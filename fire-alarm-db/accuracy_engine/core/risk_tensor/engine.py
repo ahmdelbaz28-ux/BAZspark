@@ -1,4 +1,4 @@
-from core.risk_tensor.baseline_risk import calculate_baseline_risk_field, perturb_baseline
+from core.risk_tensor.system_topology import build_system_topology, apply_perturbation, calculate_risk_field
 from core.risk_tensor.aggregator import aggregate_tensors
 from core.risk_tensor.tensor_types import RiskTensor, ImpactVector
 from core.monte_carlo.scenario_generator import generate_scenario
@@ -8,24 +8,30 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
     all_tensors = []
     base_coverage = validation.get("coverage", validation.get("overall_coverage", 0.95))
 
-    baseline_fields = {}
+    topologies = {}
     for room in rooms:
-        baseline = calculate_baseline_risk_field(room, devices)
-        baseline_fields[room.get("id")] = baseline
+        topology = build_system_topology(room, devices)
+        topologies[room.get("id")] = topology
 
     for scenario_id in range(num_scenarios):
         for room in rooms:
             room_devices = [d for d in devices if d.get("room_id") == room.get("id")]
             scenario = generate_scenario(room_devices, room)
 
-            baseline = baseline_fields.get(room.get("id"))
-            if baseline:
-                perturbed_points = perturb_baseline(baseline, scenario)
-                avg_perturbed_risk = sum(p.risk_value for p in perturbed_points) / len(perturbed_points) if perturbed_points else 0
-                coverage_after = base_coverage * (1 - avg_perturbed_risk * 0.5)
-            else:
-                coverage_after = base_coverage
-                avg_perturbed_risk = 0.0
+            topology = topologies.get(room.get("id"))
+            if not topology:
+                continue
+
+            perturbed = apply_perturbation(topology, scenario)
+
+            risk_values = []
+            for key in topology.spatial_index:
+                for (x, y) in topology.spatial_index[key]:
+                    risk = calculate_risk_field(perturbed, x, y)
+                    risk_values.append(risk)
+
+            avg_risk = sum(risk_values) / len(risk_values) if risk_values else 0.0
+            coverage_after = base_coverage * (1 - avg_risk * 0.5)
 
             coverage_loss = max(0.0, base_coverage - coverage_after)
             detection_delay = coverage_loss * 30.0
@@ -41,7 +47,6 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
                 redundancy_loss=redundancy_loss
             )
 
-            failure_prob = avg_perturbed_risk
             confidence = 0.85
             if scenario.get("power_failed"):
                 confidence -= 0.10
@@ -49,7 +54,7 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
 
             tensor = RiskTensor(
                 scenario_id=scenario_id,
-                failure_probability=failure_prob,
+                failure_probability=avg_risk,
                 impact_vector=impact,
                 spatial_map=[],
                 confidence=confidence,
@@ -61,21 +66,22 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
 
     composite_index = aggregate_tensors(all_tensors)
 
-    baseline_summary = {}
-    for room_id, baseline in baseline_fields.items():
-        baseline_summary[room_id] = {
-            "overall_baseline_risk": baseline.overall_baseline_risk,
-            "detector_count": len(baseline.detector_influence_zones),
-            "geometry_risk_factor": baseline.geometry_risk_factor,
-            "room_type_risk_factor": baseline.room_type_risk_factor,
-            "sample_points": len(baseline.points)
+    topology_summary = {}
+    for room_id, topology in topologies.items():
+        topology_summary[room_id] = {
+            "room_type": topology.room_type,
+            "nodes_count": len(topology.nodes),
+            "edges_count": len(topology.edges),
+            "influence_fields": len(topology.influence_fields),
+            "room_type_risk_factor": topology.room_type_risk_factor,
+            "geometry_risk_factor": topology.geometry_risk_factor
         }
 
     return {
         "scenarios_evaluated": num_scenarios,
         "tensors_generated": len(all_tensors),
-        "has_baseline": True,
-        "baseline_fields": baseline_summary,
+        "has_system_topology": True,
+        "topologies": topology_summary,
         "composite_risk_index": composite_index.scalar,
         "risk_level": composite_index.risk_level,
         "confidence_interval": {
