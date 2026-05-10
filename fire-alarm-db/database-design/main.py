@@ -46,6 +46,18 @@ except ImportError as e:
     logger.warning(f"Elite pipeline not available: {e}")
     PIPELINE_AVAILABLE = False
 
+# Import engineering design components
+try:
+    from ai_design_integration import (
+        EngineeringDesignEngine, 
+        EngineeringLogicFactory,
+        DomainEnum
+    )
+    ENGINE_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Engineering engine not available: {e}")
+    ENGINE_AVAILABLE = False
+
 
 # =============================================================================
 # FastAPI App
@@ -82,10 +94,10 @@ TEMP_DIR = Path(tempfile.mkdtemp(prefix='firealarm_uploads_'))
 # Background Task Runner
 # =============================================================================
 
-def run_design_task(task_id: str, image_path: str, project_name: str, standard: str = 'egyptian'):
+def run_design_task(task_id: str, image_path: str, project_name: str, standard: str = 'egyptian', domain: str = 'FireAlarm'):
     """Run design task in background thread"""
     try:
-        logger.info(f"Starting task {task_id}: project={project_name}")
+        logger.info(f"Starting task {task_id}: project={project_name}, domain={domain}")
         
         # Get database URL
         db_url = os.environ.get('DATABASE_URL')
@@ -95,7 +107,8 @@ def run_design_task(task_id: str, image_path: str, project_name: str, standard: 
             image_path=image_path,
             project_name=project_name,
             db_url=db_url,
-            standard=standard
+            standard=standard,
+            domain=domain
         )
         
         # Update task status
@@ -133,19 +146,43 @@ def healthz():
     return {"status": "healthy"}
 
 
+@app.get("/api/domains")
+def get_domains():
+    """
+    Get list of available engineering domains.
+    
+    Returns:
+    - domains: List of available domain names
+    - registry: Mapping of domain names to logic classes
+    """
+    if not ENGINE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="Engineering engine not available")
+    
+    # Get available domains
+    domains = EngineeringLogicFactory.get_available_domains()
+    
+    return {
+        "domains": domains,
+        "registry": EngineeringDesignEngine.domain_registry,
+        "default": "FireAlarm"
+    }
+
+
 @app.post("/api/elite-design")
 async def elite_design(
-    image: UploadFile = File(...),
+    image: UploadFile = File(None),
     project_name: str = Form(...),
-    standard: str = Form('egyptian')
+    standard: str = Form('egyptian'),
+    domain: str = Form('FireAlarm')
 ):
     """
     Submit a new design task
     
     Accepts:
-    - image: Floor plan image file
+    - image: Floor plan image file (optional)
     - project_name: Name of the project
     - standard: Design standard (egyptian, nfpa, british)
+    - domain: Engineering domain (FireAlarm, CCTV, PublicAddress, etc.)
     
     Returns:
     - task_id: UUID for the task
@@ -185,6 +222,7 @@ async def elite_design(
         'project_name': project_name,
         'image_path': str(image_path) if image_path and content else None,
         'standard': standard,
+        'domain': domain,
         'result': None,
         'zip_path': None,
         'error': None
@@ -193,7 +231,7 @@ async def elite_design(
     # Start background thread
     thread = threading.Thread(
         target=run_design_task,
-        args=(task_id, str(image_path) if image_path and content else None, project_name, standard)
+        args=(task_id, str(image_path) if image_path and content else None, project_name, standard, domain)
     )
     thread.daemon = True
     thread.start()
@@ -201,6 +239,7 @@ async def elite_design(
     return {
         "task_id": task_id,
         "status": "processing",
+        "domain": domain,
         "message": "Design task started"
     }
 

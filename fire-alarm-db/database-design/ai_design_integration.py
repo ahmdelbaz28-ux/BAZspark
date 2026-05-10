@@ -729,6 +729,7 @@ class EngineeringLogicFactory:
     _LOGICS = {
         'FireAlarm': FireAlarmLogic,
         'CCTV': CCTVLogic,
+        'PublicAddress': None,  # Will be loaded from pa_logic.py
     }
     
     @classmethod
@@ -736,7 +737,16 @@ class EngineeringLogicFactory:
         """Create logic instance for domain"""
         logic_class = cls._LOGICS.get(domain)
         
-        if not logic_class:
+        # Try to load from module if not registered
+        if logic_class is None and domain == 'PublicAddress':
+            try:
+                from pa_logic import PublicAddressLogic
+                cls._LOGICS['PublicAddress'] = PublicAddressLogic
+                logic_class = PublicAddressLogic
+            except ImportError:
+                pass
+        
+        if logic_class is None:
             logger.warning(f"No logic for domain {domain}, using FireAlarm as default")
             logic_class = cls._LOGICS['FireAlarm']
         
@@ -746,6 +756,11 @@ class EngineeringLogicFactory:
     def register(cls, domain: str, logic_class: type):
         """Register a new logic class"""
         cls._LOGICS[domain] = logic_class
+    
+    @classmethod
+    def get_available_domains(cls) -> List[str]:
+        """Get list of available domains"""
+        return list(cls._LOGICS.keys())
 
 
 # =============================================================================
@@ -759,6 +774,13 @@ class EngineeringDesignEngine:
     Renamed from FireAlarmAIDesign to support multiple domains.
     Uses Strategy Pattern to load appropriate logic.
     """
+    
+    # Domain registry for quick lookup
+    domain_registry = {
+        'FireAlarm': 'FireAlarmLogic',
+        'CCTV': 'CCTVLogic',
+        'PublicAddress': 'PublicAddressLogic',
+    }
     
     def __init__(self, db_manager: DatabaseManager, domain: str = 'FireAlarm'):
         """
