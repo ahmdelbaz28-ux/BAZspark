@@ -762,6 +762,53 @@ class EngineeringLogicFactory:
         """Get list of available domains"""
         return list(cls._LOGICS.keys())
 
+# =============================================================================
+# Routing Models - Cable Routing and Network Topology
+# =============================================================================
+
+class RouteNode(Base):
+    """Routing nodes for cable path calculation"""
+    __tablename__ = 'RouteNodes'
+    
+    NodeID = Column(Integer, primary_key=True, autoincrement=True)
+    FloorID = Column(Integer, ForeignKey('Rooms.FloorID'), nullable=True)
+    XCoord = Column(Float, nullable=False)
+    YCoord = Column(Float, nullable=False)
+    ZCoord = Column(Float, default=0.0)
+    NodeType = Column(String(50), default='junction')  # junction, endpoint, pullbox
+    Description = Column(String(200))
+    CreatedAt = Column(DateTime, default=datetime.utcnow)
+
+
+class RouteSegment(Base):
+    """Cable segments between route nodes"""
+    __tablename__ = 'RouteSegments'
+    
+    SegmentID = Column(Integer, primary_key=True, autoincrement=True)
+    FloorID = Column(Integer, ForeignKey('Rooms.FloorID'), nullable=True)
+    FromNodeID = Column(Integer, ForeignKey('RouteNodes.NodeID'), nullable=False)
+    ToNodeID = Column(Integer, ForeignKey('RouteNodes.NodeID'), nullable=False)
+    SegmentType = Column(String(50), default='conduit')  # conduit, cable-tray, exposed
+    LengthMeters = Column(Float, nullable=False)
+    IsAccessible = Column(Boolean, default=True)
+    CreatedAt = Column(DateTime, default=datetime.utcnow)
+
+
+class DeviceConnection(Base):
+    """Device connection topology for wiring and loops"""
+    __tablename__ = 'DeviceConnections'
+    
+    ConnectionID = Column(Integer, primary_key=True, autoincrement=True)
+    FromDeviceID = Column(Integer, ForeignKey('Devices.DeviceID'), nullable=False)
+    ToDeviceID = Column(Integer, ForeignKey('Devices.DeviceID'), nullable=False)
+    ConnectionType = Column(String(50), nullable=False)  # series, parallel, loop
+    CableType = Column(String(100))
+    CalculatedLength = Column(Float)
+    PolylinePath = Column(JSON)  # GeoJSON coordinates for path
+    LoopID = Column(String(50))
+    WireGauge = Column(String(20))
+    RoutingStatus = Column(String(20), default='pending')  # pending, validated, failed
+    CreatedAt = Column(DateTime, default=datetime.utcnow)
 
 # =============================================================================
 # RENAMED: Engineering Design Engine (with domain support)
