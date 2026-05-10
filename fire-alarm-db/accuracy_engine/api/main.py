@@ -23,6 +23,9 @@ from core.safety.evacuation_risk import evacuation_risk
 from core.safety.compliance_engine import run_compliance_check
 from core.safety.confidence_v2 import multi_factor_confidence
 from core.safety.risk_assessment_report import generate_risk_assessment
+from core.monte_carlo.simulator import run_monte_carlo
+from core.monte_carlo.statistics import analyze_results
+from core.monte_carlo.reporting import generate_risk_report
 
 app = FastAPI(title="FireAlarmAI Accuracy Engine")
 
@@ -362,3 +365,36 @@ def export_dxf():
         media_type="application/dxf",
         headers={"Content-Disposition": "attachment; filename=output.dxf"}
     )
+
+
+@app.post("/api/monte-carlo")
+def monte_carlo_simulation(request: EngineRequest, iterations: int = 1000):
+    rooms = [r.model_dump() for r in request.rooms]
+    from core.improvement_engine import apply_improvements_and_reassess
+    
+    improvement = apply_improvements_and_reassess(rooms)
+    devices = improvement.get("after", {}).get("devices", [])
+    
+    if not devices:
+        from core.decision_pipeline import run_decision_pipeline
+        pipeline = run_decision_pipeline(rooms)
+        devices = pipeline.get("devices", [])
+    
+    coverage = improvement.get("after", {}).get("coverage", 0.95)
+    validation = {"coverage": coverage, "overall_coverage": coverage}
+
+    results = run_monte_carlo(rooms, devices, validation, iterations)
+    stats = analyze_results(results)
+    report = generate_risk_report(stats)
+
+    return {
+        "iterations": iterations,
+        "statistics": stats,
+        "report": report,
+        "reliability_index": stats["reliability_index"],
+        "system_reliability": stats["reliability_index"],
+        "average_coverage": stats["average_coverage_after_failure"],
+        "worst_case_coverage": stats["worst_case_coverage"],
+        "critical_failure_probability": stats["critical_failure_probability"],
+        "recommended_actions": stats["recommended_actions"]
+    }
