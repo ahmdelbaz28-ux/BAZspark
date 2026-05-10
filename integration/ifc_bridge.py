@@ -19,12 +19,33 @@ try:
 except ImportError:
     IFC_AVAILABLE = False
 
+from dataclasses import dataclass
+from enum import Enum
 from shapely.geometry import Polygon, Point
 from typing import List, Tuple
 
 from core.models import Room, Device, Obstruction
 from validation.spatial_normalizer import SpatialNormalizer
 from validation.tolerance_model import ToleranceModel
+
+
+# =============================================================================
+# Spatial Resolution Ledger
+# =============================================================================
+
+class ResolutionSource(Enum):
+    IFC_REL_CONTAINED = "IFC_REL_CONTAINED"       # Explicit spatial relationship
+    GEOMETRIC_COVERS = "GEOMETRIC_COVERS"          # Geometric coverage fallback
+    PLACEMENT_FALLBACK = "PLACEMENT_FALLBACK"      # Inferred from placement
+    UNASSIGNED = "UNASSIGNED"                       # Not assigned to any room
+
+@dataclass
+class ResolutionEntry:
+    element_id: str
+    element_type: str  # "DEVICE" or "OBSTRUCTION"
+    room_id: str
+    source: ResolutionSource
+    confidence: float  # 0.0 to 1.0
 
 
 class IFCBridge:
@@ -42,6 +63,9 @@ class IFCBridge:
         
         # Build spatial index for containment relationships
         self._build_spatial_index()
+        
+        # Initialize resolution ledger
+        self.resolution_log: List[ResolutionEntry] = []
     
     def _resolve_placement(self, placement) -> Tuple[float, float, float]:
         """
@@ -95,6 +119,22 @@ class IFCBridge:
                 elif elem.is_a("IfcColumn") or elem.is_a("IfcBeam"):
                     self.obstruction_to_room[elem_id] = room_id
     
+    def audit_spatial_decisions(self) -> str:
+        """
+        Returns a text report summarizing all spatial resolution decisions.
+        """
+        lines = ["=== Spatial Resolution Audit ==="]
+        by_source = {}
+        for entry in self.resolution_log:
+            key = entry.source.value
+            by_source[key] = by_source.get(key, 0) + 1
+        
+        for src, count in sorted(by_source.items()):
+            lines.append(f"{src}: {count} elements")
+        
+        lines.append(f"Total logged: {len(self.resolution_log)}")
+        return "\n".join(lines)
+    
     def extract_and_normalize(self) -> Tuple[List[Room], List[Device], List[Obstruction]]:
         """
         Full pipeline:
@@ -113,15 +153,61 @@ class IFCBridge:
         for room in raw_rooms:
             room_id = room.id
             
-            # Use spatial index to link elements to rooms
-            room_devices = [d for d in raw_devices if self.device_to_room.get(d.id) == room_id]
-            room_obs = [o for o in raw_obstructions if self.obstruction_to_room.get(o.id) == room_id]
+            # Use spatial index + geometric filtering with resolution logging
+            room_devices = []
+            for d in raw_devices:
+                source = None
+                conf = 0.0
+                room_in_index = self.device_to_room.get(d.id)
+                
+                if room_in_index is not None and room_in_index == room_id:
+                    source = ResolutionSource.IFC_REL_CONTAINED
+                    conf = 1.0
+                elif room.geometry.covers(d.position):
+                    source = ResolutionSource.GEOMETRIC_COVERS
+                    conf = 0.73
+                else:
+                    source = ResolutionSource.UNASSIGNED
+                    conf = 0.0
+                
+                if source != ResolutionSource.UNASSIGNED:
+                    room_devices.append(d)
+                
+                self.resolution_log.append(ResolutionEntry(
+                    element_id=d.id,
+                    element_type="DEVICE",
+                    room_id=room_id if source != ResolutionSource.UNASSIGNED else "none",
+                    source=source,
+                    confidence=conf
+                ))
             
-            # Fallback: geometric filtering if no explicit spatial relationship
-            if not room_devices:
-                room_devices = [d for d in raw_devices if room.geometry.covers(d.position)]
-            if not room_obs:
-                room_obs = [o for o in raw_obstructions if room.geometry.contains(o.geometry)]
+            # Same logic for obstructions
+            room_obs = []
+            for o in raw_obstructions:
+                source = None
+                conf = 0.0
+                obs_in_index = self.obstruction_to_room.get(o.id)
+                
+                if obs_in_index is not None and obs_in_index == room_id:
+                    source = ResolutionSource.IFC_REL_CONTAINED
+                    conf = 1.0
+                elif room.geometry.contains(o.geometry):
+                    source = ResolutionSource.GEOMETRIC_COVERS
+                    conf = 0.73
+                else:
+                    source = ResolutionSource.UNASSIGNED
+                    conf = 0.0
+                
+                if source != ResolutionSource.UNASSIGNED:
+                    room_obs.append(o)
+                
+                self.resolution_log.append(ResolutionEntry(
+                    element_id=o.id,
+                    element_type="OBSTRUCTION",
+                    room_id=room_id if source != ResolutionSource.UNASSIGNED else "none",
+                    source=source,
+                    confidence=conf
+                ))
             
             # Normalize
             norm_room, norm_devs, norm_obs, errors = self.normalizer.normalize(
@@ -387,6 +473,9 @@ def _run_self_test():
         
         # Show spatial index
         print(f"\nSpatial index (device_to_room): {bridge.device_to_room}")
+        
+        # Show resolution audit
+        print("\n" + bridge.audit_spatial_decisions())
         
         print("\n" + "=" * 60)
         if len(rooms) > 0:
