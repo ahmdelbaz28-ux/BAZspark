@@ -12,6 +12,8 @@ from core.optimization.layout_selector import select_best_layout, OPTIMIZATION_M
 from core.optimization.candidate_generation import generate_candidates, generate_corridor_candidates
 from core.optimization.coverage_optimizer import greedy_coverage_selection
 from core.optimization.routing_optimizer import minimum_spanning_tree_length, estimate_cable_cost
+from core.risk_engine.engine import run_risk_engine
+from core.risk_engine.reporting.report_generator import generate_report
 from core.safety.fire_load_risk import fire_load_risk
 from core.safety.failure_mode_analysis import detector_failure_impact
 from core.safety.redundancy_analysis import requires_redundancy, check_overlap_coverage
@@ -170,6 +172,38 @@ def safety_assessment(request: EngineRequest):
         "confidence": confidence_results,
         "risk_assessment_report": risk_report
     }
+
+
+@app.post("/api/risk-assessment")
+def risk_assessment(request: EngineRequest):
+    rooms = [r.model_dump() for r in request.rooms]
+    pipeline_result = run_decision_pipeline(rooms)
+    devices = pipeline_result.get("devices", [])
+    validation = pipeline_result.get("validation", {})
+    
+    risk_results = run_risk_engine(rooms, devices, validation)
+    
+    pdf_path = generate_report(risk_results, "risk_report.pdf")
+    
+    results_dict = []
+    for r in risk_results:
+        results_dict.append({
+            "room_id": r.room_id,
+            "risk_level": r.risk_level,
+            "score": r.score,
+            "confidence": r.confidence,
+            "hazards": [{"name": h.name, "severity": h.severity, "mitigation": h.mitigation} for h in r.hazards],
+            "recommendations": r.recommendations
+        })
+    
+    return {
+        "risk_results": results_dict,
+        "report_pdf": pdf_path,
+        "total_rooms": len(rooms),
+        "critical_rooms": len([r for r in results_dict if r["risk_level"] == "CRITICAL"]),
+        "high_risk_rooms": len([r for r in results_dict if r["risk_level"] == "HIGH"])
+    }
+
 
 @app.get("/api/health")
 def health():
