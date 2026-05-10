@@ -8,6 +8,7 @@ the Standalone Verifier.
 
 import json
 import hashlib
+import os
 from typing import Dict, Any, List, Optional
 from translator import (
     translate_element,
@@ -23,6 +24,7 @@ def export_zone(
     height: float,
     elements: List[Dict[str, Any]],
     ceiling_slope: float = 0.0,
+    source_file_path: str = None,
 ) -> str:
     """
     Export a single zone (room) to a CanonicalGeoSnapshot JSON string.
@@ -114,9 +116,23 @@ def export_zone(
     result = {
         "snapshot": snapshot,
         "geo_hash": geo_hash,
+        "source_file_hash": compute_source_file_hash(source_file_path) if source_file_path else "NOT_PROVIDED",
     }
     
     return json.dumps(result, sort_keys=True, separators=(',', ':'), indent=2)
+
+
+# ============================================================
+# Source File Anchoring
+# ============================================================
+def compute_source_file_hash(filepath: str) -> str:
+    if not filepath or not os.path.exists(filepath):
+        return "FILE_NOT_FOUND"
+    hasher = hashlib.sha256()
+    with open(filepath, 'rb') as f:
+        for chunk in iter(lambda: f.read(8192), b''):
+            hasher.update(chunk)
+    return hasher.hexdigest()
 
 
 # ============================================================

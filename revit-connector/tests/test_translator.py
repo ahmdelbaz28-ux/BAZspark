@@ -91,6 +91,7 @@ def test_export_zone():
         width=10.0,
         height=10.0,
         elements=elements,
+        source_file_path=None,
     )
     
     data = json.loads(result_json)
@@ -128,6 +129,22 @@ def test_validate_snapshot():
     assert len(issues) == 0, f"Expected 0 issues, got: {issues}"
 
 
+def test_source_file_hash_present():
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.rvt') as f:
+        f.write("Dummy Revit file content")
+        temp_path = f.name
+    try:
+        elements = [{"family": "Fire_Smoke_Detector", "x": 3.0, "y": 4.0, "id": "DET_A"}]
+        result_json = export_zone("Zone_Test", 10.0, 10.0, elements, source_file_path=temp_path)
+        data = json.loads(result_json)
+        assert "source_file_hash" in data
+        assert len(data["source_file_hash"]) == 64
+        assert data["source_file_hash"] != "FILE_NOT_FOUND"
+    finally:
+        os.unlink(temp_path)
+
+
 if __name__ == "__main__":
     # Run all tests manually
     tests = [
@@ -138,6 +155,7 @@ if __name__ == "__main__":
         test_export_zone,
         test_export_rejects_unrecognized,
         test_validate_snapshot,
+        test_source_file_hash_present,
     ]
     
     passed = 0
