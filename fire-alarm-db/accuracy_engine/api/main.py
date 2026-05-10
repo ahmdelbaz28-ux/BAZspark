@@ -95,7 +95,9 @@ def optimize_layout(request: EngineRequest):
         "cable_length": best.get("cable_length", 0),
         "score": best.get("score", 0),
         "validation": best.get("validation", {}),
-        "available_modes": list(OPTIMIZATION_MODES.keys())
+        "available_modes": list(OPTIMIZATION_MODES.keys()),
+        "safety_assessment": "enabled"
+    }
 
 @app.post("/api/safety-assessment")
 def safety_assessment(request: EngineRequest):
@@ -169,7 +171,6 @@ def safety_assessment(request: EngineRequest):
         "risk_assessment_report": risk_report
     }
 
-    }
 @app.get("/api/health")
 def health():
     return {"status": "healthy", "engine": "accuracy_engine_v1"}
