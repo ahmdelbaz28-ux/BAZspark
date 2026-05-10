@@ -1,5 +1,5 @@
 from core.risk_tensor.system_topology import build_system_topology
-from core.risk_tensor.propagation_engine import PropagationEngine
+from core.risk_tensor.dsl_engine import DSLEngine, DEFAULT_DSL_PROGRAM
 from core.risk_tensor.aggregator import aggregate_tensors
 from core.risk_tensor.tensor_types import RiskTensor, ImpactVector
 from core.monte_carlo.scenario_generator import generate_scenario
@@ -8,7 +8,7 @@ from core.monte_carlo.scenario_generator import generate_scenario
 def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, num_scenarios: int = 100) -> dict:
     all_tensors = []
     base_coverage = validation.get("coverage", validation.get("overall_coverage", 0.95))
-    engine = PropagationEngine()
+    engine = DSLEngine(DEFAULT_DSL_PROGRAM)
 
     topologies = {}
     for room in rooms:
@@ -26,11 +26,9 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
             if not topology:
                 continue
 
-            evolved_states = engine.run_propagation(topology, scenario, max_steps=3)
-            evolution_summary = engine.get_evolution_summary()
-            all_evolution_summaries.append(evolution_summary)
-
-            total_failed = evolution_summary.get("final_failed_count", 0)
+            perturbed_topology, evolution = engine.execute_rules(topology, scenario, max_steps=3)
+            
+            total_failed = len([n for n in perturbed_topology.nodes if n.status == "failed"])
             total_nodes = len(topology.nodes)
             avg_risk = total_failed / max(total_nodes, 1)
 
@@ -67,10 +65,15 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
 
             all_tensors.append(tensor)
 
+            all_evolution_summaries.append({
+                "total_failed": total_failed,
+                "steps": len(evolution)
+            })
+
     composite_index = aggregate_tensors(all_tensors)
 
-    avg_cascading = sum(s["cascading_failures"] for s in all_evolution_summaries) / max(len(all_evolution_summaries), 1)
-    avg_steps = sum(s["total_steps"] for s in all_evolution_summaries) / max(len(all_evolution_summaries), 1)
+    avg_cascading = sum(s["total_failed"] for s in all_evolution_summaries) / max(len(all_evolution_summaries), 1)
+    avg_steps = sum(s["steps"] for s in all_evolution_summaries) / max(len(all_evolution_summaries), 1)
 
     topology_summary = {}
     for room_id, topology in topologies.items():
@@ -83,16 +86,25 @@ def run_composite_risk_analysis(rooms: list, devices: list, validation: dict, nu
             "geometry_risk_factor": topology.geometry_risk_factor
         }
 
+    program_summary = engine.get_program_summary()
+
     return {
         "scenarios_evaluated": num_scenarios,
         "tensors_generated": len(all_tensors),
         "has_system_topology": True,
         "has_propagation_engine": True,
+        "has_dsl_engine": True,
         "topologies": topology_summary,
         "propagation_stats": {
             "average_cascading_failures_per_scenario": round(avg_cascading, 1),
             "average_propagation_steps": round(avg_steps, 1),
-            "propagation_rules_count": len(engine.rules)
+            "propagation_rules_count": program_summary["rules_count"]
+        },
+        "dsl_program": {
+            "nodes": program_summary["nodes_count"],
+            "edges": program_summary["edges_count"],
+            "rules": program_summary["rules_count"],
+            "decays": program_summary["decays_count"]
         },
         "composite_risk_index": composite_index.scalar,
         "risk_level": composite_index.risk_level,
