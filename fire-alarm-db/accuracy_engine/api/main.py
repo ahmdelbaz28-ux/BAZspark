@@ -15,6 +15,7 @@ from core.optimization.routing_optimizer import minimum_spanning_tree_length, es
 from core.risk_engine.engine import run_risk_engine
 from core.risk_engine.reporting.report_generator import generate_report
 from core.improvement_engine import apply_improvements_and_reassess
+from core.compliance_engine.engine import run_compliance_verification
 from core.safety.fire_load_risk import fire_load_risk
 from core.safety.failure_mode_analysis import detector_failure_impact
 from core.safety.redundancy_analysis import requires_redundancy, check_overlap_coverage
@@ -210,6 +211,19 @@ def risk_assessment(request: EngineRequest):
 def auto_improve(request: EngineRequest):
     rooms = [r.model_dump() for r in request.rooms]
     result = apply_improvements_and_reassess(rooms)
+    return result
+
+
+@app.post("/api/compliance-verification")
+def compliance_verification(request: EngineRequest):
+    rooms = [r.model_dump() for r in request.rooms]
+    from core.decision_pipeline import run_decision_pipeline
+    pipeline_result = run_decision_pipeline(rooms)
+    devices = pipeline_result.get("devices", [])
+    coverage = pipeline_result.get("validation", {}).get("overall_coverage", 0)
+    confidence = pipeline_result.get("stages", {}).get("confidence_scoring", {}).get("overall_confidence", 0)
+    
+    result = run_compliance_verification(rooms, devices, coverage, confidence)
     return result
 
 
