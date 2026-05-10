@@ -14,6 +14,7 @@ from core.optimization.coverage_optimizer import greedy_coverage_selection
 from core.optimization.routing_optimizer import minimum_spanning_tree_length, estimate_cable_cost
 from core.risk_engine.engine import run_risk_engine
 from core.risk_engine.reporting.report_generator import generate_report
+from core.improvement_engine import apply_improvements_and_reassess
 from core.safety.fire_load_risk import fire_load_risk
 from core.safety.failure_mode_analysis import detector_failure_impact
 from core.safety.redundancy_analysis import requires_redundancy, check_overlap_coverage
@@ -203,6 +204,13 @@ def risk_assessment(request: EngineRequest):
         "critical_rooms": len([r for r in results_dict if r["risk_level"] == "CRITICAL"]),
         "high_risk_rooms": len([r for r in results_dict if r["risk_level"] == "HIGH"])
     }
+
+
+@app.post("/api/auto-improve")
+def auto_improve(request: EngineRequest):
+    rooms = [r.model_dump() for r in request.rooms]
+    result = apply_improvements_and_reassess(rooms)
+    return result
 
 
 @app.get("/api/health")
