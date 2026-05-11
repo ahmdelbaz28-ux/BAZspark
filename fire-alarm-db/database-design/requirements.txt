@@ -24,7 +24,7 @@ torchvision>=0.15.0
 ultralytics>=8.0.0
 
 # PDF Generation
-reportlab>=4.0.0
+reportlab>=4.5.0
 
 # CAD/DWG
 ezdxf>=0.21.0
