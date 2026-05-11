@@ -260,7 +260,7 @@ class GraphBuilder:
         import shapely.geometry as geom
         edge = geom.LineString([(x1, y1), (x2, y2)])
         for wall in self.walls:
-            if edge.crosses(wall):
+            if edge.intersects(wall):
                 return True
         return False
 
