@@ -1,21 +1,23 @@
 """
-auto_placement.py - خوارزمية اقتراح مواقع الأجهزة (شبكة ديناميكية)
-الوصف: توزع الأجهزة تلقائياً على كامل طول وعرض الغرفة بناءً على التباعد
-       المسموح من المعيار، مع هامش آمن = نصف قطر التغطية.
+auto_placement.py - خوارزمية اقتراح مواقع الأجهزة (شبكة متداخلة)
+الوصف: توزع الأجهزة بشكل متداخل (Staggered) على كامل طول وعرض الغرفة
+       لضمان تغطية مثالية حتى في الغرف الضيقة.
 """
 import math
-from typing import List
+from typing import List, Literal
 from src.core.models import Room, Device, DeviceType, Point
 
-def suggest_devices(room: Room, spacing: float) -> List[Device]:
+def suggest_devices(
+    room: Room,
+    spacing: float,
+    pattern: Literal["staggered", "rectilinear"] = "staggered"
+) -> List[Device]:
     """
-    spacing:قصى مسافة مسموحة بين جهازين (مثلاً 9.1م لـ NFPA 72).
-    الهامش من الجدار = spacing / 2 (نصف قطر التغطية القياسي).
+    يقترح شبكة أجهزة متداخلة (أو مستقيمة) بناءً على أبعاد الغرفة والتباعد المسموح.
+    - spacing: أقصى مسافة بين جهازين متجاورين (مثلاً 9.1م لـ NFPA 72).
     """
     if not room.polygon or not room.polygon.exterior:
         return []
-
-    edge_margin = spacing / 2.0   # <--- هنا السر
 
     # 1. أبعاد الصندوق المحيط
     coords = [(p.x, p.y) for p in room.polygon.exterior]
@@ -25,32 +27,31 @@ def suggest_devices(room: Room, spacing: float) -> List[Device]:
     room_width = max_x - min_x
     room_height = max_y - min_y
 
-    # 2. المساحة الفعالة (إذا became 0 أو سالب، نستخدم 0 كهامش)
-    eff_w = room_width - 2 * edge_margin
-    eff_h = room_height - 2 * edge_margin
-    
-    # لو المساحة الفعالة سالبة، نستخدم هامش = 0
-    if eff_w <= 0:
-        eff_w = room_width
-        edge_margin = 0.0
-    if eff_h <= 0:
-        eff_h = room_height
-        edge_margin = 0.0
+    # 2. الهامش - يكون صغير للغرف الصغيرة
+    edge_margin = min(spacing / 2.0, min(room_width, room_height) / 4.0)
 
-    # 3. عدد الأعمدة والصفوف
-    cols = max(1, math.ceil(eff_w / spacing) + 1)
-    rows = max(1, math.ceil(eff_h / spacing) + 1)
+    # 3. المساحة الفعالة
+    eff_w = max(0.0, room_width - 2 * edge_margin)
+    eff_h = max(0.0, room_height - 2 * edge_margin)
 
-    # 4. التباعد الفعلي
+    # 4. عدد الأعمدة والصفوف
+    cols = max(1, math.ceil(eff_w / spacing) + 1) if eff_w > 0 else 1
+    rows = max(1, math.ceil(eff_h / spacing) + 1) if eff_h > 0 else 1
+
+    # 5. التباعد الفعلي
     x_step = eff_w / (cols - 1) if cols > 1 else 0.0
     y_step = eff_h / (rows - 1) if rows > 1 else 0.0
 
-    # 5. توليد النقاط
     devices = []
     for i in range(cols):
         for j in range(rows):
             x = min_x + edge_margin + i * x_step
             y = min_y + edge_margin + j * y_step
+
+            # الشبكة المتداخلة: إزاحة الصفوف الزوجية
+            if pattern == "staggered" and j % 2 == 1:
+                x += x_step / 2.0
+
             pt = Point(x, y)
             if room.polygon.is_point_inside(pt):
                 devices.append(Device(

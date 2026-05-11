@@ -19,7 +19,7 @@ class CoverageService:
         # (نفس منطق الاقتراح السابق)
         if devices is None:
             spacing = standard.get_max_spacing("SmokeDetector") if standard else 9.1
-            devices = suggest_devices(room, spacing)
+            devices = suggest_devices(room, spacing)  # uses 'staggered' by default
 
         violations = []
         if not devices:
