@@ -20,4 +20,10 @@ coverage.xml
 *.log
 .DS_Store
 Thumbs.db
+
+# DXF Test Files
+*.dxf
+
+# Requirements (uncomment if needed)
+# requirements.txt
 ```
