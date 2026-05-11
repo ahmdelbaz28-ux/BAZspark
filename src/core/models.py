@@ -520,3 +520,14 @@ def validate_device(device: Device) -> List[Violation]:
         ))
     
     return violations
+
+
+@dataclass
+class Beam:
+    """Beam entity representing structural beams that can block detection"""
+    beam_id: Optional[int] = None
+    start: Optional[Point] = None
+    end: Optional[Point] = None
+    depth: float = 0.3          # عمق العارضة من السقف (متر)
+    width: float = 0.1          # عرض العارضة (متر)
+    room_id: Optional[int] = None
