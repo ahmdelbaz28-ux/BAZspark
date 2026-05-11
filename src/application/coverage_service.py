@@ -1,25 +1,27 @@
 """
 src/application/coverage_service.py
-محرك فحص التغطية مع دعم العوارض (Beams)
+محرك فحص التغطية مع دعم العوارض (Beams) وكشف العوارض العميقة
 """
 from typing import List
 from src.core.models import Room, Device, Violation, ViolationSeverity, Point, Beam
 from src.auto_placement import suggest_devices
+from src.application.beam_detector import BeamDetector
 import shapely.geometry as geom
 import shapely.ops as ops
 import math
+
 
 class CoverageService:
 
     def __init__(self, beams: List[Beam] = None):
         self.beams = beams or []
+        self.beam_detector = BeamDetector()
 
     def check_coverage(self, room: Room, devices: List[Device] = None,
                        standard=None) -> List[Violation]:
-        # (نفس منطق الاقتراح السابق)
         if devices is None:
             spacing = standard.get_max_spacing("SmokeDetector") if standard else 9.1
-            devices = suggest_devices(room, spacing)  # uses 'staggered' by default
+            devices = suggest_devices(room, spacing)
 
         violations = []
         if not devices:
@@ -42,6 +44,10 @@ class CoverageService:
             ))
             return violations
 
+        # تحليل العوارض العميقة
+        ceiling_height = room.height if room.height else 3.0
+        deep_beams = self.beam_detector.analyze(room, self.beams, ceiling_height)
+        
         # دوائر التغطية المعدلة
         coverage_parts = []
         for device in devices:
@@ -57,22 +63,13 @@ class CoverageService:
 
             circle = center.buffer(radius)
 
-            # ----- جديد: إزالة المناطق المحجوبة بالعوارض -----
-            blocked_areas = []
-            for beam in self.beams:
-                if self._beam_blocks_room(beam, room):
-                    # شعاع: خط من الكاشف إلى نهاية الغرفة عبر العارضة
-                    beam_line = geom.LineString([
-                        (beam.start.x, beam.start.y),
-                        (beam.end.x, beam.end.y)
-                    ])
-                    # المنطقة التي تحجبها العارضة = دائرة نصف قطرها صغير حول خط العارضة
-                    blocked_zone = beam_line.buffer(beam.depth * 2.0)
-                    blocked_areas.append(blocked_zone)
-
-            if blocked_areas:
-                blocked_union = ops.unary_union(blocked_areas)
-                circle = circle.difference(blocked_union)
+            # إزالة المناطق المحجوبة بالعوارض العميقة
+            for beam in deep_beams:
+                shadow = self.beam_detector.compute_shadow(
+                    device.position, beam, radius
+                )
+                if shadow and not shadow.is_empty:
+                    circle = circle.difference(shadow)
 
             if not circle.is_empty:
                 coverage_parts.append(circle)
@@ -105,17 +102,23 @@ class CoverageService:
                     "total": room_poly.area
                 }
             ))
+            
+            # إذا كانت هناك عوارض عميقة ولم تغطي بشكل كامل، أضف تحذير
+            if deep_beams:
+                violations.append(Violation(
+                    violation_code="BEAM_COVERAGE",
+                    severity=ViolationSeverity.MINOR,
+                    description_template=(
+                        "Room '{room_name}' has {n} deep beam(s) that may require "
+                        "additional detectors in beam pockets."
+                    ),
+                    params={
+                        "room_name": room.name,
+                        "n": len(deep_beams)
+                    }
+                ))
 
         return violations
-
-    def _beam_blocks_room(self, beam: Beam, room: Room) -> bool:
-        """هل العارضة داخل الغرفة؟ (اختبار بسيط بالمسافة)"""
-        if not room.polygon or not room.polygon.exterior:
-            return False
-        mid_x = (beam.start.x + beam.end.x) / 2.0
-        mid_y = (beam.start.y + beam.end.y) / 2.0
-        mid_point = Point(mid_x, mid_y)
-        return room.polygon.is_point_inside(mid_point)
 
     def _room_to_shapely(self, room: Room) -> geom.Polygon:
         if room.polygon and room.polygon.exterior:

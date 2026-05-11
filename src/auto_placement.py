@@ -27,8 +27,8 @@ def suggest_devices(
     room_width = max_x - min_x
     room_height = max_y - min_y
 
-    # 2. الهامش - يكون صغير للغرف الصغيرة
-    edge_margin = min(spacing / 2.0, min(room_width, room_height) / 4.0)
+    # 2. لا هامش - نغطي كل المساحة
+    edge_margin = 0.1  # minimal margin to avoid wall edge cases
 
     # 3. المساحة الفعالة
     eff_w = max(0.0, room_width - 2 * edge_margin)
