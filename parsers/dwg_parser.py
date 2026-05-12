@@ -3,7 +3,7 @@ FireAI DWG Parser - AutoCAD DWG file parser
 """
 
 import logging
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from core.models import (
     UniversalElement, ElementType, Point3D, Geometry, 
@@ -50,7 +50,77 @@ class DWGParser:
         except Exception as e:
             logger.error(f"Error parsing DWG {dwg_path}: {e}")
             return []
-    
+
+    def extract_rooms_from_chaos(self, doc: Any) -> List['UniversalElement']:
+        """Chaos-to-Order Engine v2.0"""
+        from shapely.geometry import LineString
+        from shapely.ops import unary_union, polygonize
+
+        lines = []
+        try:
+            msp = doc.modelspace()
+            for entity in msp:
+                if entity.dxftype() not in ['LINE', 'LWPOLYLINE', 'POLYLINE']:
+                    continue
+                try:
+                    if entity.dxftype() == 'LINE':
+                        start = (entity.dxf.start.x, entity.dxf.start.y)
+                        end = (entity.dxf.end.x, entity.dxf.end.y)
+                        if ((end[0]-start[0])**2 + (end[1]-start[1])**2) > 1e-9:
+                            lines.append(LineString([start, end]))
+                    elif entity.dxftype() in ['LWPOLYLINE', 'POLYLINE']:
+                        pts = [(p[0], p[1]) for p in entity.get_points()]
+                        if len(pts) >= 2:
+                            if entity.closed and pts[0] != pts[-1]:
+                                pts.append(pts[0])
+                            valid = True
+                            for i in range(len(pts)-1):
+                                if ((pts[i+1][0]-pts[i][0])**2 + (pts[i+1][1]-pts[i][1])**2) < 1e-9:
+                                    valid = False
+                                    break
+                            if valid:
+                                lines.append(LineString(pts))
+                except:
+                    continue
+        except:
+            return []
+
+        if len(lines) < 3:
+            return []
+
+        try:
+            merged = unary_union(lines)
+            polys = list(polygonize(merged))
+        except:
+            return []
+
+        rooms = []
+        for i, poly in enumerate(polys):
+            try:
+                if poly.area < 1.0 or not poly.is_valid or not poly.is_simple:
+                    continue
+                coords = list(poly.exterior.coords)
+                if coords[0] == coords[-1]:
+                    coords = coords[:-1]
+                clean = [coords[0]]
+                for pt in coords[1:]:
+                    if (pt[0]-clean[-1][0])**2 + (pt[1]-clean[-1][1])**2 > 1e-9:
+                        clean.append(pt)
+                if len(clean) < 3:
+                    continue
+                pts = [Point3D(x, y, 0) for x, y in clean]
+                geom = Geometry(points=pts, polyline_closed=True)
+                geom.calculate_area()
+                name = f"Room_{int(geom.area)}m2_{i}"
+                room = UniversalElement(
+                    properties=SemanticProperties(element_type=ElementType.ROOM, name=name),
+                    geometry=geom, source_file="chaos_inference"
+                )
+                rooms.append(room)
+            except:
+                continue
+        return rooms
+
     def _convert_entity_to_universal(self, entity, source_file: str) -> Optional[UniversalElement]:
         """تحويل كائن DXF إلى Universal Element"""
         try:
