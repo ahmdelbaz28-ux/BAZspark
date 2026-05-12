@@ -26,6 +26,12 @@ from spatial_engine.mip_solver import OptimalMIPEngine
 from src.domain.nfpa72_provider import NFPA72ConstraintProvider
 from validation.compliance_oracle import ComplianceOracle
 from core.models import Room as CoreRoom, Device as CoreDevice, DeviceCoordinate
+from src.adapters.geometry_adapter import (
+    json_polygon_to_shapely,
+    coordinate_to_shapely_point,
+    calculate_polygon_area,
+    calculate_polygon_perimeter,
+)
 
 
 # =============================================================================
@@ -344,58 +350,66 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
         polygon = room.polygon
         area = calculate_area(polygon)
         
-        # ========== ComplianceOracle Gate ==========
-        # Convert to Core models for verification
+                # ========== ComplianceOracle Gate (REAL) ==========
         try:
-            # Create Core Room from polygon
+            # Convert JSON polygon to Shapely for Oracle
+            shapely_poly = json_polygon_to_shapely(room.polygon)
+
+            # Create Core Room with REAL Shapely geometry
             core_room = CoreRoom(
                 id=f"room_{room.name}",
                 name=room.name,
                 room_type=room.room_type,
-                floor_area=area,
-                geometry={"polygon": room.polygon}
+                floor_area=calculate_polygon_area(room.polygon),
+                ceiling_height=room.ceiling_height,
+                ceiling_type=room.ceiling_type,
+                geometry=shapely_poly,
             )
-            
+
             # Create Core Devices from placements
             core_devices = []
             for d in result.devices:
                 core_devices.append(CoreDevice(
                     id=f"dev_{d.x}_{d.y}",
                     device_type=d.device_type,
-                    position=DeviceCoordinate(x=d.x, y=d.y, z=0),
-                    room_id=f"room_{room.name}"
+                    position=coordinate_to_shapely_point(d.x, d.y),
+                    room_id=f"room_{room.name}",
+                    z_height=room.ceiling_height,
+                    coverage_radius=4.6,  # NFPA 72 default for smooth ceiling
                 ))
-            
-            # Run ComplianceOracle verification
-            # Note: Oracle expects Shapely geometry objects which need special conversion
-            # For now, we trust the MIP solver produces valid placements
-            # In production, convert to proper Shapely Polygon before calling
-            verification = {
-                "status": "PASS",
-                "violations_count": 0,
-                "audit_trail": "MIP solver verified",
-                "checksum": "trusted"
-            }
-            
-            # Gate: REJECTED_HARD or REJECTED_AMBIGUOUS → skip room
-            # (Always PASS for now since MIP produces valid placements)
+
+            # REAL Oracle call
+            oracle = ComplianceOracle()
+            verification = oracle.verify_truth(
+                room=core_room,
+                devices=core_devices,
+                obstructions=[],
+            )
+
+            # STRICT GATE
             if verification["status"] in ["REJECTED_HARD", "REJECTED_AMBIGUOUS"]:
                 failed_rooms.append({
                     "name": room.name,
                     "status": verification["status"],
-                    "reason": verification.get("audit_trail", "Unknown")
+                    "checksum": verification.get("checksum"),
+                    "decision_id": verification.get("decision_id"),
+                    "violations": verification.get("violations", []),
                 })
                 continue
-            
+
+            room_checksum = verification.get("checksum", "unknown")
+            room_decision_id = verification.get("decision_id", "unknown")
+
         except Exception as e:
-            # If conversion fails, add to failed and continue
             failed_rooms.append({
                 "name": room.name,
-                "status": "ERROR",
-                "reason": str(e)
+                "status": "REJECTED_EXCEPTION",
+                "reason": str(e),
+                "checksum": None,
+                "decision_id": None,
             })
             continue
-        
+
         # Calculate costs
         device_breakdown = {}
         for d in result.devices:

@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Dict, List, Optional
 from datetime import datetime
 import uuid
-from shapely.geometry import Point as ShapelyPoint, Polygon
+from shapely.geometry import Polygon as ShapelyPolygon, Point as ShapelyPoint
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -347,7 +347,9 @@ class Room:
     name: str
     room_type: str
     floor_area: float
-    geometry: Dict  # polygon data
+    geometry: ShapelyPolygon  # Shapely Polygon for Oracle
+    ceiling_height: float = 2.8  # Default height in meters
+    ceiling_type: str = "SMOOTH"  # SMOOTH, BEAMED, SLOPED, CORRIDOR
 
 
 @dataclass
@@ -355,8 +357,10 @@ class Device:
     """Device for ComplianceOracle"""
     id: str
     device_type: str
-    position: DeviceCoordinate
+    position: ShapelyPoint  # Shapely Point for Oracle
     room_id: str
+    z_height: float = 2.4  # mounting height in meters
+    coverage_radius: float = 4.6  # default coverage radius in meters
 
 
 @dataclass
@@ -373,6 +377,6 @@ class Violation:
 class Obstruction:
     """Obstruction for ComplianceOracle"""
     id: str
-    geometry: Polygon
+    geometry: ShapelyPolygon
     height: float
     blocks_visibility: bool = True
