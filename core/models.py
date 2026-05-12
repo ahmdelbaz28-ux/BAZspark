@@ -371,6 +371,7 @@ class Violation:
     location: Optional[DeviceCoordinate] = None
     value: float = 0.0
     threshold: float = 0.0
+    severity: str = "WARNING"  # WARNING, CRITICAL
 
 
 @dataclass
