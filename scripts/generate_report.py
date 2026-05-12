@@ -23,6 +23,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from spatial_engine.mip_solver import OptimalMIPEngine
+from src.domain.nfpa72_provider import NFPA72ConstraintProvider
 
 
 # =============================================================================
@@ -57,6 +58,9 @@ class Room:
     name: str
     polygon: List[Tuple[float, float]]
     room_type: str = "Office"
+    ceiling_height: float = 2.8
+    ceiling_type: str = "SMOOTH"
+    device_type: str = "SMOKE_PHOTOELECTRIC"
 
 
 @dataclass
@@ -169,26 +173,63 @@ def estimate_cable_length(num_devices: int, room_area: float, room_perimeter: fl
     return total
 
 
-def select_device_type(room_type: str) -> str:
+def select_device_type(room: Room) -> str:
     """Select appropriate device type based on room"""
-    if room_type in ["Kitchen", "ElectricalRoom", "ServerRoom"]:
-        return "HeatDetector"  # Heat preferred in hot rooms
-    elif room_type in ["Storage", "Warehouse"]:
-        return "HeatDetector"
+    # Use room's device_type if specified
+    if hasattr(room, 'device_type') and room.device_type:
+        return room.device_type
+    
+    # Fallback: infer from room type
+    if room.room_type in ["Kitchen", "ElectricalRoom", "ServerRoom"]:
+        return "HEAT_RATE_OF_RISE"
+    elif room.room_type in ["Storage", "Warehouse"]:
+        return "HEAT_FIXED"
     else:
-        return "SmokeDetector"
+        return "SMOKE_PHOTOELECTRIC"
 
 
 # =============================================================================
 # MIP SOLVER WRAPPER
 # =============================================================================
 
-def solve_room_placement(room: Room, device_radius: float = 3.0) -> PlacementResult:
+def solve_room_placement(room: Room, device_radius: float = None) -> PlacementResult:
     """
     Run MIP solver to find optimal device placement for a room.
     
-    Returns optimal count and placement proof.
+    Uses NFPA72ConstraintProvider for proper radius calculation.
+    
+    Args:
+        room: Room with all NFPA metadata
+        device_radius: Optional override (uses NFPA calculation if None)
+    
+    Returns:
+        Optimal count and placement proof.
     """
+    polygon = room.polygon
+    
+    if len(polygon) < 3:
+        return PlacementResult(
+            room_name=room.name,
+            num_devices=0,
+            devices=[],
+            is_optimal=False,
+            proof="Invalid room polygon"
+        )
+    
+    # ========== NFPA72ConstraintProvider integration ==========
+    # Use proper radius from NFPA 72 table
+    if device_radius is None:
+        device_radius = NFPA72ConstraintProvider.get_effective_radius(
+            room.device_type,
+            room.ceiling_height,
+            room.ceiling_type
+        )
+        
+        # Corridor bonus per NFPA 72 (corridors have better air flow)
+        if room.room_type == "CORRIDOR":
+            device_radius = round(device_radius * 1.5, 2)
+    
+    # ========== Rest of solver logic ==========
     polygon = room.polygon
     
     if len(polygon) < 3:
@@ -223,6 +264,9 @@ def solve_room_placement(room: Room, device_radius: float = 3.0) -> PlacementRes
             proof="Room too small for placement"
         )
     
+    # Create list to store placed devices
+    placed_devices = []
+    
     # Run MIP solver
     engine = OptimalMIPEngine(grid_size=grid_size, radius=device_radius)
     devices, count, success = engine.solve()
@@ -239,12 +283,11 @@ def solve_room_placement(room: Room, device_radius: float = 3.0) -> PlacementRes
     # Convert grid positions to real coordinates
     scale_x = width / grid_size
     scale_y = height / grid_size
-    placed_devices = []
     
     for gx, gy in devices:
         real_x = min_x + (gx + 0.5) * scale_x
         real_y = min_y + (gy + 0.5) * scale_y
-        device_type = select_device_type(room.room_type)
+        device_type = select_device_type(room)
         placed_devices.append(DevicePlacement(
             x=round(real_x, 2),
             y=round(real_y, 2),
@@ -301,11 +344,15 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
         room_cost += cable * CABLE_COST_PER_METER
         room_cost += labor_hours * LABOR_RATE
         
-        # Compliance statement
-        spacing = SPACING_RULES.get(select_device_type(room.room_type), 9.0)
+        # Compliance statement - get device type from room
+        device_type_key = select_device_type(room)
+        spacing = NFPA72ConstraintProvider.get_spacing(device_type_key)
+        effective_r = NFPA72ConstraintProvider.get_effective_radius(
+            device_type_key, room.ceiling_height, room.ceiling_type
+        )
         compliance = (
-            f"NFPA 72 Compliant: All devices placed at ≤{spacing}m spacing "
-            f"with ≥{spacing}m separation. Coverage verified by MIP proof."
+            f"NFPA 72 Compliant: Device spacing {spacing}m (effective {effective_r}m coverage). "
+            f"Coverage verified by MIP proof."
         )
         
         room_report = RoomReport(
@@ -535,31 +582,43 @@ def format_json_report(report: FinalReport) -> str:
 def generate_sample() -> List[Room]:
     """Generate sample rooms for demo"""
     
-    # Sample project with typical rooms
+    # Sample project with proper NFPA metadata
     rooms = [
         # Office 1 - 10x10
         Room(
             name="Office 101",
-            room_type="Office",
-            polygon=[(0, 0), (10, 0), (10, 10), (0, 10)]
+            room_type="OFFICE",
+            polygon=[(0, 0), (10, 0), (10, 10), (0, 10)],
+            ceiling_height=2.8,
+            ceiling_type="SMOOTH",
+            device_type="SMOKE_PHOTOELECTRIC"
         ),
         # Office 2 - 8x8
         Room(
             name="Office 102",
-            room_type="Office", 
-            polygon=[(10, 0), (18, 0), (18, 8), (10, 8)]
+            room_type="OFFICE", 
+            polygon=[(10, 0), (18, 0), (18, 8), (10, 8)],
+            ceiling_height=2.8,
+            ceiling_type="SMOOTH",
+            device_type="SMOKE_PHOTOELECTRIC"
         ),
         # Corridor
         Room(
             name="Corridor A",
-            room_type="Corridor",
-            polygon=[(0, 10), (18, 10), (18, 12), (0, 12)]
+            room_type="CORRIDOR",
+            polygon=[(0, 10), (18, 10), (18, 12), (0, 12)],
+            ceiling_height=2.8,
+            ceiling_type="SMOOTH",
+            device_type="SMOKE_PHOTOELECTRIC"
         ),
         # Kitchen (heat detector)
         Room(
             name="Kitchen",
-            room_type="Kitchen",
-            polygon=[(10, 8), (15, 8), (15, 10), (10, 10)]
+            room_type="KITCHEN",
+            polygon=[(10, 8), (15, 8), (15, 10), (10, 10)],
+            ceiling_height=2.8,
+            ceiling_type="SMOOTH",
+            device_type="HEAT_RATE_OF_RISE"
         ),
     ]
     
@@ -597,7 +656,16 @@ def main():
     elif args.input:
         with open(args.input, 'r') as f:
             data = json.load(f)
-            rooms = [Room(**r) for r in data.get("rooms", [])]
+            rooms = []
+            for r in data.get("rooms", []):
+                rooms.append(Room(
+                    name=r.get("name", "Unnamed"),
+                    polygon=[tuple(p) for p in r.get("polygon", [])],
+                    room_type=r.get("room_type", "OFFICE"),
+                    ceiling_height=r.get("ceiling_height", 2.8),
+                    ceiling_type=r.get("ceiling_type", "SMOOTH"),
+                    device_type=r.get("device_type", "SMOKE_PHOTOELECTRIC")
+                ))
     else:
         print("Error: Specify --input or --sample")
         parser.print_help()
