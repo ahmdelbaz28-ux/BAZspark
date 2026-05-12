@@ -196,6 +196,27 @@ class UniversalElement:
     is_deleted: bool = False
     autocad_handle: Optional[str] = None
     revit_element_id: Optional[int] = None
+    change_log: List = field(default_factory=list)
+    content_hash: str = ""
+    
+    def add_change_log_entry(
+        self,
+        change_type: str,
+        source: ChangeSource = ChangeSource.SYSTEM,
+        old_value: Optional[Dict] = None,
+        new_value: Optional[Dict] = None,
+        reason: Optional[str] = None
+    ):
+        """إضافة سجل تغيير"""
+        entry = ChangeLogEntry(
+            change_type=change_type,
+            source=source,
+            old_value=old_value,
+            new_value=new_value,
+            reason=reason
+        )
+        self.change_log.append(entry)
+        self.content_hash = str(hash(str(self.to_dict())))
     
     def to_dict(self) -> Dict:
         return {
@@ -229,6 +250,52 @@ class UniversalElement:
             autocad_handle=d.get('autocad_handle'),
             revit_element_id=d.get('revit_element_id')
         )
+    
+    def validate_semantic_consistency(self) -> tuple:
+        """التحقق من الاتساق الدلالي"""
+        errors = []
+        
+        if not self.properties:
+            errors.append("Missing properties")
+            return False, errors
+        
+        # Check element type has required fields
+        if self.properties.element_type == ElementType.WALL:
+            if self.properties.height is None:
+                errors.append("WALL requires height")
+        
+        elif self.properties.element_type == ElementType.ROOM:
+            if self.properties.height is None:
+                errors.append("ROOM requires height")
+        
+        if not self.geometry or len(self.geometry.points) < 3:
+            if self.properties.element_type not in [ElementType.EQUIPMENT, ElementType.MECHANICAL, ElementType.ELECTRICAL]:
+                errors.append("Geometry must have at least 3 points")
+        
+        return len(errors) == 0, errors
+
+
+@dataclass
+class ChangeLogEntry:
+    """مدخل في سجل التغييرات"""
+    change_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: datetime = field(default_factory=datetime.now)
+    change_type: str = ""  # create, update, delete
+    source: ChangeSource = ChangeSource.SYSTEM
+    old_value: Optional[Dict] = None
+    new_value: Optional[Dict] = None
+    reason: Optional[str] = None
+    
+    def to_dict(self) -> Dict:
+        return {
+            'change_id': self.change_id,
+            'timestamp': self.timestamp.isoformat(),
+            'change_type': self.change_type,
+            'source': self.source.value,
+            'old_value': self.old_value,
+            'new_value': self.new_value,
+            'reason': self.reason
+        }
 
 
 @dataclass

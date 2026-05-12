@@ -166,7 +166,14 @@ class UniversalDataModel:
             # Apply updates
             for key, value in updates.items():
                 if key == 'properties' and isinstance(value, dict):
-                    element.properties = SemanticProperties.from_dict(value)
+                    # Update existing properties or create new
+                    if element.properties is None:
+                        element.properties = SemanticProperties.from_dict(value)
+                    else:
+                        # Update individual property fields
+                        for prop_key, prop_value in value.items():
+                            if hasattr(element.properties, prop_key):
+                                setattr(element.properties, prop_key, prop_value)
                 elif key == 'geometry' and isinstance(value, dict):
                     element.geometry = Geometry.from_dict(value)
                 elif hasattr(element, key):
@@ -202,6 +209,9 @@ class UniversalDataModel:
             
             # Persist
             self._persist_element(element)
+            
+            # Increment element version
+            element.version += 1
             
             self.version += 1
             logger.info(f"Updated element {element_id}")
