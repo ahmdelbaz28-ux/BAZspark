@@ -1,0 +1,18 @@
+{
+  "rooms": [
+    {
+      "name": "Simple Office",
+      "polygon": [[0,0], [5,0], [5,4], [0,4], [0,0]],
+      "room_type": "OFFICE",
+      "ceiling_height": 2.8,
+      "ceiling_type": "SMOOTH"
+    },
+    {
+      "name": "L_Factory",
+      "polygon": [[0,0], [20,0], [20,10], [10,10], [10,20], [0,20], [0,0]],
+      "room_type": "FACTORY",
+      "ceiling_height": 4.0,
+      "ceiling_type": "SMOOTH"
+    }
+  ]
+}

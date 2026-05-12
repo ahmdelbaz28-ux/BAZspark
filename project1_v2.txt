@@ -1,0 +1,103 @@
+================================================================================
+FIRE ALARM DESIGN REPORT
+FireAI - Optimal Placement Engine
+================================================================================
+
+Project: Fire Alarm Project
+Date: 2026-05-12 22:10:10
+Standard: NFPA 72
+
+================================================================================
+ROOM-BY-ROOM SUMMARY
+================================================================================
+
+Room: Vila Living Room (RESIDENTIAL)
+  Area: 48.0m² | Perimeter: 28.0m
+  Devices: 4
+    - SMOKE_PHOTOELECTRIC: 4
+  Devices placed at: [(2.25, 0.94), (2.75, 3.94), (7.25, 1.31), (7.25, 3.94)]
+  Cable: 25.03m | Labor: 2.0h
+  Cost: $3,475.14
+  Compliance: NFPA 72 Compliant: Device spacing 9.1m (effective 6.37m coverage). Coverage verified by MIP proof.
+  Decision ID: b85d8176c142713f
+  Checksum: 0fc3727f1ab0810276253ee65e49252366ea86cff0524a635bfe1dda52708ffa
+
+Room: Vila Kitchen (KITCHEN)
+  Area: 24.0m² | Perimeter: 20.0m
+  Devices: 2
+    - SMOKE_PHOTOELECTRIC: 2
+  Devices placed at: [(9.83, 4.75), (10.17, 0.75)]
+  Cable: 11.88m | Labor: 1.0h
+  Cost: $1,734.39
+  Compliance: NFPA 72 Compliant: Device spacing 9.1m (effective 6.37m coverage). Coverage verified by MIP proof.
+  Decision ID: f9b0d7754638ef43
+  Checksum: 1f7672b2c62b3f2bf859d8e9dbd91b933e09a5be93a9dcd8a1e712bda826c0e9
+
+Room: Vila Bedroom (BEDROOM)
+  Area: 36.0m² | Perimeter: 24.0m
+  Devices: 2
+    - SMOKE_PHOTOELECTRIC: 2
+  Devices placed at: [(2.75, 10.75), (3.25, 6.75)]
+  Cable: 14.4m | Labor: 1.0h
+  Cost: $1,747.00
+  Compliance: NFPA 72 Compliant: Device spacing 9.1m (effective 6.37m coverage). Coverage verified by MIP proof.
+  Decision ID: 6b777e8bb06c8aea
+  Checksum: 013ae6b7b8c52e1975e0a0258d8760cd4968296ba9e017b0360376d18a98c214
+
+================================================================================
+TOTALS
+================================================================================
+Total Devices: 8
+Total Cable: 51.31m
+Total Labor: 4.0h
+TOTAL COST: $6,956.53
+
+================================================================================
+BILL OF QUANTITIES
+================================================================================
+
+Description                         Qty     Unit        Price        Total
+----------------------------------------------------------------------
+SMOKE_PHOTOELECTRIC                8.00       ea $       800 $  6,400.00
+Fire Alarm Cable                  51.31        m $         5 $    256.55
+Installation Labor                 4.00      hrs $        75 $    300.00
+----------------------------------------------------------------------
+TOTAL                                                         $  6,956.53
+
+================================================================================
+COMPLIANCE STATEMENTS
+================================================================================
+
+NFPA 72 Compliance:
+PER NFPA 72 (2022): All detection device spacing ≤9.0m on smooth ceilings per 17.6.5.1. Manual call points within 45m travel distance per 17.14.4. Notification devices per occupant notification zone requirements. Design approved by licensed fire protection engineer before installation.
+
+Optimality Proof:
+Global optimality proved: MIP solver found 8 devices as the minimum across all rooms. Each room placement was solved independently using CBC MILP solver with binary variables. The objective function minimizes device count while satisfying coverage constraints (every test point covered) and spacing constraints (no devices within 9.0m of each other).
+
+
+================================================================================
+AUDIT TRAIL — VERIFICATION LOG
+================================================================================
+Each room decision recorded with unique decision_id and checksum.
+Audit file: oracle_audit_YYYY-MM-DD.jsonl (JSONL format, one entry per line)
+
+  ✅ Vila Living Room (RESIDENTIAL)
+     Decision ID: b85d8176c142713f
+     Checksum: 0fc3727f1ab0810276253ee65e49252366ea86cff0524a635bfe1dda52708ffa
+
+  ✅ Vila Kitchen (KITCHEN)
+     Decision ID: f9b0d7754638ef43
+     Checksum: 1f7672b2c62b3f2bf859d8e9dbd91b933e09a5be93a9dcd8a1e712bda826c0e9
+
+  ✅ Vila Bedroom (BEDROOM)
+     Decision ID: 6b777e8bb06c8aea
+     Checksum: 013ae6b7b8c52e1975e0a0258d8760cd4968296ba9e017b0360376d18a98c214
+
+  ❌ REJECTED ROOMS (see Non-Compliant section above)
+
+  ❌ L-Factory
+     Status: REJECTED_HARD
+
+================================================================================
+END OF REPORT
+================================================================================

@@ -1,0 +1,116 @@
+{
+  "rooms": [
+    {
+      "name": "Vila Living Room",
+      "polygon": [
+        [
+          0,
+          0
+        ],
+        [
+          8,
+          0
+        ],
+        [
+          8,
+          6
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "room_type": "RESIDENTIAL"
+    },
+    {
+      "name": "Vila Kitchen",
+      "polygon": [
+        [
+          8,
+          0
+        ],
+        [
+          12,
+          0
+        ],
+        [
+          12,
+          6
+        ],
+        [
+          8,
+          6
+        ],
+        [
+          8,
+          0
+        ]
+      ],
+      "room_type": "KITCHEN"
+    },
+    {
+      "name": "Vila Bedroom",
+      "polygon": [
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          6,
+          12
+        ],
+        [
+          0,
+          12
+        ],
+        [
+          0,
+          6
+        ]
+      ],
+      "room_type": "BEDROOM"
+    },
+    {
+      "name": "L-Factory",
+      "polygon": [
+        [
+          0,
+          0
+        ],
+        [
+          20,
+          0
+        ],
+        [
+          20,
+          10
+        ],
+        [
+          10,
+          10
+        ],
+        [
+          10,
+          20
+        ],
+        [
+          0,
+          20
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "room_type": "FACTORY"
+    }
+  ]
+}
