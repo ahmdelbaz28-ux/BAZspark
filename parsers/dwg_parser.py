@@ -90,6 +90,13 @@ class DWGParser:
 
         try:
             merged = unary_union(lines)
+            
+            # ==== Magical fix to close small gaps ====
+            merged = merged.buffer(0.001)  # Add 1mm buffer to close gaps
+            merged = merged.buffer(-0.0005)  # Remove buffer to return to original size
+            merged = merged.simplify(0.001)  # Simplify
+            # ================================
+            
             polys = list(polygonize(merged))
         except:
             return []
