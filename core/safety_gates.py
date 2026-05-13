@@ -65,11 +65,25 @@ class SafetyGates:
     HEAT_MAX_SPACING = 6.1  # meters (fixed temp)
     HEAT_MAX_FROM_WALL = 3.0  # meters
     
-    SPRINKLER_MAX_SPACING = 4.6  # meters (NFPA 13)
+    # NFPA 13 Sprinkler (Light Hazard)
+    SPRINKLER_MAX_SPACING = 4.6  # meters
     SPRINKLER_MAX_AREA = 20.9  # m² per head
     
-    # NFPA 101 egress
-    EXIT_MAX_TRAVEL = 61.0  # meters
+    # For testing - use actual coordinates
+    def _check_sprinkler_spacing(self, positions, room_area):
+        """Helper to check sprinkler spacing."""
+        import math
+        for i, pos1 in enumerate(positions):
+            for j, pos2 in enumerate(positions[i+1:], i+1):
+                d = math.sqrt((pos1[0]-pos2[0])**2 + (pos1[1]-pos2[1])**2)
+                if d > self.SPRINKLER_MAX_SPACING:
+                    return False, d
+        return True, 0
+    
+    # NFPA 101 Egress
+    EXIT_MAX_TRAVEL = 61.0  # meters (sprinklered business)
+    MAX_COMMON_PATH = 30.5  # meters
+    MAX_DEAD_END = 15.2  # meters
     
     @staticmethod
     def gate_smoke_coverage(

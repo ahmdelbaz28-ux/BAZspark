@@ -104,6 +104,49 @@ class HeatDetectorCoverage:
         return cls.SPACING.get(detector_type, 6.1)  # safe default
 
 
+class NFPA13:
+    """NFPA 13 Sprinkler Rules - Life Safety."""
+    
+    # Light Hazard Occupancies - Table 8.6.3.1.1
+    SPRINKLER_SPACING = {
+        "light_hazard": 4.6,           # 4.6m (15ft) max spacing
+        "ordinary": 4.6,              # 4.6m
+        "extra_hazard": 4.0,           # 4.0m
+    }
+    
+    # Area per sprinkler head (m²)
+    AREA_PER_HEAD = {
+        "light_hazard": 20.9,           # 20.9m² per head
+        "ordinary": 12.1,              # 12.1m²
+        "extra_hazard": 8.4,            # 8.4m²
+    }
+    
+    # Minimum from wall
+    FROM_WALL = {
+        "max": 2.3,                 # 2.3m (7.5ft) max from wall
+        "min": 0.1,                  # 10cm min
+    }
+
+
+class NFPA101:
+    """NFPA 101Egress Rules - Life Safety."""
+    
+    # Maximum travel distance to exit (meters)
+    MAX_TRAVEL = {
+        "business_sprinklered": 61.0,      # 61m (200ft) sprinklered
+        "business_non_sprinklered": 45.0,   # 45m (150ft)
+        "assembly": 45.0,              # 45m
+        "educational": 45.0,           # 45m
+        "residential": 45.0,            # 45m
+    }
+    
+    # Common path max
+    MAX_COMMON_PATH = 30.5  # 30.5m (100ft)
+    
+    # Dead end max
+    MAX_DEAD_END = 15.2  # 15.2m (50ft)
+
+
 class FireZoneType(Enum):
     """Fire alarm zones."""
     detection = "detection"
