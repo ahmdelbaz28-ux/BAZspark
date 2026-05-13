@@ -147,6 +147,13 @@ class DXFParser:
                         lines.append(poly.exterior)
                 except Exception as e:
                     logger.debug(f"Circle skip: {e}")
+            elif ent.dxftype() == "ARC":
+                # Convert ARC to line segments
+                try:
+                    segments = self._arc_to_segments(ent, scale)
+                    lines.extend(segments)
+                except Exception as e:
+                    logger.debug(f"Arc skip: {e}")
         return lines
 
     def _circle_to_polygon(self, entity, scale):
@@ -154,6 +161,38 @@ class DXFParser:
         c = Point(entity.dxf.center.x * scale, entity.dxf.center.y * scale)
         r = entity.dxf.radius * scale
         return c.buffer(r, resolution=36)  # 36 points
+
+    def _arc_to_segments(self, entity, scale, num_points: int = 32):
+        """Convert ARC to LineString segments (default 32 points)"""
+        import math
+        c = Point(entity.dxf.center.x * scale, entity.dxf.center.y * scale)
+        r = entity.dxf.radius * scale
+        
+        # Get start and end angles in radians
+        start_angle = math.radians(entity.dxf.start_angle)
+        end_angle = math.radians(entity.dxf.end_angle)
+        
+        # Handle the case where arc goes through 0/360 degrees
+        if end_angle < start_angle:
+            end_angle += 2 * math.pi
+        
+        # Calculate angular step
+        total_angle = end_angle - start_angle
+        step = total_angle / num_points
+        
+        points = []
+        for i in range(num_points + 1):
+            angle = start_angle + (i * step)
+            x = c.x + r * math.cos(angle)
+            y = c.y + r * math.sin(angle)
+            points.append((x, y))
+        
+        # Add proper closing point if needed
+        if len(points) >= 2:
+            from shapely.geometry import LineString
+            ls = LineString(points)
+            return [ls]
+        return []
 
     def _lines_to_valid_polygons(self, lines) -> List[Polygon]:
         """CRITICAL: Always validate geometry. Never trust raw DXF."""
