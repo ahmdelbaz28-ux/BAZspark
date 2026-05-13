@@ -73,38 +73,13 @@ class TestDeduplication:
         assert len(result) == 2, "Separate rooms should be kept"
 
 
-class TestSafetyMargin:
-    """Test safety margin calculations"""
-
-    def test_margin_10_detectors(self):
-        """10 detectors * 1.15 = 12 (ceil)"""
-        from core.floor_orchestrator import SAFETY_MARGIN
-        import math
-        count = 10
-        expected = math.ceil(count * SAFETY_MARGIN)
-        assert expected == 12, f"10 * 1.15 = 11.5 → ceil = 12, got {expected}"
-
-    def test_margin_1_detector(self):
-        """1 detector * 1.15 = 2 (ceil, at least 2)"""
-        from core.floor_orchestrator import SAFETY_MARGIN
-        import math
-        count = 1
-        expected = math.ceil(count * SAFETY_MARGIN)
-        assert expected == 2, f"1 * 1.15 = 1.15 → ceil = 2, got {expected}"
-
-    def test_margin_100_detectors(self):
-        """100 detectors * 1.15 = 115"""
-        from core.floor_orchestrator import SAFETY_MARGIN
-        import math
-        count = 100
-        expected = math.ceil(count * SAFETY_MARGIN)
-        assert expected == 115, f"100 * 1.15 = 115, got {expected}"
+class TestCoreFeatures:
+    """Test core V5.1.2 features"""
 
     def test_spline_supported(self):
         """SPLINE entity type should be processed"""
         from parsers.dxf_parser import DXFParser
         parser = DXFParser()
-        # Method should exist
         assert hasattr(parser, '_spline_to_segments'), "SPLINE method missing"
 
     def test_geometry_hash_present(self):

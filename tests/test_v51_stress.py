@@ -1,6 +1,6 @@
 """
 tests/test_v51_stress.py — FireAI V5.1.2 Stress Tests
-Critical safety checks only.
+Critical safety checks only. NO safety margin - NFPA compliance via verify_full_coverage().
 """
 
 import pytest
@@ -10,47 +10,29 @@ from shapely.geometry import Polygon
 
 from parsers.dxf_parser import DXFParser
 from nfpa72_calculations import get_smoke_detector_radius
-from core.floor_orchestrator import SAFETY_MARGIN
 from audit_trail import AuditTrail
 
 FIXTURES = Path("tests/fixtures")
 
 
-class TestSafetyMarginEnforcement:
-    """The +15% margin must be applied."""
+class TestCoreFeatures:
+    """Test core V5.1.2 features"""
 
-    def test_margin_1_to_2(self):
-        assert math.ceil(1 * SAFETY_MARGIN) == 2
-
-    def test_margin_10_to_12(self):
-        assert math.ceil(10 * SAFETY_MARGIN) == 12
-
-    def test_margin_100_to_115(self):
-        assert math.ceil(100 * SAFETY_MARGIN) == 115
-
-
-class TestDeduplication:
-    """Deduplication must work correctly."""
-
-    def test_90_overlap_removed(self):
+    def test_deduplication_works(self):
         parser = DXFParser()
         poly1 = Polygon([(0,0),(10,0),(10,10),(0,10)])
         poly2 = Polygon([(0,0),(9.9,0),(9.9,9.9),(0,9.9)])
         unique = parser._remove_duplicates([poly1, poly2])
-        assert len(unique) == 1
+        assert len(unique) == 1, "90%+ overlap should merge"
 
     def test_separate_rooms_kept(self):
         parser = DXFParser()
         poly1 = Polygon([(0,0),(10,0),(10,10),(0,10)])
         poly2 = Polygon([(20,20),(30,20),(30,30),(20,30)])
         unique = parser._remove_duplicates([poly1, poly2])
-        assert len(unique) == 2
+        assert len(unique) == 2, "Separate rooms must be kept"
 
-
-class TestAuditTrailIntegrity:
-    """Audit trail must be immutable."""
-
-    def test_entry_hash_present(self):
+    def test_audit_hash_present(self):
         trail = AuditTrail("test")
         trail.log_dxf_parse("x.dxf", "m", 1.0, 1, 0)
         entry = trail.to_list()[0]

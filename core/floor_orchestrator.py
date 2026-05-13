@@ -17,8 +17,11 @@ from spatial_engine.mip_solver import OptimalMIPEngine
 
 logger = logging.getLogger("fireai.orchestrator")
 
-# SAFETY: Always add margin to detector counts
-SAFETY_MARGIN = 1.15  # 15% extra detectors for safety
+# NOTE: Safety margin removed per expert recommendation.
+# NFPA 72 compliance is verified via verify_full_coverage(), not percentage margin.
+# If coverage fails, margin doesn't help - the system must comply properly.
+# Uncomment to enable if desired for extra safety:
+# SAFETY_MARGIN = 1.15
 
 
 @dataclass
@@ -63,12 +66,6 @@ class FloorResult:
         self.total_detectors = sum(r.detector_count for r in self.room_results)
         self.total_time_s = sum(r.solve_time_s for r in self.room_results)
         
-        # SAFETY: Include safety margin detectors
-        self.total_detectors_with_margin = sum(
-            getattr(r, 'detector_count_with_margin', r.detector_count) 
-            for r in self.room_results
-        )
-        
         if self.rooms_errored == 0 and self.rooms_failed == 0:
             self.status = "PASS"
         elif self.rooms_passed == 0:
@@ -101,18 +98,18 @@ class FloorResult:
             },
             "detectors": {
                 "calculated": self.total_detectors,
-                "with_safety_margin": getattr(self, 'total_detectors_with_margin', self.total_detectors),
             },
+            # NOTE: Safety margin removed - NFPA 72 compliance via verify_full_coverage()
+            # Uncomment to enable:
+            # "with_safety_margin": math.ceil(self.total_detectors * 1.15),
             "safety": {
-                "margin_percent": 15,
-                "reason": "NFPA 72: Always add spare detectors for calculation uncertainty"
+                "note": "NFPA 72 compliance verified via verify_full_coverage()"
             },
             "details": [
                 {
                     "room_id": r.room_id,
                     "status": r.status,
                     "detector_count": r.detector_count,
-                    "detector_count_with_margin": getattr(r, 'detector_count_with_margin', r.detector_count),
                     "coverage_pct": r.coverage_pct,
                     "radius_m": r.radius_m,
                     "warnings": r.warnings,
@@ -195,10 +192,6 @@ class FloorOrchestrator:
             result.spacing_m = meta["spacing_m"]
             result.geometry = meta["coverage_geometry"]
             result.detector_count = count
-
-            # SAFETY: Always use ceil to ensure at least +15%
-            import math
-            result.detector_count_with_margin = math.ceil(count * SAFETY_MARGIN)
             result.detector_positions = positions
             result.coverage_pct = coverage["coverage_percentage"]
             result.worst_case_distance_m = coverage["worst_case_distance_m"]
