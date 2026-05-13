@@ -120,8 +120,113 @@ class DXFParser:
         )
 
     def _detect_units(self, doc) -> int:
-        """Detect DXF units code (not name)"""
-        return doc.header.get("$INSUNITS", 6)  # Default to Meters (6)
+        """Detect DXF units using heuristic for INSUNITS=0 files.
+        
+        CRITICAL SAFETY: For unitless (0) DXF files, we must detect the actual unit
+        by analyzing coordinate values. Wrong unit = wrong room areas = failed coverage
+        detection = LIVES LOST.
+        
+        Strategy:
+        1. If INSUNITS != 0, use standard mapping
+        2. If INSUNITS == 0, try multiple scales and validate
+        3. Reject if no valid scale found (safety-first)
+        """
+        units = doc.header.get("$INSUNITS", 6)
+        
+        # Non-zero units: trust the header
+        if units != 0:
+            return units
+        
+        # INSUNITS = 0: Must detect actual unit via heuristic
+        # This is CRITICAL for safety - we cannot guess
+        detected = self._detect_unit_heuristic(doc)
+        if detected is not None:
+            logger.info(f"Units auto-detected: {detected}")
+            return detected
+        
+        # Failed to detect: safety-first approach
+        raise RuntimeError(
+            f"Cannot determine DXF units. INSUNITS=0 and coordinate analysis inconclusive. "
+            f"File may be corrupted or use non-standard units. "
+            f"CRITICAL: Cannot proceed - incorrect unit = incorrect coverage calculation."
+        )
+    
+    def _detect_unit_heuristic(self, doc) -> int:
+        """Detect actual unit by testing scale factors.
+        
+        CRITICAL SAFETY: We try multiple scales and check which produces valid
+        NFPA 72-compliant room areas. Only accept if EXACTLY ONE scale works.
+        """
+        from shapely.geometry import LineString
+        from shapely.ops import unary_union, polygonize
+        from shapely.validation import make_valid
+        msp = doc.modelspace()
+        
+        # Try different unit scales
+        candidates = [
+            (1, "meters"),      # 1:1 direct
+            (0.001, "mm x 1000 -> m"),    # mm
+            (0.01, "cm x 100 -> m"),      # cm  
+            (0.3048, "feet x 0.3048 -> m"), # feet
+        ]
+        
+        valid_scales = []
+        
+        for scale, unit_name in candidates:
+            lines = []
+            for ent in msp:
+                if ent.dxftype() == "LINE":
+                    s = (ent.dxf.start.x * scale, ent.dxf.start.y * scale)
+                    e = (ent.dxf.end.x * scale, ent.dxf.end.y * scale)
+                    if s != e:
+                        lines.append(LineString([s, e]))
+                elif ent.dxftype() in ("LWPOLYLINE", "POLYLINE"):
+                    try:
+                        pts = [(p[0]*scale, p[1]*scale) for p in ent.get_points()]
+                        if len(pts) >= 3 and ent.closed:
+                            lines.append(LineString(pts))
+                    except:
+                        pass
+            
+            if not lines:
+                continue
+            
+            # Try to create polygons
+            merged = unary_union(lines)
+            raw_polys = polygonize(merged)
+            
+            valid_count = 0
+            for p in raw_polys:
+                if not p.is_valid:
+                    p = make_valid(p)
+                if p.is_valid and self.MIN_ROOM_AREA_M2 <= p.area <= self.MAX_ROOM_AREA_M2:
+                    valid_count += 1
+            
+            if valid_count > 0:
+                valid_scales.append((scale, unit_name, valid_count))
+        
+        # CRITICAL: Must have exactly one valid scale OR pick the best one
+        # If multiple: pick the one with MOST valid rooms (most likely correct)
+        if len(valid_scales) >= 1:
+            # Sort by room count descending - pick the one with most rooms
+            valid_scales.sort(key=lambda x: -x[2])
+            scale, name, count = valid_scales[0]
+            logger.info(f"Unit detected: {name} -> {count} valid rooms")
+            
+            # Map back to DXF unit code
+            if scale == 0.001:
+                return 4  # mm
+            elif scale == 0.01:
+                return 5  # cm
+            elif scale == 0.3048:
+                return 2  # feet
+            else:
+                return 6  # meters
+        
+        # No valid scale: fail closed (safety-first)
+        logger.error("No valid unit scale found")
+        
+        return None
 
     def _extract_lines(self, msp, scale: float) -> List:
         from shapely.geometry import LineString

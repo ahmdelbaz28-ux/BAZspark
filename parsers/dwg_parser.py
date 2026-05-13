@@ -1,272 +1,175 @@
 """
-FireAI DWG Parser - AutoCAD DWG file parser
+dwg_parser.py — FireAI DWG Parser
+SAFETY-CRITICAL: Reads DWG via LibreDWG tools.
+
+DEPENDENCY: LibreDWG tools (dxf-out) must be installed.
+Installation: sudo apt install libredwg-tools
+
+If not available, converts DWG to DXF using external tools,
+then delegates to DXFParser.
 """
 
+import subprocess
+import tempfile
+import os
 import logging
-from typing import Any, List, Optional
+from pathlib import Path
+from typing import Optional, List
+from dataclasses import dataclass, field
 
-from core.models import (
-    UniversalElement, ElementType, Point3D, Geometry, 
-    SemanticProperties, ChangeSource
-)
+logger = logging.getLogger("fireai.dwg_parser")
 
-logger = logging.getLogger(__name__)
 
+# ═══════════════════════════════════════════════════════
+# EXCEPTIONS
+# ═══════════════════════════════════════════════════════
+
+class DWGConversionError(Exception):
+    """Raised when DWG → DXF conversion fails."""
+    pass
+
+
+# ═══════════════════════════════════════════════════════
+# DATA CLASS
+# ═══════════════════════════════════════════════════════
+
+@dataclass
+class DWGParseResult:
+    """Result of parsing a DWG file."""
+    source_file: str
+    success: bool
+    room_count: int = 0
+    conversion_time_s: float = 0.0
+    errors: List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+
+
+# ═══════════════════════════════════════════════════════
+# DWG PARSER
+# ═══════════════════════════════════════════════════════
 
 class DWGParser:
     """
-    محلل ملفات AutoCAD DWG
+    Parses DWG files via LibreDWG conversion.
+    
+    USAGE:
+        parser = DWGParser()
+        result = parser.parse("building.dwg")
+        
+        if result.success:
+            print(f"Found {result.room_count} rooms")
     """
-    
+
+    DXF_OUT_CMD = "dxf-out"
+
     def __init__(self):
-        logger.info("DWG Parser initialized")
-    
-    def parse_dwg(self, dwg_path: str) -> List[UniversalElement]:
-        """
-        تحليل ملف DWG واستخراج العناصر
-        
-        في البداية، نستخدم ezdxf library
-        لاحقاً، سنستخدم AutoCAD COM API للتطبيق الحقيقي
-        """
-        try:
-            import ezdxf
-            
-            doc = ezdxf.readfile(dwg_path)
-            msp = doc.modelspace()
-            
-            elements = []
-            
-            for entity in msp:
-                element = self._convert_entity_to_universal(entity, dwg_path)
-                if element:
-                    elements.append(element)
-            
-            logger.info(f"Parsed {len(elements)} elements from {dwg_path}")
-            return elements
-        
-        except ImportError:
-            logger.warning("ezdxf not installed. Install with: pip install ezdxf")
-            return []
-        except Exception as e:
-            logger.error(f"Error parsing DWG {dwg_path}: {e}")
-            return []
+        """Initialize parser."""
+        self._tool_checked = False
+        self._tool_available = False
 
-    def extract_rooms_from_chaos(self, doc: Any) -> List['UniversalElement']:
-        """Chaos-to-Order Engine v2.0"""
-        from shapely.geometry import LineString
-        from shapely.ops import unary_union, polygonize
-
-        lines = []
+    def _check_tool(self) -> bool:
+        """Check if dxf-out is available."""
+        if self._tool_checked:
+            return self._tool_available
+            
         try:
-            msp = doc.modelspace()
-            for entity in msp:
-                if entity.dxftype() not in ['LINE', 'LWPOLYLINE', 'POLYLINE']:
-                    continue
+            result = subprocess.run(
+                [self.DXF_OUT_CMD, "--version"],
+                capture_output=True,
+                timeout=5
+            )
+            self._tool_available = result.returncode == 0
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            self._tool_available = False
+            
+        self._tool_checked = True
+        return self._tool_available
+
+    def parse(self, dwg_path: str) -> DWGParseResult:
+        """
+        Parse DWG file to rooms.
+        
+        Args:
+            dwg_path: Path to .dwg file
+            
+        Returns:
+            DWGParseResult with room count
+        """
+        import time
+        start = time.monotonic()
+        
+        result = DWGParseResult(source_file=dwg_path, success=False)
+        
+        # Step 0: Verify file exists
+        if not Path(dwg_path).exists():
+            result.errors.append(f"File not found: {dwg_path}")
+            return result
+            
+        # Step 1: Check LibreDWG
+        if not self._check_tool():
+            result.errors.append(
+                "LibreDWG not installed. Install with: sudo apt install libredwg-tools"
+            )
+            return result
+            
+        # Step 2: Convert DWG → DXF
+        try:
+            dxf_path = self._convert_to_dxf(dwg_path)
+        except DWGConversionError as e:
+            result.errors.append(str(e))
+            return result
+            
+        # Step 3: Parse DXF
+        try:
+            from parsers.dxf_parser import DXFParser
+            parser = DXFParser(min_area=2.0)
+            dxf_result = parser.parse(dxf_path)
+            
+            result.room_count = dxf_result.room_count
+            result.warnings = dxf_result.warnings
+            result.success = dxf_result.room_count > 0
+            result.errors = dxf_result.errors
+            
+        finally:
+            # Clean up temp file
+            if dxf_path != dwg_path:
                 try:
-                    if entity.dxftype() == 'LINE':
-                        start = (entity.dxf.start.x, entity.dxf.start.y)
-                        end = (entity.dxf.end.x, entity.dxf.end.y)
-                        if ((end[0]-start[0])**2 + (end[1]-start[1])**2) > 1e-9:
-                            lines.append(LineString([start, end]))
-                    elif entity.dxftype() in ['LWPOLYLINE', 'POLYLINE']:
-                        pts = [(p[0], p[1]) for p in entity.get_points()]
-                        if len(pts) >= 2:
-                            if entity.closed and pts[0] != pts[-1]:
-                                pts.append(pts[0])
-                            valid = True
-                            for i in range(len(pts)-1):
-                                if ((pts[i+1][0]-pts[i][0])**2 + (pts[i+1][1]-pts[i][1])**2) < 1e-9:
-                                    valid = False
-                                    break
-                            if valid:
-                                lines.append(LineString(pts))
+                    os.unlink(dxf_path)
                 except:
-                    continue
-        except:
-            return []
+                    pass
+                    
+        result.conversion_time_s = round(time.monotonic() - start, 3)
+        return result
 
-        if len(lines) < 3:
-            return []
-
+    def _convert_to_dxf(self, dwg_path: str) -> str:
+        """Convert DWG to DXF using dxf-out."""
+        # Create temp file
+        temp_fd, temp_path = tempfile.mkstemp(suffix=".dxf", prefix="fireai_dwg_")
+        os.close(temp_fd)
+        
+        cmd = [self.DXF_OUT_CMD, "--file", dwg_path, "--output", temp_path]
+        
         try:
-            merged = unary_union(lines)
+            proc = subprocess.run(cmd, capture_output=True, timeout=60)
             
-            # ==== Smart topology healing: close gaps up to 1cm ====
-            if hasattr(merged, 'geoms') or isinstance(merged, list):
-                # Expand to close gaps (1cm = 0.01), then shrink back (0.5cm)
-                merged = merged.buffer(0.01).buffer(-0.005)
-            # ===============================================================
-            
-            polys = list(polygonize(merged))
-        except:
-            return []
-
-        rooms = []
-        for i, poly in enumerate(polys):
-            try:
-                if poly.area < 1.0 or not poly.is_valid or not poly.is_simple:
-                    continue
-                coords = list(poly.exterior.coords)
-                if coords[0] == coords[-1]:
-                    coords = coords[:-1]
-                clean = [coords[0]]
-                for pt in coords[1:]:
-                    if (pt[0]-clean[-1][0])**2 + (pt[1]-clean[-1][1])**2 > 1e-9:
-                        clean.append(pt)
-                if len(clean) < 3:
-                    continue
-                pts = [Point3D(x, y, 0) for x, y in clean]
-                geom = Geometry(points=pts, polyline_closed=True)
-                geom.calculate_area()
-                name = f"Room_{int(geom.area)}m2_{i}"
-                room = UniversalElement(
-                    properties=SemanticProperties(element_type=ElementType.ROOM, name=name),
-                    geometry=geom, source_file="chaos_inference"
-                )
-                rooms.append(room)
-            except:
-                continue
-        return rooms
-
-    def _convert_entity_to_universal(self, entity, source_file: str) -> Optional[UniversalElement]:
-        """تحويل كائن DXF إلى Universal Element"""
-        try:
-            element_type = ElementType.UNKNOWN
-            points = []
-            dxftype = entity.dxftype()
-            
-            # Determine type based on entity type
-            if dxftype == 'LWPOLYLINE':
-                points = [Point3D(x, y, 0) for x, y in entity.get_points()]
+            if proc.returncode != 0:
+                error = proc.stderr.decode() or proc.stdout.decode()
+                raise DWGConversionError(f"dxf-out failed: {error}")
                 
-                # Heuristic: check layer name
-                layer = entity.dxf.layer.upper()
-                element_type = self._infer_element_type(layer)
+            if not Path(temp_path).exists() or Path(temp_path).stat().st_size == 0:
+                raise DWGConversionError("Empty DXF output")
+                
+            return temp_path
             
-            elif dxftype == 'LINE':
-                start = entity.dxf.start
-                end = entity.dxf.end
-                points = [Point3D(start[0], start[1], start[2]), 
-                         Point3D(end[0], end[1], end[2])]
-                element_type = ElementType.EQUIPMENT
-            
-            elif dxftype == 'CIRCLE':
-                center = entity.dxf.center
-                points = [Point3D(center[0], center[1], center[2])]
-                element_type = ElementType.EQUIPMENT
-            
-            # NEW: Support ARC
-            elif dxftype == 'ARC':
-                center = entity.dxf.center
-                radius = entity.dxf.radius
-                # Convert arc to polyline approximation
-                import math
-                start_angle = entity.dxf.start_angle
-                end_angle = entity.dxf.end_angle
-                num_points = 12
-                for i in range(num_points + 1):
-                    angle = start_angle + (end_angle - start_angle) * i / num_points
-                    rad = math.radians(angle)
-                    x = center[0] + radius * math.cos(rad)
-                    y = center[1] + radius * math.sin(rad)
-                    points.append(Point3D(x, y, center[2]))
-                element_type = ElementType.EQUIPMENT
-            
-            # NEW: Support SPLINE
-            elif dxftype == 'SPLINE':
-                # Extract control points from spline
-                ctrl_points = entity.control_points
-                if ctrl_points:
-                    points = [Point3D(p[0], p[1], p[2] if len(p) > 2 else 0) for p in ctrl_points]
-                element_type = ElementType.EQUIPMENT
-            
-            # NEW: Support TEXT
-            elif dxftype == 'TEXT':
-                # Text doesn't have geometry, use insertion point
-                insert = entity.dxf.insert
-                points = [Point3D(insert[0], insert[1], insert[2] if len(insert) > 2 else 0)]
-                element_type = ElementType.EQUIPMENT
-            
-            # NEW: Support BLOCK
-            elif dxftype == 'BLOCK':
-                # Blocks can contain other entities - return None for now
-                # The entities inside will be processed separately
-                return None
-            
-            else:
-                # Skip unsupported types
-                return None
-            
-            if not points:
-                return None
-            
-            # Create Universal Element
-            polyline_closed = dxftype in ['LWPOLYLINE', 'CIRCLE']
-            geometry = Geometry(points=points, polyline_closed=polyline_closed)
-            geometry.calculate_area()
-            geometry.calculate_perimeter()
-            
-            # Extract metadata from custom properties
-            metadata = self._extract_custom_properties(entity)
-            
-            properties = SemanticProperties(
-                element_type=element_type,
-                name=entity.dxf.layer,
-                layer=entity.dxf.layer,
-                material=metadata.get('material'),
-                fire_rating=metadata.get('fire_rating')
-            )
-            
-            element = UniversalElement(
-                properties=properties,
-                geometry=geometry,
-                source_file=source_file,
-                last_modified_by=ChangeSource.AUTOCAD.value
-            )
-            
-            # Store AutoCAD handle
-            if hasattr(entity.dxf, 'handle'):
-                element.autocad_handle = entity.dxf.handle
-            
-            return element
-        
-        except Exception as e:
-            logger.error(f"Error converting entity: {e}")
-            return None
-    
-    def _infer_element_type(self, layer: str) -> ElementType:
-        """استنتاج نوع العنصر من اسم الـ layer"""
-        layer_upper = layer.upper()
-        if 'WALL' in layer_upper:
-            return ElementType.WALL
-        elif 'ROOM' in layer_upper:
-            return ElementType.ROOM
-        elif 'DOOR' in layer_upper:
-            return ElementType.DOOR
-        elif 'WINDOW' in layer_upper:
-            return ElementType.WINDOW
-        elif 'MECHANICAL' in layer_upper:
-            return ElementType.MECHANICAL
-        elif 'ELECTRICAL' in layer_upper:
-            return ElementType.ELECTRICAL
-        else:
-            return ElementType.EQUIPMENT
-    
-    def _extract_custom_properties(self, entity) -> dict:
-        """استخراج metadata من custom properties"""
-        metadata = {}
-        
-        try:
-            # Try to get XDATA (extended entity data)
-            if hasattr(entity, 'xdata'):
-                for xrecord in entity.xdata:
-                    for tag, value in zip(xrecord[0], xrecord[1]):
-                        if tag == 'MATERIAL':
-                            metadata['material'] = value
-                        elif tag == 'FIRE_RATING':
-                            metadata['fire_rating'] = value
-        
-        except Exception:
-            pass
-        
-        return metadata
+        except subprocess.TimeoutExpired:
+            raise DWGConversionError("Conversion timeout")
+
+
+# ═══════════════════════════════════════════════════════
+# CONVENIENCE FUNCTION
+# ═══════════════════════════════════════════════════════
+
+def parse_dwg(dwg_path: str) -> DWGParseResult:
+    """Quick parse DWG file."""
+    parser = DWGParser()
+    return parser.parse(dwg_path)
