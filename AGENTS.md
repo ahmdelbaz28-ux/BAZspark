@@ -62,3 +62,24 @@
 **Fix:** Use `entity.get_points()` which returns list of tuples `(x, y, z, start_width, end_width)` instead of iterating over `entity.vertices`.
 
 **Key insight:** When importing DXF files, EZDXF newer versions changed API - always check the actual data structure by printing debug info.
+
+---
+
+## Engineering Ethics & Safety Rules (Added 2026-05-13)
+
+### Honesty & Directness
+- **NO sugarcoating** - When you see an error, say it clearly
+- Engineering errors = risking human lives - this is not exaggeration
+- If you spot a bug, flag it immediately - don't bury it
+- Be explicit: "This is wrong because..." not "This might need adjustment"
+
+### Commit Reporting Requirements
+- After EVERY commit, you MUST provide:
+  - The commit hash (full SHA)
+  - Direct link to the commit on GitHub
+- Example: `Commit: abc123def... | Link: https://github.com/ahmdelbaz28-ux/revit/commit/abc123def...`
+
+### Code ReviewMandatory
+- Before submitting any change, verify it yourself
+- If unsure, test locally first
+- Don't assume "it will work" - prove it works
