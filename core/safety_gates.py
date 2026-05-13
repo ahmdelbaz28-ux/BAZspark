@@ -89,9 +89,10 @@ class SafetyGates:
     def gate_smoke_coverage(
         detector_positions: List[tuple],
         room_area: float,
-        room_bounds: Optional[tuple] = None
+        room_bounds: Optional[tuple] = None,
+        ceiling_height: float = 3.0
     ) -> SafetyGateResult:
-        """Check smoke detector coverage."""
+        """Check smoke detector coverage - CORRECTED formula."""
         
         if not detector_positions:
             return SafetyGateResult(
@@ -101,18 +102,23 @@ class SafetyGates:
                 severity="critical"
             )
         
-        if len(detector_positions) < 2:
+        # CRITICAL: Check ceiling height
+        if ceiling_height > 3.7:
             return SafetyGateResult(
                 name="smoke_coverage",
                 status=GateStatus.REVIEW_REQUIRED,
-                message=f"Only {len(detector_positions)} detector(s) - cannot verify spacing",
-                severity="advisory"
+                message=f"Ceiling {ceiling_height}m > 3.7m - verify detector type",
+                severity="critical"
             )
+        
+        # CRITICAL: Use CIRCLE area, not square!
+        import math
+        radius = SafetyGates.SMOKE_MAX_SPACING / 2
+        coverage_per_detector = math.pi * radius ** 2  # 66.5m² NOT 84.6m²!
         
         # Check spacing between detectors
         for i, pos1 in enumerate(detector_positions):
             for j, pos2 in enumerate(detector_positions[i+1:], i+1):
-                import math
                 d = math.sqrt((pos1[0]-pos2[0])**2 + (pos1[1]-pos2[1])**2)
                 if d > SafetyGates.SMOKE_MAX_SPACING:
                     return SafetyGateResult(
@@ -123,20 +129,24 @@ class SafetyGates:
                         details={"i": i, "j": j, "distance": d, "limit": SafetyGates.SMOKE_MAX_SPACING}
                     )
         
-        # Check coverage area estimate
-        coverage_per = room_area / len(detector_positions)
-        if coverage_per > 85:  # ~9.2m × 9.2m
+        # Check coverage area - CRITICAL: use CIRCLE not square
+        # Room area / circle coverage = number needed
+        detectors_needed = max(1, math.ceil(room_area / coverage_per_detector))
+        detectors_provided = len(detector_positions)
+        
+        if detectors_provided < detectors_needed:
             return SafetyGateResult(
                 name="smoke_coverage",
-                status=GateStatus.REVIEW_REQUIRED,
-                message=f"~{coverage_per:.0f}m² per detector - verify coverage",
-                severity="advisory"
+                status=GateStatus.FAIL,
+                message=f"Need {detectors_needed} detectors for {room_area}m² (have {detectors_provided})",
+                severity="critical",
+                details={"needed": detectors_needed, "provided": detectors_provided, "area": room_area}
             )
         
         return SafetyGateResult(
             name="smoke_coverage",
             status=GateStatus.PASS,
-            message=f"{len(detector_positions)} detectors, adequate coverage",
+            message=f"{detectors_provided} detectors, {coverage_per_detector:.1f}m² coverage each",
             severity="info"
         )
     
@@ -193,11 +203,20 @@ class SafetyGates:
     ) -> SafetyGateResult:
         """Check egress distances (NFPA 101)."""
         
-        if not occupant_points or not exit_points:
+        # CRITICAL: Must have exits defined!
+        if not exit_points:
+            return SafetyGateResult(
+                name="egress",
+                status=GateStatus.FAIL,
+                message="CRITICAL: No exits defined in drawing - CANNOT verify egress",
+                severity="critical"
+            )
+        
+        if not occupant_points:
             return SafetyGateResult(
                 name="egress",
                 status=GateStatus.REVIEW_REQUIRED,
-                message="Cannot verify egress - missing points",
+                message="No occupant points defined - cannot verify",
                 severity="advisory"
             )
         
