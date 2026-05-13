@@ -50,7 +50,7 @@ class DXFParseResult:
 class DXFParser:
     """CRITICAL: Never trust DXF geometry. Always validate."""
 
-    MIN_ROOM_AREA_M2: float = 1.0
+    MIN_ROOM_AREA_M2: float = 2.0  # Min 2m² per NFPA 72 (columns are ~1.5m²)
     MAX_ROOM_AREA_M2: float = 50_000.0
 
     INSUNITS_TO_METERS = {
