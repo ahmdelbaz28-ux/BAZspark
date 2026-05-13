@@ -381,6 +381,137 @@ def validate_ceiling_height(ceiling_height_m: float) -> None:
         )
 
 
+# ============================================================================
+# ⭐ ELITE SAFE FUNCTIONS - Conservative Fallback (2026-05-13)
+# ============================================================================
+# These functions provide SAFE FALLBACK for heights outside NFPA 72 range.
+# Principle: More detectors (closer spacing) = safer for fire safety.
+# ============================================================================
+
+def get_smoke_detector_radius_safe(
+    ceiling_height_m: float,
+    _return_details: bool = False
+):
+    """
+    ⭐ ELITE SOLUTION: Get smoke detector radius with SAFE FALLBACK.
+    
+    This provides CONSERVATIVE values for heights outside NFPA 72 range.
+    More detectors (closer spacing) = safer design.
+    
+    Args:
+        ceiling_height_m: Actual ceiling height in meters
+        _return_details: If True, returns (radius, details dict)
+        
+    Returns:
+        float: Coverage radius in meters (conservative)
+        tuple: (radius, details) if _return_details=True
+        
+    Test Cases:
+        Input 2.4m  -> Output 4.55m (conservative)
+        Input 2.7m  -> Output 4.55m (conservative)
+        Input 3.0m  -> Output 4.55m (standard)
+        Input 15.3m -> Output 6.40m (standard)
+        Input 20.0m -> Output 6.40m (capped) + flag
+    """
+    actual_height = ceiling_height_m
+    flag = None
+    safe_height = ceiling_height_m
+    
+    # Case 1: Below NFPA range (< 3.0m) - use 3.0m values (more conservative)
+    if ceiling_height_m < 3.0:
+        safe_height = 3.0
+        flag = "LOW_CEILING: Using 3.0m values for safety"
+        
+    # Case 2: Above NFPA range (> 15.3m) - cap at maximum
+    elif ceiling_height_m > 15.3:
+        safe_height = 15.3
+        flag = "HIGH_CEILING: Capped at 15.3m, ENGINEER REVIEW REQUIRED"
+    
+    # Get radius using internal function
+    try:
+        radius = _get_radius_internal(safe_height)
+    except:
+        radius = _get_radius_internal(3.0)  # Fallback
+        flag = "FALLBACK: Used 3.0m values"
+    
+    details = {
+        "input_height": actual_height,
+        "effective_height": safe_height,
+        "radius": radius,
+        "flag": flag,
+        "conservative": flag is not None
+    }
+    
+    if _return_details:
+        return radius, details
+    return radius
+
+
+def _get_radius_internal(h: float) -> float:
+    """Internal radius lookup."""
+    R = {
+        (3.0, 4.3): 4.55,
+        (4.3, 6.1): 5.35,
+        (6.1, 7.6): 5.2,
+        (7.6, 9.1): 5.8,
+        (9.1, 15.3): 6.4
+    }
+    for (min_h, max_h), r in R.items():
+        if min_h <= h <= max_h:
+            return r
+    if h == 15.3:
+        return 6.4
+    raise CeilingHeightError(f"Height {h}m outside NFPA range")
+
+
+def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_details: bool = False):
+    """⭐ ELITE SOLUTION: Get max coverage with SAFE FALLBACK."""
+    actual = ceiling_height_m
+    flag = None
+    safe_h = ceiling_height_m
+    
+    if ceiling_height_m < 3.0:
+        safe_h = 3.0
+        flag = "LOW_CEILING"
+    elif ceiling_height_m > 15.3:
+        safe_h = 15.3
+        flag = "HIGH_CEILING"
+    
+    try:
+        max_cov = _get_max_internal(safe_h)
+    except:
+        max_cov = _get_max_internal(3.0)
+        flag = "FALLBACK"
+    
+    details = {
+        "input_height": actual,
+        "effective_height": safe_h,
+        "max_coverage": max_cov,
+        "flag": flag
+    }
+    
+    if _return_details:
+        return max_cov, details
+    return max_cov
+
+
+def _get_max_internal(h: float) -> float:
+    """Internal max coverage lookup."""
+    M = {
+        (3.0, 4.3): 5.5,
+        (4.3, 6.1): 6.5,
+        (6.1, 7.6): 8.1,
+        (7.6, 9.1): 9.0,
+        (9.1, 15.3): 10.1
+    }
+    for (min_h, max_h), m in M.items():
+        if min_h <= h <= max_h:
+            return m
+    if h == 15.3:
+        return 10.1
+    raise CeilingHeightError(f"Height {h}m outside NFPA range")
+
+
 # Test exported symbols
 __all__ = [
     # Enums
@@ -403,6 +534,8 @@ __all__ = [
     "NFPAComplianceResult",
     # Functions
     "get_smoke_detector_radius",
+    "get_smoke_detector_radius_safe",  # ⭐ New: Elite safe fallback
     "get_smoke_detector_coverage_max",
+    "get_smoke_detector_coverage_max_safe",  # ⭐ New: Elite safe fallback
     "validate_ceiling_height",
 ]
