@@ -139,7 +139,21 @@ class DXFParser:
                         lines.append(LineString(pts))
                 except Exception as e:
                     logger.debug(f"Polyline skip: {e}")
+            elif ent.dxftype() == "CIRCLE":
+                # Convert CIRCLE to polygon approximation
+                try:
+                    poly = self._circle_to_polygon(ent, scale)
+                    if poly and poly.is_valid:
+                        lines.append(poly.exterior)
+                except Exception as e:
+                    logger.debug(f"Circle skip: {e}")
         return lines
+
+    def _circle_to_polygon(self, entity, scale):
+        """Convert CIRCLE to Polygon approximation (36 points)"""
+        c = Point(entity.dxf.center.x * scale, entity.dxf.center.y * scale)
+        r = entity.dxf.radius * scale
+        return c.buffer(r, resolution=36)  # 36 points
 
     def _lines_to_valid_polygons(self, lines) -> List[Polygon]:
         """CRITICAL: Always validate geometry. Never trust raw DXF."""
