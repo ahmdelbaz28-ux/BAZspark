@@ -308,7 +308,7 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
         height_m=room.ceiling_height
     )
     engine = OptimalMIPEngine(room_spec)
-    devices, count, success = engine.solve()
+    devices, count, success, meta = engine.solve()
     
     if not success:
         return PlacementResult(
@@ -319,17 +319,16 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
             proof="No feasible solution found"
         )
     
-    # Convert grid positions to real coordinates
-    scale_x = width / grid_size
-    scale_y = height / grid_size
+    # Create list to store placed devices
+    placed_devices = []
     
-    for gx, gy in devices:
-        real_x = min_x + (gx + 0.5) * scale_x
-        real_y = min_y + (gy + 0.5) * scale_y
+    # Convert grid positions to real coordinates (if needed)
+    # Note: new engine already returns real coordinates
+    for dx, dy in devices:
         device_type = select_device_type(room)
         placed_devices.append(DevicePlacement(
-            x=round(real_x, 2),
-            y=round(real_y, 2),
+            x=round(dx, 2),
+            y=round(dy, 2),
             device_type=device_type
         ))
     
@@ -337,9 +336,8 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
     proof = (
         f"MIP Solver proved optimality: {count} devices is the minimum. "
         f"The CBC MILP solver verified that no solution with fewer than "
-        f"{count} devices can cover all {grid_size*grid_size} test points "
-        f"within {device_radius}m radius while maintaining {device_radius}m "
-        f"minimum spacing between devices."
+        f"{count} devices can cover all test points "
+        f"within {meta.get('radius_m', 'dynamic')}m radius."
     )
     
     return PlacementResult(
