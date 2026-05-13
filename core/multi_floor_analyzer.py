@@ -18,21 +18,26 @@ class PanelType(Enum):
     NETWORK = "network"              # Multiple panels
 
 
-@dataclass
 class FloorInfo:
-    """Information about each floor."""
-    floor_number: int
-    floor_area: float  # m²
-    devices_count: int
-    panel_recommended: bool = False
+    """Information about each floor.
+    
+    Usage:
+        FloorInfo(level=1, area=500, devices=45)
+    """
+    def __init__(self, level: int = 1, area: float = 500, devices: int = 0):
+        self.floor_number = level
+        self.floor_area = area
+        self.devices_count = devices
+        self.panel_recommended = False
 
 
 class MultiFloorAnalyzer:
     """
     Analyzer for multi-story buildings.
     
-    ⚠️  WARNING: This is a SIMPLIFIED model!
-    Actual design requires professional engineer.
+    Usage:
+        floors = [FloorInfo(level=1, area=500, devices=45)]
+        result = MultiFloorAnalyzer.analyze_building(floors, max_devices_per_panel=1000)
     """
     
     # NFPA 72 limits per panel
@@ -51,7 +56,7 @@ class MultiFloorAnalyzer:
     def analyze_building(
         cls,
         floors: List[FloorInfo],
-        building_area: float,
+        max_devices_per_panel: int = 500,
         panel_type: str = "addressable"
     ) -> Dict:
         """
@@ -62,7 +67,7 @@ class MultiFloorAnalyzer:
         total_devices = sum(f.devices_count for f in floors)
         
         # Check if single panel is sufficient
-        if total_devices <= cls.MAX_DEVICES_PER_PANEL:
+        if max_devices_per_panel and total_devices <= max_devices_per_panel:
             return {
                 "panels_needed": 1,
                 "panel_type": panel_type,
@@ -85,7 +90,7 @@ class MultiFloorAnalyzer:
     def check_multi_building(
         cls,
         building_positions: List[tuple],
-        max_single_building: float = 150  # meters
+        max_distance: float = 150  # meters
     ) -> Dict:
         """
         Check if buildings can be served by single panel/network.
@@ -107,7 +112,7 @@ class MultiFloorAnalyzer:
                 d = math.sqrt((pos1[0]-pos2[0])**2 + (pos1[1]-pos2[1])**2)
                 max_dist = max(max_dist, d)
         
-        if max_dist > max_single_building:
+        if max_dist > max_distance:
             return {
                 "single_panel": False,
                 "reason": f"Distance {max_dist:.0f}m exceeds limit",
@@ -138,8 +143,8 @@ def calculate_cable_length(
 
 
 def estimate_voltage_drop(
-    length_meters: float,
-    current_amps: float,
+    distance: float,
+    current: float,
     wire_gauge: int = 14  # AWG
 ) -> float:
     """
@@ -158,10 +163,10 @@ def estimate_voltage_drop(
     }.get(wire_gauge, 3.0)
     
     # Convert meters to feet
-    length_ft = length_meters * 3.281
+    length_ft = distance * 3.281
     
     # Calculate drop: V = I × R × (L/1000)
-    vdrop = current_amps * resistance * (length_ft / 1000)
+    vdrop = current * resistance * (length_ft / 1000)
     
     return vdrop
 
