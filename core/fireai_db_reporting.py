@@ -29,12 +29,19 @@ class FireAIDatabase:
     
     def __init__(self, db_path: str = None):
         self.db_path = db_path or self.DB_NAME
+        self._is_memory = db_path == ":memory:"
+        self._conn = None if not self._is_memory else sqlite3.connect(":memory:")
         self._init_db()
         
     def _init_db(self):
         """Create all tables."""
-        with sqlite3.connect(self.db_path) as conn:
-            c = conn.cursor()
+        # Use same connection for in-memory
+        conn = self._conn or sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        # Ensure connection stays open for in-memory
+        if self._is_memory:
+            self._conn = conn
             
             # Projects table
             c.execute("""
@@ -92,13 +99,19 @@ class FireAIDatabase:
             
             conn.commit()
             
+    def _get_conn(self):
+        """Get database connection."""
+        if self._is_memory and self._conn:
+            return self._conn
+        return sqlite3.connect(self.db_path)
+        
     def save_project(self, name: str, file_path: str, file_type: str) -> str:
         """Save new project and return hash."""
         project_hash = hashlib.md5(
             f"{name}{datetime.now().isoformat()}".encode()
         ).hexdigest()[:16]
         
-        with sqlite3.connect(self.db_path) as conn:
+        with self._get_conn() as conn:
             conn.execute("""
                 INSERT INTO projects (project_hash, name, file_path, file_type, status)
                 VALUES (?, ?, ?, ?, 'pending')
@@ -117,7 +130,7 @@ class FireAIDatabase:
         analysis_data: Dict
     ):
         """Save analysis result."""
-        with sqlite3.connect(self.db_path) as conn:
+        with self._get_conn() as conn:
             conn.execute("""
                 INSERT INTO analyses 
                 (project_hash, room_count, device_count, violations, analysis_data)
@@ -139,7 +152,7 @@ class FireAIDatabase:
         
     def log_audit(self, project_hash: str, action: str, details: str):
         """Log audit trail."""
-        with sqlite3.connect(self.db_path) as conn:
+        with self._get_conn() as conn:
             conn.execute("""
                 INSERT INTO audit_log (project_hash, action, details)
                 VALUES (?, ?, ?)
@@ -148,7 +161,7 @@ class FireAIDatabase:
             
     def get_project(self, project_hash: str) -> Optional[Dict]:
         """Get project info."""
-        with sqlite3.connect(self.db_path) as conn:
+        with self._get_conn() as conn:
             c = conn.execute(
                 "SELECT * FROM projects WHERE project_hash = ?",
                 (project_hash,)
@@ -168,7 +181,7 @@ class FireAIDatabase:
     
     def list_projects(self) -> List[Dict]:
         """List all projects."""
-        with sqlite3.connect(self.db_path) as conn:
+        with self._get_conn() as conn:
             rows = conn.execute("""
                 SELECT project_hash, name, status, created_at 
                 FROM projects ORDER BY created_at DESC
@@ -181,7 +194,7 @@ class FireAIDatabase:
     
     def get_audit_trail(self, project_hash: str) -> List[Dict]:
         """Get audit trail for project."""
-        with sqlite3.connect(self.db_path) as conn:
+        with self._get_conn() as conn:
             rows = conn.execute("""
                 SELECT action, details, created_at 
                 FROM audit_log 
