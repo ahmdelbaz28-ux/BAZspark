@@ -60,3 +60,57 @@ def suggest_devices(
                     coverage_radius=spacing / 2
                 ))
     return devices
+
+
+# ============================================================================
+# DUCT DETECTORS (Added in V8 PATCH)
+# ============================================================================
+
+def suggest_duct_detectors(hvac_ducts):
+    """
+    يقترح duct detectors لكل duct في نظام HVAC.
+    Per NFPA 72 Section 17.7.5:
+      - detector عند upstream من كل fan
+      - كل 21m (70ft) على امتداد الـ duct
+    """
+    if hvac_ducts is None:
+        raise ValueError("hvac_ducts cannot be None")
+
+    devices = []
+    NFPA_MAX_SPACING_M = 21.0
+
+    for duct in hvac_ducts:
+        if not hasattr(duct, 'start_x') or not hasattr(duct, 'end_x'):
+            # Skip missing coordinates
+            continue
+
+        duct_length_m = math.sqrt(
+            (duct.end_x - duct.start_x) ** 2 +
+            (duct.end_y - duct.start_y) ** 2
+        )
+
+        # Detector عند بداية الـ duct (upstream)
+        devices.append(Device(
+            position=Point(x=duct.start_x, y=duct.start_y, z=getattr(duct, 'height_z', 3.0)),
+            device_type=DeviceType.DUCT_DETECTOR,
+            coverage_radius=1.0,
+            ai_justification=f"Upstream duct detector per NFPA 72 s17.7.5"
+        ))
+
+        # Detectors إضافية كل 21m
+        num_intervals = int(duct_length_m / NFPA_MAX_SPACING_M)
+        for i in range(1, num_intervals + 1):
+            ratio = (i * NFPA_MAX_SPACING_M) / duct_length_m
+            if ratio >= 1.0:
+                break
+            pos_x = duct.start_x + ratio * (duct.end_x - duct.start_x)
+            pos_y = duct.start_y + ratio * (duct.end_y - duct.start_y)
+
+            devices.append(Device(
+                position=Point(x=pos_x, y=pos_y, z=getattr(duct, 'height_z', 3.0)),
+                device_type=DeviceType.DUCT_DETECTOR,
+                coverage_radius=1.0,
+                ai_justification=f"Duct detector at {i*21}m interval per NFPA 72 s17.7.5"
+            ))
+
+    return devices
