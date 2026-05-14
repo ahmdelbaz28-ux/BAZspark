@@ -249,3 +249,60 @@ class TimestampedDecisionSigner:
 # 1. Take old valid signature and apply to new decision (different signed_at)
 # 2. Reuse signature after expiry (max_age_hours check)
 # 3. Forge signature (RSA/HMAC verification)
+
+
+# PYDANTIC SCHEMA FOR AUDIT TRAIL VALIDATION
+# ===================================
+# Pydantic provides runtime validation for audit trail integrity.
+# This ensures no invalid data enters the audit chain.
+
+try:
+    from pydantic import BaseModel, Field, validator
+    PYDANTIC_AVAILABLE = True
+except ImportError:
+    PYDANTIC_AVAILABLE = False
+    BaseModel = object
+
+
+if PYDANTIC_AVAILABLE:
+    class DecisionProvenanceSchema(BaseModel):
+        """
+        Pydantic schema for DecisionProvenance audit validation.
+        
+        Provides runtime type checking and validation for all decision fields.
+        Used to ensure audit trail integrity at entry point.
+        """
+        decision_id: str = Field(..., min_length=1, description="Unique decision ID")
+        decision_type: str = Field(..., description="Type: override, compliance, calculation")
+        symbol: str = Field(..., description="Fire protection symbol")
+        value: float = Field(..., description="Calculated value")
+        unit: str = Field(..., description="Unit of measurement")
+        
+        confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence level 0-1")
+        jurisdiction: str = Field(..., description="Jurisdiction code")
+        edition: str = Field(..., description="Code edition")
+        
+        signed_at: str = Field(..., description="ISO timestamp")
+        signed_by: str = Field(..., description="Signatory")
+        
+        # Validators - ensure data quality
+        @validator('decision_type')
+        def validate_type(cls, v):
+            allowed = {'override', 'compliance', 'calculation', 'spacing', 'coverage'}
+            if v not in allowed:
+                raise ValueError(f"Invalid type: {v}")
+            return v
+        
+        @validator('unit')
+        def validate_unit(cls, v):
+            allowed = {'m', 'ft', 'in', 'ratio', 'count'}
+            if v not in allowed:
+                raise ValueError(f"Invalid unit: {v}")
+            return v
+        
+        class Config:
+            extra = "forbid"  # No extra fields allowed
+            
+else:
+    # Fallback for when Pydantic not installed
+    DecisionProvenanceSchema = None
