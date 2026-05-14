@@ -13,6 +13,7 @@ V9 CHANGES (2026-05-14):
 5. validate_min_detector_count() — minimum detector validation
 """
 import math
+from shapely.geometry import Point as ShapelyPoint
 from typing import List, Literal, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
@@ -380,10 +381,24 @@ def suggest_devices(
     # =========================================================================
     if not room.polygon or not room.polygon.exterior:
         pass  # Return empty list
-    # 1. أبعاد الصندوق المحيط
-    coords = [(p.x, p.y) for p in room.polygon.exterior]
-    min_x, max_x = min(c[0] for c in coords), max(c[0] for c in coords)
-    min_y, max_y = min(c[1] for c in coords), max(c[1] for c in coords)
+    
+    # Fix: Handle both Room (shapely Polygon) and RoomSpec (has polygon attribute)
+    polygon = getattr(room, 'polygon', None)
+    if polygon is None:
+        return []
+    
+    # Get coordinates from polygon - handle both formats
+    if hasattr(polygon.exterior, 'coords'):
+        # shapely Polygon exterior
+        coords = list(polygon.exterior.coords)
+    else:
+        # Already a list of coordinates
+        coords = list(polygon.exterior)
+    
+    min_x = min(c[0] for c in coords)
+    max_x = max(c[0] for c in coords)
+    min_y = min(c[1] for c in coords)
+    max_y = max(c[1] for c in coords)
     room_width = max_x - min_x
     room_height = max_y - min_y
     # 2. لا هامش - نغطي كل المساحة
@@ -407,8 +422,9 @@ def suggest_devices(
             # الشبكة المتداخلة: إزاحة الصفوف الزوجية
             if pattern == "staggered" and j % 2 == 1:
                 x += x_step / 2.0
-            pt = Point(x, y)
-            if room.polygon.is_point_inside(pt):
+
+            pt = ShapelyPoint(x, y)
+            if polygon.contains(pt):
                 devices.append(Device(
                     position=pt,
                     device_type=DeviceType.SMOKE_DETECTOR,
