@@ -51,7 +51,7 @@ def run_full_workflow(input_file: str,
     out = Path(output_dir); out.mkdir(parents=True, exist_ok=True)
     artifacts = {}
 
-    # 1. Run analysis (with self-learning + reasoning)
+    # 1. Run analysis (V8: pattern submission for human review)
     log.info("workflow: analyzing %s …", input_file)
     kb = kb or KnowledgeBase()
     report = analyze_file(input_file, kb=kb, schedule=schedule)

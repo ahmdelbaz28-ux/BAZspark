@@ -11,11 +11,11 @@ Sections produced (every one citation-backed, every one customizable):
   5. Compliance Findings — per-rule, per-room
   6. Schedule Reconciliation
   7. Safety Gates — pass/fail
-  8. Smoke Simulation Results (if digital twin populated)
+  8. Smoke Pre-Screening Estimate (if input populated)
   9. Engineering Calculations — panels, loops, voltage drop, conduit
  10. ADA Compliance Audit
- 11. Self-Learning Log — what the system learned from this file
- 12. Reasoning Trace — every step the AI took, with inputs/outputs
+ 11. Pattern Submission Log — what was submitted for human review
+ 12. Reasoning Trace — every step the engine took, with inputs/outputs
  13. Honest Limitations — what we DIDN'T check
  14. Reviewer Sign-Off Block — for the licensed engineer
  15. Integrity Footer — chain root + signature
@@ -149,9 +149,9 @@ def _build_methodology(software_version) -> list[dict]:
         {"step":4, "name":"Symbol Classification",
          "algorithm":"3-tier: name pattern → embedding k-NN → geometric heuristic",
          "embedder":"HOG (default) / CLIP (optional)"},
-        {"step":5, "name":"Self-Learning",
-         "algorithm":"7 mechanisms (legend harvest, alias mining, layer prior, "
-                     "spacing prior, clustering, regex induction, calibration)"},
+        {"step":5, "name":"Pattern Review",
+         "algorithm":"Submit patterns for FPE review via pattern_library "
+                     "(no automatic learning)"},
         {"step":6, "name":"Compliance Check",
          "algorithm":"Rule-based against KB-stored NFPA/IBC/NEC values",
          "evidence":"Pairwise distance + coverage (Monte Carlo) + Voronoi gap"},
@@ -159,9 +159,9 @@ def _build_methodology(software_version) -> list[dict]:
          "algorithm":"Exact + alias + fuzzy match (cutoff 0.85, advisory log)"},
         {"step":8, "name":"Reasoning",
          "algorithm":"Decomposed chain-of-thought planner with weighted evidence"},
-        {"step":9, "name":"Smoke Simulation",
-         "algorithm":"NFPA 92 two-zone model (Heskestad plume entrainment)",
-         "limitations":"Not a substitute for FDS/CFD for non-trivial geometries"},
+        {"step":9, "name":"Smoke Pre-Screening",
+         "algorithm":"Pre-screening estimate (±50% error band)",
+         "limitations":"NOT a simulation, NOT NFPA 92 compliant"},
         {"step":10,"name":"Integrity Sealing",
          "algorithm":"SHA-256 hash chain + optional Ed25519 signature",
          "purpose":"Tamper detection (NOT a claim of correctness)"},
@@ -195,14 +195,10 @@ def _honest_limitations() -> list[str]:
         "This software produces an ANALYSIS — not an engineered design.",
         "All findings require independent review by a licensed Professional Engineer "
         "before any construction or modification.",
-        "Smoke simulation uses a two-zone model and is NOT a substitute for "
+        "Smoke pre-screening uses an analytical estimate and is NOT a substitute for "
         "CFD (e.g., FDS) for atriums, large open spaces, or compartmented designs.",
-        "Detector classification accuracy depends on drawing quality; the system "
-        "explicitly reports per-element confidence so reviewers can prioritize.",
-        "Code values shipped with the system reflect the cited editions; the "
-        "Authority Having Jurisdiction (AHJ) may impose stricter requirements.",
-        "Self-learned aliases and spacing priors are STORED but never override "
-        "hard-coded code values — they only inform suggestions.",
+        "Pattern submissions are STORED but never automatically applied - "
+        "FPE review is required.",
         "No claim of infallibility is made. The integrity seal proves the report "
         "has not been altered since issuance; it does not prove the underlying "
         "analysis is free of error.",
@@ -297,9 +293,8 @@ def list_template_variables() -> dict:
         "r.reconciliation[]":          "Schedule vs drawing items",
         "r.engineering.panel_plan":    "Panel optimizer output",
         "r.engineering.loop_plan":     "Loop designer output",
-        "r.engineering.smoke_sim":     "Smoke simulation per room",
-        "r.reasoning":                 "Multi-step reasoning trace",
-        "r.learning":                  "Self-learning outcome",
+        "r.engineering.smoke_estimator": "Smoke pre-screening estimate",
+        "r.patterns":                  "Pattern submissions for review",
         "r.limitations[]":             "Honest list of what was NOT checked",
         "r.review_block":              "Reviewer sign-off fields (editable)",
         "r.integrity":                 "Hash chain root + signature",

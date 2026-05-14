@@ -4,12 +4,12 @@ pipeline.py — Unified FireSafetyGenius pipeline v1.0
 
 Single entry-point that wires:
   ingest → vectorize → ocr → tables → classify → reasoning → compliance
-        → reconcile → safety_gates → digital_twin → smoke_sim
-        → reporting → SELF-LEARNING (automatic, every file)
+        → reconcile → safety_gates → digital_twin → smoke_estimator
+        → reporting → pattern_review (human-curated)
 
-Key change vs v0.2: the pipeline ALWAYS calls SelfLearner.learn_from_file()
-at the end. No human action required. The system genuinely improves on
-every drawing it sees.
+Key change vs v0.2: the pipeline NO LONGER calls automatic learning.
+Patterns are submitted for FPE review via pattern_library. Human approval required.
+No automatic improvement from any file.
 """
 from __future__ import annotations
 import json, logging, os, time
@@ -26,7 +26,8 @@ from .kernel.vectorize   import vectorize_raster
 from .kernel.ocr         import run_ocr
 from .knowledge.memory   import KnowledgeBase
 from .knowledge.classifier      import SymbolClassifier, Classification
-from .knowledge.self_learner    import SelfLearner, LearningOutcome
+# V8: pattern_library replaces self_learner - import disabled for safety
+# from .knowledge.self_learner    import SelfLearner, LearningOutcome
 from .reasoning.compliance      import ComplianceEngine, Finding
 from .reasoning.schedule_match  import reconcile, ScheduleLine
 from .reasoning.chain_of_thought import FireSafetyReasoner
@@ -80,8 +81,9 @@ class Report:
             for r in self.reconciliation:
                 print(f"  [{r['status']:18}] {r['item']:25} sched={r['scheduled_qty']:>4}  "
                       f"actual={r['actual_qty']:>4}  Δ={r['delta']:+d}")
-        if self.learning_outcome:
-            print(f"\n🧠 LEARNING (auto): " + self.learning_outcome.get("summary",""))
+        # V8: Learning outcome disabled - use pattern_library for human review
+        # if self.learning_outcome:
+        #     print(f"\n🧠 LEARNING (auto): " + self.learning_outcome.get("summary",""))
         if self.reasoning_trace:
             print(f"\n🎯 VERDICT: {self.reasoning_trace.get('conclusion','')}")
         if self.warnings:
@@ -98,13 +100,14 @@ def analyze_file(path: str,
                  do_ocr: bool = True,
                  twin = None,                                   # DigitalTwin
                  do_reasoning: bool = True,
-                 do_self_learn: bool = True,
+                 do_pattern_submission: bool = False,  # V8: off by default - human review required
                  overlay_dir: Optional[str] = None,
                  html_out: Optional[str] = None) -> Report:
     t0 = time.time()
     kb = kb or KnowledgeBase()
-    learner = SelfLearner(kb)
-    classifier = SymbolClassifier(kb, learner=learner)
+    # V8: SelfLearner disabled - use pattern_library for human-curated patterns
+    # learner = SelfLearner(kb)
+    classifier = SymbolClassifier(kb, learner=None)  # V8: no auto-learner
 
     nd = ingest(path)
     kb.record_file(nd.source_sha256, nd.source_path, nd.file_type, nd.metadata)
@@ -225,13 +228,16 @@ def analyze_file(path: str,
         except Exception as ex:
             warnings.append(f"Reasoning failed: {ex}")
 
-    # (H) AUTOMATIC SELF-LEARNING — runs every file, no human needed
-    if do_self_learn:
+    # (H) PATTERN SUBMISSION FOR REVIEW — human-curated, not automatic
+    # Note: V8 uses pattern_library instead of automatic pattern submission
+    if do_pattern_submission:
         try:
-            outcome = learner.learn_from_file(report, nd, classifier)
-            report.learning_outcome = {**outcome.__dict__, "summary": outcome.summary()}
+            # Placeholder: submit to pattern_library for FPE review
+            # outcome = pattern_library.submit_for_review(...)
+            # report.pattern_submission = outcome
+            pass
         except Exception as ex:
-            warnings.append(f"Self-learning step failed: {ex}")
+            warnings.append(f"Pattern submission step skipped: {ex}")
 
     # (I) visual artefacts
     overlays = []
