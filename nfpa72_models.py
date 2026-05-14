@@ -227,17 +227,40 @@ class HeatDetectorSpec:
 
 @dataclass
 class DetectorPlacement:
-    """Individual detector placement"""
-    
+    """
+    Represents a single detector's position and coverage.
+
+    Attributes:
+        x: X coordinate in meters
+        y: Y coordinate in meters
+        z: Z coordinate (height above floor) in meters
+        detector_type: Type of detector (SMOKE, HEAT, etc.)
+        ceiling_height_m: Floor-to-ceiling height in meters (used to compute radius)
+        coverage_radius_m: Coverage radius; auto-computed if not provided
+    """
     x: float
     y: float
     z: float
     detector_type: DetectorType
+    ceiling_height_m: float = 3.0        # NEW PARAMETER — was missing before
     coverage_radius_m: Optional[float] = None
-    
+
     def __post_init__(self):
+        # Validate inputs
+        if self.ceiling_height_m <= 0:
+            raise ValueError(
+                f"ceiling_height_m must be positive, got {self.ceiling_height_m}"
+            )
+
         if self.coverage_radius_m is None:
-            self.coverage_radius_m = get_smoke_detector_radius(ceiling_spec.height_at_low_point_m) if hasattr(ceiling_spec, 'height_at_low_point_m') else 4.55  # Default
+            if self.detector_type == DetectorType.HEAT:
+                # NFPA 72 Table 17.6.3.5: heat detector max spacing 9.1m x 9.1m
+                self.coverage_radius_m = 9.1 / 2   # 4.55m — square coverage (Chebyshev)
+            else:
+                # SMOKE and others: use safe fallback (handles heights outside NFPA range)
+                self.coverage_radius_m = get_smoke_detector_radius_safe(
+                    self.ceiling_height_m
+                )
 
 
 @dataclass
