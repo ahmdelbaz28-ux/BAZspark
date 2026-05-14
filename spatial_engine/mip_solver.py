@@ -14,7 +14,7 @@ from nfpa72_models import (
     RoomSpec, DetectorType, CoverageGeometry, CeilingType, NFPAComplianceError,
     CeilingSpec as CeilingSpecModel, HeatDetectorSpec as HeatDetectorSpecModel
 )
-from nfpa72_calculations import get_smoke_detector_radius, get_heat_detector_placement_params
+from nfpa72_calculations import get_smoke_detector_radius, get_smoke_detector_radius_safe, get_heat_detector_placement_params
 from nfpa72_coverage import get_sloped_ceiling_constraints, verify_full_coverage
 
 
@@ -69,9 +69,10 @@ class OptimalMIPEngine:
             )
 
         # Get detector spacing/radius based on ceiling height
+        # V9 FIX: Use safe radius function
         if self.detector_type == DetectorType.SMOKE:
             self.coverage_geo = CoverageGeometry.CIRCULAR
-            self.radius = get_smoke_detector_radius(self.ceiling.height_at_low_point_m)
+            self.radius = get_smoke_detector_radius_safe(self.ceiling.height_at_low_point_m)
             self.spacing = None
         elif self.detector_type in (DetectorType.HEAT_FIXED_TEMP, DetectorType.HEAT_RATE_OF_RISE, 
                                   DetectorType.HEAT_COMBINATION, DetectorType.SMOKE_HEAT_COMBINATION):
@@ -82,7 +83,7 @@ class OptimalMIPEngine:
         else:
             # Default to smoke
             self.coverage_geo = CoverageGeometry.CIRCULAR
-            self.radius = get_smoke_detector_radius(self.ceiling.height_at_low_point_m)
+            self.radius = get_smoke_detector_radius_safe(self.ceiling.height_at_low_point_m)
             self.spacing = None
 
         self.candidates: List[Tuple[float, float]] = []
@@ -94,9 +95,10 @@ class OptimalMIPEngine:
 
     def _setup_coverage_params(self):
         """Set coverage geometry, radius, and spacing based on NFPA 72."""
+        # V9 FIX: Use safe radius function
         if self.detector_type == DetectorType.SMOKE:
             self.coverage_geo = CoverageGeometry.CIRCULAR
-            self.radius = get_smoke_detector_radius(self.ceiling.height_at_low_point_m)
+            self.radius = get_smoke_detector_radius_safe(self.ceiling.height_at_low_point_m)
             self.spacing = None
 
         elif self.detector_type in (

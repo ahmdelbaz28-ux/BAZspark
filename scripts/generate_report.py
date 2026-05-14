@@ -27,7 +27,7 @@ from logging.handlers import RotatingFileHandler
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import NFPA 72 V5 functions
-from nfpa72_models import get_smoke_detector_radius, RoomSpec, CeilingSpec, CeilingType
+from nfpa72_models import get_smoke_detector_radius, get_smoke_detector_radius_safe, RoomSpec, CeilingSpec, CeilingType
 
 # === FireAI Audit Logging ===
 # Persistent logs for human review and legal compliance
@@ -391,7 +391,8 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
             core_devices = []
             for d in result.devices:
                 # Calculate dynamic radius based on ceiling height per NFPA 72 V5
-                radius = get_smoke_detector_radius(room.ceiling_height)
+                # V9 FIX: Use safe radius function
+                radius = get_smoke_detector_radius_safe(room.ceiling_height)
                 core_devices.append(CoreDevice(
                     id=f"dev_{d.x}_{d.y}",
                     device_type=d.device_type,

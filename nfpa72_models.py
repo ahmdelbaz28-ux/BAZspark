@@ -198,7 +198,8 @@ class SmokeDetectorSpec:
     @property
     def radius_m(self) -> float:
         """Get radius based on ceiling height per NFPA 72"""
-        return get_smoke_detector_radius(self.ceiling_spec.height_m)
+        # V9 FIX: Use safe radius function
+        return get_smoke_detector_radius_safe(self.ceiling_spec.height_m)
     
     @property
     def coverage_max_m(self) -> float:
@@ -234,10 +235,15 @@ class DetectorPlacement:
     z: float
     detector_type: DetectorType
     coverage_radius_m: Optional[float] = None
+    ceiling_spec: Optional[CeilingSpec] = None  # Added for V9
     
     def __post_init__(self):
+        # V9 FIX: Use safe radius function with proper parameter
         if self.coverage_radius_m is None:
-            self.coverage_radius_m = get_smoke_detector_radius(ceiling_spec.height_at_low_point_m) if hasattr(ceiling_spec, 'height_at_low_point_m') else 4.55  # Default
+            if self.ceiling_spec and hasattr(self.ceiling_spec, 'height_at_low_point_m'):
+                self.coverage_radius_m = get_smoke_detector_radius_safe(self.ceiling_spec.height_at_low_point_m)
+            else:
+                self.coverage_radius_m = 4.55  # Default safe radius
 
 
 @dataclass
