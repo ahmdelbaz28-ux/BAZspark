@@ -1,7 +1,17 @@
 """
 cli.py — FireSafetyGenius v1.1 command-line interface
 ======================================================
+
+⚠️ LIFE-SAFETY WARNING ⚠️
+======================================================
+
+This system outputs fire safety recommendations.
+
+⚠️ IMPORANT: All outputs require PE verification.
+⚠️ OUTPUTS NOT VERIFIED by licensed PE may result in death.
+⚠️ Use only within validated scope (see docs/SCOPE_DOCUMENT.md)
 """
+
 from __future__ import annotations
 import argparse, json, logging, sys, csv
 from pathlib import Path

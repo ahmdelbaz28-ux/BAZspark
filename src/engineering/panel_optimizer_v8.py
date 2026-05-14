@@ -3,6 +3,17 @@ engineering/panel_optimizer_v8.py
 ================================
 V8 Refactored Panel Optimizer - Returns DecisionProvenance
 
+⚠️ LIFE-SAFETY WARNING ⚠️
+
+THIS MODULE IS A PATTERN-MATCHING TOOL.
+
+- ALL OUTPUTS REQUIRE PE VERIFICATION
+- NOT GUARANTEED CORRECT - MAY PRODUCE WRONG OUTPUTS
+- VERIFY BEFORE USE - WRONG OUTPUTS MAY CAUSE DEATH
+
+See: docs/SCOPE_DOCUMENT.md
+See: docs/PE_LIABILITY_PROTOCOL.md
+
 This module refactors optimize_panels to return DecisionProvenance (§3.5 of Blueprint)
 instead of bare scalars. This is a V8 requirement enforced by CI lint.
 

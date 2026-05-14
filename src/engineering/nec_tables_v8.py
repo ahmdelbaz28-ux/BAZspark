@@ -1,5 +1,16 @@
 """
 engineering/nec_tables_v8.py
+
+⚠️ LIFE-SAFETY WARNING ⚠️
+
+THIS MODULE IS A PATTERN-MATCHING TOOL.
+- ALL OUTPUTS REQUIRE PE VERIFICATION.
+- NOT GUARANTEED CORRECT - MAY PRODUCE WRONG OUTPUTS.
+- VERIFY BEFORE USE - WRONG OUTPUTS MAY CAUSE DEATH.
+
+See: docs/SCOPE_DOCUMENT.md
+See: docs/PE_LIABILITY_PROTOCOL.md
+
 =========================
 V8 Refactored NEC Tables - Returns DecisionProvenance
 

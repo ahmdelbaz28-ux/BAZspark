@@ -1,14 +1,33 @@
 """
 FireCalc Pro V8.0 — Core Safety Modules
 ========================================
-Deterministic NFPA/NEC calculator with audit trail.
-NOT an AI. NOT a self-learning system. NOT a simulator.
+⚠️ LIFE-SAFETY WARNING ⚠️
+========================================
 
-Every public function in this package:
-  1. Returns a DecisionProvenance object (never a bare scalar).
-  2. Cites the NFPA/NEC clause it applies.
-  3. Requires a licensed PE to approve before any real-world use.
+THIS IS A PATTERN-MATCHING TOOL, NOT AN AI.
 
+Every output REQUIRES:
+  1. Licensed PE verification and signature
+  2. Independent calculation (not just FireCalc output)
+  3. Site-specific review
+
+NOT GUARANTEED TO BE CORRECT:
+  - Patterns may be outdated
+  - New construction types not covered
+  - Edge cases may fail silently
+
+WRONG OUTPUT MAY RESULT IN DEATH.
+
+See docs/VALIDATION_STUDY_PROTOCOL.md
+See docs/SCOPE_DOCUMENT.md
+See docs/PE_LIABILITY_PROTOCOL.md
+
+USE ONLY IF:
+  - You understand the limitations
+  - PE reviews every output
+  - Building is within validated scope
+
+========================================
 Module map:
   code_authority       — Versioned, FPE-signed code constants (NFPA 72, NEC).
   decision_provenance  — Structured output objects with citations + confidence.
