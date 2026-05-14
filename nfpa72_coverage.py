@@ -235,7 +235,7 @@ def check_voronoi_coverage(
         CoverageResult
     """
     room_polygon = create_room_polygon(room_spec)
-    radius = get_smoke_detector_radius(ceiling_spec.height_m)
+    radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
     
     # Voronoi regions show theoretical coverage
     regions = calculate_voronoi_coverage(detector_positions, room_polygon)
@@ -331,7 +331,7 @@ def check_l_shaped_coverage(
     Returns:
         CoverageResult
     """
-    radius = get_smoke_detector_radius(ceiling_height_m)
+    radius = get_smoke_detector_radius_safe(ceiling_height_m)
     
     # Sample points throughout actual polygon
     uncovered = []

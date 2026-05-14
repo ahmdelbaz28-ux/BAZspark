@@ -198,7 +198,7 @@ class SmokeDetectorSpec:
     @property
     def radius_m(self) -> float:
         """Get radius based on ceiling height per NFPA 72"""
-        return get_smoke_detector_radius(self.ceiling_spec.height_m)
+        return get_smoke_detector_radius_safe(self.ceiling_spec.height_m)
     
     @property
     def coverage_max_m(self) -> float:
