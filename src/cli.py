@@ -206,7 +206,7 @@ def main():
 
     elif args.cmd == "simulate":
         # V8: disabled - use smoke_estimator instead
-        print("V8: Smoke simulation disabled. Use v8_core.smoke_estimator for pre-screening estimates.")
+        print("V8: Smoke pre-screening disabled. Use v8_core.smoke_estimator for estimates.")
         # res = simulate(args.volume_m3, args.ceiling_m,
         #                 device_mount_height_m=args.device_h,
         #                 scenario=FireScenario.named(args.growth))

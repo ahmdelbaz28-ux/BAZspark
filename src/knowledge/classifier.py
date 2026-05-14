@@ -1,15 +1,14 @@
 """
-knowledge/classifier.py — enhanced version with learned-pattern injection
-=========================================================================
+knowledge/classifier.py — V8 Symbol Classifier
+=========================================
 
-Augments the v0.2 classifier with:
-  - Block-name lookup against SelfLearner's block_alias table
-  - Layer-priors when block name is ambiguous
-  - Learned regex patterns merged into NAME_PATTERNS at runtime
-  - Calibrated confidence output
+V8: This classifier uses ONLY base patterns. Self-learner disabled.
+- Block-name lookup against BASE_PATTERNS
+- Layer-priors disabled (use pattern_library instead)
+- No runtime pattern injection
+- Confidence calibration disabled (use FPE-reviewed values)
 
-Plus a public class-method `match_name_pattern(text)` used by SelfLearner's
-legend-harvest mechanism.
+Pattern Library (V8) REPLACES self_learner functionality.
 """
 from __future__ import annotations
 import io, logging, re
@@ -80,7 +79,8 @@ class SymbolClassifier:
                  learner=None):
         self.kb = kb
         self.embedder = embedder or HOGEmbedder()
-        self.learner = learner
+        # V8: SelfLearner disabled - use pattern_library instead
+        self.learner = None  # was: learner
         self._cached_examples = None
 
     @classmethod
@@ -92,37 +92,38 @@ class SymbolClassifier:
         return None
 
     def _all_patterns(self) -> dict:
-        """Merge base patterns with learned regex from KB."""
+        """Return base patterns (V8: no learned patterns - use pattern_library)."""
         out = dict(self.BASE_PATTERNS)
-        if self.learner:
-            for sym, pats in self.learner.all_learned_patterns().items():
-                for p in pats:
-                    out.setdefault(f"{sym}_learned_{p}", re.compile(p, re.I))
+        # V8: SelfLearner disabled - use pattern_library instead
+        # if self.learner:
+        #     for sym, pats in self.learner.all_learned_patterns().items():
+        #         for p in pats:
+        #             out.setdefault(f"{sym}_learned_{p}", re.compile(p, re.I))
         return out
 
     # ── name match ─
     def classify_by_name(self, name: str, *, layer: Optional[str] = None) -> Optional[Classification]:
         if not name: return None
-        # 1) learned aliases (highest priority — most specific)
-        if self.learner:
-            sym = self.learner.alias_lookup(name)
-            if sym:
-                return Classification(sym, 0.97, f"learned alias: '{name}' → {sym}")
-        # 2) pattern match (base + learned)
+        # V8: SelfLearner disabled - use pattern_library instead
+        # if self.learner:
+        #     sym = self.learner.alias_lookup(name)
+        #     if sym:
+        #         return Classification(sym, 0.97, f"learned alias: '{name}' → {sym}")
+        # 1) pattern match (base patterns only)
         for sym, patt in self._all_patterns().items():
             if patt.search(name):
                 clean_sym = sym.split("_learned_")[0]
                 return Classification(clean_sym, 0.93, f"pattern match: '{name}'")
-        # 3) exact symbol name in KB
+        # 2) exact symbol name in KB
         if self.kb.get_symbol(name.lower()):
             return Classification(name.lower(), 1.0, f"exact KB hit: {name}")
-        # 4) layer prior fallback
-        if self.learner and layer:
-            prior = self.learner.layer_prior(layer)
-            if prior:
-                sym, prob = prior
-                return Classification(sym, float(prob*0.8),
-                                      f"layer prior: '{layer}' → {sym} (p={prob:.2f})")
+        # 3) layer prior - V8: disabled
+        # if self.learner and layer:
+        #     prior = self.learner.layer_prior(layer)
+        #     if prior:
+        #         sym, prob = prior
+        #         return Classification(sym, float(prob*0.8),
+        #                               f"layer prior: '{layer}' → {sym} (p={prob:.2f})")
         return None
 
     # ── image / embedding ─
@@ -190,8 +191,9 @@ class SymbolClassifier:
         return r
 
     def _calibrate(self, raw: float) -> float:
-        if self.learner:
-            return self.learner.calibrated_confidence(raw)
+        # V8: SelfLearner disabled - return raw confidence
+        # if self.learner:
+        #     return self.learner.calibrated_confidence(raw)
         return raw
 
     def learn_from(self, img_bgr, symbol_name, file_sha, bbox, confidence=1.0):
