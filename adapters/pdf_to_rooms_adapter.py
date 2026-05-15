@@ -252,7 +252,7 @@ class ExtractionReport:
     small_polygons_filtered: int = 0
     large_polygons_filtered: int = 0
     final_room_count: int = 0
-    validation_failures: List[str] = field(default_factory=list)
+    validation_failures: List[dict] = field(default_factory=list)
     discarded_walls_details: List[dict] = field(default_factory=list)
 
 
@@ -462,8 +462,13 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
         is_valid, error_msg = validate_room_polygon(poly, idx)
         
         if not is_valid:
-            report.validation_failures.append(error_msg)
-            logger.warning(error_msg)
+            # تسجيل قسري في التقرير الرسمي - لا سماح بالصمت
+            report.validation_failures.append({
+                "room_index": idx,
+                "reason": error_msg,
+                "coordinates": str(poly.exterior.coords) if poly and hasattr(poly, 'exterior') else "N/A"
+            })
+            logger.warning(f"Room rejected: {error_msg}")
             continue
         
         coords = list(poly.exterior.coords)[:-1]
@@ -482,7 +487,13 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
         depth = max(ys) - min(ys)
         
         if width < 0.5 or depth < 0.5:
-            report.validation_failures.append(f"Room {idx}: dimensions too small ({width:.2f}x{depth:.2f}m)")
+            # تسجيل قسري في التقرير الرسمي - لا سماح بالصمت
+            report.validation_failures.append({
+                "room_index": idx,
+                "reason": f"dimensions too small ({width:.2f}x{depth:.2f}m)",
+                "coordinates": str(poly.exterior.coords) if poly and hasattr(poly, 'exterior') else "N/A"
+            })
+            logger.warning(f"Room rejected: dimensions too small ({width:.2f}x{depth:.2f}m)")
             continue
         
         ceiling_spec = CeilingSpec.create_safe(height_at_low_point_m=3.0)
