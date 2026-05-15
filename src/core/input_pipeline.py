@@ -23,6 +23,7 @@ from parsers import (
     extract_walls_from_pdf,
     extract_symbols_from_pdf,
     extract_dimensions_from_pdf,
+    extract_scale_from_pdf,
     WallElement,
     SymbolElement,
     SymbolType,
@@ -105,9 +106,10 @@ class InputPipeline:
         walls = extract_walls_from_pdf(self.pdf_path)
         symbols = extract_symbols_from_pdf(self.pdf_path)
         dimensions = extract_dimensions_from_pdf(self.pdf_path)
-
+        scale_meters = extract_scale_from_pdf(self.pdf_path)
+        
         # ── المرحلة 3: بناء الغرف ──
-        rooms = self._build_rooms(walls, dimensions)
+        rooms = self._build_rooms(walls, dimensions, scale_meters)
 
         # ── المرحلة 4: بناء الكواشف ──
         detectors = self._build_detectors(symbols, dimensions)
@@ -128,8 +130,10 @@ class InputPipeline:
             self.errors.append("NO_WALLS: Could not extract any walls from drawing")
         if not symbols:
             self.errors.append("NO_SYMBOLS: Could not extract any fire protection symbols")
-        if not dimensions:
-            self.errors.append("NO_DIMENSIONS: Could not extract any dimensions")
+        
+        # Dimensions: accept either extracted dimensions OR scale bar
+        if not dimensions and not scale_meters:
+            self.errors.append("NO_SCALE: Could not extract dimensions or scale from drawing")
 
         message = self._build_message(status, confidence.score, walls, symbols, dimensions)
 
@@ -147,7 +151,7 @@ class InputPipeline:
             errors=self.errors
         )
 
-    def _build_rooms(self, walls: List[WallElement], dims: List[DimensionElement]) -> List[RoomSpec]:
+    def _build_rooms(self, walls: List[WallElement], dims: List[DimensionElement], scale_meters: float = None) -> List[RoomSpec]:
         """بناء RoomSpec من الجدران المستخلصة، مع التحقق من صحة المضلع."""
         rooms = []
         for wall in walls:
@@ -174,9 +178,13 @@ class InputPipeline:
             # حساب المساحة
             area = self._polygon_area(cleaned_points + [cleaned_points[0]])
             
-            # تقدير معامل المقياس
+            # معامل المقياس: أولاً استخدم المقياس المستخرج من الرسم
             scale_factor = 1.0
-            if dims:
+            if scale_meters:
+                # scale_meters = meters per PDF unit
+                scale_factor = scale_meters
+            elif dims:
+                # Fallback: استخرج من الأبعاد
                 wall_width = max(
                     abs(cleaned_points[1][0] - cleaned_points[0][0]) if len(cleaned_points) > 1 else 1.0,
                     0.01

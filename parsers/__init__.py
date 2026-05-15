@@ -47,13 +47,15 @@ try:
     from .dimension_extractor import (
         DimensionExtractor,
         DimensionElement,
-        extract_dimensions_from_pdf
+        extract_dimensions_from_pdf,
+        extract_scale_from_pdf,
     )
 except ImportError:
     from src.core.dimension_extractor import (
         DimensionExtractor,
         DimensionElement,
-        extract_dimensions_from_pdf
+        extract_dimensions_from_pdf,
+        extract_scale_from_pdf,
     )
 
 __all__ = [

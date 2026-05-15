@@ -47,6 +47,18 @@ class DimensionExtractor:
         r'(\d+(?:\.\d+)?)\s*(m|cm|mm|ft|feet|in|inch|\'|")',
         re.IGNORECASE
     )
+    
+    # نمط يطابق scale bar مثل "3/32"=1'-0'" أو "1/4" = 1'-0""
+    SCALE_PATTERN = re.compile(
+        r'(\d+/\d+)\s*[=\"]?\s*=\s*(\d+)\'([-]?\d*)"?\s*(?:=|\')',
+        re.IGNORECASE
+    )
+    
+    # نمط بديل للـ scale
+    SCALE_PATTERN2 = re.compile(
+        r'(\d+/\d+)["\']?\s*=\s*(\d+)[\'-](\d*)',
+        re.IGNORECASE
+    )
 
     # عوامل التحويل إلى متر
     UNIT_TO_M = {
@@ -118,3 +130,51 @@ class DimensionExtractor:
 def extract_dimensions_from_pdf(pdf_path: str, page: int = 0) -> List[DimensionElement]:
     """Extract dimensions from PDF."""
     return DimensionExtractor(pdf_path, page).extract_dimensions()
+
+
+def extract_scale_from_pdf(pdf_path: str, page: int = 0) -> float:
+    """
+    استخراج المقياس من الرسم البياني.
+    
+    Returns:
+        meters_per_pdf_unit: how many real meters equals 1 PDF unit.
+        None if not found.
+        
+    Example:
+        "3/32"=1'-0'" -> 3/32 inch on drawing = 1 foot = 12 inches in reality
+        -> scale = 12 / (3/32) = 128 inches per PDF unit
+        -> 128 * 0.0254 = 3.2512 meters per PDF unit
+    """
+    try:
+        doc = fitz.open(pdf_path)
+        page = doc[page]
+        text = page.get_text("text")
+        
+        # Search for scale patterns like "3/32"=1'-0'" or "1/4" = 1'-0"
+        import re
+        pattern = r'(\d+/\d+)["\']?\s*[=:]\s*(\d+)[\'-]?(\d*)["\']?'
+        for match in re.finditer(pattern, text, re.IGNORECASE):
+            fraction = match.group(1)  # e.g., "3/32"
+            real_feet = int(match.group(2))
+            real_inch = int(match.group(3)) if match.group(3) else 0
+            
+            # Convert to total real inches
+            real_inches_total = real_feet * 12 + real_inch
+            
+            # Parse fraction
+            num, denom = map(float, fraction.split('/'))
+            
+            # Scale: (fraction inches on drawing) = (real_inches_total inches in reality)
+            # => 1 PDF unit = real_inches_total / fraction inches
+            pdf_inches_per_real_inch = real_inches_total / num * denom
+            
+            # Convert to meters
+            meters_per_pdf_inch = pdf_inches_per_real_inch * 0.0254
+            meters_per_pdf_unit = meters_per_pdf_inch  # Assuming 1:1 unit mapping
+            
+            return round(meters_per_pdf_unit, 4)
+        
+        doc.close()
+        return None
+    except Exception:
+        return None
