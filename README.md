@@ -73,6 +73,66 @@ curl http://localhost:8000/healthz && curl http://localhost:8000/api/domains
 # Try the interactive docs
 # Open http://localhost:8000/docs in your browser
 ```
+---
+
+## 🎯 How to Use the Interactive Pipeline (v1.0)
+
+The FireAI pipeline now includes **interactive human review** for complete design automation.
+
+### Running the Pipeline
+
+```bash
+python3 run_full_pipeline.py <path_to_floor_plan.pdf>
+```
+
+### Workflow
+
+1. **Extract rooms** → Unknown types show 0 detectors
+2. **Interactive prompt** → Enter room types:
+   - `office` → SMOKE detectors
+   - `kitchen` → HEAT detectors (SMOKE prohibited)
+   - `server_room` → MULTI-CRITERIA detector
+   - `bedroom`, `bathroom`, `corridor`, `warehouse`, `storage`, `garage`
+   - Press Enter to keep as unknown (no detectors placed)
+3. **Final Report** → Detectors placed based on verified types
+
+### Status Meanings
+
+| Status | Meaning |
+|--------|---------|
+| 🔴 FAILED | Unknown rooms, 0 detectors placed |
+| ✅ COMPLETE | All rooms verified, detectors placed |
+| ⚠️ PARTIAL | Some rooms verified, others unknown |
+
+### Example
+
+```bash
+$ python3 run_full_pipeline.py test_data/hybrid/single_office.pdf
+  room_1 (area: 64.3m²) [suggested]: office
+  room_2 (area: 36.0m²) [suggested]: kitchen
+  room_3 (area: 36.0m²) [suggested]: server_room
+  room_4 (area: 36.0m²) [suggested]: 
+  ...
+
+✅ DESIGN COMPLETE (AFTER HUMAN REVIEW)
+  room_1 → HEAT (3 detectors) ✅
+  room_2 → HEAT (2 detectors) ✅
+  room_3 → MULTI_CRITERIA (4 detectors) ✅
+  room_4 → UNKNOWN (0 detectors) ⚠️
+```
+
+### Output Files
+
+- `_FULL_REPORT.json` - Initial analysis with unknowns
+- `_FINAL_REPORT.json` - Complete design after human review
+
+### Non-Interactive Mode
+
+```bash
+python3 run_full_pipeline.py <file.pdf> --non-interactive
+```
+
+Skips human review loop.
 
 ---
 
