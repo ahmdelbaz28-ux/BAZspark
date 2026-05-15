@@ -111,8 +111,9 @@ class ParserConfidence:
         details = {}
 
         # Scale annotation
-        scale_keywords = ['scale', '1:', '1/8', '1/4', 'meter', 'ft', 'mètre']
-        details["scale_found"] = any(kw in self._text for kw in scale_keywords)
+        scale_keywords = ['scale', 'scale 1:', '1:', '1/8', '1/4', 'meter', 'ft', 'mètre', 
+                    'مقياس', 'drawing scale', '1:100', '1:50', '1:200']
+        details["scale_found"] = any(kw in self._text.lower() for kw in [k.lower() for k in scale_keywords])
         if details["scale_found"]:
             score += 0.3
 
@@ -122,14 +123,23 @@ class ParserConfidence:
         if details["num_layers"] >= 5:
             score += 0.1
 
-        # Legend
-        details["legend_found"] = 'legend' in self._text
+        # Legend - expanded keywords for better detection
+        legend_keywords = ['legend', 'symbol legend', 'abbreviations', 'notes and symbols', 
+                        'مفتاح الرموز', 'key', 'drawing list', 'device schedule']
+        details["legend_found"] = any(kw.lower() in self._text.lower() for kw in legend_keywords)
+        
         if details["legend_found"]:
             score += 0.1
-            nfpa_symbols = ['smoke', 'detector', 'sprinkler', 'heat', 'horn', 'strobe', 'pull', 'nac']
-            details["nfpa_symbols_mentioned"] = [s for s in nfpa_symbols if s in self._text]
-            if details["nfpa_symbols_mentioned"]:
+            # Expand NFPA symbol keywords
+            nfpa_symbols = ['smoke', 'detector', 'sprinkler', 'heat', 'horn', 'strobe', 
+                          'pull', 'nac', 'notification', 'speaker', 'pull station', 'heat detector',
+                          'smoke detector', 'manual pull', 'bell', 'indicator']
+            details["nfpa_symbols_mentioned"] = [s for s in nfpa_symbols if s in self._text.lower()]
+            # More symbols = higher score
+            if len(details["nfpa_symbols_mentioned"]) >= 3:
                 score += 0.1
+            elif details["nfpa_symbols_mentioned"]:
+                score += 0.05
 
         return min(0.6, score), details
 
