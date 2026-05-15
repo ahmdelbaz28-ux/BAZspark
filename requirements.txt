@@ -1,18 +1,47 @@
+# FireAlarm Engine - NFPA 72 Coverage Analysis
+# BETA 1.0 - Lead: AhmedElbaz
+#
+# ⚠️ BETA SOFTWARE - NOT FOR PRODUCTION USE
+# All results require FPE review before use.
+
 ezdxf>=0.18
 shapely>=2.0
 click>=8.0
+networkx>=3.0
+pydantic>=2.0
 
 # PDF Processing
 PyMuPDF>=1.23
 numpy>=1.24
 Pillow>=10.0
+pdf2image>=1.17
+opencv-python-headless>=4.8
+pytesseract>=0.3
 
-# Testing
-pytest>=7.0
+# Testing & QA
+pytest>=7.4
+pytest-cov>=4.1
+pytest-asyncio>=0.21
+hypothesis>=6.88
+faker>=19.0
 
-# Cable Routing Dependencies
-networkx>=3.0
-ezdxf>=0.18
+# BIM & IFC
+ifcopenshell>=0.7
 
-# Validation & Audit
-pydantic>=2.0
+# Validation
+jsonschema>=4.19
+cerberus>=1.3
+
+# Logging & Audit
+structlog>=23.1
+python-json-logger>=2.0
+
+# Science
+scipy>=1.11
+
+# Security
+cryptography>=41.0
+
+# Fallbacks
+tenacity>=8.2
+retrying>=1.3
