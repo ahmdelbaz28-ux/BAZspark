@@ -127,7 +127,9 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
                         bounds = room.polygon.bounds
                         text = page.extract_text(bounds=bounds)
                         
-                        # ONLY trust text that is a KNOWN room name
+                        # Track whether text was found IN polygon bounds
+                        room_has_text_in_bounds = False
+                        
                         if text and len(text.strip()) > 0:
                             text_clean = text.strip().split('\n')[0].lower().strip()
                             # Check if text STARTS with known room name
@@ -135,43 +137,48 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
                             
                             if is_known:
                                 # Text is a known room name - trust it
+                                room_has_text_in_bounds = True
                                 lines = [l.strip() for l in text.split('\n') if l.strip()]
                                 suggested_name = lines[0]
                                 inferred_type = guess_room_type(suggested_name)
                                 print(f"  In-polygon '{room_name}': '{suggested_name}' -> {inferred_type}")
-                            else:
-                                # FALLBACK: Match page-level room to room by area
-                                room_area_sqm = room.area_sqm
-                                for mapped_room, mapped_area in sorted(page_room_map.items(), key=lambda x: abs(x[1] - room_area_sqm)):
-                                    if abs(mapped_area - room_area_sqm) < 2.0:  # Within 2m²
-                                        suggested_name = mapped_room
-                                        inferred_type = guess_room_type(suggested_name)
-                                        print(f"  Page-mapped '{room_name}' ({room_area_sqm:.1f}m²): '{suggested_name}' -> {inferred_type}")
-                                        break
-                                if not inferred_type:
-                                    # Last resort: match by room index in extracted list
-                                    # WRAP AROUND using modulo
-                                    room_idx = list(rooms).index(room)
-                                    area_list = sorted(page_room_map.values())
-                                    if area_list:
-                                        # Use modulo to wrap around
-                                        map_idx = room_idx % len(page_room_map)
-                                        mapped_room = list(page_room_map.keys())[map_idx]
-                                        suggested_name = mapped_room
-                                        inferred_type = guess_room_type(suggested_name)
-                                        print(f"  Wrap-mapped '{room_name}' [{room_idx}%{len(page_room_map)}]: '{suggested_name}' -> {inferred_type}")
+                        if not room_has_text_in_bounds:
+                            # FALLBACK: Match page-level room to room by area
+                            room_area_sqm = room.area_sqm
+                            for mapped_room, mapped_area in sorted(page_room_map.items(), key=lambda x: abs(x[1] - room_area_sqm)):
+                                if abs(mapped_area - room_area_sqm) < 2.0:  # Within 2m²
+                                    suggested_name = mapped_room
+                                    inferred_type = guess_room_type(suggested_name)
+                                    print(f"  Page-mapped '{room_name}' ({room_area_sqm:.1f}m²): '{suggested_name}' -> {inferred_type}")
+                                    break
+                            if not inferred_type:
+                                # Last resort: match by room index in extracted list
+                                # WRAP AROUND using modulo
+                                room_idx = list(rooms).index(room)
+                                area_list = sorted(page_room_map.values())
+                                if area_list:
+                                    # Use modulo to wrap around
+                                    map_idx = room_idx % len(page_room_map)
+                                    mapped_room = list(page_room_map.keys())[map_idx]
+                                    suggested_name = mapped_room
+                                    inferred_type = guess_room_type(suggested_name)
+                                    print(f"  Wrap-mapped '{room_name}' [{room_idx}%{len(page_room_map)}]: '{suggested_name}' -> {inferred_type}")
             except Exception as e:
                 print(f"  Text extraction note: {e}")
         
-        # Determine occupancy type - use inferred type if available
-        # Use "unknown" only when truly unknown (not just auto-named)
-        if inferred_type and inferred_type != "unknown":
+        # Determine occupancy type - only use inferred type if CONFIRMED in bounds
+        # CRITICAL: wrap-around mapping is a GUESS, not verification
+        # We must be HONEST: no text in polygon = unknown
+        if inferred_type and inferred_type != "unknown" and room_has_text_in_bounds:
+            # ONLY mark verified if text was actually inside polygon bounds
             occupancy_type = inferred_type
-            is_verified = True  # Text was found and typed!
+            is_verified = True
         elif is_verified and room.occupancy_type and room.occupancy_type != "unknown":
             occupancy_type = room.occupancy_type
         else:
+            # HONEST: no confirmed type = unknown
             occupancy_type = "unknown"
+            is_verified = False
         
         # Initialize warnings early for large room check
         warnings = []
