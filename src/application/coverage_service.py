@@ -13,7 +13,8 @@ import math
 
 class CoverageService:
 
-    def __init__(self, beams: List[Beam] = None):
+    def __init__(self, standard: str = None, beams: List[Beam] = None):
+        self.standard = standard
         self.beams = beams or []
         self.beam_detector = BeamDetector()
 
@@ -126,14 +127,14 @@ class CoverageService:
             return geom.Polygon(coords)
         raise ValueError("Room has no valid polygon")
 
-    def check_room_coverage(self, room: Room, devices: List[Device] = None) -> List[dict]:
+    def check_room_coverage(self, room: Room, devices: List[Device] = None) -> List[Violation]:
         """Check room coverage - delegates to check_coverage."""
         if devices is None:
             devices = []
         violations = self.check_coverage(room, devices)
-        return [{'type': v.violation_code, 'severity': v.severity.value} for v in violations]
+        return violations
 
-    def check_device_spacing(self, room: Room, devices: List[Device] = None) -> List[dict]:
+    def check_device_spacing(self, room: Room, devices: List[Device] = None) -> List[Violation]:
         """Check device spacing violations."""
         violations = []
         if not devices or len(devices) < 2:
@@ -142,10 +143,10 @@ class CoverageService:
             for d2 in devices[i+1:]:
                 dist = math.sqrt((d1.x - d2.x)**2 + (d1.y - d2.y)**2)
                 if dist < 4.55:
-                    violations.append({
-                        'type': 'spacing',
-                        'device1': d1.id,
-                        'device2': d2.id,
-                        'distance': dist
-                    })
+                    violations.append(Violation(
+                        violation_code="SPACING_VIOLATION",
+                        severity=ViolationSeverity.CRITICAL,
+                        description_template="Devices {d1} and {d2} too close: {dist:.2f}m",
+                        params={"d1": d1.device_id, "d2": d2.device_id, "dist": dist}
+                    ))
         return violations
