@@ -1,8 +1,23 @@
 # FPE Engagement Guide — How to Find and Work with a Fire Protection Engineer
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** 2026-05-15  
 **Purpose:** Guide for finding and engaging an FPE for FireAI review
+
+---
+
+## 0. Research Results — FPE Firms Found
+
+| Company | Website | Notes |
+|---------|---------|-------|
+| Premier Fire Protection Consultants | premierfpc.com | Full NFPA 72 review |
+| Capitol FPE | capitolfpe.com | Design + consulting |
+| Beekman Point Engineering (BPE) | bpe-eng.com | QFPE services |
+| Applied Fire Protection Engineering | afpe.us | 23+ years experience |
+| Michael Baker International | mbakerintl.com | Large firm, nationwide |
+| Alliance Consulting Group | alliance.us.com | Hiring FPEs |
+| TERPconsulting | terpconsulting.com | DoD-compliant |
+| SFPE (Society) | sfpe.org | Professional org |
 
 ---
 
