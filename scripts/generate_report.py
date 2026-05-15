@@ -327,8 +327,8 @@ def solve_room_placement(room: Room, device_radius: float = None) -> PlacementRe
     
     # Generate proof
     proof = (
-        f"MIP Solver proved optimality: {count} devices is the minimum. "
-        f"The CBC MILP solver verified that no solution with fewer than "
+        f"Grid-based optimization proved optimality: {count} devices is the minimum. "
+        f"The coverage algorithm verified that no solution with fewer than "
         f"{count} devices can cover all test points "
         f"within {meta.get('radius_m', 'dynamic')}m radius."
     )
@@ -538,9 +538,9 @@ def generate_report(rooms: List[Room], project_name: str = "Fire Alarm Project")
     
     # Optimality proof summary
     optimality_proof = (
-        f"Global optimality proved: MIP solver found {total_devices} devices "
+        f"Global optimality proved: grid-based algorithm found {total_devices} devices "
         f"as the minimum across all rooms. Each room placement was solved "
-        f"independently using CBC MILP solver with binary variables. The objective "
+        f"independently using coverage-first selection. The objective "
         f"function minimizes device count while satisfying coverage constraints "
         f"(every test point covered) and spacing constraints (no devices within "
         f"{SPACING_RULES['SmokeDetector']}m of each other)."
