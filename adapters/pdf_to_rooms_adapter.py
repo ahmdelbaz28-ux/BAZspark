@@ -236,8 +236,13 @@ def guess_room_type(room_name: str) -> str:
         return "server_room"
     
     # Corridor / Hallway
-    corridor_keywords = ["corridor", "hallway", "hall", "passage", "ممر", " corridor"]
+    corridor_keywords = ["corridor", "hallway", "hall", "passage", "ممر", "lobby"]
     if any(kw in name_lower for kw in corridor_keywords):
+        return "corridor"
+    
+    # Lobby - treat as corridor (transitional space)
+    lobby_keywords = ["lobby", "entrance", "vestibule"]
+    if any(kw in name_lower for kw in lobby_keywords):
         return "corridor"
     
     # Bedroom

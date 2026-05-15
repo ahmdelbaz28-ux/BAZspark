@@ -1,0 +1,213 @@
+{
+  "report_metadata": {
+    "source_file": "test_data/hybrid/two_rooms.pdf",
+    "generated_utc": "2026-05-15T19:26:43.380131Z",
+    "status": "COMPLETE",
+    "requires_pe_review": true,
+    "design_complete": true,
+    "review_reason": null
+  },
+  "rooms": [
+    {
+      "name": "room_1",
+      "area_sqm": 19284.5,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 2143,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_2",
+      "area_sqm": 9642.3,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 1071,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_3",
+      "area_sqm": 64.3,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 7,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_4",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_5",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_6",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_7",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_8",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_9",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_10",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_11",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_12",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    },
+    {
+      "name": "room_13",
+      "area_sqm": 36.0,
+      "occupancy_type": "office",
+      "occupancy_source": "auto_assigned",
+      "occupancy_verified": true,
+      "suggested_name": "FireAI Test - two_rooms",
+      "detector_type": "SMOKE",
+      "detector_count": 4,
+      "coverage_pct": 100.0,
+      "compliant": true,
+      "warnings": [
+        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+      ]
+    }
+  ],
+  "summary": {
+    "total_rooms": 13,
+    "unverified_rooms": 0,
+    "total_detectors": 3261,
+    "compliant": true
+  }
+}

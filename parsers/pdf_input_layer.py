@@ -507,8 +507,9 @@ class PDFInputLayer:
         return rooms
     
     def _extract_room_area(self, text: str, position: int) -> Optional[float]:
-        """Extract room area near position."""
-        window = text[max(0, position-100):position+100]
+        """Extract room area near position - ONLY look AFTER the room name."""
+        # IMPORTANT: Only look AFTER position, not before (we need the area of THIS room)
+        window = text[position:position+200]
         
         # Area patterns: sqft
         area_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sf|sqft)', window)
