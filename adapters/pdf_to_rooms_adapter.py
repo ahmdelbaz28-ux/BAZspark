@@ -29,6 +29,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + "/..")
 from shapely.geometry import LineString, Polygon as ShapelyPolygon
 from shapely.ops import linemerge, polygonize
 
+# Try to import PyMuPDF for text extraction
+try:
+    import fitz
+    HAS_FITZ = True
+except ImportError:
+    HAS_FITZ = False
+    logger.warning("PyMuPDF (fitz) not installed - room name extraction disabled")
+
 from nfpa72_models import RoomSpec, CeilingSpec, CeilingType, DetectorType
 from nfpa72_coverage import check_coverage_polygon
 
@@ -42,6 +50,106 @@ logger = logging.getLogger(__name__)
 GAP_CLOSURE_THRESHOLD = 0.0  # 0 = disabled - prevents opening doors/windows from being closed
 MIN_ROOM_AREA_SQM = 1.0
 MAX_ROOM_AREA_SQM = 200.0
+def extract_text_from_polygon(polygon: ShapelyPolygon, page, scale: float = 1.0) -> str:
+    """
+    Extract text found inside a polygon bounds from PDF page.
+    
+    Args:
+        polygon: Shapely polygon defining room boundary
+        page: PyMuPDF page object
+        scale: Coordinate scale factor (PDF to model units)
+    
+    Returns:
+        str: Best text found inside polygon, or empty string if none found
+    """
+    if not HAS_FITZ or polygon is None or page is None:
+        return ""
+    
+    try:
+        # Get polygon bounds
+        min_x, min_y, max_x, max_y = polygon.bounds
+        
+        # Convert to PDF coordinates (flip Y axis)
+        pdf_min_y = page.rect.height - max_y / scale
+        pdf_max_y = page.rect.height - min_y / scale
+        pdf_min_x = min_x / scale
+        pdf_max_x = max_x / scale
+        
+        # Check each text block
+        text_candidates = []
+        for block in page.get_text("blocks"):
+            if len(block) >= 5:
+                # block = [x0, y0, x1, y1, text, ...]
+                bx0, by0, bx1, by1 = block[0], block[1], block[2], block[3]
+                text = block[4].strip()
+                
+                if not text:
+                    continue
+                
+                # Check if text is within polygon bounds
+                # Allow some margin
+                margin = 0.1
+                if (pdf_min_x - margin <= bx0 and bx1 <= pdf_max_x + margin and
+                    pdf_min_y - margin <= by0 and by1 <= pdf_max_y + margin):
+                    # Calculate center distance to prefer center text
+                    center_x = (bx0 + bx1) / 2
+                    center_y = (by0 + by1) / 2
+                    poly_center_x = (pdf_min_x + pdf_max_x) / 2
+                    poly_center_y = (pdf_min_y + pdf_max_y) / 2
+                    dist = ((center_x - poly_center_x)**2 + (center_y - poly_center_y)**2)**0.5
+                    
+                    # Score: prefer larger text, closer to center
+                    score = len(text) / (1.0 + dist * 0.1)
+                    text_candidates.append((score, text))
+        
+        if text_candidates:
+            # Return highest scoring text
+            text_candidates.sort(reverse=True, key=lambda x: x[0])
+            return text_candidates[0][1]
+        
+        return ""
+        
+    except Exception as e:
+        logger.debug(f"Text extraction failed: {e}")
+        return ""
+
+
+def extract_rooms_from_pdf(pdf_path: str) -> Tuple[List[ShapelyPolygon], any]:
+    """
+    Extract room polygons directly from PDF with text extraction.
+    
+    Args:
+        pdf_path: Path to PDF file
+    
+    Returns:
+        Tuple of (polygons, pdf_page) for room extraction
+    """
+    if not HAS_FITZ:
+        return [], None
+    
+    try:
+        doc = fitz.open(pdf_path)
+        page = doc[0]  # First page
+        
+        # Reuse existing wall extraction logic
+        from parsers.geometry_extractor import GeometryExtractor
+        extractor = GeometryExtractor(pdf_path)
+        walls = extractor.extract_walls()
+        
+        polygons, report = extract_rooms_from_walls(walls)
+        
+        # Extract text for each room
+        for poly in polygons:
+            text = extract_text_from_polygon(poly, page)
+            if text:
+                logger.info(f"Found room text: '{text}'")
+        
+        doc.close()
+        return polygons, page
+        
+    except Exception as e:
+        logger.warning(f"PDF text extraction failed: {e}")
+        return [], None
 
 
 def select_safe_detector_type(room_name: str, room_type_guess: str = "office") -> DetectorType:
@@ -383,12 +491,28 @@ def close_gaps_in_lines(lines: List[LineString], threshold: float = GAP_CLOSURE_
     return modified_lines, gaps_closed
 
 
-def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tuple[List[RoomSpec], ExtractionReport]:
+def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True, pdf_path: str = None) -> Tuple[List[RoomSpec], ExtractionReport]:
     """
     Convert WallElement objects to RoomSpec objects.
     Robust version with gap closing, validation, and boundary filtering.
+    
+    Args:
+        walls: List of WallElement objects
+        enable_gap_closing: Enable gap closing (default False)
+        pdf_path: Optional PDF path for text extraction
     """
     report = ExtractionReport(walls_input=len(walls) if walls else 0)
+    pdf_page = None
+    text_found = False
+    
+    # Open PDF for text extraction if available
+    if pdf_path and HAS_FITZ:
+        try:
+            doc = fitz.open(pdf_path)
+            pdf_page = doc[0]
+            logger.info(f"Opened PDF for text extraction: {pdf_path}")
+        except Exception as e:
+            logger.warning(f"Could not open PDF: {e}")
     
     if not walls or len(walls) < 2:
         return [], report
@@ -501,20 +625,41 @@ def extract_rooms_from_walls(walls: List, enable_gap_closing: bool = True) -> Tu
         
         ceiling_spec = CeilingSpec.create_safe(height_at_low_point_m=3.0)
         
+        # Try to extract room name from PDF text
+        room_label = None
+        if pdf_page:
+            room_label = extract_text_from_polygon(poly, pdf_page)
+            if room_label:
+                text_found = True
+                logger.info(f"Room {idx}: extracted name '{room_label}'")
+        
+        # Use extracted name or fallback to generic
+        if not room_label:
+            room_label = f"room_{idx + 1}"
+        
         room = RoomSpec(
-            name=f"room_{idx + 1}",
+            name=room_label,
             width_m=width,
             depth_m=depth,
             height_m=ceiling_spec.height_at_low_point_m,
             polygon=ShapelyPolygon(normalized_coords),
             ceiling_spec=ceiling_spec,
-            occupancy_type=guess_room_type(f"room_{idx + 1}")
+            occupancy_type=guess_room_type(room_label)
         )
         rooms.append(room)
     
     report.rooms_created = len(rooms)
     report.final_room_count = len(rooms)
     logger.info(f"Extraction complete: {report.rooms_created} rooms from {report.walls_input} walls")
+    
+    # WARNING if no text was found - PE review mandatory
+    if pdf_path and not text_found:
+        logger.warning("NO TEXT FOUND IN ROOMS - DEFAULTING TO OFFICE/SMOKE. PE REVIEW MANDATORY.")
+        report.validation_failures.append({
+            "room_index": -1,
+            "reason": "NO_TEXT_FOUND_IN_PDF - PE_REVIEW_MANDATORY",
+            "coordinates": "N/A"
+        })
     
     return rooms, report
 
