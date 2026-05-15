@@ -1,5 +1,14 @@
-FireAlarm Engine Pipeline
-====================
+FireAlarm Engine - NFPA 72 Coverage Analysis
+==========================================
+
+**Version**: 1.0-BETA (2026-05-15)
+**Lead Engineer**: AhmedElbaz
+**Status**: BETA - NOT FOR PRODUCTION USE
+
+## ⚠️ SAFETY NOTICE
+
+This software is BETA and requires FPE review before any use.
+See LICENSE file for full terms.
 
 📁 revit/
 ├── 📁 parsers/                    # PDF/DXF/DWG extraction
