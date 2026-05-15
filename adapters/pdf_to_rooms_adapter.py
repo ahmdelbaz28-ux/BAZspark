@@ -195,7 +195,20 @@ def select_safe_detector_type(room_name: str, room_type_guess: str = "office") -
         logger.info(f"Room '{room_name}' ({room_type_guess}): Using HEAT detector (warehouse)")
         return DetectorType.HEAT_RATE_OF_RISE
     
-    # 5. OFFICES / ADMINISTRATIVE AREAS (USE SMOKE DETECTORS)
+    # 5. LARGE OPEN SPACES (ATRIUMS, LOBBIES) - Require special consideration
+    large_space_keywords = ['atrium', 'lobby', 'hall', 'grande', 'galleria', 'showroom']
+    if any(kw in search_text for kw in large_space_keywords):
+        logger.warning(f"Room '{room_name}' ({room_type_guess}): LARGE SPACE - Verify detector type suitability")
+        logger.info(f"Room '{room_name}' ({room_type_guess}): Using SMOKE detector (large space - verify suitability)")
+        return DetectorType.SMOKE
+    
+    # 6. CORRIDORS / TRANSITIONAL SPACES
+    corridor_keywords = ['corridor', 'hallway', 'hall', 'passage', 'ممر', 'lobby', 'entrance']
+    if any(kw in search_text for kw in corridor_keywords):
+        logger.info(f"Room '{room_name}' ({room_type_guess}): Using SMOKE detector (corridor/transitional)")
+        return DetectorType.SMOKE
+    
+    # 7. OFFICES / ADMINISTRATIVE AREAS (USE SMOKE DETECTORS)
     # Smoke detectors are appropriate for offices - smoke appears before heat
     office_keywords = ['office', 'admin', 'administrative', 'desk', 'workroom', 'conference', 'meeting']
     if any(kw in search_text for kw in office_keywords):

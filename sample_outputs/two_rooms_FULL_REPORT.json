@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "source_file": "test_data/hybrid/two_rooms.pdf",
-    "generated_utc": "2026-05-15T20:52:31.350154Z",
+    "generated_utc": "2026-05-15T20:55:22.413201Z",
     "status": "FAILED",
     "requires_pe_review": true,
     "design_complete": false,
@@ -13,13 +13,15 @@
       "area_sqm": 19284.5,
       "occupancy_type": "atrium",
       "source": "manual",
-      "detector_type": "HEAT",
-      "detector_count": 964,
+      "detector_type": "SMOKE",
+      "detector_count": 2143,
       "coverage_pct": 100.0,
       "is_flagged": true,
       "compliant": true,
       "warnings": [
-        "⚠️ Large known room (19284.5m²) - verify coverage meets NFPA 72 §17.6.3.1."
+        "⚠️ Large known room (19284.5m²) - verify coverage meets NFPA 72 §17.6.3.1.",
+        "⚠️ LARGE OPEN SPACE (atrium) - Engineer review REQUIRED",
+        "   Standard detectors may be unsuitable per NFPA 72"
       ]
     },
     {
@@ -27,8 +29,8 @@
       "area_sqm": 9642.3,
       "occupancy_type": "corridor",
       "source": "manual",
-      "detector_type": "HEAT",
-      "detector_count": 482,
+      "detector_type": "SMOKE",
+      "detector_count": 1071,
       "coverage_pct": 100.0,
       "is_flagged": true,
       "compliant": true,
@@ -44,7 +46,7 @@
       "detector_type": "HEAT_FIXED_TEMP",
       "detector_count": 3,
       "coverage_pct": 100.0,
-      "is_flagged": false,
+      "is_flagged": true,
       "compliant": true,
       "warnings": [
         "Kitchen detected - SMOKE detectors prohibited per NFPA 72 §17.6.4"
@@ -58,7 +60,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
-      "is_flagged": false,
+      "is_flagged": true,
       "compliant": true,
       "warnings": []
     },
@@ -70,7 +72,7 @@
       "detector_type": "HEAT_RATE_OF_RISE",
       "detector_count": 2,
       "coverage_pct": 100.0,
-      "is_flagged": false,
+      "is_flagged": true,
       "compliant": true,
       "warnings": []
     },
@@ -82,7 +84,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
-      "is_flagged": false,
+      "is_flagged": true,
       "compliant": true,
       "warnings": []
     },
@@ -94,7 +96,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
-      "is_flagged": false,
+      "is_flagged": true,
       "compliant": true,
       "warnings": []
     },
@@ -106,7 +108,7 @@
       "detector_type": "HEAT_RATE_OF_RISE",
       "detector_count": 2,
       "coverage_pct": 100.0,
-      "is_flagged": false,
+      "is_flagged": true,
       "compliant": true,
       "warnings": []
     },
@@ -189,7 +191,7 @@
   "summary": {
     "total_rooms": 13,
     "unverified_rooms": 5,
-    "total_detectors": 1459,
+    "total_detectors": 3227,
     "compliant": false
   }
 }

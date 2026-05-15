@@ -146,7 +146,14 @@ def run_pipeline(pdf_path: str, output_path: str = None, manual_room_types: dict
             if area_sqm > LARGE_ROOM_THRESHOLD_SQM:
                 is_flagged = True
                 warnings.append(f"⚠️ Large known room ({area_sqm:.1f}m²) - verify coverage meets NFPA 72 §17.6.3.1.")
-            else:
+            
+            # CRITICAL: Flag atrium-type rooms for special review
+            if occupancy_type in ["atrium", "lobby", "hall", "grande"]:
+                is_flagged = True
+                warnings.append(f"⚠️ LARGE OPEN SPACE ({occupancy_type}) - Engineer review REQUIRED")
+                warnings.append("   Standard detectors may be unsuitable per NFPA 72")
+            
+            if not is_flagged:
                 is_flagged = False
         elif room.is_flagged:
             # Flagged outlier from adapter - require manual review
