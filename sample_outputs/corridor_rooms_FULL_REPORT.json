@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "source_file": "test_data/hybrid/corridor_rooms.pdf",
-    "generated_utc": "2026-05-15T19:46:35.128861Z",
+    "generated_utc": "2026-05-15T20:01:16.026657Z",
     "status": "COMPLETE",
     "requires_pe_review": true,
     "design_complete": true,
@@ -15,11 +15,13 @@
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
       "suggested_name": "office",
-      "detector_type": "SMOKE",
-      "detector_count": 2678,
-      "coverage_pct": 100.0,
+      "detector_type": "REVIEW_REQUIRED",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
       "compliant": true,
       "warnings": [
+        "⚠️ Large room (24105.6m² > 500.0m²) - MANUAL REVIEW REQUIRED",
         "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
@@ -30,11 +32,13 @@
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
       "suggested_name": "lobby",
-      "detector_type": "HEAT",
-      "detector_count": 1004,
-      "coverage_pct": 100.0,
+      "detector_type": "REVIEW_REQUIRED",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
       "compliant": true,
       "warnings": [
+        "⚠️ Large room (20088.0m² > 500.0m²) - MANUAL REVIEW REQUIRED",
         "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
       ]
     },
@@ -45,11 +49,13 @@
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
       "suggested_name": "corridor",
-      "detector_type": "HEAT",
-      "detector_count": 482,
-      "coverage_pct": 100.0,
+      "detector_type": "REVIEW_REQUIRED",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
       "compliant": true,
       "warnings": [
+        "⚠️ Large room (9642.3m² > 500.0m²) - MANUAL REVIEW REQUIRED",
         "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
       ]
     },
@@ -63,6 +69,7 @@
       "detector_type": "SMOKE",
       "detector_count": 7,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
@@ -78,6 +85,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
@@ -93,6 +101,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
@@ -108,6 +117,7 @@
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
@@ -123,6 +133,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
@@ -138,6 +149,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
@@ -153,6 +165,7 @@
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
@@ -168,6 +181,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
@@ -183,6 +197,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
@@ -198,6 +213,7 @@
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
@@ -213,6 +229,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
@@ -228,6 +245,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
@@ -243,6 +261,7 @@
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
@@ -258,6 +277,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'lobby'. Verify before relying."
@@ -273,6 +293,7 @@
       "detector_type": "HEAT",
       "detector_count": 2,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'corridor'. Verify before relying."
@@ -288,6 +309,7 @@
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
         "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
@@ -297,7 +319,7 @@
   "summary": {
     "total_rooms": 19,
     "unverified_rooms": 0,
-    "total_detectors": 4211,
+    "total_detectors": 47,
     "compliant": true
   }
 }

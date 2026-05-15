@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "source_file": "test_data/hybrid/two_rooms.pdf",
-    "generated_utc": "2026-05-15T19:57:41.108227Z",
+    "generated_utc": "2026-05-15T20:03:37.280638Z",
     "status": "COMPLETE",
     "requires_pe_review": true,
     "design_complete": true,
@@ -15,13 +15,13 @@
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
       "suggested_name": "office",
-      "detector_type": "REVIEW_REQUIRED",
-      "detector_count": 0,
-      "coverage_pct": 0.0,
+      "detector_type": "SMOKE",
+      "detector_count": 2143,
+      "coverage_pct": 100.0,
       "is_flagged": true,
       "compliant": true,
       "warnings": [
-        "⚠️ Large room (19284.5m² > 500.0m²) - MANUAL REVIEW REQUIRED",
+        "⚠️ Large known room (19284.5m²) - verify coverage meets NFPA 72 §17.6.3.1.",
         "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
@@ -32,13 +32,13 @@
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
       "suggested_name": "meeting",
-      "detector_type": "REVIEW_REQUIRED",
-      "detector_count": 0,
-      "coverage_pct": 0.0,
+      "detector_type": "SMOKE",
+      "detector_count": 1071,
+      "coverage_pct": 100.0,
       "is_flagged": true,
       "compliant": true,
       "warnings": [
-        "⚠️ Large room (9642.3m² > 500.0m²) - MANUAL REVIEW REQUIRED",
+        "⚠️ Large known room (9642.3m²) - verify coverage meets NFPA 72 §17.6.3.1.",
         "⚠️ Suggested room name from PDF: 'meeting'. Verify before relying."
       ]
     },
@@ -222,7 +222,7 @@
   "summary": {
     "total_rooms": 13,
     "unverified_rooms": 0,
-    "total_detectors": 47,
+    "total_detectors": 3261,
     "compliant": true
   }
 }
