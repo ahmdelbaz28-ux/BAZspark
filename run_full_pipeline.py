@@ -22,7 +22,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from parsers.geometry_extractor import GeometryExtractor
-from adapters.pdf_to_rooms_adapter import extract_rooms_from_walls, guess_room_type, select_safe_detector_type
+from adapters.pdf_to_rooms_adapter import extract_rooms_from_walls, select_safe_detector_type
 
 
 def run_pipeline(pdf_path: str, output_path: str = None, manual_room_types: dict = None) -> dict:
@@ -62,7 +62,7 @@ def run_pipeline(pdf_path: str, output_path: str = None, manual_room_types: dict
     total_detectors = 0
     
     # Try to extract text using pdfplumber for suggestions
-    suggested_names = {}
+    # No suggested names - manual input only
     text_extractor_available = False
     
     try:
@@ -92,85 +92,27 @@ def run_pipeline(pdf_path: str, output_path: str = None, manual_room_types: dict
             source = "unverified"
         
         # Skip auto-detection if manual types provided
-        # Level 2 only runs for rooms without manual input
-        suggested_name = None
-        inferred_type = None
+        # Skip text extraction if manual types provided - NO auto-detection for unverified rooms
+        # HONESTY ONLY: text must be IN polygon bounds to be trusted
         if room_name in manual_room_types:
-            # Manual type already set - skip text extraction
-            pass
+            pass  # Manual already set above
         elif text_extractor_available and pdf_path:
             try:
-                # MAP PAGE-LEVEL ROOM NAMES to room polygons
-                # First: extract all room names and areas from page text
-                page_room_map = {}  # {room_name: area}
-                
-                with pdfplumber.open(pdf_path) as pdf:
-                    page = pdf.pages[0]
-                    full_text = page.extract_text() or ""
-                    
-                    # Parse room names and areas from page text
-                    # NOTE: In this PDF format, rooms are listed IN ORDER with area BEFORE each room
-                    import re
-                    known_rooms = ['corridor', 'lobby', 'office', 'kitchen', 'meeting', 'bathroom', 'bedroom']
-                    lines_list = full_text.split('\n')
-                    
-                    # Find sequence: "Area: Xm²" followed by room name
-                    for i, line in enumerate(lines_list):
-                        line_lower = line.lower().strip()
-                        
-                        # Check if line is a known room name
-                        room_type = None
-                        for known in known_rooms:
-                            if known == line_lower:  # EXACT match
-                                room_type = known
-                                break
-                        
-                        if room_type:
-                            # Look for the area IMMEDIATELY before this line
-                            if i > 0:
-                                prev_line = lines_list[i-1]
-                                area_match = re.search(r'Area:\s*([\d.]+)m', prev_line)
-                                if area_match:
-                                    area_val = float(area_match.group(1))
-                                    page_room_map[room_type] = area_val
-                    
-                    # Now try text extraction inside each polygon
-                    if room.polygon:
-                        bounds = room.polygon.bounds
+                # ONLY extract text INSIDE polygon bounds
+                if room.polygon:
+                    bounds = room.polygon.bounds
+                    with pdfplumber.open(pdf_path) as pdf:
+                        page = pdf.pages[0]
                         text = page.extract_text(bounds=bounds)
-                        
-                        # Track whether text was found IN polygon bounds
-                        room_has_text_in_bounds = False
                         
                         if text and len(text.strip()) > 0:
                             text_clean = text.strip().split('\n')[0].lower().strip()
-                            # Check if text STARTS with known room name
-                            is_known = any(text_clean.startswith(known) for known in known_rooms)
-                            
-                            if is_known:
-                                # Text is a known room name - trust it
-                                room_has_text_in_bounds = True
-                                lines = [l.strip() for l in text.split('\n') if l.strip()]
-                                suggested_name = lines[0]
-                                inferred_type = guess_room_type(suggested_name)
-                                print(f"  In-polygon '{room_name}': '{suggested_name}' -> {inferred_type}")
-                        # If no text in bounds, leave as unknown - NO auto-detection
+                            # Accept only exact matches in polygon bounds
+                            known_rooms = ['corridor', 'lobby', 'office', 'kitchen', 'meeting', 'bathroom', 'bedroom']
+                            if any(text_clean == known for known in known_rooms):
+                                pass  # Text found in bounds - currently not used
             except Exception as e:
-                print(f"  Text extraction note: {e}")
-        
-        # Determine occupancy type - only use inferred type if CONFIRMED in bounds
-        # CRITICAL: wrap-around mapping is a GUESS, not verification
-        # We must be HONEST: no text in polygon = unknown
-        if inferred_type and inferred_type != "unknown" and room_has_text_in_bounds:
-            # ONLY mark verified if text was actually inside polygon bounds
-            occupancy_type = inferred_type
-            is_verified = True
-        elif is_verified and room.occupancy_type and room.occupancy_type != "unknown":
-            occupancy_type = room.occupancy_type
-        else:
-            # HONEST: no confirmed type = unknown
-            occupancy_type = "unknown"
-            is_verified = False
+                pass  # Silently ignore extraction errors
         
         # Initialize warnings early for large room check
         warnings = []
@@ -224,17 +166,11 @@ def run_pipeline(pdf_path: str, output_path: str = None, manual_room_types: dict
         total_detectors += detector_count  # Simplified
         
         # Add standard warnings
-        if not is_verified:
-            warnings.append("MANUAL TYPE REQUIRED - NO DETECTORS PLACED")
-        
-        if suggested_name:
-            warnings.append(f"⚠️ Suggested room name from PDF: '{suggested_name}'. Verify before relying.")
+        if occupancy_type == "unknown":
+            warnings.append("🔴 MANUAL REVIEW REQUIRED - Design incomplete")
         
         if occupancy_type == "kitchen":
             warnings.append("Kitchen detected - SMOKE detectors prohibited per NFPA 72 §17.6.4")
-        
-        if occupancy_type == "unknown":
-            warnings.append("🔴 MANUAL REVIEW REQUIRED - Design incomplete")
         
         room_results.append({
             "name": room_name,
@@ -330,7 +266,7 @@ def print_terminal_report(report: dict):
     print("─" * 45)
     
     if summary["unverified_rooms"] > 0:
-        print(f"⚠️ WARNING: {summary['unverified_rooms']} rooms have auto-assigned types.")
+        print(f"⚠️ WARNING: {summary['unverified_rooms']} rooms require manual type input.")
         print("   Verify usage before ordering equipment.")
     
     print("=" * 45)
@@ -389,9 +325,8 @@ def main():
         for room in report["rooms"]:
             if room["occupancy_type"] == "unknown":
                 room_name = room["name"]
-                current_type = room.get("suggested_name", "unknown")
                 
-                prompt = f"  {room_name} (area: {room['area_sqm']}m²) [{current_type}]: "
+                prompt = f"  {room_name} (area: {room['area_sqm']}m²) [type required]: "
                 user_input = input(prompt).strip().lower()
                 
                 if user_input:
