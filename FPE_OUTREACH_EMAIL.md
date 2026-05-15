@@ -1,8 +1,8 @@
-# FPE Outreach Email - Fire Alarm Software Review
+# 🔥 READY TO SEND - FPE Outreach Email
 
 ---
 
-**Subject**: NFPA 72 Software Review Contract — 14 Days
+**Subject**: URGENT: Fire Alarm Software FPE Review — $3,000 — 14 Days
 
 ---
 
@@ -10,38 +10,48 @@
 
 Hi,
 
-I'm looking for a licensed Fire Protection Engineer (FPE) to review our fire alarm coverage calculation software (NFPA 72-2022).
+I'm **[YOUR NAME]**, founder of **FireAI** — an NFPA 72 fire alarm coverage calculation tool.
 
-**What's needed:**
-- Execute our FPE Protocol (~2 hours)
-- Run 103 automated tests
-- Code review (line-by-line)
-- Sign off: PASS / CONDITIONAL / REJECT
+We're at **beta stage** with:
+- 103 automated tests passing (0 failures)
+- 0 skips
+- Full NFPA 72 Table 17.6.3.1 implementation
 
-**Timeline:** 14 days max
+**Need:** Licensed FPE to review our protocol and sign off.
 
-**Deliverable:** Signed PDF + digital signature
+**Timeline:** 14 days max from start
 
-**Protocol link:** https://github.com/ahmdelbaz28-ux/revit/blob/fix/nfpa72-coverage-v8/FPE_REVIEW_CHECKLIST.md
+**Budget:** $3,000 fixed fee
 
-**PR link:** https://github.com/ahmdelbaz28-ux/revit/pull/29
+**What FPE gets:**
+- Our FPE Review Protocol (executable commands)
+- Code review access (GitHub)
+- Signed PDF deliverable
 
-**Budget:** $[YOUR_BUDGET]
+**Links:**
+- Protocol: https://github.com/ahmdelbaz28-ux/revit/blob/fix/nfpa72-coverage-v8/FPE_REVIEW_CHECKLIST.md
+- PR: https://github.com/ahmdelbaz28-ux/revit/pull/29
 
-Requirements:
-- PE license number
-- NFPA 72 experience
-- Fire alarm calculation background
-
-Interested? Reply with:
-1. Your PE license #
-2. Your daily rate
-3. Available start date
+Reply with:
+1. Your PE license number
+2. Available start date
 
 Best,
-[Your Name]
-[Your Phone]
-[Your Email]
+**[YOUR NAME]**
+[YOUR EMAIL]
+[YOUR PHONE]
+
+---
+
+## 📋 Fill This BEFORE Sending:
+
+| Field | Your Answer |
+|-------|------------|
+| YOUR NAME | __________ |
+| YOUR EMAIL | __________ |
+| YOUR PHONE | __________ |
+| Budget | $3,000 (negotiable) |
+| Deadline | __________ |
 
 ---
 
