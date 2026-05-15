@@ -141,6 +141,88 @@ def guess_room_type(room_name: str) -> str:
     return "office"
 
 
+def validate_and_guess_type_detailed(
+    room_name: str,
+    polygon: ShapelyPolygon,
+    has_windows: bool = True,
+    adjacent_rooms: list = None
+) -> dict:
+    """
+    Contextual validation - detect contradictions between name and physical properties.
+    
+    This implements the "Reasonable Doubt Policy":
+    - If name contradicts physical properties, flag for MANUAL_REVIEW
+    - Default to fail-safe (HEAT) when uncertain
+    
+    Args:
+        room_name: Name from PDF or guessed
+        polygon: Room geometry
+        has_windows: Does room have windows (from PDF analysis)
+        adjacent_rooms: List of adjacent room names
+    
+    Returns:
+        dict with: detector_type, requires_review, warnings, confidence
+    """
+    name_lower = room_name.lower() if room_name else ""
+    area_sqm = polygon.area
+    adjacent = [r.lower() for r in (adjacent_rooms or [])]
+    
+    warnings = []
+    requires_review = False
+    
+    # Get base type from name
+    base_type = guess_room_type(room_name)
+    
+    # ====== CONTEXTUAL CHECKS ======
+    
+    # Check 1: Server room size (should be < 50 sqm typically)
+    if "server" in name_lower and area_sqm > 50:
+        warnings.append(f"Large server room ({area_sqm:.0f} sqm) - atypical")
+        requires_review = True
+    
+    # Check 2: Office without windows (atypical)
+    if "office" in name_lower and not has_windows:
+        warnings.append("Office without windows - possibly storage/electrical")
+        requires_review = True
+    
+    # Check 3: Bedroom near wet areas
+    if "bedroom" in name_lower or "bed" in name_lower:
+        has_nearby_wet = any(wet in adjacent for wet in ["bath", "kitchen", "toilet", "wc"])
+        if has_nearby_wet:
+            warnings.append("Bedroom adjacent to wet area - verify occupancy")
+            requires_review = True
+    
+    # Check 4: Large storage (>= 50 sqm needs review - warehouses are typically open plan)
+    if "storage" in name_lower and area_sqm >= 50:
+        warnings.append(f"Large storage ({area_sqm:.0f} sqm) - verify purpose")
+        requires_review = True
+    
+    # Check 5: Kitchen named "Office" near water
+    if "office" in name_lower and any(wet in adjacent for wet in ["kitchen", "pantry"]):
+        warnings.append("Office adjacent to kitchen - verify no cooking")
+        requires_review = True
+    
+    # ====== DETERMINE DETECTOR TYPE ======
+    
+    if requires_review:
+        # When uncertain: FAIL-SAFE default to HEAT
+        detector_type = "heat_fixed_temp"  # Fail-safe
+        confidence = "LOW"
+    else:
+        # Use normal mapping
+        detector_type = select_safe_detector_type(room_name).value
+        confidence = "HIGH"
+    
+    return {
+        "detector_type": detector_type,
+        "requires_review": requires_review,
+        "warnings": warnings,
+        "confidence": confidence,
+        "base_occupancy": base_type,
+        "area_sqm": area_sqm
+    }
+
+
 @dataclass
 class ExtractionReport:
     """Report containing detailed extraction statistics."""
