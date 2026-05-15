@@ -502,9 +502,10 @@ def get_smoke_detector_radius_safe(
     # Get radius using internal function
     try:
         radius = _get_radius_internal(safe_height)
-    except:
+    except Exception as e:
         radius = _get_radius_internal(3.0)  # Fallback
         flag = "FALLBACK: Used 3.0m values"
+        logger.warning(f"Radius lookup failed for {safe_height}m: {e}")
     details = {
         "input_height": actual_height,
         "effective_height": safe_height,
@@ -543,7 +544,7 @@ def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_detail
         flag = "HIGH_CEILING"
     try:
         max_cov = _get_max_internal(safe_h)
-    except:
+    except Exception as e:
         max_cov = _get_max_internal(3.0)
         flag = "FALLBACK"
     details = {

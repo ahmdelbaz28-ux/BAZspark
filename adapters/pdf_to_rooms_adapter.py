@@ -127,8 +127,8 @@ def validate_room_polygon(poly, index: int) -> Tuple[bool, str]:
             poly = poly.buffer(0)
             if not poly.is_valid:
                 return False, f"Room {index}: Invalid polygon (cannot be fixed)"
-        except:
-            return False, f"Room {index}: Invalid polygon"
+        except Exception as e:
+            return False, f"Room {index}: Invalid polygon ({e})"
     
     # Check for zero-length sides
     coords = list(poly.exterior.coords)
