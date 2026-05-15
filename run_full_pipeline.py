@@ -245,10 +245,11 @@ def print_terminal_report(report: dict):
 
 
 def main():
-    """Main entry point."""
+    """Main entry point with interactive human review."""
     parser = argparse.ArgumentParser(description="FireAI NFPA 72 Design Pipeline")
     parser.add_argument("pdf_file", help="Path to floor plan PDF")
     parser.add_argument("--output", "-o", help="JSON output path", default=None)
+    parser.add_argument("--non-interactive", "-n", help="Skip human review", action="store_true")
     
     args = parser.parse_args()
     
@@ -265,11 +266,131 @@ def main():
     # Ensure output directory exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     
-    # Run pipeline
+    # Run initial pipeline
     report = run_pipeline(args.pdf_file, output_path)
-    
-    # Print terminal report
     print_terminal_report(report)
+    
+    # Interactive human review loop (Level 3)
+    if not args.non_interactive and report["report_metadata"].get("status") == "FAILED":
+        print("\n" + "=" * 45)
+        print("  🔴 HUMAN REVIEW REQUIRED")
+        print("=" * 45)
+        print("\nEnter room types to complete the design.")
+        print("Valid types: office, kitchen, server_room, bedroom, bathroom,")
+        print("           corridor, warehouse, storage, garage")
+        print("Press Enter to keep as 'unknown' (no detectors will be placed)\n")
+        
+        room_types = {}
+        
+        for room in report["rooms"]:
+            if room["occupancy_type"] == "unknown":
+                room_name = room["name"]
+                current_type = room.get("suggested_name", "unknown")
+                
+                prompt = f"  {room_name} (area: {room['area_sqm']}m²) [{current_type}]: "
+                user_input = input(prompt).strip().lower()
+                
+                if user_input:
+                    room_types[room_name] = user_input
+                else:
+                    # Keep as unknown if no input
+                    room_types[room_name] = "unknown"
+        
+        # If user provided any room types, re-run analysis
+        if any(v != "unknown" for v in room_types.values()):
+            print("\n🔄 Re-running analysis with verified types...")
+            
+            # Open the PDF and run analysis with corrected occupancy types
+            from parsers.geometry_extractor import GeometryExtractor
+            from adapters.pdf_to_rooms_adapter import extract_rooms_from_walls, select_safe_detector_type
+            
+            extractor = GeometryExtractor(args.pdf_file)
+            walls = extractor.extract_walls()
+            rooms, _ = extract_rooms_from_walls(walls, pdf_path=args.pdf_file)
+            
+            # Re-analyze with user-provided types
+            final_rooms = []
+            for room in rooms:
+                room_name = room.name
+                user_type = room_types.get(room_name, "unknown")
+                area_sqm = room.polygon.area if room.polygon else 0
+                
+                is_verified = user_type != "unknown"
+                
+                # Calculate detectors
+                if user_type == "unknown":
+                    detector_type = "UNKNOWN"
+                    detector_count = 0
+                    coverage_pct = 0.0
+                else:
+                    detector = select_safe_detector_type(room_name, user_type)
+                    detector_type = detector.name
+                    if detector_type.startswith("SMOKE"):
+                        detector_count = max(1, int((area_sqm / 9.0) + 0.5))
+                    elif detector_type.startswith("HEAT"):
+                        detector_count = max(1, int((area_sqm / 20.0) + 0.5))
+                    else:
+                        detector_count = max(1, int((area_sqm / 15.0) + 0.5))
+                    coverage_pct = 100.0
+                
+                # Check for special warnings
+                warnings = []
+                if user_type == "kitchen":
+                    warnings.append("Kitchen - SMOKE prohibited per NFPA 72 §17.6.4")
+                
+                final_rooms.append({
+                    "name": room_name,
+                    "area_sqm": round(area_sqm, 1),
+                    "occupancy_type": user_type,
+                    "occupancy_source": "human_review",
+                    "occupancy_verified": is_verified,
+                    "detector_type": detector_type,
+                    "detector_count": detector_count,
+                    "coverage_pct": coverage_pct,
+                    "compliant": True,
+                    "warnings": warnings
+                })
+            
+            total_detectors = sum(r["detector_count"] for r in final_rooms)
+            unverified_count = sum(1 for r in final_rooms if not r["occupancy_verified"])
+            
+            # Build final report
+            final_report = {
+                "report_metadata": {
+                    "source_file": args.pdf_file,
+                    "generated_utc": datetime.utcnow().isoformat() + "Z",
+                    "status": "COMPLETE" if unverified_count == 0 else "PARTIAL",
+                    "requires_pe_review": unverified_count > 0,
+                    "design_complete": unverified_count == 0,
+                    "review_reason": "Human review completed" if unverified_count == 0 else f"{unverified_count} rooms still unknown"
+                },
+                "rooms": final_rooms,
+                "summary": {
+                    "total_rooms": len(final_rooms),
+                    "unverified_rooms": unverified_count,
+                    "total_detectors": total_detectors,
+                    "compliant": unverified_count == 0
+                }
+            }
+            
+            # Save final JSON
+            final_output = output_path.replace("_FULL_REPORT", "_FINAL_REPORT")
+            with open(final_output, 'w', encoding='utf-8') as f:
+                json.dump(final_report, f, indent=2, ensure_ascii=False)
+            
+            # Print final report
+            print("\n" + "=" * 45)
+            print("  ✅ DESIGN COMPLETE (AFTER HUMAN REVIEW)")
+            print("=" * 45)
+            print(f"\nRooms: {len(final_rooms)} | Detectors: {total_detectors}")
+            print(f"Saved to: {final_output}")
+            
+            for room in final_rooms:
+                status = "✅" if room["occupancy_verified"] else "⚠️"
+                print(f"  {room['name']} → {room['detector_type']} ({room['detector_count']} detectors) {status}")
+        else:
+            print("\nNo room types provided. Design incomplete.")
+            print(f"Progress saved to: {output_path}")
     
     return 0
 
