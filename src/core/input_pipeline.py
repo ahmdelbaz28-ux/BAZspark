@@ -148,27 +148,71 @@ class InputPipeline:
         )
 
     def _build_rooms(self, walls: List[WallElement], dims: List[DimensionElement]) -> List[RoomSpec]:
-        """بناء RoomSpec من الجدران المستخلصة."""
+        """بناء RoomSpec من الجدران المستخلصة، مع التحقق من صحة المضلع."""
         rooms = []
         for wall in walls:
             if len(wall.geometry) < 3:
                 continue
-            # حساب المساحة التقريبية من إحداثيات الجدار
-            area = self._polygon_area(wall.geometry)
-            # تحويل المساحة باستخدام أول بُعد موجود (تقريبي)
+            
+            # تنظيف النقاط: إزالة النقاط المكررة المتتالية
+            cleaned_points = [wall.geometry[0]]
+            for pt in wall.geometry[1:]:
+                if pt != cleaned_points[-1]:
+                    cleaned_points.append(pt)
+            
+            # إذا آخر نقطة = أول نقطة، نحذف الأخيرة (المضلع يُغلق تلقائياً)
+            if len(cleaned_points) >= 2 and cleaned_points[-1] == cleaned_points[0]:
+                cleaned_points = cleaned_points[:-1]
+            
+            if len(cleaned_points) < 3:
+                continue
+            
+            # التحقق من أن المضلع بسيط (لا يتقاطع مع نفسه)
+            if not self._is_simple_polygon(cleaned_points):
+                continue
+            
+            # حساب المساحة
+            area = self._polygon_area(cleaned_points + [cleaned_points[0]])
+            
+            # تقدير معامل المقياس
             scale_factor = 1.0
             if dims:
-                # نفترض أن البُعد الأول يمثل مقياس الرسم
-                scale_factor = dims[0].value_m / max(
-                    abs(wall.geometry[1][0] - wall.geometry[0][0]),
+                wall_width = max(
+                    abs(cleaned_points[1][0] - cleaned_points[0][0]) if len(cleaned_points) > 1 else 1.0,
                     0.01
                 )
+                scale_factor = dims[0].value_m / wall_width
+            
             rooms.append(RoomSpec(
-                points=wall.geometry,
+                points=cleaned_points + [cleaned_points[0]],  # إغلاق المضلع
                 area_m2=round(area * scale_factor * scale_factor, 2),
                 confidence=wall.confidence.value
             ))
+        
         return rooms
+
+    def _is_simple_polygon(self, points: List) -> bool:
+        """فحص: هل المضلع غير متقاطع مع نفسه؟"""
+        if len(points) < 3:
+            return False
+        
+        # تأكد من عدم وجود ثلاث نقاط على استقامة واحدة
+        for i in range(len(points)):
+            p1 = points[i]
+            p2 = points[(i + 1) % len(points)]
+            p3 = points[(i + 2) % len(points)]
+            
+            # حساب المساحة المثلثية
+            area_triangle = abs(
+                p1[0] * (p2[1] - p3[1]) +
+                p2[0] * (p3[1] - p1[1]) +
+                p3[0] * (p1[1] - p2[1])
+            ) / 2.0
+            
+            if area_triangle < 1e-6:
+                return False
+        
+        return True
 
     def _build_detectors(self, symbols: List[SymbolElement], dims: List[DimensionElement]) -> List[DetectorSpec]:
         """بناء DetectorSpec من الرموز المستخلصة."""

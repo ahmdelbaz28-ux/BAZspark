@@ -12,13 +12,25 @@ import math
 
 
 class CoverageService:
+    # NFPA Standard attribute for audit trail
+    standard = "NFPA72"
+    nfpa_standard = "NFPA72"
 
     def __init__(self, beams: List[Beam] = None):
         self.beams = beams or []
         self.beam_detector = BeamDetector()
+    
+    # Alias for compatibility
+    def check_room_coverage(self, room: Room, devices: List[Device] = None) -> List[Violation]:
+        """Check coverage for a room. Alias for check_coverage(room, devices)."""
+        return self.check_coverage(room, devices)
 
     def check_coverage(self, room: Room, devices: List[Device] = None,
                        standard=None) -> List[Violation]:
+        # Alias for compatibility: check_room_coverage(room) = check_coverage(room, room.devices)
+        if devices is None and hasattr(room, 'devices'):
+            devices = room.devices
+        
         if devices is None:
             spacing = standard.get_max_spacing("SmokeDetector") if standard else 9.1
             devices = suggest_devices(room, spacing)
@@ -121,7 +133,23 @@ class CoverageService:
         return violations
 
     def _room_to_shapely(self, room: Room) -> geom.Polygon:
-        if room.polygon and room.polygon.exterior:
-            coords = [(p.x, p.y) for p in room.polygon.exterior]
-            return geom.Polygon(coords)
+        """Convert Room to shapely Polygon - handles both formats."""
+        if room.polygon is None:
+            raise ValueError("Room has no polygon")
+        
+        # If already a shapely Polygon
+        if hasattr(room.polygon, 'exterior'):
+            return room.polygon
+        
+        # If it's a list of points
+        if isinstance(room.polygon, (list, tuple)):
+            coords = []
+            for p in room.polygon:
+                if hasattr(p, 'x') and hasattr(p, 'y'):
+                    coords.append((p.x, p.y))
+                elif isinstance(p, (tuple, list)) and len(p) >= 2:
+                    coords.append((p[0], p[1]))
+            if len(coords) >= 3:
+                return geom.Polygon(coords)
+        
         raise ValueError("Room has no valid polygon")
