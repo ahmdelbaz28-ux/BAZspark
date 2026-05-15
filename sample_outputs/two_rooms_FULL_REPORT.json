@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "source_file": "test_data/hybrid/two_rooms.pdf",
-    "generated_utc": "2026-05-15T19:26:43.380131Z",
+    "generated_utc": "2026-05-15T19:57:41.108227Z",
     "status": "COMPLETE",
     "requires_pe_review": true,
     "design_complete": true,
@@ -14,13 +14,15 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
-      "detector_type": "SMOKE",
-      "detector_count": 2143,
-      "coverage_pct": 100.0,
+      "suggested_name": "office",
+      "detector_type": "REVIEW_REQUIRED",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Large room (19284.5m² > 500.0m²) - MANUAL REVIEW REQUIRED",
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
     {
@@ -29,13 +31,15 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
-      "detector_type": "SMOKE",
-      "detector_count": 1071,
-      "coverage_pct": 100.0,
+      "suggested_name": "meeting",
+      "detector_type": "REVIEW_REQUIRED",
+      "detector_count": 0,
+      "coverage_pct": 0.0,
+      "is_flagged": true,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Large room (9642.3m² > 500.0m²) - MANUAL REVIEW REQUIRED",
+        "⚠️ Suggested room name from PDF: 'meeting'. Verify before relying."
       ]
     },
     {
@@ -44,13 +48,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
+      "suggested_name": "office",
       "detector_type": "SMOKE",
       "detector_count": 7,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
     {
@@ -59,13 +64,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
+      "suggested_name": "meeting",
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'meeting'. Verify before relying."
       ]
     },
     {
@@ -74,13 +80,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
+      "suggested_name": "office",
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
     {
@@ -89,13 +96,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
+      "suggested_name": "meeting",
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'meeting'. Verify before relying."
       ]
     },
     {
@@ -104,13 +112,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
+      "suggested_name": "office",
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
     {
@@ -119,13 +128,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
+      "suggested_name": "meeting",
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'meeting'. Verify before relying."
       ]
     },
     {
@@ -134,13 +144,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
+      "suggested_name": "office",
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
     {
@@ -149,13 +160,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
+      "suggested_name": "meeting",
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'meeting'. Verify before relying."
       ]
     },
     {
@@ -164,13 +176,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
+      "suggested_name": "office",
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     },
     {
@@ -179,13 +192,14 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
+      "suggested_name": "meeting",
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'meeting'. Verify before relying."
       ]
     },
     {
@@ -194,20 +208,21 @@
       "occupancy_type": "office",
       "occupancy_source": "auto_assigned",
       "occupancy_verified": true,
-      "suggested_name": "FireAI Test - two_rooms",
+      "suggested_name": "office",
       "detector_type": "SMOKE",
       "detector_count": 4,
       "coverage_pct": 100.0,
+      "is_flagged": false,
       "compliant": true,
       "warnings": [
-        "⚠️ Suggested room name from PDF: 'FireAI Test - two_rooms'. Verify before relying."
+        "⚠️ Suggested room name from PDF: 'office'. Verify before relying."
       ]
     }
   ],
   "summary": {
     "total_rooms": 13,
     "unverified_rooms": 0,
-    "total_detectors": 3261,
+    "total_detectors": 47,
     "compliant": true
   }
 }

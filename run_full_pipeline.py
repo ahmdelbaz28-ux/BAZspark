@@ -173,15 +173,27 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
         else:
             occupancy_type = "unknown"
         
-        # Determine detector type - FAIL-SAFE for unknown rooms
-        # If room type is unknown, don't place any detectors
+        # Initialize warnings early for large room check
+        warnings = []
+        
+        # Calculate detectors with LARGE ROOM FAIL-SAFE
+        LARGE_ROOM_THRESHOLD_SQM = 500.0  # Rooms > 500m² require manual review
+        
         if occupancy_type == "unknown":
             # FAIL-SAFE: No detectors for unknown rooms
             detector_type = "UNKNOWN"
             detector_count = 0
             coverage_pct = 0.0
+            is_flagged = True  # Flag for manual review
+        elif area_sqm > LARGE_ROOM_THRESHOLD_SQM:
+            # FAIL-SAFE: No detectors for abnormally large rooms
+            detector_type = "REVIEW_REQUIRED"
+            detector_count = 0
+            coverage_pct = 0.0
+            is_flagged = True  # Flag for manual review
+            warnings.append(f"⚠️ Large room ({area_sqm:.1f}m² > {LARGE_ROOM_THRESHOLD_SQM}m²) - MANUAL REVIEW REQUIRED")
         else:
-            # Known room type - use safe detector selection
+            # Known room type - calculate detectors
             detector = select_safe_detector_type(room_name, occupancy_type)
             detector_type = detector.name
             
@@ -193,11 +205,11 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
             else:
                 detector_count = max(1, int((area_sqm / 15.0) + 0.5))
             coverage_pct = 100.0
+            is_flagged = False
         
         total_detectors += detector_count  # Simplified
         
-        # Build warnings/errors
-        warnings = []
+        # Add standard warnings
         if not is_verified:
             warnings.append("MANUAL TYPE REQUIRED - NO DETECTORS PLACED")
         
@@ -220,6 +232,7 @@ def run_pipeline(pdf_path: str, output_path: str = None) -> dict:
             "detector_type": detector_type,
             "detector_count": detector_count,
             "coverage_pct": coverage_pct,
+            "is_flagged": is_flagged,
             "compliant": True,
             "warnings": warnings
         })
@@ -388,11 +401,22 @@ def main():
                 
                 is_verified = user_type != "unknown"
                 
-                # Calculate detectors
+                # Calculate detectors with LARGE ROOM FAIL-SAFE
+                LARGE_ROOM_THRESHOLD_SQM = 500.0
+                is_flagged = False
+                warnings = []
+                
                 if user_type == "unknown":
                     detector_type = "UNKNOWN"
                     detector_count = 0
                     coverage_pct = 0.0
+                    is_flagged = True
+                elif area_sqm > LARGE_ROOM_THRESHOLD_SQM:
+                    detector_type = "REVIEW_REQUIRED"
+                    detector_count = 0
+                    coverage_pct = 0.0
+                    is_flagged = True
+                    warnings.append(f"⚠️ Large room ({area_sqm:.1f}m²) - MANUAL REVIEW REQUIRED")
                 else:
                     detector = select_safe_detector_type(room_name, user_type)
                     detector_type = detector.name
@@ -405,7 +429,6 @@ def main():
                     coverage_pct = 100.0
                 
                 # Check for special warnings
-                warnings = []
                 if user_type == "kitchen":
                     warnings.append("Kitchen - SMOKE prohibited per NFPA 72 §17.6.4")
                 
@@ -418,6 +441,7 @@ def main():
                     "detector_type": detector_type,
                     "detector_count": detector_count,
                     "coverage_pct": coverage_pct,
+                    "is_flagged": is_flagged,
                     "compliant": True,
                     "warnings": warnings
                 })
