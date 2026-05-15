@@ -6,6 +6,7 @@ from typing import List
 from src.core.models import Room, Device, Violation, ViolationSeverity, Point, Beam
 from src.auto_placement import suggest_devices
 from src.application.beam_detector import BeamDetector
+import shapely
 import shapely.geometry as geom
 import shapely.ops as ops
 import math
@@ -16,9 +17,20 @@ class CoverageService:
     standard = "NFPA72"
     nfpa_standard = "NFPA72"
 
-    def __init__(self, beams: List[Beam] = None):
+    def __init__(self, beams: List[Beam] = None, standard: str = None):
         self.beams = beams or []
         self.beam_detector = BeamDetector()
+        
+        # Handle string as first arg (backward compatibility)
+        # CoverageService("NFPA72") was used with string as standard
+        if isinstance(beams, str):
+            if beams not in ["NFPA72", None]:
+                raise ValueError(f"Unknown standard: {beams}. Supported: NFPA72")
+            self.beams = []
+        
+        # Accept standard name for compatibility
+        if standard and standard not in ["NFPA72", None]:
+            raise ValueError(f"Unknown standard: {standard}. Supported: NFPA72")
     
     # Alias for compatibility
     def check_room_coverage(self, room: Room, devices: List[Device] = None) -> List[Violation]:
@@ -38,7 +50,7 @@ class CoverageService:
         violations = []
         if not devices:
             violations.append(Violation(
-                violation_code="NO_DEVICES",
+                violation_code="COVERAGE_NO_DEVICES",
                 severity=ViolationSeverity.CRITICAL,
                 description_template="Room '{room_name}' has no devices.",
                 params={"room_name": room.name}
@@ -137,9 +149,18 @@ class CoverageService:
         if room.polygon is None:
             raise ValueError("Room has no polygon")
         
-        # If already a shapely Polygon
-        if hasattr(room.polygon, 'exterior'):
+        # If it's already a shapely Polygon
+        if hasattr(room.polygon, 'exterior') and hasattr(room.polygon, 'difference'):
             return room.polygon
+        
+        # If it's our custom Polygon class
+        if hasattr(room.polygon, 'exterior'):
+            coords = []
+            for p in room.polygon.exterior:
+                if hasattr(p, 'x') and hasattr(p, 'y'):
+                    coords.append((p.x, p.y))
+            if len(coords) >= 3:
+                return geom.Polygon(coords)
         
         # If it's a list of points
         if isinstance(room.polygon, (list, tuple)):
@@ -153,3 +174,80 @@ class CoverageService:
                 return geom.Polygon(coords)
         
         raise ValueError("Room has no valid polygon")
+
+    def check_device_spacing(self, room: Room, devices: List[Device]) -> List[Violation]:
+        """
+        Validate device spacing per NFPA 72 §17.6.3.1.
+        
+        Smoke detectors: max 9.1m apart
+        Heat detectors: max 15m apart
+        """
+        violations = []
+        
+        if not devices or len(devices) < 2:
+            return violations
+        
+        from itertools import combinations
+        import math
+        
+        for d1, d2 in combinations(devices, 2):
+            # Get spacing based on detector type
+            max_spacing = 9.1  # Default smoke
+            if hasattr(d1, 'device_type'):
+                if 'heat' in str(d1.device_type).lower():
+                    max_spacing = 15.0
+                elif 'pull' in str(d1.device_type).lower():
+                    max_spacing = 21.0
+            
+            # Calculate distance
+            x1, y1 = d1.position.x, d1.position.y if d1.position else (0, 0)
+            x2, y2 = d2.position.x, d2.position.y if d2.position else (0, 0)
+            distance = math.sqrt((x2-x1)**2 + (y2-y1)**2)
+            
+            if distance > max_spacing:
+                violations.append(Violation(
+                    violation_code="SPACING_EXCEEDED",
+                    severity=ViolationSeverity.MAJOR,
+                    description_template="Devices {d1} and {d2} are {dist:.1f}m apart (max {max}m)",
+                    params={"d1": str(d1.device_id), "d2": str(d2.device_id), 
+                           "dist": distance, "max": max_spacing}
+                ))
+        
+        return violations
+
+    def check_kitchen_requirement(self, room: Room, devices: List[Device]) -> List[Violation]:
+        """
+        Validate kitchen has heat detector per NFPA 72 §17.5.3.
+        
+        Kitchens require heat detectors, not smoke detectors
+        (smoke detectors trigger false alarms from cooking)
+        """
+        violations = []
+        
+        # Check if room is kitchen
+        is_kitchen = False
+        if hasattr(room, 'room_type'):
+            if 'kitchen' in str(room.room_type).lower():
+                is_kitchen = True
+        elif hasattr(room, 'name') and 'kitchen' in str(room.name).lower():
+            is_kitchen = True
+        
+        if not is_kitchen:
+            return violations
+        
+        # Check for heat detector
+        has_heat = False
+        for device in devices:
+            if hasattr(device, 'device_type'):
+                if 'heat' in str(device.device_type).lower():
+                    has_heat = True
+        
+        if not has_heat:
+            violations.append(Violation(
+                violation_code="KITCHEN_REQUIRES_HEAT_DETECTOR",
+                severity=ViolationSeverity.CRITICAL,
+                description_template="Kitchen '{room}' requires heat detector, not smoke detector",
+                params={"room": room.name}
+            ))
+        
+        return violations
