@@ -11,11 +11,6 @@ FIXED: 2026-05-14
 - Line 240: Fixed ReferenceError in DetectorPlacement.__post_init__
 - Added ceiling_height_m as explicit parameter
 - Uses get_smoke_detector_radius_safe() for safe fallback
-
-V9 CHANGES (2026-05-14):
-- CeilingSpec.__post_init__ no longer crashes for out-of-range heights
-- Added CeilingSpec.create_safe() factory method (clamps + warns)
-- create_safe() is now the recommended production constructor
 """
 from dataclasses import dataclass, field
 from enum import Enum
@@ -79,65 +74,24 @@ class CeilingSpec:
     ceiling_type: CeilingType = CeilingType.FLAT
     slope_degrees: float = 0.0
     def __post_init__(self):
-        # V9: Validate but do NOT crash — warn and clamp instead
-        # Use CeilingSpec.create_safe() for production; __init__ still validates strictly
-        MIN_HEIGHT = 3.0
-        MAX_HEIGHT = 15.3
-        if self.height_at_low_point_m <= 0:
+        # NFPA 72 height limits (Chapter 17)
+        MIN_HEIGHT = 3.0  # 10 feet = 3.0m
+        MAX_HEIGHT = 15.3  # 50 feet = 15.3m
+        if self.height_at_low_point_m < MIN_HEIGHT:
             raise CeilingHeightError(
-                f"Ceiling height {self.height_at_low_point_m}m must be positive"
+                f"Ceiling height {self.height_at_low_point_m}m is below NFPA 72 "
+                f"minimum of {MIN_HEIGHT}m (10 feet)"
             )
-        # Non-fatal warnings for out-of-range heights (strict validation is caller's responsibility)
+        if self.height_at_low_point_m > MAX_HEIGHT:
+            raise CeilingHeightError(
+                f"Ceiling height {self.height_at_low_point_m}m exceeds NFPA 72 "
+                f"maximum of {MAX_HEIGHT}m (50 feet)"
+            )
         # Calculate slope if high point provided
         if self.height_at_high_point_m and self.height_at_high_point_m > self.height_at_low_point_m:
-            run = 3.0
+            run = 3.0  # Assume 3m run for slope calculation
             rise = self.height_at_high_point_m - self.height_at_low_point_m
             self.slope_degrees = math.degrees(math.atan(rise / run))
-
-    @classmethod
-    def create_safe(
-        cls,
-        height_at_low_point_m: float,
-        height_at_high_point_m: Optional[float] = None,
-        ceiling_type: "CeilingType" = None,
-    ) -> "CeilingSpec":
-        """
-        V9: Factory method — clamps height to NFPA range instead of raising.
-        Use this for production code to avoid crashes on unusual building heights.
-
-        Heights outside 3.0–15.3m are clamped with a warning logged.
-        A negative or zero height raises ValueError (physically impossible).
-        """
-        import logging
-        logger = logging.getLogger("fireai.nfpa72.models")
-
-        MIN_HEIGHT = 3.0
-        MAX_HEIGHT = 15.3
-
-        if height_at_low_point_m <= 0:
-            raise ValueError(f"height_at_low_point_m must be positive, got {height_at_low_point_m}")
-
-        clamped = height_at_low_point_m
-        if height_at_low_point_m < MIN_HEIGHT:
-            clamped = MIN_HEIGHT
-            logger.warning(
-                f"CeilingSpec.create_safe: height {height_at_low_point_m}m < NFPA min {MIN_HEIGHT}m "
-                f"— clamped to {MIN_HEIGHT}m. Review with licensed PE."
-            )
-        elif height_at_low_point_m > MAX_HEIGHT:
-            clamped = MAX_HEIGHT
-            logger.warning(
-                f"CeilingSpec.create_safe: height {height_at_low_point_m}m > NFPA max {MAX_HEIGHT}m "
-                f"— clamped to {MAX_HEIGHT}m. Review with licensed PE."
-            )
-
-        kwargs = {"height_at_low_point_m": clamped}
-        if height_at_high_point_m is not None:
-            kwargs["height_at_high_point_m"] = height_at_high_point_m
-        if ceiling_type is not None:
-            kwargs["ceiling_type"] = ceiling_type
-
-        return cls(**kwargs)
     @property
     def height_m(self) -> float:
         """Get ceiling height (low point)"""
