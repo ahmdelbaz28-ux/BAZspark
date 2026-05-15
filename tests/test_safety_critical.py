@@ -165,6 +165,24 @@ class TestMathematicalCoverage:
 class TestCodeAutopsy:
     """Test 4: No silent errors, no TODOs in production code."""
     
+    def test_detector_selection_logic(self):
+        """Test 1 (FIXED): Detector type selection based on room name."""
+        from adapters.pdf_to_rooms_adapter import select_safe_detector_type
+        
+        # Kitchen -> HEAT (not smoke!)
+        kitchen = select_safe_detector_type("Main Kitchen")
+        assert kitchen.value == "heat_fixed_temp", f"Kitchen got {kitchen.value}"
+        
+        # Server -> Multi-criteria
+        server = select_safe_detector_type("Server Room")
+        assert server.value == "smoke_heat_combination", f"Server got {server.value}"
+        
+        # Office -> Smoke (default)
+        office = select_safe_detector_type("Office 101")
+        assert office.value == "smoke", f"Office got {office.value}"
+        
+        print("Detector selection: PASSED")
+        
     def test_no_bare_except(self):
         """No bare except clauses allowed."""
         import os
