@@ -144,11 +144,43 @@ class ParserConfidence:
         final = max(0.0, min(1.0, raw))
 
         if final < 0.7:
-            gate = GateDecision.REJECT
-            message = (
-                f"REJECT: Drawing score {final:.2f} < 0.7. "
-                f"Unfit for automated analysis. Engineer must review manually."
-            )
+            # Special handling for Raster PDFs with decent completeness
+            # Only allow if: has scale bar OR has explicit dimensions
+            is_raster = file_details.get('type') in ['raster', 'mixed']
+            has_completeness = comp_details.get('scale_found') or comp_details.get('legend_found')
+            has_scale = comp_details.get('scale_found') is True  # Text mentions scale
+            
+            if is_raster and has_completeness and has_scale and final >= 0.5:
+                # Check if scale was actually extracted
+                from src.core.dimension_extractor import extract_scale_from_pdf
+                actual_scale = extract_scale_from_pdf(self.pdf_path)
+                if not actual_scale:
+                    # Raster mentions scale but can't extract it
+                    gate = GateDecision.REJECT
+                    message = (
+                        f"REJECT: Raster PDF mentions scale but extraction failed. "
+                        f"Provide clearer scale bar or vector PDF."
+                    )
+                else:
+                    gate = GateDecision.CAUTION
+                    message = (
+                        f"CAUTION: Raster drawing with scale (score {final:.2f}). "
+                        f"Processing with caution - MODERATE confidence. PE REVIEW REQUIRED."
+                    )
+            elif is_raster and has_completeness and not has_scale:
+                # Raster without scale - cannot get meaningful measurements
+                gate = GateDecision.REJECT
+                message = (
+                    f"REJECT: Raster drawing without scale bar. "
+                    f"Cannot extract meaningful measurements. "
+                    f"Provide vector PDF or PDF with scale bar."
+                )
+            elif final < 0.7:
+                gate = GateDecision.REJECT
+                message = (
+                    f"REJECT: Drawing score {final:.2f} < 0.7. "
+                    f"Unfit for automated analysis. Engineer must review manually."
+                )
         elif final < 0.85:
             gate = GateDecision.CAUTION
             message = (
