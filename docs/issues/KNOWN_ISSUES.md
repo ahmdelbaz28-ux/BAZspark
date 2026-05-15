@@ -1,75 +1,50 @@
-# Known Issues — FireAI V9.6
+# KNOWN_ISSUES.md — FireAI Known Issues (HONEST VERSION)
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** 2026-05-15  
-**Purpose:** Document all known limitations
+**Purpose:** Document ALL limitations - NO marketing
 
 ---
 
-## ParserConfidence Limitations
+## CRITICAL: Symbol Detection Gap
 
-### 1. Hybrid PDFs without raster symbols = CAUTION
+### What We CAN Do:
+- Read text from PDF (get_text)
+- Detect vector lines (walls) 
+- Calculate coverage areas
 
-- **Issue:** Generated hybrid PDFs get CAUTION not HIGH
-- **Reason:** No raster symbols, legend, or layers
-- **Resolution:** Expected behavior - document in V&V_RESULTS.md
-- **Impact:** MEDIUM - Workaround exists
+### What We CANNOT Do:
+- Visual symbol detection - cannot distinguish smoke vs heat detector
+- Graphical legend parsing - cannot read legend table images
+- Shape recognition - cannot identify shapes automatically
+- Circle detection - cannot tell "circle = smoke detector"
 
-### 2. Visual Symbol Detection Not Implemented
-
-- **Issue:** Cannot distinguish smoke vs heat detector symbols
-- **Reason:** Text-only extraction, no CV
-- **Resolution:** Future work
-- **Impact:** HIGH - Manual verification required
-
-### 3. Legend Parsing Not Implemented
-
-- **Issue:** Cannot parse legend table (symbol = meaning)
-- **Resolution:** Require explicit "legend" keyword
-- **Impact:** MEDIUM - User awareness needed
-
-### 4. ReverseScaleEstimator = Fallback Only
-
-- **Issue:** Estimates scale from room size
-- **Resolution:** Always flag as ESTIMATED
-- **Impact:** HIGH if not flagged
+### FPE Question Expected:
+**Q:** "How does the program know this circle is a smoke detector?"  
+**A:** "Currently can't - requires PE REVIEW"
 
 ---
 
-## Safety Warnings
+## Rating
 
-### ALL Outputs Require PE Review
-
-- **Warning:** Regardless of score, all outputs require Professional Engineer review
-- **CAUTION:** Means "analyze but flag uncertainty"
-- **REJECT:** Means "do not proceed without manual verification"
-- **HIGH:** Means "sufficient quality" - still requires review
-
----
-
-## Workarounds
-
-| Scenario | Workaround |
-|----------|-----------|
-| CAUTION result | Verify manually before use |
-| No scale found | Check manually, request updated PDF |
-| Symbol unclear | Verify against legend manually |
-| Reverse scale flagged | MANUAL_VERIFICATION_REQUIRED |
+| Component | Reality |
+|-----------|----------|
+| Code | Basic text search + geometry |
+| "Elite" | Marketing - basic if/else + 16 keywords |
+| "Closed programmatically" | True - no symbol detection |
+| Symbol detection | MISSING - TODO |
 
 ---
 
-## Resolution Timeline
+## Action Items
 
-| Issue | Status | ETA |
-|-------|--------|-----|
-| Visual symbol detection | Future | TBD |
-| Legend parsing | Future | TBD |
-| ReverseScale safety | Done | Done |
+1. Get real PDF → test text detection
+2. Implement symbol detection → needs CV/shape matching
+3. Document honestly in FPE review
 
 ---
 
-## Revision History
+## Disclaimer
 
-| Date | Version | Changes |
-|------|---------|---------|
-| 2026-05-15 | 1.0 | Initial known issues |
+This system provides ANALYSIS, not APPROVAL.  
+All outputs require PE REVIEW.
