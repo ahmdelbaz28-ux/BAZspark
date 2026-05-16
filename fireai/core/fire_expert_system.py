@@ -1021,11 +1021,10 @@ class ExpertSystem:
         result.placement_proof = proof
 
         result.coverage_result = check_coverage_polygon(
-            positions             = positions,
+            detector_positions       = positions,
             room_spec             = room_spec,
-            ceiling               = ceiling,
+            ceiling_spec             = ceiling,
             detector_type         = detector_type,
-            required_coverage_pct = required_coverage_pct,
         )
 
         if not proof.proof_valid:
@@ -1042,8 +1041,8 @@ class ExpertSystem:
         wall_violations = validate_wall_distances(
             detector_positions = positions,
             room_spec          = room_spec,
-            ceiling            = ceiling,
-            detector_type      = detector_type,
+            
+            
         )
         result.wall_violations = wall_violations
 
@@ -1118,7 +1117,6 @@ class ExpertSystem:
         for room_spec in rooms:
             res = self.analyse_room(
                 room_spec             = room_spec,
-                required_coverage_pct = required_coverage_pct,
             )
             results.append(res)
 
