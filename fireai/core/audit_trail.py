@@ -66,6 +66,17 @@ class AuditTrail:
             nfpa_reference=f"NFPA 72 (2022) Table 17.6.3.1 — {table_row}",
         ))
 
+    def log_rejection(self, room_id: str, reason: str):
+        """Log rejected input before it reaches the solver"""
+        self._add(AuditEntry(
+            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            room_id=room_id,
+            operation="INPUT_REJECTED",
+            inputs={"room_id": room_id},
+            outputs={"reason": reason},
+            nfpa_reference="Fail-fast validation",
+        ))
+
     def log_heat_params(self, room_id, listed_spacing_m, adjusted_spacing_m, adjustments):
         self._add(AuditEntry(
             timestamp_utc=datetime.now(timezone.utc).isoformat(),

@@ -179,7 +179,13 @@ async def upload_file(request: Request, file: UploadFile = File(...)) -> Dict[st
 @app.post("/analyse/room", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("30/minute")
 async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResultOut:
-    room_spec = _build_room_spec(body.room)  # create_validated called inside
+    try:
+        room_spec = _build_room_spec(body.room)  # create_validated called inside
+    except ValueError as e:
+        # Log rejection before returning error
+        _audit_trail.log_rejection(room_id=body.room.room_id, reason=str(e))
+        raise HTTPException(status_code=422, detail=str(e))
+    
     forced_type: Optional[DetectorType] = None
     if body.forced_detector_type:
         try:
@@ -204,7 +210,15 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
 @app.post("/analyse/floor", response_model=FloorResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("10/minute")
 async def analyse_floor(request: Request, body: AnalyseFloorRequest) -> FloorResultOut:
-    room_specs = [_build_room_spec(r) for r in body.rooms]  # create_validated called inside
+    # Build and validate each room - log any rejections
+    room_specs = []
+    for r in body.rooms:
+        try:
+            room_specs.append(_build_room_spec(r))
+        except ValueError as e:
+            _audit_trail.log_rejection(room_id=r.room_id, reason=str(e))
+            raise HTTPException(status_code=422, detail=f"Room '{r.room_id}': {e}")
+    
     orchestrator = FloorOrchestrator(audit_trail=_audit_trail)
     floor_result = orchestrator.process(
         room_specs=room_specs,
