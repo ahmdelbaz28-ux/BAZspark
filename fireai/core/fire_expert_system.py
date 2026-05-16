@@ -193,7 +193,7 @@ _STAIRWELL_TYPES: frozenset = frozenset({
 
 # Detector type mandated by occupancy (None = use default logic)
 _MANDATORY_DETECTOR: Dict[OccupancyClass, Optional[DetectorType]] = {
-    OccupancyClass.COOKING:     DetectorType.HEAT_FIXED,
+    OccupancyClass.COOKING:     DetectorType.HEAT_FIXED_TEMP,
     OccupancyClass.SLEEPING:    DetectorType.SMOKE_PHOTOELECTRIC,
     OccupancyClass.SERVER_ROOM: DetectorType.SMOKE_MULTI_CRITERIA,
     OccupancyClass.CLEAN_ROOM:  DetectorType.SMOKE_MULTI_CRITERIA,

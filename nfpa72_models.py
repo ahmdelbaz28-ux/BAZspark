@@ -21,6 +21,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Tuple, Optional
 from shapely.geometry import Polygon as ShapelyPolygon
+
+# Constants
+_NFPA_HEIGHT_MIN_M = 0.0
+_NFPA_HEIGHT_MAX_M = 10.0
+MIN_WALL_DISTANCE_M = 0.10  # 4 inches per NFPA 72 §17.6.3.1.1
 import math
 # ============================================================================
 # ENUMS - Detector Types and Modes
@@ -28,6 +33,9 @@ import math
 class DetectorType(Enum):
     """NFPA 72 detector types"""
     SMOKE = "smoke"
+    SMOKE_PHOTOELECTRIC = "smoke_photoelectric"
+    SMOKE_IONIZATION = "smoke_ionization"
+    SMOKE_MULTI_CRITERIA = "smoke_multi_criteria"
     HEAT = "heat"
     FLAME = "flame"
     GAS = "gas"
@@ -153,18 +161,30 @@ class CeilingSpec:
             # Simplified: return line at center of room
             return (0, 0, 10, 0)  # Placeholder
         return None
+
+@dataclass
+class HVACDuct:
+    """HVAC Duct for smoke detection placement"""
+    duct_id: str = ""
+    centerline: list = field(default_factory=list)
+    width_m: float = 0.3
+    height_m: float = 0.3
+    airflow_m3s: float = 0.0
+
 @dataclass
 class RoomSpec:
     """Room specification with polygon boundary"""
-    name: str
-    width_m: float
-    depth_m: float
-    height_m: float
+    room_id: str = ""
+    name: str = ""
+    width_m: float = 10.0
+    depth_m: float = 10.0
+    height_m: float = 3.0
     polygon: Optional[ShapelyPolygon] = None
     ceiling_spec: Optional[CeilingSpec] = None
     detector_type: Optional[DetectorType] = None
     occupancy_type: str = "office"
     heat_detector_spec: Optional['HeatDetectorSpec'] = None
+    hvac_ducts: list = field(default_factory=list)
     def __post_init__(self):
         # Build polygon from dimensions if not provided
         if self.polygon is None:

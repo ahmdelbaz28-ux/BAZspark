@@ -19,27 +19,9 @@ V9 CHANGES (2026-05-14):
 5. Adaptive grid sampling: 0.25m resolution (was fixed 20x20)
 6. Added validate_wall_distances() — NFPA 72 §17.6.3.1.1
 """
-
 import math
-from dataclasses import dataclass
 from typing import List, Tuple, Optional
 from shapely.geometry import Polygon, Point, box
-
-@dataclass
-class DuctDevice:
-    device_id: str
-    x: float
-    y: float
-    z: float = 0.0
-    detector_type: str = "smoke"
-
-@dataclass
-class WallViolation:
-    x: float
-    y: float
-    distance_m: float
-    min_required_m: float
-
 from shapely.ops import voronoi_diagram
 from shapely import affinity
 from nfpa72_models import (
@@ -116,26 +98,6 @@ def validate_wall_distances(
                 })
 
     return violations
-
-
-def suggest_duct_detectors(room: RoomSpec, detector_type: str = "smoke") -> List[DuctDevice]:
-    """Suggest detector placements near HVAC ducts."""
-    devices = []
-    if not room.hvac_ducts:
-        return devices
-    
-    for i, duct in enumerate(room.hvac_ducts):
-        if not duct.centerline:
-            continue
-        cx, cy = duct.centerline[0][:2]
-        devices.append(DuctDevice(
-            device_id=f"DUCT_{i+1}",
-            x=cx, y=cy,
-            detector_type=detector_type
-        ))
-    return devices
-
-
 
 
 def create_room_polygon(room_spec: RoomSpec) -> Polygon:
@@ -491,8 +453,7 @@ __all__ = [\
 \
     "is_point_in_room",\
 \
-    "check_coverage_polygon",
-    "suggest_duct_detectors",\
+    "check_coverage_polygon",\
 \
     "calculate_voronoi_coverage",\
 \

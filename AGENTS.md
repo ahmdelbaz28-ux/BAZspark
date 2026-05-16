@@ -128,6 +128,22 @@
 
 **Safety First:**
 - Every code change in fire safety affects human lives
+### FireAI V10 - Full Integration (2026-05-16)
+
+**Components Added:**
+- nfpa72_models.py: HVACDuct, RoomSpec with hvac_ducts, DetectorType enums
+- nfpa72_calculations.py: calculate_max_spacing, calculate_coverage_radius, calculate_max_wall_distance
+- nfpa72_coverage.py: suggest_duct_detectors, check_coverage_polygon, validate_wall_distances
+- fire_expert_system.py: Fully operational V10
+
+**Constants Added:**
+- MIN_WALL_DISTANCE_M = 0.10m (4 inches per NFPA 72 §17.6.3.1.1)
+- _NFPA_HEIGHT_MIN_M, _NFPA_HEIGHT_MAX_M
+
+**DetectorType Enums:**
+- SMOKE_PHOTOELECTRIC, SMOKE_IONIZATION, SMOKE_MULTI_CRITERIA
+
+**Tests:** Spacing=5.5m, Radius=2.75m, Wall=2.75m, HVAC=1 device
 - No assumption - always test and verify
 - Be explicit about limitations
 
