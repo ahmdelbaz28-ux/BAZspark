@@ -1,7 +1,22 @@
 """
-fire_expert_system.py  V10.0
+fire_expert_system.py V10 ENHANCED
 =============================
-NFPA 72-2022 Fire Alarm Design Expert System — Elite Edition.
+NFPA 72-2022 Fire Alarm Design Expert System — Enhanced Edition.
+
+V10 Enhanced vs V10 Original:
+-------------------------
+This file adds to fire_expert_system.py (V10):
+  1. ResilienceResult dataclass - Monte Carlo device-failure simulation
+  2. _run_resilience_check() - Tests design under single-device failure
+  3. _sign_proof() - Placeholder for RegulatoryProofEngine integration
+  4. EnhancedExpertResult - Subclass of ExpertResult with resilience & signed_proof fields
+  5. enhance_result() - Creates EnhancedExpertResult preserving original values
+  6. analyse_room_enhanced() - Wrapper that calls V10 then enhances
+
+IMPORTANT: These additions do NOT modify V10's core logic.
+All V10 detector placement, confidence scoring, and coverage
+remain unchanged. The enhanced features only add resilience
+testing AFTER the V10 analysis is complete.
 
 DESIGN PHILOSOPHY
 -----------------
@@ -1303,17 +1318,70 @@ def _sign_proof(result, poly, occupancy):
 
 
 # ============================================================================
+# ENHANCED RESULT CLASS
+# ============================================================================
+
+@dataclass
+class EnhancedExpertResult(ExpertResult):
+    """
+    Enhanced version of ExpertResult that adds resilience testing and proof signing.
+    
+    This is a pure subclass that adds ONLY two new fields:
+      resilience:   Result of Monte Carlo device-failure simulation (or None)
+      signed_proof: Digital signature from RegulatoryProofEngine (or None)
+    
+    All other fields are inherited from ExpertResult unchanged.
+    """
+    resilience: Optional[ResilienceResult] = None
+    signed_proof: Optional[object] = None
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary for JSON serialization."""
+        from dataclasses import asdict
+        return asdict(self)
+
+
+# ============================================================================
 # ENHANCED FUNCTIONS
 # ============================================================================
 
-def enhance_result(result, room_id, poly, radius):
+def enhance_result(result: ExpertResult, room_id: str, poly, radius: float, 
+                run_resilience: bool = True) -> EnhancedExpertResult:
     """
-    Enhance a V10 result with resilience check.
-
-    Takes the original V10 result and adds resilience field.
-    Does NOT modify any V10 original values.
+    Create an EnhancedExpertResult from V10 ExpertResult.
+    
+    This function:
+      1. Copies ALL fields from the original result
+      2. Runs resilience check if run_resilience=True and detector count >= 2
+      3. Creates a NEW EnhancedExpertResult with the added fields
+    
+    Does NOT modify the original result.
     """
-    if result.detector_positions and len(result.detector_positions) >= 2:
+    # Copy all fields from original to new result
+    enhanced = EnhancedExpertResult(
+        room_id=result.room_id,
+        detector_positions=result.detector_positions,
+        detector_type=result.detector_type,
+        occupancy_class=result.occupancy_class,
+        coverage_result=result.coverage_result,
+        placement_proof=result.placement_proof,
+        wall_violations=result.wall_violations,
+        duct_devices=result.duct_devices,
+        confidence=result.confidence,
+        confidence_score=result.confidence_score,
+        warnings=list(result.warnings),  # Make a copy
+        errors=list(result.errors),      # Make a copy
+        improvements=list(result.improvements),  # Make a copy
+        retry_count=result.retry_count,
+        nfpa_version=result.nfpa_version,
+        refused=result.refused,
+        refusal_reason=result.refusal_reason,
+        resilience=None,
+        signed_proof=None,
+    )
+    
+    # Run resilience check only if requested
+    if run_resilience and result.detector_positions and len(result.detector_positions) >= 2:
         try:
             resilience = _run_resilience_check(
                 positions=result.detector_positions,
@@ -1323,21 +1391,19 @@ def enhance_result(result, room_id, poly, radius):
                 iterations=_MC_ITERATIONS,
                 seed=42,
             )
-            # Add resilience as dynamic attribute
-            result.resilience = resilience
+            enhanced.resilience = resilience
         except Exception as e:
-            # If resilience check fails, just log and continue
-            result.warnings.append(f"Resilience check skipped: {e}")
-
+            enhanced.warnings.append(f"Resilience check skipped: {e}")
+    
     # Try proof signing (optional)
     try:
         signed = _sign_proof(result, poly, result.occupancy_class)
         if signed:
-            result.signed_proof = signed
+            enhanced.signed_proof = signed
     except Exception:
         pass  # Optional feature - don't fail
-
-    return result
+    
+    return enhanced
 
 
 def analyse_room_enhanced(
@@ -1348,17 +1414,23 @@ def analyse_room_enhanced(
     occupancy_class: str = "standard",
     room_type: str = "office",
     ceiling_type: str = "flat",
-) -> "ExpertResult":
+    run_resilience: bool = True,
+) -> EnhancedExpertResult:
     """
     Enhanced analyze_room that runs V10 analysis then adds resilience.
 
     This function:
     1. Calls original analyse_room from V10
-    2. Enhances the result with resilience check
-    3. Returns the enhanced result
+    2. Extracts coverage_radius using V10's calculate_coverage_radius function
+    3. Enhances the result with resilience check using the EXACT same radius
+    4. Returns the enhanced result (NOT modifying original)
+    
+    Args:
+        run_resilience: If False, skips resilience check (result.resilience will be None)
     """
     # Import ExpertSystem from V10
     from fireai.core.fire_expert_system import ExpertSystem, RoomSpec, CeilingSpec, CeilingType as V10CeilingType
+    from fireai.core.nfpa72_calculations import calculate_coverage_radius
 
     # Convert ceiling_type string to CeilingType enum
     ceiling_type_enum = V10CeilingType.FLAT
@@ -1372,6 +1444,7 @@ def analyse_room_enhanced(
     # Build room spec using V10 API
     ceiling_spec = CeilingSpec(
         height_at_low_point_m=ceiling_height_m,
+        height_at_high_point_m=ceiling_height_m,
         ceiling_type=ceiling_type_enum,
     )
     room_spec = RoomSpec.create_validated(
@@ -1386,31 +1459,19 @@ def analyse_room_enhanced(
     system = ExpertSystem()
     result = system.analyse_room(room_spec=room_spec)
 
+    # Get the EXACT same coverage_radius that V10 used
+    # This should match what V10 calculated internally
+    radius = calculate_coverage_radius(ceiling_spec, result.detector_type)
+
     # Build polygon for resilience check
-    from shapely.geometry import Polygon as ShapelyPolygon
-    poly = ShapelyPolygon([
+    poly = Polygon([
         (0, 0),
         (width_m, 0),
         (width_m, depth_m),
         (0, depth_m)
     ])
 
-    # Get coverage radius from room spec
-    radius = room_spec.ceiling_spec.height_at_low_point_m
-    # Use approximate radius formula (NFPA 72 Table 17.6.3.2)
-    # For 3m ceiling: 4.55m radius
-    if radius <= 4.3:
-        radius = 4.55
-    elif radius <= 6.1:
-        radius = 5.35
-    elif radius <= 7.6:
-        radius = 5.2
-    elif radius <= 9.1:
-        radius = 5.8
-    else:
-        radius = 6.4
+    # Enhance with resilience - pass run_resilience parameter
+    enhanced = enhance_result(result, room_id, poly, radius, run_resilience=run_resilience)
 
-    # Enhance with resilience
-    result = enhance_result(result, room_id, poly, radius)
-
-    return result
+    return enhanced
