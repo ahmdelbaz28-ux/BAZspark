@@ -9,6 +9,8 @@ FireAI V10 is a production‑grade, safety‑first expert system that automates 
 - Voltage drop and battery backup calculations
 - Immutable audit trail for professional engineer (PE) review
 
+**Author:** Ahmed Elbaz
+
 ## Repository Structure
 ```
 fireai/

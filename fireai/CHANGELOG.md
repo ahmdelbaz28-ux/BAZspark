@@ -1,5 +1,7 @@
 # Changelog
 
+All versions developed and maintained by Ahmed Elbaz.
+
 ## V10 (current)
 - Fail‑fast input validation (RoomSpec / CeilingSpec)
 - Self‑correction placement loop with seed positions
