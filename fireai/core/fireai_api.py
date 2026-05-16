@@ -23,6 +23,7 @@ from .nfpa72_models import CeilingSpec, CeilingType, DetectorType, HVACDuct, Roo
 from .fire_expert_system import ExpertSystem
 from .floor_orchestrator import FloorOrchestrator
 from .audit_trail import AuditTrail
+from shapely.geometry import Polygon as ShapelyPolygon
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ def create_app() -> FastAPI:
 
 app = create_app()
 _expert_system = ExpertSystem()
-_audit_trail   = AuditTrail(project_id="api-session")
+_audit_trail = AuditTrail(project_name="api-session")
 
 async def verify_api_key(x_api_key: str = Header(...)) -> str:
     raw = os.getenv("FIREAI_API_KEYS", "")
@@ -132,11 +133,11 @@ def _build_room_spec(room_in: RoomSpecIn) -> RoomSpec:
                            width_m=d.width_m, height_m=d.height_m, airflow_m3s=d.airflow_m3s)
                   for d in room_in.hvac_ducts]
     return RoomSpec(room_id=room_in.room_id, name=room_in.name,
-                    polygon_coords=[tuple(p) for p in room_in.polygon_coords],
-                    ceiling=ceiling, room_type=room_in.room_type, hvac_ducts=hvac_ducts)
+                    polygon=ShapelyPolygon([tuple(p) for p in room_in.polygon_coords]),
+                    ceiling=ceiling, occupancy_type=room_in.room_type, hvac_ducts=hvac_ducts)
 
 def _room_result_to_out(result: Any) -> RoomResultOut:
-    coverage_pct = result.coverage_result.coverage_pct if result.coverage_result else 0.0
+    coverage_pct = result.coverage_result.coverage_percentage if result.coverage_result else 0.0
     return RoomResultOut(
         room_id=result.room_id, compliant=result.compliant, coverage_pct=coverage_pct,
         detector_count=len(result.detector_positions), detector_type=result.detector_type.value,
@@ -175,10 +176,8 @@ async def analyse_room(body: AnalyseRoomRequest) -> RoomResultOut:
 
 async def analyse_floor(body: AnalyseFloorRequest) -> FloorResultOut:
     room_specs = [_build_room_spec(r) for r in body.rooms]
-    orchestrator = FloorOrchestrator(floor_id=body.floor_id, max_workers=4)
-    floor_result = orchestrator.solve_floor(rooms=room_specs,
-                                            required_coverage_pct=body.required_coverage_pct,
-                                            parallel=body.parallel)
+    orchestrator = FloorOrchestrator()
+    floor_result = orchestrator.process(room_specs=room_specs, required_pct=body.required_coverage_pct)
     return FloorResultOut(
         floor_id=floor_result.floor_id,
         fully_compliant=floor_result.fully_compliant,

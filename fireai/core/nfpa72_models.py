@@ -193,7 +193,7 @@ class RoomSpec:
     heat_detector_spec: Optional['HeatDetectorSpec'] = None
     hvac_ducts: List[HVACDuct] = field(default_factory=list)
     def __post_init__(self):
-        # Build polygon from dimensions if not provided
+        # Build polygon from dimensions if not provided, or convert list to ShapelyPolygon
         if self.polygon is None:
             self.polygon = ShapelyPolygon([\
                 (0, 0),\
@@ -201,6 +201,9 @@ class RoomSpec:
                 (self.width_m, self.depth_m),\
                 (0, self.depth_m)\
             ])
+        elif isinstance(self.polygon, list):
+            # Convert list of (x, y) tuples to ShapelyPolygon
+            self.polygon = ShapelyPolygon(self.polygon)
         # Build ceiling_spec from height if not provided
         if self.ceiling_spec is None:
             try:
