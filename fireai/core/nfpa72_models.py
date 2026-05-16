@@ -39,7 +39,8 @@ def sanitize_string(value: str, max_length: int = 100) -> str:
     if not isinstance(value, str):
         raise ValueError("Input must be a string")
     value = value.strip()
-    effective_max = max(MAX_STRING_LENGTH, max_length)
+    # Enforce maximum cap - use min to prevent bypassing
+    effective_max = min(MAX_STRING_LENGTH, max_length) if max_length > 0 else MAX_STRING_LENGTH
     if len(value) > effective_max:
         raise ValueError(f"Input too long (max {effective_max} characters)")
     # Check for SQL injection patterns
@@ -57,17 +58,17 @@ def sanitize_string(value: str, max_length: int = 100) -> str:
 # ============================================================================
 class DetectorType(Enum):
     """NFPA 72 detector types"""
-    SMOKE = "smoke"
-    SMOKE_PHOTOELECTRIC = "smoke_photoelectric"
-    SMOKE_IONIZATION = "smoke_ionization"
-    SMOKE_MULTI_CRITERIA = "smoke_multi_criteria"
-    HEAT = "heat"
-    FLAME = "flame"
-    GAS = "gas"
-    HEAT_FIXED_TEMP = "heat_fixed_temp"
-    HEAT_RATE_OF_RISE = "heat_rate_of_rise"
-    HEAT_COMBINATION = "heat_combination"
-    SMOKE_HEAT_COMBINATION = "smoke_heat_combination"
+    SMOKE = "SMOKE"
+    SMOKE_PHOTOELECTRIC = "SMOKE_PHOTOELECTRIC"
+    SMOKE_IONIZATION = "SMOKE_IONIZATION"
+    SMOKE_MULTI_CRITERIA = "SMOKE_MULTI_CRITERIA"
+    HEAT = "HEAT"
+    FLAME = "FLAME"
+    GAS = "GAS"
+    HEAT_FIXED_TEMP = "HEAT_FIXED_TEMP"
+    HEAT_RATE_OF_RISE = "HEAT_RATE_OF_RISE"
+    HEAT_COMBINATION = "HEAT_COMBINATION"
+    SMOKE_HEAT_COMBINATION = "SMOKE_HEAT_COMBINATION"
 class CoverageGeometry(Enum):
     """Coverage geometry types per NFPA 72"""
     CIRCULAR = "circular"
@@ -78,16 +79,17 @@ class HeatDetectionMode(Enum):
     SQUARE_GRID = "square_grid"  # Chebyshev (for heat)
 class CeilingType(Enum):
     """Ceiling configuration types"""
-    FLAT = "flat"
-    GABLE = "gable"
-    SHED = "shed"
-    TRUSS = "truss"
-    COMBUSTIBLE = "combustible"
+    FLAT = "FLAT"
+    GABLE = "GABLE"
+    SHED = "SHED"
+    TRUSS = "TRUSS"
+    COMBUSTIBLE = "COMBUSTIBLE"
     # Additional types used by expert system
-    SMOOTH = "smooth"
-    BEAMED = "beamed"
-    SLOPED = "sloped"
-    CORRIDOR = "corridor"
+    SMOOTH = "SMOOTH"
+    BEAMED = "BEAMED"
+    SLOPED = "SLOPED"
+    CORRIDOR = "CORRIDOR"
+
 # ============================================================================
 # EXCEPTIONS - NFPA Compliance Errors
 # ============================================================================
@@ -146,6 +148,14 @@ class CeilingSpec:
         if errors:
             raise CeilingHeightError("CeilingSpec validation failed: " + "; ".join(errors))
         
+        # NFPA 72 range validation - reject non-standard heights
+        if h_low < _NFPA_HEIGHT_MIN_M or h_low > _NFPA_HEIGHT_MAX_M:
+            raise CeilingHeightError(
+                f"CeilingSpec height {h_low}m outside NFPA 72 range "
+                f"({_NFPA_HEIGHT_MIN_M}m - {_NFPA_HEIGHT_MAX_M}m). "
+                f"Use CeilingSpec.create_safe() for automatic clamping."
+            )
+        
         if self.height_at_high_point_m and self.height_at_high_point_m > self.height_at_low_point_m:
             run = 3.0
             rise = self.height_at_high_point_m - self.height_at_low_point_m
@@ -170,8 +180,8 @@ class CeilingSpec:
         import logging
         logger = logging.getLogger("fireai.nfpa72.models")
 
-        MIN_HEIGHT = 3.0
-        MAX_HEIGHT = 15.3
+        MIN_HEIGHT = _NFPA_HEIGHT_MIN_M
+        MAX_HEIGHT = _NFPA_HEIGHT_MAX_M
 
         if height_at_low_point_m <= 0:
             raise ValueError(f"height_at_low_point_m must be positive, got {height_at_low_point_m}")
@@ -588,9 +598,9 @@ def validate_ceiling_height(ceiling_height_m: float) -> None:
     Raises:
         CeilingHeightError: If height is outside limits
     """
-    # NFPA 72 Chapter 17: 3.0m (10 ft) min, 15.3m (50 ft) max
-    MIN_HEIGHT = 3.0
-    MAX_HEIGHT = 15.3
+    # NFPA 72 Chapter 17: 3.0m min, 15.24m max
+    MIN_HEIGHT = _NFPA_HEIGHT_MIN_M
+    MAX_HEIGHT = _NFPA_HEIGHT_MAX_M
     if ceiling_height_m < MIN_HEIGHT:
         raise CeilingHeightError(
             f"Ceiling height {ceiling_height_m}m is below NFPA 72 minimum "
