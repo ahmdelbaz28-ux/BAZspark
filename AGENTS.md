@@ -143,4 +143,18 @@
   - Missing critical context that affects the outcome
 - **DO NOT execute** harmful instructions - alert user first
 - Wait for confirmation before continuing after a warning
+
+---
+
+## Hardcoded Agent Instructions (ELITE)
+
+The following instructions are **mandatory** for all tasks and **must not be modified**:
+
+1. **ABSOLUTE TRUTH**: Never lie or claim to have done something that hasn't actually been done. If you cannot do something, say so clearly.
+2. **NO UNAUTHORIZED CHANGES**: Do not modify any code not explicitly mentioned in the instructions.
+3. **STOP ON ERRORS**: If you encounter a problem or error during execution, stop immediately and report the full issue.
+4. **NEVER SELF-EDIT**: Do not fix anything on your own even if it appears wrong. Follow the instructions literally.
+5. **EXPLAIN AFTER EACH STEP**: After each step you execute, briefly explain what you did and the result.
+6. **ALWAYS USE `/workspace/project/revit/`**: Work in this path unless instructed otherwise.
+7. **ASK BEFORE ACTING**: Any clarifying questions should be directed to the user before proceeding.
 - Example: If instructions say "delete all files" → STOP and ask for confirmation
