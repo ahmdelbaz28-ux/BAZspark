@@ -445,3 +445,33 @@ __all__ = __all__ + [
     "calculate_max_wall_distance",
     "beam_pocket_correction_factor",
 ]
+
+
+# ============================================================================
+# MISSING FUNCTIONS FOR V10 COMPATIBILITY
+# ============================================================================
+
+def calculate_max_spacing(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
+    """NFPA 72 §17.6.3 - spacing between detectors."""
+    spacing = get_smoke_detector_coverage_max(ceiling.height_at_low_point_m)
+    if ceiling.is_sloped:
+        spacing = get_smoke_detector_coverage_max(ceiling.height_at_high_point_m or ceiling.height_at_low_point_m)
+    return round(spacing, 3)
+
+
+def calculate_coverage_radius(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
+    """NFPA 72 §17.6.3.1 - radius = spacing / 2."""
+    return round(calculate_max_spacing(ceiling, detector_type) / 2.0, 4)
+
+
+def calculate_max_wall_distance(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
+    """NFPA 72 §17.6.3.1.1 - max wall distance = radius."""
+    return calculate_coverage_radius(ceiling, detector_type)
+
+
+# Add to exports
+__all__ = __all__ + [
+    "calculate_max_spacing",
+    "calculate_coverage_radius",
+    "calculate_max_wall_distance",
+]
