@@ -1,9 +1,9 @@
 """
-test_comprehensive.py — FireAI Comprehensive Test Suite V2
+test_comprehensive.py — FireAI Comprehensive Test Suite V3
 ==========================================================
 End-to-end tests across all three architectural layers:
   Layer 1: DensityOptimizer V7.3 (single room)
-  Layer 2: FloorAnalyser V2.2 (floor — multiple rooms)
+  Layer 2: FloorAnalyser V2.3 (floor — multiple rooms + MIP verifier)
   Layer 3: BuildingEngine V0.1 (building — multiple floors)
 
 Plus cross-cutting concerns:
@@ -15,6 +15,7 @@ Plus cross-cutting concerns:
   - Low ceiling warning (R=6.40m not conservative)
   - Wall distance validation
   - API security (fireai_api V10)
+  - MIP Solver (PuLP) — verification only, never replaces greedy
 
 NFPA References:
   - NFPA 72 (2022) Section 17.6.3 — smoke detector coverage
@@ -23,6 +24,7 @@ NFPA References:
   - NFPA 72 (2022) Table 17.6.3.1 — ceiling height / radius
   - NFPA 72 (2022) Section 17.6.3.1.1 — wall distance requirements
   - NFPA 72 (2022) Section 17.7.5 — duct detectors
+  - MIP Set Covering ILP — proven optimal on candidate grid
 """
 
 import pytest
@@ -37,6 +39,14 @@ from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room,
 from fireai.core.floor_analyser import FloorAnalyser, FloorReport, RoomSummary
 from fireai.core.building_engine import BuildingEngine, BuildingReport
 from audit_trail import AuditTrail
+
+# MIP Solver — optional (skipif if PuLP not installed)
+try:
+    from fireai.core.spatial_engine.mip_solver import solve_set_covering_mip, MIPResult, PULP_AVAILABLE
+except ImportError:
+    PULP_AVAILABLE = False
+
+MIP_SKIP_REASON = "PuLP not installed — install with: pip install pulp"
 
 
 # ─── Fixtures ───────────────────────────────────────────────────
@@ -151,6 +161,13 @@ def test_2_floor_analyser_ten_rooms(optimizer):
         assert hasattr(s, 'refused')
         assert hasattr(s, 'refusal_reason')
         assert hasattr(s, 'used_mip')
+        assert hasattr(s, 'mip_proven_optimal_count')
+        assert hasattr(s, 'mip_solve_time_s')
+        assert hasattr(s, 'mip_status')
+        # Without use_mip, these should be None/False
+        assert s.mip_proven_optimal_count is None
+        assert s.mip_solve_time_s is None
+        assert s.mip_status is None
 
 
 # ─── Layer 3: BuildingEngine V0.1 — 3-floor building ───────────
@@ -640,10 +657,199 @@ class TestAPISecurity:
 # Planned but not yet implemented — skip markers with reasons
 # ═══════════════════════════════════════════════════════════════════
 
-@pytest.mark.skip(reason="MIP Solver not yet implemented — planned for next phase with PuLP")
-def test_mip_solver_produces_optimal_count():
-    """MIP must prove minimum detector count. Requires PuLP implementation."""
-    pass
+# ═══════════════════════════════════════════════════════════════════
+# NEW: Test Group — MIP Solver (PuLP) — Verification Only
+# ═══════════════════════════════════════════════════════════════════
+
+@pytest.mark.skipif(not PULP_AVAILABLE, reason=MIP_SKIP_REASON)
+class TestMIPSolver:
+    """
+    MIP Set Covering ILP — proves minimum detector count on candidate grid.
+    MIP is VERIFIER only — never replaces greedy placement.
+    See TECHNICAL_HONESTY.md §5 for terminology.
+    """
+
+    def test_small_room_optimal(self):
+        """5x5 room with R=6.40: MIP must prove 1 detector sufficient."""
+        result = solve_set_covering_mip(
+            room_width=5.0,
+            room_length=5.0,
+            coverage_radius=6.40,
+            candidate_step=1.0,
+            time_limit_seconds=30.0,
+        )
+        assert result.success, f"MIP failed: {result.fallback_reason}"
+        assert result.solver_status == "Optimal"
+        assert result.theoretical_minimum == 1, (
+            f"Expected 1 detector for 5x5 room with R=6.40, got {result.theoretical_minimum}"
+        )
+        assert result.used_mip is True
+
+    def test_medium_room_optimality_proven(self):
+        """10x10 room: verify MIP returns proven optimal (not just feasible)."""
+        result = solve_set_covering_mip(
+            room_width=10.0,
+            room_length=10.0,
+            coverage_radius=6.40,
+            candidate_step=1.5,
+            time_limit_seconds=30.0,
+        )
+        assert result.success, f"MIP failed: {result.fallback_reason}"
+        assert result.solver_status == "Optimal"
+        assert result.theoretical_minimum is not None
+        assert result.theoretical_minimum >= 1
+        assert len(result.detector_positions) == result.theoretical_minimum
+
+    def test_coverage_completeness(self):
+        """Every target point must be within R of at least one MIP detector."""
+        room_w, room_l, R = 8.0, 6.0, 6.40
+        result = solve_set_covering_mip(
+            room_width=room_w,
+            room_length=room_l,
+            coverage_radius=R,
+            candidate_step=1.0,
+            time_limit_seconds=30.0,
+        )
+        assert result.success
+
+        # Verify coverage on dense grid (matching V7.3 VERIFY_STEP = 0.20)
+        check_step = 0.20
+        uncovered = []
+        x = check_step / 2
+        while x <= room_w:
+            y = check_step / 2
+            while y <= room_l:
+                covered = any(
+                    (x - dx) ** 2 + (y - dy) ** 2 <= R ** 2
+                    for dx, dy in result.detector_positions
+                )
+                if not covered:
+                    uncovered.append((round(x, 2), round(y, 2)))
+                y += check_step
+            x += check_step
+
+        assert not uncovered, (
+            f"{len(uncovered)} uncovered points found — MIP solution is infeasible! "
+            f"First 5: {uncovered[:5]}"
+        )
+
+    def test_mip_within_time_limit(self):
+        """MIP must not exceed time limit excessively."""
+        import time as _time
+        start = _time.perf_counter()
+        result = solve_set_covering_mip(
+            room_width=12.0,
+            room_length=10.0,
+            coverage_radius=6.40,
+            candidate_step=2.0,
+            time_limit_seconds=15.0,
+        )
+        elapsed = _time.perf_counter() - start
+        # Allow 5s margin above limit
+        assert elapsed < 20.0, f"MIP took {elapsed:.1f}s — exceeds acceptable threshold"
+
+    def test_fallback_when_pulp_unavailable(self, monkeypatch):
+        """Graceful fallback when PULP_AVAILABLE is False."""
+        import fireai.core.spatial_engine.mip_solver as mip_mod
+        original = mip_mod.PULP_AVAILABLE
+        monkeypatch.setattr(mip_mod, "PULP_AVAILABLE", False)
+        try:
+            result = solve_set_covering_mip(5.0, 5.0, 6.40)
+            assert result.success is False
+            assert result.used_mip is False
+            assert "PuLP" in (result.fallback_reason or "")
+        finally:
+            monkeypatch.setattr(mip_mod, "PULP_AVAILABLE", original)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# NEW: Test Group — MIP Integration with FloorAnalyser
+# ═══════════════════════════════════════════════════════════════════
+
+@pytest.mark.skipif(not PULP_AVAILABLE, reason=MIP_SKIP_REASON)
+class TestMIPIntegration:
+    """
+    Integration tests: FloorAnalyser with use_mip=True.
+    MIP verification runs after greedy — never replaces placement.
+    """
+
+    def test_use_mip_sets_fields(self, optimizer):
+        """FloorAnalyser with use_mip=True must populate MIP fields in RoomSummary."""
+        analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer, use_mip=True)
+        rooms = [
+            {"room_id": "R1", "name": "office",
+             "polygon_coords": [(0,0),(10,0),(10,8),(0,8)], "ceiling_height": 3.0},
+        ]
+        report = analyser.analyse(rooms)
+        s = report.room_summaries[0]
+        assert s.used_mip is True, "used_mip must be True when MIP succeeds"
+        assert s.mip_proven_optimal_count is not None, "mip_proven_optimal_count must be set"
+        assert s.mip_proven_optimal_count >= 1
+        assert s.mip_solve_time_s is not None
+        assert s.mip_solve_time_s >= 0
+        assert s.mip_status == "Optimal"
+
+    def test_mip_proven_count_leq_greedy_count(self, optimizer):
+        """MIP proven optimal must be <= greedy detector count."""
+        analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer, use_mip=True)
+        rooms = [
+            {"room_id": "R1", "name": "office",
+             "polygon_coords": [(0,0),(12,0),(12,8),(0,8)], "ceiling_height": 3.0},
+        ]
+        report = analyser.analyse(rooms)
+        s = report.room_summaries[0]
+        assert s.mip_proven_optimal_count <= s.detector_count, (
+            f"MIP proven ({s.mip_proven_optimal_count}) > greedy ({s.detector_count}) — impossible!"
+        )
+
+    def test_mip_optimality_gap_warning(self, optimizer):
+        """When MIP proves fewer detectors, MIP_OPTIMALITY_GAP warning must appear."""
+        analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer, use_mip=True)
+        rooms = [
+            {"room_id": "R1", "name": "large_room",
+             "polygon_coords": [(0,0),(20,0),(20,15),(0,15)], "ceiling_height": 3.0},
+        ]
+        report = analyser.analyse(rooms)
+        s = report.room_summaries[0]
+        # If MIP proves fewer, warning must exist
+        if s.mip_proven_optimal_count is not None and s.mip_proven_optimal_count < s.detector_count:
+            has_gap = any("MIP_OPTIMALITY_GAP" in w for w in s.warnings)
+            assert has_gap, "MIP_OPTIMALITY_GAP warning missing when MIP < greedy"
+
+    def test_without_use_mip_no_mip_fields(self, optimizer):
+        """Without use_mip, MIP fields should be None/False."""
+        analyser = FloorAnalyser(floor_id="GF", optimizer=optimizer, use_mip=False)
+        rooms = [
+            {"room_id": "R1", "name": "office",
+             "polygon_coords": [(0,0),(10,0),(10,8),(0,8)], "ceiling_height": 3.0},
+        ]
+        report = analyser.analyse(rooms)
+        s = report.room_summaries[0]
+        assert s.used_mip is False
+        assert s.mip_proven_optimal_count is None
+        assert s.mip_solve_time_s is None
+        assert s.mip_status is None
+
+    def test_greedy_still_places_detectors_with_mip(self, optimizer):
+        """Greedy placement must be unchanged regardless of MIP verification."""
+        # Without MIP
+        analyser_no_mip = FloorAnalyser(floor_id="GF", optimizer=optimizer, use_mip=False)
+        analyser_mip = FloorAnalyser(floor_id="GF", optimizer=optimizer, use_mip=True)
+        rooms = [
+            {"room_id": "R1", "name": "office",
+             "polygon_coords": [(0,0),(10,0),(10,8),(0,8)], "ceiling_height": 3.0},
+        ]
+        report_no_mip = analyser_no_mip.analyse(rooms)
+        report_mip = analyser_mip.analyse(rooms)
+        s_no = report_no_mip.room_summaries[0]
+        s_mip = report_mip.room_summaries[0]
+        # Greedy count must be identical
+        assert s_no.detector_count == s_mip.detector_count, (
+            f"Greedy count changed with MIP: {s_no.detector_count} vs {s_mip.detector_count}"
+        )
+        assert s_no.coverage_pct == s_mip.coverage_pct
+        assert s_no.nfpa_valid == s_mip.nfpa_valid
+        assert s_no.method == s_mip.method
 
 
 @pytest.mark.skip(reason="Duct detector logic not yet implemented — NFPA 72 §17.7.5 deferred")

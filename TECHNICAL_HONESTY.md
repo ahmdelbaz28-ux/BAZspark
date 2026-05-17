@@ -2,7 +2,7 @@
 ## وثيقة الصدق الفني لمشروع FireAI
 
 **التاريخ:** 18 مايو 2026
-**النسخة:** 2.0
+**النسخة:** 2.1
 **الغرض:** توثيق الحالة الراهنة للمشروع، حدود النظام المعروفة، وخطة
 التطوير، التزاماً بمبدأ الشفافية الكاملة ورفض أي ادعاءات غير قابلة للتحقق.
 
@@ -13,7 +13,8 @@
 | المكوّن | الملف | الحالة |
 |---------|-------|--------|
 | DensityOptimizer V7.3 | `fireai/core/spatial_engine/density_optimizer.py` | ✅ مُختبر (1000 غرفة) |
-| FloorAnalyser V2.1 | `fireai/core/floor_analyser.py` | ✅ مُختبر (15+10 غرف) + AuditTrail + AuditStore |
+| MIP Solver (PuLP) | `fireai/core/spatial_engine/mip_solver.py` | ✅ اختياري — تحقق فقط |
+| FloorAnalyser V2.3 | `fireai/core/floor_analyser.py` | ✅ مُختبر + MIP verifier + AuditTrail + AuditStore |
 | BuildingEngine V0.1 | `fireai/core/building_engine.py` | ✅ مُختبر (6 سيناريوهات مبنى) |
 | AuditTrail V5.2 | `audit_trail.py` | ✅ thread-safe + 5 دوال تسجيل جديدة |
 | AuditStore | `fireai/core/audit_store.py` | ✅ سلسلة هش غير قابلة للتعدیل + HMAC-SHA256 |
@@ -47,7 +48,7 @@
 | العنصر | السبب |
 |--------|-------|
 | كود V11 بالكامل | يعتمد على 5+ وحدات غير موجودة. لا يمكن تشغيل أي سطر منه |
-| MIP Solver مُدمج | لا يوجد تكامل مع PuLP في Pipeline الحالي |
+| MIP Solver مُدمج | ✅ متاح كتحقق اختياري (use_mip=True) — لا يُستبدل greedy أبداً |
 | ProjectMemory | غير موجود — ولن يُستخدم بين الغرف |
 | دعم الأشكال غير المستطيلة | النظام يفترض غرفاً مستطيلة |
 | duct_devices منطق كامل | الحقل موجود (=0)، منطق الحقن التلقائي لاحقاً |
@@ -74,9 +75,11 @@
    - هذا **ليس تحفظياً (conservative)** — بل قد يكون أقل أماناً للأسقف المنخفضة
    - مراجعة PE مطلوبة خاصة للأسقف المنخفضة
 
-4. **غياب الحد الأدنى المُثبت رياضياً**
-   - لا يوجد MIP لإثبات العدد الأمثل
-   - `theoretical_lower_bound` تقديري فقط (NOT proven minimum)
+4. **غياب الحد الأدنى المُثبت رياضياً (مُحدَّث)**
+   - MIP Solver (PuLP) متاح الآن كخيار تحقق (use_mip=True)
+   - عند نجاحه، `mip_proven_optimal_count` يحتوي على الحد الأدنى المُثبت على شبكة المرشحين
+   - بدون MIP، يبقى `theoretical_lower_bound` تقديرياً فقط
+   - مواضع MIP غير مُتحقق منها NFPA — لا تُخزّن في RoomSummary
 
 ---
 
@@ -97,7 +100,7 @@
 | ProjectMemory | **مرفوض** | تلوث بين الغرف |
 | ProcessPoolExecutor | **مرفوض** | أخطاء مخفية في نظام سلامة حرائق |
 | أي import لوحدات V11 غير موجودة | **مرفوض** | لا stub/shim وهمية |
-| MIP حقيقي (PuLP) | **لاحقاً** | بعد بناء الأساس |
+| MIP حقيقي (PuLP) | **مُنفذ (V2.3)** | ✅ تحقق اختياري — لا يُستبدل greedy |
 | R متغير حسب ارتفاع السقف | **لاحقاً** | يحتاج تعديل V7.3 |
 | دعم L-shape عبر Shapely | **لاحقاً** | يحتاج تعديل DensityOptimizer |
 | duct_devices منطق كامل | **لاحقاً** | الحقل الآن، المنطق لاحقاً |
@@ -105,16 +108,28 @@
 
 ---
 
-## 5. الفرق الصارم: theoretical_lower_bound ≠ theoretical_minimum
+## 5. الفرق الصارم: theoretical_lower_bound ≠ theoretical_minimum ≠ mip_proven_optimal_count
 
 | المصطلح | المعنى | القابلية للتحقق |
 |---------|--------|----------------|
 | `theoretical_lower_bound` | تقدير: ceil(area / π×R²) — لا يمكن بأقل نظرياً | ❌ تقديري — قد يكون أقل من الممكن فعلياً |
-| `theoretical_minimum` | الحد الأدنى المُثبت رياضياً عبر MIP | ✅ مُثبت — لكن يتطلب MIP حقيقي |
+| `mip_proven_optimal_count` | الحد الأدنى المُثبت على شبكة المرشحين فقط | ⚠️ مُثبت على الشبكة فقط — قد لا يكون الحد الأدنى المُطلق |
+| `theoretical_minimum` | داخل MIPResult فقط — الحل الأمثل على الشبكة | ✅ مُثبت عندما solver_status == "Optimal" |
+| `detector_count` | العدد الفعلي من greedy (مُتحقق NFPA) | ✅ مُتحقق |
 
 **تحذير:** استخدام `theoretical_minimum` بدون MIP حقيقي يخلق "وهم دقة" —
 نفس النوع من التضليل الذي كشفناه في MIP الوهمي سابقاً.
 الاسم `theoretical_minimum` غير موجود في الواجهة العامة — فقط `_theoretical_minimum` (private).
+
+**ملاحظة مهمة (V2.3):**
+- `mip_proven_optimal_count` قد يكون أقل من `detector_count` لأن MIP لا يُخضع
+  مواضعه لتحقق NFPA (جدار، تباعد). هذا لا يعني أن greedy مُفرط — بل يعني
+  أن MIP يحل مشكلة مختلفة (set covering خالص بدون قيود NFPA).
+- عند وجود فجوة (MIP < greedy)، يُصدر تحذير `MIP_OPTIMALITY_GAP`
+  لمراجعة PE إمكانية تقليل عدد الكواشف.
+- `candidate_step` يتحكم بدقة الشبكة: 1.0m = دقة معقولة، 0.5m = أدق لكن أبطأ.
+  الشبكة لا تغطي كل المواضع الممكنة — لذلك `mip_proven_optimal_count`
+  ليس الحد الأدنى المُطلق بل الحد الأدنى على الشبكة.
 
 ---
 
@@ -147,6 +162,7 @@ This is a known limitation (0.8% of rooms). PE review recommended.
 | `3544fdb` | Test Suite V2 — 10 realistic rooms | ✅ 10/10 PASS |
 | `86f3cc8` | Phase 2 — theoretical_lower_bound, AuditTrail V5.2, BOUNDARY_LIMIT | ✅ مُختبر |
 | `66b952f` | Phase 3 — BuildingEngine V0.1 | ✅ 6/6 PASS |
+| `784c265` | Phase 4 — FloorAnalyser V2.2 + expanded tests (25 PASS + 3 SKIP) | ✅ مُختبر |
 | `d429e48` | ⛔ مُزوَّر — يجب تجاهله حسب AGENTS.md | ❌ مرفوض |
 
 ---
@@ -158,9 +174,11 @@ This is a known limitation (0.8% of rooms). PE review recommended.
 - لا ذاكرة مشتركة بين الغرف
 - لا كود وهمي (stub/shim)
 - theoretical_lower_bound هو الوحيد المستخدم للحد الأدنى التقديري
-- theoretical_minimum محجوز للحل المُثبت رياضياً مستقبلاً (private فقط حالياً)
+- theoretical_minimum محجوز لـ MIPResult فقط (الحل الأمثل على الشبكة)
+- mip_proven_optimal_count في RoomSummary — مُثبت على شبكة المرشحين فقط
 - AuditStore يُستخدم لتسجيل الأحداث الحرجة (سلسلة هش غير قابلة للتعدیل)
 - BuildingEngine تستخدم FloorAnalyser كمكوّن (composition not reimplementation)
+- MIP هو VERIFIER فقط — لا يُستبدل greedy placement أبداً
 
 ---
 

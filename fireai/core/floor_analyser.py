@@ -1,9 +1,17 @@
 """
-fireai/core/floor_analyser.py  V2.2
+fireai/core/floor_analyser.py  V2.3
 ====================================
 Safe, sequential floor-level fire alarm design analyser.
 
-Uses the V7.3 DensityOptimizer directly - no ExpertSystem, no MIP.
+Uses the V7.3 DensityOptimizer directly - no ExpertSystem.
+MIP (PuLP) available as optional verifier — never replaces greedy placement.
+
+V2.3 Changes:
+  - Added MIP verification path: _try_mip_verification()
+  - Added mip_proven_optimal_count, mip_solve_time_s, mip_status to RoomSummary
+  - Added use_mip parameter to FloorAnalyser constructor
+  - Added MIP_OPTIMALITY_GAP warning when MIP proves fewer detectors suffice
+  - MIP is VERIFIER only — greedy always places actual detectors
 
 V2.2 Changes:
   - Added refused, refusal_reason, used_mip fields to RoomSummary
@@ -18,9 +26,18 @@ V2.1 Changes:
   - Added optional AuditTrail integration
 
 Architecture:
-  - DensityOptimizer V7.3 (coverage_limit = R) for detector placement
+  - DensityOptimizer V7.3 (coverage_limit = R) for detector placement — FROZEN
+  - MIP Solver (PuLP) as optional verifier — never replaces greedy
   - Sequential execution only - parallel processing disabled for safety
   - Triple-check gate: proof_valid AND nfpa_valid AND NOT fallback_used
+
+MIP Verification (V2.3):
+  When use_mip=True and PuLP is available, FloorAnalyser runs MIP Set Covering
+  ILP after greedy placement. MIP proves the minimum detector count on a
+  candidate grid. This count is stored in mip_proven_optimal_count.
+  MIP positions are NOT NFPA-verified — they are never stored in RoomSummary.
+  If MIP proves fewer detectors than greedy, an MIP_OPTIMALITY_GAP warning
+  is emitted for PE review.
 
 Safety guarantees:
   - Every room result is independently verified.
@@ -100,7 +117,11 @@ class RoomSummary:
         duct_devices:   Number of duct detectors (NFPA 72 Section 17.7.5). Initial field only.
         refused:        True if room was refused (safety rule violation).
         refusal_reason: Human-readable reason for refusal, or None.
-        used_mip:       True if MIP solver was used (always False until MIP is implemented).
+        used_mip:       True if MIP verification was run and succeeded.
+        mip_proven_optimal_count: Minimum detector count proven by MIP on candidate grid.
+                        None if MIP not run or failed. See TECHNICAL_HONESTY.md §5.
+        mip_solve_time_s: MIP solve time in seconds, or None.
+        mip_status:     MIP solver status string, or None.
         analysis_ms:    Wall-clock time for this room's analysis in milliseconds.
     """
     room_id:          str
@@ -122,6 +143,9 @@ class RoomSummary:
     refused:          bool             = False
     refusal_reason:   Optional[str]    = None
     used_mip:         bool             = False
+    mip_proven_optimal_count: Optional[int]    = None
+    mip_solve_time_s: Optional[float]  = None
+    mip_status:       Optional[str]    = None
     analysis_ms:      float            = 0.0
 
 
@@ -162,7 +186,8 @@ class FloorAnalyser:
     """
     Safe, sequential full-floor fire alarm design analyser.
 
-    Uses the V7.3 DensityOptimizer directly - no ExpertSystem, no MIP.
+    Uses the V7.3 DensityOptimizer directly - no ExpertSystem.
+    Optional MIP verification (use_mip=True) proves optimality after greedy.
     Each room is analysed independently; no inter-room state is shared.
 
     Triple-Check Gate (a room passes only if ALL three are true):
@@ -193,6 +218,12 @@ class FloorAnalyser:
         audit_store: Optional AuditStore for tamper-proof (SQLite) logging.
                      Critical events (BOUNDARY_LIMIT warnings, placements)
                      are written here when provided.
+        use_mip:    If True, run MIP Set Covering ILP as verifier after greedy.
+                    Requires PuLP. MIP results are verification only — never
+                    replace greedy placement. Default False.
+        mip_candidate_step: Grid spacing for MIP candidate positions (meters).
+                    Default 1.0m. Smaller = more accurate but slower.
+        mip_time_limit: Time limit for MIP solver per room (seconds). Default 10.0.
 
     Example:
         >>> from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
@@ -217,11 +248,17 @@ class FloorAnalyser:
         optimizer:   DensityOptimizer,
         audit_trail: Optional[object] = None,
         audit_store: Optional[object] = None,
+        use_mip:     bool = False,
+        mip_candidate_step: float = 1.0,
+        mip_time_limit: float = 10.0,
     ) -> None:
         self.floor_id    = floor_id
         self.opt         = optimizer   # V7.3 as-is, no modifications
         self.audit_trail = audit_trail
         self.audit_store = audit_store
+        self.use_mip     = use_mip
+        self.mip_candidate_step = mip_candidate_step
+        self.mip_time_limit     = mip_time_limit
 
     # ─── public ──────────────────────────────────────────────────────
 
@@ -413,8 +450,16 @@ class FloorAnalyser:
                 refused                 = False,
                 refusal_reason          = None,
                 used_mip                = False,
+                mip_proven_optimal_count = None,
+                mip_solve_time_s        = None,
+                mip_status              = None,
                 analysis_ms             = round(ms, 1),
             )
+
+            # ─── MIP verification (optional) ───
+            if self.use_mip:
+                self._try_mip_verification(room, layout, summary)
+
             report.room_summaries.append(summary)
             report.total_detectors += summary.detector_count
             report.total_theoretical_lower_bound += summary.theoretical_lower_bound
@@ -448,6 +493,96 @@ class FloorAnalyser:
         return report
 
     # ─── private ─────────────────────────────────────────────────────
+
+    def _try_mip_verification(
+        self,
+        room: Room,
+        layout: DetectorLayout,
+        summary: RoomSummary,
+    ) -> None:
+        """
+        Run MIP Set Covering ILP as verification after greedy placement.
+
+        MIP proves the minimum detector count on a candidate grid.
+        This is VERIFICATION ONLY — greedy placement is always used.
+        MIP positions are NOT NFPA-verified and are never stored in RoomSummary.
+
+        If MIP proves fewer detectors than greedy, an MIP_OPTIMALITY_GAP
+        warning is added for PE review.
+
+        Updates summary fields in-place:
+          - used_mip, mip_proven_optimal_count, mip_solve_time_s, mip_status
+
+        Args:
+            room:    Room object with width, length, ceiling_height.
+            layout:  DetectorLayout from greedy (DensityOptimizer V7.3).
+            summary: RoomSummary to update with MIP verification results.
+        """
+        try:
+            from fireai.core.spatial_engine.mip_solver import (
+                solve_set_covering_mip,
+                PULP_AVAILABLE,
+            )
+        except ImportError:
+            summary.mip_status = "mip_solver_import_failed"
+            logger.warning("Room %s: MIP solver module not importable", room.name)
+            return
+
+        if not PULP_AVAILABLE:
+            summary.mip_status = "pulp_not_installed"
+            return
+
+        mip_result = solve_set_covering_mip(
+            room_width=room.width,
+            room_length=room.length,
+            coverage_radius=self.opt.R,  # 6.40m from V7.3 (not modified)
+            candidate_step=self.mip_candidate_step,
+            time_limit_seconds=self.mip_time_limit,
+        )
+
+        if mip_result.success:
+            summary.used_mip = True
+            summary.mip_proven_optimal_count = mip_result.theoretical_minimum
+            summary.mip_solve_time_s = round(mip_result.solve_time_seconds, 3)
+            summary.mip_status = mip_result.solver_status
+
+            # Log MIP verification to AuditStore if available
+            if self.audit_store and hasattr(self.audit_store, 'add_event'):
+                self.audit_store.add_event(
+                    event_type="MIP_VERIFICATION",
+                    room_id=summary.room_id,
+                    details_dict={
+                        "mip_proven_optimal_count": mip_result.theoretical_minimum,
+                        "greedy_count": layout.count,
+                        "gap": layout.count - mip_result.theoretical_minimum,
+                        "candidate_step_m": self.mip_candidate_step,
+                        "solve_time_s": round(mip_result.solve_time_seconds, 3),
+                        "solver_status": mip_result.solver_status,
+                    },
+                )
+
+            # Golden warning: MIP proves fewer detectors suffice on candidate grid
+            if mip_result.theoretical_minimum < layout.count:
+                gap_msg = (
+                    f"MIP_OPTIMALITY_GAP: MIP proves {mip_result.theoretical_minimum} detectors "
+                    f"sufficient on candidate grid (step={self.mip_candidate_step}m), "
+                    f"but greedy placed {layout.count}. "
+                    f"PE review recommended for potential reduction."
+                )
+                summary.warnings.append(gap_msg)
+                logger.info("Room %s: %s", room.name, gap_msg)
+            else:
+                logger.info(
+                    "Room %s: MIP confirms greedy count %d is optimal on candidate grid",
+                    room.name, layout.count,
+                )
+        else:
+            summary.used_mip = False
+            summary.mip_status = mip_result.fallback_reason or mip_result.solver_status
+            logger.info(
+                "Room %s: MIP verification skipped — %s",
+                room.name, summary.mip_status,
+            )
 
     @staticmethod
     def _check_safety_refusal(room_type: str, detector_type: str) -> tuple:
@@ -543,7 +678,7 @@ if __name__ == "__main__":
         {"room_id": "thin_line_1x50", "name": "thin_line", "polygon_coords": [(0,0),(1,0),(1,50),(0,50)], "ceiling_height": 3.0},
     ]
 
-    print("Testing FloorAnalyser V2.1 with 15 rooms...")
+    print("Testing FloorAnalyser V2.3 with 15 rooms...")
     report = analyser.analyse(test_rooms)
 
     print(f"\nFloor: {report.floor_id}")
