@@ -189,6 +189,9 @@ class RoomSummary:
     scenario_worst_time_s: Optional[float] = None
     scenario_blind_spots: int            = 0
     scenario_battery_ms: float           = 0.0
+    # V3.1: Duct detector fields
+    duct_results:   List              = field(default_factory=list)
+    duct_warnings:  List[str]         = field(default_factory=list)
 
 
 @dataclass
@@ -221,10 +224,10 @@ class FloorReport:
     # V3.0: Scenario verification aggregation
     scenario_non_compliant_rooms: List[str]     = field(default_factory=list)
     scenario_safe_to_submit: bool               = True
+    # V3.1: Duct detector aggregation
+    total_duct_devices: int                    = 0
 
 
-# ──────────────────────────────────────────────────────────────────
-# Floor Analyser
 # ──────────────────────────────────────────────────────────────────
 
 class FloorAnalyser:
@@ -547,9 +550,13 @@ class FloorAnalyser:
                     room_dict, layout, summary, ceiling_h, det_type_str,
                 )
 
+            # ─── Duct detector analysis (V3.1) ───────────────────────────
+            self._inject_duct_analysis(room_dict, summary)
+
             report.room_summaries.append(summary)
             report.total_detectors += summary.detector_count
             report.total_theoretical_lower_bound += summary.theoretical_lower_bound
+            report.total_duct_devices += summary.duct_devices
 
         # Floor-level aggregation
         report.non_compliant_rooms = [
@@ -690,6 +697,92 @@ class FloorAnalyser:
             )
 
     # ------------------------------------------------------------------
+    def _inject_duct_analysis(
+        self,
+        room_dict: dict,
+        summary:   RoomSummary,
+    ) -> None:
+        """
+        Run duct detector analysis for a room (V3.1).
+
+        If the room_dict contains a 'ducts' key with a list of duct
+        specifications, this method analyses each duct per NFPA 72 §17.7.5
+        and populates summary.duct_results, summary.duct_devices, and
+        summary.duct_warnings.
+
+        If no ducts are specified, duct_devices remains 0 (default).
+
+        Args:
+            room_dict: Room dictionary (must have optional 'ducts' key).
+            summary:   RoomSummary to update with duct results.
+        """
+        try:
+            from fireai.core.duct_detector import (
+                DuctSpec,
+                analyse_ducts,
+                total_duct_detectors,
+            )
+        except ImportError:
+            logger.debug(
+                "Room %s: duct_detector not importable — skipping duct analysis",
+                summary.name,
+            )
+            return
+
+        raw_ducts = room_dict.get("ducts", [])
+        if not raw_ducts:
+            return
+
+        # Convert dicts to DuctSpec if needed
+        duct_specs = []
+        for d in raw_ducts:
+            if isinstance(d, DuctSpec):
+                duct_specs.append(d)
+            elif isinstance(d, dict):
+                try:
+                    duct_specs.append(DuctSpec(**d))
+                except TypeError:
+                    logger.warning(
+                        "Room %s: invalid duct spec %s — skipping",
+                        summary.name, d,
+                    )
+            else:
+                logger.warning(
+                    "Room %s: duct entry must be DuctSpec or dict, got %s",
+                    summary.name, type(d).__name__,
+                )
+
+        if not duct_specs:
+            return
+
+        results = analyse_ducts(duct_specs)
+        all_warnings = [w for r in results for w in r.warnings]
+
+        summary.duct_results  = results
+        summary.duct_devices  = total_duct_detectors(results)
+        summary.duct_warnings = all_warnings
+
+        # Log to AuditStore if available
+        if self.audit_store and hasattr(self.audit_store, 'add_event'):
+            self.audit_store.add_event(
+                event_type="DUCT_DETECTOR_ANALYSIS",
+                room_id=summary.room_id,
+                details_dict={
+                    "ducts_analysed": len(duct_specs),
+                    "duct_devices": summary.duct_devices,
+                    "exempt_ducts": sum(
+                        1 for r in results if r.exempt
+                    ),
+                    "nfpa_ref": "NFPA 72-2022 §17.7.5",
+                },
+            )
+
+        logger.info(
+            "Room %s: duct analysis ducts=%d devices=%d exempt=%d",
+            summary.name, len(duct_specs), summary.duct_devices,
+            sum(1 for r in results if r.exempt),
+        )
+
     def _run_scenario_verification(
         self,
         room_dict:     dict,
