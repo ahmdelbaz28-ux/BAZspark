@@ -10,7 +10,7 @@ import json
 import hashlib
 
 
-@dataclass
+@dataclass(frozen=True)
 class AuditEntry:
     timestamp_utc: str
     room_id: str
