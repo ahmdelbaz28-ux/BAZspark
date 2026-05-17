@@ -135,7 +135,8 @@ class RoomSummary:
         warnings:       List of advisory warnings (including BOUNDARY_LIMIT).
         theoretical_lower_bound: Estimative minimum detector count (NOT proven).
         efficiency_ratio: theoretical_lower_bound / detector_count (closer to 1.0 = better).
-        duct_devices:   Number of duct detectors (NFPA 72 Section 17.7.5). Initial field only.
+        duct_devices:   Number of duct smoke detectors (populated by _inject_duct_analysis).
+                        Remains 0 if room has no ducts or is refused.
         refused:        True if room was refused (safety rule violation).
         refusal_reason: Human-readable reason for refusal, or None.
         used_mip:       True if MIP verification was run and succeeded.
@@ -729,7 +730,16 @@ class FloorAnalyser:
             )
             return
 
-        raw_ducts = room_dict.get("ducts", [])
+        # Support multiple key names for compatibility with different models:
+        # - "ducts" (simple key used by FloorAnalyser room dicts)
+        # - "hvac_ducts" (used by nfpa72_models.RoomSpec.hvac_ducts property)
+        # - "hvac_duct_list" (used by nfpa72_models.RoomSpec.hvac_duct_list field)
+        raw_ducts = (
+            room_dict.get("ducts")
+            or room_dict.get("hvac_ducts")
+            or room_dict.get("hvac_duct_list")
+            or []
+        )
         if not raw_ducts:
             return
 

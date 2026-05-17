@@ -30,6 +30,7 @@ from fireai.core.duct_detector import (
     NFPA_DUCT_MIN_WIDTH_M,
     NFPA_DUCT_MIN_LENGTH_M,
     NFPA_DUCT_CFM_THRESHOLD,
+    NFPA_DUCT_SPACING_REF,
 )
 
 from fireai.core.floor_analyser import FloorAnalyser, RoomSummary, FloorReport
@@ -176,6 +177,16 @@ class TestDuctPositions:
         r = analyse_duct(duct)
         for pos in r.detectors:
             assert "NFPA 72" in pos.nfpa_ref
+            assert "NFPA 90A" in pos.spacing_ref
+
+    def test_spacing_ref_cites_nfpa_90a(self):
+        """spacing_ref must cite NFPA 90A (the actual spacing source)."""
+        duct = DuctSpec("D-SPR", length_m=5.0, width_m=0.5,
+                        start_point=(0, 0), end_point=(5, 0))
+        r = analyse_duct(duct)
+        for pos in r.detectors:
+            assert "NFPA 90A" in pos.spacing_ref
+            assert "6.4.2.2" in pos.spacing_ref
 
 
 # ============================================================================
@@ -199,6 +210,15 @@ class TestDuctSpacing:
                         start_point=(0, 0), end_point=(3, 0))
         r = analyse_duct(duct)
         assert "NFPA 72" in r.nfpa_ref
+        assert "NFPA 90A" in r.spacing_ref
+
+    def test_result_spacing_ref_cites_90a(self):
+        """Result spacing_ref must cite NFPA 90A §6.4.2.2."""
+        duct = DuctSpec("D-SPR", length_m=5.0, width_m=0.5,
+                        start_point=(0, 0), end_point=(5, 0))
+        r = analyse_duct(duct)
+        assert "NFPA 90A" in r.spacing_ref
+        assert "6.4.2.2" in r.spacing_ref
 
 
 # ============================================================================
@@ -496,3 +516,90 @@ class TestDuctEdgeCases:
         assert not supply_result.exempt
         assert not return_result.exempt
         assert exhaust_result.exempt
+
+
+# ============================================================================
+# Test Duct Key Compatibility (hvac_ducts / hvac_duct_list)
+# ============================================================================
+
+class TestDuctKeyCompatibility:
+    """Test that _inject_duct_analysis supports multiple key names."""
+
+    def test_hvac_ducts_key_works(self):
+        """room_dict with 'hvac_ducts' key should populate duct_devices."""
+        opt = DensityOptimizer()
+        fa = FloorAnalyser("floor_1", opt)
+        rooms = [
+            {"room_id": "R1", "name": "Office",
+             "polygon_coords": [(0, 0), (10, 0), (10, 8), (0, 8)],
+             "ceiling_height": 3.0,
+             "hvac_ducts": [
+                 {"duct_id": "SUP-1", "length_m": 4.0, "width_m": 0.5,
+                  "start_point": (1.0, 2.0), "end_point": (5.0, 2.0),
+                  "airflow_cfm": 3000},
+             ]},
+        ]
+        report = fa.analyse(rooms)
+        s = report.room_summaries[0]
+        assert s.duct_devices > 0
+        assert len(s.duct_results) == 1
+        assert s.duct_results[0].duct_id == "SUP-1"
+
+    def test_hvac_duct_list_key_works(self):
+        """room_dict with 'hvac_duct_list' key should populate duct_devices."""
+        opt = DensityOptimizer()
+        fa = FloorAnalyser("floor_1", opt)
+        rooms = [
+            {"room_id": "R1", "name": "Office",
+             "polygon_coords": [(0, 0), (10, 0), (10, 8), (0, 8)],
+             "ceiling_height": 3.0,
+             "hvac_duct_list": [
+                 {"duct_id": "SUP-1", "length_m": 4.0, "width_m": 0.5,
+                  "start_point": (1.0, 2.0), "end_point": (5.0, 2.0),
+                  "airflow_cfm": 3000},
+             ]},
+        ]
+        report = fa.analyse(rooms)
+        s = report.room_summaries[0]
+        assert s.duct_devices > 0
+        assert len(s.duct_results) == 1
+
+    def test_ducts_key_takes_priority(self):
+        """'ducts' key should take priority when multiple keys present."""
+        opt = DensityOptimizer()
+        fa = FloorAnalyser("floor_1", opt)
+        rooms = [
+            {"room_id": "R1", "name": "Office",
+             "polygon_coords": [(0, 0), (10, 0), (10, 8), (0, 8)],
+             "ceiling_height": 3.0,
+             "ducts": [
+                 {"duct_id": "PRIORITY", "length_m": 4.0, "width_m": 0.5,
+                  "start_point": (1.0, 2.0), "end_point": (5.0, 2.0)},
+             ],
+             "hvac_ducts": [
+                 {"duct_id": "FALLBACK", "length_m": 6.0, "width_m": 0.5,
+                  "start_point": (1.0, 2.0), "end_point": (7.0, 2.0)},
+             ]},
+        ]
+        report = fa.analyse(rooms)
+        s = report.room_summaries[0]
+        assert s.duct_results[0].duct_id == "PRIORITY"
+
+    def test_empty_ducts_falls_through_to_hvac_ducts(self):
+        """If 'ducts' is empty list, should try 'hvac_ducts'."""
+        opt = DensityOptimizer()
+        fa = FloorAnalyser("floor_1", opt)
+        rooms = [
+            {"room_id": "R1", "name": "Office",
+             "polygon_coords": [(0, 0), (10, 0), (10, 8), (0, 8)],
+             "ceiling_height": 3.0,
+             "ducts": [],
+             "hvac_ducts": [
+                 {"duct_id": "FROM-HVAC", "length_m": 4.0, "width_m": 0.5,
+                  "start_point": (1.0, 2.0), "end_point": (5.0, 2.0)},
+             ]},
+        ]
+        report = fa.analyse(rooms)
+        s = report.room_summaries[0]
+        assert s.duct_devices > 0
+        assert s.duct_results[0].duct_id == "FROM-HVAC"

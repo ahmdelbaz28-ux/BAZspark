@@ -35,6 +35,7 @@ Point = Tuple[float, float]
 # NOTE: NFPA 72 §17.7.5 does NOT specify inter-detector spacing.
 # The 3.05m (10 ft) value comes from NFPA 90A and IMC.
 NFPA_DUCT_MAX_SPACING_M: float = 3.05   # 10 ft converted to metres
+NFPA_DUCT_SPACING_REF:   str   = "NFPA 90A-2024 §6.4.2.2"  # spacing source
 
 # Minimum dimensions for duct detector requirement
 NFPA_DUCT_MIN_WIDTH_M: float  = 0.20    # ducts narrower than this are exempt
@@ -77,19 +78,26 @@ class DuctSpec:
 class DuctDetectorPosition:
     """
     Position of one duct smoke detector.
+
+    nfpa_ref cites the requirement for duct detectors (NFPA 72 §17.7.5).
+    spacing_ref cites the maximum inter-detector spacing (NFPA 90A §6.4.2.2).
     """
     duct_id: str
     index: int                          # detector index within duct (1-based)
     x: float
     y: float
     distance_from_start_m: float
-    nfpa_ref: str = "NFPA 72-2022 §17.7.5"
+    nfpa_ref: str = "NFPA 72-2022 §17.7.5"       # detector requirement
+    spacing_ref: str = "NFPA 90A-2024 §6.4.2.2"   # max spacing source
 
 
 @dataclass
 class DuctAnalysisResult:
     """
     Complete analysis result for one duct.
+
+    nfpa_ref cites the requirement for duct detectors (NFPA 72 §17.7.5).
+    spacing_ref cites the maximum inter-detector spacing (NFPA 90A §6.4.2.2).
     """
     duct_id: str
     duct_length_m: float
@@ -100,7 +108,8 @@ class DuctAnalysisResult:
     exempt: bool = False
     exemption_reason: Optional[str] = None
     warnings: List[str] = field(default_factory=list)
-    nfpa_ref: str = "NFPA 72-2022 §17.7.5"
+    nfpa_ref: str = "NFPA 72-2022 §17.7.5"       # detector requirement
+    spacing_ref: str = "NFPA 90A-2024 §6.4.2.2"   # max spacing source
 
 
 # ============================================================================
