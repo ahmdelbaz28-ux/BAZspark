@@ -159,6 +159,8 @@ class DensityOptimizer:
         Guarantees step_x <= max_spacing.
         """
         available = W - 2 * self.wm
+        if available <= 2 * self.R:
+            return 1, 0.0
         if available <= self.max_spacing:
             return 1, 0.0
         n = max(2, math.ceil(available / self.max_spacing) + 1)
