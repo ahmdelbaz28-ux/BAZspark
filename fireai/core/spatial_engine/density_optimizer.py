@@ -84,15 +84,23 @@ class DensityOptimizer:
         cands.sort(key=lambda c: c.count)
         best: Optional[DetectorLayout] = None
         
-        # First pass: prefer NFPA-compliant (no violations)
+        # First pass: prefer NFPA-compliant with 100% coverage
         for lay in cands:
             self._verify(lay)
             self._audit_nfpa(lay)
-            if len(lay.violations) == 0:
+            if len(lay.violations) == 0 and lay.coverage_pct == 100.0:
                 best = lay
                 break
 
-        # Second pass: if none NFPA-compliant, pick highest coverage
+        # Second pass: if none with 100%, pick highest coverage NFPA-compliant
+        if best is None:
+            best_cov = -1
+            for lay in cands:
+                if len(lay.violations) == 0 and lay.coverage_pct > best_cov:
+                    best_cov = lay.coverage_pct
+                    best = lay
+
+        # Third pass: if none NFPA-compliant, pick highest coverage
         if best is None:
             best_cov = -1
             for lay in cands:
@@ -109,24 +117,53 @@ class DensityOptimizer:
 
     # ── A: Hex-Guarded ──────────────────────────────────────────────────────────
 
+    def _calculate_rows(self, L: float) -> int:
+        """
+        Calculate minimum number of rows such that:
+          - distance between adjacent rows <= S
+          - distance from any row to nearest wall <= S/2
+        """
+        available = L - 2 * self.wm
+        if available <= self.max_spacing:
+            return 1
+        n = 1
+        while True:
+            if n == 1:
+                gap = available
+            else:
+                gap = available / (n - 1)
+            wall_dist = gap / 2 if n > 1 else available / 2
+            if gap <= self.max_spacing + 1e-9 and wall_dist <= self.max_spacing / 2 + 1e-9:
+                return n
+            n += 1
+            if n > 100:
+                return max(1, math.ceil(available / self.max_spacing))
+
+    def _distribute_rows(self, L: float, n_rows: int) -> List[float]:
+        """
+        Evenly distribute row centers in [wm, L-wm].
+        Guarantees wall distance <= S/2 for first and last rows.
+        """
+        if n_rows == 1:
+            return [L / 2]
+        available = L - 2 * self.wm
+        gap = available / (n_rows - 1)
+        return [self.wm + i * gap for i in range(n_rows)]
+
     def _hex_guarded(self, room: Room, along_x: bool) -> DetectorLayout:
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
-        S, Ry, wm, R = self.S_g, self.Ry_g, self.wm, self.R
+        S, wm, R = self.S_g, self.wm, self.R
         pts: List[Tuple[float, float]] = []
-        row = 0; y = wm
-        while True:
-            offset = (S / 2) if (row % 2 == 1) else 0.0
+        
+        # Use calculated row distribution for NFPA compliance
+        n_rows = self._calculate_rows(L)
+        y_coords = self._distribute_rows(L, n_rows)
+        
+        for row_index, y in enumerate(y_coords):
+            offset = (S / 2) if (row_index % 2 == 1) else 0.0
             xs = self._row_xs_guarded(W, wm, S, offset, R)
-            for x in xs: pts.append((x, y))
-            nxt = y + Ry; far = L - wm
-            if nxt > far + 1e-9:
-                if far - y > R + 1e-9:
-                    row += 1
-                    off2 = (S / 2) if (row % 2 == 1) else 0.0
-                    for x in self._row_xs_guarded(W, wm, S, off2, R):
-                        pts.append((x, far))
-                break
-            y = nxt; row += 1
+            for x in xs:
+                pts.append((x, y))
 
         # Corner Guards
         corners = [(wm, wm), (W - wm, wm), (wm, L - wm), (W - wm, L - wm)]
@@ -154,32 +191,20 @@ class DensityOptimizer:
 
     def _hex_adaptive(self, room: Room, along_x: bool) -> DetectorLayout:
         """
-        New NFPA-Compliant version: Use slice-based row distribution.
+        Uses calculated row distribution for NFPA compliance.
         """
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
         R, wm = self.R, self.wm
+        S = self.max_spacing
         pts: List[Tuple[float, float]] = []
 
-        # --- New NFPA-Compliant Row Distribution ---
-        S_max = min(R * math.sqrt(3), self.max_spacing / 2.0)  # Max horizontal spacing + NFPA limit
-
-        top_boundary = L - wm
-        bottom_boundary = wm
-        usable_height = top_boundary - bottom_boundary
-
-        # Number of slices = ceil(usable_height / S_max)
-        num_rows = max(1, math.ceil(usable_height / S_max))
-        slice_height = usable_height / num_rows
-
-        # Generate row centers
-        y_coords = []
-        for i in range(num_rows):
-            y = bottom_boundary + (i + 0.5) * slice_height
-            y_coords.append(y)
+        # Use calculated row distribution
+        n_rows = self._calculate_rows(L)
+        y_coords = self._distribute_rows(L, n_rows)
 
         # Calculate horizontal spacing
-        Nx = max(2, math.ceil((W - 2*wm) / S_max) + 1)
-        Sx = (W - 2*wm) / (Nx - 1)
+        Nx = max(2, math.ceil((W - 2*wm) / S) + 1)
+        Sx = (W - 2*wm) / (Nx - 1) if Nx > 1 else 0
         even_xs = [wm + i * Sx for i in range(Nx)]
         odd_xs = [even_xs[0] + Sx / 2 + i * Sx for i in range(Nx)]
 
