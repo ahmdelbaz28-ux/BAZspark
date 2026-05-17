@@ -82,22 +82,24 @@ class DensityOptimizer:
         # Verify cheapest candidates first; stop at first valid
         cands.sort(key=lambda c: c.count)
         best: Optional[DetectorLayout] = None
+        
+        # First pass: prefer no NFPA violations
         for lay in cands:
             self._verify(lay)
             self._audit_nfpa(lay)
-            if lay.proof_valid and lay.wall_violations == 0:
+            if len(lay.violations) == 0 and lay.wall_violations == 0:
                 best = lay
                 break
 
-        # If no winner yet, keep verifying rest
+        # Second pass: if none are NFPA-compliant, pick highest coverage
         if best is None:
+            best_cov = -1
             for lay in cands:
-                if not lay.proof_valid:
-                    continue
-                if lay.wall_violations == 0:
-                    if best is None or lay.count < best.count:
-                        best = lay
+                if lay.coverage_pct > best_cov:
+                    best_cov = lay.coverage_pct
+                    best = lay
 
+        # Fallback to _fallback only if no candidates
         if best is None:
             best = self._fallback(room)
             self._verify(best)
@@ -108,34 +110,33 @@ class DensityOptimizer:
 
     def _hex_guarded(self, room: Room, along_x: bool) -> DetectorLayout:
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
-        S, Ry, wm, R = self.S_g, self.Ry_g, self.wm, self.R
-        # NFPA compliance: ensure row spacing doesn't exceed S/2
-        Ry = min(Ry, S / 2.0)  # Max row spacing = S/2
+        S, wm, R = self.S_g, self.wm, self.R
         pts: List[Tuple[float, float]] = []
-        row = 0; y = wm
-        while True:
-            offset = (S / 2) if (row % 2 == 1) else 0.0
+
+        # --- New NFPA-Compliant Row Distribution ---
+        max_dist_from_wall = self.max_spacing / 2.0  # NFPA limit = 4.57m
+        
+        # List of y-coordinates for rows
+        y_coords = []
+        
+        # Place first row at min distance from bottom wall = S/2
+        y = wm + max_dist_from_wall
+        while y <= L - wm - max_dist_from_wall + 1e-9:
+            y_coords.append(y)
+            y += max_dist_from_wall
+        
+        # Ensure at least 1 row centered
+        if not y_coords:
+            y_coords = [L / 2]
+
+        # Place detectors for each row
+        for row_index, y in enumerate(y_coords):
+            offset = (S / 2) if (row_index % 2 == 1) else 0.0
             xs = self._row_xs_guarded(W, wm, S, offset, R)
             for x in xs:
-                # NFPA compliance: distance to NEAREST wall <= S/2
-                dist_to_nearest_wall_y = min(y - wm, L - wm - y)
-                if dist_to_nearest_wall_y <= S / 2.0 + 1e-9:
-                    pts.append((x, y))
-            nxt = y + Ry; far = L - wm
-            if nxt > far + 1e-9:
-                if far - y > R + 1e-9:
-                    row += 1
-                    off2 = (S / 2) if (row % 2 == 1) else 0.0
-                    for x in self._row_xs_guarded(W, wm, S, off2, R):
-                        # NFPA compliance: distance to NEAREST wall <= S/2
-                        dist_to_nearest_wall = min(far - wm, L - wm - far)
-                        if dist_to_nearest_wall <= S / 2.0 + 1e-9:
-                            pts.append((x, far))
-                break
-            y = nxt; row += 1
-        if not along_x: pts = [(b, a) for a, b in pts]
+                pts.append((x, y))
 
-        # Corner guards: ensure all four corners are within R of a detector
+        # Add Corner Guards
         corners = [(wm, wm), (W - wm, wm), (wm, L - wm), (W - wm, L - wm)]
         for cx, cy in corners:
             covered = False
@@ -146,6 +147,8 @@ class DensityOptimizer:
             if not covered:
                 pts.append((cx, cy))
 
+        if not along_x:
+            pts = [(b, a) for a, b in pts]
         return DetectorLayout(room=room, detectors=pts,
                               method=f"hexG_{'x' if along_x else 'y'}")
 
@@ -160,70 +163,55 @@ class DensityOptimizer:
 
     def _hex_adaptive(self, room: Room, along_x: bool) -> DetectorLayout:
         """
-        Choose Nx so even-row detectors span [wm, W-wm] exactly with equal spacing.
-        Spacing Sx=(W-2wm)/(Nx-1) ≤ R·√3 (equilateral triangle centroid ≤ R).
-        Ry = Sx·√3/2.  Odd rows at even_x[i]+Sx/2.
+        New NFPA-Compliant version: Use slice-based row distribution.
         """
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
         R, wm = self.R, self.wm
-        S_max = R * math.sqrt(3)   # 7.9155 m
+        pts: List[Tuple[float, float]] = []
 
-        # NFPA compliance: limit Ry to S/2
-        S_max = min(S_max, self.max_spacing / 2.0)  # S/2 = 4.57m
+        # --- New NFPA-Compliant Row Distribution ---
+        S_max = min(R * math.sqrt(3), self.max_spacing / 2.0)  # Max horizontal spacing + NFPA limit
 
-        Nx_min = max(2, math.ceil((W - 2*wm) / S_max) + 1)
-        best_pts: Optional[List] = None
-        best_n = 10**9
+        top_boundary = L - wm
+        bottom_boundary = wm
+        usable_height = top_boundary - bottom_boundary
 
-        for Nx in range(Nx_min, Nx_min + 20):
-            Sx = (W - 2*wm) / (Nx - 1)
-            even_xs = [wm + i * Sx for i in range(Nx)]
-            Ry = Sx * math.sqrt(3) / 2
+        # Number of slices = ceil(usable_height / S_max)
+        num_rows = max(1, math.ceil(usable_height / S_max))
+        slice_height = usable_height / num_rows
 
-            # Odd rows: start at even_xs[0]+Sx/2, same spacing
-            odd_xs: List[float] = []
-            x = even_xs[0] + Sx / 2
-            while x <= W - wm + 1e-9: odd_xs.append(x); x += Sx
+        # Generate row centers
+        y_coords = []
+        for i in range(num_rows):
+            y = bottom_boundary + (i + 0.5) * slice_height
+            y_coords.append(y)
 
-            pts: List[Tuple[float, float]] = []
-            row = 0; y = wm
-            while True:
-                for xp in (even_xs if row % 2 == 0 else odd_xs):
-                    # NFPA compliance: distance to NEAREST wall <= S/2
-                    dist_to_nearest_wall = min(y - wm, L - wm - y)
-                    if dist_to_nearest_wall <= self.max_spacing / 2.0 + 1e-9:
-                        pts.append((xp, y))
-                nxt = y + Ry; far = L - wm
-                if nxt > far + 1e-9:
-                    if far - y > R + 1e-9:
-                        row += 1
-                        for xp in (even_xs if row % 2 == 0 else odd_xs):
-                            # NFPA compliance: distance to NEAREST wall <= S/2
-                            dist_to_nearest_wall = min(far - wm, L - wm - far)
-                            if dist_to_nearest_wall <= self.max_spacing / 2.0 + 1e-9:
-                                pts.append((xp, far))
-                    break
-                y = nxt; row += 1
+        # Calculate horizontal spacing
+        Nx = max(2, math.ceil((W - 2*wm) / S_max) + 1)
+        Sx = (W - 2*wm) / (Nx - 1)
+        even_xs = [wm + i * Sx for i in range(Nx)]
+        odd_xs = [even_xs[0] + Sx / 2 + i * Sx for i in range(Nx)]
 
-            if len(pts) < best_n:
-                best_n = len(pts); best_pts = pts
+        # Place detectors for each row
+        for row_index, y in enumerate(y_coords):
+            xs = even_xs if row_index % 2 == 0 else odd_xs
+            for x in xs:
+                pts.append((x, y))
 
-        if best_pts is None:
-            best_pts = []
-        if not along_x: best_pts = [(b, a) for a, b in best_pts]
-
-        # Corner guards: ensure all four corners are within R of a detector
+        # Add Corner Guards
         corners = [(wm, wm), (W - wm, wm), (wm, L - wm), (W - wm, L - wm)]
         for cx, cy in corners:
             covered = False
-            for dx, dy in best_pts:
+            for dx, dy in pts:
                 if (cx - dx) ** 2 + (cy - dy) ** 2 <= R ** 2 + 1e-9:
                     covered = True
                     break
             if not covered:
-                best_pts.append((cx, cy))
+                pts.append((cx, cy))
 
-        return DetectorLayout(room=room, detectors=best_pts,
+        if not along_x:
+            pts = [(b, a) for a, b in pts]
+        return DetectorLayout(room=room, detectors=pts,
                               method=f"hexA_{'x' if along_x else 'y'}")
 
     # ── C: Rect-Best ──────────────────────────────────────────────────────────────
