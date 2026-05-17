@@ -122,19 +122,19 @@ class DensityOptimizer:
     def _calculate_rows(self, L: float) -> List[float]:
         """
         Returns y-coordinates of rows.
-        - First and last rows are within wall_limit (S/2) of the walls.
+        - First and last rows are within coverage_limit (R) of the walls.
         - Inner rows are evenly spaced such that gap <= Ry.
         """
         wm, Ry = self.wm, self.Ry_g
-        wall_limit = self.max_spacing / 2.0
+        coverage_limit = self.R  # 6.40m — coverage radius for full wall coverage
 
         # Small room: single row at center
-        if L <= 2 * wall_limit + 2 * wm:
+        if L <= 2 * coverage_limit + 2 * wm:
             return [round(L / 2.0, 3)]
 
-        # Boundary rows at wall_limit
-        y_first = wall_limit
-        y_last = L - wall_limit
+        # Boundary rows at coverage_limit
+        y_first = coverage_limit
+        y_last = L - coverage_limit
         available = y_last - y_first
 
         # Number of gaps between rows (must be <= Ry)
@@ -340,7 +340,7 @@ class DensityOptimizer:
         dets = layout.detectors
         S = self.max_spacing
         W, L = layout.room.width, layout.room.length
-        wall_limit = S / 2
+        coverage_limit = self.R  # 6.40m — coverage radius for wall coverage check
         violations = []
         layout.violations = []  # Reset violations list
         
@@ -367,10 +367,10 @@ class DensityOptimizer:
         # (b) Boundary detector gaps along each wall
         walls = {'bottom': [], 'top': [], 'left': [], 'right': []}
         for idx, (x, y) in enumerate(dets):
-            if y <= wall_limit + self.wm: walls['bottom'].append((idx, x))
-            if y >= L - wall_limit - self.wm: walls['top'].append((idx, x))
-            if x <= wall_limit + self.wm: walls['left'].append((idx, y))
-            if x >= W - wall_limit - self.wm: walls['right'].append((idx, y))
+            if y <= coverage_limit + self.wm: walls['bottom'].append((idx, x))
+            if y >= L - coverage_limit - self.wm: walls['top'].append((idx, x))
+            if x <= coverage_limit + self.wm: walls['left'].append((idx, y))
+            if x >= W - coverage_limit - self.wm: walls['right'].append((idx, y))
         
         for wall_name, wall_dets in walls.items():
             if len(wall_dets) == 0:
