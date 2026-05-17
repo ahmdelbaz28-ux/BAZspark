@@ -270,6 +270,27 @@ class DensityOptimizer:
             x = min(x+step, W)
         layout.coverage_pct = round(100.0*covered/total, 4) if total else 0.0
         layout.proof_valid  = (covered == total)
+
+        # --- TEMPORARY DIAGNOSTIC ---
+        if covered < total:
+            import sys
+            x = 0.0
+            found = 0
+            while True:
+                y = 0.0
+                while True:
+                    px, py = min(x, W), min(y, L)
+                    if not any((px-dx)**2+(py-dy)**2 <= R2 for dx, dy in dets):
+                        print(f"  UNCOVERED POINT: ({px:.2f}, {py:.2f})", file=sys.stderr)
+                        found += 1
+                        if found >= 5:
+                            break
+                    if y >= L: break
+                    y = min(y+step, L)
+                if found >= 5 or x >= W: break
+                x = min(x+step, W)
+        # --- END DIAGNOSTIC ---
+
         viol = 0
         for xd, yd in dets:
             if xd < self.wm-1e-6 or xd > W-self.wm+1e-6: viol += 1
