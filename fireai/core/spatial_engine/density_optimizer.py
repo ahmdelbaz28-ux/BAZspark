@@ -117,10 +117,9 @@ class DensityOptimizer:
             offset = (S / 2) if (row % 2 == 1) else 0.0
             xs = self._row_xs_guarded(W, wm, S, offset, R)
             for x in xs:
-                # NFPA compliance: check distance to nearest wall
-                dist_x = min(x - wm, W - wm - x)
-                dist_y = min(y - wm, L - wm - y)
-                if dist_x <= S / 2.0 and dist_y <= S / 2.0:
+                # NFPA compliance: distance to NEAREST wall <= S/2
+                dist_to_nearest_wall_y = min(y - wm, L - wm - y)
+                if dist_to_nearest_wall_y <= S / 2.0 + 1e-9:
                     pts.append((x, y))
             nxt = y + Ry; far = L - wm
             if nxt > far + 1e-9:
@@ -128,8 +127,9 @@ class DensityOptimizer:
                     row += 1
                     off2 = (S / 2) if (row % 2 == 1) else 0.0
                     for x in self._row_xs_guarded(W, wm, S, off2, R):
-                        # Only add if within NFPA bounds
-                        if far >= wm and far <= L - wm:
+                        # NFPA compliance: distance to NEAREST wall <= S/2
+                        dist_to_nearest_wall = min(far - wm, L - wm - far)
+                        if dist_to_nearest_wall <= S / 2.0 + 1e-9:
                             pts.append((x, far))
                 break
             y = nxt; row += 1
@@ -189,17 +189,18 @@ class DensityOptimizer:
             row = 0; y = wm
             while True:
                 for xp in (even_xs if row % 2 == 0 else odd_xs):
-                    # NFPA compliance: ensure distance to nearest wall <= S/2
+                    # NFPA compliance: distance to NEAREST wall <= S/2
                     dist_to_nearest_wall = min(y - wm, L - wm - y)
-                    if dist_to_nearest_wall <= self.max_spacing / 2.0:
+                    if dist_to_nearest_wall <= self.max_spacing / 2.0 + 1e-9:
                         pts.append((xp, y))
                 nxt = y + Ry; far = L - wm
                 if nxt > far + 1e-9:
                     if far - y > R + 1e-9:
                         row += 1
                         for xp in (even_xs if row % 2 == 0 else odd_xs):
-                            # NFPA compliance: check if final row is valid
-                            if wm <= far <= L - wm:
+                            # NFPA compliance: distance to NEAREST wall <= S/2
+                            dist_to_nearest_wall = min(far - wm, L - wm - far)
+                            if dist_to_nearest_wall <= self.max_spacing / 2.0 + 1e-9:
                                 pts.append((xp, far))
                     break
                 y = nxt; row += 1
