@@ -247,13 +247,14 @@ class DensityOptimizer:
         ys = self._place(room.length, self._min_n(room.length))
         pts = [(x, y) for x in xs for y in ys]
 
-        # Corner guards for fallback strategy
-        corners = [(self.wm, self.wm), (room.width - self.wm, self.wm),
-                   (self.wm, room.length - self.wm), (room.width - self.wm, room.length - self.wm)]
+        # Corner guards: ensure all corners are within R of a detector
+        W, L = room.width, room.length
+        wm, R = self.wm, self.R
+        corners = [(wm, wm), (W - wm, wm), (wm, L - wm), (W - wm, L - wm)]
         for cx, cy in corners:
             covered = False
             for dx, dy in pts:
-                if (cx - dx) ** 2 + (cy - dy) ** 2 <= self.R ** 2 + 1e-9:
+                if (cx - dx) ** 2 + (cy - dy) ** 2 <= R ** 2 + 1e-9:
                     covered = True
                     break
             if not covered:
