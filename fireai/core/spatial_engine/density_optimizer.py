@@ -98,6 +98,15 @@ class Room:
     length: float
     ceiling_height: float = 3.0
 
+    def __post_init__(self):
+        """Validate room dimensions — life-safety data MUST be valid."""
+        if not isinstance(self.width, (int, float)) or self.width <= 0 or not math.isfinite(self.width):
+            raise ValueError(f"Room width must be positive finite, got {self.width}")
+        if not isinstance(self.length, (int, float)) or self.length <= 0 or not math.isfinite(self.length):
+            raise ValueError(f"Room length must be positive finite, got {self.length}")
+        if not isinstance(self.ceiling_height, (int, float)) or self.ceiling_height <= 0:
+            raise ValueError(f"Room ceiling_height must be positive, got {self.ceiling_height}")
+
 
 @dataclass
 class DetectorLayout:
@@ -174,7 +183,7 @@ class DensityOptimizer:
         Args:
             room: Room with width, length, ceiling_height.
             coverage_radius: Override coverage radius (meters). If None, uses
-                the instance default (DETECTOR_RADIUS = 6.40m). When calculated
+                the instance default (DETECTOR_RADIUS = 6.37m). When calculated
                 from NFPA 72 Table 17.6.3.1.1 via calculate_coverage_radius_from_height,
                 higher ceilings produce smaller radii (more detectors).
                 The default behaviour is unchanged — existing callers need not
@@ -277,11 +286,19 @@ class DensityOptimizer:
         - Inner rows are evenly spaced such that gap <= Ry.
         """
         wm, Ry = self.wm, self.Ry_g
-        coverage_limit = self.R  # 6.40m — coverage radius for full wall coverage
+        coverage_limit = self.R  # 6.37m — coverage radius for full wall coverage
 
-        # Small room: single row at center
-        if L <= 2 * coverage_limit + 2 * wm:
+        # Small room: check if a SINGLE row at center can cover both walls
+        # For a single row at y=L/2 to cover the wall at y=0, we need L/2 ≤ R.
+        # If L/2 > R, a single center row leaves walls uncovered → use 2 boundary rows.
+        if L <= 2 * coverage_limit:
+            # Single row at center: distance to wall = L/2 ≤ R ✓
             return [round(L / 2.0, 3)]
+
+        # Slightly larger room: 2 rows at coverage_limit from each wall
+        if L <= 2 * coverage_limit + 2 * wm:
+            # Two boundary rows at R from walls
+            return [round(coverage_limit, 3), round(L - coverage_limit, 3)]
 
         # Boundary rows at coverage_limit
         y_first = coverage_limit
@@ -380,7 +397,8 @@ class DensityOptimizer:
             odd_xs = [W / 2]
         else:
             even_xs = [wm + i * Sx for i in range(Nx)]
-            odd_xs = [even_xs[0] + Sx / 2 + i * Sx for i in range(Nx)]
+            odd_xs = [even_xs[0] + Sx / 2 + i * Sx for i in range(Nx)
+                       if wm - 1e-9 <= even_xs[0] + Sx / 2 + i * Sx <= W - wm + 1e-9]
 
         # Place detectors for each row using Sx/2 offset
         for row_index, y in enumerate(y_coords):
@@ -648,28 +666,35 @@ class DensityOptimizer:
         diff_c = all_corners[:, np.newaxis, :] - dets_arr[np.newaxis, :, :]
         dist2_c = (diff_c ** 2).sum(axis=2)
 
-        # COARSE PASS: any-detector check (fast filter, NOT a proof)
-        # Identifies cells where all four corners are within R of some
-        # detector.  This is a heuristic filter — cells that pass are
-        # very likely covered but not rigorously proven.  The actual
-        # proof happens in the fine pass (δ-conservative) for cells
-        # that fail this filter.
-        corner_covered_coarse = (dist2_c <= R2).any(axis=1)  # (n_corners,)
+        # COARSE PASS: δ-conservative check for rigorous proof
+        # Uses R_eff_coarse = R - coarse_step×√2/2 to guarantee that if
+        # all coarse cell CORNERS are within R_eff_coarse of SOME detector,
+        # then every point in the cell is within R of that detector.
+        # This makes the coarse pass a RIGOROUS PROOF, not just a filter.
+        # Math: dist(P, D) ≤ dist(P, corner) + dist(corner, D)
+        #             ≤ coarse_step×√2/2 + R_eff_coarse
+        #             = coarse_step×√2/2 + (R - coarse_step×√2/2)
+        #             = R
+        coarse_margin = coarse_step * math.sqrt(2) / 2  # 0.707m for 1.0m cells
+        R_eff_coarse = self.R - coarse_margin
+        R2_eff_coarse = R_eff_coarse ** 2 + 1e-9
+        corner_covered_coarse = (dist2_c <= R2_eff_coarse).any(axis=1)  # (n_corners,)
         corner_covered_cells = corner_covered_coarse.reshape(n_coarse_cells, 4)
         cell_covered = corner_covered_cells.all(axis=1)  # (n_cells,)
 
         n_coarse_covered = int(cell_covered.sum())
 
-        # If all coarse cells covered, we're done
+        # If all coarse cells covered with δ-conservative R_eff, we're done
+        # This is now a RIGOROUS PROOF because we used R_eff_coarse < R
         if n_coarse_covered == n_coarse_cells:
             layout.coverage_pct = 100.0
             layout.proof_valid = True
             viol = 0
             for xd, yd in dets:
-                if xd < self.wm - 1e-6 or xd > W - self.wm + 1e-6:
-                    viol += 1
-                if yd < self.wm - 1e-6 or yd > L - self.wm + 1e-6:
-                    viol += 1
+                x_bad = xd < self.wm - 1e-6 or xd > W - self.wm + 1e-6
+                y_bad = yd < self.wm - 1e-6 or yd > L - self.wm + 1e-6
+                if x_bad or y_bad:
+                    viol += 1  # count non-compliant detectors, not axes
             layout.wall_violations = viol
             return
 
@@ -712,10 +737,10 @@ class DensityOptimizer:
             layout.proof_valid = False
             viol = 0
             for xd, yd in dets:
-                if xd < self.wm - 1e-6 or xd > W - self.wm + 1e-6:
-                    viol += 1
-                if yd < self.wm - 1e-6 or yd > L - self.wm + 1e-6:
-                    viol += 1
+                x_bad = xd < self.wm - 1e-6 or xd > W - self.wm + 1e-6
+                y_bad = yd < self.wm - 1e-6 or yd > L - self.wm + 1e-6
+                if x_bad or y_bad:
+                    viol += 1  # count non-compliant detectors, not axes
             layout.wall_violations = viol
             return
 
@@ -1066,7 +1091,7 @@ class DensityOptimizer:
         total = len(test_points)
         covered_count = covered.sum()
         layout.coverage_pct = round(100.0 * covered_count / total, 4) if total else 0.0
-        layout.proof_valid = (covered_count >= total * 0.9999)
+        layout.proof_valid = (covered_count == total)
 
         # Wall violations — same logic as _verify
         viol = 0

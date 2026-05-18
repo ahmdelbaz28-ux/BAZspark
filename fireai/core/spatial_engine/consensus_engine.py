@@ -203,7 +203,11 @@ class ConsensusEngine:
                 confidence = ConfidenceLevel.FAIL
         elif n_total == 2:
             if n_pass == 2:
-                confidence = ConfidenceLevel.VERIFIED
+                # SAFETY: 2-engine agreement is NOT sufficient for VERIFIED.
+                # Triple verification requires 3 engines. 2-engine agreement
+                # is at most WARNING — a single undetected bug could cause
+                # both engines to agree on a wrong result.
+                confidence = ConfidenceLevel.WARNING
             elif n_pass == 1:
                 confidence = ConfidenceLevel.WARNING
             else:

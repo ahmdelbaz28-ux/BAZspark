@@ -442,8 +442,11 @@ class HeatDetectorSpec:
     detector_type: DetectorType = DetectorType.HEAT
     heat_mode: HeatDetectionMode = HeatDetectionMode.SQUARE_GRID
     # Fixed spacing per NFPA 72 (Table 17.6.2.1)
-    FIXED_SPACING_FT = 30  # 30 feet = 9.1m
-    FIXED_SPACING_M = 9.1
+    # CRITICAL FIX: Heat detectors use 20ft (6.1m) listed spacing, NOT 30ft (9.1m).
+    # NFPA 72 Table 17.6.3.1.1: Heat detector listed spacing = 20ft = 6.1m.
+    # The previous value of 30ft (9.1m) was for smoke detectors.
+    FIXED_SPACING_FT = 20  # 20 feet = 6.1m
+    FIXED_SPACING_M = 6.1
     @property
     def spacing_m(self) -> float:
         """Get spacing for heat detector"""
@@ -627,16 +630,23 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
     # CRITICAL FIX: R = 0.7 × S (NFPA 72 §17.7.4.2.3.1)
     # Old values used S/2 which is WRONG — coverage radius is 0.7×S,
     # not half-spacing.  For h≤3.0m: S=9.1m → R=6.37m (not 4.55m).
+    # CRITICAL FIX: RADIUS_MAP now uses height-adjusted spacing per
+    # NFPA 72 Table 17.6.3.1.1. Higher ceilings → smaller spacing → smaller R.
+    # R = 0.7 × adjusted_spacing for each height bracket.
     RADIUS_MAP = {
-        (3.0, 4.3): 6.37,   # R = 0.7 × 9.1
-        (4.3, 6.1): 6.37,   # R = 0.7 × 9.1
-        (6.1, 7.6): 6.37,   # R = 0.7 × 9.1
-        (7.6, 9.1): 6.37,   # R = 0.7 × 9.1
-        (9.1, 15.24): 6.40, # R = 0.7 × 9.144
+        (3.0, 3.7):  6.37,   # R = 0.7 × 9.10 (h ≤ 3.0m)
+        (3.7, 4.6):  6.09,   # R = 0.7 × 8.70 (3.0–3.7m)
+        (4.6, 5.5):  5.74,   # R = 0.7 × 8.20 (3.7–4.6m)
+        (5.5, 6.1):  5.39,   # R = 0.7 × 7.70 (4.6–5.5m)
+        (6.1, 7.6):  5.11,   # R = 0.7 × 7.30 (5.5–6.1m)
+        (7.6, 9.1):  4.76,   # R = 0.7 × 6.80 (6.1–7.6m)
+        (9.1, 10.7): 4.48,   # R = 0.7 × 6.40 (7.6–9.1m)
+        (10.7, 12.2): 4.20,  # R = 0.7 × 6.00 (9.1–10.7m)
+        (12.2, 15.24): 3.92, # R = 0.7 × 5.60 (10.7–12.2m)
     }
     for (min_h, max_h), radius in RADIUS_MAP.items():
         # Use < for upper bound in lower brackets to avoid overlap at boundaries
-        # Only the last bracket (9.1, 15.24) uses <= for its upper bound
+        # Only the last bracket (12.2, 15.24) uses <= for its upper bound
         if max_h == 15.24:
             if min_h <= ceiling_height_m <= max_h:
                 return radius
@@ -645,7 +655,7 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
                 return radius
     # Handle edge case at 15.24m (exactly at max)
     if ceiling_height_m == 15.24:
-        return 6.4
+        return 3.92
     # Outside valid range
     raise CeilingHeightError(
         f"Ceiling height {ceiling_height_m}m is outside NFPA 72 "
@@ -768,13 +778,18 @@ def get_smoke_detector_radius_safe(
     return radius
 def _get_radius_internal(h: float) -> float:
     """Internal radius lookup."""
-    # CRITICAL FIX: R = 0.7 × S (must match RADIUS_MAP)
+    # CRITICAL FIX: R = 0.7 × S (must match RADIUS_MAP above)
+    # Height-adjusted per NFPA 72 Table 17.6.3.1.1
     R = {
-        (3.0, 4.3): 6.37,   # R = 0.7 × 9.1
-        (4.3, 6.1): 6.37,   # R = 0.7 × 9.1
-        (6.1, 7.6): 6.37,   # R = 0.7 × 9.1
-        (7.6, 9.1): 6.37,   # R = 0.7 × 9.1
-        (9.1, 15.24): 6.40, # R = 0.7 × 9.144
+        (3.0, 3.7):  6.37,   # R = 0.7 × 9.10
+        (3.7, 4.6):  6.09,   # R = 0.7 × 8.70
+        (4.6, 5.5):  5.74,   # R = 0.7 × 8.20
+        (5.5, 6.1):  5.39,   # R = 0.7 × 7.70
+        (6.1, 7.6):  5.11,   # R = 0.7 × 7.30
+        (7.6, 9.1):  4.76,   # R = 0.7 × 6.80
+        (9.1, 10.7): 4.48,   # R = 0.7 × 6.40
+        (10.7, 12.2): 4.20,  # R = 0.7 × 6.00
+        (12.2, 15.24): 3.92, # R = 0.7 × 5.60
     }
     for (min_h, max_h), r in R.items():
         # Use < for upper bound in lower brackets to avoid overlap
@@ -785,7 +800,7 @@ def _get_radius_internal(h: float) -> float:
             if min_h <= h < max_h:
                 return r
     if h == 15.24:
-        return 6.4
+        return 3.92
     raise CeilingHeightError(f"Height {h}m outside NFPA range")
 def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_details: bool = False):
     """⭐ ELITE SOLUTION: Get max coverage with SAFE FALLBACK."""

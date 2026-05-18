@@ -109,10 +109,18 @@ class ProofCertificate:
             "detector_radius_m": self.detector_radius_m,
             "grid_step_m": self.grid_step_m,
             "effective_radius_m": self.effective_radius_m,
+            "delta_margin_m": self.delta_margin_m,
+            "max_spacing_m": self.max_spacing_m,
+            "wall_min_m": self.wall_min_m,
             "n_grid_points": self.n_grid_points,
             "n_covered": self.n_covered,
             "n_uncovered": self.n_uncovered,
             "coverage_guaranteed": self.coverage_guaranteed,
+            "coverage_lower_bound_pct": self.coverage_lower_bound_pct,
+            "uncovered_area_upper_bound_sqm": self.uncovered_area_upper_bound_sqm,
+            "nfpa_compliant": self.nfpa_compliant,
+            "wall_coverage_complete": self.wall_coverage_complete,
+            "spacing_compliant": self.spacing_compliant,
         }
         raw = json.dumps(data, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(raw.encode()).hexdigest()

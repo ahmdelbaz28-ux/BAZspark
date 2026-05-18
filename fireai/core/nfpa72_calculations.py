@@ -46,9 +46,22 @@ def get_heat_detector_placement_params(
     Returns:
         Dictionary with max_detector_spacing_m and other parameters
     """
-    base_spacing = spec.listed_spacing_m if spec else 9.1
-    # NFPA 72 Table 17.6.2.1 adjustments
+    # CRITICAL FIX: Use spec.FIXED_SPACING_M (6.1m), NOT spec.listed_spacing_m (doesn't exist).
+    # Also add ceiling height adjustments per NFPA 72 Table 17.6.2.1.
+    base_spacing = spec.FIXED_SPACING_M if spec else 6.1
+    # NFPA 72 Table 17.6.2.1: Reduce spacing for ceiling heights > 3.0m
     adjusted_spacing = base_spacing
+    if ceiling_height_m > 3.0:
+        # Height-adjusted reduction: use the heat spacing from NFPA 72 Table 17.6.3.1.1
+        # This table is in nfpa72_calculations.py's _NFPA72_TABLE_17_6_3_1_1
+        from .nfpa72_calculations import _NFPA72_TABLE_17_6_3_1_1
+        for h_max, _, heat_spacing in _NFPA72_TABLE_17_6_3_1_1:
+            if ceiling_height_m <= h_max:
+                adjusted_spacing = heat_spacing
+                break
+        else:
+            # Beyond table: use conservative fallback
+            adjusted_spacing = 3.50  # matches _NFPA72_HEAT_SPACING_FALLBACK
     return {
         "max_detector_spacing_m": adjusted_spacing,
         "coverage_type": "square_grid",
@@ -84,9 +97,11 @@ def calculate_smoke_detector_spacing(
         Tuple of (number_along_width, number_along_depth)
     """
     radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)  # V9: safe fallback
-    max_coverage = get_smoke_detector_coverage_max(ceiling_spec.height_m)
-    # Use max coverage for spacing calculation
-    spacing = max_coverage * 2  # Diameter
+    # CRITICAL FIX: Use the listed spacing S, NOT max_coverage * 2.
+    # max_coverage is the extended coverage radius (5.5m at h=3.0m), NOT the spacing.
+    # Using 2×max_coverage = 11.0m exceeds the NFPA 72 listed spacing of 9.1m by 21%.
+    # The correct spacing S comes from calculate_max_spacing() which uses R/0.7.
+    spacing = radius / 0.7  # S = R / 0.7 (reverse of R = 0.7 × S)
     # Number of detectors
     num_width = max(1, math.ceil(room_width_m / spacing))
     num_depth = max(1, math.ceil(room_depth_m / spacing))
@@ -702,8 +717,11 @@ def calculate_corridor_spacing(
     base = calculate_max_spacing(ceiling, detector_type)
     if corridor_width_m >= 3.0:
         return base
-    # §17.6.3.3: Spacing = 2 × √(S² − (W/2)²)   where S = rated radius
-    rated_radius = base / 2.0
+    # §17.6.3.3: Spacing = 2 × √(R² − (W/2)²)   where R = coverage radius = 0.7×S
+    # CRITICAL FIX: Use coverage radius R = 0.7 × S, NOT S/2.
+    # Previous code used base/2.0 (S/2 = 4.55m) instead of 0.7×S (6.37m).
+    # NFPA 72 §17.7.4.2.3.1 defines the coverage radius as R = 0.7×S.
+    rated_radius = base * 0.7  # R = 0.7 × S (coverage radius, not S/2)
     half_width   = corridor_width_m / 2.0
     if rated_radius <= half_width:
         return base
