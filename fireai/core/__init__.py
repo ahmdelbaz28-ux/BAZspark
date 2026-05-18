@@ -9,6 +9,7 @@ from .nfpa72_coverage import verify_full_coverage, suggest_duct_detectors
 from .sensitivity_analyzer import SensitivityAnalyzer, SensitivityReport
 from .parameter_optimizer import ParameterOptimizer, ParameterOptimizationResult
 from .project_learner import ProjectLearner, BuildingProjectProfile
+from .polygon_optimizer import PolygonDensityOptimizer, PolygonRoom, PolygonRoomSummary
 
 __all__ = [
     "ExpertSystem",
@@ -34,4 +35,7 @@ __all__ = [
     "ParameterOptimizationResult",
     "ProjectLearner",
     "BuildingProjectProfile",
+    "PolygonDensityOptimizer",
+    "PolygonRoom",
+    "PolygonRoomSummary",
 ]

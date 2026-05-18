@@ -206,6 +206,11 @@ class RoomSummary:
     # V5.0: Room dimensions for project learning (bounding rectangle)
     width:          float             = 0.0             # bounding rectangle width (metres)
     length:         float             = 0.0             # bounding rectangle length (metres)
+    # V6.0: Polygon verifier (Greedy Set Cover) — verification only
+    polygon_verifier_count: Optional[int]   = None      # detectors from Greedy Set Cover on actual polygon
+    polygon_verifier_method: Optional[str]  = None      # "greedy_polygon" or None
+    polygon_verifier_ms: float              = 0.0       # verifier runtime in ms
+    polygon_optimality_gap: bool            = False     # True if greedy polygon proves fewer detectors
 
 
 @dataclass
@@ -317,6 +322,7 @@ class FloorAnalyser:
         use_scenarios:    bool = False,
         scenario_time_step: float = 1.0,
         scenario_skip_blind: bool = True,
+        use_polygon_verifier: bool = False,
     ) -> None:
         self.floor_id    = floor_id
         self.opt         = optimizer   # V7.3 as-is, no modifications
@@ -329,6 +335,8 @@ class FloorAnalyser:
         self.use_scenarios       = use_scenarios
         self.scenario_time_step  = scenario_time_step
         self.scenario_skip_blind = scenario_skip_blind  # skip blind scan for speed
+        # V6.0: Polygon verifier (Greedy Set Cover)
+        self.use_polygon_verifier = use_polygon_verifier
 
     # ─── public ──────────────────────────────────────────────────────
 
@@ -610,6 +618,10 @@ class FloorAnalyser:
             # ─── Duct detector analysis (V3.1) ───────────────────────────
             self._inject_duct_analysis(room_dict, summary)
 
+            # ─── Polygon verifier (V6.0) — Greedy Set Cover ──────────────
+            if self.use_polygon_verifier and is_non_rect:
+                self._run_polygon_verifier(polygon_coords, layout, summary)
+
             report.room_summaries.append(summary)
             report.total_detectors += summary.detector_count
             report.total_theoretical_lower_bound += summary.theoretical_lower_bound
@@ -809,6 +821,95 @@ class FloorAnalyser:
             layout.proof_valid = True
 
         return removed
+
+    # ------------------------------------------------------------------
+    def _run_polygon_verifier(
+        self,
+        polygon_coords: list,
+        layout:         DetectorLayout,
+        summary:        RoomSummary,
+    ) -> None:
+        """
+        Run Greedy Set Cover verifier on a non-rectangular polygon (V6.0).
+
+        This is VERIFICATION ONLY — it never replaces the actual placement.
+        The verifier proves how many detectors suffice on the actual polygon
+        interior grid. If it proves fewer than the bounding-rectangle approach,
+        a POLYGON_OPTIMALITY_GAP warning is emitted for PE review.
+
+        This follows the same pattern as MIP verification (V2.3):
+          - Verifier runs after greedy placement
+          - Results are informational only
+          - Warning emitted if gap is detected
+          - No placement is ever modified
+
+        Updates summary fields in-place:
+          - polygon_verifier_count, polygon_verifier_method,
+            polygon_verifier_ms, polygon_optimality_gap
+        """
+        try:
+            from fireai.core.polygon_optimizer import (
+                PolygonDensityOptimizer, PolygonRoom,
+            )
+        except ImportError:
+            logger.debug(
+                "Room %s: polygon_optimizer not importable — skipping verifier",
+                summary.name,
+            )
+            return
+
+        t0 = time.time()
+        try:
+            poly_room = PolygonRoom(
+                room_id=summary.room_id,
+                polygon=polygon_coords,
+                ceiling_height=summary.ceiling_height or 3.0,
+                detector_type=summary.detector_type,
+                name=summary.name,
+            )
+            poly_opt = PolygonDensityOptimizer()
+            poly_summary = poly_opt.optimize_polygon(poly_room)
+            ms = (time.time() - t0) * 1000
+
+            summary.polygon_verifier_count = poly_summary.count
+            summary.polygon_verifier_method = poly_summary.method
+            summary.polygon_verifier_ms = round(ms, 1)
+
+            # If polygon verifier proves fewer detectors suffice
+            if poly_summary.count < summary.detector_count:
+                summary.polygon_optimality_gap = True
+                gap_msg = (
+                    f"POLYGON_OPTIMALITY_GAP: Greedy Set Cover on actual polygon "
+                    f"proves {poly_summary.count} detectors sufficient "
+                    f"(method={poly_summary.method}), "
+                    f"but bounding-rectangle approach placed {summary.detector_count}. "
+                    f"PE review recommended for potential reduction."
+                )
+                summary.warnings.append(gap_msg)
+                logger.info("Room %s: %s", summary.name, gap_msg)
+
+            # Log to AuditStore if available
+            if self.audit_store and hasattr(self.audit_store, 'add_event'):
+                self.audit_store.add_event(
+                    event_type="POLYGON_VERIFICATION",
+                    room_id=summary.room_id,
+                    details_dict={
+                        "polygon_verifier_count": poly_summary.count,
+                        "bounding_rect_count": summary.detector_count,
+                        "gap": summary.detector_count - poly_summary.count,
+                        "verifier_method": poly_summary.method,
+                        "verifier_coverage_pct": poly_summary.coverage_pct,
+                        "verifier_proof_valid": poly_summary.proof_valid,
+                        "verifier_nfpa_valid": poly_summary.nfpa_valid,
+                        "verifier_ms": round(ms, 1),
+                    },
+                )
+
+        except Exception as exc:
+            logger.warning(
+                "Room %s: polygon verifier failed — %s",
+                summary.name, exc,
+            )
 
     # ------------------------------------------------------------------
     def _inject_duct_analysis(
