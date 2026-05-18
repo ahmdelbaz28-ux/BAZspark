@@ -643,13 +643,22 @@ class DensityOptimizer:
         # Vectorized distance: (n_corners, 1, 2) - (1, D, 2) -> (n_corners, D)
         diff_c = all_corners[:, np.newaxis, :] - dets_arr[np.newaxis, :, :]
         dist2_c = (diff_c ** 2).sum(axis=2)
-        corner_covered = (dist2_c <= R2).any(axis=1)  # (n_corners,)
 
-        # Reshape back to (n_coarse_cells, 4) — one row per cell, 4 corners
-        corner_covered_cells = corner_covered.reshape(n_coarse_cells, 4)
+        # SAFETY: Check if SAME detector covers ALL 4 corners of each cell
+        # corner_detector_covered[c, d] = True if corner c is within R of detector d
+        corner_detector_covered = (dist2_c <= R2)  # (n_corners, n_dets)
 
-        # A cell is covered only if ALL 4 corners are covered
-        cell_covered = corner_covered_cells.all(axis=1)  # (n_coarse_cells,)
+        # Reshape to (n_cells, 4, n_dets)
+        cell_corner_detector = corner_detector_covered.reshape(n_coarse_cells, 4, -1)
+
+        # For each cell, check if ANY detector covers ALL 4 corners
+        # Logic: for each detector d, check if all 4 corners are covered by d
+        # Then check if ANY detector satisfies this
+        # Shape: (n_cells, n_dets) — True if detector d covers all 4 corners of cell
+        all_corners_covered_by_det = cell_corner_detector.all(axis=1)  # (n_cells, n_dets)
+
+        # A cell is covered if ANY detector covers all 4 corners
+        cell_covered = all_corners_covered_by_det.any(axis=1)  # (n_cells,)
 
         n_coarse_covered = int(cell_covered.sum())
 
@@ -721,11 +730,12 @@ class DensityOptimizer:
         # Vectorized distance for fine corners
         diff_f = all_fine_corners[:, np.newaxis, :] - dets_arr[np.newaxis, :, :]
         dist2_f = (diff_f ** 2).sum(axis=2)
-        fine_corner_covered = (dist2_f <= R2).any(axis=1)
 
-        # Reshape to (n_fine_cells, 4)
-        fine_corner_covered_cells = fine_corner_covered.reshape(n_fine_cells, 4)
-        fine_cell_covered = fine_corner_covered_cells.all(axis=1)
+        # SAFETY: Check if SAME detector covers ALL 4 corners of each fine cell
+        fine_corner_detector_covered = (dist2_f <= R2)  # (n_fine_corners, n_dets)
+        fine_cell_corner_detector = fine_corner_detector_covered.reshape(n_fine_cells, 4, -1)
+        fine_all_corners_covered_by_det = fine_cell_corner_detector.all(axis=1)  # (n_fine_cells, n_dets)
+        fine_cell_covered = fine_all_corners_covered_by_det.any(axis=1)  # (n_fine_cells,)
 
         n_fine_covered = int(fine_cell_covered.sum())
 
@@ -750,19 +760,18 @@ class DensityOptimizer:
     # ── original pure-Python verify (kept as fallback) ──────────────────────────
 
     def _verify(self, layout: DetectorLayout) -> None:
-        """δ-Conservative grid verification using convexity argument.
+        """Conservative grid verification using same-detector corner check.
 
         For each grid cell, checks ALL FOUR CORNERS against all detectors.
-        If all corners are within R of some detector, the entire cell is
-        provably covered (because a circle is a convex set and the cell
-        is the convex hull of its corners).
+        A cell is accepted ONLY if there exists a SINGLE detector that
+        covers ALL four corners. This uses the convexity of a single disk:
+        if one disk contains all corners, it contains the entire cell
+        (convex hull of corners).
 
-        This is MATHEMATICALLY SAFE: no false negatives possible.
-        A cell is accepted only when every corner is provably covered.
-
-        Margin formula: margin(C) = R - max_corner_distance(C)
-        If margin ≥ 0 → cell provably covered (convexity guarantee)
-        If margin < 0 → cell might have uncovered regions → refine
+        SAFETY: This is CONSERVATIVE — it may reject cells that are actually
+        covered (if different corners are covered by different detectors).
+        But it NEVER accepts a cell that is not covered. False positives
+        are possible; false negatives are NOT.
 
         Complexity: O(N_cells × N_detectors) per grid level.
         """
@@ -797,6 +806,10 @@ class DensityOptimizer:
             y = min(y + step, L)
 
         # For each cell, check ALL FOUR CORNERS
+        # SAFETY RULE: A cell is provably covered ONLY if all four corners
+        # are within R of the SAME detector (convexity of a single disk).
+        # If corners are covered by DIFFERENT detectors, the union of disks
+        # is NOT convex, so we cannot guarantee coverage — mark for refinement.
         total_cells = 0
         covered_cells = 0
 
@@ -809,20 +822,25 @@ class DensityOptimizer:
                 # Four corners of the cell
                 corners = [(x0, y0), (x1, y0), (x0, y1), (x1, y1)]
 
-                # Check if ALL corners are within R of some detector
-                # Convexity argument: if all corners are covered, the
-                # entire cell (convex hull of corners) is covered.
-                all_covered = True
+                # For each corner, find the set of detectors that cover it
+                corner_covering_sets = []
                 for cx, cy in corners:
-                    min_dist_sq = min(
-                        (cx - dx) ** 2 + (cy - dy) ** 2
-                        for dx, dy in dets
-                    )
-                    if min_dist_sq > R2:
-                        all_covered = False
-                        break
+                    covering = set()
+                    for d_idx, (dx, dy) in enumerate(dets):
+                        if (cx - dx) ** 2 + (cy - dy) ** 2 <= R2:
+                            covering.add(d_idx)
+                    corner_covering_sets.append(covering)
 
-                if all_covered:
+                # Check if there exists a SINGLE detector that covers ALL corners
+                # This is the convexity argument: if one disk covers all corners,
+                # the cell (convex hull of corners) is entirely within that disk.
+                common_coverers = corner_covering_sets[0]
+                for s in corner_covering_sets[1:]:
+                    common_coverers = common_coverers & s
+
+                if common_coverers:
+                    # At least one detector covers ALL four corners
+                    # Cell is PROVABLY covered (convexity of single disk)
                     covered_cells += 1
 
         layout.coverage_pct = (
