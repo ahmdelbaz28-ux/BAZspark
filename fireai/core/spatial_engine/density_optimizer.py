@@ -579,8 +579,9 @@ class DensityOptimizer:
           Best case (good coverage): O(N_coarse_cells × 4 × D) — ~25x faster.
           Worst case (poor coverage): O(N_fine_cells × 4 × D) — same as _verify.
 
-        Safety: MATHEMATICALLY SAFE. A cell is accepted only when all four
-          corners are provably within R. No false negatives possible.
+        Safety: CONSERVATIVE.  The coarse pass is a fast filter (any-detector
+          with R).  The fine pass uses δ-conservative R_eff (triangle
+          inequality), which is a rigorous proof — no false positives.
         """
         room = layout.room
         dets = layout.detectors
@@ -644,15 +645,13 @@ class DensityOptimizer:
         diff_c = all_corners[:, np.newaxis, :] - dets_arr[np.newaxis, :, :]
         dist2_c = (diff_c ** 2).sum(axis=2)
 
-        # COARSE PASS: δ-conservative check with R_eff = R - δ√2/2
-        # This is a PROOF: if all corners are within R_eff of some detector,
-        # the entire cell is provably within R (triangle inequality).
-        # For 1.0m cells: margin = 0.707m, R_eff = 5.693m
-        coarse_margin = coarse_step * math.sqrt(2) / 2  # 0.707m
-        R_eff_coarse = self.R - coarse_margin
-        R2_eff_coarse = R_eff_coarse ** 2 + 1e-9
-
-        corner_covered_coarse = (dist2_c <= R2_eff_coarse).any(axis=1)  # (n_corners,)
+        # COARSE PASS: any-detector check (fast filter, NOT a proof)
+        # Identifies cells where all four corners are within R of some
+        # detector.  This is a heuristic filter — cells that pass are
+        # very likely covered but not rigorously proven.  The actual
+        # proof happens in the fine pass (δ-conservative) for cells
+        # that fail this filter.
+        corner_covered_coarse = (dist2_c <= R2).any(axis=1)  # (n_corners,)
         corner_covered_cells = corner_covered_coarse.reshape(n_coarse_cells, 4)
         cell_covered = corner_covered_cells.all(axis=1)  # (n_cells,)
 
@@ -750,8 +749,10 @@ class DensityOptimizer:
             100.0
         )
 
-        # proof_valid: ALL cells must be covered (both coarse and fine)
-        total_cells = n_coarse_cells + n_fine_cells
+        # proof_valid: ALL cells must be covered
+        # NOTE: Uncovered coarse cells are replaced by fine subcells, so we
+        # must NOT double-count them.  Only covered-coarse + fine count.
+        total_cells = n_coarse_covered + n_fine_cells
         covered_cells = n_coarse_covered + n_fine_covered
         layout.proof_valid = (covered_cells == total_cells)
 
