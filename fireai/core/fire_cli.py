@@ -32,7 +32,7 @@ def _load_json(path: str) -> Dict[str, Any]:
 
 def _detect_input_type(data: Dict[str, Any]) -> str:
     """Heuristic: decide whether JSON is a room, floor, or building spec."""
-    if "floors" in data or "floor_results" in data:
+    if "floors" in data or "floor_reports" in data:
         return "building"
     if "rooms" in data or "room_summaries" in data:
         return "floor"
@@ -68,10 +68,10 @@ def cmd_analyse(args: argparse.Namespace) -> int:
 
 def _analyse_room(data: Dict[str, Any]) -> int:
     try:
-        from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room
+        from fireai.core.spatial_engine.density_optimizer import Room, DensityOptimizer
         from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
         from fireai.core.geometry_utils import is_rectangular
-        from fireai.core.polygon_optimizer import PolygonDensityOptimizer, PolygonRoom
+        from fireai.core.polygon_optimizer import PolygonRoom, PolygonDensityOptimizer
 
         polygon = data.get("polygon_coords")
         ceiling_h = float(data.get("ceiling_height", 3.0))
@@ -106,8 +106,10 @@ def _analyse_room(data: Dict[str, Any]) -> int:
                 length=length,
                 ceiling_height=ceiling_h,
             )
-            spec = calculate_coverage_radius_from_height(ceiling_h, det_type)
-            layout = DensityOptimizer().optimize(room, coverage_radius=spec.radius)
+            cov_det_type = "heat" if "heat" in det_type.lower() else "smoke"
+            spec = calculate_coverage_radius_from_height(ceiling_h, cov_det_type)
+            radius = spec.radius
+            layout = DensityOptimizer().optimize(room, coverage_radius=radius)
             result = {
                 "room_id":        data.get("room_id", "room-cli"),
                 "method":         layout.method,
@@ -133,11 +135,7 @@ def _analyse_floor(data: Dict[str, Any]) -> int:
 
         rooms = data.get("rooms", data.get("room_summaries", [data]))
         opt = DensityOptimizer()
-        analyser = FloorAnalyser(
-            floor_id=data.get("floor_id", "floor-cli"),
-            optimizer=opt,
-        )
-        report = analyser.analyse(rooms)
+        report = FloorAnalyser(floor_id="floor-cli", optimizer=opt).analyse(rooms)
         _print_json({
             "floor_id":        getattr(report, "floor_id", "floor-cli"),
             "total_rooms":     len(getattr(report, "room_summaries", [])),
@@ -167,12 +165,18 @@ def _analyse_building(data: Dict[str, Any]) -> int:
         from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
 
         opt = DensityOptimizer()
-        engine = BuildingEngine(
-            building_id=data.get("building_id", "building-cli"),
-            optimizer=opt,
-        )
-        floors = data.get("floors", {})
-        report = engine.analyse(floors)
+        building_id = data.get("building_id", "building-cli")
+        engine = BuildingEngine(building_id=building_id, optimizer=opt)
+
+        floors_raw = data.get("floors", [data])
+        if isinstance(floors_raw, dict):
+            floors = floors_raw
+        elif isinstance(floors_raw, list):
+            floors = {"F1": floors_raw}
+        else:
+            floors = {"F1": [data]}
+
+        report = engine.analyse(floors=floors)
         _print_json({
             "building_id":       report.building_id,
             "total_detectors":   report.total_detectors,
@@ -211,12 +215,18 @@ def cmd_report(args: argparse.Namespace) -> int:
         from fireai.core.pdf_report import generate_building_report
 
         opt = DensityOptimizer()
-        engine = BuildingEngine(
-            building_id=data.get("building_id", "report-cli"),
-            optimizer=opt,
-        )
-        floors = data.get("floors", {})
-        report = engine.analyse(floors)
+        building_id = data.get("building_id", "report-cli")
+        engine = BuildingEngine(building_id=building_id, optimizer=opt)
+
+        floors_raw = data.get("floors", [data])
+        if isinstance(floors_raw, dict):
+            floors = floors_raw
+        elif isinstance(floors_raw, list):
+            floors = {"F1": floors_raw}
+        else:
+            floors = {"F1": [data]}
+
+        report = engine.analyse(floors=floors)
         result = generate_building_report(report, out_path)
         print(f"[fireai] PDF report written to: {result}")
         return 0
@@ -233,7 +243,7 @@ def cmd_report(args: argparse.Namespace) -> int:
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="fireai",
-        description="FireAI - NFPA 72-2022 Automated Fire Detector Placement Engine",
+        description="FireAI – NFPA 72-2022 Automated Fire Detector Placement Engine",
     )
     parser.add_argument(
         "--version", action="version",

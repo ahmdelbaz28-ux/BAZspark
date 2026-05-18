@@ -49,10 +49,10 @@ dev = [
 fireai = "fireai.core.fire_cli:main"
 
 [project.urls]
-Homepage = "https://github.com/ahmdelbaz28-ux/revit"
-Documentation = "https://github.com/ahmdelbaz28-ux/revit#readme"
-Repository = "https://github.com/ahmdelbaz28-ux/revit"
-"Bug Tracker" = "https://github.com/ahmdelbaz28-ux/revit/issues"
+Homepage = "https://github.com/fireai/fireai"
+Documentation = "https://github.com/fireai/fireai#readme"
+Repository = "https://github.com/fireai/fireai"
+"Bug Tracker" = "https://github.com/fireai/fireai/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

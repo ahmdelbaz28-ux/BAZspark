@@ -630,3 +630,7 @@ def generate_building_report(
             f.write(f"PDF generation failed: {exc}\n\n")
             traceback.print_exc(file=f)
         return fallback
+
+
+# Alias for CLI convenience — both names refer to the same function.
+generate_pdf = generate_building_report

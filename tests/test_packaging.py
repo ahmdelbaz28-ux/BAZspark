@@ -79,9 +79,14 @@ def test_audit_trail_importable():
     assert AuditTrail is not None
 
 
-def test_generate_building_report_importable_and_callable():
-    from fireai import generate_building_report
-    assert callable(generate_building_report)
+def test_audit_store_importable():
+    from fireai import AuditStore
+    assert AuditStore is not None
+
+
+def test_generate_pdf_importable_and_callable():
+    from fireai import generate_pdf
+    assert callable(generate_pdf)
 
 
 def test_cli_version_flag_exits_zero():

@@ -5,8 +5,8 @@ fireai – NFPA 72-2022 Automated Fire Detector Placement Engine
 __version__ = "1.0.0"
 
 # Core analysers
-from fireai.core.floor_analyser import FloorAnalyser, FloorReport, RoomSummary
-from fireai.core.building_engine import BuildingEngine, BuildingReport
+from fireai.core.floor_analyser import FloorAnalyser
+from fireai.core.building_engine import BuildingEngine
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
 
 # Optimisation & analysis tools
@@ -22,22 +22,20 @@ from fireai.core.scenario_engine import (
 )
 
 # Polygon support
-from fireai.core.polygon_optimizer import PolygonDensityOptimizer, PolygonRoom, PolygonRoomSummary
+from fireai.core.polygon_optimizer import PolygonDensityOptimizer
 
 # Audit
 from fireai.core.audit_trail import AuditTrail
+from fireai.core.audit_store import AuditStore
 
 # Reporting
-from fireai.core.pdf_report import generate_building_report
+from fireai.core.pdf_report import generate_pdf
 
 __all__ = [
     "__version__",
     # Analysers
     "FloorAnalyser",
-    "FloorReport",
-    "RoomSummary",
     "BuildingEngine",
-    "BuildingReport",
     "DensityOptimizer",
     # Tools
     "SensitivityAnalyzer",
@@ -49,10 +47,9 @@ __all__ = [
     "ScenarioReporter",
     # Polygon
     "PolygonDensityOptimizer",
-    "PolygonRoom",
-    "PolygonRoomSummary",
     # Audit
     "AuditTrail",
+    "AuditStore",
     # Reporting
-    "generate_building_report",
+    "generate_pdf",
 ]

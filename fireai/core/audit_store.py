@@ -35,15 +35,26 @@ def _get_hmac_key() -> str:
 
 
 # Database path - can be overridden via environment
-DATABASE_PATH = os.environ.get("AUDIT_DB_PATH", "/workspace/project/revit/fireai/core/audit_store.db")
+DATABASE_PATH = os.environ.get("AUDIT_DB_PATH", os.path.join(os.path.dirname(__file__), "audit_store.db"))
 
 
 # ============================================================================
 # DATABASE SETUP
 # ============================================================================
 
+# Track whether database has been initialized
+_db_initialized = False
+
+
 def _init_database() -> None:
     """Initialize database with audit_log table and triggers."""
+    global _db_initialized
+    if _db_initialized:
+        return
+    # Ensure parent directory exists
+    db_dir = os.path.dirname(DATABASE_PATH)
+    if db_dir and not os.path.isdir(db_dir):
+        os.makedirs(db_dir, exist_ok=True)
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
@@ -83,10 +94,12 @@ def _init_database() -> None:
     
     conn.commit()
     conn.close()
+    _db_initialized = True
 
 
 def _get_connection() -> sqlite3.Connection:
-    """Get database connection."""
+    """Get database connection (initializes on first call)."""
+    _init_database()
     return sqlite3.connect(DATABASE_PATH)
 
 
@@ -267,8 +280,37 @@ def get_events() -> List[Dict[str, Any]]:
 
 
 # ============================================================================
+# FACADE CLASS — public API surface
+# ============================================================================
+
+class AuditStore:
+    """Facade class for tamper-evident audit log operations.
+
+    Delegates to the module-level functions so that callers can use
+    either the functional API (``add_event()``) or the class-based
+    API (``AuditStore.add_event()``).
+    """
+
+    @staticmethod
+    def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> str:
+        """Add a new audit event to the hash chain."""
+        return add_event(event_type, room_id, details_dict)
+
+    @staticmethod
+    def verify_chain() -> tuple:
+        """Verify integrity of the entire hash chain and HMAC signatures."""
+        return verify_chain()
+
+    @staticmethod
+    def get_events() -> List[Dict[str, Any]]:
+        """Return all events as a list of dictionaries (read-only)."""
+        return get_events()
+
+
+# ============================================================================
 # INITIALIZATION
 # ============================================================================
 
-# Initialize database on module import
-_init_database()
+# Database is initialized lazily on first connection (not at import time).
+# This prevents import-time failures when the DB path is not writable.
+# _init_database() is called by _get_connection() on first use.
