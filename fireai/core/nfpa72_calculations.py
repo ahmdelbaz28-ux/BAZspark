@@ -371,8 +371,17 @@ def calculate_coverage_radius(ceiling: "CeilingSpec", detector_type: "DetectorTy
 
 
 def calculate_max_wall_distance(ceiling: "CeilingSpec", detector_type: "DetectorType") -> float:
-    """NFPA 72 §17.6.3.1.1 - max wall distance = radius."""
-    return calculate_coverage_radius(ceiling, detector_type)
+    """NFPA 72 §17.6.3.1.1 - max wall distance = S/2 (half the listed spacing).
+
+    CRITICAL FIX: Previous version incorrectly returned the coverage radius
+    R = 0.7 × S instead of the wall distance S/2. Per NFPA 72 §17.6.3.1.1,
+    detectors shall be located not more than half the listed spacing from
+    any wall. This is S/2, NOT the coverage radius R.
+
+    For smoke at h≤3.0m: S=9.1m → wall distance = S/2 = 4.55m (NOT R=6.37m).
+    """
+    spacing = calculate_max_spacing(ceiling, detector_type)
+    return round(spacing / 2.0, 4)
 
 
 # Add to exports

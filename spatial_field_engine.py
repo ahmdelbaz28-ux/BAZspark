@@ -1,6 +1,16 @@
 """
 Spatial Field Coverage Engine v2.0
 =================================
+⚠️ DEPRECATED: This file is a legacy standalone implementation.
+For production use, prefer the canonical implementations in:
+    fireai.core.nfpa72_models
+    fireai.core.nfpa72_calculations
+    fireai.core.nfpa72_coverage
+
+This file is retained ONLY for backward compatibility with the validation
+layer (validation/compliance_oracle.py, core/truth_deriver.py) and will
+be migrated in a future bridge.
+
 This engine validates NFPA compliance by checking that every point in a room
 is covered by a detector within the allowed distance, and that no obstruction
 blocks the line of sight to any detector.
@@ -11,6 +21,13 @@ Fixed v2.0 changes:
 - Uses polygon.covers() for boundary points
 - Dynamic coverage_factor based on ceiling type/height
 - Added validate_geometry() input validation layer
+
+CRITICAL FIX (2026-05-18):
+- HEAT_FIXED rated_spacing: Confirmed correct at 6.1m per NFPA 72 Table 17.6.3.1.1
+- Added deprecation notice pointing to canonical package
+- Note: coverage_factor(0.7) × HEAT_FIXED spacing gives Euclidean "radius" but
+  heat detectors use Chebyshev (square) geometry — prefer canonical package
+  which handles this correctly.
 """
 
 from dataclasses import dataclass
@@ -37,10 +54,10 @@ class NFPAConstraintModel:
     
     def __init__(self, ceiling_type: str = "SMOOTH", ceiling_height: float = 2.4):
         self.rated_spacing = {
-            "SMOKE_PHOTOELECTRIC": 9.1,  # 30 feet
-            "HEAT_FIXED": 6.1,  # 20 feet per NFPA 72 Table 17.6.2.1 (FIXED from incorrect 15.2m)
+            "SMOKE_PHOTOELECTRIC": 9.1,  # 30 feet — NFPA 72 Table 17.6.3.1.1 at h≤3.0m
+            "HEAT_FIXED": 6.1,  # 20 feet per NFPA 72 Table 17.6.3.1.1 at h≤3.0m
             "SMOKE_IONIZATION": 9.1,
-            "HEAT_RATE_OF_RISE": 6.1,  # 20 feet per NFPA 72 (FIXED from incorrect 15.2m)
+            "HEAT_RATE_OF_RISE": 6.1,  # 20 feet per NFPA 72 Table 17.6.3.1.1 at h≤3.0m
             "MULTI_CRITERIA": 9.1,
         }
         self.ceiling_type = ceiling_type

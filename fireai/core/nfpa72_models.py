@@ -725,10 +725,10 @@ def get_smoke_detector_radius_safe(
         ValueError: If ceiling_height_m <= 0 (MUST be rejected)
     Test Cases:
         Input <= 0  -> ValueError (MUST reject)
-        Input 2.4m  -> Output 4.55m (conservative) + flag
-        Input 3.0m  -> Output 4.55m (standard)
-        Input 15.24m -> Output 6.40m (standard)
-        Input 20.0m -> Output 6.40m (capped) + flag
+        Input 2.4m  -> Output 6.37m (conservative, using 3.0m values) + flag
+        Input 3.0m  -> Output 6.37m (standard, R = 0.7 × 9.1)
+        Input 15.24m -> Output 6.40m (standard, R = 0.7 × 9.144)
+        Input 20.0m -> Output 6.40m (capped at 15.24m) + flag
     """
     # ⚠️ CRITICAL: REJECT invalid heights - DO NOT fallback silently
     if ceiling_height_m <= 0:

@@ -29,8 +29,11 @@ import math
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Dict
 
-MAX_SPACING_M   = 9.144         # 30 ft exactly in meters
-DETECTOR_RADIUS = 0.7 * MAX_SPACING_M  # 6.40 m (NFPA 72 §17.7.4.2.3.1 - 0.7S Rule)
+MAX_SPACING_M   = 9.1           # 30 ft ≈ 9.1m (rounded, matches NFPA 72 Table 17.6.3.1.1)
+DETECTOR_RADIUS = 0.7 * MAX_SPACING_M  # 6.37 m (NFPA 72 §17.7.4.2.3.1 - 0.7S Rule)
+# NOTE: Previous version used 9.144m (exact 30ft) giving R=6.40m. This was
+# inconsistent with the canonical nfpa72_models.RADIUS_MAP which uses 9.1m giving
+# R=6.37m. Aligned to 9.1m for consistency — all models now agree on R=6.37m.
 WALL_MIN_M      = 0.10
 VERIFY_STEP     = 0.20                  # proof resolution (m)
 COARSE_STEP     = 1.00                  # hierarchical coarse grid step (m)

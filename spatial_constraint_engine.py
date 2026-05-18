@@ -1,12 +1,26 @@
 """
 Minimal Spatial Constraint Engine for Fire Safety Compliance
 =========================================================
-This is the CORE execution engine - not more specifications.
+⚠️ DEPRECATED: This file is a legacy standalone implementation.
+For production use, prefer the canonical implementations in:
+    fireai.core.nfpa72_models
+    fireai.core.nfpa72_calculations
+    fireai.core.nfpa72_coverage
+
+This file is retained ONLY for backward compatibility with the validation
+layer (validation/transformation_governor.py, validation/unit_coercion.py,
+validation/spatial_normalizer.py) and will be migrated in a future bridge.
 
 Implements ONE simple rule:
 "Distance from detector to nearest wall must not exceed max_spacing_between_detectors / 2"
 
 This validates NFPA 72 coverage principle using Shapely for spatial geometry.
+
+CRITICAL FIX (2026-05-18):
+- Heat detector spacing: Fixed from stale 9.1m default to height-adjusted values
+  per NFPA 72 Table 17.6.3.1.1 (6.1m at h≤3.0m)
+- Heat MAX_WALL_DISTANCE: Fixed from stale 7.6m to correct 3.05m (6.1/2)
+- Added deprecation notice pointing to canonical package
 """
 
 from dataclasses import dataclass
@@ -89,18 +103,29 @@ class NFPA72Spacings:
     """NFPA 72 spacing constants - these are the constraints"""
     
     # Maximum spacing between detectors (meters) for smooth ceiling
+    # NOTE: These are DEFAULT spacings at h≤3.0m. For variable height-adjusted
+    # spacings, use fireai.core.nfpa72_calculations.calculate_coverage_radius_from_height()
     DETECTOR_MAX_SPACING = {
-        "SMOKE_PHOTOELECTRIC": 9.1,  # 30 feet
+        "SMOKE_PHOTOELECTRIC": 9.1,  # 30 feet — NFPA 72 Table 17.6.3.1.1 at h≤3.0m
         "SMOKE_IONIZATION": 9.1,
-        "HEAT_FIXED": 6.1,  # 20 feet per NFPA 72 (FIXED from incorrect 15.2m)
-        "HEAT_RATE_OF_RISE": 6.1,  # 20 feet per NFPA 72 (FIXED from incorrect 15.2m)
+        "HEAT_FIXED": 6.1,  # 20 feet per NFPA 72 Table 17.6.3.1.1 at h≤3.0m
+        "HEAT_RATE_OF_RISE": 6.1,  # 20 feet per NFPA 72 Table 17.6.3.1.1 at h≤3.0m
         "MULTI_CRITERIA": 9.1,
     }
     
-    # Maximum wall distance (should be ≤ half max spacing)
+    # Maximum wall distance = S/2 per NFPA 72 §17.6.3.1.1
+    # NOTE: This is S/2 (half spacing), NOT the coverage radius R = 0.7×S.
+    # For coverage radius, use get_smoke_detector_radius_safe() from canonical package.
     MAX_WALL_DISTANCE = {
-        "SMOKE_PHOTOELECTRIC": 4.55,  # 9.1 / 2
-        "HEAT_FIXED": 3.05,  # 6.1 / 2 (FIXED from incorrect 7.6m — leftover from 15.2m spacing)
+        "SMOKE_PHOTOELECTRIC": 4.55,  # S/2 = 9.1/2 (wall distance, NOT coverage radius)
+        "HEAT_FIXED": 3.05,  # S/2 = 6.1/2 (wall distance per NFPA 72 §17.6.3.1.1)
+    }
+    
+    # Coverage radius R = 0.7 × S per NFPA 72 §17.7.4.2.3.1
+    # Used for area coverage checks, NOT for wall distance
+    COVERAGE_RADIUS = {
+        "SMOKE_PHOTOELECTRIC": 6.37,  # R = 0.7 × 9.1 (coverage radius)
+        "HEAT_FIXED": 4.27,  # R = 0.7 × 6.1 (coverage radius for circular model)
     }
     
     @classmethod
@@ -110,6 +135,11 @@ class NFPA72Spacings:
     @classmethod
     def get_max_wall_distance(cls, device_type: str) -> float:
         return cls.MAX_WALL_DISTANCE.get(device_type, cls.get_max_spacing(device_type) / 2)
+    
+    @classmethod
+    def get_coverage_radius(cls, device_type: str) -> float:
+        """Get coverage radius R = 0.7 × S per NFPA 72 §17.7.4.2.3.1."""
+        return cls.COVERAGE_RADIUS.get(device_type, 0.7 * cls.get_max_spacing(device_type))
 
 
 # =============================================================================

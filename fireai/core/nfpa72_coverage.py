@@ -57,6 +57,8 @@ from .nfpa72_calculations import (
     is_point_covered_by_heat_detectors,
     is_in_ridge_zone,
     requires_ridge_zone_detector,
+    calculate_coverage_radius_from_height,
+    calculate_max_spacing,
 )
 # ============================================================================
 # POLYGON-BASED COVERAGE CHECKS
@@ -226,7 +228,16 @@ def check_coverage_polygon(
         # Per NFPA 72, heat detectors use rectangular/square coverage areas
         # because heat detection responds to absolute temperature rise
         # not smoke migration patterns
-        radius = 9.1 / 2  # Half of 9.1m listed spacing
+        #
+        # CRITICAL FIX (2026-05-18): Previous version hardcoded 9.1/2 = 4.55m
+        # for heat detector half-spacing, which is WRONG because heat detector
+        # spacing varies with ceiling height per NFPA 72 Table 17.6.3.1.1.
+        # Now uses calculate_coverage_radius_from_height() which returns the
+        # height-adjusted spacing for heat detectors.
+        heat_spec = calculate_coverage_radius_from_height(
+            ceiling_spec.height_m, detector_type="heat"
+        )
+        radius = heat_spec.spacing_max / 2.0  # Half of height-adjusted spacing
         coverage_geometry = "square"  # Chebyshev distance
     else:
         # Default fallback for other detector types
@@ -260,7 +271,11 @@ def check_coverage_polygon(
             if detector_type == DetectorType.HEAT:
                 # ✅ HEAT: Use Chebyshev distance (square coverage)
                 # Check if point is within square bounds of any detector
-                half_spacing = 9.1 / 2
+                # CRITICAL FIX: Use height-adjusted heat spacing from NFPA table
+                heat_spec = calculate_coverage_radius_from_height(
+                    ceiling_spec.height_m, detector_type="heat"
+                )
+                half_spacing = heat_spec.spacing_max / 2.0
                 for dx, dy in detector_positions:
                     # Chebyshev distance: max(|dx|, |dy|)
                     if max(abs(x - dx), abs(y - dy)) <= half_spacing:
