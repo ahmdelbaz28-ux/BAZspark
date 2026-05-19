@@ -233,6 +233,34 @@ Integrated 5 production-grade modules from FIRE-BIM PRODUCTION CORE v2.0:
 - Engineering Router: obstacle-aware A* routing OK
 - Room Classifier: corridor=0.66, office=0.78 confidence
 
+### Consultant Code Review Fixes (2026-05-19)
+
+Applied fixes from consultant's critical code review of simulation/NFPA72 layer:
+
+| Bug | Fix | File | Severity |
+|-----|-----|------|----------|
+| BUG 3 | Timer-based detector checking (not int(t) % 30) | twin/simulation_layer.py | HIGH |
+| BUG 4 | Proper lower-layer temp with plume impact factor 0.5 | twin/simulation_layer.py | HIGH |
+| BUG 5a | Grid-based coverage (not arbitrary 0.65 factor) | twin/nfpa72_bridge.py | HIGH |
+| BUG 5b | Ceiling height adjustment per NFPA 72 17.6.3.1.3 | twin/nfpa72_bridge.py | HIGH |
+| BUG 5c | Wall proximity check ≥0.1m | twin/nfpa72_bridge.py | HIGH |
+| Typo | det.x → det.y for y-axis wall distance | twin/nfpa72_bridge.py | CRITICAL |
+
+**New Module:** twin/simulation_layer.py
+- High-level simulation interface wrapping fire_physics.py
+- Supports ZONE_MODEL, CFD_LITE, HYBRID modes
+- Integrates NFPA72Bridge for post-simulation compliance validation
+- Uses PhysicsDetector RTI model for realistic activation timing
+
+**Consultant Architectural Notes (acknowledged, tracked):**
+1. 2-zone model is simplified (our fire_physics.py already has full N-S solver)
+2. Multi-room smoke spread (already in MultiZoneEngine via Doorway flow)
+3. No HVAC coupling (documented as known limitation, future enhancement)
+4. No inverse modeling (future: Bayesian inference for fire source estimation)
+
+**Commits:**
+- Commit: d3831ba | Link: https://github.com/ahmdelbaz28-ux/revit/commit/d3831ba
+
 ### Instruction Validation (Critical Safety Rule)
 - **STOP and WARN immediately** if instructions are:
   - Incorrect or will damage the codebase
