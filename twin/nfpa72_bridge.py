@@ -305,8 +305,9 @@ class NFPA72Bridge:
 
                     # Check wall distance
                     # Distance from detector to nearest wall
+                    # BUG FIX: det.x → det.y for y-axis wall distance
                     dist_to_wall_x = min(det.x, room.width_m - det.x)
-                    dist_to_wall_y = min(det.y, room.depth_m - det.x)
+                    dist_to_wall_y = min(det.y, room.depth_m - det.y)
                     dist_to_wall = min(dist_to_wall_x, dist_to_wall_y)
 
                     if dist_to_wall > wall_max:
@@ -344,17 +345,14 @@ class NFPA72Bridge:
                     })
                     continue
 
-                # Check effective coverage
-                # Use height-adjusted coverage radius for each detector
-                total_coverage = 0.0
-                for det in room_detectors:
-                    adjusted = self.get_adjusted_spacing(
-                        room.ceiling_height_m, det.detector_type)
-                    r = self.get_coverage_radius(adjusted)
-                    total_coverage += 3.14159 * (r ** 2)
-
-                # Account for overlap: use 65% efficiency (conservative)
-                effective_coverage = total_coverage * 0.65
+                # Check effective coverage using grid-based integration
+                # BUG FIX (Consultant BUG 5): Replace arbitrary 0.65 factor
+                # with proper grid-based coverage calculation.
+                # Also applies ceiling height adjustment per NFPA 72 17.6.3.1.3.
+                effective_coverage = self._calculate_effective_coverage(
+                    room_detectors, room.width_m, room.depth_m,
+                    room.ceiling_height_m,
+                )
 
                 if effective_coverage < room.area_sqm:
                     violations.append({
@@ -429,6 +427,86 @@ class NFPA72Bridge:
                     })
 
         return violations
+
+    def _calculate_effective_coverage(
+        self,
+        detectors: List[DetectorPlacement],
+        room_width: float,
+        room_depth: float,
+        ceiling_height_m: float,
+    ) -> float:
+        """Calculate effective coverage area with proper overlap handling.
+
+        BUG FIX (Consultant BUG 5): Uses grid-based integration instead of
+        arbitrary 0.65/0.7 factor. Also applies ceiling height adjustment
+        per NFPA 72-2022 17.6.3.1.3.
+
+        Method: Divide room into grid cells and count covered cells.
+        Each detector's coverage radius is adjusted for ceiling height.
+
+        For performance: uses adaptive resolution (0.25m for small rooms,
+        0.5m for large rooms) to balance accuracy vs speed.
+
+        Args:
+            detectors: List of detector placements in the room
+            room_width: Room width in metres
+            room_depth: Room depth in metres
+            ceiling_height_m: Ceiling height in metres
+
+        Returns:
+            Effective coverage area in square metres
+        """
+        if not detectors:
+            return 0.0
+
+        # Adaptive resolution for performance
+        room_area = room_width * room_depth
+        if room_area < 100:
+            resolution = 0.25  # Fine grid for small rooms
+        elif room_area < 500:
+            resolution = 0.5   # Medium grid
+        else:
+            resolution = 1.0   # Coarse grid for large rooms
+
+        # Pre-compute height-adjusted coverage radii per NFPA 72 17.6.3.1.3
+        # Ceilings above 10 ft (3.05m) use reduced spacing
+        detector_radii: List[Tuple[float, float, float]] = []  # (x, y, r)
+        for det in detectors:
+            adjusted_spacing = self.get_adjusted_spacing(
+                ceiling_height_m, det.detector_type)
+            effective_radius = self.get_coverage_radius(adjusted_spacing)
+
+            # NFPA 72-2022 17.6.3.1.3: linear reduction for high ceilings
+            if ceiling_height_m > 3.05:
+                reduction_factor = max(0.7, 1.0 - (ceiling_height_m - 3.05) * 0.1)
+                effective_radius *= reduction_factor
+
+            detector_radii.append((det.x, det.y, effective_radius))
+
+        # Grid-based coverage calculation
+        covered_cells = 0
+        total_cells = 0
+
+        nx = max(1, int(room_width / resolution))
+        ny = max(1, int(room_depth / resolution))
+
+        for ix in range(nx):
+            for iy in range(ny):
+                cell_x = (ix + 0.5) * resolution
+                cell_y = (iy + 0.5) * resolution
+                total_cells += 1
+
+                # Check if any detector covers this cell
+                for dx, dy, r in detector_radii:
+                    dist_sq = (cell_x - dx) ** 2 + (cell_y - dy) ** 2
+                    if dist_sq <= r * r:
+                        covered_cells += 1
+                        break
+
+        if total_cells == 0:
+            return 0.0
+
+        return covered_cells * (resolution ** 2)
 
     def validate_design(
         self,
