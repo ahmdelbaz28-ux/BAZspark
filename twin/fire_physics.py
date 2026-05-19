@@ -401,6 +401,7 @@ class FireSource:
     soot_yield: float = 0.10     # typical for upholstered furniture
     co_yield: float = 0.04       # typical for well-ventilated flaming
     ignition_time: float = 0.0
+    fuel_load_kg: float = 500.0  # total fuel available (kg) — CRIT-02 FIX
 
 
 # ---------------------------------------------------------------------------
@@ -565,7 +566,7 @@ class VoxelCombustionModel:
 
             # Check if peak reached
             if hrr >= self.hrr_peak:
-                self._phase = "GROWTH"  # will transition to STEADY next
+                self._phase = "GROWTH"  # hrr capped at peak; stays GROWTH until vent-control or fuel exhaustion
                 # Check fuel
                 if self.fuel_remaining <= 0.0:
                     self._transition_to_decay(t, hrr)
@@ -1060,7 +1061,7 @@ class HeatTransportNS:
         Parameters:
             grid: VoxelGrid to update in-place
             fire: FireSource (for source location)
-            hrr_now: current HRR (W) from FireGrowthModel
+            hrr_now: current HRR (W) from combustion model (VoxelCombustionModel)
             dt: time-step (s)
         """
         dx = grid.resolution
@@ -2516,6 +2517,7 @@ class TimeEngine:
                 hrr_peak_w=fires[0].hrr,
                 growth_alpha_kw_s2=fires[0].growth_alpha,
                 ignition_time_s=fires[0].ignition_time,
+                fuel_load_kg=fires[0].fuel_load_kg,
             )
         else:
             self._combustion = VoxelCombustionModel()

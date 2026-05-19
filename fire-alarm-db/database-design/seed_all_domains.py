@@ -57,22 +57,8 @@ class ManufacturerCatalog(Base):
     UnitPrice = Column(Float)
     Currency = Column(String(3), default='USD')
     CreatedAt = Column(DateTime, default=datetime.utcnow)
-    
-class ManufacturerCatalog(Base):
-    """Manufacturer product catalog"""
-    __tablename__ = 'ManufacturerCatalog'
-    
-    CatalogID = Column(Integer, primary_key=True, autoincrement=True)
-    DeviceTypeID = Column(Integer, ForeignKey('DeviceType.DeviceTypeID'))
-    ManufacturerName = Column(String(100), nullable=False)
-    Model = Column(String(100), nullable=False)
-    Specifications = Column(JSON)  # JSON dict of specs
-    UnitPrice = Column(Float)
-    Currency = Column(String(3), default='USD')
-    CreatedAt = Column(DateTime, default=datetime.utcnow)
 
 
-# =============================================================================
 # Route Network Seeding
 # =============================================================================
 

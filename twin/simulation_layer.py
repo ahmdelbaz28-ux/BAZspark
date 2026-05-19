@@ -82,7 +82,7 @@ from twin.fire_physics import (
     VoxelGrid,
     CFLController,
     FireSource,
-    FireGrowthModel,
+    VoxelCombustionModel,
     PressureSolver,
     HeatTransportNS,
     SmokeTransportNS,
@@ -594,7 +594,12 @@ class SimulationLayer:
         fires_by_room: Dict[str, List[SimulationFireSource]],
         t: float,
     ) -> None:
-        """Advance the CFD solver by one time step."""
+        """Advance the CFD solver by one time step.
+
+        CRIT-02 FIX: Uses VoxelCombustionModel for O2-limited HRR instead of
+        the simple FireGrowthModel.hrr_at() which had no ventilation control,
+        no fuel tracking, and no decay phase.
+        """
         if not self._grid:
             return
 
@@ -605,13 +610,27 @@ class SimulationLayer:
                     hrr=fire.hrr_peak_w,
                     soot_yield=fire.soot_yield,
                     co_yield=fire.co_yield,
+                    fuel_load_kg=fire.fuel_load_kg,
                 )
-                hrr_now = FireGrowthModel.hrr_at(
-                    fire.hrr_peak_w,
-                    fire.growth_alpha_kW_s2,
-                    fire.ignition_time_s,
-                    t,
-                )
+
+                # CRIT-02 FIX: Use VoxelCombustionModel for O2-limited HRR
+                # This replaces the old FireGrowthModel.hrr_at() which bypassed
+                # O2 ventilation control, fuel consumption, and decay.
+                # Create a per-fire combustion model that persists across steps
+                # by caching it on the SimulationLayer instance.
+                cache_key = f"_comb_{room_id}_{fire.x}_{fire.y}"
+                combustion = getattr(self, cache_key, None)
+                if combustion is None:
+                    combustion = VoxelCombustionModel(
+                        hrr_peak_w=fire.hrr_peak_w,
+                        growth_alpha_kw_s2=fire.growth_alpha_kW_s2,
+                        ignition_time_s=fire.ignition_time_s,
+                        fuel_load_kg=fire.fuel_load_kg,
+                    )
+                    setattr(self, cache_key, combustion)
+
+                hrr_now = combustion.get_hrr(t, grid=self._grid, fire=fire_src)
+                combustion.consume_fuel(hrr_now, dt)
 
                 if self._pressure_solver:
                     self._pressure_solver.step(self._grid, dt)

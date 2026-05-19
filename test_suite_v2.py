@@ -9,7 +9,7 @@ import math
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "fireai", "core"))
 
-from spatial_engine.density_optimizer import DensityOptimizer, Room
+from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room
 from floor_analyser import FloorAnalyser
 
 # ─────────────────────────────────────────────────────────────
