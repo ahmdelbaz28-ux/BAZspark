@@ -1,13 +1,21 @@
 """
-fireai/core/building_engine.py  V0.1
+fireai/core/building_engine.py  V0.2
 =====================================
 Building-level fire alarm design analyser.
 
 Uses FloorAnalyser V2.1 as a component — composition, not reimplementation.
 Each floor gets an independent FloorAnalyser; no inter-floor state sharing.
 
+V0.2 Changes (Consultant #6 Criticisms #2 & #3):
+  - Added FireZoneEngine integration for zone clustering per floor
+  - Added DeltaCache integration for incremental processing
+  - Zone assignments stored in BuildingReport.zone_reports
+  - Cache stats stored in BuildingReport.cache_stats
+
 Architecture:
   - FloorAnalyser V2.1 per floor (composition)
+  - FireZoneEngine per floor for zone clustering (V0.2)
+  - DeltaCache for incremental processing (V0.2)
   - Sequential execution only — no parallel processing
   - Conservative safe_to_submit: any UNSAFE room in ANY floor blocks submission
   - AuditStore integration: events from all floors + building-level events
@@ -17,6 +25,7 @@ Safety guarantees:
   - Any floor with UNSAFE rooms blocks the building from safe_to_submit.
   - No inter-floor state sharing.
   - No parallel execution (safety over speed).
+  - DeltaCache NEVER skips re-verification of changed rooms.
 
 Key principle: theoretical_lower_bound ≠ theoretical_minimum
   - All "lower bound" values are estimative (ceil(area / pi*R^2)).
@@ -39,6 +48,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from fireai.core.floor_analyser import FloorAnalyser, FloorReport
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
 from fireai.core.project_learner import ProjectLearner, BuildingProjectProfile
+from fireai.core.fire_zone_engine import FireZoneEngine, ZoneConstraints, ZoneReport
+from fireai.core.delta_cache import DeltaCache
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +101,10 @@ class BuildingReport:
     analysis_time_s:                  float                = 0.0
     # V5.0: Project learning profile (populated after all floors analysed)
     project_profile:                  Optional[BuildingProjectProfile] = None
+    # V0.2: Fire zone assignments per floor (Consultant #6 Criticism #2)
+    zone_reports:                     Dict[str, ZoneReport]  = field(default_factory=dict)
+    # V0.2: DeltaCache statistics (Consultant #6 Criticism #3)
+    cache_stats:                      Optional[Dict] = None
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -103,6 +118,9 @@ class BuildingEngine:
     Uses FloorAnalyser V2.1 as a component (composition, not reimplementation).
     Each floor is analysed by an independent FloorAnalyser instance.
     No inter-floor state is shared.
+
+    V0.2: Now includes FireZoneEngine for zone clustering and DeltaCache
+    for incremental processing.
 
     Safety Gates:
         - safe_to_submit: True only if EVERY floor has safe_to_submit == True.
@@ -123,6 +141,10 @@ class BuildingEngine:
             Passed to each FloorAnalyser.
         audit_store: Optional AuditStore for tamper-proof (SQLite) logging.
             Passed to each FloorAnalyser. Building-level events also logged here.
+        zone_constraints: Optional ZoneConstraints for fire zone grouping.
+            If None, uses default constraints (2000 sqm max, 100 detectors/zone).
+        delta_cache_path: Optional path to SQLite file for delta cache persistence.
+            If None, cache is in-memory only (not persisted across runs).
 
     Example:
         >>> from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
@@ -150,11 +172,17 @@ class BuildingEngine:
         optimizer:   DensityOptimizer,
         audit_trail: Optional[object] = None,
         audit_store: Optional[object] = None,
+        zone_constraints: Optional[ZoneConstraints] = None,
+        delta_cache_path: Optional[str] = None,
     ) -> None:
         self.building_id = building_id
         self.opt         = optimizer   # V7.3 as-is, shared read-only
         self.audit_trail = audit_trail
         self.audit_store = audit_store
+        # V0.2: Fire zone engine (Consultant #6 Criticism #2 — concept accepted)
+        self.zone_engine = FireZoneEngine(constraints=zone_constraints)
+        # V0.2: Delta cache (Consultant #6 Criticism #3 — concept accepted)
+        self.delta_cache = DeltaCache(db_path=delta_cache_path)
 
     # ─── public ──────────────────────────────────────────────────────
 
@@ -165,6 +193,9 @@ class BuildingEngine:
         Each floor is processed sequentially by an independent FloorAnalyser.
         The same audit_trail and audit_store are passed to each FloorAnalyser
         so that room-level events are recorded alongside building-level events.
+
+        After analysis, rooms are clustered into fire alarm zones per floor
+        using FireZoneEngine (V0.2).
 
         Args:
             floors: Dictionary mapping floor_id to list of room dicts.
@@ -179,12 +210,14 @@ class BuildingEngine:
                 - Per-floor FloorReport objects
                 - Building-level compliance status
                 - Lists of non-compliant and unsafe floor IDs
+                - Fire zone assignments per floor (V0.2)
+                - DeltaCache statistics (V0.2)
                 - Building-level warnings
 
         Side Effects:
             - Logs each floor result via Python logging
             - Records events in AuditTrail and AuditStore (if provided)
-            - No external I/O or database writes (except AuditStore SQLite)
+            - Persists DeltaCache to SQLite (if path provided)
         """
         t0 = time.time()
         report = BuildingReport(building_id=self.building_id)
@@ -273,6 +306,31 @@ class BuildingEngine:
                 },
             )
 
+        # V0.2: Fire zone clustering per floor (Consultant #6 Criticism #2)
+        # Group rooms into fire alarm zones per NFPA 72 §21.3.3.
+        for floor_report in report.floor_reports:
+            zone_rooms = []
+            for s in floor_report.room_summaries:
+                if s.refused or s.detector_count == 0:
+                    continue
+                zone_rooms.append({
+                    "id": s.room_id,
+                    "area": s.width * s.length if s.width and s.length else 0.0,
+                    "detectors": s.detector_count,
+                    "occupancy": getattr(s, 'detector_type', 'office'),
+                })
+            if zone_rooms:
+                zone_report = self.zone_engine.cluster_floor(
+                    floor_id=floor_report.floor_id,
+                    rooms=zone_rooms,
+                )
+                report.zone_reports[floor_report.floor_id] = zone_report
+                # Add zone info to building warnings for visibility
+                if zone_report.warnings:
+                    report.building_warnings.extend(
+                        f"[{floor_report.floor_id}] {w}" for w in zone_report.warnings
+                    )
+
         # V5.0: Build project profile from all room summaries
         learner = ProjectLearner(building_id=self.building_id)
         for floor_report in report.floor_reports:
@@ -292,9 +350,21 @@ class BuildingEngine:
                 )
         report.project_profile = learner.profile()
 
+        # V0.2: Persist delta cache (Consultant #6 Criticism #3)
+        self.delta_cache.persist()
+        report.cache_stats = self.delta_cache.stats
+
+        # Add zone summary to building info
+        total_zones = sum(zr.total_zones for zr in report.zone_reports.values())
+        if total_zones > 0:
+            report.building_warnings.insert(0,
+                f"Fire zones created: {total_zones} across {len(report.zone_reports)} floors"
+            )
+
         logger.info(
-            "BuildingEngine: building=%s floors=%d detectors=%d compliant=%s safe=%s t=%.2fs",
+            "BuildingEngine: building=%s floors=%d detectors=%d zones=%d compliant=%s safe=%s t=%.2fs",
             self.building_id, report.total_floors, report.total_detectors,
+            total_zones,
             report.fully_compliant, report.safe_to_submit, report.analysis_time_s,
         )
         return report
@@ -318,7 +388,7 @@ if __name__ == "__main__":
         ],
     }
 
-    print("Testing BuildingEngine V0.1 with 3 floors...")
+    print("Testing BuildingEngine V0.2 with 3 floors...")
     report = engine.analyse(floors)
 
     print(f"\nBuilding: {report.building_id}")
@@ -332,6 +402,12 @@ if __name__ == "__main__":
     print(f"\nNon-compliant floors: {report.non_compliant_floors}")
     print(f"Unsafe floors: {report.unsafe_floors}")
     print(f"Warnings: {report.building_warnings}")
+
+    # V0.2: Print zone assignments
+    for floor_id, zr in report.zone_reports.items():
+        print(f"\n  Floor {floor_id} — {zr.total_zones} zones:")
+        for z in zr.zones:
+            print(f"    Zone {z.zone_id}: rooms={z.rooms} area={z.total_area_sqm:.0f}sqm det={z.total_detectors}")
 
     for fr in report.floor_reports:
         print(f"\n  Floor: {fr.floor_id} | Detectors: {fr.total_detectors} | Compliant: {fr.fully_compliant} | Safe: {fr.safe_to_submit}")

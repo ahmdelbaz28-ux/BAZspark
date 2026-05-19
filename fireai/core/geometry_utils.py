@@ -215,12 +215,16 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
     """
     Validate polygon integrity: minimum vertices, no duplicates,
     no self-intersection, minimum area.
+
+    V11 Enhancement (Consultant #5 Criticism #4 - partially accepted):
+      - Added non-consecutive duplicate vertex detection (not just consecutive)
+      - Added near-duplicate vertex warning (within 0.05m)
     """
     errors: List[str] = []
     warnings: List[str] = []
 
     if len(poly) < 3:
-        errors.append(f"Polygon has {len(poly)} vertices — minimum is 3.")
+        errors.append(f"Polygon has {len(poly)} vertices - minimum is 3.")
         return ValidationResult(False, errors, warnings)
 
     # Duplicate consecutive vertices
@@ -230,7 +234,22 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
         if math.hypot(b[0] - a[0], b[1] - a[1]) < 1e-9:
             errors.append(f"Duplicate consecutive vertices at index {i}: {a}.")
 
-    # Self-intersection (O(n^2) — acceptable for room-scale polygons)
+    # V11: Non-consecutive near-duplicate vertices (within 0.05m)
+    # These cause numerical instability in algorithms and should be simplified.
+    near_dup_threshold = 0.05  # 5cm
+    for i in range(len(poly)):
+        for j in range(i + 2, len(poly)):
+            if j == (i + len(poly) - 1) % len(poly):
+                continue  # Skip first-last pair (they're adjacent via closure)
+            dist = math.hypot(poly[j][0] - poly[i][0], poly[j][1] - poly[i][1])
+            if dist < near_dup_threshold and dist > 1e-9:
+                warnings.append(
+                    f"Near-duplicate vertices at index {i} and {j}: "
+                    f"distance={dist:.4f}m < {near_dup_threshold}m. "
+                    f"Consider simplification."
+                )
+
+    # Self-intersection (O(n^2) - acceptable for room-scale polygons)
     n = len(poly)
     for i in range(n):
         for j in range(i + 2, n):
@@ -244,13 +263,13 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
 
     area = polygon_area(poly)
     if area < min_area:
-        errors.append(f"Area {area:.4f}m² is below minimum {min_area}m².")
+        errors.append(f"Area {area:.4f}m2 is below minimum {min_area}m2.")
 
     if len(poly) > 50:
-        warnings.append(f"Polygon has {len(poly)} vertices — consider simplification.")
+        warnings.append(f"Polygon has {len(poly)} vertices - consider simplification.")
 
     if polygon_perimeter(poly) > 500:
-        warnings.append("Perimeter > 500m — verify units are in metres.")
+        warnings.append("Perimeter > 500m - verify units are in metres.")
 
     return ValidationResult(not errors, errors, warnings)
 
@@ -578,3 +597,174 @@ def convex_hull_2d(points: Sequence[Point]) -> Polygon:
         )
 
     return hull
+
+
+# ─────────────────────────────────────────────
+# Room Geometry Sanitization (V11 - Consultant #5 Criticism #4)
+# ─────────────────────────────────────────────
+
+@dataclass
+class SanitizeResult:
+    """Result from room geometry sanitization."""
+    coords: List[Point]
+    was_modified: bool = False
+    modifications: List[str] = field(default_factory=list)
+    rejected: bool = False
+    rejection_reason: Optional[str] = None
+
+
+def sanitize_room_geometry(coords: List[Point], min_area: float = 1.0) -> SanitizeResult:
+    """Sanitize room geometry from Revit before processing.
+
+    Revit models frequently contain geometry errors that, if passed
+    directly to the coverage engine, produce incorrect results that
+    appear valid. This function acts as a gate, rejecting or cleaning
+    geometry before it enters FireAI.
+
+    V11 Enhancement (Consultant #5 Criticism #4 - partially accepted):
+      The existing code already had:
+        - Min area check (1.0m2) in floor_analyser.py
+        - Self-intersection repair (buffer(0)) in floor_analyser.py
+        - Duplicate detection in validate_polygon()
+      This function adds:
+        - Simplification of near-duplicate vertices (0.05m tolerance)
+        - MultiPolygon rejection (disconnected rooms)
+        - Zero/negative area check AFTER cleaning
+        - Centralized sanitization (replacing scattered checks)
+
+    Args:
+        coords: Room polygon vertices from Revit.
+        min_area: Minimum acceptable room area in sqm.
+            Default 1.0 sqm — rooms below this are likely Revit
+            modeling errors (shafts, column pockets, etc.).
+
+    Returns:
+        SanitizeResult with:
+          - coords: Cleaned coordinates (if not rejected)
+          - was_modified: True if any changes were made
+          - modifications: List of changes applied
+          - rejected: True if room should be rejected entirely
+          - rejection_reason: Why the room was rejected
+
+    Examples:
+        >>> result = sanitize_room_geometry([(0,0),(10,0),(10,8),(0,8)])
+        >>> result.rejected
+        False
+        >>> result.coords
+        [(0,0), (10,0), (10,8), (0,8)]
+    """
+    modifications: List[str] = []
+    was_modified = False
+
+    # Basic input validation
+    if not coords or len(coords) < 3:
+        return SanitizeResult(
+            coords=coords,
+            rejected=True,
+            rejection_reason=f"Room has {len(coords) if coords else 0} vertices - minimum is 3.",
+        )
+
+    # Try Shapely-based sanitization (more robust)
+    try:
+        from shapely.geometry import Polygon as ShapelyPolygon
+
+        poly = ShapelyPolygon(coords)
+
+        # 1. Auto-repair self-intersecting polygons (common Revit error)
+        if not poly.is_valid:
+            poly = poly.buffer(0)
+            modifications.append("Auto-repaired self-intersecting polygon (buffer(0))")
+            was_modified = True
+            if not poly.is_valid:
+                return SanitizeResult(
+                    coords=coords,
+                    rejected=True,
+                    rejection_reason="Room geometry is corrupted - auto-repair failed.",
+                )
+
+        # 2. Reject MultiPolygon (disconnected rooms must be analyzed separately)
+        if poly.geom_type == 'MultiPolygon':
+            return SanitizeResult(
+                coords=coords,
+                rejected=True,
+                rejection_reason=(
+                    "Room is a MultiPolygon (disconnected parts). "
+                    "Each part must be analyzed as a separate room."
+                ),
+            )
+
+        # 3. Check minimum area (likely Revit shaft or modeling error)
+        if poly.area < min_area:
+            return SanitizeResult(
+                coords=coords,
+                rejected=True,
+                rejection_reason=(
+                    f"Room area {poly.area:.2f} sqm is below minimum {min_area} sqm. "
+                    f"Likely a Revit modeling error (shaft, column pocket, etc.)."
+                ),
+            )
+
+        # 4. Simplify near-duplicate vertices (0.05m tolerance)
+        #    Removes vertices that are very close together, which cause
+        #    numerical instability in placement algorithms.
+        original_n = len(poly.exterior.coords) - 1  # -1 for closing vertex
+        simplified = poly.simplify(0.05, preserve_topology=True)
+        simplified_n = len(simplified.exterior.coords) - 1
+
+        if simplified_n < original_n:
+            removed = original_n - simplified_n
+            modifications.append(
+                f"Simplified {removed} near-duplicate vertex/vertices "
+                f"({original_n} -> {simplified_n})"
+            )
+            was_modified = True
+            poly = simplified
+
+        # 5. Validate the simplified polygon
+        if not poly.is_valid or poly.area <= 0:
+            return SanitizeResult(
+                coords=coords,
+                rejected=True,
+                rejection_reason="Room geometry became invalid after simplification.",
+            )
+
+        # Return cleaned coordinates
+        clean_coords = [(round(x, 6), round(y, 6)) for x, y in list(poly.exterior.coords)[:-1]]
+
+        return SanitizeResult(
+            coords=clean_coords,
+            was_modified=was_modified,
+            modifications=modifications,
+        )
+
+    except ImportError:
+        # Shapely not available - fall back to basic pure-Python validation
+        modifications.append("Shapely not available - using basic validation only")
+
+        # Check for duplicate consecutive vertices
+        clean = list(coords)
+        i = 0
+        while i < len(clean):
+            next_i = (i + 1) % len(clean)
+            if math.hypot(clean[next_i][0] - clean[i][0],
+                         clean[next_i][1] - clean[i][1]) < 1e-9:
+                clean.pop(next_i if next_i < len(clean) else i)
+                modifications.append(f"Removed duplicate vertex at index {i}")
+                was_modified = True
+            else:
+                i += 1
+
+        # Check area
+        area = polygon_area(clean)
+        if area < min_area:
+            return SanitizeResult(
+                coords=coords,
+                rejected=True,
+                rejection_reason=f"Room area {area:.2f} sqm below minimum {min_area} sqm.",
+            )
+
+        return SanitizeResult(
+            coords=clean if was_modified else coords,
+            was_modified=was_modified,
+            modifications=modifications,
+        )

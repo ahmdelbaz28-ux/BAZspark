@@ -4,9 +4,11 @@ from fireai.core.spatial_engine.voronoi_verifier import VoronoiVerifier, Voronoi
 from fireai.core.spatial_engine.consensus_engine import (
     ConsensusEngine, ConsensusResult, ConfidenceLevel, EngineName,
 )
+from fireai.core.spatial_engine.exact_coverage import ExactCoverageEngine, ExactCoverageResult
 __all__ = [
     "DensityOptimizer", "Room", "DetectorLayout", "DETECTOR_RADIUS",
     "AnalyticalVerifier", "AnalyticalResult",
     "VoronoiVerifier", "VoronoiResult",
     "ConsensusEngine", "ConsensusResult", "ConfidenceLevel", "EngineName",
+    "ExactCoverageEngine", "ExactCoverageResult",
 ]

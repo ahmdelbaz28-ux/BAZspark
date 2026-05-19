@@ -112,7 +112,9 @@ from fireai.core.geometry_utils import (
     point_in_polygon,
     grid_points_in_polygon,
     polygon_area,
+    sanitize_room_geometry,
 )
+from fireai.core.sensor_physics_advisor import SensorPhysicsAdvisor
 
 logger = logging.getLogger(__name__)
 
@@ -323,6 +325,7 @@ class FloorAnalyser:
         scenario_time_step: float = 1.0,
         scenario_skip_blind: bool = True,
         use_polygon_verifier: bool = False,
+        room_timeout_s: float = 60.0,
     ) -> None:
         self.floor_id    = floor_id
         self.opt         = optimizer   # V7.3 as-is, no modifications
@@ -337,6 +340,14 @@ class FloorAnalyser:
         self.scenario_skip_blind = scenario_skip_blind  # skip blind scan for speed
         # V6.0: Polygon verifier (Greedy Set Cover)
         self.use_polygon_verifier = use_polygon_verifier
+        # V11: Per-room timeout (Consultant #5 Criticism #3 - timeout concept accepted)
+        # If a room analysis takes longer than this, flag it for manual review.
+        # NOT using ProcessPoolExecutor - sequential execution is maintained for safety.
+        self.room_timeout_s = room_timeout_s
+        # V12: Sensor Physics Advisor (Consultant #6 Criticism #1 — advisory concept accepted)
+        # Provides warnings for extreme ceiling/slope conditions where
+        # point detectors may be insufficient (beam detectors recommended).
+        self.sensor_advisor = SensorPhysicsAdvisor()
 
     # ─── public ──────────────────────────────────────────────────────
 
@@ -374,46 +385,50 @@ class FloorAnalyser:
             return report
 
         for room_dict in rooms:
-            # ─── V7.3.1: Geometry sanity check (Consultant #4) ───
-            # Reject rooms with impossibly small area — likely Revit modeling errors
-            # (shafts, column pockets, etc.) that should not have detectors.
+            # ─── V11: Centralized geometry sanitization ───
+            # (Replaces scattered V7.3.1 inline checks with sanitize_room_geometry)
+            # Handles: min area, self-intersection repair, MultiPolygon rejection,
+            # near-duplicate vertex simplification, and corrupted geometry.
             polygon_coords = room_dict.get("polygon_coords", [])
             if polygon_coords:
-                try:
-                    from shapely.geometry import Polygon as ShapelyPolygon
-                    room_poly = ShapelyPolygon(polygon_coords)
-                    if not room_poly.is_valid:
-                        room_poly = room_poly.buffer(0)  # Auto-repair self-intersecting
-                    if room_poly.area < 1.0:
-                        # Room < 1m² is likely a Revit shaft or modeling error
-                        room_name = room_dict.get("name", room_dict.get("room_id", ""))
-                        summary = RoomSummary(
-                            room_id=room_dict.get("room_id", room_name),
-                            name=room_name,
-                            detector_count=0,
-                            detector_type=room_dict.get("detector_type", "smoke_photoelectric"),
-                            coverage_pct=0.0,
-                            nfpa_valid=False,
-                            proof_valid=False,
-                            fallback_used=False,
-                            method="rejected_geometry",
-                            compliant=False,
-                            safe_to_submit=False,
-                            violations=[f"Room area {room_poly.area:.2f}m² < 1.0m² minimum — likely Revit modeling error"],
-                            warnings=[f"REJECTED: Room area {room_poly.area:.2f}m² is too small for detector placement. Likely a shaft or modeling artifact."],
-                            theoretical_lower_bound=0,
-                            efficiency_ratio=0.0,
-                            duct_devices=0,
-                            refused=True,
-                            refusal_reason=f"Room area {room_poly.area:.2f}m² below 1.0m² minimum",
-                            used_mip=False,
-                            analysis_ms=0.0,
-                        )
-                        report.room_summaries.append(summary)
-                        report.unsafe_rooms.append(room_dict.get("room_id", room_name))
-                        continue
-                except Exception:
-                    pass  # If Shapely unavailable, continue with normal processing
+                sanitize_result = sanitize_room_geometry(polygon_coords, min_area=1.0)
+                if sanitize_result.rejected:
+                    room_name = room_dict.get("name", room_dict.get("room_id", ""))
+                    summary = RoomSummary(
+                        room_id=room_dict.get("room_id", room_name),
+                        name=room_name,
+                        detector_count=0,
+                        detector_type=room_dict.get("detector_type", "smoke_photoelectric"),
+                        coverage_pct=0.0,
+                        nfpa_valid=False,
+                        proof_valid=False,
+                        fallback_used=False,
+                        method="rejected_geometry",
+                        compliant=False,
+                        safe_to_submit=False,
+                        violations=[f"GEOMETRY_REJECTED: {sanitize_result.rejection_reason}"],
+                        warnings=[f"REJECTED: {sanitize_result.rejection_reason}"],
+                        theoretical_lower_bound=0,
+                        efficiency_ratio=0.0,
+                        duct_devices=0,
+                        refused=True,
+                        refusal_reason=sanitize_result.rejection_reason,
+                        used_mip=False,
+                        analysis_ms=0.0,
+                    )
+                    report.room_summaries.append(summary)
+                    report.unsafe_rooms.append(room_dict.get("room_id", room_name))
+                    continue
+                elif sanitize_result.was_modified:
+                    # Use cleaned coordinates
+                    room_dict = dict(room_dict)  # copy to avoid mutating original
+                    room_dict["polygon_coords"] = sanitize_result.coords
+                    polygon_coords = sanitize_result.coords
+                    logger.info(
+                        "Room %s: Geometry sanitized: %s",
+                        room_dict.get("room_id", room_dict.get("name", "")),
+                        "; ".join(sanitize_result.modifications),
+                    )
 
             # ─── Safety refusal check (NFPA 72 §17.6.4) ───
             room_type = room_dict.get("room_type", "")
@@ -490,6 +505,34 @@ class FloorAnalyser:
             layout = self.opt.optimize(room, coverage_radius=radius)
             ms = (time.time() - t_room) * 1000
 
+            # ─── V11: Per-room timeout warning ───
+            # (Consultant #5 Criticism #3 - timeout concept accepted, ProcessPoolExecutor rejected)
+            # Sequential execution is maintained for safety. If a room takes too long,
+            # flag it for manual review rather than using process isolation.
+            room_time_s = ms / 1000.0
+            if room_time_s > self.room_timeout_s:
+                timeout_msg = (
+                    f"ROOM_TIMEOUT: Room analysis took {room_time_s:.1f}s, "
+                    f"exceeding timeout limit {self.room_timeout_s:.0f}s. "
+                    f"Possible infinite loop in fallback algorithm. "
+                    f"Manual design review required."
+                )
+                room_warnings = list(layout.warnings) if layout.warnings else []
+                room_warnings.append(timeout_msg)
+                logger.warning("Room %s: %s", room.name, timeout_msg)
+
+                # Log to AuditStore if available
+                if self.audit_store and hasattr(self.audit_store, 'add_event'):
+                    self.audit_store.add_event(
+                        event_type="ROOM_TIMEOUT_WARNING",
+                        room_id=room_dict.get("room_id", room.name),
+                        details_dict={
+                            "analysis_time_s": round(room_time_s, 3),
+                            "timeout_limit_s": self.room_timeout_s,
+                            "note": "Room analysis exceeded timeout. Possible infinite loop. Manual design required.",
+                        },
+                    )
+
             # ─── V4.0: Filter detectors for non-rectangular rooms ─────────────
             filtered_count = 0
             if is_non_rect:
@@ -551,6 +594,34 @@ class FloorAnalyser:
                             "radius_used_m": radius,
                             "nfpa_table_reference": "Table 17.6.3.2",
                             "note": "Height below NFPA 72 range — using conservative radius. PE review required.",
+                        },
+                    )
+
+            # ─── V12: Sensor Physics Advisory (Consultant #6 Criticism #1) ───
+            # Advisory warnings for extreme ceiling/slope conditions.
+            # Does NOT modify calculations — only adds recommendations.
+            # The actual coverage radius is already height-adjusted per
+            # NFPA 72 Table 17.6.3.1.1 (see calculate_coverage_radius_from_height).
+            sensor_advisory = self.sensor_advisor.advise_room_dict(room_dict)
+            if sensor_advisory.severity in ("WARNING", "CRITICAL"):
+                for rec in sensor_advisory.recommendations:
+                    room_warnings.append(rec)
+                    logger.log(
+                        logging.WARNING if sensor_advisory.severity == "WARNING" else logging.CRITICAL,
+                        "Room %s: %s", room.name, rec,
+                    )
+
+                # Log to AuditStore if available
+                if self.audit_store and hasattr(self.audit_store, 'add_event'):
+                    self.audit_store.add_event(
+                        event_type=f"SENSOR_ADVISORY_{sensor_advisory.severity}",
+                        room_id=room_dict.get("room_id", room.name),
+                        details_dict={
+                            "severity": sensor_advisory.severity,
+                            "beam_detector_recommended": sensor_advisory.beam_detector_recommended,
+                            "performance_based_design": sensor_advisory.performance_based_design,
+                            "recommendations": sensor_advisory.recommendations,
+                            "nfpa_references": sensor_advisory.nfpa_references,
                         },
                     )
             if not layout.proof_valid and layout.coverage_pct > 99.9:

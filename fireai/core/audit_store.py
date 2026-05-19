@@ -1,5 +1,5 @@
 """
-audit_store.py – Tamper-Evident Audit Log for NFPA 72 Compliance
+audit_store.py - Tamper-Evident Audit Log for NFPA 72 Compliance
 =========================================================
 Immutable audit log with hash chain verification.
 Designed for legal/production use.
@@ -22,8 +22,27 @@ SECURITY NOTE:
       to "no fallback ever" based on the consultant's strict recommendation.
       The consultant has now REVERSED their position, agreeing that the
       dev fallback is more practical. I should have trusted my original
-      judgment — a security fix that prevents developers from working is
+      judgment - a security fix that prevents developers from working is
       a problem, not a solution.
+
+V11 ECDSA LAYER (Consultant #5 Criticism #2 - partially accepted):
+    Optional asymmetric ECDSA signing as a SECOND layer on top of HMAC.
+    When enabled via AUDIT_ECDSA_KEY_PEM environment variable, each audit
+    record is signed with a private key. Third parties (e.g., Civil Defense)
+    can verify record integrity using the public key WITHOUT being able to
+    forge records. This provides legal/forensic non-repudiation that HMAC
+    alone cannot offer (HMAC key holder can forge).
+
+    REJECTED as replacement for HMAC because:
+      - ECDSA requires external `ecdsa` library (not always installed)
+      - ECDSA is slower than HMAC for bulk verification
+      - Current HMAC + hash chain + SQLite triggers is sufficient for
+        most use cases
+
+    ACCEPTED as optional second layer because:
+      - Genuine advantage: third-party verification without forgery risk
+      - Important for legal/forensic scenarios (life safety liability)
+      - Opt-in: no change to existing behavior unless enabled
 """
 
 import json
@@ -33,7 +52,14 @@ import hashlib
 import datetime
 import os
 import logging
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
+
+# Optional ECDSA support - graceful degradation if not installed
+try:
+    from ecdsa import SigningKey, VerifyingKey, NIST256p, BadSignatureError
+    HAS_ECDSA = True
+except ImportError:
+    HAS_ECDSA = False
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +100,7 @@ def _get_hmac_key() -> str:
       position, agreeing that breaking developer workflows is
       counterproductive. This RESTORES the dev/prod balance.
 
-      The auto-generated key is random per process — not a hardcoded
+      The auto-generated key is random per process - not a hardcoded
       default. Two different dev processes will have different keys,
       preventing any false sense of consistency.
 
@@ -95,9 +121,9 @@ def _get_hmac_key() -> str:
             )
         return key
 
-    # ── Development fallback ─────────────────────────────────────────
+    # -- Development fallback --------------------------------
     # No AUDIT_HMAC_KEY set. Generate a per-process random key.
-    # This is NOT for production — the warning makes that clear.
+    # This is NOT for production - the warning makes that clear.
     if _DEV_HMAC_KEY is None:
         import secrets as _secrets
         _DEV_HMAC_KEY = _secrets.token_hex(32)
@@ -106,21 +132,10 @@ def _get_hmac_key() -> str:
         _DEV_KEY_WARNED = True
         logger.warning(
             "\n"
-            "╔═══════════════════════════════════════════════════════════╗\n"
-            "║  AUDIT_HMAC_KEY not set — using auto-generated dev key. ║\n"
-            "║  This is INSECURE for production!                        ║\n"
-            "║  Set AUDIT_HMAC_KEY env var (32+ chars) for production.  ║\n"
-            "║  Generate: python -c \"import secrets;                  ║\n"
-            "║            print(secrets.token_hex(32))\"                 ║\n"
-            "╚═══════════════════════════════════════════════════════════╝"
-        )
-        # Also use warnings.warn for additional visibility
-        import warnings
-        warnings.warn(
-            "AUDIT_HMAC_KEY not set — using insecure dev key. "
-            "Set AUDIT_HMAC_KEY for production!",
-            UserWarning,
-            stacklevel=3,
+            "AUDIT_HMAC_KEY not set - using auto-generated dev key.\n"
+            "This is INSECURE for production!\n"
+            "Set AUDIT_HMAC_KEY env var (32+ chars) for production.\n"
+            "Generate: python -c \"import secrets; print(secrets.token_hex(32))\""
         )
 
     return _DEV_HMAC_KEY
@@ -134,7 +149,7 @@ DATABASE_PATH = os.environ.get(
 
 
 # ============================================================================
-# DATABASE SETUP
+# DATABASE SETUP (V11 - with ECDSA signature column)
 # ============================================================================
 
 # Track whether database has been initialized
@@ -142,7 +157,7 @@ _db_initialized = False
 
 
 def _init_database() -> None:
-    """Initialize database with audit_log table and triggers."""
+    """Initialize database with V11 schema (ECDSA signature column)."""
     global _db_initialized
     if _db_initialized:
         return
@@ -153,7 +168,7 @@ def _init_database() -> None:
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 
-    # Create table
+    # Create table with ECDSA signature column (V11)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS audit_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -163,9 +178,22 @@ def _init_database() -> None:
             details TEXT NOT NULL,
             previous_hash TEXT NOT NULL,
             current_hash TEXT NOT NULL,
-            signature TEXT
+            signature TEXT,
+            ecdsa_signature TEXT
         )
     """)
+
+    # Migrate: add ecdsa_signature column if it doesn't exist (V10 -> V11)
+    try:
+        cursor.execute("SELECT ecdsa_signature FROM audit_log LIMIT 1")
+    except sqlite3.OperationalError:
+        try:
+            cursor.execute(
+                "ALTER TABLE audit_log ADD COLUMN ecdsa_signature TEXT"
+            )
+            logger.info("Migrated audit_log: added ecdsa_signature column")
+        except Exception:
+            pass  # Column may already exist from a concurrent migration
 
     # Create trigger to prevent UPDATE
     cursor.execute("""
@@ -230,12 +258,159 @@ def _get_last_hash() -> str:
 
 
 # ============================================================================
+# ECDSA SIGNING LAYER (V11 - Consultant #5, Criticism #2, partially accepted)
+# ============================================================================
+
+# Module-level ECDSA signer (lazy initialization)
+_ecdsa_signing_key: Optional[Any] = None
+_ecdsa_initialized = False
+
+
+def _get_ecdsa_signer():
+    """Get ECDSA signing key from environment variable (lazy init).
+
+    The key MUST be provided in PEM format via the AUDIT_ECDSA_KEY_PEM
+    environment variable. If not set, ECDSA signing is disabled.
+
+    To generate a key pair:
+      from ecdsa import SigningKey, NIST256p
+      sk = SigningKey.generate(curve=NIST256p)
+      sk_pem = sk.to_pem().decode()
+      vk_pem = sk.verifying_key.to_pem().decode()
+      # Set AUDIT_ECDSA_KEY_PEM=sk_pem in environment
+      # Share vk_pem with Civil Defense / AHJ for verification
+
+    Returns:
+        SigningKey instance, or None if ECDSA is not configured.
+    """
+    global _ecdsa_signing_key, _ecdsa_initialized
+
+    if _ecdsa_initialized:
+        return _ecdsa_signing_key
+
+    _ecdsa_initialized = True
+
+    if not HAS_ECDSA:
+        logger.debug("ecdsa library not installed - ECDSA signing disabled")
+        return None
+
+    key_pem = os.environ.get("AUDIT_ECDSA_KEY_PEM")
+    if not key_pem:
+        logger.debug("AUDIT_ECDSA_KEY_PEM not set - ECDSA signing disabled")
+        return None
+
+    try:
+        _ecdsa_signing_key = SigningKey.from_pem(key_pem)
+        logger.info("ECDSA signing enabled (NIST P-256 curve)")
+        return _ecdsa_signing_key
+    except Exception as e:
+        logger.warning("Failed to load ECDSA key: %s - ECDSA signing disabled", e)
+        return None
+
+
+def _compute_ecdsa_signature(current_hash: str) -> Optional[str]:
+    """Compute ECDSA signature on the hash chain entry.
+
+    Signs the current_hash (which already chains to previous_hash),
+    providing non-repudiation: only the private key holder could have
+    produced this signature.
+
+    Returns:
+        Hex-encoded ECDSA signature, or None if ECDSA not configured.
+    """
+    sk = _get_ecdsa_signer()
+    if sk is None:
+        return None
+    try:
+        sig = sk.sign(current_hash.encode('utf-8'))
+        return sig.hex()
+    except Exception as e:
+        logger.warning("ECDSA signing failed: %s", e)
+        return None
+
+
+def verify_ecdsa_signature(record: Dict[str, Any], public_key_pem: str) -> bool:
+    """Verify ECDSA signature of an audit record using a public key.
+
+    This function can be used by third parties (Civil Defense, AHJ,
+    independent auditor) to verify record integrity WITHOUT access
+    to the private signing key. This provides non-repudiation.
+
+    The verification checks:
+      1. Recompute the hash from the record fields
+      2. Verify the ECDSA signature against the recomputed hash
+
+    Args:
+        record: Audit record dict with keys:
+            - timestamp, event_type, room_id, details,
+              previous_hash, current_hash, ecdsa_signature
+        public_key_pem: PEM-encoded ECDSA public key (NIST P-256).
+
+    Returns:
+        True if signature is valid, False if tampered or invalid.
+
+    Raises:
+        ImportError: If ecdsa library is not installed.
+    """
+    if not HAS_ECDSA:
+        raise ImportError(
+            "ecdsa library required for ECDSA verification. "
+            "Install with: pip install ecdsa"
+        )
+
+    try:
+        vk = VerifyingKey.from_pem(public_key_pem)
+    except Exception as e:
+        logger.error("Invalid ECDSA public key: %s", e)
+        return False
+
+    # Check for ECDSA signature
+    ecdsa_sig = record.get('ecdsa_signature')
+    if not ecdsa_sig:
+        logger.warning("No ECDSA signature in record")
+        return False
+
+    # Verify hash integrity first
+    details_json = (
+        json.dumps(record['details'], sort_keys=True)
+        if isinstance(record['details'], dict)
+        else record['details']
+    )
+    expected_hash = _compute_hash(
+        record['timestamp'], record['event_type'],
+        record.get('room_id', ''), details_json,
+        record['previous_hash']
+    )
+    if expected_hash != record['current_hash']:
+        logger.warning("Hash mismatch in ECDSA verification")
+        return False
+
+    # Verify ECDSA signature
+    try:
+        vk.verify(
+            bytes.fromhex(ecdsa_sig),
+            record['current_hash'].encode('utf-8')
+        )
+        return True
+    except BadSignatureError:
+        logger.warning("ECDSA signature verification FAILED - record may be forged")
+        return False
+    except Exception as e:
+        logger.warning("ECDSA verification error: %s", e)
+        return False
+
+
+# ============================================================================
 # PUBLIC API
 # ============================================================================
 
 def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> str:
-    """
-    Add a new audit event to the chain.
+    """Add a new audit event to the chain with optional ECDSA signing.
+
+    V11 Enhancement: When ECDSA is enabled (AUDIT_ECDSA_KEY_PEM set),
+    each record is also signed with an asymmetric ECDSA key. This
+    provides non-repudiation - third parties can verify with the
+    public key without being able to forge records.
 
     Args:
         event_type: Type of event (e.g., "ROOM_ANALYSIS", "DETECTOR_PLACEMENT")
@@ -265,16 +440,19 @@ def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> st
     # Compute current hash
     current_hash = _compute_hash(timestamp, event_type, room_id, details_json, previous_hash)
 
-    # Compute signature
-    signature = _compute_signature(current_hash)
+    # Compute HMAC signature
+    hmac_signature = _compute_signature(current_hash)
+
+    # Compute ECDSA signature (optional second layer)
+    ecdsa_sig = _compute_ecdsa_signature(current_hash)
 
     # Insert event
     conn = _get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO audit_log (timestamp, event_type, room_id, details, previous_hash, current_hash, signature)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature))
+        INSERT INTO audit_log (timestamp, event_type, room_id, details, previous_hash, current_hash, signature, ecdsa_signature)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (timestamp, event_type, room_id, details_json, previous_hash, current_hash, hmac_signature, ecdsa_sig))
     conn.commit()
     conn.close()
 
@@ -282,8 +460,7 @@ def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> st
 
 
 def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
-    """
-    Verify the integrity of the entire hash chain AND HMAC signature.
+    """Verify the integrity of the entire hash chain AND HMAC signature.
 
     Returns:
         (is_valid, error_details) tuple
@@ -304,7 +481,11 @@ def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
 
     # Check each event
     for i, row in enumerate(rows):
-        event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature = row
+        # Handle both V10 (8 cols) and V11 (9 cols) rows
+        if len(row) >= 9:
+            event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature, _ = row[:9]
+        else:
+            event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature = row[:8]
 
         # 1. Verify hash
         expected_hash = _compute_hash(timestamp, event_type, room_id, details_json, previous_hash)
@@ -349,11 +530,9 @@ def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
 
 
 def get_events() -> List[Dict[str, Any]]:
-    """
-    Get all events as a list of dictionaries (read-only).
+    """Get all events as a list of dictionaries (read-only).
 
-    Returns:
-        List of event dictionaries
+    V11 Enhancement: Includes ecdsa_signature field when available.
     """
     conn = _get_connection()
     cursor = conn.cursor()
@@ -363,8 +542,14 @@ def get_events() -> List[Dict[str, Any]]:
 
     events = []
     for row in rows:
-        event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature = row
-        events.append({
+        # V11: row may have 8 or 9 columns (with/without ecdsa_signature)
+        if len(row) >= 9:
+            event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature, ecdsa_sig = row[:9]
+        else:
+            event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature = row[:8]
+            ecdsa_sig = None
+
+        event_dict = {
             "id": event_id,
             "timestamp": timestamp,
             "event_type": event_type,
@@ -372,14 +557,17 @@ def get_events() -> List[Dict[str, Any]]:
             "details": json.loads(details_json),
             "previous_hash": previous_hash,
             "current_hash": current_hash,
-            "signature": signature
-        })
+            "signature": signature,
+        }
+        if ecdsa_sig is not None:
+            event_dict["ecdsa_signature"] = ecdsa_sig
+        events.append(event_dict)
 
     return events
 
 
 # ============================================================================
-# FACADE CLASS — public API surface
+# FACADE CLASS - public API surface
 # ============================================================================
 
 class AuditStore:
@@ -420,6 +608,7 @@ __all__ = [
     "add_event",
     "verify_chain",
     "get_events",
+    "verify_ecdsa_signature",
     "NFPA_VERSION",
     "DATABASE_PATH",
 ]
