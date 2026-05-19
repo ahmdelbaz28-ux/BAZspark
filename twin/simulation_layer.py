@@ -496,7 +496,12 @@ class SimulationLayer:
                 if compartment is None:
                     continue
 
-                # Read state from RoomCompartment
+                # BUG-LOW-11 FIX: Update derived quantities BEFORE reading
+                # smoke_od and co_ppm, not after. Previously, the recorded
+                # state used the previous timestep's derived quantities.
+                compartment.update_derived_quantities()
+
+                # Read state from RoomCompartment (AFTER update)
                 upper_temp = compartment.upper.temperature
                 lower_temp = compartment.lower.temperature
                 interface = compartment.interface_height
@@ -549,9 +554,6 @@ class SimulationLayer:
                 )
                 room_states[room_id].append(state)
 
-                # Update derived quantities (smoke OD, CO ppm)
-                compartment.update_derived_quantities()
-
             t += dt_actual
             step_count += 1
 
@@ -599,10 +601,16 @@ class SimulationLayer:
         CRIT-02 FIX: Uses VoxelCombustionModel for O2-limited HRR instead of
         the simple FireGrowthModel.hrr_at() which had no ventilation control,
         no fuel tracking, and no decay phase.
+
+        BUG-FIX: Removed double 'break' that silently dropped all fires after
+        the first fire in the first room. Now processes ALL fires in ALL rooms.
+        Added check_fuel_exhaustion() call (was missing — fires never decayed).
+        Fixed cache key to include fire.z for uniqueness.
         """
         if not self._grid:
             return
 
+        # Process ALL fires in ALL rooms (BUG-CRIT-1: removed double break)
         for room_id, fires in fires_by_room.items():
             for fire in fires:
                 fire_src = FireSource(
@@ -614,11 +622,10 @@ class SimulationLayer:
                 )
 
                 # CRIT-02 FIX: Use VoxelCombustionModel for O2-limited HRR
-                # This replaces the old FireGrowthModel.hrr_at() which bypassed
-                # O2 ventilation control, fuel consumption, and decay.
                 # Create a per-fire combustion model that persists across steps
                 # by caching it on the SimulationLayer instance.
-                cache_key = f"_comb_{room_id}_{fire.x}_{fire.y}"
+                # BUG-HIGH-7 FIX: Include fire.z in cache key for uniqueness
+                cache_key = f"_comb_{room_id}_{fire.x}_{fire.y}_{fire.z}"
                 combustion = getattr(self, cache_key, None)
                 if combustion is None:
                     combustion = VoxelCombustionModel(
@@ -630,24 +637,31 @@ class SimulationLayer:
                     setattr(self, cache_key, combustion)
 
                 hrr_now = combustion.get_hrr(t, grid=self._grid, fire=fire_src)
+
+                # BUG-CRIT-2 FIX: Check fuel exhaustion — without this,
+                # fires in CFD mode never transition to DECAY phase.
+                hrr_now = combustion.check_fuel_exhaustion(t, hrr_now)
+
                 combustion.consume_fuel(hrr_now, dt)
 
-                if self._pressure_solver:
-                    self._pressure_solver.step(self._grid, dt)
                 if self._heat_transport:
                     self._heat_transport.step(self._grid, fire_src, hrr_now, dt)
                 if self._smoke_transport:
                     self._smoke_transport.step(self._grid, fire_src, hrr_now, dt)
 
-                self._cfl.check_divergence(self._grid.all_fluid())
-                break
-            break
+        # Pressure solve + divergence check once per step (not per fire)
+        if self._pressure_solver:
+            self._pressure_solver.step(self._grid, dt)
+        self._cfl.check_divergence(self._grid.all_fluid())
 
     def _overlay_zone_to_cfd(self) -> None:
         """Overlay SemiCFAST zone model state onto CFD grid.
 
         This is the HYBRID mode coupling: the fast zone model provides
         boundary conditions for the CFD grid, ensuring consistency.
+
+        BUG-HIGH-6 FIX: Now overlays O2 and CO2 as well, preventing
+        inconsistent voxel state (temp+smoke from zone, O2 from CFD).
         """
         if not self._grid or not self._cfast:
             return
@@ -664,8 +678,15 @@ class SimulationLayer:
                         v.temp = compartment.upper.temperature
                         v.smoke = compartment.smoke_od
                         v.co_ppm = compartment.co_ppm
+                        # BUG-HIGH-6 FIX: Overlay species to prevent
+                        # inconsistent state (zone says hot smoke, CFD says
+                        # high O2 — physically impossible combination).
+                        v.o2_fraction = compartment.upper.species.get('O2', 0.232)
+                        v.co2_ppm = compartment.upper.species.get('CO2', 0.0) * 1e6
                     else:
                         v.temp = compartment.lower.temperature
+                        v.o2_fraction = compartment.lower.species.get('O2', 0.232)
+                        v.co2_ppm = compartment.lower.species.get('CO2', 0.0) * 1e6
                     break
 
     def _check_nfpa72_compliance(self) -> Dict[str, Any]:

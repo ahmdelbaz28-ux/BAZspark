@@ -564,17 +564,43 @@ class VoxelCombustionModel:
                     self._phase = "VENT_CONTROLLED"
                     return self._ventilation_limited_hrr(grid, fire, hrr)
 
-            # Check if peak reached
+            # BUG-HIGH-4 FIX: Check fuel exhaustion in ALL phases, not just at peak.
+            # If fuel runs out during growth or ventilation control, fire must decay.
+            if self.fuel_remaining <= 0.0:
+                self._transition_to_decay(t, hrr)
+                return hrr * 0.5  # immediate drop on fuel exhaustion
+
+            # Check if peak reached — transition to STEADY (not stay in GROWTH)
             if hrr >= self.hrr_peak:
-                self._phase = "GROWTH"  # hrr capped at peak; stays GROWTH until vent-control or fuel exhaustion
-                # Check fuel
-                if self.fuel_remaining <= 0.0:
-                    self._transition_to_decay(t, hrr)
+                self._phase = "STEADY"
+
+            return hrr
+
+        # --- Phase 1.5: STEADY (HRR at peak, no growth, no decay yet) ---
+        if self._phase == "STEADY":
+            hrr = self.hrr_peak
+
+            # BUG-HIGH-4 FIX: Check fuel exhaustion in STEADY phase too
+            if self.fuel_remaining <= 0.0:
+                self._transition_to_decay(t, hrr)
+                return hrr * 0.5
+
+            # Check for ventilation control
+            if grid is not None and fire is not None:
+                o2_frac = self._read_local_o2(grid, fire)
+                if o2_frac < self.O2_VENT_THRESHOLD:
+                    self._phase = "VENT_CONTROLLED"
+                    return self._ventilation_limited_hrr(grid, fire, hrr)
 
             return hrr
 
         # --- Phase 2: VENTILATION-CONTROLLED ---
         if self._phase == "VENT_CONTROLLED":
+            # BUG-HIGH-4 FIX: Check fuel exhaustion in VENT_CONTROLLED phase too
+            if self.fuel_remaining <= 0.0:
+                self._transition_to_decay(t, min(self.alpha * dt_ign * dt_ign * 1000.0, self.hrr_peak))
+                return self._hrr_at_decay * 0.5
+
             # Base growth HRR
             hrr_growth = min(
                 self.alpha * dt_ign * dt_ign * 1000.0,
@@ -585,8 +611,11 @@ class VoxelCombustionModel:
             if grid is not None and fire is not None:
                 o2_frac = self._read_local_o2(grid, fire)
                 if o2_frac > self.O2_VENT_THRESHOLD + 0.02:
-                    # O2 recovered — back to growth/steady
-                    self._phase = "GROWTH"
+                    # O2 recovered — back to STEADY or GROWTH
+                    if hrr_growth >= self.hrr_peak:
+                        self._phase = "STEADY"
+                    else:
+                        self._phase = "GROWTH"
                     return min(hrr_growth, self.hrr_peak)
 
                 return self._ventilation_limited_hrr(grid, fire, hrr_growth)
@@ -669,8 +698,13 @@ class VoxelCombustionModel:
 
         Uses O2 averaged over the 3×3×3 neighborhood of the fire voxel,
         consistent with _read_local_o2(). The available O2 mass is
-        computed from the neighborhood average, scaled by the fire cell
-        volume and an entrainment factor.
+        computed from the total neighborhood volume (not just one cell).
+
+        BUG-HIGH-5 FIX: Previously used single-cell volume (dx³) but
+        neighborhood-averaged O2 from 27 cells, underestimating available O2
+        by ~5×. Now counts actual non-solid cells in 3×3×3 block and uses
+        the total volume, with a plume entrainment factor of 2× for
+        air drawn from beyond the immediate neighborhood.
         """
         voxel = grid.at_pos(fire.x, fire.y, fire.z)
         if voxel is None or voxel.is_solid:
@@ -679,11 +713,21 @@ class VoxelCombustionModel:
         o2_frac = self._read_local_o2(grid, fire)
         o2_excess = max(o2_frac - self.O2_MIN_BURN, 0.0)
 
-        # Available O2 mass in the fire cell (using neighborhood-averaged O2)
+        # BUG-HIGH-5 FIX: Count non-solid cells in 3×3×3 neighborhood
+        # and use total volume (not single-cell volume × arbitrary factor).
         dx = grid.resolution
-        vol = dx * dx * dx
+        n_cells = 0
+        for dix in range(-1, 2):
+            for diy in range(-1, 2):
+                for diz in range(-1, 2):
+                    nb = grid.get(voxel.ix + dix, voxel.iy + diy, voxel.iz + diz)
+                    if nb is not None and not nb.is_solid:
+                        n_cells += 1
+
+        vol_total = dx * dx * dx * n_cells
         rho = voxel.density
-        m_o2 = rho * vol * o2_excess * 5.0  # ×5 for plume entrainment volume
+        # Plume entrainment factor 2×: fire draws air from beyond the 3×3×3 block
+        m_o2 = rho * vol_total * o2_excess * 2.0
 
         # HRR from available O2 (limited by mixing time)
         Q_vent = (m_o2 / self.MIXING_TIME) * self.HEAT_OF_COMBUSTION / self.O2_STOICH_RATIO
@@ -1437,11 +1481,20 @@ class SmokeTransportNS:
             # Floor at zero (concentrations cannot be negative)
             s_new = max(s_new, 0.0)
             c_new = max(c_new, 0.0)
-            # CRIT-05 STABILITY: Cap O2 depletion to 50% per step.
-            # Without this, a single step can deplete a cell's O2 to 0,
-            # and it never recovers because diffusion is too slow.
-            # In reality, plume entrainment continuously replenishes O2.
-            o2_new = max(min(o2_new, self.O2_AMBIENT), o2 * 0.5)
+            # BUG-CRIT-3 FIX: Removed artificial 50% O2 depletion cap.
+            # The old code `max(min(o2_new, O2_AMBIENT), o2 * 0.5)` silently
+            # inflated O2 levels, causing VoxelCombustionModel to compute
+            # higher-than-physical HRR — a silently wrong result violating
+            # PRINCIPLE ZERO.
+            # Instead: floor at 0.0 (physically correct minimum), and emit
+            # a loud WARNING if depletion exceeds 50%/step (indicates dt too large).
+            o2_new = max(min(o2_new, self.O2_AMBIENT), 0.0)
+            if o2 > 0.0 and o2_new < o2 * 0.5:
+                logger.warning(
+                    "O2 at voxel (%d,%d,%d) dropped %.1f%% in one step — "
+                    "timestep may be too large (o2: %.4f -> %.4f)",
+                    v.ix, v.iy, v.iz, (1.0 - o2_new / o2) * 100.0, o2, o2_new,
+                )
             co2_new = max(co2_new, 0.0)
 
             key = (v.ix, v.iy, v.iz)
