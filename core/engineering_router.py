@@ -359,11 +359,25 @@ class EngineeringRouter:
 
         A line of sight is clear if no obstacle polygon (with clearance)
         intersects the line segment.
+
+        V14 Fix — Crosses vs Intersects:
+        Previous code used ``line.crosses(poly)`` which returns False when
+        the line segment is ENTIRELY inside the obstacle (e.g., both start
+        and end are within the clearance zone of an elevator shaft).  In
+        that scenario ``crosses`` reports a clear path even though the cable
+        would run straight through the obstruction — a life-safety routing
+        failure.
+
+        Fix: Use ``line.intersects(poly) and not line.touches(poly)``.
+        ``intersects`` catches every case (crossing, within, overlapping).
+        ``touches`` is excluded so that a cable running along the clearance
+        boundary (tangent) is still permitted — the clearance is already
+        baked into the expanded polygon.
         """
         if SHAPELY_AVAILABLE and self._obstacle_polys:
             line = ShapelyLineString([start, end])
             for poly in self._obstacle_polys:
-                if poly and line.crosses(poly):
+                if poly and line.intersects(poly) and not line.touches(poly):
                     return False
             return True
 

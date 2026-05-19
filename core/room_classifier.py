@@ -149,18 +149,56 @@ def extract_features(area: float = None,
         raise ValueError("area is required")
 
     # Compute bounding box dimensions
-    if bbox is not None:
-        bbox_w = bbox[2] - bbox[0]
-        bbox_h = bbox[3] - bbox[1]
-    elif polygon_vertices and len(polygon_vertices) >= 3:
-        xs = [p[0] for p in polygon_vertices]
-        ys = [p[1] for p in polygon_vertices]
-        bbox_w = max(xs) - min(xs)
-        bbox_h = max(ys) - min(ys)
-    else:
-        # Estimate from area assuming square
-        bbox_w = math.sqrt(area)
-        bbox_h = math.sqrt(area)
+    #
+    # V14 Fix — AABB Rotation Trap:
+    # Previous code used the axis-aligned bounding box (AABB) to compute
+    # aspect ratio. A corridor 2m × 20m rotated 45° in a CAD drawing has
+    # an AABB of roughly 14m × 14m, so aspect_ratio ≈ 1.0 and it would
+    # be classified as an office — skipping corridor-specific detector
+    # spacing rules per NFPA 72 §17.7.3.
+    #
+    # Fix: When polygon vertices are available, use Shapely's
+    # minimum_rotated_rectangle to obtain the TRUE dimensions regardless
+    # of rotation angle. Fall back to AABB when only bbox is provided.
+    _use_rotated_rect = False
+
+    if polygon_vertices and len(polygon_vertices) >= 3:
+        try:
+            from shapely.geometry import Polygon as ShapelyPoly
+            poly = ShapelyPoly(polygon_vertices)
+            if poly.is_valid and poly.area > 0:
+                min_rect = poly.minimum_rotated_rectangle
+                rect_coords = list(min_rect.exterior.coords)
+                # Side lengths of the oriented rectangle
+                len1 = math.hypot(
+                    rect_coords[1][0] - rect_coords[0][0],
+                    rect_coords[1][1] - rect_coords[0][1],
+                )
+                len2 = math.hypot(
+                    rect_coords[2][0] - rect_coords[1][0],
+                    rect_coords[2][1] - rect_coords[1][1],
+                )
+                bbox_w = max(len1, len2)
+                bbox_h = min(len1, len2)
+                _use_rotated_rect = True
+        except Exception:
+            log.warning(
+                "minimum_rotated_rectangle failed; falling back to AABB"
+            )
+
+    if not _use_rotated_rect:
+        if bbox is not None:
+            bbox_w = bbox[2] - bbox[0]
+            bbox_h = bbox[3] - bbox[1]
+        elif polygon_vertices and len(polygon_vertices) >= 3:
+            xs = [p[0] for p in polygon_vertices]
+            ys = [p[1] for p in polygon_vertices]
+            bbox_w = max(xs) - min(xs)
+            bbox_h = max(ys) - min(ys)
+        else:
+            # Estimate from area assuming square
+            bbox_w = math.sqrt(area)
+            bbox_h = math.sqrt(area)
 
     # Compute perimeter
     if perimeter is None and polygon_vertices and len(polygon_vertices) >= 3:

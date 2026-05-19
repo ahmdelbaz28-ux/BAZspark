@@ -527,38 +527,75 @@ def close_gaps_in_lines(lines: List[LineString], threshold: float = GAP_CLOSURE_
     """
     Close small gaps between adjacent line segments (drawing errors only).
     WARNING: Don't close gaps > 80cm as these are likely doors/windows.
+
+    V14 Fix — Bowtie Merge Mutation:
+    Previous code only measured the distance from end-of-line_i to
+    start-of-line_j.  In CAD files, lines can be drawn in any direction,
+    so the closest endpoints could be end↔end, start↔end, or start↔start.
+    Blindly appending line_j's coords after line_i's coords when the
+    true closest points are end_i ↔ end_j creates a zigzag "bowtie"
+    that slices through the room polygon and destroys all downstream
+    geometry calculations.
+
+    Fix: Check all four endpoint-to-endpoint distances, pick the
+    shortest, and reverse coordinate order as needed before merging.
     """
+    import math as _math
+
     if len(lines) < 2:
         return lines, 0
-    
+
     gaps_closed = 0
     modified_lines = list(lines)
-    
+
     for i in range(len(modified_lines)):
         for j in range(i + 1, len(modified_lines)):
             line_i = modified_lines[i]
             line_j = modified_lines[j]
-            
+
             if line_i.is_empty or line_j.is_empty:
                 continue
-            
-            end_i = line_i.coords[-1]
-            start_j = line_j.coords[0]
-            dist = ((end_i[0] - start_j[0])**2 + (end_i[1] - start_j[1])**2) ** 0.5
-            
-            # WARNING: Don't close gaps > 0.8m (80cm) - these are real doors/windows
-            if threshold < dist < 0.8:
-                continue  # Skip - likely architectural opening
-            
-            if dist < threshold:
-                new_coords = list(line_i.coords)[:-1] + list(line_j.coords)
+
+            coords_i = list(line_i.coords)
+            coords_j = list(line_j.coords)
+
+            if len(coords_i) < 2 or len(coords_j) < 2:
+                continue
+
+            # V14: Check all 4 endpoint-pair distances
+            d_es = _math.hypot(coords_i[-1][0] - coords_j[0][0],
+                               coords_i[-1][1] - coords_j[0][1])   # End_i → Start_j
+            d_ee = _math.hypot(coords_i[-1][0] - coords_j[-1][0],
+                               coords_i[-1][1] - coords_j[-1][1])  # End_i → End_j
+            d_se = _math.hypot(coords_i[0][0] - coords_j[-1][0],
+                               coords_i[0][1] - coords_j[-1][1])   # Start_i → End_j
+            d_ss = _math.hypot(coords_i[0][0] - coords_j[0][0],
+                               coords_i[0][1] - coords_j[0][1])   # Start_i → Start_j
+
+            min_d = min(d_es, d_ee, d_se, d_ss)
+
+            # Don't close gaps that look like doors/windows
+            if threshold < min_d < 0.8:
+                continue  # Likely an architectural opening
+
+            if min_d < threshold:
+                # Merge with coordinate reversal as needed
+                if min_d == d_es:
+                    new_coords = coords_i[:-1] + coords_j
+                elif min_d == d_ee:
+                    new_coords = coords_i[:-1] + coords_j[::-1]
+                elif min_d == d_se:
+                    new_coords = coords_j[:-1] + coords_i
+                else:  # d_ss
+                    new_coords = coords_j[::-1][:-1] + coords_i
+
                 modified_lines[i] = LineString(new_coords)
-                modified_lines[j] = LineString([])
+                modified_lines[j] = LineString()  # mark for removal
                 gaps_closed += 1
                 break
-    
+
     modified_lines = [l for l in modified_lines if not l.is_empty and len(l.coords) > 1]
-    
+
     return modified_lines, gaps_closed
 
 

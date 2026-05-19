@@ -148,26 +148,46 @@ def estimate_voltage_drop(
     wire_gauge: int = 14  # AWG
 ) -> float:
     """
-    Estimate voltage drop (simplified).
-    
-    ⚠️  APPROXIMATE - requires actual calculation!
-    
-    Returns: voltage drop in volts
+    Exact DC voltage drop calculation for fire alarm circuits.
+
+    CRITICAL: DC circuits (NAC / SLC) require the return path to be
+    accounted for. Current flows out on one conductor and returns on
+    another, so the total wire length is 2x the one-way distance.
+
+    Failure to multiply by 2 under-reports voltage drop by 50%, which
+    can leave notification appliances (horns/strobes) at the end of the
+    line without enough voltage to operate during a fire — a life-safety
+    failure per NEC 760 and NFPA 72 Chapter 10.
+
+    Parameters
+    ----------
+    distance : float
+        One-way distance in metres.
+    current : float
+        Circuit current in amperes.
+    wire_gauge : int
+        AWG wire size (14, 12, 10, 8).
+
+    Returns
+    -------
+    float
+        Voltage drop in volts (out + return).
     """
-    # Resistance per 1000ft (approximate)
+    # Resistance per 1000 ft (NEC Chapter 9, Table 8 — copper)
     resistance = {
-        14: 3.0,
+        14: 3.0,   # Ω/kft
         12: 1.9,
         10: 1.2,
         8: 0.75,
     }.get(wire_gauge, 3.0)
-    
-    # Convert meters to feet
+
+    # Convert one-way metres to feet
     length_ft = distance * 3.281
-    
-    # Calculate drop: V = I × R × (L/1000)
-    vdrop = current * resistance * (length_ft / 1000)
-    
+
+    # V_drop = 2 × I × R × (L / 1000)
+    # The factor of 2 accounts for the DC return path (out and back).
+    vdrop = 2.0 * current * resistance * (length_ft / 1000.0)
+
     return vdrop
 
 
