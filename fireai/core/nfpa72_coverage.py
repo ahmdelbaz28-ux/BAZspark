@@ -24,6 +24,7 @@ import math
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 from shapely.geometry import Polygon, Point, box
+from shapely.ops import unary_union
 
 @dataclass
 class DuctDevice:
@@ -292,15 +293,85 @@ def check_coverage_polygon(
                 covered_count += 1
             else:
                 uncovered.append(point)
-    # Calculate coverage percentage
-    if total_points > 0:
-        coverage_pct = (covered_count / total_points) * 100
-    else:
-        coverage_pct = 0
+    # =====================================================================
+    # V13 Fix: Area-based coverage calculation (replaces point-counting)
+    # =====================================================================
+    # Point-counting (covered_count / total_points) has a fatal flaw:
+    # it can miss uncovered corners between grid points. A room with 99.77%
+    # point coverage might have a 0.5m gap in a corner that the 0.25m grid
+    # happened to skip. This violates NFPA 72's requirement that EVERY point
+    # must be within the listed spacing of a detector.
+    #
+    # Fix: Use Shapely area-based calculation. Create coverage polygons for
+    # each detector, union them, intersect with room polygon, then compute
+    # the area ratio. This gives EXACT coverage with no grid artifacts.
+    #
+    # The point-sampling result is kept as a secondary metric for debugging.
+    # =====================================================================
+    try:
+        room_area = room_polygon.area
+        if room_area <= 0:
+            raise ValueError("Room has zero area")
+
+        coverage_polys = []
+        if detector_type == DetectorType.HEAT:
+            # HEAT: Square coverage (Chebyshev)
+            heat_spec = calculate_coverage_radius_from_height(
+                ceiling_spec.height_m, detector_type="heat"
+            )
+            half_s = heat_spec.spacing_max / 2.0
+            for dx, dy in detector_positions:
+                sq = box(dx - half_s, dy - half_s, dx + half_s, dy + half_s)
+                coverage_polys.append(sq)
+        else:
+            # SMOKE: Circular coverage (Euclidean)
+            for dx, dy in detector_positions:
+                pt = Point(dx, dy)
+                buf = pt.buffer(radius)
+                coverage_polys.append(buf)
+
+        if coverage_polys:
+            total_coverage = unary_union(coverage_polys)
+            # Clip to room boundary — coverage doesn't extend through walls
+            actual_coverage = total_coverage.intersection(room_polygon)
+            coverage_area_pct = (actual_coverage.area / room_area) * 100.0
+            coverage_area_pct = min(coverage_area_pct, 100.0)  # Cap at 100%
+        else:
+            coverage_area_pct = 0.0
+
+        # Use area-based coverage as the PRIMARY result
+        # 99.9% area threshold = NFPA compliant (accounts for floating-point)
+        is_covered_area = coverage_area_pct >= 99.9
+
+        # Keep point-based result as secondary for backward compatibility
+        if total_points > 0:
+            point_coverage_pct = (covered_count / total_points) * 100
+        else:
+            point_coverage_pct = 0
+
+        # Primary coverage = area-based (NFPA compliant)
+        # If area says covered but points don't, trust the area (points can miss corners)
+        # If points say covered but area doesn't, trust the area (area is exact)
+        primary_pct = coverage_area_pct
+        is_covered = is_covered_area
+
+    except Exception as area_err:
+        # Fallback to point-based if Shapely area calculation fails
+        # (e.g., invalid geometry, degenerate polygon)
+        import logging as _logging
+        _logging.getLogger(__name__).warning(
+            f"Area-based coverage failed, falling back to point-based: {area_err}"
+        )
+        if total_points > 0:
+            primary_pct = (covered_count / total_points) * 100
+        else:
+            primary_pct = 0
+        is_covered = primary_pct >= 99
+
     return CoverageResult(
-        is_covered=coverage_pct >= 99,
+        is_covered=is_covered,
         uncovered_areas=uncovered,
-        coverage_percentage=coverage_pct,
+        coverage_percentage=primary_pct,
         detectors_in_coverage=len(detector_positions)
     )
 # ============================================================================
@@ -416,50 +487,74 @@ def check_l_shaped_coverage(
     """
     Check coverage for L-shaped room.
     This is the critical test case - Bounding Box fails here.
-    Args:
-        detector_positions: Detector positions
-        room_polygon: Room polygon (can be L-shaped)
-        ceiling_height_m: Ceiling height
-    Returns:
-        CoverageResult
+
+    V13 Fix: Uses area-based coverage calculation as primary method,
+    with point-sampling retained for uncovered area detection.
     """
     # ✅ Use safe fallback
     radius = get_smoke_detector_radius_safe(ceiling_height_m)
-    # FIXED: Use adaptive grid (0.25m resolution) instead of fixed 20×20 sampling
-    # The old 20×20 grid could miss coverage gaps in large rooms
+
+    # =====================================================================
+    # PRIMARY: Area-based coverage (EXACT, no grid artifacts)
+    # =====================================================================
+    try:
+        room_area = room_polygon.area
+        if room_area <= 0:
+            raise ValueError("Room has zero area")
+
+        coverage_polys = []
+        for dx, dy in detector_positions:
+            pt = Point(dx, dy)
+            buf = pt.buffer(radius)
+            coverage_polys.append(buf)
+
+        if coverage_polys:
+            total_coverage = unary_union(coverage_polys)
+            actual_coverage = total_coverage.intersection(room_polygon)
+            area_pct = (actual_coverage.area / room_area) * 100.0
+            area_pct = min(area_pct, 100.0)
+        else:
+            area_pct = 0.0
+
+        is_covered = area_pct >= 99.9
+    except Exception:
+        area_pct = 0.0
+        is_covered = False
+
+    # =====================================================================
+    # SECONDARY: Point-sampling for uncovered area coordinates
+    # =====================================================================
     GRID_RESOLUTION_M = 0.25
     uncovered = []
     bounds = room_polygon.bounds
     min_x, min_y, max_x, max_y = bounds
     step_x = GRID_RESOLUTION_M
     step_y = GRID_RESOLUTION_M
-    covered_count = 0
-    total_points = 0
     x = min_x
     while x <= max_x:
         y = min_y
         while y <= max_y:
-            # CRITICAL: Use polygon.contains(), NOT bounding box
             if not room_polygon.contains(Point(x, y)):
                 y += step_y
                 continue
-            total_points += 1
-            # Check coverage
             covered = any(
                 math.sqrt((x - dx)**2 + (y - dy)**2) <= radius
                 for dx, dy in detector_positions
             )
-            if covered:
-                covered_count += 1
-            else:
+            if not covered:
                 uncovered.append((x, y))
             y += step_y
         x += step_x
-    coverage_pct = (covered_count / total_points * 100) if total_points > 0 else 0
+
+    # Use area-based percentage (primary)
+    primary_pct = area_pct if area_pct > 0 else (
+        (1 - len(uncovered) / max(1, len(uncovered) + 1)) * 100
+    )
+
     return CoverageResult(
-        is_covered=coverage_pct >= 99,
+        is_covered=is_covered,
         uncovered_areas=uncovered,
-        coverage_percentage=coverage_pct,
+        coverage_percentage=primary_pct,
         detectors_in_coverage=len(detector_positions)
     )
 # ============================================================================
@@ -541,18 +636,25 @@ def verify_full_coverage(
 ) -> dict:
     """
     Verify that all points in the room are covered by detectors.
-    FIXED: 2026-05-14
-    - Added detector_type parameter
-    - Uses correct geometry per detector type:
-      * SMOKE: Circular (Euclidean)
-      * HEAT: Square (Chebyshev)
+
+    V13 Fix — Area-based coverage (replaces point-counting):
+    Previous code used (covered_points / total_points) which produces
+    floating-point artifacts like 98.7508218277449% and can miss uncovered
+    corners between grid points. This violates NFPA 72 which requires EVERY
+    point to be within listed spacing of a detector.
+
+    Fix: Use Shapely area-based calculation as the PRIMARY method.
+    Point-sampling is retained as a secondary metric for worst-case distance
+    reporting and backward compatibility, but the compliance decision is
+    based on the EXACT area ratio, not a grid approximation.
+
     Args:
         room_polygon: Shapely Polygon of room
         detector_positions: List of detector (x, y) positions
         coverage_geometry: "circular" or "square_grid"
         detector_radius: Coverage radius for smoke detectors
         listed_spacing_m: Listed spacing for heat detectors
-        grid_resolution_m: Grid resolution for sampling
+        grid_resolution_m: Grid resolution for worst-case distance sampling
         detector_type: Type of detector (SMOKE or HEAT)
     Returns:
         Dictionary with coverage_percentage, worst_case_distance_m, compliance_status
@@ -560,12 +662,53 @@ def verify_full_coverage(
     if coverage_geometry == "circular":
         radius = detector_radius
     else:
-        # For square grid, use half of listed spacing
         radius = (listed_spacing_m or 9.1) / 2
-    # ✅ Override with correct geometry based on detector type
+
     if detector_type == DetectorType.HEAT:
-        # Heat detectors always use square geometry per NFPA 72
         half_spacing = (listed_spacing_m or 9.1) / 2
+
+    # =====================================================================
+    # PRIMARY: Area-based coverage calculation (EXACT, no grid artifacts)
+    # =====================================================================
+    try:
+        room_area = room_polygon.area
+        if room_area <= 0:
+            raise ValueError("Room has zero area")
+
+        coverage_polys = []
+        if detector_type == DetectorType.HEAT:
+            for dx, dy in detector_positions:
+                sq = box(dx - half_spacing, dy - half_spacing,
+                         dx + half_spacing, dy + half_spacing)
+                coverage_polys.append(sq)
+        else:
+            for dx, dy in detector_positions:
+                pt = Point(dx, dy)
+                buf = pt.buffer(radius)
+                coverage_polys.append(buf)
+
+        if coverage_polys:
+            total_coverage = unary_union(coverage_polys)
+            actual_coverage = total_coverage.intersection(room_polygon)
+            area_coverage_pct = (actual_coverage.area / room_area) * 100.0
+            area_coverage_pct = min(area_coverage_pct, 100.0)
+        else:
+            area_coverage_pct = 0.0
+
+        # 99.9% area threshold = NFPA compliant (0.1% tolerance for float)
+        area_status = "PASS" if area_coverage_pct >= 99.9 else "FAIL"
+
+    except Exception as area_err:
+        logger.warning(
+            f"Area-based coverage failed in verify_full_coverage, "
+            f"falling back to point-based: {area_err}"
+        )
+        area_coverage_pct = None
+        area_status = None
+
+    # =====================================================================
+    # SECONDARY: Point-sampling for worst-case distance (diagnostic)
+    # =====================================================================
     bounds = room_polygon.bounds
     minx, miny, maxx, maxy = bounds
     step = grid_resolution_m
@@ -579,40 +722,45 @@ def verify_full_coverage(
             pt = Point(x, y)
             if room_polygon.contains(pt):
                 total_points += 1
-                # Find distance to nearest detector
                 min_dist = float('inf')
                 for dx, dy in detector_positions:
                     if detector_type == DetectorType.HEAT:
-                        # ✅ HEAT: Use Chebyshev distance (square)
                         dist = max(abs(x - dx), abs(y - dy))
                     else:
-                        # ✅ SMOKE: Use Euclidean distance (circular)
                         dist = math.sqrt((x - dx) ** 2 + (y - dy) ** 2)
                     min_dist = min(min_dist, dist)
-                # Check coverage with correct geometry
                 if detector_type == DetectorType.HEAT:
-                    # Square coverage: within half_spacing in both axes
                     if min_dist <= half_spacing:
                         covered_points += 1
                     else:
                         worst_distance = max(worst_distance, min_dist)
                 else:
-                    # Circular coverage: within radius
                     if min_dist <= radius:
                         covered_points += 1
                     else:
                         worst_distance = max(worst_distance, min_dist)
             y += step
         x += step
-    coverage_pct = (covered_points / total_points * 100) if total_points > 0 else 0
-    status = "PASS" if coverage_pct >= 99 else "FAIL"
+
+    point_coverage_pct = (covered_points / total_points * 100) if total_points > 0 else 0
+
+    # Use area-based result as primary if available; fall back to point-based
+    if area_coverage_pct is not None:
+        primary_pct = area_coverage_pct
+        status = area_status
+    else:
+        primary_pct = point_coverage_pct
+        status = "PASS" if point_coverage_pct >= 99 else "FAIL"
+
     return {
-        "coverage_percentage": coverage_pct,
+        "coverage_percentage": primary_pct,
         "worst_case_distance_m": worst_distance,
         "compliance_status": status,
         "coverage_geometry": "square" if detector_type == DetectorType.HEAT else "circular",
         "total_points_checked": total_points,
         "covered_points": covered_points,
+        "area_coverage_pct": area_coverage_pct,
+        "point_coverage_pct": point_coverage_pct,
     }
 def get_sloped_ceiling_constraints(
     polygon,

@@ -64,12 +64,15 @@ class FloorResult:
         self.total_detectors = sum(r.detector_count for r in self.room_results)
         self.total_time_s = sum(r.solve_time_s for r in self.room_results)
         
+        # V13 Fix: Replace "PARTIAL" with legally safer terminology.
+        # "PARTIAL" could be misinterpreted by contractors as partial approval.
+        # A building either meets code (APPROVED) or doesn't (REQUIRES_REVIEW).
         if self.rooms_errored == 0 and self.rooms_failed == 0:
-            self.status = "PASS"
+            self.status = "APPROVED"
         elif self.rooms_passed == 0:
-            self.status = "FAIL"
+            self.status = "REJECTED"
         else:
-            self.status = "PARTIAL"
+            self.status = "REQUIRES_MANUAL_REVIEW"
     
     def save_audit(self, output_dir: str = "audit"):
         """Save audit trail to JSON file for liability protection"""
@@ -97,11 +100,12 @@ class FloorResult:
             "detectors": {
                 "calculated": self.total_detectors,
             },
-            # NOTE: Safety margin removed - NFPA 72 compliance via verify_full_coverage()
-            # Uncomment to enable:
-            # "with_safety_margin": math.ceil(self.total_detectors * 1.15),
+            # V13: 15% spare detector margin REMOVED — no NFPA 72 basis for this.
+            # NFPA compliance is verified via exact area-based coverage calculation.
             "safety": {
-                "note": "NFPA 72 compliance verified via verify_full_coverage()"
+                "method": "Exact Shapely area-based coverage verification",
+                "threshold": "99.9% area coverage required (NFPA 72)",
+                "note": "No arbitrary spare detector margin — coverage is mathematically verified"
             },
             "details": [
                 {

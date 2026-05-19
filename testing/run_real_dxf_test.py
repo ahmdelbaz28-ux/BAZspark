@@ -95,7 +95,8 @@ def test_dxf_file(dxf_path: str, verbose: bool = False) -> bool:
             if r.status == "FAIL":
                 print(f"    - {r.room_id}: {r.errors}")
     
-    success = floor_result.status in ("PASS", "PARTIAL")
+    # V13: Updated status check — "PARTIAL" replaced with "REQUIRES_MANUAL_REVIEW"
+    success = floor_result.status in ("PASS", "APPROVED", "REQUIRES_MANUAL_REVIEW")
     print(f"\n{'✅ PASS' if success else '❌ FAIL'}")
     
     return success

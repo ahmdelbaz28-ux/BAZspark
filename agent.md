@@ -131,3 +131,64 @@
 ### Regression Check
 - ✅ buffer(0.5) in parser_bridge — REMOVED in V11, confirmed NOT present
 - ✅ Manhattan routing in output_bridge — Present but justified (V11 fix with panel_height_m + obstacle_tolerance)
+
+---
+
+## V13 Safety Hardening (2026-05-20)
+
+### Audit Log Forensic Analysis — Consultant's 4 Claims
+
+**Source:** Consultant provided audit logs from 2026-05-13 (pre-V13) and claimed 4 "crimes."
+
+#### Claim 1: "Fake 15% Margin" (margin_percent: 15)
+**Verdict: ⚠️ ALREADY FIXED — stale audit logs**
+- Current `floor_orchestrator.py` line 101: `with_safety_margin` is COMMENTED OUT
+- Replaced with: `"method": "Exact Shapely area-based coverage verification"`
+- The `1.15` in `multi_floor_analyzer.py` is a CABLE ROUTING factor (bends/drops), NOT detector margin
+- The `safety_margin=0.15` in V8 files is for electrical LOAD calculations, NOT detector count
+- Old audit logs (76 files) moved to `audit/archived_pre_v13/` with README warning
+- **No code change needed** — was already fixed. Audit logs were from V5.1.2.
+
+#### Claim 2: "Point-Cloud Coverage Illusion" (98.75% floating-point artifacts)
+**Verdict: ✅ CONFIRMED — real bug in nfpa72_coverage.py**
+- `constraint_solver.py` was already fixed (area-based), BUT...
+- `nfpa72_coverage.py` (the file the orchestrator ACTUALLY uses) still used point-counting:
+  - `check_coverage_polygon()` line 297: `coverage_pct = (covered_count / total_points) * 100`
+  - `verify_full_coverage()` line 678: `coverage_pct = (covered_points / total_points * 100)`
+  - `check_l_shaped_coverage()` line 529: `coverage_pct = (covered_count / total_points * 100)`
+- **Impact:** A room with 99.77% point coverage might have a 0.5m uncovered corner that the 0.25m grid missed. False PASS possible.
+- **Fix Applied:** All 3 functions now use Shapely area-based coverage as PRIMARY:
+  - Create coverage polygons (Point.buffer for smoke, box for heat)
+  - Union them, intersect with room polygon, compute area ratio
+  - 99.9% area threshold (0.1% tolerance for floating-point)
+  - Point-sampling retained as SECONDARY for worst-case distance and debugging
+  - Fallback to point-based if area calculation fails
+
+#### Claim 3: "Premature Solver Surrender"
+**Verdict: ✅ CONFIRMED — missing guarantee loop**
+- `FloorOrchestrator._process_one_room()`: if MIP solver fails, room gets FAIL immediately
+- No retry mechanism, no parameter adjustment
+- `AdaptiveSolver` exists but was NOT integrated into orchestrator
+- **Fix Applied:** Added Adaptive Re-solve in `_process_one_room()`:
+  - If MIP solver returns FAIL, automatically try `ConstraintSolver` (area-based greedy)
+  - If ConstraintSolver achieves ≥99.9% coverage, override result to PASS
+  - If both fail, mark as FAIL with "Manual design required" message
+  - Audit trail records which solver succeeded (for liability)
+
+#### Claim 4: "PARTIAL Status Danger"
+**Verdict: ✅ CONFIRMED — legally dangerous status**
+- Both `floor_orchestrator.py` files used `self.status = "PARTIAL"` for mixed results
+- "PARTIAL" could be misinterpreted by contractors as "partial approval"
+- **Fix Applied:**
+  - "PASS" → "APPROVED" (clearer legal terminology)
+  - "FAIL" → "REJECTED" (all rooms failed)
+  - "PARTIAL" → "REQUIRES_MANUAL_REVIEW" (some rooms failed, building NOT approved)
+  - Updated `run_real_dxf_test.py` to recognize new statuses
+  - Audit JSON now includes clear safety method documentation
+
+### Self-Criticism Notes (V13)
+
+1. **Consultant's audit logs were stale** — from 2026-05-13, before V12 fixes. Claim 1 was already fixed. This validates the "verify before changing" protocol.
+2. **Claim 2 was partially our oversight** — we fixed `constraint_solver.py` but missed that the orchestrator pipeline uses `nfpa72_coverage.py`, not `constraint_solver.py`. The point-counting bug was hiding in a different file.
+3. **Claim 3 is nuanced** — the MIP solver SHOULD find optimal solutions. The real fix is the area-based coverage in nfpa72_coverage.py, which makes both the MIP solver and ConstraintSolver agree. The adaptive re-solve is a safety net.
+4. **V8 safety_margin=0.15 is NOT the same as detector margin** — it's for electrical load calculations (NEC, not NFPA). We did NOT remove it as it serves a different purpose.

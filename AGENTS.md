@@ -343,17 +343,34 @@ Applied fixes from consultant's deep analysis of Elite Drawing Analyzer (2 verif
 | 1 | Midpoint Collision Trap: `check_cable_separation()` used midpoint distance between cable and hot pipe segments — two parallel segments touching (distance=0) could have midpoints far apart, producing FALSE NEGATIVE | Replaced with Shapely `LineString.distance()` for exact segment-to-segment shortest distance | elite_drawing_analyzer/reasoning/compliance.py | FULLY ACCEPTED |
 | 2 | Computer Vision Hallucination: `classify_by_heuristic()` guessed smoke detector from 1 circle (0.45 confidence) and sprinkler from 2 circles (0.55) — light fixtures, speakers drawn as circles would be misclassified, and "Approve All" in large projects = building covered with lights instead of detectors | Implemented Zero-Guessing Policy: `classify_by_heuristic()` now returns None, forcing "unknown" → manual engineer classification → system learns from correction | elite_drawing_analyzer/intelligence/classifier.py | FULLY ACCEPTED |
 
-**⚠️ REJECTED: MIP Solver "fixes" — Consultant's description does NOT match actual code:**
-The consultant described a class-based MIP solver with `__init__`, `_setup_coverage_params`, `_covers`, and `solve` methods.
-The actual `fireai/core/spatial_engine/mip_solver.py` is a function-based module (`solve_set_covering_mip()`) that already has:
-- `time_limit_seconds=10.0` parameter with `PULP_CBC_CMD(timeLimit=time_limit_seconds)`
-- Proper solver status handling
-- Graceful fallback when PuLP unavailable
-- The module is NOT imported/used anywhere in the codebase (only DensityOptimizer is used for placement)
-Applying the consultant's class-based replacement would DESTROY a working module and introduce references to undefined types (`CoverageGeometry`, `ShapelyPolygon`, `NFPAComplianceError`). Per AGENTS.md §Instruction Validation: STOP and WARN.
+**⚠️ SELF-CORRECTION (2026-05-20):**
+In the previous commit, I INCORRECTLY analyzed `fireai/core/spatial_engine/mip_solver.py` (function-based module) instead of `spatial_engine/mip_solver.py` (class-based `OptimalMIPEngine`). The consultant WAS referring to the class-based module, and their analysis was 100% correct. I rejected valid fixes due to my own error in identifying the correct file. This has now been corrected — see V11 Spatial Engine Hardening below.
 
 **Commits:**
 - Commit: 71e207a | Link: https://github.com/ahmdelbaz28-ux/revit/commit/71e207a
+
+### V11 — Spatial Engine Safety Hardening (2026-05-20)
+
+Applied fixes from consultant's deep analysis of spatial_engine/ layer (6 verified vulnerabilities):
+
+**constraint_solver.py — 3 vulnerabilities (ALL consultant claims verified correct):**
+
+| # | Vulnerability | Fix | Verdict |
+|---|--------------|-----|---------|
+| 1 | Scaling Grid Bug: `_generate_grid()` scaled step by room dimension (`density * (maxy-miny)/10`), producing 22.5m step in 50m rooms — coverage = 0% | Fixed step = `device_radius / 3.0` using `np.arange` | FULLY ACCEPTED |
+| 2 | X-Ray Vision: Coverage measured by circular distance ignoring walls — U/L-shaped rooms had coverage through walls | `p.buffer(radius).intersection(room_poly)` clips coverage at walls | FULLY ACCEPTED |
+| 3 | Coverage Illusion: Coverage measured by point count, not area — blind spots between grid points invisible | Area-based greedy selection using Shapely area ratio (NFPA compliant) | FULLY ACCEPTED |
+
+**mip_solver.py — 3 vulnerabilities (ALL consultant claims verified correct):**
+
+| # | Vulnerability | Fix | Verdict |
+|---|--------------|-----|---------|
+| 1 | NFPA Bypass: Heat detectors hardcoded 9.1m spacing regardless of ceiling height. `_setup_coverage_params()` existed but was NOT called | Replaced inline hardcoded logic with `_setup_coverage_params()` call | FULLY ACCEPTED |
+| 2 | NP-Hard Hang: `prob.solve()` without time limit — 15,000+ binary variables can hang server for days | `PULP_CBC_CMD(timeLimit=self.time_limit_s, msg=False)` with graceful fallback | FULLY ACCEPTED |
+| 3 | X-Ray Vision: `_covers()` used only geometric distance, ignoring walls and columns | Added Line of Sight check: `LineString` + `polygon.buffer(0.01).contains()` | FULLY ACCEPTED |
+
+**Commits:**
+- Commit: cf3e58f | Link: https://github.com/ahmdelbaz28-ux/revit/commit/cf3e58f
 
 ### Instruction Validation (Critical Safety Rule)
 - **STOP and WARN immediately** if instructions are:

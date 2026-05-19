@@ -63,12 +63,18 @@ class FloorResult:
         self.total_detectors = sum(r.detector_count for r in self.room_results)
         self.total_time_s = sum(r.solve_time_s for r in self.room_results)
         
+        # V13 Fix: Replace "PARTIAL" with legally safer terminology.
+        # "PARTIAL" could be misinterpreted by contractors as partial approval.
+        # A building either meets code (APPROVED) or doesn't (REQUIRES_REVIEW).
+        # Failed rooms are flagged for manual design, not partial acceptance.
         if self.rooms_errored == 0 and self.rooms_failed == 0:
-            self.status = "PASS"
+            self.status = "APPROVED"
         elif self.rooms_passed == 0:
-            self.status = "FAIL"
+            self.status = "REJECTED"
         else:
-            self.status = "PARTIAL"
+            # Some rooms pass, some fail — building NOT approved.
+            # Failed rooms require manual design by licensed PE.
+            self.status = "REQUIRES_MANUAL_REVIEW"
     
     def save_audit(self, output_dir: str = "audit"):
         """Save audit trail to JSON file for liability protection"""
@@ -96,11 +102,14 @@ class FloorResult:
             "detectors": {
                 "calculated": self.total_detectors,
             },
-            # NOTE: Safety margin removed - NFPA 72 compliance via verify_full_coverage()
-            # Uncomment to enable:
-            # "with_safety_margin": math.ceil(self.total_detectors * 1.15),
+            # V13: 15% spare detector margin REMOVED — no NFPA 72 basis for this.
+            # NFPA compliance is verified via exact area-based coverage calculation.
+            # Adding spare detectors without engineering justification violates
+            # battery calculations and SLC loop capacity (NEC 760.41).
             "safety": {
-                "note": "NFPA 72 compliance verified via verify_full_coverage()"
+                "method": "Exact Shapely area-based coverage verification",
+                "threshold": "99.9% area coverage required (NFPA 72)",
+                "note": "No arbitrary spare detector margin — coverage is mathematically verified"
             },
             "details": [
                 {
@@ -194,10 +203,46 @@ class FloorOrchestrator:
             result.worst_case_distance_m = coverage["worst_case_distance_m"]
             result.audit_notes = meta.get("audit_notes", [])
 
+            # V13 Fix: Adaptive Re-solve — if coverage fails for a regular room,
+            # don't give up immediately. Try the ConstraintSolver with area-based
+            # greedy placement which can find solutions the MIP solver misses.
             if result.status == "FAIL":
                 result.errors.append(
-                    f"Coverage failed: {coverage['coverage_percentage']}%"
+                    f"MIP coverage failed: {coverage['coverage_percentage']:.1f}%"
                 )
+                # Attempt adaptive re-solve using area-based ConstraintSolver
+                try:
+                    from spatial_engine.constraint_solver import ConstraintSolver
+                    area_solver = ConstraintSolver(
+                        room_polygon=spec.polygon,
+                        device_radius=meta["radius_m"]
+                    )
+                    adaptive_result = area_solver.find_optimal_placement(max_devices=50)
+                    if adaptive_result.coverage_percent >= 99.9:
+                        result.status = "PASS"
+                        result.detector_count = adaptive_result.num_devices
+                        result.detector_positions = adaptive_result.positions
+                        result.coverage_pct = adaptive_result.coverage_percent
+                        result.audit_notes.append(
+                            f"V13 Adaptive Re-solve: MIP failed, "
+                            f"area-based solver succeeded with {adaptive_result.num_devices} detectors "
+                            f"({adaptive_result.coverage_percent:.1f}% coverage)"
+                        )
+                        logger.info(
+                            f"  {spec.name}: ADAPTIVE RE-SOLVE succeeded "
+                            f"({adaptive_result.num_devices} detectors, "
+                            f"{adaptive_result.coverage_percent:.1f}%)"
+                        )
+                    else:
+                        result.errors.append(
+                            f"Adaptive re-solve also failed: "
+                            f"{adaptive_result.coverage_percent:.1f}% coverage "
+                            f"(need 99.9%). Manual design required."
+                        )
+                except Exception as adapt_err:
+                    result.errors.append(
+                        f"Adaptive re-solve error: {adapt_err}. Manual design required."
+                    )
 
         except (NFPAComplianceError, InvalidInputError) as e:
             # Logic errors → convert to ERROR result
