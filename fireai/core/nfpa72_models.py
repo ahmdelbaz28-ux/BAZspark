@@ -381,7 +381,14 @@ class RoomSpec:
 
     @property
     def area_sqm(self) -> float:
-        """Calculate room area"""
+        """Calculate room area from polygon if available, otherwise from dimensions.
+        
+        CRITICAL FIX: Previously computed from width_m * depth_m only,
+        ignoring the actual polygon geometry. For non-rectangular rooms,
+        this would produce wrong area in safety-critical calculations.
+        """
+        if self.polygon is not None and self.polygon.area > 0:
+            return self.polygon.area
         return self.width_m * self.depth_m
     
     @property

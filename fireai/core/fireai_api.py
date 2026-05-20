@@ -53,11 +53,38 @@ app = create_app()
 _expert_system = ExpertSystem()
 _audit_trail = AuditTrail(project_name="api-session")
 
-# Task store for async operations (in-memory)
+# Task store for async operations (in-memory with TTL and cap)
+# CRITICAL FIX: Previously had no TTL, no cleanup, and no cap.
+# This caused unbounded memory growth in long-lived API workers.
 _task_store: Dict[str, Dict[str, Any]] = {}
+_MAX_TASK_STORE_SIZE = 1000  # Maximum number of tasks to keep
+_TASK_TTL_SECONDS = 3600  # Tasks expire after 1 hour
 
 # Request timeout in seconds
 REQUEST_TIMEOUT_SECONDS: float = 30.0
+
+
+def _cleanup_task_store():
+    """Remove expired and excess tasks from the store."""
+    import time as _time
+    now = _time.monotonic()
+    # Remove expired tasks
+    expired = [
+        tid for tid, task in _task_store.items()
+        if task.get("_expires_at", 0) < now
+    ]
+    for tid in expired:
+        del _task_store[tid]
+    # Evict oldest if still over cap
+    if len(_task_store) > _MAX_TASK_STORE_SIZE:
+        # Sort by creation time and remove oldest
+        sorted_tasks = sorted(
+            _task_store.items(),
+            key=lambda x: x[1].get("_created_at", 0)
+        )
+        to_remove = sorted_tasks[:len(_task_store) - _MAX_TASK_STORE_SIZE]
+        for tid, _ in to_remove:
+            del _task_store[tid]
 
 
 async def _run_with_timeout(coro, timeout: float = REQUEST_TIMEOUT_SECONDS):
@@ -151,6 +178,37 @@ def _build_room_spec(room_in: RoomSpecIn) -> RoomSpec:
     if room_in.polygon:
         polygon = ShapelyPolygon(room_in.polygon)
     
+    # CRITICAL FIX: Derive width/depth from polygon when available.
+    # Previously defaulted to 10.0x10.0 when only polygon was sent,
+    # causing silent geometry corruption in safety-critical analysis.
+    width_m = room_in.width_m
+    depth_m = room_in.depth_m
+    
+    if polygon is not None and (width_m is None or depth_m is None):
+        bounds = polygon.bounds  # (minx, miny, maxx, maxy)
+        derived_width = bounds[2] - bounds[0]
+        derived_depth = bounds[3] - bounds[1]
+        if width_m is None:
+            width_m = derived_width
+        if depth_m is None:
+            depth_m = derived_depth
+    
+    # SAFETY: If still no dimensions, REJECT rather than inject fake defaults.
+    # A 10.0x10.0 default for safety-critical geometry is unacceptable.
+    if width_m is None or depth_m is None:
+        raise ValueError(
+            f"Room '{room_in.room_id}': width_m and depth_m are required "
+            f"when no polygon is provided. Refusing to inject fake geometry."
+        )
+    
+    # Validate derived dimensions are physically meaningful
+    if width_m <= 0 or depth_m <= 0:
+        raise ValueError(
+            f"Room '{room_in.room_id}': derived dimensions invalid "
+            f"(width={width_m:.3f}m, depth={depth_m:.3f}m). "
+            f"Check polygon coordinates."
+        )
+    
     # Use create_safe() to allow clamping of unusual heights
     ceiling_spec = None
     if room_in.ceiling_height_m is not None:
@@ -164,8 +222,8 @@ def _build_room_spec(room_in: RoomSpecIn) -> RoomSpec:
     return RoomSpec.create_validated(
         room_id=room_in.room_id,
         name=room_in.name or room_in.room_id,
-        width_m=room_in.width_m or 10.0,
-        depth_m=room_in.depth_m or 10.0,
+        width_m=width_m,
+        depth_m=depth_m,
         polygon=polygon,
         occupancy_type=room_in.occupancy_type,
         ceiling_spec=ceiling_spec,
@@ -364,12 +422,16 @@ async def analyse_floor_async(
     """
     task_id = str(uuid.uuid4())
     
-    # Immediate response
+    # Immediate response (with TTL tracking)
+    import time as _time
+    _cleanup_task_store()  # Clean up before adding
     _task_store[task_id] = {
         "status": "processing",
         "progress": 0,
         "result": None,
         "error": None,
+        "_created_at": _time.monotonic(),
+        "_expires_at": _time.monotonic() + _TASK_TTL_SECONDS,
     }
     
     # Schedule background task

@@ -9,13 +9,12 @@ class TestRoomSpecStrictValidation:
     """RoomSpec must reject ALL invalid inputs at construction"""
 
     def test_valid_room_creation(self):
-        """✅ Valid room should be created successfully"""
+        """Valid room should be created successfully"""
         room = RoomSpec.create_validated(
             room_id="valid-room",
             name="Valid Room",
             width_m=6.0,
             depth_m=8.0,
-            height_m=3.0,
             occupancy_type="office"
         )
         assert room.room_id == "valid-room"
@@ -102,16 +101,10 @@ class TestRoomSpecStrictValidation:
         assert "width_m must be > 0" in str(exc.value) or "finite" in str(exc.value)
 
     def test_infinite_height_rejected(self):
-        """❌ Infinite height must be REJECTED"""
-        with pytest.raises(ValueError) as exc:
-            RoomSpec(
-                room_id="inf-height",
-                width_m=10.0,
-                depth_m=10.0,
-                height_m=float('inf'),
-                occupancy_type="office"
-            )
-        assert "height_m must be > 0" in str(exc.value) or "finite" in str(exc.value)
+        """Infinite ceiling height must be REJECTED via CeilingSpec."""
+        from fireai.core.nfpa72_models import CeilingSpec, CeilingHeightError
+        with pytest.raises((ValueError, CeilingHeightError)):
+            CeilingSpec(height_at_low_point_m=float('inf'))
 
     def test_empty_room_id_rejected(self):
         """❌ Empty room_id must be REJECTED"""

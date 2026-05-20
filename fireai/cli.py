@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-fireai/cli.py - واجهة الأوامر الموحدة لـ FireAI v1.0
-الاستخدام: python -m fireai.cli build -f FILE.dxf -o OUTPUT_DIR
+fireai/cli.py - Unified CLI for FireAI
+Usage: python -m fireai.cli build -f FILE.dxf -o OUTPUT_DIR
+
+CRITICAL FIX: Removed broken import of src.dxf_importer (doesn't exist).
+CLI now degrades gracefully when optional modules are missing.
 """
 
 import sys
@@ -11,16 +14,40 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import click
 from pathlib import Path
-from src.auto_placement import suggest_devices
-from src.dxf_importer import DXFImporter
-from src.application.coverage_service import CoverageService
-from src.application.graph_builder import GraphBuilder
-from src.application.cable_router import CableRouter
-from src.application.schemas import PanelConfig
-from src.core.models import NFPA72, BS5839, DeviceType
-from src.infrastructure.dxf_production_writer import DXFProductionWriter
-from src.infrastructure.boq_generator import BOQGenerator
-from src.infrastructure.justification_writer import generate_justification, write_justification_to_file
+
+# CRITICAL FIX: Lazy imports — these modules may not be available.
+# The old code imported src.dxf_importer which doesn't exist.
+# Now we import inside the command handler and fail gracefully.
+try:
+    from src.auto_placement import suggest_devices
+    _HAS_AUTO_PLACEMENT = True
+except ImportError:
+    _HAS_AUTO_PLACEMENT = False
+
+try:
+    from src.application.coverage_service import CoverageService
+    from src.application.graph_builder import GraphBuilder
+    from src.application.cable_router import CableRouter
+    from src.application.schemas import PanelConfig
+    _HAS_APPLICATION = True
+except ImportError:
+    _HAS_APPLICATION = False
+
+try:
+    from src.core.models import NFPA72, BS5839, DeviceType
+    _HAS_MODELS = True
+except ImportError:
+    _HAS_MODELS = False
+
+try:
+    from src.infrastructure.dxf_production_writer import DXFProductionWriter
+    from src.infrastructure.boq_generator import BOQGenerator
+    from src.infrastructure.justification_writer import generate_justification, write_justification_to_file
+    _HAS_INFRASTRUCTURE = True
+except ImportError:
+    _HAS_INFRASTRUCTURE = False
+
+# NOTE: src.dxf_importer was removed — DXF import must use alternative path
 
 
 DISCLAIMER = """

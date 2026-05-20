@@ -12,9 +12,15 @@ import time
 import logging
 
 from .audit_trail import AuditTrail
-from .nfpa72_models import RoomSpec, NFPAComplianceError
+from .nfpa72_models import RoomSpec, NFPAComplianceError, DetectorType
 from .nfpa72_coverage import verify_full_coverage
 from .spatial_engine.density_optimizer import DensityOptimizer, Room
+
+# CRITICAL FIX: InvalidInputError was caught but never imported or defined.
+# Define it locally to prevent NameError at runtime.
+class InvalidInputError(ValueError):
+    """Raised when room input is invalid."""
+    pass
 
 logger = logging.getLogger("fireai.orchestrator")
 
@@ -161,8 +167,8 @@ class FloorOrchestrator:
                 self.audit_trail.log_placement(
                     room_id=spec.room_id,
                     detector_count=room_res.detector_count,
-                    detector_type=room_res.detector_type,
-                    coverage_pct=room_res.coverage_percentage,
+                    detector_type=spec.detector_type.value if spec.detector_type else "UNKNOWN",
+                    coverage_pct=room_res.coverage_pct,
                     positions=room_res.detector_positions
                 )
 
@@ -180,11 +186,17 @@ class FloorOrchestrator:
         try:
             # [1] NEW Engine for every room — no shared state
             # Use DensityOptimizer V6 with hexagonal placement strategies
+            # CRITICAL FIX: RoomSpec has depth_m not length_m,
+            # and ceiling_spec not ceiling_height_m.
+            ceiling_h = (
+                spec.ceiling_spec.height_at_low_point_m
+                if spec.ceiling_spec else 3.0
+            )
             room_data = Room(
                 name=spec.name,
                 width=spec.width_m,
-                length=spec.length_m,
-                ceiling_height=spec.ceiling_height_m or 3.0
+                length=spec.depth_m,
+                ceiling_height=ceiling_h
             )
             optimizer = DensityOptimizer()
             layout = optimizer.optimize(room_data)
@@ -218,7 +230,7 @@ class FloorOrchestrator:
                     f"Coverage failed: {coverage['coverage_percentage']}%"
                 )
 
-        except (NFPAComplianceError, InvalidInputError) as e:
+        except (NFPAComplianceError, InvalidInputError, ValueError) as e:
             # Logic errors → convert to ERROR result
             result.status = "ERROR"
             result.errors.append(str(e))

@@ -354,10 +354,12 @@ def _build_spec(req: RoomRequest) -> RoomSpec:
         height_at_high_point_m=req.height_high or req.height,
         ceiling_type=CeilingType[req.ceiling_type] if req.ceiling_type in [c.name for c in CeilingType] else CeilingType.FLAT,
     )
-    # Calculate width/depth from polygon
+    # CRITICAL FIX: Calculate width/depth from polygon using geometric SPAN.
+    # Previously used max(x) and max(y) which is WRONG for translated/negative
+    # coordinate polygons. Correct: (max - min) = actual geometric span.
     poly = [tuple(p) for p in req.polygon]
-    width = max(p[0] for p in poly)
-    depth = max(p[1] for p in poly)
+    width = max(p[0] for p in poly) - min(p[0] for p in poly)
+    depth = max(p[1] for p in poly) - min(p[1] for p in poly)
 
     return RoomSpec(
         room_id=req.room_id,

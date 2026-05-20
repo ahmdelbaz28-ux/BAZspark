@@ -27,8 +27,10 @@ app.add_middleware(
 )
 
 # Import core modules
+_core_loaded = False
 try:
     from core.database import UniversalDataModel
+    _core_loaded = True
     logger.info("Core modules loaded successfully")
 except ImportError as e:
     logger.error(f"Failed to load core modules: {e}")
@@ -54,8 +56,16 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Health check endpoint"""
-    return {"status": "healthy"}
+    """Health check endpoint — truthful about core module availability.
+    
+    CRITICAL FIX: Previously always returned "healthy" even when core
+    modules failed to load. This is a false-green health endpoint that
+    misleads deployment probes and operators.
+    """
+    if _core_loaded:
+        return {"status": "healthy", "core_modules": "loaded"}
+    else:
+        return {"status": "degraded", "core_modules": "failed", "warning": "Core modules not loaded — service is degraded"}
 
 if __name__ == "__main__":
     import uvicorn
