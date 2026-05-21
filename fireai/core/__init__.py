@@ -61,6 +61,13 @@ from fireai.core.safety_assurance import (
     STANDARD_COVERAGE_THRESHOLD, PROOF_VERIFIED_THRESHOLD,
 )
 
+# V12 — Class A Routing + Firestopping + Safe Building Engine + DXF Schedule
+from fireai.core.routing_global_class_a import EliteGlobalRouter
+from fireai.core.firestop_annotator import FirestoppingAnnotator
+from fireai.core.safe_building_engine import SafeBuildingEngine
+from fireai.core.dxf_table_schedule import TrueAECDraftingTable
+from fireai.core.routing_engine_v10 import EliteClassARouter, ArchitecturalWall, RouteSegment
+
 __all__ = [
     "__version__",
     # Analysers
@@ -118,4 +125,12 @@ __all__ = [
     "MINIMUM_COVERAGE_FOR_SUBMISSION",
     "STANDARD_COVERAGE_THRESHOLD",
     "PROOF_VERIFIED_THRESHOLD",
+    # V12 — Class A Routing + Firestopping + Safe Engine + DXF
+    "EliteGlobalRouter",
+    "FirestoppingAnnotator",
+    "SafeBuildingEngine",
+    "TrueAECDraftingTable",
+    "EliteClassARouter",
+    "ArchitecturalWall",
+    "RouteSegment",
 ]
