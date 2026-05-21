@@ -271,6 +271,23 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
     if polygon_perimeter(poly) > 500:
         warnings.append("Perimeter > 500m - verify units are in metres.")
 
+    # Shapely-based self-intersection check (more robust than O(n²) pure Python).
+    # Falls back to the existing _segments_intersect check if Shapely unavailable.
+    try:
+        from shapely.geometry import Polygon as ShapelyPolygon
+        shapely_poly = ShapelyPolygon(poly)
+        if not shapely_poly.is_valid:
+            # Shapely's is_valid catches self-intersection, ring orientation,
+            # and other geometric issues that the O(n²) check may miss.
+            explanation = shapely_poly.explain_validity if hasattr(shapely_poly, 'explain_validity') else "unknown reason"
+            errors.append(
+                f"Polygon is invalid per Shapely: {explanation}. "
+                f"Self-intersecting polygons produce wrong area calculations, "
+                f"which leads to incorrect detector counts."
+            )
+    except ImportError:
+        pass  # Shapely not available — already checked via _segments_intersect above
+
     return ValidationResult(not errors, errors, warnings)
 
 

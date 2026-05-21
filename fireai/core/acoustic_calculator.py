@@ -405,6 +405,79 @@ def _frange(start: float, stop: float, step: float):
             start += step
 
 
+# ============================================================================
+# Backward-Compatible Speaker Coverage — Replaces SPEAKER_COVERAGE=30.0
+# ============================================================================
+
+def get_speaker_coverage_radius(
+    source_dba: float = 95.0,
+    ref_distance_m: float = DEFAULT_REF_DISTANCE_M,
+    ambient_dba: float = 55.0,
+    mode: str = "public",
+    room_height_m: float = 3.0,
+    room_absorption_m2: Optional[float] = None,
+) -> float:
+    """Compute the effective speaker coverage radius per NFPA 72 §18.4/§18.5.
+
+    This function replaces the deprecated fixed SPEAKER_COVERAGE=30.0 constant.
+    It calculates the maximum distance at which a speaker provides adequate
+    audibility based on inverse-square-law attenuation, room absorption, and
+    ambient noise levels.
+
+    The old constant (30m general, 21m intelligible) was a rough estimate
+    that ignored room acoustics, ambient noise, and speaker specifications.
+    This function provides accurate, code-compliant coverage.
+
+    NFPA 72 References:
+        - §18.4.3: Public mode — min 15 dB above ambient
+        - §18.4.4: Private mode — min 10 dB above ambient
+        - §18.4.2: Sleeping areas — min 75 dBA at pillow
+        - §18.4.1.2: Maximum 110 dBA
+
+    Args:
+        source_dba: Speaker output at reference distance (default 95 dBA at 3m).
+        ref_distance_m: Reference distance for speaker spec (default 3m).
+        ambient_dba: Ambient noise level in dBA (default 55 for office).
+        mode: "public", "private", or "sleeping".
+        room_height_m: Room ceiling height (default 3.0m).
+        room_absorption_m2: Room absorption in m² Sabine. If None, estimated
+            from a typical 10m×10m room with moderate absorption.
+
+    Returns:
+        Maximum coverage radius in metres where audibility is compliant.
+        If no distance is compliant (speaker too quiet), returns 0.0.
+    """
+    if room_absorption_m2 is None:
+        # Estimate: typical room 10m×10m, α≈0.25, surface ≈ 300m²
+        room_absorption_m2 = 75.0
+
+    # Binary search for maximum compliant distance
+    lo, hi = 0.5, 100.0  # Search between 0.5m and 100m
+    best_radius = 0.0
+
+    for _ in range(50):  # ~50 iterations gives ~0.001m precision
+        mid = (lo + hi) / 2.0
+        # Worst case: listener at the farthest horizontal distance + height
+        worst_dist = math.sqrt(mid ** 2 + room_height_m ** 2)
+
+        result = check_audibility_compliance(
+            source_dba=source_dba,
+            target_distance_m=worst_dist,
+            ambient_dba=ambient_dba,
+            mode=mode,
+            ref_distance_m=ref_distance_m,
+            room_absorption_m2=room_absorption_m2,
+        )
+
+        if result.compliant:
+            best_radius = mid
+            lo = mid
+        else:
+            hi = mid
+
+    return round(best_radius, 2)
+
+
 __all__ = [
     "AUDIBLE_REQUIREMENTS",
     "AMBIENT_NOISE_LEVELS",
@@ -416,4 +489,5 @@ __all__ = [
     "calculate_spl_at_distance",
     "check_audibility_compliance",
     "calculate_min_speakers_for_room",
+    "get_speaker_coverage_radius",
 ]

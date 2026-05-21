@@ -507,6 +507,222 @@ def validate_aset_vs_rset(
     )
 
 
+# ============================================================================
+# Integrated ASET/RSET Analysis — Connects semi_cfast_engine to release_gates
+# ============================================================================
+
+def perform_aset_rset_analysis(
+    room_area_m2: float,
+    room_height_m: float,
+    travel_distance_m: float,
+    occupancy_type: str = "business",
+    fire_growth_rate: str = "medium",
+    fire_load_MJ: float = 500.0,
+    is_sprinklered: bool = True,
+    safety_factor_override: Optional[float] = None,
+    ventilation_opening_m2: float = 2.0,
+    ceiling_type: str = "FLAT",
+) -> Dict[str, Any]:
+    """Perform a complete ASET vs RSET analysis using semi_cfast_engine physics.
+
+    This is the integration function that connects the physics-based
+    semi_cfast_engine to release_gates.py Gate 7. It creates a FireScenario,
+    computes ASET using the time-stepping engine, computes RSET from egress
+    parameters, and returns a result dict that can be passed directly to
+    verify_and_evaluate() as the ``aset_rset_result`` parameter.
+
+    NFPA 72 / SFPE References:
+        - SFPE Engineering Guide to Performance-Based Fire Protection
+        - NFPA 101 §9.3 (Means of Egress)
+        - BS 7974:2019 (Application of fire safety engineering principles)
+        - NFPA 72 §18.5 (Notification appliance circuit design — indirectly,
+          as detection time affects ASET)
+
+    This function is CRITICAL because Gate 7 of release_gates.py
+    numerically re-verifies ASET > RSET × safety_factor. If this
+    function is not called, Gate 7 has no data and blocks release.
+
+    Args:
+        room_area_m2: Floor area of the room/compartment in m².
+        room_height_m: Ceiling height of the room in metres.
+        travel_distance_m: Maximum travel distance to nearest exit (path-based).
+        occupancy_type: NFPA 101 occupancy classification.
+            One of: assembly, business, educational, healthcare,
+            industrial, mercantile, residential, storage, high_hazard.
+        fire_growth_rate: t² fire growth rate per NFPA 72 Annex A.
+            One of: slow, medium, fast, ultrafast.
+        fire_load_MJ: Total fire load in megajoules.
+        is_sprinklered: Whether the compartment has sprinklers.
+        safety_factor_override: Override the occupancy-based safety factor.
+        ventilation_opening_m2: Total ventilation opening area in m².
+        ceiling_type: Ceiling type string ("FLAT", "SLOPED", "BEAM").
+
+    Returns:
+        Dict with keys required by release_gates.py Gate 7:
+          - aset_seconds: Available Safe Egress Time
+          - rset_seconds: Required Safe Egress Time
+          - safety_factor: Safety factor used
+          - is_safe: Whether ASET > RSET × safety_factor
+          - limiting_factor: What limits ASET
+          - occupancy_type: Occupancy classification
+          - verdict: Human-readable PASS/FAIL
+          - details: Full analysis details
+    """
+    try:
+        from fireai.core.semi_cfast_engine import (
+            calculate_aset as _cfast_aset,
+            calculate_rset as _cfast_rset,
+            FireScenario,
+            TenabilityCriteria,
+            verify_aset_rset,
+        )
+
+        # Build fire scenario from room parameters
+        scenario = FireScenario(
+            room_area_m2=room_area_m2,
+            room_height_m=room_height_m,
+            fire_growth_rate=fire_growth_rate,
+            fire_load_MJ=fire_load_MJ,
+            ventilation_opening_m2=ventilation_opening_m2,
+            ceiling_type=ceiling_type,
+        )
+
+        # Default tenability criteria per SFPE
+        criteria = TenabilityCriteria()
+
+        # Map occupancy type to semi_cfast_engine terminology
+        # The aset_rset_calculator uses NFPA 101 terms (business, mercantile, etc.)
+        # while semi_cfast_engine uses SFPE terms (office, retail, etc.)
+        _OCCUPANCY_TYPE_MAP = {
+            "business": "office",
+            "mercantile": "retail",
+            "educational": "education",
+            "high_hazard": "industrial",
+            "storage": "industrial",     # Storage maps to industrial (similar speeds)
+            "residential": "residential",  # Same name but ensure mapping
+            "healthcare": "elderly_care",  # Healthcare → elderly care (conservative)
+            "assembly": "assembly",         # Same name
+            "industrial": "industrial",     # Same name
+        }
+        cfast_occupancy = _OCCUPANCY_TYPE_MAP.get(occupancy_type, occupancy_type)
+
+        # Compute ASET using physics-based time-stepping engine
+        aset_result = _cfast_aset(scenario, criteria)
+
+        # Compute RSET using egress parameters
+        rset_result = _cfast_rset(
+            room_area_m2=room_area_m2,
+            room_height_m=room_height_m,
+            travel_distance_m=travel_distance_m,
+            occupancy_type=cfast_occupancy,
+        )
+
+        # Extract RSET values from dict result
+        rset_seconds = float(rset_result.get("rset_seconds", 0))
+        travel_time_s = float(rset_result.get("travel_time_s", 0))
+        walking_speed_mps = float(rset_result.get("walking_speed_m_s", 0))
+        premovement_delay_s = float(rset_result.get("pre_movement_s", 0))
+        detection_time_s = float(rset_result.get("detection_time_s", 0))
+
+        # Determine safety factor based on occupancy and sprinklers
+        if safety_factor_override is not None:
+            sf = safety_factor_override
+        else:
+            risk_category = RISK_CATEGORIES.get(occupancy_type, "standard")
+            sf = SAFETY_FACTORS.get(risk_category, 1.5)
+            if is_sprinklered and sf > 1.0:
+                sf = max(sf - 0.25, 1.0)
+
+        rset_with_safety = rset_seconds * sf
+
+        # Verify ASET > RSET with safety factor
+        validation = verify_aset_rset(
+            aset_seconds=aset_result.aset_seconds,
+            rset_seconds=rset_with_safety,
+            safety_factor=sf,
+        )
+
+        # Extract limiting criterion from ASETResult
+        limiting = "unknown"
+        if hasattr(aset_result, 'limiting_criterion'):
+            limiting = str(aset_result.limiting_criterion)
+        elif hasattr(aset_result, 'limiting_factor'):
+            limiting = str(aset_result.limiting_factor)
+
+        return {
+            "aset_seconds": aset_result.aset_seconds,
+            "rset_seconds": rset_seconds,
+            "rset_with_safety_s": rset_with_safety,
+            "safety_factor": sf,
+            "is_safe": validation.get("is_safe", False),
+            "limiting_factor": limiting,
+            "occupancy_type": occupancy_type,
+            "verdict": "PASS" if validation.get("is_safe", False) else "FAIL",
+            "details": {
+                "aset_details": {
+                    "method": "semi_cfast_engine_time_stepping",
+                    "limiting_criterion": limiting,
+                    "smoke_layer_at_aset_m": aset_result.smoke_layer_at_aset_m
+                        if hasattr(aset_result, 'smoke_layer_at_aset_m') else None,
+                    "temperature_at_aset_c": aset_result.temperature_at_aset_c
+                        if hasattr(aset_result, 'temperature_at_aset_c') else None,
+                },
+                "rset_details": {
+                    "detection_time_s": detection_time_s,
+                    "premovement_delay_s": premovement_delay_s,
+                    "travel_time_s": travel_time_s,
+                    "walking_speed_mps": walking_speed_mps,
+                    "travel_distance_m": travel_distance_m,
+                    "is_sprinklered": is_sprinklered,
+                },
+                "scenario": {
+                    "room_area_m2": room_area_m2,
+                    "room_height_m": room_height_m,
+                    "fire_growth_rate": fire_growth_rate,
+                    "fire_load_MJ": fire_load_MJ,
+                },
+            },
+        }
+
+    except ImportError as e:
+        # semi_cfast_engine not available — fall back to simplified calculation
+        # using the local calculate_aset and calculate_rset
+        aset_result = calculate_aset(
+            smoke_fill_time_s=300.0,  # 5 min default estimate
+            room_height_m=room_height_m,
+        )
+
+        rset_result = calculate_rset(
+            travel_distance_m=travel_distance_m,
+            occupancy_type=occupancy_type,
+            is_sprinklered=is_sprinklered,
+        )
+
+        validation = validate_aset_vs_rset(aset_result, rset_result, safety_factor_override)
+
+        return {
+            "aset_seconds": aset_result.aset_seconds,
+            "rset_seconds": rset_result.rset_seconds,
+            "rset_with_safety_s": rset_result.rset_with_safety_s,
+            "safety_factor": rset_result.safety_factor,
+            "is_safe": validation.is_safe,
+            "limiting_factor": aset_result.limiting_factor,
+            "occupancy_type": occupancy_type,
+            "verdict": validation.verdict.split(":")[0] if ":" in validation.verdict else ("PASS" if validation.is_safe else "FAIL"),
+            "details": {
+                "aset_details": {
+                    "method": "simplified_estimate_fallback",
+                    "warning": f"semi_cfast_engine unavailable ({e}); using simplified estimate with ±50% error band",
+                },
+                "rset_details": {
+                    "premovement_delay_s": rset_result.premovement_delay_s,
+                    "travel_time_s": rset_result.travel_time_s,
+                    "walking_speed_mps": rset_result.walking_speed_mps,
+                },
+            },
+        }
+
+
 __all__ = [
     "TENABILITY_THRESHOLDS",
     "PREMOVEMENT_DELAYS",
@@ -519,4 +735,5 @@ __all__ = [
     "calculate_aset",
     "calculate_rset",
     "validate_aset_vs_rset",
+    "perform_aset_rset_analysis",
 ]

@@ -28,8 +28,8 @@ class CeilingType(str, Enum):
     """NFPA 72 ceiling classifications.
 
     CONSOLIDATED: This enum is the canonical source. nfpa72_models.py
-    CeilingType has additional entries (GABLE, SHED, TRUSS, COMBUSTIBLE,
-    CORRIDOR) that map to these core types for contract validation.
+    CeilingType re-exports from here for backward compatibility.
+    Includes all ceiling types from both original files.
     """
     FLAT = "FLAT"
     SLOPED = "SLOPED"
@@ -41,6 +41,8 @@ class CeilingType(str, Enum):
     GABLE = "GABLE"
     SHED = "SHED"
     CORRIDOR = "CORRIDOR"
+    TRUSS = "TRUSS"
+    COMBUSTIBLE = "COMBUSTIBLE"
 
 
 class ConfidenceLevel(str, Enum):
@@ -63,6 +65,7 @@ class DetectorType(str, Enum):
     SMOKE_MULTI_CRITERIA = "SMOKE_MULTI_CRITERIA"
     HEAT = "HEAT"
     HEAT_FIXED = "HEAT_FIXED"
+    HEAT_FIXED_TEMP = "HEAT_FIXED_TEMP"  # Alias: same category as HEAT_FIXED
     HEAT_RATE_OF_RISE = "HEAT_RATE_OF_RISE"
     HEAT_COMBINATION = "HEAT_COMBINATION"
     COMBINATION = "COMBINATION"

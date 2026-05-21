@@ -427,3 +427,29 @@ class FireZoneEngine:
             zones.append(current)
 
         return zones
+
+    def build_zone_map(self, report: ZoneReport) -> Dict[str, str]:
+        """Build a zone_map dict from a ZoneReport for fault isolator injection.
+
+        The returned dict maps room_id -> zone_id, suitable for passing to
+        :func:`fireai.core.fault_isolator_injector.inject_fault_isolators`
+        as the ``zone_map`` parameter.
+
+        This is the integration bridge between the fire zone engine and the
+        fault isolator injector — without it, the injector cannot determine
+        zone boundaries and may place isolators at wrong positions.
+
+        NFPA 72 §12.3.2 requires a single fault to affect only one zone,
+        so correct zone boundary identification is critical.
+
+        Args:
+            report: ZoneReport from :meth:`cluster_floor`.
+
+        Returns:
+            Dict mapping room_id -> zone_id (both strings).
+        """
+        zone_map: Dict[str, str] = {}
+        for zone in report.zones:
+            for room_id in zone.rooms:
+                zone_map[room_id] = zone.zone_id
+        return zone_map

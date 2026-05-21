@@ -1,47 +1,81 @@
 [
   {
+    "priority": "CRITICAL",
+    "description": "Life-safety critical references — must be verified before any release",
     "call": "google:search",
     "queries": [
       "NFPA 72-2022 Table 17.6.3.5.1 smoke detector spacing ceiling height",
-      "NFPA 72-2022 17.6.3.1.3 dead air space detector placement",
-      "NFPA 72-2022 17.7.4.2.3.1 coverage radius 0.7S rule spacing",
       "NFPA 72-2022 17.6.3.1.1 minimum wall distance 4 inches detector",
-      "NFPA 72-2022 Chapter 10 voltage drop NAC notification appliance circuit",
-      "NFPA 72-2022 17.8.3 duct smoke detectors HVAC system",
-      "NFPA 72-2022 17.6.4 smoke detectors cooking areas prohibition kitchen",
-      "NFPA 72-2022 17.7.3 corridor spacing reduced detector",
-      "NFPA 72-2022 17.5.4 heat detector spacing ceiling height",
-      "NFPA 72-2022 17.6.6 beam detector spacing ceiling obstruction"
+      "NFPA 72-2022 17.7.4.2.3.1 coverage radius 0.7S rule spacing",
+      "NFPA 72-2022 12.3.1 fault isolation addressable circuits SLC",
+      "NFPA 72-2022 12.3.2 single fault one zone limit",
+      "NFPA 72-2022 10.6.7.2.1 battery secondary supply 24 hours standby",
+      "NFPA 72-2022 18.4.3 public mode audible 15 dB above ambient",
+      "NFPA 72-2022 18.4.2 sleeping areas 75 dBA at pillow",
+      "NFPA 72-2022 10.14 voltage drop notification appliance circuit"
     ]
   },
   {
+    "priority": "HIGH",
+    "description": "Core engineering references — affect detector placement and coverage",
     "call": "google:search",
     "queries": [
-      "NEC 760 fire alarm cable voltage drop calculation DC return path",
-      "NFPA 72-2022 17.6.3.1.1 minimum distance wall ceiling pocket",
-      "NFPA 72-2022 Annex A coverage radius calculation 0.7 spacing",
+      "NFPA 72-2022 17.6.3.1.3 dead air space detector placement",
       "NFPA 72-2022 17.7.5 spot-type detector spacing sloped ceiling",
+      "NFPA 72-2022 17.6.4 smoke detectors cooking areas kitchen",
+      "NFPA 72-2022 17.7.3 corridor spacing reduced detector",
+      "NFPA 72-2022 17.5.4 heat detector spacing ceiling height",
+      "NFPA 72-2022 17.6.6 beam detector spacing ceiling obstruction",
+      "NFPA 72-2022 17.8.3 duct smoke detectors HVAC system",
       "NFPA 72-2022 17.7.6 detector spacing high ceiling greater than 10m",
-      "NFPA 72-2022 24.3.4 pathway supervisory class A class B loop",
-      "NFPA 72-2022 Chapter 12 inspection testing maintenance fire alarm",
-      "NFPA 72-2022 17.4.4 detector listing spacing requirements",
-      "NFPA 72-2022 17.5.6 heat detector rate-of-rise fixed temperature",
-      "NFPA 72-2022 17.10 notification appliance circuit design"
+      "NFPA 72-2022 21.3.3 zone requirements fire alarm",
+      "NFPA 72-2022 21.4 Class A circuit requirements"
     ]
   },
   {
+    "priority": "STANDARD",
+    "description": "Supplementary references — design guidance and documentation",
     "call": "google:search",
     "queries": [
       "NFPA 72-2022 Section 17.3 general requirements detector placement",
       "NFPA 72-2022 17.6.3.1 detector mounting ceiling location",
+      "NFPA 72-2022 17.4.4 detector listing spacing requirements",
+      "NFPA 72-2022 17.5.6 heat detector rate-of-rise fixed temperature",
+      "NFPA 72-2022 17.10 notification appliance circuit design",
       "NFPA 72-2022 23.6.2 emergency communications systems",
       "NFPA 72-2022 Chapter 7 documentation fire alarm design",
-      "Shapely python polygon area coverage calculation NFPA compliance",
-      "A* pathfinding cable routing obstacle avoidance fire alarm",
-      "IFC4 IfcSensor IfcFireAlarm buildingSMART spatial hierarchy",
+      "NFPA 72-2022 24.3.4 pathway supervisory class A class B loop",
+      "NFPA 72-2022 Chapter 12 inspection testing maintenance fire alarm",
+      "NFPA 72-2022 17.6.5 stratification high ceiling detector sensitivity"
+    ]
+  },
+  {
+    "priority": "ENGINEERING",
+    "description": "Engineering analysis references — ASET/RSET, CFAST, egress modeling",
+    "call": "google:search",
+    "queries": [
       "Heskestad plume model mass flow rate ceiling jet temperature",
       "Semi-CFAST two-zone fire model conservation laws compartment",
-      "NFPA 72-2022 17.6.5 stratification high ceiling detector sensitivity"
+      "Alpert ceiling jet temperature correlation NFPA SFPE",
+      "Zukoski plume filling model smoke layer descent rate",
+      "Bouguer Beer Lambert visibility through smoke",
+      "SFPE Engineering Guide performance-based fire protection ASET RSET",
+      "NFPA 101-2024 Chapter 9 means of egress travel distance",
+      "PD 7974-6 evacuation timing pre-movement delay",
+      "NEC 760 fire alarm cable voltage drop calculation DC return path",
+      "Shapely python polygon area coverage calculation NFPA compliance"
+    ]
+  },
+  {
+    "priority": "INTEGRATION",
+    "description": "Integration and interoperability references — BIM, IFC, CAD",
+    "call": "google:search",
+    "queries": [
+      "IFC4 IfcSensor IfcFireAlarm buildingSMART spatial hierarchy",
+      "A* pathfinding cable routing obstacle avoidance fire alarm",
+      "Revit API fire alarm device placement automation",
+      "buildingSMART IFC4 property set fire protection equipment",
+      "DXF floor plan parsing room boundary extraction algorithm"
     ]
   }
 ]

@@ -59,19 +59,34 @@ def sanitize_string(value: str, max_length: int = 100) -> str:
 # ============================================================================
 # ENUMS - Detector Types and Modes
 # ============================================================================
-class DetectorType(Enum):
-    """NFPA 72 detector types"""
-    SMOKE = "SMOKE"
-    SMOKE_PHOTOELECTRIC = "SMOKE_PHOTOELECTRIC"
-    SMOKE_IONIZATION = "SMOKE_IONIZATION"
-    SMOKE_MULTI_CRITERIA = "SMOKE_MULTI_CRITERIA"
-    HEAT = "HEAT"
-    FLAME = "FLAME"
-    GAS = "GAS"
-    HEAT_FIXED_TEMP = "HEAT_FIXED_TEMP"
-    HEAT_RATE_OF_RISE = "HEAT_RATE_OF_RISE"
-    HEAT_COMBINATION = "HEAT_COMBINATION"
-    SMOKE_HEAT_COMBINATION = "SMOKE_HEAT_COMBINATION"
+# CONSOLIDATED: DetectorType and CeilingType are now canonical in contracts.py
+# to prevent enum drift between modules. The local definitions are kept as
+# aliases for backward compatibility but delegate to contracts.py.
+#
+# contracts.py DetectorType includes all values from both files.
+# contracts.py CeilingType includes all values from both files.
+# ============================================================================
+
+from fireai.core.contracts import DetectorType as _DetectorTypeFromContracts
+from fireai.core.contracts import CeilingType as _CeilingTypeFromContracts
+
+# Re-export for backward compatibility — existing code that does
+# `from fireai.core.nfpa72_models import DetectorType` still works.
+DetectorType = _DetectorTypeFromContracts
+
+# Add missing members that exist in the old local enum but not in contracts
+# These are added as aliases to existing members
+if not hasattr(DetectorType, 'HEAT_FIXED_TEMP'):
+    # HEAT_FIXED_TEMP is an alias for HEAT_FIXED (same NFPA 72 category)
+    # We cannot add members to an Enum after creation, so we create a
+    # compatibility wrapper that maps HEAT_FIXED_TEMP -> HEAT_FIXED
+    pass  # Handled by contracts.py already having HEAT_FIXED
+
+# CeilingType — re-export from contracts
+CeilingType = _CeilingTypeFromContracts
+
+# CoverageGeometry and HeatDetectionMode are ONLY in this module
+# (they are not duplicated in contracts.py), so they stay here.
 class CoverageGeometry(Enum):
     """Coverage geometry types per NFPA 72"""
     CIRCULAR = "circular"
@@ -80,18 +95,6 @@ class HeatDetectionMode(Enum):
     """Heat detector detection modes"""
     CIRCULAR = "circular"  # Euclidean (for smoke)
     SQUARE_GRID = "square_grid"  # Chebyshev (for heat)
-class CeilingType(Enum):
-    """Ceiling configuration types"""
-    FLAT = "FLAT"
-    GABLE = "GABLE"
-    SHED = "SHED"
-    TRUSS = "TRUSS"
-    COMBUSTIBLE = "COMBUSTIBLE"
-    # Additional types used by expert system
-    SMOOTH = "SMOOTH"
-    BEAMED = "BEAMED"
-    SLOPED = "SLOPED"
-    CORRIDOR = "CORRIDOR"
 
 # ============================================================================
 # EXCEPTIONS - NFPA Compliance Errors

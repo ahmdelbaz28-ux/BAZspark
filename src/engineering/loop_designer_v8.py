@@ -38,12 +38,18 @@ from ..v8_core.decision_provenance import (
 
 @dataclass
 class Loop:
-    """Loop data structure (legacy, for backward compat)."""
+    """Loop data structure (legacy, for backward compat).
+
+    zone_id added per NFPA 72 §12.3.1/§12.3.2 — a single fault must not
+    affect more than one zone. This field is used by fault_isolator_injector.py
+    to determine where to place fault isolators on SLC loops.
+    """
     id: str
     panel_pos: tuple[float, float]
     order: list  # list[(device_idx, position)]
     total_length_m: float = 0.0
     class_b: bool = True
+    zone_id: Optional[str] = None  # NFPA 72 §12.3.1/§12.3.2 fault isolation zone
 
 
 @dataclass

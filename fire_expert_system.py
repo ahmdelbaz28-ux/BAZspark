@@ -214,21 +214,47 @@ class NFPA72:
     }
     
     # DEPRECATED: Hardcoded speaker coverage replaced by acoustic_calculator.py
-    # Use calculate_min_speakers_for_room() from fireai.core.acoustic_calculator
-    # which properly computes distance-based SPL per NFPA 72 §18.4/§18.5
-    # with inverse square law, room absorption, and ambient noise compensation.
+    # Use get_speaker_coverage_radius() or calculate_min_speakers_for_room()
+    # from fireai.core.acoustic_calculator which properly computes distance-based
+    # SPL per NFPA 72 §18.4/§18.5 with inverse square law, room absorption,
+    # and ambient noise compensation.
+    #
     # Kept for backward compatibility only — DO NOT use for new code.
+    # Accessing SPEAKER_COVERAGE will emit a DeprecationWarning in v2.
     SPEAKER_COVERAGE = {
-        "general": 30.0,               # DEPRECATED: Use acoustic_calculator
-        "intelligible": 21.0,          # DEPRECATED: Use acoustic_calculator
+        "general": 30.0,               # DEPRECATED: Use acoustic_calculator.get_speaker_coverage_radius()
+        "intelligible": 21.0,          # DEPRECATED: Use acoustic_calculator.get_speaker_coverage_radius(mode="private")
     }
 
-    # Reference to proper acoustic calculator module
-    # from fireai.core.acoustic_calculator import (
-    #     calculate_min_speakers_for_room,
-    #     check_audibility_compliance,
-    #     calculate_spl_at_distance,
-    # )
+    @classmethod
+    def get_speaker_coverage_radius(
+        cls,
+        source_dba: float = 95.0,
+        ambient_dba: float = 55.0,
+        mode: str = "public",
+        room_height_m: float = 3.0,
+    ) -> float:
+        """Compute speaker coverage radius using proper acoustic calculations.
+
+        Replaces the hardcoded SPEAKER_COVERAGE constant with physics-based
+        SPL calculation per NFPA 72 §18.4/§18.5.
+
+        Delegates to fireai.core.acoustic_calculator.get_speaker_coverage_radius().
+        """
+        import warnings
+        warnings.warn(
+            "NFPA72.SPEAKER_COVERAGE is deprecated. Use "
+            "fireai.core.acoustic_calculator.get_speaker_coverage_radius() directly.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        from fireai.core.acoustic_calculator import get_speaker_coverage_radius
+        return get_speaker_coverage_radius(
+            source_dba=source_dba,
+            ambient_dba=ambient_dba,
+            mode=mode,
+            room_height_m=room_height_m,
+        )
     
     # Duct Detector Coverage
     DUCT_DETECTOR_COVERAGE = {

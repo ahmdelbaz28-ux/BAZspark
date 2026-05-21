@@ -19,6 +19,7 @@ This produces an ACTUAL routing (sequence of devices) — not just counts.
 from __future__ import annotations
 import math
 from dataclasses import dataclass, field
+from typing import Optional
 import numpy as np
 
 
@@ -29,6 +30,7 @@ class Loop:
     order: list                       # list[(device_idx, position)]
     total_length_m: float = 0.0
     class_b: bool = True               # True = open ended; False = Class A (closed)
+    zone_id: Optional[str] = None      # NFPA 72 §12.3.1/§12.3.2 fault isolation zone
 
 
 @dataclass
