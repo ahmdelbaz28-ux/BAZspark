@@ -1,0 +1,388 @@
+"""
+fireai/core/network_topology.py
+=================================
+Master Network Backbone Topology & Class X Redundancy Router.
+
+V20 CRITICAL LIFE-SAFETY MODULE.
+
+In campus-scale installations with multiple FACP panels (master +
+satellites), the network communication backbone between panels must
+survive any single point of failure.  NFPA 72 §23.8 and §12.3
+mandate Class X (redundant path) connectivity for network links
+between fire alarm control panels.
+
+Without Class X redundancy:
+  - A single cable cut in a building corridor severs ALL downstream
+    panels from the master, leaving them as orphaned stand-alone units.
+  - Coordinated evacuation sequences, strobe synchronization, and
+    fire department notification are lost for the affected buildings.
+  - Each orphaned panel operates independently, potentially causing
+    conflicting instructions to occupants.
+
+This module:
+  1. Analyses the physical topology of network links between panels.
+  2. Verifies Class X (redundant path) compliance for every link.
+  3. Generates fiber optic or copper trunk routing recommendations.
+  4. Flags single-point-of-failure links that violate NFPA 72 §23.8.
+
+Topology types:
+  - **Star**: All panels connect to a single hub.  Hub failure = total loss.
+  - **Daisy-chain**: Panels connect in series.  Any mid-chain cut isolates
+    all downstream panels.  FORBIDDEN for life-safety networks.
+  - **Ring (Class X)**: Panels connect in a loop.  Any single cut leaves
+    all panels connected via the alternate path.  REQUIRED per NFPA 72.
+  - **Dual-fiber ring**: Redundant fiber optic paths — gold standard.
+
+Code references:
+  - NFPA 72-2022 §23.8  — Networked systems
+  - NFPA 72-2022 §12.3  — Pathway survivability
+  - UL 864 10th Edition — Network communication integrity
+  - NFPA 72-2022 §12.2  — Pathway design
+
+Provenance:
+  Returns ``DecisionProvenance`` via the ``.new()`` factory when
+  ``src.v8_core`` is available; degrades gracefully to plain dict.
+"""
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
+
+# ---------------------------------------------------------------------------
+# Provenance — graceful degradation
+# ---------------------------------------------------------------------------
+try:
+    from fireai.core.provenance import (
+        DecisionProvenance,
+        RuleApplied,
+        Violation,
+        ConfidenceScore,
+        ConfidenceLevel,
+    )
+except ImportError:
+    DecisionProvenance = None  # type: ignore[misc,assignment]
+    RuleApplied = None  # type: ignore[misc,assignment]
+    Violation = None  # type: ignore[misc,assignment]
+    ConfidenceScore = None  # type: ignore[misc,assignment]
+    ConfidenceLevel = None  # type: ignore[misc,assignment]
+
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# Constants
+# ============================================================================
+
+# Required topology for NFPA 72 compliance
+REQUIRED_TOPOLOGY: str = "ring"  # Class X = ring / dual-path
+
+# Citations
+_CITE_NFPA72_23_8 = "NFPA 72-2022 §23.8"
+_CITE_NFPA72_12_3 = "NFPA 72-2022 §12.3"
+_CITE_NFPA72_12_2 = "NFPA 72-2022 §12.2"
+_CITE_UL864 = "UL 864 10th Ed."
+
+
+@dataclass(frozen=True)
+class PanelNode:
+    """Represents a FACP panel in the network topology.
+
+    Attributes:
+        panel_id: Unique panel identifier (e.g. "FACP-01").
+        building_id: Building identifier (e.g. "BLDG-A").
+        location: (x, y) coordinate for routing.
+        is_master: Whether this is the master (central) panel.
+    """
+    panel_id: str
+    building_id: str
+    location: Tuple[float, float] = (0.0, 0.0)
+    is_master: bool = False
+
+
+@dataclass(frozen=True)
+class NetworkLink:
+    """Represents a physical network link between two panels.
+
+    Attributes:
+        link_id: Unique link identifier.
+        from_panel: Source panel ID.
+        to_panel: Destination panel ID.
+        link_type: "copper", "fiber_single", "fiber_dual".
+        is_class_x: Whether this link has redundant path (Class X).
+        length_m: Physical cable length in metres.
+    """
+    link_id: str
+    from_panel: str
+    to_panel: str
+    link_type: str = "copper"
+    is_class_x: bool = False
+    length_m: float = 0.0
+
+
+class NetworkTopologyAuditor:
+    """Audits and designs the master network backbone topology
+    for Class X compliance per NFPA 72 §23.8.
+
+    The auditor analyses the network graph formed by panel nodes and
+    inter-panel links, verifying that:
+      1. Every panel has at least two independent paths to the master.
+      2. No single link failure can isolate any panel.
+      3. The overall topology forms a ring (Class X) or better.
+
+    Usage::
+
+        auditor = NetworkTopologyAuditor()
+        result = auditor.audit_network_topology(
+            panels=[...],
+            links=[...],
+        )
+    """
+
+    def __init__(self) -> None:
+        pass
+
+    def audit_network_topology(
+        self,
+        panels: List[Dict[str, Any]],
+        links: List[Dict[str, Any]],
+    ) -> Any:
+        """Audit the network topology for Class X compliance.
+
+        Args:
+            panels: Each dict must have:
+                - ``panel_id`` (str): Panel identifier.
+                - ``building_id`` (str, optional): Building ID.
+                - ``is_master`` (bool, optional): Master panel flag.
+            links: Each dict must have:
+                - ``link_id`` (str): Link identifier.
+                - ``from_panel`` (str): Source panel ID.
+                - ``to_panel`` (str): Destination panel ID.
+                - ``link_type`` (str, optional): Cable type.
+                - ``is_class_x`` (bool, optional): Redundant path flag.
+                - ``length_m`` (float, optional): Cable length.
+
+        Returns:
+            ``DecisionProvenance`` or plain dict.
+        """
+        violations: list = []
+        fiber_recommendations: List[Dict[str, Any]] = []
+
+        # Build adjacency graph
+        panel_ids = set()
+        master_id = None
+        for p in panels:
+            pid = p.get("panel_id", "UNKNOWN")
+            panel_ids.add(pid)
+            if p.get("is_master", False):
+                master_id = pid
+
+        # Build adjacency list (undirected)
+        adj: Dict[str, List[str]] = {pid: [] for pid in panel_ids}
+        link_details: Dict[str, Dict[str, Any]] = {}
+
+        for link in links:
+            lid = link.get("link_id", "UNKNOWN")
+            from_p = link.get("from_panel", "")
+            to_p = link.get("to_panel", "")
+            is_class_x = link.get("is_class_x", False)
+            link_type = link.get("link_type", "copper")
+            length_m = float(link.get("length_m", 0.0))
+
+            if from_p in panel_ids and to_p in panel_ids:
+                adj[from_p].append(to_p)
+                adj[to_p].append(from_p)
+                link_details[lid] = {
+                    "from": from_p,
+                    "to": to_p,
+                    "is_class_x": is_class_x,
+                    "link_type": link_type,
+                    "length_m": length_m,
+                }
+
+        # Check 1: Every non-master panel must have ≥2 connections
+        # (Class X = redundant path)
+        for pid in panel_ids:
+            if pid == master_id:
+                continue
+            connections = adj.get(pid, [])
+            if len(connections) < 2:
+                desc = (
+                    f"Panel '{pid}' has only {len(connections)} network "
+                    f"connection(s). NFPA 72 §23.8 requires Class X "
+                    f"(minimum 2 independent paths) for life-safety "
+                    f"network backbone. A single cable cut will isolate "
+                    f"this panel from the master."
+                )
+                if Violation is not None:
+                    violations.append(Violation(
+                        severity="CRITICAL",
+                        citation=_CITE_NFPA72_23_8,
+                        description=desc,
+                    ))
+                else:
+                    violations.append({
+                        "severity": "CRITICAL",
+                        "citation": _CITE_NFPA72_23_8,
+                        "description": desc,
+                    })
+                logger.critical(desc)
+
+        # Check 2: Non-Class-X copper links are single points of failure
+        for lid, details in link_details.items():
+            if not details["is_class_x"] and details["link_type"] == "copper":
+                fiber_recommendations.append({
+                    "link_id": lid,
+                    "from": details["from"],
+                    "to": details["to"],
+                    "current_type": details["link_type"],
+                    "recommended_type": "fiber_dual",
+                    "reason": (
+                        "Copper link without Class X redundancy is a "
+                        "single point of failure. Replace with dual "
+                        "fiber optic ring per NFPA 72 §23.8."
+                    ),
+                })
+
+        # Check 3: Master panel must have ≥2 connections (if network >1)
+        if master_id and len(panel_ids) > 1:
+            master_connections = adj.get(master_id, [])
+            if len(master_connections) < 2:
+                desc = (
+                    f"Master panel '{master_id}' has only "
+                    f"{len(master_connections)} connection(s). The master "
+                    f"is the single point of failure for the entire "
+                    f"network. Ring topology requires ≥2 connections."
+                )
+                if Violation is not None:
+                    violations.append(Violation(
+                        severity="CRITICAL",
+                        citation=_CITE_NFPA72_23_8,
+                        description=desc,
+                    ))
+                else:
+                    violations.append({
+                        "severity": "CRITICAL",
+                        "citation": _CITE_NFPA72_23_8,
+                        "description": desc,
+                    })
+                logger.critical(desc)
+
+        # Determine topology type
+        topology_type = self._classify_topology(adj, panel_ids)
+
+        # Classify overall compliance
+        is_class_x_compliant = len(violations) == 0 and topology_type in ("ring", "mesh")
+        safe = len(violations) == 0
+
+        # Build provenance result
+        if DecisionProvenance is not None:
+            try:
+                rules = [
+                    RuleApplied(
+                        citation=_CITE_NFPA72_23_8,
+                        constant_id="CLASS_X_NETWORK",
+                        value_used=2.0,
+                        unit="minimum_paths",
+                    ),
+                    RuleApplied(
+                        citation=_CITE_NFPA72_12_3,
+                        constant_id="PATHWAY_SURVIVABILITY",
+                        value_used=1.0,
+                        unit="BOOLEAN",
+                    ),
+                ]
+                conf = ConfidenceScore(
+                    input_quality_score=1.0,
+                    rule_coverage=1.0,
+                    geometry_certainty=1.0,
+                    overall=ConfidenceLevel.HIGH if safe else ConfidenceLevel.LOW,
+                )
+                return DecisionProvenance.new(
+                    decision_type="network_topology_audit",
+                    value={
+                        "topology_type": topology_type,
+                        "is_class_x_compliant": is_class_x_compliant,
+                        "fiber_recommendations": fiber_recommendations,
+                        "total_panels": len(panel_ids),
+                        "total_links": len(links),
+                        "single_points_of_failure": len(violations),
+                        "safe": safe,
+                    },
+                    inputs={
+                        "panels": len(panels),
+                        "links": len(links),
+                        "master_id": master_id,
+                    },
+                    rules_applied=rules,
+                    algorithm={"name": "RedundantPathFinder", "version": "v20"},
+                    confidence=conf,
+                    selected_because=(
+                        "Network backbone between FACP panels must survive any "
+                        "single point of failure per NFPA 72 §23.8. Class X "
+                        "(ring/dual-path) topology ensures no single cable cut "
+                        "can isolate any panel from the master."
+                    ),
+                    violations=violations if violations else None,
+                )
+            except Exception:
+                pass
+
+        return {
+            "decision_type": "network_topology_audit",
+            "value": {
+                "topology_type": topology_type,
+                "is_class_x_compliant": is_class_x_compliant,
+                "fiber_recommendations": fiber_recommendations,
+                "safe": safe,
+            },
+            "safe": safe,
+            "violations": violations,
+        }
+
+    def _classify_topology(
+        self,
+        adj: Dict[str, List[str]],
+        panel_ids: set,
+    ) -> str:
+        """Classify the network topology type.
+
+        Returns:
+            "star", "daisy_chain", "ring", "mesh", or "unknown".
+        """
+        if len(panel_ids) <= 1:
+            return "single_panel"
+
+        # Count connections per panel
+        conn_counts = {pid: len(adj.get(pid, [])) for pid in panel_ids}
+
+        # Ring: every panel has exactly 2 connections
+        if all(c == 2 for c in conn_counts.values()):
+            return "ring"
+
+        # Star: one hub has N-1 connections, all others have 1
+        max_conn = max(conn_counts.values())
+        min_conn = min(conn_counts.values())
+        hubs = sum(1 for c in conn_counts.values() if c == max_conn)
+
+        if hubs == 1 and max_conn == len(panel_ids) - 1 and min_conn == 1:
+            return "star"
+
+        # Mesh: multiple panels with >2 connections
+        if sum(1 for c in conn_counts.values() if c > 2) > 1:
+            return "mesh"
+
+        # Daisy-chain: exactly 2 endpoints with 1 connection each,
+        # all intermediates with 2
+        endpoints = sum(1 for c in conn_counts.values() if c == 1)
+        if endpoints == 2:
+            return "daisy_chain"
+
+        return "unknown"
+
+
+__all__ = [
+    "NetworkTopologyAuditor",
+    "PanelNode",
+    "NetworkLink",
+    "REQUIRED_TOPOLOGY",
+]

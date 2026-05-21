@@ -37,6 +37,8 @@ _PUBLIC_NAMES = [
     "EnterpriseOrchestrator",
     # V19 High-Rise Engineering Suite
     "ElevatorShuntTripAuditor", "NACBoosterAllocator", "SeismicJointPenalyer",
+    # V20 Digital Signaling & Master Network Architecture
+    "SLCCapacitanceAuditor", "StairwellSmokeControlIntegrator", "NetworkTopologyAuditor",
 ]
 
 

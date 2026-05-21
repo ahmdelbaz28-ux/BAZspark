@@ -73,6 +73,11 @@ from fireai.core.elevator_shunt_trip import ElevatorShuntTripAuditor
 from fireai.core.bps_allocator import NACBoosterAllocator
 from fireai.core.seismic_joint_penalyer import SeismicJointPenalyer
 
+# V20 — SLC Capacitance + Stairwell Smoke Control + Network Topology
+from fireai.core.slc_capacitance import SLCCapacitanceAuditor
+from fireai.core.stairwell_smoke_control import StairwellSmokeControlIntegrator
+from fireai.core.network_topology import NetworkTopologyAuditor
+
 __all__ = [
     "__version__",
     # Analysers
@@ -142,4 +147,8 @@ __all__ = [
     "ElevatorShuntTripAuditor",
     "NACBoosterAllocator",
     "SeismicJointPenalyer",
+    # V20 — SLC Capacitance + Stairwell Smoke Control + Network Topology
+    "SLCCapacitanceAuditor",
+    "StairwellSmokeControlIntegrator",
+    "NetworkTopologyAuditor",
 ]
