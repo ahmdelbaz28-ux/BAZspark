@@ -68,6 +68,11 @@ from fireai.core.safe_building_engine import SafeBuildingEngine
 from fireai.core.dxf_table_schedule import TrueAECDraftingTable
 from fireai.core.routing_engine_v10 import EliteClassARouter, ArchitecturalWall, RouteSegment
 
+# V19 — Elevator Shunt-Trip + NAC Booster Allocator + Seismic Joint Penalty
+from fireai.core.elevator_shunt_trip import ElevatorShuntTripAuditor
+from fireai.core.bps_allocator import NACBoosterAllocator
+from fireai.core.seismic_joint_penalyer import SeismicJointPenalyer
+
 __all__ = [
     "__version__",
     # Analysers
@@ -133,4 +138,8 @@ __all__ = [
     "EliteClassARouter",
     "ArchitecturalWall",
     "RouteSegment",
+    # V19 — Elevator Shunt-Trip + NAC Booster + Seismic Joint
+    "ElevatorShuntTripAuditor",
+    "NACBoosterAllocator",
+    "SeismicJointPenalyer",
 ]

@@ -35,6 +35,8 @@ _PUBLIC_NAMES = [
     # V17 Critical Life-Safety Triad
     "AcousticSPLCalculator", "StrictBatterySizer", "TenabilityEvaluator",
     "EnterpriseOrchestrator",
+    # V19 High-Rise Engineering Suite
+    "ElevatorShuntTripAuditor", "NACBoosterAllocator", "SeismicJointPenalyer",
 ]
 
 
