@@ -1,3 +1,0 @@
-[
-  {"call": "google:search", "queries": ["NFPA 101 ASET RSET calculation", "Fire alarm IoT digital twin architecture"]}
-]

@@ -1,3 +1,0 @@
-[
-  {"action": "SYSTEM_UPGRADE", "status": "EXECUTING", "mode": "ELITE_TOPOLOGY_ARCHITECTURE"}
-]

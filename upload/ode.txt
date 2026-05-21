@@ -1,3 +1,0 @@
-[
-  {"action": "SYSTEM_UPGRADE", "status": "EXECUTING", "mode": "STRICT_ENGINEERING"}
-]
