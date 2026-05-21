@@ -17,6 +17,7 @@ from fireai.core.nfpa72_models import (
     # Explicit re-exports for type-checkers and IDEs
     DetectorType,
     HeatDetectionMode,
+    CoverageGeometry,
     CeilingType,
     NFPAComplianceError,
     CeilingHeightError,
@@ -44,6 +45,7 @@ from fireai.core.nfpa72_models import (
 __all__ = [
     "DetectorType",
     "HeatDetectionMode",
+    "CoverageGeometry",
     "CeilingType",
     "NFPAComplianceError",
     "CeilingHeightError",

@@ -856,6 +856,7 @@ def _get_max_internal(h: float) -> float:
 __all__ = [
     "DetectorType",
     "HeatDetectionMode",
+    "CoverageGeometry",
     "CeilingType",
     "NFPAComplianceError",
     "CeilingHeightError",

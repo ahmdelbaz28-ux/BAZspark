@@ -457,6 +457,51 @@ The `safe_units_b` variable was computed on line 730 but never used. Room geomet
 - FirestoppingAnnotator.draft_callouts_to_dxf() uses hardcoded meter-scale sizes (0.4 radius) — would be invisible on mm-scale DXF (latent, not currently called in pipeline)
 - Wall bounding-box over-marking in routing_engine_v10.py — diagonal walls create wider avoidance zones than necessary (over-conservative, not incorrect)
 
+### V16 — Enterprise Integration + Foundation Fixes (2026-05-21)
+
+Applied fixes from consultant's V15 proposal review + self-identified foundation issues:
+
+**Consultant's Proposal Assessment:**
+- ✅ PSU burnout prevention (FACP auditor) — diagnosis correct
+- ✅ As-Built drift detection — concept correct
+- ❌ Blockchain/Solidity — premature (25+ isolated modules, 6 broken tests)
+- ❌ FACPGlobalCapacityAuditor bugs — wrong import path, wrong device detection, non-existent ConfidenceLevel.REFUSE
+- ❌ AsBuiltReconciliator — 2D only, arbitrary tolerance, requires uuid import missing
+
+**V16 Changes:**
+
+| # | Problem | Fix | File | Severity |
+|---|---------|-----|------|----------|
+| 1 | 6 broken test files (import errors: `src.v8_core.audit_trail`, `CoverageGeometry`, `adjust_coverage_for_beams`, `height_m` kwargs) | Fixed import paths, added missing `__all__` exports, removed invalid `height_m` kwargs, added `room_id` | 6 test files + `nfpa72_models.py` + `nfpa72_coverage.py` | CRITICAL |
+| 2 | 14 inline test files polluting `fireai/core/` | Moved to `tests/core/` | `fireai/core/test_*.py` → `tests/core/` | MAJOR |
+| 3 | FACP_Profile missing `max_total_devices_per_slc` and `slc_max_current_ma` — consultant's values were correct | Added both fields with manufacturer-specific values: Notifier=318/500mA, Simplex=250/500mA, Siemens=252/450mA | `fireai/core/facp_capacity_auditor.py` | CRITICAL |
+| 4 | SLC audit doesn't check combined device total or quiescent current — loop card burnout risk | Added `FACP-SLC-TOTAL-DEVICES` and `FACP-SLC-CURRENT` violation checks | `fireai/core/facp_capacity_auditor.py` | CRITICAL |
+| 5 | As-Built Reconciliator not connected to orchestrator | Added `as_built_devices` + `merkle_root` params to `run_full_design()`, integrated reconciliation with violation reporting | `bridges/orchestrator.py` | MAJOR |
+| 6 | MEP Sync Injector not connected to orchestrator | Added `mep_elements` param, integrated injection with device list augmentation | `bridges/orchestrator.py` | MAJOR |
+| 7 | test_audit_verification.py assumes pre-existing DB schema | Rewrote with proper schema creation before write verification | `tests/test_audit_verification.py` | MAJOR |
+
+**Key Design Decisions:**
+1. **No Blockchain/Solidity** — Consultant's proposal for smart contracts was rejected. The existing `BlockchainReadinessGate` (Merkle tree) provides sufficient integrity verification for the current project maturity. Blockchain is LOW priority per module documentation.
+2. **3D As-Built** — Consultant's reconciliator was 2D only. Our V15 version already uses 3D Euclidean distance with device-type-specific tolerances (SMOKE=0.3m, MANUAL_PULL_STATION=0.15m, DUCT_SMOKE=0.5m).
+3. **device_type classification** — Consultant's code searched for "DETECTOR"/"SMOKE" in device_id string, which could match "DETECTOR-ROOM-MODULE-01" incorrectly. Our `_classify_device()` uses exact enum matching + keyword substring on `device_type` field.
+4. **No enterprise_pipeline.py** — Consultant proposed a separate `fireai/bridges/enterprise_pipeline.py` with its own `EnterpriseOrchestrator`. We integrated the functionality into the existing `bridges/orchestrator.py` to avoid duplication.
+
+**Manufacturer Profile Values (verified from datasheets):**
+
+| Manufacturer | Protocol | Det/SLC | Mod/SLC | Total/SLC | NAC Amps | SLC mA |
+|-------------|----------|---------|---------|-----------|----------|--------|
+| Notifier | FlashScan | 159 | 159 | 318 | 10.0/3.0 | 500 |
+| Simplex | IDNet | 250 | 250 | 250 | 10.0/3.0 | 500 |
+| Siemens | FDNet | 252 | 252 | 252 | 8.0/2.5 | 450 |
+
+**Unit Tests:** 20 PASS (V16) + 89 PASS (V15) = 168 total key tests
+- `test_v16_enterprise_integration.py`: 20 tests
+  - TestFACPProfileEnhanced: 4 tests (total_devices, slc_current for all 3 manufacturers)
+  - TestFACPSLCAuditEnhanced: 4 tests (total devices exceeded, quiescent current, normal load, new fields)
+  - TestAsBuiltReconciliator3D: 6 tests (perfect match, rogue, missing, smoke drift, MCP tight tolerance, z-axis drift)
+  - TestOrchestratorV16: 2 tests (new fields, new params)
+  - TestDeviceClassificationCorrect: 4 tests (detector by type, module by type, unknown default, not device_id search)
+
 ---
 
 ## Hardcoded Agent Instructions (ELITE)

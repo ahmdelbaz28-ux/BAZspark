@@ -769,6 +769,8 @@ __all__ = [\
 \
     "get_sloped_ceiling_constraints",\
 \
+    "adjust_coverage_for_beams",\
+\
 ]
 def verify_full_coverage(
     room_polygon,

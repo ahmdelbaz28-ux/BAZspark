@@ -16,7 +16,7 @@ def test_old_api_rejected():
 
 def test_single_device_optimal():
     """Test with RoomSpec - single device in small room"""
-    room = RoomSpec(name='test', width_m=4, depth_m=4, height_m=3)
+    room = RoomSpec(room_id='test-1', name='test', width_m=4, depth_m=4)
     engine = OptimalMIPEngine(room)
     devices, count, success, meta = engine.solve()
     
@@ -27,7 +27,7 @@ def test_single_device_optimal():
 
 def test_infeasible_case():
     """Test feasible case with 10x10 room"""
-    room = RoomSpec(name='test', width_m=10, depth_m=10, height_m=3)
+    room = RoomSpec(room_id='test-2', name='test', width_m=10, depth_m=10)
     engine = OptimalMIPEngine(room)
     devices, count, success, meta = engine.solve()
     

@@ -5,7 +5,10 @@ Quick test for LearningStore calibration functionality.
 """
 
 import sys
-sys.path.insert(0, '/workspace/project/revit')
+from pathlib import Path
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 from fireai.core.learning_store import LearningStore
 

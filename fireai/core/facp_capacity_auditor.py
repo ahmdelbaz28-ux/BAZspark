@@ -92,14 +92,23 @@ class FACP_Profile:
         manufacturer:  Human-readable manufacturer name (e.g. "Notifier FlashScan").
         max_detectors_per_slc: Maximum detector addresses per SLC loop.
         max_modules_per_slc:   Maximum module addresses per SLC loop.
+        max_total_devices_per_slc: Maximum total devices (det+mod) per SLC loop.
+            Some manufacturers (Notifier FlashScan) cap the combined total
+            separately from the individual detector/module limits.
+            Others (Simplex IDNet) use a shared address pool where
+            max_total = max_detectors = max_modules.
         max_total_nac_amps:    Aggregate NAC current the PSU can sustain (A).
         max_amps_per_nac:      Per-circuit NAC current limit (A).
+        slc_max_current_ma:    Maximum quiescent current per SLC loop (mA).
+            Exceeding this can burn the SLC card's output circuit.
     """
     manufacturer: str
     max_detectors_per_slc: int
     max_modules_per_slc: int
+    max_total_devices_per_slc: int
     max_total_nac_amps: float
     max_amps_per_nac: float
+    slc_max_current_ma: float
 
 
 # ============================================================================
@@ -110,22 +119,28 @@ _MANUFACTURER_PROFILES: Dict[str, FACP_Profile] = {
         manufacturer="Notifier FlashScan",
         max_detectors_per_slc=159,
         max_modules_per_slc=159,
+        max_total_devices_per_slc=318,
         max_total_nac_amps=10.0,
         max_amps_per_nac=3.0,
+        slc_max_current_ma=500.0,
     ),
     "simplex": FACP_Profile(
-        manufacturer="Simplex",
+        manufacturer="Simplex IDNet",
         max_detectors_per_slc=250,
         max_modules_per_slc=250,
+        max_total_devices_per_slc=250,
         max_total_nac_amps=10.0,
         max_amps_per_nac=3.0,
+        slc_max_current_ma=500.0,
     ),
     "siemens": FACP_Profile(
-        manufacturer="Siemens",
-        max_detectors_per_slc=250,
-        max_modules_per_slc=250,
+        manufacturer="Siemens FDNet",
+        max_detectors_per_slc=252,
+        max_modules_per_slc=252,
+        max_total_devices_per_slc=252,
         max_total_nac_amps=8.0,
         max_amps_per_nac=2.5,
+        slc_max_current_ma=450.0,
     ),
 }
 
@@ -446,12 +461,22 @@ class FACPCapacityAuditor:
                 else:
                     module_count += 1
 
+            total_devices = detector_count + module_count
+
+            # Quiescent current estimation (each device draws some standby current)
+            quiescent_current_ma = 0.0
+            for dev in devices:
+                quiescent_current_ma += float(dev.get("quiescent_ma", 0.8))
+
             loop_summary: Dict[str, Any] = {
                 "loop_id": loop_id,
                 "detector_count": detector_count,
                 "module_count": module_count,
+                "total_devices": total_devices,
+                "quiescent_current_ma": round(quiescent_current_ma, 2),
                 "max_detectors_per_slc": self.profile.max_detectors_per_slc,
                 "max_modules_per_slc": self.profile.max_modules_per_slc,
+                "max_total_devices_per_slc": self.profile.max_total_devices_per_slc,
             }
 
             loop_failed = False
@@ -483,6 +508,43 @@ class FACPCapacityAuditor:
                 violations.append(
                     _build_violation(
                         code="FACP-SLC-MODULES",
+                        message=msg,
+                        severity="CRITICAL",
+                    )
+                )
+                logger.critical(msg)
+                loop_failed = True
+
+            # Total device limit check (V16: some manufacturers cap combined total)
+            if total_devices > self.profile.max_total_devices_per_slc:
+                msg = (
+                    f"SLC loop '{loop_id}': {total_devices} total devices "
+                    f"exceeds combined limit of "
+                    f"{self.profile.max_total_devices_per_slc} "
+                    f"for {self.profile.manufacturer}"
+                )
+                violations.append(
+                    _build_violation(
+                        code="FACP-SLC-TOTAL-DEVICES",
+                        message=msg,
+                        severity="CRITICAL",
+                    )
+                )
+                logger.critical(msg)
+                loop_failed = True
+
+            # SLC quiescent current check (V16: loop card burnout prevention)
+            if quiescent_current_ma > self.profile.slc_max_current_ma:
+                msg = (
+                    f"SLC loop '{loop_id}': quiescent current "
+                    f"{quiescent_current_ma:.1f} mA exceeds SLC card "
+                    f"limit of {self.profile.slc_max_current_ma:.0f} mA "
+                    f"for {self.profile.manufacturer} — risk of loop card "
+                    f"circuit burnout"
+                )
+                violations.append(
+                    _build_violation(
+                        code="FACP-SLC-CURRENT",
                         message=msg,
                         severity="CRITICAL",
                     )

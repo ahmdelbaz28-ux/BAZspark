@@ -5,8 +5,11 @@ Tests the resilience and enhanced features.
 """
 
 import sys
-# Absolute path to project root
-sys.path.insert(0, '/workspace/project/revit')
+# Resolve project root relative to this file's new location
+from pathlib import Path
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 from fireai.core.fire_expert_system_v10_enhanced import (
     analyse_room_enhanced,

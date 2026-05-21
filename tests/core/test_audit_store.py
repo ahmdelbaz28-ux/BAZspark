@@ -7,19 +7,22 @@ Verifies tamper-evident audit log functionality.
 import sqlite3
 import os
 import sys
+from pathlib import Path
 
-# Add fireai/core to path
-sys.path.insert(0, "/workspace/project/revit/fireai/core")
+# Ensure project root is on sys.path for fireai imports
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
-# Database path (must match audit_store.py)
-DATABASE_PATH = "/workspace/project/revit/fireai/core/audit_store.db"
+# Import using proper package path
+from fireai.core import audit_store
 
-# Remove old database before tests
-if os.path.exists(DATABASE_PATH):
+# Database path (must match audit_store.py) – resolve relative to audit_store module
+DATABASE_PATH = os.path.join(os.path.dirname(audit_store.__file__), "audit_store.db")
+
+# Remove old database before tests (only when run as a script)
+if __name__ == "__main__" and os.path.exists(DATABASE_PATH):
     os.remove(DATABASE_PATH)
-
-# Import after removing old DB
-import audit_store
 
 
 def test_basic_chain():
@@ -95,7 +98,7 @@ def test_trigger_prevention():
     
     # This will re-create the database with triggers
     import importlib
-    importlib.reload(importlib.import_module('audit_store'))
+    importlib.reload(importlib.import_module('fireai.core.audit_store'))
     
     # Add event
     audit_store.add_event("TEST", "room_001", {"data": "test"})

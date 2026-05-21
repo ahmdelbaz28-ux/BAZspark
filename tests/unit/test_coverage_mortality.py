@@ -26,7 +26,7 @@ class TestMortalityEdgeCases:
         assert radius <= 6.4
 
     def test_no_detectors(self):
-        room = RoomSpec(name="Test", width_m=10, depth_m=10, height_m=3)
+        room = RoomSpec(room_id="test-1", name="Test", width_m=10, depth_m=10)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         result = check_coverage_polygon([], room, ceiling)
         assert result.coverage_percentage == 0
@@ -38,7 +38,7 @@ class TestMortalityRoomShapes:
     def test_l_shaped_room(self):
         from shapely.geometry import Polygon
         l_shaped = Polygon([(0, 0), (10, 0), (10, 5), (5, 5), (5, 10), (0, 10)])
-        room = RoomSpec(name="L", width_m=10, depth_m=10, height_m=3, polygon=l_shaped)
+        room = RoomSpec(room_id="l-shape", name="L", width_m=10, depth_m=10, polygon=l_shaped)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         result = check_coverage_polygon([(2, 2), (8, 8)], room, ceiling)
         assert result is not None
@@ -64,13 +64,13 @@ class TestMortalitySpacing:
     """Detector spacing calculations"""
 
     def test_standard_room(self):
-        room = RoomSpec(name="Test", width_m=10, depth_m=10, height_m=3)
+        room = RoomSpec(room_id="t", name="Test", width_m=10, depth_m=10)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         num_w, num_d = calculate_smoke_detector_spacing(ceiling, 10, 10)
         assert num_w >= 1 and num_d >= 1
 
     def test_large_room(self):
-        room = RoomSpec(name="Large", width_m=30, depth_m=20, height_m=3)
+        room = RoomSpec(room_id="l", name="Large", width_m=30, depth_m=20)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         num_w, num_d = calculate_smoke_detector_spacing(ceiling, 30, 20)
         assert num_w >= 2 and num_d >= 2
@@ -80,7 +80,7 @@ class TestMortalityVoronoi:
     """Voronoi coverage"""
 
     def test_single_detector(self):
-        room = RoomSpec(name="Test", width_m=10, depth_m=10, height_m=3)
+        room = RoomSpec(room_id="t", name="Test", width_m=10, depth_m=10)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         result = check_voronoi_coverage([(5, 5)], room, ceiling)
         assert result is not None
@@ -90,7 +90,7 @@ class TestMortalityVerify:
     """Full verification"""
 
     def test_adequate_coverage(self):
-        room = RoomSpec(name="Test", width_m=10, depth_m=10, height_m=3)
+        room = RoomSpec(room_id="t", name="Test", width_m=10, depth_m=10)
         polygon = room.polygon
         detectors = [(2.5, 2.5), (7.5, 2.5), (2.5, 7.5), (7.5, 7.5)]
         result = verify_full_coverage(polygon, detectors, 'circular', 4.55)
@@ -101,7 +101,7 @@ class TestMortalityStress:
     """Stress tests"""
 
     def test_many_detectors(self):
-        room = RoomSpec(name="Test", width_m=50, depth_m=50, height_m=3)
+        room = RoomSpec(room_id="t", name="Test", width_m=50, depth_m=50)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         detectors = [(x, y) for x in range(2, 50, 4) for y in range(2, 50, 4)]
         result = check_coverage_polygon(detectors, room, ceiling)

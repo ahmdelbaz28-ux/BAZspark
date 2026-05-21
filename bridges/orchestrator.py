@@ -52,6 +52,10 @@ class FullDesignResult:
     facp_audit: dict = field(default_factory=dict)
     # V15: Pathway survivability classification
     pathway_survivability: dict = field(default_factory=dict)
+    # V16: As-built reconciliation result
+    as_built_reconciliation: dict = field(default_factory=dict)
+    # V16: MEP sync injection result
+    mep_sync: dict = field(default_factory=dict)
 
 
 def run_full_design(
@@ -70,6 +74,9 @@ def run_full_design(
     facp_manufacturer: str = "notifier",
     ducts: list = None,
     building_spec: dict = None,
+    as_built_devices: list = None,
+    merkle_root: str = None,
+    mep_elements: list = None,
 ) -> FullDesignResult:
     """
     Run the complete fire alarm design pipeline across all 5 bridges.
@@ -95,6 +102,10 @@ def run_full_design(
     building_spec : Dict with building info for pathway survivability (V15).
         Keys: occupancy, height_m, num_floors, is_sprinklered, has_voice_evac,
         evacuation_type, is_high_rise.
+    as_built_devices : List of as-built device dicts for reconciliation (V16).
+        Each dict must have: id, x, y, z, device_type.
+    merkle_root : Merkle root from a previous design run for integrity check (V16).
+    mep_elements : List of MEP element dicts for clash detection (V16).
     """
     t0 = time.time()
     os.makedirs(output_dir, exist_ok=True)
@@ -403,6 +414,129 @@ def run_full_design(
         except Exception as ex:
             warnings.append(f"Duct detector error: {ex}")
             log.error("Duct detector error: %s", ex)
+
+    # ═══════════════════════════════════════════════════════════════
+    # V16: As-Built Reconciliation (3D drift + rogue/missing detection)
+    # ═══════════════════════════════════════════════════════════════
+    if as_built_devices:
+        log.info("=" * 50)
+        log.info("V16: AS-BUILT RECONCILIATION (3D)...")
+        try:
+            from fireai.core.as_built_reconciliator import (
+                AsBuiltReconciliator, DEVICE_TOLERANCES, DEFAULT_TOLERANCE,
+            )
+
+            # Build design manifest from current devices
+            design_devices = []
+            for d in result.devices:
+                design_devices.append({
+                    'id': d.id,
+                    'x': float(d.position.x),
+                    'y': float(d.position.y),
+                    'z': float(getattr(d, 'z_height', 2.8)),
+                    'device_type': getattr(d, 'device_type', 'UNKNOWN'),
+                })
+
+            design_manifest = {'devices': design_devices}
+
+            reconciliator = AsBuiltReconciliator(
+                design_manifest=design_manifest,
+                merkle_root=merkle_root,  # Optional integrity check
+            )
+            recon_result = reconciliator.reconcile(as_built_devices)
+
+            result.as_built_reconciliation = {
+                'status': recon_result.status,
+                'verified_count': recon_result.verified_count,
+                'rogue_devices': len(recon_result.rogue_devices),
+                'missing_devices': len(recon_result.missing_devices),
+                'drifted_devices': len(recon_result.drifted_devices),
+                'total_deviations': recon_result.total_deviations,
+                'integrity_verified': recon_result.integrity_verified,
+                'summary': recon_result.summary,
+            }
+
+            if recon_result.status == "DEVIATION_DETECTED":
+                for dev_id, msg in recon_result.rogue_devices:
+                    result.violations.append(f"ROGUE DEVICE: {msg}")
+                for dev_id, msg in recon_result.missing_devices:
+                    result.violations.append(f"MISSING DEVICE: {msg}")
+                for dev_id, drift, tol, msg in recon_result.drifted_devices:
+                    result.violations.append(
+                        f"DRIFTED DEVICE: {dev_id} drifted {drift:.3f}m "
+                        f"(tolerance: {tol:.3f}m)"
+                    )
+
+            bridge_results['as_built_reconciliation'] = {
+                'status': recon_result.status,
+                'deviations': recon_result.total_deviations,
+            }
+            log.info("As-Built reconciliation: %s (%d deviations)",
+                     recon_result.status, recon_result.total_deviations)
+        except ImportError:
+            warnings.append("As-built reconciliator not available")
+            log.warning("As-built reconciliator import failed")
+        except Exception as ex:
+            warnings.append(f"As-built reconciliation error: {ex}")
+            log.error("As-built reconciliation error: %s", ex)
+
+    # ═══════════════════════════════════════════════════════════════
+    # V16: MEP Sync Injection (duct detector placement via NFPA 90A)
+    # ═══════════════════════════════════════════════════════════════
+    if mep_elements:
+        log.info("=" * 50)
+        log.info("V16: MEP SYNC INJECTION...")
+        try:
+            from fireai.core.mep_sync_injector import (
+                MEPSyncInjector, MEPElement, MEPElementType,
+            )
+
+            injector = MEPSyncInjector()
+            mep_objs = []
+            for el in mep_elements:
+                mep_objs.append(MEPElement(
+                    element_id=el.get('id', 'MEP-??'),
+                    element_type=MEPElementType(el.get('type', 'DUCT')),
+                    position=tuple(el.get('position', (0.0, 0.0, 0.0))),
+                    dimensions=el.get('dimensions', {}),
+                    zone_id=el.get('zone_id', 'ZnX'),
+                ))
+
+            injection_result = injector.process_elements(mep_objs)
+
+            result.mep_sync = {
+                'total_monitor_modules': injection_result.total_monitor_modules,
+                'total_duct_detectors': injection_result.total_duct_detectors,
+                'errors': injection_result.errors,
+            }
+
+            # Inject MEP-derived devices into the device list
+            for mod in injection_result.modules:
+                result.devices.append(type('Device', (), {
+                    'id': mod.module_id,
+                    'device_type': 'DUCT_SMOKE' if 'DUCT' in mod.module_type else 'MONITOR_MODULE',
+                    'position': type('Pos', (), {
+                        'x': mod.position[0],
+                        'y': mod.position[1],
+                    })(),
+                    'z_height': mod.position[2] if len(mod.position) > 2 else 2.8,
+                    'room_id': 'MEP-SYSTEM',
+                    'coverage_radius': 0.0,
+                })())
+
+            bridge_results['mep_sync'] = {
+                'modules_injected': injection_result.total_monitor_modules,
+                'duct_detectors': injection_result.total_duct_detectors,
+            }
+            log.info("MEP sync: %d modules, %d duct detectors injected",
+                     injection_result.total_monitor_modules,
+                     injection_result.total_duct_detectors)
+        except ImportError:
+            warnings.append("MEP sync injector not available")
+            log.warning("MEP sync injector import failed")
+        except Exception as ex:
+            warnings.append(f"MEP sync injection error: {ex}")
+            log.error("MEP sync injection error: %s", ex)
 
     # ═══════════════════════════════════════════════════════════════
     # BRIDGE 3: Draw design on DWG

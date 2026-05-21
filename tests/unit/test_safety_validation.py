@@ -85,14 +85,14 @@ class TestMeaningfulFailure:
 
     def test_zero_detectors_coverage_zero(self):
         """Zero detectors = 0% coverage."""
-        room = RoomSpec(name="Test", width_m=10, depth_m=10, height_m=3)
+        room = RoomSpec(room_id="t", name="Test", width_m=10, depth_m=10)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         result = check_coverage_polygon([], room, ceiling)
         assert result.coverage_percentage == 0.0
 
     def test_one_detector_huge_room_insufficient(self):
         """100m×100m + 1 detector = insufficient."""
-        room = RoomSpec(name="Large", width_m=100, depth_m=100, height_m=3)
+        room = RoomSpec(room_id="l", name="Large", width_m=100, depth_m=100)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         result = check_coverage_polygon([(50, 50)], room, ceiling)
         assert result.coverage_percentage < 5.0
@@ -111,7 +111,7 @@ class TestSafetyWarnings:
         l_shaped = Polygon([
             (0, 0), (30, 0), (30, 10), (20, 10), (20, 30), (0, 30)
         ])
-        room = RoomSpec(name="L", width_m=30, depth_m=30, height_m=3, polygon=l_shaped)
+        room = RoomSpec(room_id="l-shape", name="L", width_m=30, depth_m=30, polygon=l_shaped)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         result = check_coverage_polygon([(5, 5), (25, 5)], room, ceiling)
         assert result.coverage_percentage < 100.0
@@ -126,7 +126,7 @@ class TestPerformance:
 
     def test_100_detectors_under_1s(self):
         """100 detectors in < 1 second."""
-        room = RoomSpec(name="Test", width_m=100, depth_m=100, height_m=3)
+        room = RoomSpec(room_id="t", name="Test", width_m=100, depth_m=100)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         detectors = [(x, y) for x in range(5, 100, 10) for y in range(5, 100, 10)]
         
@@ -138,7 +138,7 @@ class TestPerformance:
 
     def test_500_detectors_no_crash(self):
         """500 detectors must not crash."""
-        room = RoomSpec(name="Test", width_m=200, depth_m=200, height_m=3)
+        room = RoomSpec(room_id="t", name="Test", width_m=200, depth_m=200)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         detectors = [(x, y) for x in range(2, 200, 4) for y in range(2, 200, 4)][:500]
         
@@ -176,14 +176,14 @@ class TestSilentDeath:
 
     def test_detectors_too_far_apart(self):
         """Detectors 15m apart → no coverage in middle."""
-        room = RoomSpec(name="Test", width_m=20, depth_m=10, height_m=3)
+        room = RoomSpec(room_id="t", name="Test", width_m=20, depth_m=10)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         result = check_coverage_polygon([(2, 5), (18, 5)], room, ceiling)
         assert result.coverage_percentage < 100.0
 
     def test_dead_corner_no_coverage(self):
         """Far corner uncovered."""
-        room = RoomSpec(name="Test", width_m=20, depth_m=20, height_m=3)
+        room = RoomSpec(room_id="t", name="Test", width_m=20, depth_m=20)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         result = check_coverage_polygon([(1, 1)], room, ceiling)
         assert result.coverage_percentage < 15.0
@@ -193,7 +193,7 @@ class TestSilentDeath:
         # Heat detector has square coverage (Chebyshev), smoke has circle (Euclidean)
         # For same radius, heat covers MORE in cardinal directions
         # Test that system distinguishes them
-        room = RoomSpec(name="Test", width_m=10, depth_m=10, height_m=3)
+        room = RoomSpec(room_id="t", name="Test", width_m=10, depth_m=10)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         
         # Single detector can cover 10x10 if positioned right
@@ -205,7 +205,7 @@ class TestSilentDeath:
         """Sloped ceiling without ridge detector = DEATH."""
         # Gable ceiling 10m wide, 4m high at peak
         # Detector at (5, 5) assumes flat 3m = WRONG
-        room = RoomSpec(name="Gable", width_m=10, depth_m=10, height_m=4)
+        room = RoomSpec(room_id="gable", name="Gable", width_m=10, depth_m=10)
         ceiling = CeilingSpec(
             height_at_low_point_m=3.0,
             height_at_high_point_m=5.0,
@@ -306,7 +306,7 @@ class TestSlopedCeiling:
         # If function exists, test it. If not, skip.
         try:
             from nfpa72_coverage import check_ridge_zone_compliance
-            room = RoomSpec(name="Gable", width_m=10, depth_m=10, height_m=4)
+            room = RoomSpec(room_id="gable", name="Gable", width_m=10, depth_m=10)
             ceiling = CeilingSpec(
                 height_at_low_point_m=3.0,
                 height_at_high_point_m=5.0,
@@ -395,7 +395,7 @@ class TestSafetyWarningsCritical:
 
     def test_sloped_ceiling_requires_engineer(self):
         """Gable ceiling must warn engineer."""
-        room = RoomSpec(name="Gable", width_m=10, depth_m=10, height_m=3)
+        room = RoomSpec(room_id="gable", name="Gable", width_m=10, depth_m=10)
         ceiling = CeilingSpec(
             height_at_low_point_m=3.0,
             height_at_high_point_m=5.0,
@@ -409,7 +409,7 @@ class TestSafetyWarningsCritical:
     def test_beam_pocket_detection(self):
         """Beam pockets must reduce effective coverage."""
         # Deep beam pocket -> treat as separate compartment
-        room = RoomSpec(name="BeamTest", width_m=10, depth_m=10, height_m=3)
+        room = RoomSpec(room_id="beam", name="BeamTest", width_m=10, depth_m=10)
         ceiling = CeilingSpec(height_at_low_point_m=3.0)
         
         # With deep beam (>10% ceiling height)
