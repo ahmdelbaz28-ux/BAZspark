@@ -360,10 +360,19 @@ def route_cables(
         prev = (dx, dy)
 
     # ── Class A return (Manhattan offset fallback) ───────────────────
+    # V15 WARNING: This Manhattan Y-offset approach does NOT guarantee
+    # NFPA 72 S12.2.2 1m separation in complex building geometries.
+    # The A* router (above) is the compliant path. This fallback exists
+    # only when building_bounds_m is not available (no room geometry).
     last_dev = prev
     px, py = panel_pos
 
     if class_a:
+        log.warning(
+            "Class A return using Manhattan Y-offset fallback — "
+            "NFPA 72 S12.2.2 1m separation NOT guaranteed in complex geometries. "
+            "Provide building_bounds_m for compliant A* routing."
+        )
         offset_y = CLASS_A_SEPARATION_MM  # 1m offset
         ret_start = last_dev
         ret_track_y = last_dev[1] + offset_y
@@ -725,6 +734,11 @@ def draw_fire_alarm_design(
 
     if draw_cables and devices and panel_position:
         # V13: Compute building bounds for A* routing from room geometry
+        # V15 FIX: Previously, safe_units_b was computed but NEVER APPLIED
+        # to the bounds values. Room geometry bounds are in drawing units
+        # (typically mm) but building_bounds_m must be in METERS for the
+        # A* router. Without the conversion, the A* grid origin was off by
+        # a factor of 1000, producing completely wrong cable routes.
         building_bounds_m = None
         if rooms:
             safe_units_b = units_to_m if units_to_m and units_to_m > 0 else 1.0
@@ -733,11 +747,12 @@ def draw_fire_alarm_design(
                 geom = getattr(r, 'geometry', None)
                 if geom and hasattr(geom, 'bounds'):
                     try:
-                        _, _, rx, ry = geom.bounds
-                        b_min_x = min(b_min_x, geom.bounds[0])
-                        b_min_y = min(b_min_y, geom.bounds[1])
-                        b_max_x = max(b_max_x, rx)
-                        b_max_y = max(b_max_y, ry)
+                        r_min_x, r_min_y, r_max_x, r_max_y = geom.bounds
+                        # V15: Convert drawing units → meters
+                        b_min_x = min(b_min_x, r_min_x * safe_units_b)
+                        b_min_y = min(b_min_y, r_min_y * safe_units_b)
+                        b_max_x = max(b_max_x, r_max_x * safe_units_b)
+                        b_max_y = max(b_max_y, r_max_y * safe_units_b)
                     except Exception:
                         pass
             if b_max_x > b_min_x and b_max_y > b_min_y:

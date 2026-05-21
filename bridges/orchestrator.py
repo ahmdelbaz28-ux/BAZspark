@@ -62,6 +62,7 @@ def run_full_design(
     pe_license: str = "",
     class_a: bool = True,
     fire_rated_walls: list = None,
+    panel_position: tuple = None,
 ) -> FullDesignResult:
     """
     Run the complete fire alarm design pipeline across all 5 bridges.
@@ -79,6 +80,8 @@ def run_full_design(
     pe_license    : PE license number
     class_a       : Route Class A return with >=1m separation (V13)
     fire_rated_walls: List of Shapely LineString objects for fire-rated walls (V13)
+    panel_position: (x_mm, y_mm) panel position in drawing units (V15). If None,
+        auto-placed near first room centroid (may be inaccurate).
     """
     t0 = time.time()
     os.makedirs(output_dir, exist_ok=True)
@@ -118,10 +121,12 @@ def run_full_design(
 
     # ═══════════════════════════════════════════════════════════════
     # BRIDGE 4: Pull from BIM (if IFC provided)
+    # V15: Try DigitalTwinBridge first, fall back to HeadlessIFCBridge
     # ═══════════════════════════════════════════════════════════════
     if ifc_path and os.path.exists(ifc_path):
         log.info("=" * 50)
         log.info("BRIDGE 4: Pulling from BIM...")
+        ifc_pulled = False
         try:
             from bridges.digital_twin_bridge import DigitalTwinBridge
             twin = DigitalTwinBridge(ifc_path=ifc_path)
@@ -140,9 +145,34 @@ def run_full_design(
             }
             log.info("Bridge 4 pull: %d rooms, %d devices from IFC",
                      len(ifc_rooms), len(ifc_devices))
+            ifc_pulled = True
         except Exception as ex:
-            warnings.append(f"Bridge 4 pull failed: {ex}")
-            log.error("Bridge 4 pull error: %s", ex)
+            log.warning("DigitalTwinBridge pull failed: %s, trying HeadlessIFCBridge", ex)
+
+        # V15: Fallback to HeadlessIFCBridge (pure ifcopenshell, no COM)
+        if not ifc_pulled:
+            try:
+                from fireai.bridges.ifc_headless_bridge import HeadlessIFCBridge
+                headless = HeadlessIFCBridge(ifc_path)
+                ifc_spaces = headless.extract_spaces()
+                # Convert space dicts to minimal room-like objects
+                for space in ifc_spaces:
+                    result.rooms.append(type('Room', (), {
+                        'id': space['guid'],
+                        'name': space['name'],
+                        'geometry': None,
+                    })())
+                bridge_results["bridge4_pull"] = {
+                    "ifc_rooms": len(ifc_spaces),
+                    "ifc_devices": 0,
+                    "ifc_obstructions": 0,
+                    "method": "headless_fallback",
+                }
+                log.info("Bridge 4 pull (headless fallback): %d spaces from IFC",
+                         len(ifc_spaces))
+            except Exception as ex2:
+                warnings.append(f"Bridge 4 pull failed (both DigitalTwin and Headless): {ex2}")
+                log.error("Bridge 4 pull error: %s", ex2)
 
     # ═══════════════════════════════════════════════════════════════
     # FireAI Engine: Design + NFPA 72 verification
@@ -235,6 +265,7 @@ def run_full_design(
             output_path=output_dwg,
             rooms=result.rooms,
             devices=result.devices,
+            panel_position=panel_position,
             proof_valid=proof_valid,
             force=force_draw,
             units_to_m=units_to_m,

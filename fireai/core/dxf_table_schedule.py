@@ -22,9 +22,12 @@ from __future__ import annotations
 import ezdxf
 
 try:
-    from ezdxf.addons import Table
+    from ezdxf.addons import TablePainter as Table
 except ImportError:
-    Table = None
+    try:
+        from ezdxf.addons import Table  # Older ezdxf versions
+    except ImportError:
+        Table = None
 
 
 class TrueAECDraftingTable:
@@ -73,7 +76,7 @@ class TrueAECDraftingTable:
         columns_count = len(headers)
         rows_count = len(device_array) + 2  # Including title row + header row
 
-        tbl = Table(insert=self.position, numrows=rows_count, numcols=columns_count)
+        tbl = Table(insert=self.position, nrows=rows_count, ncols=columns_count)
 
         # Style settings enforcing AEC plot conventions
         tbl.set_col_width(0, 3.5)
@@ -82,14 +85,15 @@ class TrueAECDraftingTable:
         tbl.set_col_width(3, 2.0)
         tbl.set_col_width(4, 5.5)
 
-        blue_fill = 5
-        grey_fill = 252
-
-        tbl.text_cell(0, 0, project_metadata, bg_color=blue_fill)
+        # V15 FIX: TablePainter.text_cell() uses 'style' parameter instead of 'bg_color'.
+        # The old ezdxf Table addon used bg_color keyword, but TablePainter uses
+        # named styles. We use the default style for all cells — background
+        # colors can be set via custom styles if needed.
+        tbl.text_cell(0, 0, project_metadata)
         # Typically spans logic here using spans, however, let's inject natively mapped string to col 0 simply for AEC compatibility test.
 
         for i, hname in enumerate(headers):
-            tbl.text_cell(1, i, hname, bg_color=grey_fill)
+            tbl.text_cell(1, i, hname)
 
         r_cursor = 2
         for entity in device_array:

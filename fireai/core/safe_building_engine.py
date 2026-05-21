@@ -146,7 +146,7 @@ class SafeBuildingEngine:
                 }
         except Exception as ex:
             logger.error(f"Safe Solver Failure upon {room_spec.get('room_id')}: {ex}")
-            return {"room_id": room_spec.get("room_id"), "success": False, "error": str(ex)}
+            return {"room_id": room_spec.get("room_id"), "success": False, "status": "ERROR", "error": str(ex)}
 
     def run_multi_floor_safety_analysis(self, floor_spec_registry: List[Dict[str, Any]]) -> List[Dict]:
         """
@@ -182,8 +182,10 @@ class SafeBuildingEngine:
         for f_data in floor_spec_registry:
             floor_lbl = f_data.get("floor_id")
             for rm in f_data.get("rooms", []):
-                rm['virtual_floor'] = floor_lbl
-                rooms_flatted.append(rm)
+                # V15 FIX: Don't mutate the caller's room dicts — create a copy
+                rm_copy = dict(rm)
+                rm_copy['virtual_floor'] = floor_lbl
+                rooms_flatted.append(rm_copy)
 
         logger.info(f"Commencing protected multi-thread evaluation over {len(rooms_flatted)} discrete areas.")
 

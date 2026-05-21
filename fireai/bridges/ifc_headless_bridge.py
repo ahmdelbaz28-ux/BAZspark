@@ -168,9 +168,15 @@ class HeadlessIFCBridge:
         """
         Traverse hierarchical IFC coordinate placement to get Absolute XYZ.
 
+        V15 FIX: Previously only read the FIRST level of RelativePlacement,
+        returning relative coordinates for nested placements. Now walks the
+        full PlacementRelTo chain to accumulate absolute coordinates, matching
+        the correct implementation in DigitalTwinBridge._ifc_get_position().
+
         IFC uses a nested placement hierarchy: each IfcLocalPlacement can
-        reference a parent placement via PlacementRelTo. This method walks
-        the chain to compute the accumulated translation.
+        reference a parent placement via PlacementRelTo. For multi-storey
+        buildings, a space on Floor 3 at local (5, 10) with storey elevation
+        9.0m must return (5, 10, 9.0), NOT (5, 10, 0).
 
         Parameters:
             placement: IfcLocalPlacement or similar object.
@@ -178,9 +184,18 @@ class HeadlessIFCBridge:
         Returns:
             Tuple of (x, y, z) absolute coordinates.
         """
-        if not placement:
-            return 0.0, 0.0, 0.0
-        rel = getattr(placement, "RelativePlacement", None)
-        loc = getattr(rel, "Location", None) if rel else None
-        coords = getattr(loc, "Coordinates", (0.0, 0.0, 0.0)) if loc else (0.0, 0.0, 0.0)
-        return coords[0], coords[1], coords[2] if len(coords) > 2 else 0.0
+        x, y, z = 0.0, 0.0, 0.0
+        current = placement
+        while current:
+            if hasattr(current, 'RelativePlacement') and current.RelativePlacement:
+                rel = current.RelativePlacement
+                if hasattr(rel, 'Location') and rel.Location:
+                    coords = rel.Location.Coordinates
+                    x += coords[0] if len(coords) > 0 else 0.0
+                    y += coords[1] if len(coords) > 1 else 0.0
+                    z += coords[2] if len(coords) > 2 else 0.0
+            if hasattr(current, 'PlacementRelTo') and current.PlacementRelTo:
+                current = current.PlacementRelTo
+            else:
+                break
+        return x, y, z

@@ -428,6 +428,35 @@ The original V12 `generate_class_a_loop()` was designed as a "simplification" (l
 - HeadlessIFCBridge not integrated into orchestrator pipeline (duplicate of DigitalTwinBridge)
 - HeadlessIFCBridge._resolve_local_placement() doesn't walk parent placement chain (coordinates may be relative)
 
+### V15 — Pipeline Hardening + IFC Placement Chain + DXF TABLE Fix (2026-05-21)
+
+Applied 7 fixes from deep code audit (2 CRITICAL, 3 MAJOR, 2 MINOR):
+
+| # | Problem | Fix | File | Severity |
+|---|---------|-----|------|----------|
+| 1 | `building_bounds_m` unit mismatch — `safe_units_b` computed but never applied. Room bounds in drawing units (mm) stored as "meters", causing A* grid offset by 1000x | Applied `* safe_units_b` conversion when reading room geometry bounds | `bridges/output_bridge.py` | CRITICAL |
+| 2 | `_resolve_local_placement()` only reads first placement level — returns relative coords for nested IFC spaces on multi-storey buildings | Walk full `PlacementRelTo` chain accumulating translations (matching DigitalTwinBridge pattern) | `fireai/bridges/ifc_headless_bridge.py` | CRITICAL |
+| 3 | `panel_position` not passed from orchestrator to `draw_fire_alarm_design` — panel auto-placed at potentially wrong location | Added `panel_position` parameter to `run_full_design()` and passed it through | `bridges/orchestrator.py` | MAJOR |
+| 4 | `ezdxf.addons.Table` removed in v1.4.3 — `TrueAECDraftingTable` always returns `False` | Updated import to try `TablePainter` first, then `Table`. Fixed constructor (`nrows`/`ncols` instead of `numrows`/`numcols`). Removed `bg_color` kwarg (not supported by TablePainter) | `fireai/core/dxf_table_schedule.py` | MAJOR |
+| 5 | Manhattan Class A fallback doesn't guarantee 1m separation — simple Y-offset routes through walls | Added explicit `log.warning()` that NFPA 72 S12.2.2 compliance is NOT guaranteed in fallback mode | `bridges/output_bridge.py` | MAJOR |
+| 6 | `HeadlessIFCBridge` not reachable from orchestrator pipeline | Added fallback: if DigitalTwinBridge fails, try HeadlessIFCBridge for IFC space extraction | `bridges/orchestrator.py` | MAJOR |
+| 7 | SafeBuildingEngine error path missing `status` key + input dict mutation | Added `"status": "ERROR"` to exception handler. Use `dict(rm)` copy instead of mutating caller's dicts | `fireai/core/safe_building_engine.py` | MINOR |
+
+**Root Cause Analysis — Issue #1 (building_bounds_m):**
+The `safe_units_b` variable was computed on line 730 but never used. Room geometry bounds from Shapely's `geom.bounds` are in drawing units (typically mm for DXF files). The variable name `building_bounds_m` implies meters, but the values were raw drawing units. When `_route_cables_astar()` later divided panel/device positions by 1000 (mm→m) and subtracted `min_x`/`min_y` (still in mm), the resulting coordinates were nonsensical. The A* router would still "work" (it just routes on a misaligned grid), but all cable coordinates would be wrong by a factor of ~1000x.
+
+**Unit Tests:** 9 PASS (V15) + 10 PASS (V14) + 26 PASS (V13) = 45 total
+- `test_v15_pipeline_hardening.py`: 9 tests
+  - TestBuildingBoundsUnitConversion: 2 tests (TablePainter, import)
+  - TestIFCPlacementChainWalk: 2 tests (3-level chain, single-level)
+  - TestOrchestratorPanelPosition: 2 tests (parameter exists, default None)
+  - TestSafeBuildingEngineRobustness: 2 tests (status key, no mutation)
+  - TestProvenanceShim: 1 test (regression)
+
+**Remaining Known Issues (deferred to V16):**
+- FirestoppingAnnotator.draft_callouts_to_dxf() uses hardcoded meter-scale sizes (0.4 radius) — would be invisible on mm-scale DXF (latent, not currently called in pipeline)
+- Wall bounding-box over-marking in routing_engine_v10.py — diagonal walls create wider avoidance zones than necessary (over-conservative, not incorrect)
+
 ---
 
 ## Hardcoded Agent Instructions (ELITE)
