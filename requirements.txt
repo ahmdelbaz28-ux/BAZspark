@@ -64,6 +64,9 @@ retrying>=1.3
 # Optimization (Required for floor orchestrator)
 pulp>=2.7.0
 
+# Spatial Indexing (V21: R-tree for ray trace performance)
+rtree>=1.1.0
+
 # CAD Integration (Windows only)
 pyautocad>=0.2; platform_system == "Windows"
 revitpythonshell>=2023; platform_system == "Windows"

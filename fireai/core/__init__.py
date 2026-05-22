@@ -78,6 +78,34 @@ from fireai.core.slc_capacitance import SLCCapacitanceAuditor
 from fireai.core.stairwell_smoke_control import StairwellSmokeControlIntegrator
 from fireai.core.network_topology import NetworkTopologyAuditor
 
+# V21 — Pydantic Models (Fail-Fast Validation) + Hazardous Area Classification
+from fireai.core.models_v21 import (
+    SubstanceProperties as V21SubstanceProperties,
+    HACResult as V21HACResult,
+    ZoneExtent as V21ZoneExtent,
+    ATEXEquipmentSpec as V21ATEXEquipmentSpec,
+    FlameDetectorSpec as V21FlameDetectorSpec,
+    Obstruction as V21Obstruction,
+    RayTracePoint as V21RayTracePoint,
+    WavelengthBand,
+    TemperatureClass,
+    ZoneType,
+    VentilationLevel,
+    HazardType,
+    RegulatoryFramework as V21RegulatoryFramework,
+    RegSelectorResult as V21RegSelectorResult,
+    _select_temp_class,
+)
+from fireai.core.international_reg_selector import (
+    InternationalRegSelector,
+    UnknownCountryError,
+    resolve as resolve_regulatory,
+    convert_division_to_zone,
+)
+from fireai.core.hac_classification_engine import HACClassificationEngine
+from fireai.core.flame_detector_aoc_raytrace import FlameDetectorAOCRayTrace
+from fireai.core.atex_hazardous_arbiter import ATEXHazardousArbiter
+
 __all__ = [
     "__version__",
     # Analysers
@@ -151,4 +179,27 @@ __all__ = [
     "SLCCapacitanceAuditor",
     "StairwellSmokeControlIntegrator",
     "NetworkTopologyAuditor",
+    # V21 — Pydantic Models + Hazardous Area Classification
+    "V21SubstanceProperties",
+    "V21HACResult",
+    "V21ZoneExtent",
+    "V21ATEXEquipmentSpec",
+    "V21FlameDetectorSpec",
+    "V21Obstruction",
+    "V21RayTracePoint",
+    "WavelengthBand",
+    "TemperatureClass",
+    "ZoneType",
+    "VentilationLevel",
+    "HazardType",
+    "V21RegulatoryFramework",
+    "V21RegSelectorResult",
+    "_select_temp_class",
+    "InternationalRegSelector",
+    "UnknownCountryError",
+    "resolve_regulatory",
+    "convert_division_to_zone",
+    "HACClassificationEngine",
+    "FlameDetectorAOCRayTrace",
+    "ATEXHazardousArbiter",
 ]
