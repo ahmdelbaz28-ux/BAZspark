@@ -244,7 +244,10 @@ class FloorOrchestrator:
                         f"Adaptive re-solve error: {adapt_err}. Manual design required."
                     )
 
-        except (NFPAComplianceError, InvalidInputError) as e:
+        # V20.2 FIX: InvalidInputError is not defined in this module.
+        # ImportError from MIP solver (when pulp not installed) should be
+        # caught here as an ERROR result, not crash the entire pipeline.
+        except (NFPAComplianceError, ImportError) as e:
             # Logic errors → convert to ERROR result
             result.status = "ERROR"
             result.errors.append(str(e))

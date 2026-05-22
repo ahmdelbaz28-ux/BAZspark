@@ -394,17 +394,24 @@ class SequenceOfOperationsMatrix:
                 )
 
             # Special case: Healthcare duct detectors
-            # In healthcare, NFPA 101 requires additional alarm notification
-            # for duct detectors because patients cannot self-evacuate
+            # V20.2 FIX: In healthcare, NFPA 101 §9.7 requires alarm-level
+            # notification for duct detectors because patients cannot self-evacuate.
+            # Previous code only added NAC_ZONE without ALARM — this is insufficient
+            # for healthcare where patients need staff assistance to evacuate.
+            # Adding both ALARM and NAC_ZONE ensures full notification.
             effective_outputs = list(outputs)
             if (dev.device_type == DeviceInputType.DUCT_DETECTOR
                     and occupancy_type.lower() in ("healthcare", "hospital")):
-                # Add NAC zone activation for healthcare duct detectors
+                # Add ALARM + NAC zone activation for healthcare duct detectors
                 # per NFPA 101 §9.7 and local AHJ requirements
-                effective_outputs.append(LogicFunction.NAC_ZONE)
+                if LogicFunction.ALARM not in effective_outputs:
+                    effective_outputs.append(LogicFunction.ALARM)
+                if LogicFunction.NAC_ZONE not in effective_outputs:
+                    effective_outputs.append(LogicFunction.NAC_ZONE)
                 warnings.append(
                     f"Device {dev.device_id}: Duct detector in healthcare occupancy "
-                    f"triggers zone NAC per NFPA 101 §9.7 supplementary notification."
+                    f"triggers ALARM + zone NAC per NFPA 101 §9.7 supplementary "
+                    f"notification (patients require staff-assisted evacuation)."
                 )
 
             row = MatrixRow(

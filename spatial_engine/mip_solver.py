@@ -6,7 +6,18 @@ CRITICAL SAFETY SYSTEM: Any modification requires peer review.
 """
 
 from typing import List, Tuple, Dict, Optional
-from pulp import LpProblem, LpMinimize, LpVariable, LpBinary, lpSum, LpStatus, value, PULP_CBC_CMD
+# V20.2 FIX: pulp is optional — not all environments have it installed.
+# The MIP solver is an optional optimization; the ConstraintSolver and
+# AdaptiveSolver provide full coverage without it.
+try:
+    from pulp import LpProblem, LpMinimize, LpVariable, LpBinary, lpSum, LpStatus, value, PULP_CBC_CMD
+    HAS_PULP = True
+except ImportError:
+    HAS_PULP = False
+    # Stubs so the class can be imported without pulp
+    LpProblem = None  # type: ignore[misc,assignment]
+    LpMinimize = None  # type: ignore[misc,assignment]
+    PULP_CBC_CMD = None  # type: ignore[misc,assignment]
 import math
 from shapely.geometry import Point, Polygon, LineString
 
@@ -210,6 +221,15 @@ class OptimalMIPEngine:
         return coverage
 
     def solve(self) -> Tuple[List[Tuple[float, float]], int, bool, Dict]:
+        # V20.2 FIX: Guard against pulp not being installed
+        if not HAS_PULP:
+            raise ImportError(
+                "PuLP not installed — MIP solver unavailable. "
+                "Install with: pip install pulp. "
+                "Alternatively, use ConstraintSolver or AdaptiveSolver "
+                "which do not require PuLP."
+            )
+
         coverage = self._build_coverage_pairs()
 
         uncovered = [ti for ti, cov in coverage.items() if not cov]

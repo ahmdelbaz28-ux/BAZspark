@@ -181,7 +181,10 @@ def extract_features(area: float = None,
                 bbox_w = max(len1, len2)
                 bbox_h = min(len1, len2)
                 _use_rotated_rect = True
-        except Exception:
+        # V20.2 FIX: Narrowed exception from bare `Exception` to specific
+        # expected failures. Broad `except Exception` catches KeyboardInterrupt,
+        # MemoryError, etc. — these should propagate, not silently fall back.
+        except (ValueError, ImportError, AttributeError, TypeError):
             log.warning(
                 "minimum_rotated_rectangle failed; falling back to AABB"
             )

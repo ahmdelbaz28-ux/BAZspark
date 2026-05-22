@@ -476,7 +476,11 @@ class NACBoosterAllocator:
                     "description": desc,
                 })
 
-        safe = len(violations) == 0 and len(booster_placements) == 0
+        # V20.2 FIX: Previous code: `safe = len(violations) == 0 and len(booster_placements) == 0`
+        # This penalized valid BPS insertions — even when BPS correctly regenerated
+        # voltage at choke points, `safe` was False. BPS insertions are a VALID
+        # correction, not a failure. Only violations make the result unsafe.
+        safe = len(violations) == 0
 
         if DecisionProvenance is not None:
             try:

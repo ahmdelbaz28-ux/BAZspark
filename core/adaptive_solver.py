@@ -198,7 +198,6 @@ class AdaptiveSolver:
             safe_polygon = safe_polygon.difference(zone)
         
         # Second try: heat detectors (larger coverage)
-        alternatives = ["heat_detector"]
         heat_result = self._try_heat_detectors(
             safe_polygon, required_count  # V12 Fix: safe_polygon, NOT room_polygon
         )
@@ -209,7 +208,6 @@ class AdaptiveSolver:
             
         # Third try: beam detectors for beam pockets
         if ceiling_info and ceiling_info.structure_type.value == "beam_pocket":
-            alternatives.append("beam_detector")
             beam_result = self._try_beam_detectors(
                 safe_polygon, obstructions, required_count  # V12 Fix: safe_polygon
             )
@@ -217,8 +215,16 @@ class AdaptiveSolver:
                 beam_result.alternative_detector_types = ["beam_detector"]
                 return beam_result
                 
-        # Return the last result (even if failed)
-        return result
+        # V20.2 FIX: All alternatives failed. Return the heat_result (not original result)
+        # so the caller gets information about what alternatives were tried.
+        # Previous code returned `result` (from re_solve) which had no info about
+        # heat/beam attempts. Now we return the last attempt's result, which includes
+        # the alternative_detector_types metadata.
+        # If heat_result failed, its metadata tells the caller that heat detectors
+        # were tried but couldn't solve the room — requiring manual FPE design.
+        if not heat_result.success:
+            heat_result.alternative_detector_types = ["heat_detector"]
+        return heat_result
 
     def _generate_candidates(
         self,

@@ -375,3 +375,75 @@ After line-by-line code reading, here is the full verification:
 - **Commit:** (pending)
 - **Tests:** 99/99 passing (35 V19.1 + 33 V17 + 23 V18 + 8 Apocalypse)
 
+---
+
+## V20.2 Fixes (2026-05-22) — Agent-Initiated Safety Audit
+
+### Context
+After reading agent.md and all critical source files line-by-line, I performed a full code audit comparing agent.md claims against actual code. Found 9 bugs — 4 CRITICAL, 3 HIGH, 2 MEDIUM. All fixes verified with 176/176 tests passing.
+
+### Bug 16 — proof_valid Safety Gate Override (CRITICAL — Life Safety)
+**File:** `bridges/orchestrator.py` — line 855 (now 860)
+**Discovery:** V12 CRITICAL SAFETY GATE sets `result.proof_valid = False` at line 280 when orphaned devices exist. But line 855 unconditionally resets it: `result.proof_valid = proof_valid`. This **silently negates** the safety gate — a building with unverified devices CAN still pass.
+**Impact:** Building signed off as "compliant" with devices that were never checked by any NFPA engine. Possible undetected coverage gaps.
+**Fix Applied:** Changed to AND logic: `result.proof_valid = proof_valid and result.proof_valid`. A single safety gate veto is now binding — no override possible.
+
+### Bug 17 — BPS Pass 1/Pass 2 Disconnection (CRITICAL — Silent Horn/Strobe Failure)
+**File:** `fireai/core/bps_allocator.py` — `allocate_boosters_across_floors()` and `validate_voltage_drop()`
+**Discovery:** The two methods are completely disconnected. agent.md V19.1 claims "Two-pass allocation" but Pass 2 must be invoked manually by the caller. If only current-capacity allocation is used (Pass 1), terminal voltage at end-of-line devices may be below 16 VDC.
+**Impact:** Horns/strobes fail silently during fire — no evacuation alarm.
+**Fix Applied:** `allocate_boosters_across_floors()` now auto-invokes `validate_voltage_drop()` when `devices_line` data is available on any floor. When no device data is provided, a CRITICAL violation is emitted warning that voltage drop validation was not performed.
+
+### Bug 18 — DEFAULT_HD_RTI=50 Neuters RTI Check (CRITICAL — Electrocution Risk)
+**File:** `fireai/core/elevator_shunt_trip.py` — line 91
+**Discovery:** `DEFAULT_HD_RTI = 50.0` equals `DEFAULT_SPRINKLER_RTI = 50.0`. The RTI check is `hd_rti > (spk_rti * 1.0)`. With defaults: `50 > 50 = False` — the check **never triggers**. The entire V19.1 RTI fix is a no-op with default values. Standard-response heat detectors have RTI 100–150 per UL 521.
+**Impact:** A standard-response HD (RTI=100-150) paired with a quick-response sprinkler (RTI=50) passes the RTI check because both default to 50. Sprinkler bursts before power is severed → electrified water → firefighter electrocution.
+**Fix Applied:** `DEFAULT_HD_RTI = 100.0` (conservative standard-response). Now `100 > 50 = True` — the RTI check correctly flags the thermal response mismatch.
+
+### Bug 19 — beam_detectors Returns success=True with Empty Positions (CRITICAL — False Protection)
+**File:** `core/adaptive_solver.py` — `_try_beam_detectors()` line 419
+**Discovery:** The function returns `AdaptiveSolution(success=True, positions=[])`. This claims beam detectors are placed when they aren't. Any caller checking `result.success` will believe the room is protected.
+**Impact:** Building signed off as "protected" with zero actual beam detector positions.
+**Fix Applied:** Returns `success=False` with clear reason requiring manual FPE design per NFPA 72 §17.7.4.
+
+### Bug 20 — Duplicate Dict Key "40%" in MAX_CONDUCTOR_FILL (HIGH — NEC Violation)
+**File:** `core/code_compliance_engine.py` — line 303-307
+**Discovery:** `"40%"` appears twice in the dict. Python silently uses the last value. The second `"40%"` was meant to be `"53%"` per NEC Chapter 9 Table 1 (1 conductor fill limit).
+**Impact:** Conduit fill calculations for single-conductor runs use wrong percentage.
+**Fix Applied:** Corrected to `{"53%": 53, "31%": 31, "40%": 40}` per NEC Chapter 9 Table 1.
+
+### Bug 21 — ConduitType Enum Lists PVC/LFMC/FMC With No Specs Data (HIGH — Silent Failure)
+**File:** `fireai/core/conduit_fill_analyzer.py` — lines 150-192
+**Discovery:** `ConduitType` enum has PVC40, PVC80, LFMC, FMC but `CONDUIT_SPECS` only has data for EMT, RMC, IMC. PVC/LFMC/FMC silently fall through to cable tray recommendation.
+**Impact:** PVC (commonly used for FA installations per NEC 760.154) produces incorrect sizing results.
+**Fix Applied:** Added full specs for PVC Schedule 40 (10 sizes), PVC Schedule 80 (9 sizes), LFMC (7 sizes), FMC (7 sizes) from NEC Chapter 9 Table 4.
+
+### Bug 22 — NameError When fitz Not Installed (HIGH — Import Crash)
+**File:** `adapters/pdf_to_rooms_adapter.py` — line 38
+**Discovery:** `logger.warning()` called before `logger = logging.getLogger(__name__)` at line 45. If PyMuPDF not installed → NameError at import time.
+**Fix Applied:** Moved logger definition before the try/except import block.
+
+### Bug 23 — Stale Version Strings in floor_orchestrator.py (MEDIUM — Audit Confusion)
+**File:** `fireai/core/floor_orchestrator.py`
+**Discovery:** Three different version references all outdated: docstring says "V10", disclaimer says "V5.1.0", audit JSON says "V5.1.2". Actual code is V13+.
+**Impact:** Reviewing FPE seeing "V5.1.0" would not know V13 fixes were applied. Audit trail confusion.
+**Fix Applied:** Updated all three to "V20.2".
+
+### Bug 24 — IFC Placeholder Geometry Used for NFPA Analysis (MEDIUM — False Results)
+**File:** `bridges/parser_bridge.py` + `bridges/orchestrator.py`
+**Discovery:** IFC rooms get placeholder `ShapelyPolygon([(0,0),(1,0),(1,1),(0,1)])` — a 1m² box. Downstream NFPA analysis on this geometry produces completely wrong coverage results. The warning is present but nothing prevents the analysis from running.
+**Impact:** A building imported from IFC could be signed off as "protected" based on 1m² box geometry.
+**Fix Applied:** Added `_placeholder_geometry = True` flag on IFC rooms. Orchestrator now skips NFPA analysis for flagged rooms and emits a CRITICAL violation requiring IFC geometry resolution.
+
+### Self-Criticism Notes (V20.2)
+
+1. **proof_valid override was a V12 regression** — V12 added the safety gate but then overwrote it. This is the most dangerous kind of bug: a safety feature that exists in code but doesn't work. I should have tested the full data flow, not just verified the safety gate exists.
+2. **BPS Pass 1/2 disconnection contradicts agent.md** — The documentation claims "Two-pass allocation" but the code doesn't integrate the passes. Documentation-code mismatch is a safety hazard.
+3. **DEFAULT_HD_RTI=50 made V19.1 RTI fix meaningless** — This is the worst kind of bug: a fix that looks correct but is neutralized by a default value. The test `test_default_rti_backward_compatible` was also wrong — it asserted `safe=True` when the correct behavior is `safe=False`.
+4. **beam_detectors success=True with positions=[] is a lie** — In a fire alarm system, claiming to have solved a problem without actually placing any devices is potentially criminal negligence.
+
+### Commit Information
+- **Commit:** `ff29d11`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/ff29d11
+- **Tests:** 176/176 passing (24 V18 + 35 V19 + 32 V17 + 8 Apocalypse + 37 V20.1 + 28 V20 + 10 basic + 2 other)
+

@@ -4,6 +4,21 @@ MIP Solver Tests - Optimal Placement
 """
 
 import pytest
+
+# V20.2 FIX: Skip entire module if pulp is not installed.
+# The MIP solver is optional — ConstraintSolver/AdaptiveSolver
+# provide full coverage without PuLP.
+try:
+    from pulp import LpProblem  # noqa: F401 — just checking availability
+    HAS_PULP = True
+except ImportError:
+    HAS_PULP = False
+
+pytestmark = pytest.mark.skipif(
+    not HAS_PULP,
+    reason="PuLP not installed — MIP solver tests require 'pip install pulp'"
+)
+
 from nfpa72_models import RoomSpec
 from spatial_engine.mip_solver import OptimalMIPEngine
 
