@@ -164,6 +164,15 @@ from fireai.core.ugld_raytrace import (
     compute_path_difference,
 )
 
+# V24 — Layer 7: Hybrid Survivability Index Engine
+from fireai.core.hybrid_survivability import (
+    HybridSurvivabilityEngine,
+    HybridSurvivabilityMap,
+    HybridPointResult,
+    AcousticCoverageDetail,
+    SurvivabilityClass,
+)
+
 __all__ = [
     "__version__",
     # Analysers
@@ -309,4 +318,10 @@ __all__ = [
     "trace_acoustic_ray",
     "maekawa_insertion_loss",
     "compute_path_difference",
+    # V24 — Layer 7: Hybrid Survivability Index
+    "HybridSurvivabilityEngine",
+    "HybridSurvivabilityMap",
+    "HybridPointResult",
+    "AcousticCoverageDetail",
+    "SurvivabilityClass",
 ]
