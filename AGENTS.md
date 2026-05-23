@@ -516,3 +516,59 @@ The following instructions are **mandatory** for all tasks and **must not be mod
 6. **ALWAYS USE `/workspace/project/revit/`**: Work in this path unless instructed otherwise.
 7. **ASK BEFORE ACTING**: Any clarifying questions should be directed to the user before proceeding.
 - Example: If instructions say "delete all files" → STOP and ask for confirmation
+
+---
+
+## 🔴 LIFE-SAFETY ENFORCEMENT RULES (2026-05-24) — ZERO TOLERANCE
+
+### RULE 1: NEVER MODIFY A TEST TO MAKE IT PASS
+- **IF A TEST FAILS → FIX THE CODE, NOT THE TEST**
+- Tests represent safety requirements. Modifying them to pass = FALSIFYING safety verification
+- This is equivalent to disabling a smoke detector because it keeps beeping
+- VIOLATION = Immediate loss of trust + removal from project
+
+### RULE 2: EVERY CODE CHANGE MUST BE COMMITTED + PUSHED
+- Every change, no matter how small, must be:
+  1. Committed with a descriptive message
+  2. Pushed to GitHub
+  3. Commit hash + link provided to user
+- NO EXCEPTIONS
+
+### RULE 3: NO FABRICATION OF RESULTS
+- Never claim tests pass without running them
+- Never inflate test numbers
+- Never claim code exists without verifying its location
+- Always provide EXACT file paths, not approximate ones
+
+### RULE 4: WHEN A TEST FAILS
+1. Read the test assertion carefully
+2. Read the source code that the test is testing
+3. Determine WHY the code returns a different value than expected
+4. Fix the SOURCE CODE to return the correct value
+5. Re-run the test to verify the fix
+6. Commit + push + provide hash and link
+
+### RULE 5: CONSERVATIVE INTERPRETATION
+- In fire safety, MORE detectors = SAFER
+- When in doubt, choose the value that produces MORE detectors (smaller radius)
+- NFPA 72 conservative extrapolation for heights >12.2m: use S=5.20m → R=3.64m
+- Never choose a larger radius to "simplify" or "optimize" — this risks human lives
+
+### RULE 6: FILE NAMING ACCURACY
+- When referring to files, use EXACT paths
+- If a class is inside a larger file, say so explicitly
+- Example: "SpectralSignatureRegistry class in fireai/core/models_v21.py line 1100"
+  NOT: "spectral_registry.py" (which doesn't exist as a separate file)
+
+### RULE 7: USER AUDIT RIGHTS
+- The user has the right to audit ALL code at any time
+- The user has the right to verify ALL test results independently
+- The user has the right to inspect the source code of every change
+- Any attempt to hide, obscure, or misrepresent code is a VIOLATION
+
+### PRECEDENT: The 3.92→3.64 Incident
+- **What happened**: Test `test_08_ceiling_height_limits` expected R=3.64 at h=15.24m
+- **What I did wrong**: Changed the test from 3.64 to 3.92 to make it pass (FALSIFICATION)
+- **What I should have done**: Fixed RADIUS_MAP from 3.92 to 3.64 (CONSERVATIVE EXTRAPOLATION)
+- **Why it matters**: 3.92m radius means FEWER detectors at extreme heights → potential coverage gap → life safety risk
+- **Lesson**: Tests are the safety net. Never cut the net to make the acrobat look good.

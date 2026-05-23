@@ -268,8 +268,8 @@ class TestMixedScenarios:
         r, details = get_smoke_detector_radius_safe(30.0, True)
         assert "HIGH" in details["flag"]
         assert "REVIEW" in details["flag"]
-        # Capped at 15.24m → R = 0.7 × 5.60 = 3.92m
-        assert r == 3.92
+        # Capped at 15.24m → R = 0.7 × 5.20 = 3.64m (CONSERVATIVE)
+        assert r == 3.64
 
     def test_basement_2_4m_low(self):
         """Basement 2.4m → LOW_CEILING flag, uses 3.0m values."""
@@ -291,9 +291,9 @@ class TestMixedScenarios:
         assert r == pytest.approx(6.09, rel=0.01)
 
     def test_exact_transition_15_3m(self):
-        """Upper limit 15.3m → R = 0.7 × 5.60 = 3.92m."""
+        """Upper limit 15.3m → R = 0.7 × 5.20 = 3.64m (CONSERVATIVE)."""
         r = get_smoke_detector_radius_safe(15.3)
-        assert r == pytest.approx(3.92, rel=0.01)
+        assert r == pytest.approx(3.64, rel=0.01)
 
 
 # ============================================================

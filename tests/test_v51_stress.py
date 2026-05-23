@@ -6,7 +6,7 @@ V24 UPDATE: Tests now validate the CORRECT strict/safe API separation:
   - get_smoke_detector_radius() is STRICT: raises CeilingHeightError for h < 3.0m
   - get_smoke_detector_radius_safe() is GRACEFUL: returns conservative value + PE flag
   - RADIUS_MAP brackets corrected to start at 3.0m (not 0.0m)
-  - (12.2, 15.24] bracket uses R = 0.7 × 5.60 = 3.92 (not 3.64)
+  - (12.2, 15.24] bracket uses R = 0.7 × 5.20 = 3.64 (CONSERVATIVE EXTRAPOLATION)
 """
 
 import pytest
@@ -64,9 +64,11 @@ class TestCeilingHeight:
     """
 
     def test_15m_returns_correct_v24_radius(self):
-        """15.0m is in (12.2, 15.24] bracket → R = 0.7 × 5.60 = 3.92."""
+        """15.0m is in (12.2, 15.24] bracket → R = 0.7 × 5.20 = 3.64.
+        CONSERVATIVE EXTRAPOLATION: heights >12.2m require safer (smaller) spacing
+        per NFPA 72 extrapolation rules. More detectors = safer."""
         r = get_smoke_detector_radius(15.0)
-        assert r == 3.92, f"Expected 3.92 per V24 fix, got {r}"
+        assert r == 3.64, f"Expected 3.64 (conservative), got {r}"
 
     def test_above_15_24m_raises(self):
         """Heights above NFPA 72 max (15.24m) must raise CeilingHeightError."""

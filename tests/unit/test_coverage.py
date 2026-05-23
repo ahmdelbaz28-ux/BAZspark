@@ -12,18 +12,18 @@ class TestExtremeHeights:
     # FIX: Updated values after R = 0.7×S correction (was S/2 = 4.55m, now R = 6.37m at h=3.0m)
     # Per NFPA 72-2022 §17.7.4.2.3.1: R = 0.7 × listed_spacing
     def test_height_24m(self):
-        # Above 15.24m: capped at 15.24m → R = 0.7 × 5.60 = 3.92m
-        assert get_smoke_detector_radius_safe(24.0) == 3.92
+        # Above 15.24m: capped at 15.24m → R = 0.7 × 5.20 = 3.64m (CONSERVATIVE)
+        assert get_smoke_detector_radius_safe(24.0) == 3.64
     def test_negative(self):
         """Negative height → REJECT with ValueError."""
         with pytest.raises(ValueError, match="CEILING_HEIGHT_MUST_BE_POSITIVE"):
             get_smoke_detector_radius_safe(-1.0)
     def test_height_20m(self):
-        # Above 15.24m: capped at 15.24m → R = 0.7 × 5.60 = 3.92m
-        assert get_smoke_detector_radius_safe(20.0) == 3.92
+        # Above 15.24m: capped at 15.24m → R = 0.7 × 5.20 = 3.64m (CONSERVATIVE)
+        assert get_smoke_detector_radius_safe(20.0) == 3.64
     def test_height_15_3m(self):
-        # h=15.3m in (12.2, 15.24) bracket → R = 0.7 × 5.60 = 3.92m
-        assert get_smoke_detector_radius_safe(15.3) == 3.92
+        # h=15.3m capped at 15.24m → R = 0.7 × 5.20 = 3.64m (CONSERVATIVE)
+        assert get_smoke_detector_radius_safe(15.3) == 3.64
     def test_height_3m(self):
         # h=3.0m: R = 0.7 × 9.10 = 6.37m (was incorrectly 4.55m using S/2)
         assert get_smoke_detector_radius_safe(3.0) == 6.37

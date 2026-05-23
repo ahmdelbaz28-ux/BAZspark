@@ -694,7 +694,7 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
         (7.6, 9.1):   4.76,   # R = 0.7 × 6.80 (7.6 ≤ h < 9.1m)
         (9.1, 10.7):  4.48,   # R = 0.7 × 6.40 (9.1 ≤ h < 10.7m)
         (10.7, 12.2): 4.20,   # R = 0.7 × 6.00 (10.7 ≤ h < 12.2m)
-        (12.2, 15.24): 3.92,  # R = 0.7 × 5.60 (12.2 ≤ h ≤ 15.24m)
+        (12.2, 15.24): 3.64,  # R = 0.7 × 5.20 (12.2 ≤ h ≤ 15.24m) CONSERVATIVE EXTRAPOLATION
     }
     # V24 FIX: Removed special min_h==0.0 condition that silently accepted
     # heights below 3.0m. Now ALL brackets use < for upper bound except
@@ -848,7 +848,7 @@ def _get_radius_internal(h: float) -> float:
         (7.6, 9.1):   4.76,   # R = 0.7 × 6.80 (7.6 ≤ h < 9.1m)
         (9.1, 10.7):  4.48,   # R = 0.7 × 6.40 (9.1 ≤ h < 10.7m)
         (10.7, 12.2): 4.20,   # R = 0.7 × 6.00 (10.7 ≤ h < 12.2m)
-        (12.2, 15.24): 3.92,  # R = 0.7 × 5.60 (12.2 ≤ h ≤ 15.24m)
+        (12.2, 15.24): 3.64,  # R = 0.7 × 5.20 (12.2 ≤ h ≤ 15.24m) CONSERVATIVE EXTRAPOLATION
     }
     for (min_h, max_h), r in R.items():
         if max_h == 15.24:
