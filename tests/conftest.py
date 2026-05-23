@@ -9,6 +9,7 @@ Fixes:
 """
 
 import sys
+import pytest
 
 # ── sys.path Sanitisation ────────────────────────────────────────────────────
 # Some test modules or third-party libraries append None or "" to sys.path,
