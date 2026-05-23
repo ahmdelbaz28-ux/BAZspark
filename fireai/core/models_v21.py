@@ -541,6 +541,16 @@ class EnvironmentalContext(BaseModel):
         default=True,
         description="Indoor = hemisphere (2/3*pi*r^3). Outdoor = full sphere.",
     )
+    lens_fouling_factor: float = Field(
+        default=0.85, gt=0.0, le=1.0,
+        description=(
+            "Optical path attenuation from lens fouling over service life. "
+            "1.0 = pristine lens (laboratory), 0.85 = typical industrial, "
+            "0.65 = heavy industrial without scheduled cleaning. "
+            "FM Global DS 5-48 §3.2.1 acknowledges optical degradation. "
+            "Applied to Beer-Lambert transmittance in Layer 5."
+        ),
+    )
 
     @model_validator(mode="after")
     def cross_validate_environment(self) -> "EnvironmentalContext":
@@ -554,6 +564,97 @@ class EnvironmentalContext(BaseModel):
                 "[Pasquill-Gifford correlation]"
             )
         return self
+
+
+# ===========================================================================
+# V21.2: Zone-Based Minimum Redundancy (NFPA 72 §17.8.3.4)
+# ===========================================================================
+
+MIN_REDUNDANCY_BY_ZONE: Dict[ZoneType, int] = {
+    # High-risk zones require voting architecture (1oo2 minimum)
+    ZoneType.ZONE_0:  3,   # 2oo3 voting — continuous presence
+    ZoneType.ZONE_1:  2,   # 1oo2 minimum — NFPA 72 §17.8.3.4
+    ZoneType.ZONE_2:  1,   # Single detector acceptable
+    ZoneType.ZONE_20: 3,   # 2oo3 voting — continuous dust
+    ZoneType.ZONE_21: 2,   # 1oo2 minimum
+    ZoneType.ZONE_22: 1,   # Single acceptable
+    ZoneType.UNCLASSIFIED: 0,  # No detector required
+}
+
+
+# ===========================================================================
+# V21.2: Room Purge Time (IEC 60079-10-1 Annex B Ventilation Dilution)
+# ===========================================================================
+
+def room_purge_time(
+    room_volume_m3: float,
+    ach: float,
+    target_fraction: float = 0.01,
+) -> float:
+    """
+    Calculate the time (seconds) for ventilation to reduce gas concentration
+    to `target_fraction` of initial concentration.
+
+    Based on IEC 60079-10-1:2015 Annex B §B.2 dilution model:
+        C(t) = C_0 * exp(-ACH * t / 3600)
+
+    Solving for t when C(t)/C_0 = target_fraction:
+        t = -3600 / ACH * ln(target_fraction)
+
+    This is NOT zone reclassification — zones are based on source frequency
+    and duration per IEC §4.2. This calculation helps engineers estimate
+    how long a room takes to purge after a release.
+
+    Args:
+        room_volume_m3: Room volume (m³). Included for API consistency;
+            the exponential decay model assumes perfect mixing regardless
+            of room size (IEC Annex B limitation).
+        ach: Air changes per hour (1/h)
+        target_fraction: Target concentration as fraction of initial
+            (0.01 = 1% of initial, 0.001 = 0.1%)
+
+    Returns:
+        Time in seconds to reach target fraction. Always >= 0.
+
+    Reference: IEC 60079-10-1:2015 Annex B §B.2,
+               NFPA 497-2021 §4.3,
+               Lees' Loss Prevention §15.3 (exponential dilution)
+    """
+    if ach <= 0.0 or target_fraction <= 0.0 or target_fraction >= 1.0:
+        return float('inf')  # Cannot purge without ventilation
+
+    # t = -3600/ACH * ln(target_fraction)
+    # ln(0.01) ≈ -4.605, ln(0.001) ≈ -6.908
+    t_seconds = -3600.0 / ach * math.log(target_fraction)
+    return max(t_seconds, 0.0)
+
+
+def room_concentration_at_time(
+    initial_concentration_vol_pct: float,
+    ach: float,
+    time_seconds: float,
+) -> float:
+    """
+    Calculate gas concentration at time t using exponential dilution.
+
+    C(t) = C_0 * exp(-ACH * t / 3600)
+
+    IEC 60079-10-1:2015 Annex B §B.2: "In a room with adequate ventilation,
+    the concentration of a flammable gas after a release decreases
+    exponentially with the number of air changes."
+
+    Args:
+        initial_concentration_vol_pct: Initial concentration (vol%)
+        ach: Air changes per hour (1/h)
+        time_seconds: Time since release (seconds)
+
+    Returns:
+        Concentration at time t (vol%)
+    """
+    if ach <= 0.0:
+        return initial_concentration_vol_pct  # No ventilation = no decay
+    decay_constant = ach / 3600.0
+    return initial_concentration_vol_pct * math.exp(-decay_constant * time_seconds)
 
 
 # ===========================================================================

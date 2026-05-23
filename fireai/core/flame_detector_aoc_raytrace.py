@@ -35,7 +35,10 @@ from fireai.core.models_v21 import (
     RayTracePoint as V21RayTracePoint,
     WavelengthBand,
     VolumetricMedium,
+    EnvironmentalContext,
     SpectralSignatureRegistry,
+    MIN_REDUNDANCY_BY_ZONE,
+    ZoneType,
     volumetric_path_transmittance,
     beer_lambert_transmittance,
 )
@@ -477,6 +480,8 @@ class FlameDetectorAOCRayTrace:
         target_grid:       List[V21RayTracePoint],
         obstructions:      List[V21Obstruction],
         volumetric_media:  Optional[List[VolumetricMedium]] = None,
+        zone_type:         Optional[ZoneType] = None,
+        env_context:       Optional[EnvironmentalContext] = None,
     ) -> CoverageResult:
         """
         V21.2: Multi-detector analysis.
@@ -484,8 +489,12 @@ class FlameDetectorAOCRayTrace:
         Q5: Coverage = covered_count / total_count (not hull area).
         V21.2: Includes volumetric media (Beer-Lambert) analysis.
         GAP-06: Computes redundancy per grid point for NFPA 72 §17.8.3.4.
+        V22: lens_fouling_factor from EnvironmentalContext applied to transmittance.
+        V22: zone-based minimum redundancy check (MIN_REDUNDANCY_BY_ZONE).
         """
         volumetric_media = volumetric_media or []
+        env_context = env_context or EnvironmentalContext()
+        fouling = env_context.lens_fouling_factor
         self._build_spatial_index(obstructions)
 
         all_warnings: List[str] = []
@@ -494,6 +503,26 @@ class FlameDetectorAOCRayTrace:
 
         for det in detectors:
             result = self.analyse_single_v21(det, target_grid, obstructions, volumetric_media)
+            # V22: Apply lens fouling attenuation to spectral transmittance
+            if fouling < 1.0:
+                fouled_map = {
+                    k: round(v * fouling, 4)
+                    for k, v in result.spectral_transmittance_map.items()
+                }
+                # Re-evaluate covered points after fouling
+                fouled_covered = frozenset(
+                    k for k, v in fouled_map.items()
+                    if v >= self.detector_threshold
+                )
+                result = SingleDetectorResult(
+                    detector_id=result.detector_id,
+                    covered_pts=fouled_covered,
+                    effective_range_m=round(
+                        result.effective_range_m * fouling, 2
+                    ),
+                    spectral_transmittance_map=fouled_map,
+                    warnings=result.warnings,
+                )
             per_detector[det.detector_id] = result
             # Fix #20: union, not count per detector
             union_covered |= result.covered_pts
@@ -530,6 +559,18 @@ class FlameDetectorAOCRayTrace:
                 "covered by >=2 detectors). Critical applications require "
                 "min_redundancy >= 2 (FM Global DS 5-48 §3.1)."
             )
+
+        # V22: Zone-based minimum redundancy check
+        if zone_type is not None:
+            required = MIN_REDUNDANCY_BY_ZONE.get(zone_type, 1)
+            if min_redundancy < required and covered > 0:
+                all_warnings.append(
+                    f"V22 SAFETY: Zone {zone_type.value} requires ≥{required} "
+                    f"independent detectors per point (current min={min_redundancy}). "
+                    f"Points with <{required} detector(s) are SPOF "
+                    f"(Single Point of Failure). [NFPA 72 §17.8.3.4, "
+                    f"FM Global DS 5-48 §3.1]"
+                )
 
         return CoverageResult(
             total_points      = total,
