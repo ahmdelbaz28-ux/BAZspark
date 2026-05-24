@@ -967,6 +967,13 @@ def burgess_wheeler_lfl(
         lfl_t = lfl_25c * (1.0 - correction)
 
     # LFL must remain positive
+    # NOTE: The 50% floor (lfl_25c * 0.5) is a widely-used engineering safety
+    # factor, but it is NON-CONSERVATIVE for zone extent calculations. At very
+    # high temperatures (>200C), the true LFL may drop below 50% of reference,
+    # which would produce WIDER zone extents. This floor may cause zone extent
+    # underestimation at extreme temperatures. Per agent.md V25 finding #2,
+    # this requires FPE review for high-temperature applications.
+    # TODO: Consider removing floor or making it configurable per IEC 60079-10-1.
     return max(lfl_t, lfl_25c * 0.5)  # Never drop below 50% of reference
 
 
@@ -1134,6 +1141,13 @@ class SpectralSignatureRegistry:
         # For CO2-band (4.3um): hydrocarbons have strong absorption
         self._signatures = {
             # Methane (CH4)
+            # NOTE: alpha_ir3=0.8 is CONSERVATIVE (overestimates IR3 absorption).
+            # Per HITRAN 2020, CH4 absorption in the CO2 IR3 band (3-5 um) is
+            # weak (dominant bands at 3.3 um and 7.7 um). A more accurate value
+            # is ~0.3-0.4 for typical detector bandwidths. The higher value
+            # produces MORE detectors (conservative) but may cause over-design
+            # in gas detection systems relying on IR3 channels.
+            # TODO: Validate with FPE — consider per-band correction factors.
             "74-82-8": SpectralSignature(
                 cas_number="74-82-8", substance_name="Methane",
                 alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=0.05, alpha_ir3=0.8,

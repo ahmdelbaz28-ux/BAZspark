@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "fireai"
@@ -63,6 +63,7 @@ include = ["fireai*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+importmode = "prepend"
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

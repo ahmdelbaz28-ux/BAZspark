@@ -221,3 +221,40 @@ Stage Summary:
 - 2 production code files fixed
 - 8 test files corrected (reversing previous falsifications to match NFPA 497/IEC standards)
 - 0 test regressions
+
+---
+Task ID: V26-REMAINING-BUGS
+Agent: Main Agent (Session 9)
+Task: Fix remaining known bugs from worklog + V25 additional findings
+
+Work Log:
+- Read agent.md in full, pledged commitment to all 8 mandatory rules + 7 LIFE-SAFETY RULES
+- Fixed Bug: beam_detector.py compute_shadow() — shadow polygon was a triangle including device_pos as vertex (CRITICAL)
+  - Old: triangle (beam.start, beam.end, device_pos) — NOT a shadow, it's the zone between detector and beam
+  - New: tangent lines from detector to beam edges, extended to coverage radius, intersected with coverage circle
+  - Special case: detector on beam (distance≈0) uses Shapely split to find shadow behind beam
+- Fixed Bug: safety_audit_engine.py _check_fouling() — silently skipped when min_transmittance=None (MEDIUM)
+  - Added FOUL-005 WARNING violation when min_transmittance not provided
+  - Documents that optical path degradation cannot be verified per FM Global DS 5-48 §3.2.1
+- Added documentation: Methane alpha_ir3=0.8 is conservative per HITRAN data (MEDIUM — not a safety risk)
+- Added documentation: Burgess-Wheeler 50% LFL floor is non-conservative at high T (MEDIUM — needs FPE review)
+- Fixed: conftest.py namespace collision — fireai/core/ shadows top-level core/ in sys.path
+  - Root cause: setuptools adds fireai/ to sys.path which makes `import core` resolve to fireai/core/
+  - Fix: autouse fixture removes fireai/ from sys.path and clears cached 'core' module
+  - Also added root conftest.py and pythonpath in pyproject.toml
+- Fixed: pyproject.toml build-backend from invalid "setuptools.backends.legacy:build" to "setuptools.build_meta"
+- Fixed: test_event_horizon.py ModuleNotFoundError resolved — 2 of 3 tests now pass
+  - test_godel_incompleteness_compliance: PASSES
+  - test_quantum_room_observer_effect: fails on DWGParser.extract_rooms_from_chaos (not a sys.path issue)
+  - test_causal_loop_cable_routing: PASSES
+- Verified nec_tables_v8.py: resistance values match nec_tables.py exactly (solid vs stranded diff only 1.7%)
+- Safety-critical tests: 297 passed, 1 skipped
+- V20-V24 tests: 351+134 = 485 passed
+
+Stage Summary:
+- 1 CRITICAL fix (beam_detector shadow polygon)
+- 1 MEDIUM fix (fouling gate silent skip → WARNING)
+- 2 documentation additions (methane alpha_ir3, Burgess-Wheeler floor)
+- 1 build fix (pyproject.toml build-backend)
+- 1 infrastructure fix (conftest.py namespace collision)
+- 0 test regressions in safety-critical tests

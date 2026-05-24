@@ -578,6 +578,29 @@ class SafetyAuditEngine:
                 ))
             else:
                 passed_checks += 1
+        else:
+            # min_transmittance not provided — emit WARNING that
+            # effective transmittance check was skipped per agent.md V25
+            # finding #3. Silently skipping masks potential fouling risks.
+            total_checks += 1
+            violations.append(AuditViolation(
+                gate="FOULING",
+                severity="WARNING",
+                code="FOUL-005",
+                message=(
+                    "Effective transmittance check SKIPPED — "
+                    "min_transmittance not provided. Optical path degradation "
+                    "from fouling, dust, or contaminant accumulation cannot be "
+                    "verified. This may mask reduced detection capability in "
+                    "industrial or harsh environments per FM Global DS 5-48 §3.2.1."
+                ),
+                standard_ref="FM Global DS 5-48 §3.2.1, IEC 60079-29-4 §6.2",
+                remediation=(
+                    "Provide min_transmittance from spectral analysis (Layer 5) "
+                    "or detector manufacturer datasheet. For flame detectors, "
+                    "this is typically 0.5-0.9 for clean optical paths."
+                ),
+            ))
         
         return violations, total_checks, passed_checks
     
