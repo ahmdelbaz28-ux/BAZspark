@@ -189,7 +189,11 @@ class StairwellSmokeControlIntegrator:
         violations: list = []
         injections: List[Dict[str, Any]] = []
 
-        pressurization_required = bldg_height >= self.min_height_m
+        # V25 FIX: NFPA 101 §7.2.3.9 says buildings "exceeding 75 ft" require
+        # pressurization. "Exceeding" means strictly greater than (>), not
+        # greater than or equal to (≥). A building at exactly 75 ft (22.86 m)
+        # does NOT require pressurization per NFPA 101.
+        pressurization_required = bldg_height > self.min_height_m
 
         for stair in stairwells:
             zone_id = stair.get("zone_id", "UNKNOWN-STAIR")
@@ -265,6 +269,42 @@ class StairwellSmokeControlIntegrator:
                     })
 
         safe = len(violations) == 0
+
+        # V25 FIX: Validate MAX_POSITIVE_PRESSURE_PA constraint.
+        # NFPA 92 §6.4.2 limits maximum stairwell pressure to prevent doors
+        # from becoming impossible to open during evacuation. Without this
+        # check, the system could approve a pressurization design that traps
+        # occupants by exceeding 85 Pa — a life-safety failure.
+        if pressurization_required:
+            # If pressure data is provided, validate against max limit
+            for stair in stairwells:
+                zone_id = stair.get("zone_id", "UNKNOWN-STAIR")
+                name = stair.get("name", zone_id)
+                design_pressure = stair.get("design_pressure_pa", None)
+                if design_pressure is not None and design_pressure > MAX_POSITIVE_PRESSURE_PA:
+                    desc = (
+                        f"Stairwell '{name}' ({zone_id}) design pressure "
+                        f"({design_pressure:.1f} Pa) exceeds maximum "
+                        f"({MAX_POSITIVE_PRESSURE_PA:.1f} Pa per NFPA 92 §6.4.2). "
+                        f"Excessive pressure prevents door opening — occupants "
+                        f"TRAPPED during fire evacuation. "
+                        f"Per NFPA 101 §7.2.1.4.5, door force must not exceed "
+                        f"the capability of the building occupants."
+                    )
+                    if Violation is not None:
+                        violations.append(Violation(
+                            severity="CRITICAL",
+                            citation=f"{_CITE_NFPA92_6_4} / NFPA 101-2024 §7.2.1.4.5",
+                            description=desc,
+                        ))
+                    else:
+                        violations.append({
+                            "severity": "CRITICAL",
+                            "citation": f"{_CITE_NFPA92_6_4} / NFPA 101-2024 §7.2.1.4.5",
+                            "description": desc,
+                        })
+                    logger.critical(desc)
+                    safe = False
 
         # Build provenance result
         if DecisionProvenance is not None:

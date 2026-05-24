@@ -344,10 +344,29 @@ def _iec_annex_b_extent(
         r_hz = (3.0 * Vz_diluted_m3 / (4.0 * math.pi)) ** (1.0 / 3.0)
 
     # IEC 60079-10-1 Annex B §B.4: vertical extent
-    # Buoyancy: gases lighter than air (MW < 29) rise → larger vertical extent
-    mw_air = 29.0
-    buoyant = mw < mw_air
-    r_vz = r_hz * (1.5 if buoyant else 0.5)
+    # V25 FIX: Buoyancy classification now uses the same 3-tier density-ratio
+    # system as models_v21.vapor_density_tier(), ensuring consistent vertical
+    # extent calculation across the entire codebase.
+    #
+    # Previous code used binary mw < 29.0 (with wrong MW_air=29.0 vs 28.96
+    # in models_v21). This caused:
+    #   1. Cross-module inconsistency (29.0 vs 28.96 g/mol)
+    #   2. Binary classification missed the BREATHING_ZONE tier
+    #   3. Ethane (MW=30.07, ratio=1.038) was classified as "not buoyant"
+    #      but the 3-tier system correctly classifies it as LOW (heavier than air)
+    #      with vertical factor 0.5 — the result is the same for ethane but
+    #      differs for gases near air MW (e.g., MW=28.5 → old: buoyant=1.5,
+    #      new: BREATHING_ZONE=1.0).
+    #
+    # Reference: IEC 60079-10-1:2015 §B.4, NFPA 497-2021 §4.5
+    from fireai.core.models_v21 import vapor_density_tier, ElevationTier as _ElevTier
+    tier = vapor_density_tier(mw)
+    if tier == _ElevTier.HIGH:
+        r_vz = r_hz * 1.5   # Light gas → rises → larger vertical extent
+    elif tier == _ElevTier.LOW:
+        r_vz = r_hz * 0.5   # Heavy gas → sinks → smaller vertical extent
+    else:
+        r_vz = r_hz * 1.0   # Near-air density → uniform sphere
     zone_vol_m3 = Vz_diluted_m3
 
     # Apply minimum extents (safety floor)

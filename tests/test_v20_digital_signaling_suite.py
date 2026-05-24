@@ -212,9 +212,28 @@ class TestStairwellSmokeControlIntegrator:
         assert len(mon_injections) == 2
 
     def test_height_threshold_boundary(self):
-        """Building exactly at 22.86m → pressurization required."""
+        """Building exactly at 22.86m (75 ft) → pressurization NOT required.
+        V25 FIX: NFPA 101 §7.2.3.9 says 'exceeding 75 ft' — the word
+        'exceeding' means strictly greater than (>). A building at exactly
+        75 ft does NOT require pressurization. The old test asserted True,
+        which was test falsification matching the buggy >= operator."""
         integrator = StairwellSmokeControlIntegrator(
             building_height_m=22.86,
+        )
+        result = integrator.generate_active_smoke_defense(
+            stairwells=[
+                {"zone_id": "STAIR-A", "name": "Stair A", "floors_served": ["F01"]},
+            ],
+        )
+        val = result.value if isinstance(result, DecisionProvenance) else result["value"]
+        assert val["pressurization_required"] is False
+
+    def test_height_just_above_threshold(self):
+        """Building just above 22.86m → pressurization required.
+        V25 FIX: Complementary test — a building at 22.87m (just above
+        75 ft) must require pressurization per NFPA 101 'exceeding 75 ft'."""
+        integrator = StairwellSmokeControlIntegrator(
+            building_height_m=22.87,
         )
         result = integrator.generate_active_smoke_defense(
             stairwells=[
