@@ -82,6 +82,10 @@ class UniversalDataModel:
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
         self._conn.execute("PRAGMA cache_size=-32768")   # 32 MB page cache
+        self._conn.execute("PRAGMA temp_store=MEMORY")  # Consultant B1: temp tables in RAM
+
+        # Consultant B1: row_factory for cleaner column access
+        self._conn.row_factory = sqlite3.Row
 
         # In-memory caches (unchanged from original)
         self.elements: Dict[str, UniversalElement] = {}
@@ -587,3 +591,21 @@ class UniversalDataModel:
         """Return all in-memory elements."""
         with self._lock:
             return list(self.elements.values())
+
+    def get_statistics(self) -> Dict[str, Any]:
+        """Return database statistics — Consultant B1 addition.
+
+        Provides a summary of the current state of the data model
+        including element counts, pending sync operations, and version.
+        """
+        return {
+            "total_elements": len(self.elements),
+            "deleted_elements": sum(1 for e in self.elements.values()
+                                   if getattr(e, "is_deleted", False)),
+            "active_elements": sum(1 for e in self.elements.values()
+                                  if not getattr(e, "is_deleted", False)),
+            "pending_autocad_to_revit": len(self.pending_changes.get("revit", [])),
+            "pending_revit_to_autocad": len(self.pending_changes.get("autocad", [])),
+            "database_version": self.version,
+            "last_sync": str(self.last_sync_timestamp) if self.last_sync_timestamp else None,
+        }

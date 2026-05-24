@@ -152,6 +152,56 @@ class Geometry:
         """Batch perimeter computation."""
         return [geom.calculate_perimeter() for geom in geometries]
     
+    @staticmethod
+    def calculate_area_batch_numpy(geometries: List['Geometry']) -> List[float]:
+        """NumPy vectorized shoelace for large uniform polygon arrays.
+        
+        Consultant B9 addition — optional accelerated path.
+        All polygons must have the SAME vertex count n (padded with last point).
+        Significant speedup for n >= 50 or len(geometries) >= 1000.
+        For small batches, calculate_area_batch() (pure Python) is faster.
+        
+        Returns list of float areas in same order as input.
+        Falls back to pure Python if NumPy unavailable.
+        """
+        try:
+            import numpy as np
+        except ImportError:
+            return [geom.calculate_area() for geom in geometries]
+        
+        if not geometries:
+            return []
+        
+        n_pts = max(len(g.points) for g in geometries)
+        n_geo = len(geometries)
+        
+        # Build (n_geo, n_pts, 2) array
+        xs = np.zeros((n_geo, n_pts), dtype=np.float64)
+        ys = np.zeros((n_geo, n_pts), dtype=np.float64)
+        
+        for i, geom in enumerate(geometries):
+            pts = geom.points
+            k = len(pts)
+            for j, p in enumerate(pts):
+                xs[i, j] = p.x
+                ys[i, j] = p.y
+            # Pad remaining with last point (closed polygon)
+            if k < n_pts:
+                xs[i, k:] = pts[-1].x
+                ys[i, k:] = pts[-1].y
+        
+        # Vectorized shoelace: sum(x[i]*y[i+1] - x[i+1]*y[i])
+        xs1 = np.roll(xs, -1, axis=1)
+        ys1 = np.roll(ys, -1, axis=1)
+        areas = np.abs((xs * ys1 - xs1 * ys).sum(axis=1)) * 0.5
+        
+        # Write back and return
+        results: List[float] = []
+        for i, geom in enumerate(geometries):
+            geom.area = float(areas[i])
+            results.append(geom.area)
+        return results
+    
     def to_dict(self) -> Dict:
         return {
             'points': [p.to_dict() for p in self.points],
