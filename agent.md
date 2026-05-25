@@ -915,3 +915,21 @@ All 6 consultant files have been fully integrated:
 
 - (a) Status: All V12-V31 fixes verified in place. 337+ tests passing. Zero new bugs found. Consultant advice fully integrated. Constants consistent. GitHub synced.
 - (b) To advance to next phase: User must define the next phase objectives (e.g., new features, performance optimization, deployment preparation, or additional safety hardening).
+
+---
+
+## AGENT.MD Rules Update (2026-05-25)
+
+### Rule 17 — NO HALF-SOLUTIONS / ROOT-CAUSE ANALYSIS MANDATORY
+**What was changed:** Added new Rule 17 to the Mandatory Rules section.
+**Description:** When encountering a problem, the agent must NEVER resort to the easiest or shortest workaround. Must first think deeply, analyze the root cause, research documented sources on the internet and within the codebase, and only then make a decision for a definitive root-cause fix. Half-solutions, superficial patches, band-aid fixes, and "good enough for now" approaches are STRICTLY FORBIDDEN.
+**Rationale:** A half-solution in a life-critical fire protection system is worse than no solution, because it creates a false sense of security while the real danger remains.
+
+### Rule 18 — CONTINUOUS PIPELINE / CLOSED LOOP OPERATION
+**What was changed:** Added new Rule 18 to the Mandatory Rules section.
+**Description:** The agent must NEVER stop working as long as the operator has not explicitly requested a stop. After completing a test cycle and delivering what's needed for the current phase, the agent MUST immediately begin reading the development files for the next phase and start working on it. The work cycle is: Read → Implement → Test → Log → Report → IMMEDIATELY begin next phase. The pipeline must be CLOSED LOOP, CERTIFIED, PROFESSIONAL, and AUTO-CORRECTED.
+**Rationale:** Stopping mid-pipeline or waiting for instruction when the next step is obvious wastes time and breaks the continuous delivery flow.
+
+### Commit Information
+- **Commit:** `0f7cc38`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/0f7cc38
