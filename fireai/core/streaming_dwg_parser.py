@@ -93,7 +93,8 @@ def _shoelace_area(poly: List[Tuple[float,float]]) -> float:
 def _assemble_closed_polygons_v29(
     lines:     List[Tuple[Tuple[float,float], Tuple[float,float]]],
     tolerance: float = 0.01,
-) -> List[List[Tuple[float, float]]]:
+    return_consumed: bool = False,
+) -> "list | tuple[list, set]":
     """
     V29 O(n) spatial grid index polygon assembler — BIDIRECTIONAL.
 
@@ -109,11 +110,15 @@ def _assemble_closed_polygons_v29(
         Validated line segments with finite coordinates.
     tolerance : float
         Maximum distance (metres) to consider two endpoints coincident.
+    return_consumed : bool
+        If True, return (polygons, consumed_indices) tuple.
+        V44 addition for correct pending_lines filtering.
 
     Returns
     -------
     list of list of (x, y)
         Each inner list is a closed polygon's vertex sequence.
+        If return_consumed=True, returns (polygons, consumed_set).
     """
     if not lines:
         return []
@@ -221,6 +226,11 @@ def _assemble_closed_polygons_v29(
             if close_dist_sq <= tol_sq:
                 closed_polygons.append(chain_vertices[:-1])
 
+    # V44 FIX: Also return consumed line indices so callers can filter
+    # pending_lines correctly. Previously, callers had to use id() matching
+    # which fails because polygon vertices are new tuples, not original lines.
+    if return_consumed:
+        return closed_polygons, consumed
     return closed_polygons
 
 
@@ -283,8 +293,8 @@ class StreamingDXFParser:
                         stats.chunks += 1
 
                         # Assemble polygons from accumulated lines
-                        polygons = _assemble_closed_polygons_v29(
-                            pending_lines, self.tolerance)
+                        polygons, consumed = _assemble_closed_polygons_v29(
+                            pending_lines, self.tolerance, return_consumed=True)
 
                         for poly in polygons:
                             area = _shoelace_area(poly)
@@ -304,14 +314,11 @@ class StreamingDXFParser:
                         # V44 FIX: Previously `pending_lines = []` silently dropped ALL lines,
                         # including orphans not consumed by polygon assembly. This meant rooms
                         # that span chunk boundaries were NEVER assembled — missing rooms = missing
-                        # fire detectors = life safety failure. Now only remove consumed lines.
-                        if polygons:
-                            consumed_line_ids = set()
-                            for poly in polygons:
-                                for seg in poly:
-                                    consumed_line_ids.add(id(seg))
-                            pending_lines = [ln for ln in pending_lines
-                                           if id(ln) not in consumed_line_ids]
+                        # fire detectors = life safety failure. Now only remove consumed lines
+                        # using the index set returned by _assemble_closed_polygons_v29.
+                        if consumed:
+                            pending_lines = [ln for i, ln in enumerate(pending_lines)
+                                           if i not in consumed]
                         chunk_buf = []
 
                 # Final chunk
