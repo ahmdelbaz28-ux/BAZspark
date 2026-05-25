@@ -1397,3 +1397,40 @@ V33 documented "API stability `analyse_rooms_batch()` ignores `n_workers` parame
 ### Commit Information
 - **Commit:** `046c38a`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/046c38a
+
+---
+
+## V38 Fix (2026-05-25) — CI Benchmark Stub Transparency
+
+### Context
+V33 documented "CI Benchmark `_stub()` returns fake results" as LOW priority. Per Rule 18, this is the last V33 Additional Finding. After this, all V33 findings are resolved.
+
+### Bug 38 — CI Benchmark Stub Returns Indistinguishable Fake Results (LOW — CI Integrity)
+**File:** `fireai/core/ci_benchmark.py` — `_stub()` method + `BenchResult` dataclass
+**Discovery:** `_stub()` returns `BenchResult` objects that are indistinguishable from real measurements: `passed=True` by default, no warning emitted, no flag marking data as synthetic. Downstream consumers (baseline comparison, CI decisions) treated fake numbers as real. A CI pipeline could silently use fake performance numbers for regression decisions.
+**Root Cause Analysis (per Rule 17):** The stub was designed as a fallback for missing imports, but without any transparency mechanism. The root cause is not the stub itself (it's needed for CI environments), but the lack of a data-layer distinction between real and synthetic results.
+**Fix Applied:**
+- Added `is_stub: bool = False` field to `BenchResult` dataclass
+- `_stub()` now emits `warnings.warn()`, sets `passed=False`, sets `is_stub=True`
+- `run_all()` prints `STUB` instead of `PASS`/`FAIL` with `(SYNTHETIC)` label
+- `compare_to_baseline()` skips stub results with "(stub — not comparable)" message
+- `to_dict()` includes `is_stub` in serialized output
+**Tests:** 27/27 V29 integration tests passing
+
+### Self-Criticism Notes (V38)
+
+1. **Fake perf numbers in a life-critical system are dangerous** — If a regression is masked by stub numbers, a real performance degradation could go undetected, potentially causing timeout failures in field operations.
+2. **The stub itself is still needed** — Some CI environments genuinely don't have all dependencies. The fix makes the stub transparent, not removed.
+
+### All V33 Additional Findings — Status
+
+| # | Finding | Priority | Status |
+|---|---------|----------|--------|
+| 1 | DeltaCache SQLite persistence incomplete | LOW | V36 FIXED |
+| 2 | HAC duplicate Burgess-Wheeler | MEDIUM | V35 FIXED |
+| 3 | analyse_rooms_batch ignores n_workers | LOW | V37 FIXED |
+| 4 | CI Benchmark _stub() fake results | LOW | V38 FIXED |
+
+### Commit Information
+- **Commit:** `096ccb7`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/096ccb7
