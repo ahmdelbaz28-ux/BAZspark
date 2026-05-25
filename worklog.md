@@ -459,3 +459,71 @@ Stage Summary:
 - Commits: da6e04c (B8+B9), 0249729 (B1), 8e4f5e9 (B10), 722a58d (B3)
 - All pushed to https://github.com/ahmdelbaz28-ux/revit
 - Key principle: Per agent.md Rule 6, every consultant fix was verified against actual code before applying. 4 of 8 recommendations were rejected due to API incompatibility, architectural risk, or deprecated target files.
+
+---
+Task ID: D1-D6-VERIFICATION
+Agent: Main Agent (Session 15 - continued from context loss)
+Task: Execute mandatory D1→D4→D5→D3→D2→D6 deliverable order, run maximum testing
+
+Work Log:
+- Read agent.md contract in full, pledged continued commitment to all 8 mandatory rules + 7 LIFE-SAFETY RULES
+- Confirmed all D1-D6 files already exist on disk from previous sessions
+- Executed mandatory order D1→D4→D5→D3→D2→D6:
+
+  D1 (constant_consistency_checker.py):
+  - Ran against 662 Python files
+  - PASS: No canonical constant mismatches (DETECTOR_RADIUS=6.37, MAX_SPACING_M=9.1, _MW_AIR=28.96 all correct)
+  - PASS: No dict-literal constant mismatches
+  - PASS: All cross-module consistency groups aligned (max_spacing, mw_air, gravity)
+  - WARN: 81 inconsistent multi-definitions (mostly different standards/contexts, not NFPA errors)
+  - WARN: 466 suspicious raw literals (should use named constants — code quality, not correctness)
+
+  D4 (test_performance_regression.py):
+  - 12/12 PASS in 24.32s
+  - Small rooms: PASS, Medium rooms: PASS, Large rooms: PASS, Wide-range rooms: PASS
+  - Verification: Small PASS, Medium PASS
+  - Invariants: Determinism PASS, Monotonicity PASS, Proof→coverage PASS, Variable radius PASS
+  - Scalability: Scaling ratio PASS, _remove_redundant bound PASS
+
+  D5 (test_pipeline_golden.py):
+  - 86 passed, 4 skipped (expected: single-detector rooms skip spacing test, high-ceiling rooms skip proof test)
+  - All 10 golden cases PASS detector count bounds, coverage minimums, NFPA compliance
+  - All 10 golden cases PASS consensus verification (VERIFIED 3/3)
+  - All 10 golden cases PASS determinism across 5 runs
+  - All detector positions verified: within room, wall distance compliant
+
+  D3 (consensus_engine_v2.py):
+  - Rectangular room: VERIFIED 3/3 (delegates to v1)
+  - L-shape polygon: VERIFIED 3/3 (ExactCoverage, Grid-Polygon, Voronoi-Polygon)
+  - Auto-detect: is_rectangular_polygon correctly identifies 4-vertex vs 5+ vertex polygons
+  - Shapely available: True
+
+  D2 (compliance_proof_document.py):
+  - Generated 7,529 char AHJ-ready Markdown document
+  - Contains all required sections: project header, design criteria, room summary, detailed results, consensus summary, engineer certification
+  - All NFPA 72 section references present
+  - Design parameters table with canonical values verified
+
+  D6 (dependency_analyzer.py):
+  - Analyzed 450 Python files, 1,513 import statements
+  - PASS: No circular import chains detected (zero critical issues)
+  - WARN: 1,453 unused imports (mostly try/except conditional imports)
+  - WARN: 48 unused public modules (mostly CLI entry points and scripts)
+
+  Maximum Testing:
+  - Core + unit + safety + performance + golden + integration: 1,021 passed, 1 failed, 5 skipped
+  - Additional batches: 271 passed, 3 skipped + 145 passed, 5 skipped
+  - Total unique tests verified: ~1,437 PASS
+  - 1 known failure: test_v13_safe_building_engine::test_single_room_solve — pulp not installed (optional dependency)
+  - Per agent.md Rule 5: test NOT modified — failure is environment dependency, not source code bug
+
+Stage Summary:
+- D1-D6 mandatory order executed: ALL PASS
+- Critical constants verified consistent across codebase
+- Performance baselines established (12/12 regression tests pass)
+- 10 golden correctness cases verified (86/86+4 SKIP pass)
+- ConsensusEngineV2 verified for rectangular and non-rectangular rooms
+- Compliance document generator verified
+- No circular imports detected
+- ~1,437 total tests passing
+- Commit: b52f375 (pre-existing) | Link: https://github.com/ahmdelbaz28-ux/revit/commit/b52f375
