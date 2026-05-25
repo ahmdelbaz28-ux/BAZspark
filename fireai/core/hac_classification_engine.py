@@ -1154,11 +1154,17 @@ class HACClassificationEngine:
         }.get(ventilation, 1.0)
         location_factor = 1.0 if is_indoor else 1.5
         radius = base_r * rate_factor * vent_factor * location_factor * kst_factor
-        area = math.pi * radius ** 2
+        r_h = radius
+        r_v = radius * 0.5  # V44: consistent with _gas_extent — vertical = 0.5 × horizontal per IEC 60079-10-1
+        area = math.pi * r_h ** 2
+        # V44 FIX: Volume must use r_h² × r_v (hemi-ellipsoid/ellipsoid), not r_h³ (uniform sphere).
+        # Per IEC 60079-10-1:2015 Annex A, zone extents are modeled as hemi-ellipsoids
+        # when r_v ≠ r_h. This was already fixed in _gas_extent and _dust_extent (V43),
+        # but this legacy _compute_extent method was missed.
         if is_indoor:
-            volume = (2.0 / 3.0) * math.pi * radius ** 3
+            volume = (2.0 / 3.0) * math.pi * r_h ** 2 * r_v   # Hemi-ellipsoid
         else:
-            volume = (4.0 / 3.0) * math.pi * radius ** 3
+            volume = (4.0 / 3.0) * math.pi * r_h ** 2 * r_v   # Ellipsoid
         volume = min(volume, room_volume_m3)
         return ZoneExtentLegacy(
             zone=zone, radius_m=round(radius, 2),

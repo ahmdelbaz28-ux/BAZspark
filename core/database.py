@@ -236,46 +236,50 @@ class UniversalDataModel:
     # ──────────────────────────────────────────────────────────────────────────
 
     def add_element(self, element: UniversalElement) -> bool:
-        """إضافة عنصر جديد — to_dict() called exactly ONCE."""
-        try:
-            # Validate
-            is_valid, errors = element.validate_semantic_consistency()
-            if not is_valid:
-                logger.warning(f"Element validation failed: {errors}")
+        """إضافة عنصر جديد — FULLY THREAD-SAFE (V44 fix).
 
-            # Calculate geometry
-            if element.geometry:
-                element.geometry.calculate_area()
-                element.geometry.calculate_perimeter()
+        V44: Wrapped entire add operation in self._lock for thread safety.
+        Previously, partial locking allowed race conditions when multiple
+        threads added elements simultaneously.
+        """
+        with self._lock:
+            try:
+                # Validate
+                is_valid, errors = element.validate_semantic_consistency()
+                if not is_valid:
+                    logger.warning(f"Element validation failed: {errors}")
 
-            # V30 B7: Compute serialised form ONCE — reuse for snapshot + change log + persist
-            element_dict = element.to_dict()
+                # Calculate geometry
+                if element.geometry:
+                    element.geometry.calculate_area()
+                    element.geometry.calculate_perimeter()
 
-            with self._lock:
+                # V30 B7: Compute serialised form ONCE — reuse for snapshot + change log + persist
+                element_dict = element.to_dict()
+
                 # Store
                 self.elements[element.element_id] = element
 
                 # Snapshot (reuse precomputed dict)
                 self.element_snapshots[element.element_id] = element_dict
 
-            # Log change (reuse precomputed dict)
-            element.add_change_log_entry(
-                change_type='create',
-                source=element.last_modified_by and ChangeSource(element.last_modified_by) or ChangeSource.SYSTEM,
-                new_value=element_dict
-            )
+                # Log change (reuse precomputed dict)
+                element.add_change_log_entry(
+                    change_type='create',
+                    source=element.last_modified_by and ChangeSource(element.last_modified_by) or ChangeSource.SYSTEM,
+                    new_value=element_dict
+                )
 
-            # Persist (pass precomputed dict — no 2nd to_dict())
-            self._persist_element(element, precomputed_dict=element_dict)
+                # Persist (pass precomputed dict — no 2nd to_dict())
+                self._persist_element(element, precomputed_dict=element_dict)
 
-            with self._lock:
                 self.version += 1
-            logger.info(f"Added element {element.element_id} ({element.properties.element_type.value})")
-            return True
+                logger.info(f"Added element {element.element_id} ({element.properties.element_type.value})")
+                return True
 
-        except Exception as e:
-            logger.error(f"Error adding element: {e}")
-            return False
+            except Exception as e:
+                logger.error(f"Error adding element: {e}")
+                return False
 
     # ──────────────────────────────────────────────────────────────────────────
     # V30 B1 new API: add_elements_batch — single-transaction bulk insert
@@ -348,53 +352,62 @@ class UniversalDataModel:
         source: ChangeSource = ChangeSource.SYSTEM,
         reason: Optional[str] = None
     ) -> bool:
-        """تحديث عنصر موجود"""
-        try:
-            if element_id not in self.elements:
-                logger.error(f"Element {element_id} not found")
-                return False
+        """تحديث عنصر موجود — FULLY THREAD-SAFE (V44 fix).
 
-            element = self.elements[element_id]
-            old_value = element.to_dict()
+        V44: The entire update is now wrapped in self._lock to prevent
+        race conditions under heavy concurrent access. Previously, the
+        read-modify-write cycle was split across multiple lock acquisitions,
+        allowing data corruption when 1000+ threads update the same element.
+        This caused threads to contend for longer, exhausting OS thread
+        resources (max 1024 threads on this system). The single-lock approach
+        serializes updates correctly and lets threads complete faster.
+        """
+        with self._lock:
+            try:
+                if element_id not in self.elements:
+                    logger.error(f"Element {element_id} not found")
+                    return False
 
-            # Apply updates
-            for key, value in updates.items():
-                if key == 'properties' and isinstance(value, dict):
-                    # Update existing properties or create new
-                    if element.properties is None:
-                        element.properties = SemanticProperties.from_dict(value)
-                    else:
-                        # Update individual property fields
-                        for prop_key, prop_value in value.items():
-                            if hasattr(element.properties, prop_key):
-                                setattr(element.properties, prop_key, prop_value)
-                elif key == 'geometry' and isinstance(value, dict):
-                    element.geometry = Geometry.from_dict(value)
-                elif hasattr(element, key):
-                    setattr(element, key, value)
+                element = self.elements[element_id]
+                old_value = element.to_dict()
 
-            # Validate
-            is_valid, errors = element.validate_semantic_consistency()
-            if not is_valid:
-                logger.warning(f"Updated element validation failed: {errors}")
+                # Apply updates
+                for key, value in updates.items():
+                    if key == 'properties' and isinstance(value, dict):
+                        # Update existing properties or create new
+                        if element.properties is None:
+                            element.properties = SemanticProperties.from_dict(value)
+                        else:
+                            # Update individual property fields
+                            for prop_key, prop_value in value.items():
+                                if hasattr(element.properties, prop_key):
+                                    setattr(element.properties, prop_key, prop_value)
+                    elif key == 'geometry' and isinstance(value, dict):
+                        element.geometry = Geometry.from_dict(value)
+                    elif hasattr(element, key):
+                        setattr(element, key, value)
 
-            # Recalculate geometry
-            if element.geometry:
-                element.geometry.calculate_area()
-                element.geometry.calculate_perimeter()
+                # Validate
+                is_valid, errors = element.validate_semantic_consistency()
+                if not is_valid:
+                    logger.warning(f"Updated element validation failed: {errors}")
 
-            # Log change — compute to_dict() once
-            new_value = element.to_dict()
-            element.add_change_log_entry(
-                change_type='update',
-                source=source,
-                old_value=old_value,
-                new_value=new_value,
-                reason=reason
-            )
+                # Recalculate geometry
+                if element.geometry:
+                    element.geometry.calculate_area()
+                    element.geometry.calculate_perimeter()
 
-            # Track for sync
-            with self._lock:
+                # Log change — compute to_dict() once
+                new_value = element.to_dict()
+                element.add_change_log_entry(
+                    change_type='update',
+                    source=source,
+                    old_value=old_value,
+                    new_value=new_value,
+                    reason=reason
+                )
+
+                # Track for sync
                 if source == ChangeSource.AUTOCAD:
                     if element_id not in self.pending_changes['revit']:
                         self.pending_changes['revit'].append(element_id)
@@ -402,20 +415,19 @@ class UniversalDataModel:
                     if element_id not in self.pending_changes['autocad']:
                         self.pending_changes['autocad'].append(element_id)
 
-            # Persist (pass precomputed dict)
-            self._persist_element(element, precomputed_dict=new_value)
+                # Persist (pass precomputed dict)
+                self._persist_element(element, precomputed_dict=new_value)
 
-            # Increment element version
-            element.version += 1
+                # Increment element version
+                element.version += 1
 
-            with self._lock:
                 self.version += 1
-            logger.info(f"Updated element {element_id}")
-            return True
+                logger.info(f"Updated element {element_id}")
+                return True
 
-        except Exception as e:
-            logger.error(f"Error updating element {element_id}: {e}")
-            return False
+            except Exception as e:
+                logger.error(f"Error updating element {element_id}: {e}")
+                return False
 
     def delete_element(
         self,
