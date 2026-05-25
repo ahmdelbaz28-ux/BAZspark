@@ -317,6 +317,20 @@ class SubstanceProperties(BaseModel):
                     "HYBRID hazard requires both lfl_vol_pct and mec_g_m3. "
                     "[IEC 60079-10-1 §5.7]"
                 )
+        # FIX #5 (HIGH): FIBER hazard type requires flammability data.
+        # Without lfl_vol_pct or mec_g_m3, a FIBER substance passes validation
+        # with zero flammability properties — a silent pass on an unvalidated
+        # hazard. Fibers can be flammable (textile fibers, organic dusts) and
+        # MUST have at least one flammability measure for zone classification.
+        # Reference: NFPA 70 Art. 503, IEC 60079-10-2 for combustible fibers.
+        if self.hazard_type == HazardType.FIBER:
+            if self.lfl_vol_pct is None and self.mec_g_m3 is None:
+                raise ValueError(
+                    "FIBER hazard requires at least one flammability property: "
+                    "lfl_vol_pct (for ignitable fiber flyings) or mec_g_m3 "
+                    "(for minimum explosible concentration). "
+                    "[NFPA 70 Art. 503, IEC 60079-10-2]"
+                )
         return self
 
 

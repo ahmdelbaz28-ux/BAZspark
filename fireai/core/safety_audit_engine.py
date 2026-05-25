@@ -803,11 +803,51 @@ class SafetyAuditEngine:
         total_checks = 0
         passed_checks = 0
         
-        # Can only check if both substance MW and detector positions are available
+        # FIX #4 (HIGH): When substance data is missing, we CANNOT silently
+        # skip the Z-axis check — this masks a potentially fatal blind spot.
+        # A missing substance means we cannot verify detector placement, which
+        # is itself a WARNING condition requiring engineering review.
         if substance is None or substance.molecular_weight is None:
+            total_checks = 1
+            violations.append(AuditViolation(
+                gate="Z_AXIS",
+                severity="WARNING",
+                code="ZAX-002",
+                message=(
+                    "Z-Axis elevation check CANNOT be performed — "
+                    "substance molecular_weight is not available. "
+                    "Detector placement against gas buoyancy behavior cannot "
+                    "be verified. This may result in undetected gas accumulation "
+                    "if detectors are at the wrong elevation for the substance."
+                ),
+                standard_ref="IEC 60079-10-1:2015 §B.4, NFPA 497 §4.5",
+                remediation=(
+                    "Provide substance properties (at minimum molecular_weight) "
+                    "to enable Z-axis elevation audit. Without this check, the "
+                    "engineer must manually verify detector placement is correct "
+                    "for the expected gas buoyancy behavior."
+                ),
+            ))
             return violations, total_checks, passed_checks
         
         if not detector_z_positions:
+            total_checks = 1
+            violations.append(AuditViolation(
+                gate="Z_AXIS",
+                severity="WARNING",
+                code="ZAX-003",
+                message=(
+                    "Z-Axis elevation check CANNOT be performed — "
+                    "no detector Z-positions provided. Detector placement "
+                    "against gas buoyancy behavior cannot be verified."
+                ),
+                standard_ref="IEC 60079-10-1:2015 §B.4, NFPA 497 §4.5",
+                remediation=(
+                    "Provide detector Z-coordinates to enable Z-axis elevation "
+                    "audit. Without this check, the engineer must manually verify "
+                    "detector elevation is appropriate for the substance."
+                ),
+            ))
             return violations, total_checks, passed_checks
         
         mw = substance.molecular_weight

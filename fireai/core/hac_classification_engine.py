@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import logging
 import math
+import warnings
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
@@ -316,7 +317,15 @@ def _iec_annex_b_extent(
     # bug — hydrogen zone extents would be 10x too small (cube root of 1000).
     # ALL molecular weights in FireAI are in g/mol (consistent with NIST/CRC).
     mw_kg_mol = mw / 1000.0
-    dV_release_m3_s = (release_rate_kg_s / mw_kg_mol) * 0.0224
+    # FIX #3 (HIGH): Apply ideal gas temperature correction to molar volume.
+    # At STP (0°C, 1 atm) molar volume = 0.0224 m³/mol, but at ambient
+    # temperature the gas expands: V_m = 0.0224 * (273.15 + T) / 273.15.
+    # Using STP volume regardless of temperature underestimates the
+    # volumetric release rate at elevated temperatures, producing zone
+    # extents that are too small. This is a life-safety bug.
+    # Reference: IEC 60079-10-1:2015 Annex B, ideal gas law PV = nRT.
+    molar_volume_m3_mol = 0.0224 * (273.15 + ambient_temp_c) / 273.15
+    dV_release_m3_s = (release_rate_kg_s / mw_kg_mol) * molar_volume_m3_mol
 
     # Concentration factor Ck
     ck = _RELEASE_GRADE_CK.get(release_grade.value, 0.25)
@@ -781,7 +790,14 @@ class HACClassificationEngine:
             (ZoneType.ZONE_1, VentilationLevel.MEDIUM): ZoneType.ZONE_1,
             (ZoneType.ZONE_1, VentilationLevel.LOW):    ZoneType.ZONE_0,
             (ZoneType.ZONE_2, VentilationLevel.MEDIUM): ZoneType.ZONE_2,
-            (ZoneType.ZONE_2, VentilationLevel.HIGH):   ZoneType.UNCLASSIFIED,
+            # FIX #6 (HIGH): (ZONE_2, HIGH) → UNCLASSIFIED is only valid when
+            # ventilation availability is GOOD per IEC 60079-10-1 §4.3. Without
+            # availability verification, declassifying to UNCLASSIFIED is unsafe —
+            # a ventilation system failure would leave an unclassified Zone 2 area.
+            # Kept as ZONE_2 (conservative) until availability is confirmed.
+            # When availability is verified GOOD, the calling code may apply
+            # UNCLASSIFIED after explicit confirmation per IEC §4.3.
+            (ZoneType.ZONE_2, VentilationLevel.HIGH):   ZoneType.ZONE_2,
         }
         return upgrades.get((zone, vent), zone)
 
@@ -867,12 +883,24 @@ class HACClassificationEngine:
         ventilation_avail:   VentilationAvailability,
         room_volume_m3:      float = 100.0,
         is_indoor:           bool = True,
-        ambient_temp_c:      float = 25.0,
+        ambient_temp_c:      float = 40.0,
     ) -> HACResultLegacy:
         """
         Legacy classify — backward compatible with dataclass inputs.
         Prefer classify_v21() for new code.
+
+        FIX #7 (HIGH): Default ambient_temp_c changed from 25.0°C to 40.0°C
+        to match V21 API default. The old 25°C default was non-conservative —
+        Burgess-Wheeler LFL correction only activates above 25°C, so 25°C
+        produced no correction and therefore underestimated zone extents.
+        This legacy method is DEPRECATED — use classify_v21() for new code.
         """
+        warnings.warn(
+            "classify() is deprecated — use classify_v21() for new code. "
+            "Default ambient_temp_c changed from 25.0 to 40.0°C (FIX #7).",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if not release_sources:
             return self._safe_result(space_id, substance)
 
