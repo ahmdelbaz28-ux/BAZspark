@@ -296,16 +296,10 @@ def _iec_annex_b_extent(
         )
 
     # LFL temperature correction — Burgess-Wheeler
-    # BUG FIX: Burgess-Wheeler correction is ONLY valid for T > 25C.
-    # Below 25C, the correction would INCREASE LFL (physically wrong
-    # extrapolation). The standalone burgess_wheeler_lfl() function in
-    # models_v21.py enforces this guard — _iec_annex_b_extent() must
-    # do the same for consistency.
-    if ambient_temp_c > 25.0:
-        lfl_corrected = lfl_vol_pct * (1.0 - 0.001824 * (ambient_temp_c - 25.0))
-        lfl_corrected = max(lfl_corrected, lfl_vol_pct * 0.5)
-    else:
-        lfl_corrected = lfl_vol_pct
+    # Delegates to canonical burgess_wheeler_lfl() from models_v21
+    # (Rule 6/14: no duplicate BW implementation).
+    # The canonical function enforces T<=25C guard and 50% floor consistently.
+    lfl_corrected = burgess_wheeler_lfl(lfl_vol_pct, ambient_temp_c)
     lfl_frac = lfl_corrected / 100.0
 
     # Volumetric release rate (m³/s at standard conditions)
