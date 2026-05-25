@@ -31,7 +31,7 @@ from __future__ import annotations
 import math
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from fireai.core.models_v21 import (
     ZoneType,
@@ -52,10 +52,19 @@ from fireai.core.models_v21 import (
 # ---------------------------------------------------------------------------
 
 class AuditSeverity(str):
-    """Violation severity levels."""
+    """Violation severity levels.
+
+    Use as: AuditSeverity.CRITICAL (str subclass, value='CRITICAL').
+    AuditViolation.severity is validated against these values.
+    """
     CRITICAL = "CRITICAL"   # Must fix before deployment
     WARNING  = "WARNING"    # Advisory — engineering review recommended
     INFO     = "INFO"       # Informational — no action required
+
+    @classmethod
+    def valid_values(cls) -> set:
+        """Return the set of valid severity strings."""
+        return {cls.CRITICAL, cls.WARNING, cls.INFO}
 
 
 class AuditViolation(BaseModel):
@@ -63,11 +72,23 @@ class AuditViolation(BaseModel):
     model_config = ConfigDict(frozen=True, strict=True)
     
     gate: str          # e.g., "REDUNDANCY", "FOULING", "ZONE_MAPPING", "Z_AXIS", "MENA"
-    severity: str      # CRITICAL, WARNING, INFO
+    severity: str      # CRITICAL, WARNING, INFO — validated against AuditSeverity
     code: str          # e.g., "RED-001", "FOUL-001", "ZAX-001"
     message: str       # Human-readable violation description
     standard_ref: str  # e.g., "NFPA 72 §17.8.3.4"
     remediation: str   # What the engineer should do
+
+    @field_validator('severity')
+    @classmethod
+    def _validate_severity(cls, v: str) -> str:
+        """Ensure severity is one of the AuditSeverity defined values."""
+        valid = AuditSeverity.valid_values()
+        if v not in valid:
+            raise ValueError(
+                f"Invalid severity '{v}'. Must be one of: {sorted(valid)}. "
+                f"Use AuditSeverity.CRITICAL / .WARNING / .INFO."
+            )
+        return v
 
 
 class AuditInput(BaseModel):

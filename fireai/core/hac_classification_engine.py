@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import logging
 import math
-import warnings
+import warnings as _warnings
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
@@ -96,8 +96,26 @@ _V21_TO_LEGACY_DEGREE = {
     VentilationLevel.HIGH:   VentilationDegree.HIGH,
     VentilationLevel.MEDIUM: VentilationDegree.MEDIUM,
     VentilationLevel.LOW:    VentilationDegree.LOW,
-    VentilationLevel.POOR:   VentilationDegree.LOW,  # POOR maps to LOW in legacy
+    VentilationLevel.POOR:   VentilationDegree.LOW,  # POOR→LOW loses 4× ventilation effectiveness (0.05 vs 0.20)
 }
+
+
+def _map_ventilation_to_legacy(vent: VentilationLevel) -> VentilationDegree:
+    """Map V21 VentilationLevel to legacy VentilationDegree with WARNING on POOR→LOW.
+
+    POOR ventilation (f=0.05, almost stagnant) maps to LOW (f=0.20, poor distribution)
+    in the legacy system, losing a 4× effectiveness factor. This is a known
+    information-loss issue in the legacy API — callers should prefer classify_v21().
+    """
+    result = _V21_TO_LEGACY_DEGREE[vent]
+    if vent == VentilationLevel.POOR:
+        logger.warning(
+            "POOR ventilation mapped to LOW in legacy API — "
+            "4× ventilation effectiveness difference lost (f=0.05 vs f=0.20). "
+            "Prefer classify_v21() for accurate POOR ventilation handling. "
+            "[IEC 60079-10-1 Annex B Table B.2]"
+        )
+    return result
 
 # Convert V21 ZoneType to legacy ATEXZone
 _V21_TO_ATEX_ZONE = {
@@ -723,7 +741,23 @@ class HACClassificationEngine:
         self, sub, vent, indoor, src_h, ambient, warnings, critical_flags,
         lfl_corrected=None,
     ) -> HACResult:
-        """Fix #8: Hybrid = classify separately, take most severe (V21.2)."""
+        """Fix #8: Hybrid = classify separately, take most severe (V21.2).
+
+        .. deprecated::
+            This method is DEAD CODE — classify_v21() handles HYBRID inline
+            using _resolve_zone_with_grade_vent() which correctly considers
+            release_grade. This method delegates to _classify_gas_v21 and
+            _classify_dust_v21 which use _gas_zone_from_ventilation_v21 /
+            _dust_zone_from_ventilation_v21 — these do NOT consider
+            release_grade, producing potentially non-conservative zone
+            assignments. Do NOT call this method; use classify_v21() instead.
+        """
+        _warnings.warn(
+            "_classify_hybrid_v21 is deprecated: it does not consider "
+            "release_grade in zone logic. Use classify_v21() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         warnings.append(
             "HYBRID mixture: classified independently for gas and dust. "
             "Most severe zone applies. [IEC 60079-10-1 §5.7]"
@@ -817,7 +851,16 @@ class HACClassificationEngine:
     def _compute_extent_v21(
         lfl: float, vent: VentilationLevel, indoor: bool, src_h: float,
     ) -> ZoneExtent:
-        """Fix #7 + Fix #13: No x10, hemisphere for indoor, IEC Annex A."""
+        """Fix #7 + Fix #13: No x10, hemisphere for indoor, IEC Annex A.
+
+        GAP-09: src_h (source height above floor) is accepted but NOT used.
+        Source height affects dispersion plume geometry per IEC 60079-10-1
+        Annex A — elevated releases produce different zone shapes than
+        floor-level releases. Implementation requires IEC Annex A dispersion
+        model. Currently zone extent is independent of source height, which
+        is conservative for floor-level releases but may underestimate
+        extent for elevated releases.
+        """
         k = {
             VentilationLevel.HIGH:   2.0,
             VentilationLevel.MEDIUM: 5.0,
@@ -848,7 +891,14 @@ class HACClassificationEngine:
     def _compute_extent_dust_v21(
         mec: float, vent: VentilationLevel, indoor: bool, src_h: float,
     ) -> ZoneExtent:
-        """Dust extent per IEC 60079-10-2 Annex A."""
+        """Dust extent per IEC 60079-10-2 Annex A.
+
+        GAP-09: src_h (source height above floor) is accepted but NOT used.
+        Source height affects dust cloud dispersion — elevated releases
+        produce larger dispersion volumes. Implementation requires
+        IEC 60079-10-2 Annex A dispersion model. Currently conservative
+        for floor-level releases.
+        """
         k = {
             VentilationLevel.HIGH:   3.0,
             VentilationLevel.MEDIUM: 6.0,
@@ -856,7 +906,11 @@ class HACClassificationEngine:
             VentilationLevel.POOR:   20.0,
         }[vent]
 
-        r_h = k / (mec / 30.0)
+        # MEC floor: no real combustible dust has MEC < 1 g/m³.
+        # Without this floor, very small MEC (e.g., 0.01 g/m³) produces
+        # unreasonable zone extents (e.g., 60000m). Floor at 1.0 g/m³.
+        mec_floored = max(mec, 1.0)
+        r_h = k / (mec_floored / 30.0)
         r_h = min(r_h, 50.0)
         r_v = r_h * 0.4
 
@@ -895,7 +949,7 @@ class HACClassificationEngine:
         produced no correction and therefore underestimated zone extents.
         This legacy method is DEPRECATED — use classify_v21() for new code.
         """
-        warnings.warn(
+        _warnings.warn(
             "classify() is deprecated — use classify_v21() for new code. "
             "Default ambient_temp_c changed from 25.0 to 40.0°C (FIX #7).",
             DeprecationWarning,

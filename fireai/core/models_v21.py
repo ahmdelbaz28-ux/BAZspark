@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import logging
 import math
+import threading
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -1153,12 +1154,21 @@ class SpectralSignatureRegistry:
     def __init__(self) -> None:
         self._signatures: Dict[str, SpectralSignature] = {}
         self._loaded = False
+        self._lock = threading.Lock()
 
     def _ensure_loaded(self) -> None:
+        # Thread-safety: double-checked locking to prevent race condition
+        # where multiple threads load signatures concurrently.
         if self._loaded:
             return
-        self._loaded = True
-        # Built-in signatures for common hazardous substances
+        with self._lock:
+            if self._loaded:
+                return
+            self._load_builtin_signatures()
+            self._loaded = True
+
+    def _load_builtin_signatures(self) -> None:
+        """Load built-in spectral signatures (called under lock)."""
         # Absorption coefficients are representative values from literature
         # For CO2-band (4.3um): hydrocarbons have strong absorption
         self._signatures = {
