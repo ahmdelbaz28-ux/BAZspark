@@ -250,6 +250,9 @@ class EngineeringRouter:
         self.obstacles: List[RoutingObstacle] = []
         self._obstacle_polys: List = []  # Shapely polygons with clearance
         self._cfg = get_production_config()
+        # V31: Cached visibility-graph nodes for route_multi() reuse.
+        # Invalidated whenever obstacles change (add/clear).
+        self._vg_corner_nodes: Optional[List[Tuple[float, float]]] = None
 
     def add_obstacle(self, obstacle: RoutingObstacle):
         """Add an obstacle to the routing space."""
@@ -259,6 +262,8 @@ class EngineeringRouter:
         if SHAPELY_AVAILABLE:
             poly = obstacle.to_shapely_with_clearance(clearance_m)
             self._obstacle_polys.append(poly)
+        # V31: Invalidate cached corner nodes
+        self._vg_corner_nodes = None
 
     def add_obstacles(self, obstacles: List[RoutingObstacle]):
         """Add multiple obstacles."""
@@ -269,6 +274,8 @@ class EngineeringRouter:
         """Remove all obstacles."""
         self.obstacles.clear()
         self._obstacle_polys.clear()
+        # V31: Invalidate cached corner nodes
+        self._vg_corner_nodes = None
 
     def route(self, start: Tuple[float, float],
               end: Tuple[float, float]) -> RouteResult:
@@ -400,25 +407,28 @@ class EngineeringRouter:
 
         Returns the path as a list of (x, y) waypoints, or None.
         """
-        # Build visibility graph nodes
-        nodes = [start, end]
-
-        clearance_m = self.constraints.clearance_mm / 1000.0
-        for obs in self.obstacles:
-            # Add expanded corner points as potential waypoints
-            minx, miny, maxx, maxy = obs.expanded_bounds(clearance_m)
-            # Offset corners slightly outward
-            offset = clearance_m * 0.5
-            corners = [
-                (minx - offset, miny - offset),
-                (maxx + offset, miny - offset),
-                (maxx + offset, maxy + offset),
-                (minx - offset, maxy + offset),
-            ]
-            for corner in corners:
-                # Only add if not inside an obstacle
-                if not self._point_in_any_obstacle(corner):
-                    nodes.append(corner)
+        # V31: Build or reuse cached corner nodes (same obstacles → same corners)
+        if self._vg_corner_nodes is None:
+            corner_nodes: List[Tuple[float, float]] = []
+            clearance_m = self.constraints.clearance_mm / 1000.0
+            for obs in self.obstacles:
+                # Add expanded corner points as potential waypoints
+                minx, miny, maxx, maxy = obs.expanded_bounds(clearance_m)
+                # Offset corners slightly outward
+                offset = clearance_m * 0.5
+                corners = [
+                    (minx - offset, miny - offset),
+                    (maxx + offset, miny - offset),
+                    (maxx + offset, maxy + offset),
+                    (minx - offset, maxy + offset),
+                ]
+                for corner in corners:
+                    # Only add if not inside an obstacle
+                    if not self._point_in_any_obstacle(corner):
+                        corner_nodes.append(corner)
+            self._vg_corner_nodes = corner_nodes
+        # Visibility graph nodes = route endpoints + cached obstacle corners
+        nodes = [start, end] + self._vg_corner_nodes
 
         # Build adjacency: edge exists if line of sight is clear
         adjacency: Dict[int, List[Tuple[int, float]]] = {i: [] for i in range(len(nodes))}

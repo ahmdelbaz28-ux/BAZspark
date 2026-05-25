@@ -104,7 +104,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout
+from fireai.core.spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout, DETECTOR_RADIUS
 from fireai.core.nfpa72_calculations import calculate_smoke_detector_radius, calculate_coverage_radius_from_height, CoverageSpec
 from fireai.core.geometry_utils import (
     is_rectangular,
@@ -195,7 +195,7 @@ class RoomSummary:
     mip_status:       Optional[str]    = None
     analysis_ms:      float            = 0.0
     # Phase 7: Variable Coverage Radius tracking fields
-    coverage_radius_used: float          = 6.37  # V20.2 FIX: was stale 6.40; correct R=0.7×9.1=6.37 at h≤3.0m
+    coverage_radius_used: float          = DETECTOR_RADIUS  # V20.2 FIX: was stale 6.40; correct R=0.7×9.1=6.37 at h≤3.0m
     ceiling_height:   Optional[float]    = None
     radius_warning:   Optional[str]      = None
     nfpa_table_ref:   str               = "NFPA 72-2022 Table 17.6.3.1.1"

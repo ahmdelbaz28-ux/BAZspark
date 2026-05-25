@@ -1141,16 +1141,17 @@ class SpectralSignatureRegistry:
         # For CO2-band (4.3um): hydrocarbons have strong absorption
         self._signatures = {
             # Methane (CH4)
-            # NOTE: alpha_ir3=0.8 is CONSERVATIVE (overestimates IR3 absorption).
-            # Per HITRAN 2020, CH4 absorption in the CO2 IR3 band (3-5 um) is
-            # weak (dominant bands at 3.3 um and 7.7 um). A more accurate value
-            # is ~0.3-0.4 for typical detector bandwidths. The higher value
-            # produces MORE detectors (conservative) but may cause over-design
-            # in gas detection systems relying on IR3 channels.
-            # TODO: Validate with FPE — consider per-band correction factors.
+            # V30 FIX: alpha_ir3 corrected from 0.8 to 0.4 per HITRAN 2020 data.
+            # CH4's dominant IR absorption is at 3.3 µm (ν₃) and 7.7 µm (ν₄).
+            # In the CO2-band (4.3 µm), CH4 absorption is weak; the broadband
+            # 3-5 µm average was previously 0.8 but this overestimates by ~2×
+            # for CO2-band flame detectors. The corrected value of 0.4 is still
+            # slightly conservative (literature: 0.3-0.4 at 1% v/v).
+            # NOTE: The old value 0.8 was conservative (more detectors) but
+            # produced over-design in LNG facilities.
             "74-82-8": SpectralSignature(
                 cas_number="74-82-8", substance_name="Methane",
-                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=0.05, alpha_ir3=0.8,
+                alpha_uv=0.1, alpha_vis=0.0, alpha_ir1=0.05, alpha_ir3=0.4,
             ),
             # Propane (C3H8)
             "74-98-6": SpectralSignature(

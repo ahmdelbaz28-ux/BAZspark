@@ -61,7 +61,10 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Tuple, Any
 
-from .spatial_engine.density_optimizer import DensityOptimizer, Room, DetectorLayout
+from .spatial_engine.density_optimizer import (
+    DensityOptimizer, Room, DetectorLayout,
+    DETECTOR_RADIUS, MAX_SPACING_M, WALL_MIN_M, VERIFY_STEP,
+)
 from .spatial_engine.consensus_engine import ConsensusEngine, ConsensusResult, ConfidenceLevel
 from .spatial_engine.proof_certificate import ProofCertificateGenerator, ProofCertificate
 from .event_bus import EventBus, Events
@@ -235,10 +238,10 @@ class AnalysisPipeline:
 
     def __init__(
         self,
-        coverage_radius: float = 6.37,
-        max_spacing: float = 9.1,
-        wall_min: float = 0.10,
-        grid_step: float = 0.20,
+        coverage_radius: float = DETECTOR_RADIUS,
+        max_spacing: float = MAX_SPACING_M,
+        wall_min: float = WALL_MIN_M,
+        grid_step: float = VERIFY_STEP,
         generate_certificate: bool = True,
         require_consensus: bool = True,
     ):

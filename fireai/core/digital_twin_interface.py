@@ -42,8 +42,8 @@ Usage:
             "ceiling_height_m": 3.0,
             "detector_type": "smoke",
             "detectors": [
-                {"x": 3.0, "y": 2.5, "z": 3.0, "radius": 6.37},
-                {"x": 7.0, "y": 5.5, "z": 3.0, "radius": 6.37},
+                {"x": 3.0, "y": 2.5, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},
+                {"x": 7.0, "y": 5.5, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},
             ],
             "proof_certificates": ["abc123", "def456"],
         },
@@ -66,6 +66,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 from .event_bus import EventBus, Events
+from .digital_twin import NFPA72_SMOKE_RADIUS_M, NFPA72_DEFAULT_CEILING_M
 
 logger = logging.getLogger(__name__)
 
@@ -619,7 +620,7 @@ class DigitalTwinInterface:
                 room_name = room.get("name", room_id)
                 width = float(room.get("width_m", 0.0))
                 depth = float(room.get("depth_m", 0.0))
-                height = float(room.get("ceiling_height_m", 3.0))
+                height = float(room.get("ceiling_height_m", NFPA72_DEFAULT_CEILING_M))
 
                 # IFCSPACE entity
                 space_guid = _generate_ifc_guid()
@@ -708,7 +709,7 @@ class DigitalTwinInterface:
                             "properties": {
                                 "DetectorIndex": idx + 1,
                                 "CoverageRadius_m": float(
-                                    det.get("radius", 6.37)
+                                    det.get("radius", NFPA72_SMOKE_RADIUS_M)
                                 ),
                                 "DetectorType": det_type,
                                 "NFPAReference": "NFPA 72-2022 Table 17.6.3.1.1",
@@ -778,7 +779,7 @@ class DigitalTwinInterface:
                 room_name = room.get("name", room_id)
                 width = float(room.get("width_m", 0.0))
                 depth = float(room.get("depth_m", 0.0))
-                height = float(room.get("ceiling_height_m", 3.0))
+                height = float(room.get("ceiling_height_m", NFPA72_DEFAULT_CEILING_M))
 
                 space_id = f"Space_{room_id}_{uuid.uuid4().hex[:6]}"
                 floor_spaces.append(space_id)
@@ -834,7 +835,7 @@ class DigitalTwinInterface:
                                 "z_m": z,
                             },
                             "coverage_radius_m": float(
-                                det.get("radius", 6.37)
+                                det.get("radius", NFPA72_SMOKE_RADIUS_M)
                             ),
                             "nfpa_reference": "NFPA 72-2022 Table 17.6.3.1.1",
                         }
@@ -1128,8 +1129,8 @@ if __name__ == "__main__":
             "detector_type": "smoke",
             "occupancy_type": "office",
             "detectors": [
-                {"x": 3.0, "y": 2.5, "z": 3.0, "radius": 6.37},
-                {"x": 7.0, "y": 5.5, "z": 3.0, "radius": 6.37},
+                {"x": 3.0, "y": 2.5, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},
+                {"x": 7.0, "y": 5.5, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},
             ],
             "proof_certificates": ["cert_r1_v1_hash"],
         },
@@ -1143,8 +1144,8 @@ if __name__ == "__main__":
             "detector_type": "smoke",
             "occupancy_type": "corridor",
             "detectors": [
-                {"x": 3.75, "y": 1.0, "z": 3.0, "radius": 6.37},
-                {"x": 11.25, "y": 1.0, "z": 3.0, "radius": 6.37},
+                {"x": 3.75, "y": 1.0, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},
+                {"x": 11.25, "y": 1.0, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},
             ],
             "proof_certificates": ["cert_r2_v1_hash"],
         },
@@ -1161,9 +1162,9 @@ if __name__ == "__main__":
             "detector_type": "smoke",
             "occupancy_type": "office",
             "detectors": [
-                {"x": 3.5, "y": 2.5, "z": 3.0, "radius": 6.37},  # repositioned
-                {"x": 7.0, "y": 5.5, "z": 3.0, "radius": 6.37},
-                {"x": 5.0, "y": 4.0, "z": 3.0, "radius": 6.37},  # added
+                {"x": 3.5, "y": 2.5, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},  # repositioned
+                {"x": 7.0, "y": 5.5, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},
+                {"x": 5.0, "y": 4.0, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},  # added
             ],
             "proof_certificates": ["cert_r1_v2_hash"],
         },
@@ -1177,8 +1178,8 @@ if __name__ == "__main__":
             "detector_type": "smoke",
             "occupancy_type": "corridor",
             "detectors": [
-                {"x": 3.75, "y": 1.0, "z": 3.0, "radius": 6.37},
-                {"x": 11.25, "y": 1.0, "z": 3.0, "radius": 6.37},
+                {"x": 3.75, "y": 1.0, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},
+                {"x": 11.25, "y": 1.0, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},
             ],
             "proof_certificates": ["cert_r2_v2_hash"],
         },

@@ -33,6 +33,8 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from typing import List, Tuple, Optional
 
+from .density_optimizer import DETECTOR_RADIUS
+
 
 @dataclass
 class ProofCertificate:
@@ -155,7 +157,7 @@ class ProofCertificateGenerator:
     Usage:
         generator = ProofCertificateGenerator(
             grid_step=0.20,  # δ = 20cm
-            coverage_radius=6.37,  # R = 0.7 × S
+            coverage_radius=DETECTOR_RADIUS,  # R = 0.7 × S
         )
         cert = generator.generate(
             room_id="room_001",
@@ -170,7 +172,7 @@ class ProofCertificateGenerator:
     def __init__(
         self,
         grid_step: float = 0.20,
-        coverage_radius: float = 6.37,
+        coverage_radius: float = DETECTOR_RADIUS,
         max_spacing: float = 9.1,
         wall_min: float = 0.10,
     ):

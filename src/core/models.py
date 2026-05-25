@@ -238,7 +238,7 @@ class Device:
     y: Optional[float] = None
     z: Optional[float] = None
     orientation: float = 0.0
-    coverage_radius: float = 7.5
+    coverage_radius: float = 6.37  # NFPA 72 R = 0.7 × 9.1m (use BS5839.smoke_coverage_radius for BS standard)
     loop_id: Optional[int] = None
     address: Optional[int] = None
     is_approved: bool = False
@@ -361,8 +361,8 @@ class NFPA72:
     max_wall_distance_heat: float = 3.05  # half of 20ft
     
     # Coverage radius
-    smoke_coverage_radius: float = 6.4   # based on 30ft spacing
-    heat_coverage_radius: float = 4.3    # based on 20ft spacing
+    smoke_coverage_radius: float = 6.37  # R = 0.7 × 9.1m per NFPA 72 §17.7.4.2.3.1
+    heat_coverage_radius: float = 4.27   # R = 0.7 × 6.1m per NFPA 72 §17.7.4.2.3.1
     
     def get_max_spacing(self, device_type: DeviceType) -> float:
         """Get maximum spacing for device type"""
@@ -370,7 +370,7 @@ class NFPA72:
             return self.smoke_detector_spacing
         elif device_type == DeviceType.HEAT_DETECTOR:
             return self.heat_detector_spacing
-        return 9.1  # default
+        return self.smoke_detector_spacing  # default to smoke (most common)
     
     def get_max_wall_distance(self, device_type: DeviceType) -> float:
         """Get maximum distance from wall"""
@@ -378,7 +378,7 @@ class NFPA72:
             return self.max_wall_distance_smoke
         elif device_type == DeviceType.HEAT_DETECTOR:
             return self.max_wall_distance_heat
-        return 4.6
+        return self.max_wall_distance_smoke  # default to smoke
     
     def get_coverage_radius(self, device_type: DeviceType) -> float:
         """Get coverage radius for device type"""
@@ -386,7 +386,7 @@ class NFPA72:
             return self.smoke_coverage_radius
         elif device_type == DeviceType.HEAT_DETECTOR:
             return self.heat_coverage_radius
-        return 6.4
+        return self.smoke_coverage_radius  # default to smoke
 
 
 @dataclass

@@ -448,7 +448,7 @@ class Room:
     room_type: str
     floor_area: float
     geometry: ShapelyPolygon  # Shapely Polygon for Oracle
-    ceiling_height: float = 2.8  # Default height in meters
+    ceiling_height: float = 3.0  # Default height in meters (NFPA 72 minimum normative height)
     ceiling_type: str = "SMOOTH"  # SMOOTH, BEAMED, SLOPED, CORRIDOR
 
 
@@ -460,7 +460,7 @@ class Device:
     position: ShapelyPoint  # Shapely Point for Oracle
     room_id: str
     z_height: float = 2.4  # mounting height in meters
-    coverage_radius: float = 4.6  # default coverage radius in meters
+    coverage_radius: float = 6.37  # R = 0.7 × S = 0.7 × 9.1m per NFPA 72 §17.7.4.2.3.1
 
 
 @dataclass

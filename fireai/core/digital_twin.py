@@ -1983,8 +1983,8 @@ if __name__ == "__main__":
             "room_id": "R-B1",
             "detector_type": "smoke",
             "detectors": [
-                {"x": 3.0, "y": 2.5, "z": 3.0, "radius": 6.37},
-                {"x": 7.0, "y": 5.5, "z": 3.0, "radius": 6.37},
+                {"x": 3.0, "y": 2.5, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},
+                {"x": 7.0, "y": 5.5, "z": 3.0, "radius": NFPA72_SMOKE_RADIUS_M},
             ],
         },
         {

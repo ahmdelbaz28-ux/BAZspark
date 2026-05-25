@@ -234,7 +234,7 @@ class TestSpectralSignatureRegistry:
         sig = reg.get("74-82-8")
         assert sig is not None
         assert sig.substance_name == "Methane"
-        assert sig.alpha_for(WavelengthBand.IR3) == 0.8
+        assert sig.alpha_for(WavelengthBand.IR3) == 0.4  # V30 FIX: corrected from 0.8 per HITRAN 2020
         assert sig.alpha_for(WavelengthBand.VIS) == 0.0
 
     def test_hydrogen_no_ir(self):
@@ -359,7 +359,7 @@ class TestVolumetricMedium:
         )
         reg = SpectralSignatureRegistry()
         alpha = vm.get_alpha_with_registry(WavelengthBand.IR3, reg)
-        assert alpha == 0.8  # Methane IR3 alpha
+        assert alpha == 0.4  # V30 FIX: Methane IR3 alpha corrected from 0.8 per HITRAN 2020
 
 
 # ===========================================================================

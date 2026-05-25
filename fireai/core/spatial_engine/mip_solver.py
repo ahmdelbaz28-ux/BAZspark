@@ -32,6 +32,8 @@ import time
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional
 
+from .density_optimizer import DETECTOR_RADIUS
+
 try:
     import pulp
     PULP_AVAILABLE = True
@@ -66,7 +68,7 @@ class MIPResult:
 def solve_set_covering_mip(
     room_width: float,
     room_length: float,
-    coverage_radius: float = 6.37,  # R = 0.7 × 9.1m (aligned with DensityOptimizer DETECTOR_RADIUS)
+    coverage_radius: float = DETECTOR_RADIUS,  # R = 0.7 × 9.1m (aligned with DensityOptimizer DETECTOR_RADIUS)
     candidate_step: float = 1.0,
     time_limit_seconds: float = 10.0,
 ) -> MIPResult:

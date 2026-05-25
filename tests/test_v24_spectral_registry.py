@@ -229,7 +229,7 @@ class TestExistingSubstancesUnchanged:
         sig = registry.get("74-82-8")
         assert sig is not None
         assert sig.substance_name == "Methane"
-        assert sig.alpha_ir3 == 0.8
+        assert sig.alpha_ir3 == 0.4  # V30 FIX: corrected from 0.8 per HITRAN 2020
 
     def test_propane_still_works(self, registry):
         sig = registry.get("74-98-6")

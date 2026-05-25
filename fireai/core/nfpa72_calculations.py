@@ -586,7 +586,7 @@ def calculate_coverage_radius_from_height(
     as the "radius". S/2 is the MAXIMUM WALL DISTANCE, NOT the coverage
     radius. The correct coverage radius is R = 0.7 × S. This fix aligns
     calculate_coverage_radius_from_height() with DensityOptimizer's
-    DETECTOR_RADIUS = 0.7 × MAX_SPACING_M = 6.40m.
+    DETECTOR_RADIUS = 0.7 × MAX_SPACING_M = 6.37m (using S=9.1m, not 9.144m).
 
     Args:
         ceiling_height: Ceiling height in meters.

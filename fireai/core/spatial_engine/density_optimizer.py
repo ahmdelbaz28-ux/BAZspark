@@ -554,8 +554,10 @@ class DensityOptimizer:
         detector count, but it eliminates obvious over-placement from boundary
         guards and grid regularity.
 
-        Complexity: O(n² × k) where n = detectors, k = grid points per detector.
-        For typical rooms (n < 20, k < 5000), this is < 1ms.
+        B4 OPTIMIZATION: Uses a spatial grid index to map grid points to cells,
+        then for each detector only checks grid points within its coverage radius.
+        This reduces the complexity from O(n² × k) to O(n × k_i) where k_i is
+        the number of grid points within detector i's radius (typically k_i << k).
 
         SAFETY: After each removal, we re-verify the entire layout. If coverage
         drops below 99.9%, we restore the removed detector. This guarantees
@@ -567,33 +569,64 @@ class DensityOptimizer:
 
         room = layout.room
         W, L = room.width, room.length
-        R2 = self.R_place ** 2 + 1e-9  # V7.4: use R_place to match placement
+        R = self.R_place
+        R2 = R ** 2 + 1e-9  # V7.4: use R_place to match placement
         step = VERIFY_STEP
 
-        # Build the full verification grid
-        xs = []
+        # ── B4: Spatial grid index for fast point-to-detector mapping ──────
+        # Build grid points and a spatial index (cell_size = R)
+        # Each cell stores indices of grid points that fall within it
+        cell_size = R  # One cell per coverage radius
+        n_cells_x = max(1, int(math.ceil(W / cell_size)))
+        n_cells_y = max(1, int(math.ceil(L / cell_size)))
+
+        # Grid point generation and spatial index
+        grid_points = []
+        cell_to_points: Dict[Tuple[int, int], List[int]] = {}
         x = 0.0
         while True:
-            xs.append(min(x, W))
-            if x >= W: break
+            px = min(x, W)
+            y = 0.0
+            while True:
+                py = min(y, L)
+                pt_idx = len(grid_points)
+                grid_points.append((px, py))
+                cx = min(int(px / cell_size), n_cells_x - 1)
+                cy = min(int(py / cell_size), n_cells_y - 1)
+                key = (cx, cy)
+                if key not in cell_to_points:
+                    cell_to_points[key] = []
+                cell_to_points[key].append(pt_idx)
+                if py >= L:
+                    break
+                y = min(y + step, L)
+            if px >= W:
+                break
             x = min(x + step, W)
-        ys = []
-        y = 0.0
-        while True:
-            ys.append(min(y, L))
-            if y >= L: break
-            y = min(y + step, L)
 
-        grid_points = [(px, py) for px in xs for py in ys]
+        # For each detector, find which grid points it covers using spatial index
+        # Only check cells that overlap with the detector's coverage circle
+        detector_covered_sets: List[set] = []
+        for dx, dy in dets:
+            covered = set()
+            # Determine which cells overlap with this detector's coverage circle
+            min_cx = max(0, int((dx - R) / cell_size))
+            max_cx = min(n_cells_x - 1, int((dx + R) / cell_size))
+            min_cy = max(0, int((dy - R) / cell_size))
+            max_cy = min(n_cells_y - 1, int((dy + R) / cell_size))
+            for cx in range(min_cx, max_cx + 1):
+                for cy in range(min_cy, max_cy + 1):
+                    for pt_idx in cell_to_points.get((cx, cy), []):
+                        px, py = grid_points[pt_idx]
+                        if (px - dx) ** 2 + (py - dy) ** 2 <= R2:
+                            covered.add(pt_idx)
+            detector_covered_sets.append(covered)
 
-        # For each grid point, compute which detectors cover it
-        point_coverers = []
-        for px, py in grid_points:
-            coverers = set()
-            for i, (dx, dy) in enumerate(dets):
-                if (px - dx) ** 2 + (py - dy) ** 2 <= R2:
-                    coverers.add(i)
-            point_coverers.append(coverers)
+        # For each grid point, compute which detectors cover it (inverse mapping)
+        point_coverers: List[set] = [set() for _ in range(len(grid_points))]
+        for det_idx, covered in enumerate(detector_covered_sets):
+            for pt_idx in covered:
+                point_coverers[pt_idx].add(det_idx)
 
         # Try to remove each detector (greedy, largest index first)
         removed = set()
@@ -606,8 +639,9 @@ class DensityOptimizer:
                 # Check if all points covered by detector i are also covered
                 # by at least one non-removed detector
                 can_remove = True
-                for coverers in point_coverers:
-                    if i in coverers and len(coverers - removed - {i}) == 0:
+                for pt_idx in detector_covered_sets[i]:
+                    coverers = point_coverers[pt_idx]
+                    if len(coverers - removed - {i}) == 0:
                         can_remove = False
                         break
                 if can_remove:

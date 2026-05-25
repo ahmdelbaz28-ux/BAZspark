@@ -41,6 +41,8 @@ from typing import List, Dict, Any
 import time
 import logging
 
+from .spatial_engine.density_optimizer import DETECTOR_RADIUS
+
 logger = logging.getLogger(__name__)
 
 
@@ -72,7 +74,7 @@ class SafeBuildingEngine:
     def __init__(
         self,
         max_threads: int = 4,
-        coverage_radius: float = 6.37,
+        coverage_radius: float = DETECTOR_RADIUS,
         candidate_step: float = 1.0,
         time_limit_s: float = 60.0,
     ):
