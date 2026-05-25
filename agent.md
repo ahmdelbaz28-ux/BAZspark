@@ -1285,3 +1285,38 @@ After adding Rules 17 (No Half-Solutions) and 18 (Continuous Pipeline) to AGENT.
 ### Commit Information
 - **Commit:** `869120c`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/869120c
+
+---
+
+## V34 Fix (2026-05-25) — FOUL-005 Severity Alignment
+
+### Context
+After applying Rules 17 (Root-Cause Analysis) and 18 (Continuous Pipeline), ran full test suite and found 1 failing test: `test_v22_safety_audit.py::TestFullAudit::test_info_violations_do_not_cause_fail`. Per Rule 10 (Mandatory Test-and-Fix Loop), this must be fixed in production code only.
+
+### Bug 34 — FOUL-005 CRITICAL Severity Misalignment with FOUL-001/002 (HIGH — False FAIL)
+**File:** `fireai/core/safety_audit_engine.py` — `_check_fouling()` line 599
+**Discovery:** V31 introduced FOUL-005 (missing `min_transmittance` verification) with `is_harsh_env = fouling < 0.85`. This threshold was too broad — it classified ANY non-pristine environment (fouling < 0.85) as "harsh," causing FOUL-005 to be CRITICAL even when existing fouling violations (FOUL-001/002) were only at WARNING level.
+**Impact:** A system with fouling=0.50 gets FOUL-002=WARNING (correct) but FOUL-005=CRITICAL (incorrect), causing overall audit FAIL. The test expects INFO-level violations should not cause FAIL, but FOUL-005 escalated the severity unjustifiably. Per NFPA 72 §17.8.3.4 and FM Global DS 5-48 §3.2.1: missing transmittance verification is advisory when fouling is already accounted for in the design. CRITICAL should be reserved for conditions where the system would actually fail to detect a fire.
+**Root Cause Analysis (per Rule 17):** The V31 fix used the default industrial fouling factor (0.85) as the CRITICAL threshold. This was a half-solution — it should have aligned with the existing FOUL-001 CRITICAL threshold (0.50). The fundamental principle is that missing verification data cannot escalate risk beyond what the existing fouling violation already captures.
+**Fix Applied:** Changed `is_harsh_env = fouling < 0.85` → `is_harsh_env = fouling < 0.50`. This aligns FOUL-005 CRITICAL severity with FOUL-001 CRITICAL severity. Updated inline message and comments to reflect the new threshold and rationale.
+
+Severity alignment matrix (after fix):
+
+| Fouling Range | FOUL-001/002 Severity | FOUL-005 Severity | Aligned? |
+|---|---|---|---|
+| < 0.50 | FOUL-001 = CRITICAL | CRITICAL | YES |
+| 0.50-0.70 | FOUL-002 = WARNING | WARNING | YES |
+| 0.70-0.85 | (none) | WARNING | YES |
+| >= 0.85 | (none) | WARNING | YES |
+
+**Tests:** 196/196 passing (26 hypothesis + 27 V29 + 125 V22 safety + 18 other)
+
+### Self-Criticism Notes (V34)
+
+1. **V31 introduced a severity misalignment** — The V31 fix added FOUL-005 without considering its interaction with existing FOUL-001/002 severity levels. This is exactly the kind of "half-solution" that Rule 17 forbids. The fix should have been designed holistically from the start.
+2. **The test was correct all along** — `test_info_violations_do_not_cause_fail` was correctly testing that INFO-level violations should not cause FAIL. The production code was wrong, not the test. This validates Rule 10 ("A failing test is a signal that the code is wrong").
+3. **0.85 was an arbitrary threshold** — It came from "industrial environment" definitions but didn't align with the existing violation codes. Per Rule 17, the root-cause fix was to align with FOUL-001's threshold (0.50) rather than introducing a new independent threshold.
+
+### Commit Information
+- **Commit:** `5b91c93`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/5b91c93
