@@ -7196,3 +7196,32 @@ in results`, extract the list. Falls back to list handling for backward compat.
 ### Commit Information
 - **Commit:** `c6ab884`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/c6ab884
+
+---
+
+## Rules Engine Integration Fix (2026-05-30)
+
+### Bug 16 — Rules Engine Alpha/Beta Network Conflict (CRITICAL)
+**File:** `fireai/core/rules_engine/engine.py` — `_evaluate_one_pass()`
+**Discovery:** Integration test revealed IndexError when NFPA72-010 (detector spacing violation) fired with only 1 fact from alpha network instead of the expected 2 facts from beta network join.
+**Root Cause:** Rules with `join_conditions` were being added as alpha-only candidates (single fact) in Phase 1, but their `action` functions expect fact pairs from Phase 2 (beta join). When the alpha candidate fired, `facts[1]` caused `IndexError`.
+**Impact:** Rules Engine would silently catch the error (logged but not surfaced), causing NFPA72-010 (detector spacing violation) to never fire correctly. Two detectors too far apart would NOT be detected — direct life safety hazard.
+**Fix Applied:** Added check in Phase 1 (alpha network): if `rule.join_conditions` is non-empty, skip the rule from alpha candidates. Join-only rules now ONLY evaluate through Phase 2 (beta network), ensuring fact pairs are always provided.
+**Verification:** 67 tests pass (including detector spacing violation test). Integration test confirms NFPA72-010 now correctly detects 15m spacing > 9.1m max.
+
+### __init__.py Export Fix
+**File:** `fireai/core/rules_engine/__init__.py`
+**Fix:** Added exports for `compliance_bridge` module (NFPA72ComplianceChecker, ComplianceReport, room_to_facts, detector_to_fact, hvac_to_fact, elevator_to_fact, results_to_report) and `api_contract` module (APIContract, ContractValidator, ContractSeverity, ContractViolationDetail, create_contract_aware_router, generate_typescript_config).
+
+### Test File Integration
+**Files:** `tests/test_rules_engine.py`, `tests/test_compliance_bridge.py`
+**Action:** Moved test files from wrong directory (`/home/z/my-project/revit/`) to correct location (`/home/z/my-project/repos/revit/tests/`). 67 tests covering: Fact basics, Engine basics, NFPA 72 rules (10 rules), Truth Maintenance System, API Contract validation, RuleSet metadata, Edge cases, Compliance Checker, Data conversion, Compliance Report.
+
+### Cleanup
+**Action:** Removed stale directory `/home/z/my-project/revit/` which contained outdated copies of rules_engine files.
+
+### Self-Criticism Notes
+1. **Previous session falsely claimed files were "unintegrated"** — they were actually already in the correct directory with IMPROVED versions (nfpa72_rules.py has room area lookup, compliance_bridge.py has TMS consistency check).
+2. **Alpha/Beta network conflict was a REAL bug** — discovered through honest integration testing, not through code review alone. Tests passed before because NFPA72-010 was silently failing.
+3. **Pipeline integration was already done** — Stage 3.5 in pipeline.py already uses NFPA72ComplianceChecker. No additional pipeline work was needed.
+4. **The only real missing pieces were:** __init__.py exports, test file locations, and the alpha/beta network bug fix.
