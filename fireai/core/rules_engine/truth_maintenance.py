@@ -133,6 +133,22 @@ class TruthMaintenanceSystem:
         if is_top_level:
             self._cascade_visited = set()
 
+        try:
+            retracted_ids = self._retract_support_inner(retracted_fact_id)
+        finally:
+            # SAFETY FIX (MEDIUM-18): Always clear the cascade visited set
+            # after a top-level call, even if an exception interrupted the
+            # cascade. Without this, stale entries in _cascade_visited would
+            # cause future retract_support calls to skip facts that were
+            # visited in the interrupted cascade, leading to inconsistent
+            # TMS state.
+            if is_top_level:
+                self._cascade_visited = set()
+
+        return retracted_ids
+
+    def _retract_support_inner(self, retracted_fact_id: str) -> List[str]:
+        """Internal implementation of retract_support (without visited-set management)."""
         retracted_ids: List[str] = []
 
         if retracted_fact_id not in self._support_index:
@@ -165,7 +181,7 @@ class TruthMaintenanceSystem:
             retracted_ids.append(affected_id)
 
             # Recursive: retract facts that depend on THIS derived fact
-            cascade_ids = self.retract_support(affected_id)
+            cascade_ids = self._retract_support_inner(affected_id)
             retracted_ids.extend(cascade_ids)
 
         # Clean up support index for the retracted fact
@@ -189,10 +205,6 @@ class TruthMaintenanceSystem:
                 f"TMS: Retraction cascade from {retracted_fact_id}: "
                 f"{len(retracted_ids)} derived facts invalidated"
             )
-
-        # FIX: Clear cascade-local visited set after top-level call completes
-        if is_top_level:
-            self._cascade_visited = set()
 
         return retracted_ids
 

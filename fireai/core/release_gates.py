@@ -238,22 +238,27 @@ def verify_and_evaluate(
           - passed_gates: Number of gates that passed
           - failed_gates: Number of gates that failed
     """
-    # Extract data from inputs for gate checks
-    coverage_pct = None
-    wall_violations = None
-    safety_tier_value = None
-
-    if input_payload:
-        # Coverage and wall violations come from pipeline stages
-        # These would be set by the pipeline caller, but we also
-        # check nfpa_results for basic compliance
-        pass
-
-    if nfpa_results:
-        # Extract coverage info if available
-        is_compliant = nfpa_results.get("is_compliant", False)
-        # If not compliant, this is a blocking condition
-        pass
+    # ═══════════════════════════════════════════════════════════════════════
+    # SAFETY FIX (CRITICAL-3/4): Extract coverage, wall violations, and
+    # safety tier from EXPLICIT data only. NEVER infer them from
+    # nfpa_results.is_compliant — a compliant NFPA result does NOT
+    # guarantee adequate coverage or zero wall violations. The
+    # is_compliant flag can be True for reasons unrelated to these
+    # specific checks, so using it as a fallback creates a false
+    # GREEN release pathway.
+    #
+    # OLD BEHAVIOR (DANGEROUS):
+    #   if nfpa_results.get("is_compliant"): G3 → pass
+    #   This meant a design with 0% coverage could get GREEN if
+    #   is_compliant was set by some other check.
+    #
+    # NEW BEHAVIOR (SAFE):
+    #   If coverage data is not available → G3 → FAIL
+    #   If wall violation data is not available → G4 → FAIL
+    #   If safety tier is not available → G8 → FAIL
+    #   False negatives (blocking good designs) are acceptable.
+    #   False positives (approving bad designs) are NOT acceptable.
+    # ═══════════════════════════════════════════════════════════════════════
 
     # Run all gates
     checks = {}
@@ -264,39 +269,37 @@ def verify_and_evaluate(
     # G2: NFPA Spacing
     checks["G2_nfpa_spacing"] = _gate_nfpa_spacing(nfpa_results)
 
-    # G3: Coverage — extracted from nfpa_results or input
-    # The pipeline passes coverage_pct separately, but in this function
-    # we infer it from the input payload or nfpa_results
+    # G3: Coverage — EXPLICIT data only, no is_compliant fallback
     cov_pct = None
-    if input_payload and "_coverage_pct" in input_payload:
-        cov_pct = input_payload["_coverage_pct"]
-    elif nfpa_results and "coverage_pct" in nfpa_results:
+    if nfpa_results and "coverage_pct" in nfpa_results:
         cov_pct = nfpa_results["coverage_pct"]
+    elif input_payload and "_coverage_pct" in input_payload:
+        cov_pct = input_payload["_coverage_pct"]
 
     if cov_pct is not None:
         checks["G3_coverage"] = _gate_coverage(cov_pct)
     else:
-        # If we can't determine coverage, check if NFPA says compliant
-        if nfpa_results and nfpa_results.get("is_compliant"):
-            checks["G3_coverage"] = {"passed": True, "reason": "Coverage compliant per NFPA results"}
-        else:
-            checks["G3_coverage"] = {"passed": False, "reason": "Coverage not verified"}
+        # SAFETY: No coverage data → BLOCK. Never assume compliance.
+        checks["G3_coverage"] = {
+            "passed": False,
+            "reason": "Coverage percentage not provided — cannot verify. Release blocked for safety.",
+        }
 
-    # G4: Wall Distance — extracted from input or nfpa_results
+    # G4: Wall Distance — EXPLICIT data only, no is_compliant fallback
     wv = None
-    if input_payload and "_wall_violations" in input_payload:
-        wv = input_payload["_wall_violations"]
-    elif nfpa_results and "wall_violations" in nfpa_results:
+    if nfpa_results and "wall_violations" in nfpa_results:
         wv = nfpa_results["wall_violations"]
+    elif input_payload and "_wall_violations" in input_payload:
+        wv = input_payload["_wall_violations"]
 
     if wv is not None:
         checks["G4_wall_distance"] = _gate_wall_distance(wv)
     else:
-        # If no wall violation data, check if NFPA says compliant
-        if nfpa_results and nfpa_results.get("is_compliant"):
-            checks["G4_wall_distance"] = {"passed": True, "reason": "No wall violations per NFPA results"}
-        else:
-            checks["G4_wall_distance"] = {"passed": False, "reason": "Wall distance not verified"}
+        # SAFETY: No wall violation data → BLOCK. Never assume compliance.
+        checks["G4_wall_distance"] = {
+            "passed": False,
+            "reason": "Wall distance data not provided — cannot verify. Release blocked for safety.",
+        }
 
     # G5: Battery
     checks["G5_battery"] = _gate_battery(battery_result)
@@ -307,12 +310,12 @@ def verify_and_evaluate(
     # G7: Fault Isolation
     checks["G7_fault_isolation"] = _gate_fault_isolation(loop_data)
 
-    # G8: Safety Tier — extracted from input or evidence
+    # G8: Safety Tier — extracted from explicit sources only
     tier = None
-    if input_payload and "_safety_tier" in input_payload:
-        tier = input_payload["_safety_tier"]
-    elif nfpa_results and "safety_tier" in nfpa_results:
+    if nfpa_results and "safety_tier" in nfpa_results:
         tier = nfpa_results["safety_tier"]
+    elif input_payload and "_safety_tier" in input_payload:
+        tier = input_payload["_safety_tier"]
     elif evidence_envelope and hasattr(evidence_envelope, "safety_tier"):
         tier = evidence_envelope.safety_tier
 

@@ -286,9 +286,15 @@ class EngineeringEvidencePackage:
             Hex-encoded SHA-256 hash string.
         """
         # Build deterministic representation
+        # SAFETY FIX (HIGH-15): Include room_polygon in hash computation.
+        # Without it, two rooms with the same area but different shapes
+        # would produce the same hash, allowing undetected tampering.
         hash_data = {
             "pkg":     self.package_id,
             "room":    self.room_id,
+            "poly":    sorted(
+                [(round(x, 4), round(y, 4)) for x, y in self.room_polygon]
+            ),
             "area":    round(self.room_area_m2, 6),
             "ceil_h":  round(self.ceiling_height_m, 4),
             "ceil_t":  self.ceiling_type,

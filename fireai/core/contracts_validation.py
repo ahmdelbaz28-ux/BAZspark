@@ -85,6 +85,9 @@ def _validate_polygon(polygon: Any) -> List[str]:
     """Validate room polygon for geometric correctness."""
     warnings = []
 
+    # SAFETY FIX (HIGH-16): Non-list types (including strings) are
+    # always errors, not just warnings. A string like "abc" has len>=3
+    # but will crash when we try to unpack chars as (x, y) tuples.
     if not isinstance(polygon, list):
         return [f"room_polygon must be a list, got {type(polygon).__name__}"]
 
@@ -204,7 +207,10 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     polygon = payload["room_polygon"]
     polygon_warnings = _validate_polygon(polygon)
     if polygon_warnings:
-        # Non-list polygons are always errors (e.g., string "bad" has len>=3)
+        # SAFETY FIX (HIGH-16): Non-list polygons are ALWAYS errors.
+        # This was already partially handled, but now we also catch
+        # cases where polygon is a list but contains non-numeric elements
+        # that would crash _compute_area_from_polygon().
         if not isinstance(polygon, list):
             raise ContractViolation(
                 polygon_warnings[0],
@@ -217,6 +223,22 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
                 field="room_polygon",
                 value=polygon,
             )
+        # Check for non-numeric vertex coords that would crash area computation
+        for i, pt in enumerate(polygon):
+            if isinstance(pt, (list, tuple)) and len(pt) == 2:
+                for j, c in enumerate(pt):
+                    if not isinstance(c, (int, float)):
+                        raise ContractViolation(
+                            f"polygon vertex {i} coord {j} must be numeric, got {type(c).__name__}",
+                            field="room_polygon",
+                            value=polygon,
+                        )
+            elif not isinstance(pt, (list, tuple)):
+                raise ContractViolation(
+                    f"polygon vertex {i} must be tuple/list, got {type(pt).__name__}",
+                    field="room_polygon",
+                    value=polygon,
+                )
 
     # ── Step 5: Compute Missing Fields ──────────────────────────────────
     result = dict(payload)  # Shallow copy
