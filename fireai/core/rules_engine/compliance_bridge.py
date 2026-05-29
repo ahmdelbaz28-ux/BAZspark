@@ -144,6 +144,91 @@ def elevator_to_fact(
     )
 
 
+def battery_result_to_fact(
+    required_ah: float,
+    installed_ah: float,
+    is_adequate: bool,
+    nfpa_section: str = "NFPA 72 §10.6.7",
+) -> Fact:
+    """Convert a battery calculation result to a Rule Engine fact.
+
+    This bridges nfpa72_engine.calculate_battery() output into
+    the Rules Engine so that RULE_BATTERY_INADEQUATE (NFPA72-011)
+    can evaluate it.
+
+    Reference: NFPA 72 §10.6.7.2.1
+    """
+    return Fact(
+        fact_type="battery_result",
+        properties={
+            "required_ah": required_ah,
+            "installed_ah": installed_ah,
+            "is_adequate": is_adequate,
+            "nfpa_section": nfpa_section,
+        },
+        source="nfpa72_engine",
+        nfpa_reference=nfpa_section,
+    )
+
+
+def voltage_drop_result_to_fact(
+    voltage_drop_v: float,
+    voltage_drop_pct: float,
+    max_length_m: float,
+    is_compliant: bool,
+    nfpa_section: str = "NFPA 72 §10.6.4",
+) -> Fact:
+    """Convert a voltage drop result to a Rule Engine fact.
+
+    This bridges nfpa72_engine.calculate_voltage_drop() output into
+    the Rules Engine so that RULE_VOLTAGE_DROP_EXCEEDED (NFPA72-012)
+    can evaluate it.
+
+    Reference: NFPA 72 §10.6.4, NEC 760
+    """
+    return Fact(
+        fact_type="voltage_drop_result",
+        properties={
+            "voltage_drop_v": voltage_drop_v,
+            "voltage_drop_pct": voltage_drop_pct,
+            "max_length_m": max_length_m,
+            "is_compliant": is_compliant,
+            "nfpa_section": nfpa_section,
+        },
+        source="nfpa72_engine",
+        nfpa_reference=nfpa_section,
+    )
+
+
+def fault_isolation_result_to_fact(
+    compliant: bool,
+    violations: List[Dict[str, Any]],
+    device_count: int,
+    isolator_count: int,
+    nfpa_section: str = "NFPA 72 §12.3",
+) -> Fact:
+    """Convert a fault isolation result to a Rule Engine fact.
+
+    This bridges nfpa72_engine.verify_fault_isolator_placement() output
+    into the Rules Engine so that RULE_FAULT_ISOLATION_VIOLATION (NFPA72-013)
+    can evaluate it.
+
+    Reference: NFPA 72 §12.3.1
+    """
+    return Fact(
+        fact_type="fault_isolation_result",
+        properties={
+            "compliant": compliant,
+            "violations": violations,
+            "device_count": device_count,
+            "isolator_count": isolator_count,
+            "nfpa_section": nfpa_section,
+        },
+        source="nfpa72_engine",
+        nfpa_reference=nfpa_section,
+    )
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # RESULT CONVERSION
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -363,6 +448,86 @@ class NFPA72ComplianceChecker:
             has_hoistway_detector=has_hoistway_detector,
         )
         return self.engine.assert_fact(fact)
+
+    def add_battery_result(
+        self,
+        required_ah: float,
+        installed_ah: float,
+        is_adequate: bool,
+    ) -> str:
+        """Add a battery calculation result for compliance checking.
+
+        Bridges nfpa72_engine.calculate_battery() results into the
+        Rules Engine. Rule NFPA72-011 will fire if is_adequate=False.
+
+        Reference: NFPA 72 §10.6.7.2.1
+        """
+        fact = battery_result_to_fact(
+            required_ah=required_ah,
+            installed_ah=installed_ah,
+            is_adequate=is_adequate,
+        )
+        fid = self.engine.assert_fact(fact)
+        logger.info(
+            f"Battery result added: required={required_ah:.2f}Ah, "
+            f"installed={installed_ah:.2f}Ah, "
+            f"adequate={is_adequate}"
+        )
+        return fid
+
+    def add_voltage_drop_result(
+        self,
+        voltage_drop_v: float,
+        voltage_drop_pct: float,
+        max_length_m: float,
+        is_compliant: bool,
+    ) -> str:
+        """Add a voltage drop result for compliance checking.
+
+        Bridges nfpa72_engine.calculate_voltage_drop() results into the
+        Rules Engine. Rule NFPA72-012 will fire if is_compliant=False.
+
+        Reference: NFPA 72 §10.6.4, NEC 760
+        """
+        fact = voltage_drop_result_to_fact(
+            voltage_drop_v=voltage_drop_v,
+            voltage_drop_pct=voltage_drop_pct,
+            max_length_m=max_length_m,
+            is_compliant=is_compliant,
+        )
+        fid = self.engine.assert_fact(fact)
+        logger.info(
+            f"Voltage drop result added: drop={voltage_drop_pct:.2f}%, "
+            f"compliant={is_compliant}"
+        )
+        return fid
+
+    def add_fault_isolation_result(
+        self,
+        compliant: bool,
+        violations: List[Dict[str, Any]],
+        device_count: int,
+        isolator_count: int,
+    ) -> str:
+        """Add a fault isolation result for compliance checking.
+
+        Bridges nfpa72_engine.verify_fault_isolator_placement() results
+        into the Rules Engine. Rule NFPA72-013 will fire if compliant=False.
+
+        Reference: NFPA 72 §12.3.1
+        """
+        fact = fault_isolation_result_to_fact(
+            compliant=compliant,
+            violations=violations,
+            device_count=device_count,
+            isolator_count=isolator_count,
+        )
+        fid = self.engine.assert_fact(fact)
+        logger.info(
+            f"Fault isolation result added: devices={device_count}, "
+            f"isolators={isolator_count}, compliant={compliant}"
+        )
+        return fid
 
     def evaluate(self) -> ComplianceReport:
         """Run compliance evaluation and return a structured report."""

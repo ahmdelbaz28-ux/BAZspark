@@ -436,6 +436,9 @@ def _stage35_rules_compliance(
     detector_positions: List[Tuple[float, float]],
     coverage_radius_m: float,
     spacing_m: float,
+    battery_dict: Optional[Dict] = None,
+    voltage_dict: Optional[Dict] = None,
+    fault_isolation_dict: Optional[Dict] = None,
 ) -> Dict:
     """Run declarative NFPA 72 rules engine compliance check.
 
@@ -445,6 +448,10 @@ def _stage35_rules_compliance(
 
     This ENHANCES (not replaces) the existing compliance checks.
     Both systems run in parallel — discrepancies are flagged.
+
+    Now also accepts nfpa72_engine calculation results (battery,
+    voltage drop, fault isolation) and feeds them as facts into
+    the Rules Engine for integrated compliance checking.
     """
     try:
         checker = NFPA72ComplianceChecker(
@@ -478,6 +485,28 @@ def _stage35_rules_compliance(
                 y=y,
                 listed_spacing_m=spacing_m,
                 wall_distance_max_m=wall_max,
+            )
+
+        # Bridge nfpa72_engine results into the Rules Engine
+        if battery_dict is not None:
+            checker.add_battery_result(
+                required_ah=battery_dict.get("required_ah", 0),
+                installed_ah=battery_dict.get("installed_ah", 0),
+                is_adequate=battery_dict.get("is_adequate", False),
+            )
+        if voltage_dict is not None:
+            checker.add_voltage_drop_result(
+                voltage_drop_v=voltage_dict.get("voltage_drop_v", 0),
+                voltage_drop_pct=voltage_dict.get("voltage_drop_pct", 0),
+                max_length_m=voltage_dict.get("max_length_m", 0),
+                is_compliant=voltage_dict.get("is_compliant", False),
+            )
+        if fault_isolation_dict is not None:
+            checker.add_fault_isolation_result(
+                compliant=fault_isolation_dict.get("compliant", True),
+                violations=fault_isolation_dict.get("violations", []),
+                device_count=fault_isolation_dict.get("device_count", 0),
+                isolator_count=fault_isolation_dict.get("isolator_count", 0),
             )
 
         # Run evaluation
@@ -727,25 +756,6 @@ def analyze_room(
     # ── Wall Violations ───────────────────────────────────────────────────────
     wall_violations = _count_wall_violations(positions, polygon)
 
-    # ── Stage 3.5: Rules Engine Compliance ────────────────────────────────────
-    # Runs the declarative NFPA 72 rules engine for structured compliance
-    # checking with full audit trail and truth maintenance.
-    # This ENHANCES (not replaces) the existing compliance checks.
-    s35 = _run_stage(
-        "S35_rules_compliance", _stage35_rules_compliance,
-        validated, positions, radius_m, spacing_m,
-    )
-    stages.append(s35)
-    rules_compliance_data = s35.data if s35.success else {}
-    if s35.success and not rules_compliance_data.get("is_safe", True):
-        # Rules engine found violations — add to warnings
-        for detail in rules_compliance_data.get("critical_details", []):
-            warnings.append(f"RULES_ENGINE CRITICAL [{detail.get('rule_id', '?')}]: {detail.get('message', '')}")
-        for detail in rules_compliance_data.get("violation_details", []):
-            warnings.append(f"RULES_ENGINE VIOLATION [{detail.get('rule_id', '?')}]: {detail.get('message', '')}")
-    elif not s35.success:
-        warnings.append("Rules Engine compliance check unavailable — investigate")
-
     # ── Stage 4: Safety Classification ───────────────────────────────────────
     s4 = _run_stage(
         "S4_safety", _stage4_safety_classify,
@@ -810,6 +820,26 @@ def analyze_room(
                 warnings.append(
                     f"SLC fault isolation violations: {sf.data.get('violations', [])}"
                 )
+
+    # ── Stage 3.5: Rules Engine Compliance (MOVED after battery/voltage/fault) ─
+    # Now runs AFTER nfpa72_engine calculations so that battery,
+    # voltage drop, and fault isolation results are fed as facts
+    # into the Rules Engine for integrated compliance checking.
+    s35 = _run_stage(
+        "S35_rules_compliance", _stage35_rules_compliance,
+        validated, positions, radius_m, spacing_m,
+        battery_dict, voltage_dict, fault_isolation_dict,
+    )
+    stages.append(s35)
+    rules_compliance_data = s35.data if s35.success else {}
+    if s35.success and not rules_compliance_data.get("is_safe", True):
+        # Rules engine found violations — add to warnings
+        for detail in rules_compliance_data.get("critical_details", []):
+            warnings.append(f"RULES_ENGINE CRITICAL [{detail.get('rule_id', '?')}]: {detail.get('message', '')}")
+        for detail in rules_compliance_data.get("violation_details", []):
+            warnings.append(f"RULES_ENGINE VIOLATION [{detail.get('rule_id', '?')}]: {detail.get('message', '')}")
+    elif not s35.success:
+        warnings.append("Rules Engine compliance check unavailable — investigate")
 
     # ── Stage 5: Release Gates ────────────────────────────────────────────────
     nfpa_result = {
@@ -920,7 +950,9 @@ def _failed_result(
     room_id: str = "",
 ) -> PipelineResult:
     """Build a failure result when a critical stage fails."""
-    room_id = room_id or str(payload.get("room_id", "UNKNOWN"))
+    room_id = room_id or str(
+        payload.get("room_id", "UNKNOWN") if isinstance(payload, dict) else "UNKNOWN"
+    )
     return PipelineResult(
         run_id             = run_id,
         room_id            = room_id,

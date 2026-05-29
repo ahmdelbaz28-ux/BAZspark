@@ -13,7 +13,7 @@ RESILIENT IMPORT DESIGN:
   and silently skip when it doesn't.
 """
 
-__version__ = "56.0.0"
+__version__ = "0.1.0"
 
 import logging
 
@@ -570,6 +570,15 @@ _optional_names = [
     "MCPipelineAdapter", "DetectorReliabilitySimulator", "DetectorFailureModel",
 ]
 
+_missing_modules = []
 for _name in _optional_names:
     if hasattr(_current_module, _name) and _name not in __all__:
         __all__.append(_name)
+    elif _name not in __all__:
+        _missing_modules.append(_name)
+
+if _missing_modules:
+    _logger.info(
+        "fireai.core: %d optional modules not available on disk: %s",
+        len(_missing_modules), ", ".join(_missing_modules[:10]),
+    )

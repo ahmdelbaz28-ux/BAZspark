@@ -204,7 +204,13 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     polygon = payload["room_polygon"]
     polygon_warnings = _validate_polygon(polygon)
     if polygon_warnings:
-        # First warning is treated as error for < 3 vertices
+        # Non-list polygons are always errors (e.g., string "bad" has len>=3)
+        if not isinstance(polygon, list):
+            raise ContractViolation(
+                polygon_warnings[0],
+                field="room_polygon",
+                value=type(polygon).__name__,
+            )
         if len(polygon) < 3:
             raise ContractViolation(
                 polygon_warnings[0],

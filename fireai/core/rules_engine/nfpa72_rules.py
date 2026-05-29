@@ -630,6 +630,133 @@ RULE_DETECTOR_SPACING_VIOLATION = Rule(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# NFPA 72 RULES — BATTERY ADEQUACY (bridged from nfpa72_engine)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+RULE_BATTERY_INADEQUATE = Rule(
+    rule_id="NFPA72-011",
+    rule_name="Battery Capacity Inadequate for Secondary Supply",
+    nfpa_reference="NFPA 72 §10.6.7.2.1",
+    priority=RulePriority.CRITICAL_SAFETY,
+    description=(
+        "The secondary supply (battery) must have sufficient capacity "
+        "to operate the system under normal load for 24 hours and "
+        "then operate all alarm appliances for 5 minutes per "
+        "NFPA 72 §10.6.7.2.1. If the installed battery capacity is "
+        "less than the required capacity, this is a CRITICAL "
+        "life-safety violation — the fire alarm system may not "
+        "function during an extended power outage."
+    ),
+    fact_type="battery_result",
+    condition=lambda f: (
+        "is_adequate" in f.properties
+        and f.properties["is_adequate"] is False
+    ),
+    action=lambda facts, engine: [
+        RuleResult(
+            rule_id="NFPA72-011",
+            rule_name="Battery Capacity Inadequate for Secondary Supply",
+            nfpa_reference="NFPA 72 §10.6.7.2.1",
+            severity=RulePriority.CRITICAL_SAFETY,
+            message=(
+                f"CRITICAL: Battery capacity inadequate — "
+                f"required={facts[0].properties.get('required_ah', '?')}Ah, "
+                f"installed={facts[0].properties.get('installed_ah', '?')}Ah. "
+                f"NFPA 72 §10.6.7.2.1 requires 24h standby + 5min alarm "
+                f"with 20% safety margin. System may fail during "
+                f"extended power outage."
+            ),
+            matched_facts=[f.fact_id for f in facts],
+        )
+    ],
+)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NFPA 72 RULES — VOLTAGE DROP (bridged from nfpa72_engine)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+RULE_VOLTAGE_DROP_EXCEEDED = Rule(
+    rule_id="NFPA72-012",
+    rule_name="Circuit Voltage Drop Exceeds NFPA 72 Limit",
+    nfpa_reference="NFPA 72 §10.6.4, NEC 760",
+    priority=RulePriority.CRITICAL_SAFETY,
+    description=(
+        "The voltage drop on any fire alarm circuit must not exceed "
+        "10% of the supply voltage (2.4V for 24V systems). Excessive "
+        "voltage drop means end-of-line devices may not operate "
+        "during an alarm condition. The ×2 factor for DC return "
+        "path is critical — missing it reports 50% of actual drop."
+    ),
+    fact_type="voltage_drop_result",
+    condition=lambda f: (
+        "is_compliant" in f.properties
+        and f.properties["is_compliant"] is False
+    ),
+    action=lambda facts, engine: [
+        RuleResult(
+            rule_id="NFPA72-012",
+            rule_name="Circuit Voltage Drop Exceeds NFPA 72 Limit",
+            nfpa_reference="NFPA 72 §10.6.4",
+            severity=RulePriority.CRITICAL_SAFETY,
+            message=(
+                f"CRITICAL: Voltage drop "
+                f"{facts[0].properties.get('voltage_drop_pct', '?')}% "
+                f"exceeds 10% limit (NFPA 72 §10.6.4). "
+                f"End-of-line devices may not operate. "
+                f"Max circuit length for this gauge: "
+                f"{facts[0].properties.get('max_length_m', '?')}m. "
+                f"Increase wire gauge or reduce circuit length."
+            ),
+            matched_facts=[f.fact_id for f in facts],
+        )
+    ],
+)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NFPA 72 RULES — FAULT ISOLATOR (bridged from nfpa72_engine)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+RULE_FAULT_ISOLATION_VIOLATION = Rule(
+    rule_id="NFPA72-013",
+    rule_name="SLC Fault Isolator Placement Violation",
+    nfpa_reference="NFPA 72 §12.3.1",
+    priority=RulePriority.SAFETY_VIOLATION,
+    description=(
+        "A single fault on a Signaling Line Circuit (SLC) must not "
+        "disable more than one zone or more than 32 devices between "
+        "isolators per NFPA 72 §12.3.1. Without proper isolator "
+        "placement, a single short circuit could disable the "
+        "entire SLC, preventing alarm notification."
+    ),
+    fact_type="fault_isolation_result",
+    condition=lambda f: (
+        "compliant" in f.properties
+        and f.properties["compliant"] is False
+    ),
+    action=lambda facts, engine: [
+        RuleResult(
+            rule_id="NFPA72-013",
+            rule_name="SLC Fault Isolator Placement Violation",
+            nfpa_reference="NFPA 72 §12.3.1",
+            severity=RulePriority.SAFETY_VIOLATION,
+            message=(
+                f"VIOLATION: SLC fault isolator placement non-compliant. "
+                f"{facts[0].properties.get('device_count', '?')} devices, "
+                f"{facts[0].properties.get('isolator_count', '?')} isolators. "
+                f"A single fault could disable more than 32 devices "
+                f"or more than one zone (NFPA 72 §12.3.1). "
+                f"{len(facts[0].properties.get('violations', []))} "
+                f"violation(s) found."
+            ),
+            matched_facts=[f.fact_id for f in facts],
+        )
+    ],
+)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # NFPA72RuleSet — Complete Rule Set
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -650,11 +777,14 @@ class NFPA72RuleSet:
         # CRITICAL SAFETY (priority 0) — fires first
         RULE_CEILING_HEIGHT_EXCEEDS_TABLE,
         RULE_DETECTOR_SPACING_VIOLATION,
+        RULE_BATTERY_INADEQUATE,
+        RULE_VOLTAGE_DROP_EXCEEDED,
         # SAFETY VIOLATIONS (priority 10)
         RULE_DEAD_AIR_SPACE,
         RULE_WALL_DISTANCE_EXCEEDED,
         RULE_DUCT_DETECTOR_REQUIRED,
         RULE_ELEVATOR_RECALL,
+        RULE_FAULT_ISOLATION_VIOLATION,
         # COMPLIANCE CHECKS (priority 20)
         RULE_CEILING_HEIGHT_SPACING,
         RULE_COVERAGE_RADIUS,

@@ -17,11 +17,16 @@ SAFETY CRITICAL:
   - All NaN/Inf inputs are REJECTED
   - All negative inputs are REJECTED
 
-DESIGN INSPIRATION (NOT copied):
-  - ElectricPy.loadedvcapdischarge — nonlinear battery discharge model
-  - ElectricPy.voltdiv — voltage divider for NAC end-of-line calculation
-  - ElectricPy.resistivity_rho — wire resistance from material properties
-  - SprayHydraulic.PNetwork.is_connected — graph topology for fault isolation
+ENGINEERING SOURCES:
+  - NFPA 72-2022 — primary standard for all fire alarm calculations
+  - NEC (NFPA 70) Chapter 9, Table 8 — wire resistance values
+  - NEC 760 — fire alarm circuit requirements
+
+NOTE: Previous version falsely claimed "inspiration" from ElectricPy and
+SprayHydraulic repositories. That was dishonest — no code or formula from
+those repositories was actually used. All calculations are from NFPA/NEC
+standards directly. If future versions incorporate specific formulas from
+external sources, they will be explicitly documented with line references.
 
 All formulas are traced to their NFPA/NEC source sections.
 """
