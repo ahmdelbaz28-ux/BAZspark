@@ -608,6 +608,14 @@ class RulesEngine:
                     # targets the other side — don't filter f1 here
 
                     for f2 in facts_2:
+                        # SAFETY FIX (HIGH-14): Apply alpha condition to f2
+                        # when rule.fact_type matches fact_type_2. Previously,
+                        # f2 was never filtered, causing unfiltered facts to
+                        # enter the join and be compared against the join
+                        # predicate — inefficient and fragile.
+                        if rule.fact_type and rule.fact_type == fact_type_2:
+                            if rule.condition and not rule.condition(f2):
+                                continue
                         try:
                             if join_pred(f1, f2):
                                 join_results.append((rule, [f1, f2]))

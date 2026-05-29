@@ -627,13 +627,20 @@ class TestVerifyAndEvaluate:
         )
         assert result["checks"]["G3_coverage"]["passed"] is False
 
-    def test_coverage_passes_via_nfpa_compliance(self) -> None:
-        """When coverage_pct unavailable but NFPA says compliant, G3 passes."""
+    def test_coverage_blocked_without_explicit_data(self) -> None:
+        """When coverage_pct unavailable, G3 FAILS even if NFPA says compliant.
+
+        SAFETY FIX (CRITICAL-3): The old behavior allowed is_compliant=True
+        to bypass the coverage gate, creating a false-GREEN release pathway.
+        Now coverage_pct MUST be explicitly provided — no inference from
+        is_compliant. False negatives (blocking good designs) are acceptable.
+        False positives (approving bad designs) are NOT acceptable.
+        """
         result = verify_and_evaluate(
             input_payload={"room_id": "R-1", "area_m2": 10.0},
             nfpa_results={"is_compliant": True},
         )
-        assert result["checks"]["G3_coverage"]["passed"] is True
+        assert result["checks"]["G3_coverage"]["passed"] is False
 
     # ── Wall violations extraction from nfpa_results ────────────────────────
 

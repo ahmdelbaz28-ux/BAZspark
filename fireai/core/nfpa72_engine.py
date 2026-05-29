@@ -216,7 +216,9 @@ def estimate_detector_count(
     spacing_result = get_detector_spacing(ceiling_height_m, detector_type)
     radius_m = spacing_result.coverage_radius_m
 
-    if radius_m <= 0 or not math.isfinite(room_area_m2) or room_area_m2 <= 0:
+    # SAFETY FIX (CRITICAL-9): Reject infinite/NaN room areas explicitly
+    # instead of letting math.ceil(float('inf')) raise OverflowError.
+    if not math.isfinite(room_area_m2) or room_area_m2 <= 0:
         return {
             "min_detector_count": 1,
             "area_per_detector_m2": 0.0,
@@ -421,7 +423,11 @@ def calculate_voltage_drop(
         max_length_km = max_drop_v / (alarm_current_a * 2.0 * r_per_km)
         max_length_m = max_length_km * 1000.0
     else:
-        max_length_m = float('inf')
+        # SAFETY: When current is 0, max length is theoretically infinite.
+        # However, returning float('inf') breaks JSON serialization and
+        # downstream consumers. Return 0.0 instead — if there's no current,
+        # the circuit length question is meaningless.
+        max_length_m = 0.0
 
     is_compliant = drop_pct <= max_drop_pct
 

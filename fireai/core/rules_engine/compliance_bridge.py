@@ -356,7 +356,11 @@ class NFPA72ComplianceChecker:
         # TMS is integrated inside RulesEngine via _derived_from/_supports
         # dictionaries. The standalone TruthMaintenanceSystem is available
         # for external audit and consistency checks.
+        # SAFETY FIX (CRITICAL-5): The standalone TMS is now synchronized
+        # with the engine's internal TMS after every evaluate() call, so
+        # validate_tms_consistency() actually checks real dependency records.
         self.tms = TruthMaintenanceSystem()
+        self._sync_tms_after_evaluate = True
 
     def validate_tms_consistency(self) -> List[str]:
         """Check TMS consistency between engine and standalone TMS.
@@ -534,6 +538,15 @@ class NFPA72ComplianceChecker:
         logger.info(f"Starting NFPA 72 compliance evaluation for session {self.engine.session_id}")
         try:
             results = self.engine.evaluate()
+
+            # SAFETY FIX (CRITICAL-5): Sync standalone TMS with engine's
+            # internal TMS after evaluation. The engine maintains _derived_from
+            # and _supports dicts that track fact dependencies. We copy these
+            # into the standalone TMS so that validate_tms_consistency() can
+            # actually detect inconsistencies instead of always returning [].
+            if self._sync_tms_after_evaluate:
+                self._synchronize_tms()
+
             report = results_to_report(self.engine)
         except Exception as e:
             # FIX: Never silently fail to produce a report in a safety-critical system
@@ -571,3 +584,31 @@ class NFPA72ComplianceChecker:
         """Reset for a new analysis session."""
         self.engine.reset()
         self.tms.reset()  # FIX: was missing — stale TMS records survived reset
+
+    def _synchronize_tms(self) -> None:
+        """Synchronize the standalone TMS with the engine's internal TMS.
+
+        SAFETY FIX (CRITICAL-5): The engine maintains _derived_from and
+        _supports dictionaries internally that track fact dependencies.
+        The standalone TMS was never fed these records, so
+        validate_tms_consistency() always returned an empty list, giving
+        a false sense of consistency. Now we copy the engine's dependency
+        records into the standalone TMS so consistency checks are real.
+        """
+        # Rebuild standalone TMS from engine's internal state
+        self.tms.reset()
+        for derived_id, source_ids in self.engine._derived_from.items():
+            # Find which rule produced this derived fact
+            producing_rule = "unknown"
+            for audit in self.engine.get_audit_log():
+                if audit.fired and audit.result:
+                    if derived_id in [
+                        f.fact_id for f in audit.result.asserted_facts
+                    ]:
+                        producing_rule = audit.rule_id
+                        break
+            self.tms.record_dependency(
+                derived_fact_id=derived_id,
+                supporting_fact_ids=source_ids,
+                producing_rule_id=producing_rule,
+            )

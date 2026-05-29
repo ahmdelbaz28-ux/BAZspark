@@ -150,6 +150,16 @@ class ContractValidator:
         contract = self._contracts.get(key)
 
         if contract is None:
+            # SAFETY FIX (MEDIUM-19): In STRICT mode, unregistered contracts
+            # MUST fail validation, not silently pass. In a safety-critical
+            # system, unregistered endpoints bypass contract validation until
+            # explicitly registered — this is a security gap. Only LOG and
+            # DISABLED modes allow unregistered endpoints through.
+            if self.severity == ContractSeverity.STRICT:
+                raise ValidationError.from_exception_data(
+                    title=f"No contract registered for {method}:{endpoint}",
+                    input_data=data,
+                )
             logger.warning(
                 f"No contract registered for {key}. "
                 f"Response validation SKIPPED. Register a contract "
