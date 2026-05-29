@@ -218,9 +218,20 @@ def results_to_report(
         if r.nfpa_reference
     })
 
+    # FIX: If no facts were asserted, we cannot determine safety.
+    # Conservative default: is_safe=False when no analysis was performed.
+    no_facts_asserted = len(engine.get_facts()) == 0
+    if no_facts_asserted:
+        critical_issues.append({
+            "rule_id": "BRIDGE-001",
+            "message": "No facts analyzed — compliance cannot be determined",
+            "severity": "CRITICAL_SAFETY",
+        })
+
     return ComplianceReport(
         session_id=engine.session_id,
-        is_safe=len(critical_issues) == 0 and len(violations) == 0,
+        is_safe=(len(critical_issues) == 0 and len(violations) == 0
+                 and not no_facts_asserted),
         critical_issues=critical_issues,
         violations=violations,
         compliance_checks=compliance_checks,
@@ -356,8 +367,21 @@ class NFPA72ComplianceChecker:
     def evaluate(self) -> ComplianceReport:
         """Run compliance evaluation and return a structured report."""
         logger.info(f"Starting NFPA 72 compliance evaluation for session {self.engine.session_id}")
-        results = self.engine.evaluate()
-        report = results_to_report(self.engine)
+        try:
+            results = self.engine.evaluate()
+            report = results_to_report(self.engine)
+        except Exception as e:
+            # FIX: Never silently fail to produce a report in a safety-critical system
+            logger.critical(f"Compliance evaluation failed: {e}", exc_info=True)
+            return ComplianceReport(
+                session_id=self.engine.session_id,
+                is_safe=False,  # Conservative: assume unsafe
+                critical_issues=[{
+                    "rule_id": "BRIDGE-EVAL-ERROR",
+                    "message": f"Compliance evaluation failed: {e}",
+                    "severity": "CRITICAL_SAFETY",
+                }],
+            )
 
         # Log summary
         logger.info(
@@ -381,3 +405,4 @@ class NFPA72ComplianceChecker:
     def reset(self) -> None:
         """Reset for a new analysis session."""
         self.engine.reset()
+        self.tms.reset()  # FIX: was missing — stale TMS records survived reset

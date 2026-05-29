@@ -61,8 +61,10 @@ class DependencyRecord:
 class TruthMaintenanceSystem:
     """Manages fact dependencies and ensures consistency.
 
-    Thread-safe via internal locking. Designed for integration with
-    the RulesEngine but can be used standalone.
+    WARNING: This standalone TMS is NOT thread-safe. The RulesEngine
+    maintains its own internal TMS (_derived_from/_supports) which IS
+    protected by the engine's lock. The standalone TMS exists for audit
+    purposes and must be synchronized manually if used from multiple threads.
 
     SAFETY CRITICAL: The TMS must NEVER silently fail to retract
     an invalid conclusion. A stale conclusion in a fire alarm system
@@ -78,6 +80,11 @@ class TruthMaintenanceSystem:
 
         # Track retraction history for audit
         self._retraction_log: List[Dict] = []
+
+        # FIX: Cascade-local visited set — replaces the historical-log
+        # guard which incorrectly skipped re-derived facts.
+        # Reset at the start of each top-level retract_support() call.
+        self._cascade_visited: Set[str] = set()
 
     def record_dependency(
         self,
@@ -118,6 +125,14 @@ class TruthMaintenanceSystem:
         This is a CASCADING operation: if a derived fact is retracted,
         any facts that depended on IT are also retracted.
         """
+        # FIX: Initialize cascade-local visited set on top-level call.
+        # This replaces the buggy historical-log guard that incorrectly
+        # skipped re-derived facts (fact retracted then re-derived with
+        # same ID would be permanently skipped on next cascade).
+        is_top_level = not self._cascade_visited
+        if is_top_level:
+            self._cascade_visited = set()
+
         retracted_ids: List[str] = []
 
         if retracted_fact_id not in self._support_index:
@@ -127,8 +142,10 @@ class TruthMaintenanceSystem:
         directly_affected = list(self._support_index[retracted_fact_id])
 
         for affected_id in directly_affected:
-            if affected_id in [r["fact_id"] for r in self._retraction_log]:
-                continue  # Already retracted in this cascade
+            # FIX: Use cascade-local visited set instead of historical log
+            if affected_id in self._cascade_visited:
+                continue  # Already retracted in THIS cascade
+            self._cascade_visited.add(affected_id)
 
             # Log the retraction
             dep = self._dependencies.get(affected_id)
@@ -163,12 +180,19 @@ class TruthMaintenanceSystem:
                 for support_id in dep.supporting_fact_ids:
                     if support_id in self._support_index:
                         self._support_index[support_id].discard(affected_id)
+                        # FIX: Clean up empty sets to prevent memory leak
+                        if not self._support_index[support_id]:
+                            del self._support_index[support_id]
 
         if retracted_ids:
             logger.info(
                 f"TMS: Retraction cascade from {retracted_fact_id}: "
                 f"{len(retracted_ids)} derived facts invalidated"
             )
+
+        # FIX: Clear cascade-local visited set after top-level call completes
+        if is_top_level:
+            self._cascade_visited = set()
 
         return retracted_ids
 

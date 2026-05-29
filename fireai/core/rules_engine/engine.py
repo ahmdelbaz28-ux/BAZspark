@@ -93,7 +93,11 @@ class Fact:
         return True
 
     def __hash__(self) -> int:
-        return hash((self.fact_type, self.fact_id))
+        # FIX: hash must match eq scope — eq compares only fact_id,
+        # so hash must use only fact_id to satisfy the Python invariant:
+        # a == b → hash(a) == hash(b). Using (fact_type, fact_id)
+        # violated this, corrupting set/dict lookups in _fired_combinations.
+        return hash(self.fact_id)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Fact):
@@ -265,6 +269,10 @@ class RulesEngine:
         # Key: (rule_id, frozenset of matched fact_ids)
         self._fired_combinations: set = set()
 
+        # Validate max_iterations
+        if max_iterations < 1:
+            raise ValueError(f"max_iterations must be >= 1, got {max_iterations}")
+
     # ── Rule Management ──────────────────────────────────────────────────
 
     def add_rule(self, rule: Rule) -> None:
@@ -353,8 +361,9 @@ class RulesEngine:
                 )
                 self._retract_fact_internal(derived_id, trigger_tms=True)
 
-            # Clean up support index
-            del self._supports[fact_id]
+            # Clean up support index — guard against recursive deletion
+            if fact_id in self._supports:
+                del self._supports[fact_id]
 
         # Clean up derivation index
         if fact_id in self._derived_from:
@@ -362,6 +371,9 @@ class RulesEngine:
                 if source_id in self._supports:
                     if fact_id in self._supports[source_id]:
                         self._supports[source_id].remove(fact_id)
+                    # FIX: Clean up empty support lists to prevent memory leak
+                    if not self._supports[source_id]:
+                        del self._supports[source_id]
             del self._derived_from[fact_id]
 
         logger.debug(f"Fact retracted: {fact.fact_type} id={fact_id}")
@@ -489,6 +501,7 @@ class RulesEngine:
             if rule.action is not None:
                 try:
                     rule_results = rule.action(matched_facts, self)
+                    this_rule_results = []  # FIX: track only THIS rule's results
 
                     # Track derived facts for TMS
                     for result in rule_results:
@@ -508,8 +521,12 @@ class RulesEngine:
                             self.assert_fact(new_fact)
 
                         results.append(result)
+                        this_rule_results.append(result)
 
-                    audit.result = results[-1] if results else None
+                    audit.result = this_rule_results[-1] if this_rule_results else None
+
+                    # FIX: Only add to fired_combinations on SUCCESS
+                    self._fired_combinations.add(combo_key)
 
                 except Exception as e:
                     logger.error(
@@ -518,9 +535,11 @@ class RulesEngine:
                     )
                     audit.fired = False
                     audit.reason = f"Action error: {e}"
+                    # FIX: Do NOT add to fired_combinations on error — allow retry
 
-            # Record that this combination has fired (prevent re-firing)
-            self._fired_combinations.add(combo_key)
+            else:
+                # No action defined — still record as fired for dedup
+                self._fired_combinations.add(combo_key)
 
             # Log audit entry
             self._audit_log.append(audit)
@@ -576,11 +595,17 @@ class RulesEngine:
                 facts_2 = self.get_facts(fact_type_2)
 
                 for f1 in facts_1:
-                    # Check alpha condition first
-                    if rule.fact_type and rule.fact_type != fact_type_1:
-                        continue
-                    if rule.condition and not rule.condition(f1):
-                        continue
+                    # FIX: Alpha condition filter only applies when
+                    # rule.fact_type matches this join side's fact_type.
+                    # The old code skipped ALL f1 facts when rule.fact_type
+                    # != fact_type_1, which broke asymmetric joins.
+                    if rule.fact_type and rule.fact_type == fact_type_1:
+                        # This side matches the rule's primary fact_type,
+                        # so apply the alpha condition
+                        if rule.condition and not rule.condition(f1):
+                            continue
+                    # If rule.fact_type != fact_type_1, the alpha condition
+                    # targets the other side — don't filter f1 here
 
                     for f2 in facts_2:
                         try:
@@ -635,7 +660,7 @@ class RulesEngine:
         ]
         compliant = [
             r for r in self._results
-            if r.severity >= RulePriority.COMPLIANCE_CHECK
+            if r.severity == RulePriority.COMPLIANCE_CHECK  # FIX: was >=, included advisory/info
         ]
 
         return {
@@ -666,14 +691,22 @@ class RulesEngine:
             self._audit_log.clear()
             self._derived_from.clear()
             self._supports.clear()
+            self._fired_combinations.clear()  # FIX: was missing — stale combos blocked rules after reset
             self._iteration = 0
 
-    def explain(self, fact_id: str) -> Dict[str, Any]:
+    def explain(self, fact_id: str, _visited: Optional[set] = None) -> Dict[str, Any]:
         """Explain why a fact exists — trace its derivation chain.
 
         Safety-critical feature: you must be able to explain every
         conclusion the system reaches.
         """
+        # FIX: Cycle detection to prevent infinite recursion
+        if _visited is None:
+            _visited = set()
+        if fact_id in _visited:
+            return {"fact_id": fact_id, "status": "circular_reference"}
+        _visited.add(fact_id)
+
         fact = self._facts.get(fact_id)
         if fact is None:
             return {"fact_id": fact_id, "status": "not_found"}
@@ -681,10 +714,10 @@ class RulesEngine:
         derivation = self._derived_from.get(fact_id, [])
         supported_by = self._supports.get(fact_id, [])
 
-        # Recursively explain source facts
+        # Recursively explain source facts (pass visited set)
         source_explanations = []
         for source_id in derivation:
-            source_explanations.append(self.explain(source_id))
+            source_explanations.append(self.explain(source_id, _visited))
 
         # Find which rule produced this fact
         producing_rule = None
