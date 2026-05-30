@@ -741,7 +741,17 @@ def analyze_room(
         PipelineResult — never raises, all errors captured inside result.
     """
     t_total = time.perf_counter()
-    run_id  = str(uuid.uuid4())
+    # V61 FIX: Deterministic run_id from input content hash.
+    # Previous uuid4() produced different IDs on every run, breaking
+    # audit reproducibility. Same input → same run_id, always.
+    _input_canonical = json.dumps(payload, sort_keys=True, default=str)
+    _content_hash = hashlib.sha256(_input_canonical.encode()).hexdigest()
+    # Format as UUID-like string for backward compatibility with tests
+    # and consumers expecting UUID format: 8-4-4-4-12
+    run_id  = (
+        f"{_content_hash[:8]}-{_content_hash[8:12]}-{_content_hash[12:16]}-"
+        f"{_content_hash[16:20]}-{_content_hash[20:32]}"
+    )
     stages: List[StageResult] = []
     errors: List[str]  = []
     warnings: List[str] = []

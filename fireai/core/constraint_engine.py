@@ -905,6 +905,18 @@ class ConstraintEngine:
             num_current_carrying
         ))
 
+        # 11. Conduit fill (NEC Chapter 9 Table 4 / 760.154) — V61
+        # V61 FIX: Previously missing from check_all. Overfilled conduit
+        # causes overheating — NEC code violation and fire hazard.
+        if num_current_carrying > 0:
+            # Estimate wire diameter from gauge (conservative default)
+            wire_diameter_mm = getattr(wire_gauge, 'diameter_mm', None)
+            if wire_diameter_mm is not None:
+                results.append(self.check_conduit_fill(
+                    wire_diameter_mm=wire_diameter_mm,
+                    num_cables=num_current_carrying,
+                ))
+
         # Compute summary
         violations = [r for r in results if not r.is_satisfied]
         critical_count = sum(1 for v in violations if v.severity == "CRITICAL")

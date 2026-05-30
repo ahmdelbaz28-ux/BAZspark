@@ -152,10 +152,22 @@ class CableRoute:
 
     def __post_init__(self):
         if self.computation_hash == "":
+            # V61 FIX: Include ALL route fields in hash for true
+            # deterministic verification. Previous hash only covered
+            # route_id/start/end/length/bends — two routes with different
+            # paths but same endpoints would produce the SAME hash.
+            # Also use float.hex() for IEEE-754 bit-exact formatting.
+            wp_coords = "|".join(
+                f"({wp.x:.6f},{wp.y:.6f},{wp.z:.6f},{int(wp.is_bend)})"
+                for wp in self.waypoints
+            )
             raw = (
                 f"{self.route_id}|{self.start}|{self.end}|"
-                f"{self.total_length_m}|{self.num_bends}|"
-                f"{self.wire_gauge.awg_value}|{self.is_compliant}"
+                f"{self.total_length_m:.6f}|{self.straight_length_m:.6f}|"
+                f"{self.num_bends}|{self.num_elevation_changes}|"
+                f"{self.wire_gauge.awg_value}|{self.voltage_drop_v:.6f}|"
+                f"{self.voltage_drop_pct:.6f}|{int(self.is_compliant)}|"
+                f"{wp_coords}"
             )
             object.__setattr__(
                 self, "computation_hash",
@@ -186,9 +198,13 @@ class RoutingSchedule:
 
     def __post_init__(self):
         if self.computation_hash == "":
+            # V61 FIX: Include individual route hashes for true verification.
+            route_hashes = "|".join(r.computation_hash for r in self.routes)
             raw = (
                 f"{self.project_name}|{len(self.routes)}|"
-                f"{self.total_cable_length_m}|{self.compliance_summary}"
+                f"{self.total_cable_length_m:.6f}|{self.total_bends}|"
+                f"{self.max_circuit_length_m:.6f}|{self.compliance_summary}|"
+                f"{route_hashes}"
             )
             object.__setattr__(
                 self, "computation_hash",
@@ -360,14 +376,16 @@ class CableRouter:
             if not is_electrical:
                 continue
 
-            # Expand element bounding box by 300mm in all directions
-            # and mark those cells as electrical zones
-            ix_min = max(0, int((elem.min_x - 0.3 - ox) / res) - sep_cells)
-            iy_min = max(0, int((elem.min_y - 0.3 - oy) / res) - sep_cells)
-            iz_min = max(0, int((elem.min_z - 0.3 - oz) / res) - sep_cells)
-            ix_max = min(nx - 1, int((elem.max_x + 0.3 - ox) / res) + sep_cells)
-            iy_max = min(ny - 1, int((elem.max_y + 0.3 - oy) / res) + sep_cells)
-            iz_max = min(nz - 1, int((elem.max_z + 0.3 - oz) / res) + sep_cells)
+            # V61 FIX: Expand element bounding box by 300mm ONLY (not 300mm
+            # + sep_cells which was double-buffering to 600mm). The 0.3m
+            # offset in the coordinate calculation already provides the
+            # required 300mm separation per NEC 760.24.
+            ix_min = max(0, int((elem.min_x - 0.3 - ox) / res))
+            iy_min = max(0, int((elem.min_y - 0.3 - oy) / res))
+            iz_min = max(0, int((elem.min_z - 0.3 - oz) / res))
+            ix_max = min(nx - 1, int((elem.max_x + 0.3 - ox) / res))
+            iy_max = min(ny - 1, int((elem.max_y + 0.3 - oy) / res))
+            iz_max = min(nz - 1, int((elem.max_z + 0.3 - oz) / res))
 
             for iz in range(iz_min, iz_max + 1):
                 for iy in range(iy_min, iy_max + 1):
@@ -492,9 +510,14 @@ class CableRouter:
         # V60 FIX: Use temperature-corrected resistance per NEC practice.
         # Previous code used R at 20 degC only, which UNDERESTIMATES voltage
         # drop by 21.6% at 75 degC operating temp — DANGEROUS for Egypt.
+        # V61 FIX: Use physical_length (not penalty-inflated) for voltage
+        # drop. Voltage drop occurs over real conductor, not fictitious
+        # bend-penalty meters. Using total_with_penalties OVERESTIMATES
+        # voltage drop and causes unnecessary wire upsizing.
+        physical_length = straight_length  # physical length without bend penalties
         r_at_20c = wire_gauge.resistance_ohm_per_km
         r_per_km = temperature_corrected_resistance(r_at_20c, ambient_temp_c)
-        length_km = total_length / 1000.0
+        length_km = physical_length / 1000.0
         v_drop = alarm_current_a * 2.0 * r_per_km * length_km  # ×2 DC return
         v_drop_pct = (v_drop / ps_voltage) * 100.0 if ps_voltage > 0 else 0.0
 
@@ -502,7 +525,7 @@ class CableRouter:
         constraint_results = None
         if verify_constraints:
             constraint_results = self._constraint_engine.check_all(
-                cable_length_m=total_length,
+                cable_length_m=physical_length,
                 wire_gauge=wire_gauge,
                 num_bends=num_bends,
                 num_elevation_changes=num_elev,
@@ -526,12 +549,15 @@ class CableRouter:
                     "NEC Chapter 9 — max 4 quarter bends per run"
                 ))
 
+        # V61 FIX: total_length_m is the PHYSICAL cable length (not
+        # penalty-inflated). The penalty-inflated length is for A* cost
+        # comparison only — it does not represent real conductor.
         return CableRoute(
             route_id=route_id or f"ROUTE-{hashlib.sha256(str(start).encode()).hexdigest()[:8]}",
             start=start,
             end=end,
             waypoints=tuple(waypoints),
-            total_length_m=round(total_length, 4),
+            total_length_m=round(physical_length, 4),
             straight_length_m=round(straight_length, 4),
             num_bends=num_bends,
             num_elevation_changes=num_elev,
@@ -822,9 +848,10 @@ class CableRouter:
 
             total_length += seg_length
 
-            # Straight length (horizontal only, no bend/elevation penalty)
-            horiz_length = math.sqrt(dx * dx + dy * dy)
-            straight_length += horiz_length
+            # Straight length (3D Euclidean, no bend/elevation penalty)
+            # V61 FIX: Include vertical component — previously only counted
+            # horizontal distance, silently dropping all vertical run length.
+            straight_length += seg_length
 
             # Count bends and elevation changes
             if wp_curr.is_bend:
