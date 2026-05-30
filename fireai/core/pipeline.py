@@ -571,7 +571,11 @@ def _estimate_coverage(
             x += step
         y += step
 
-    return round(100.0 * covered / total, 4) if total > 0 else 0.0
+    # V96 FIX: Clamp coverage to [0.0, 100.0]. Detector coverage circles can
+    # extend slightly outside the polygon boundary, making covered > total
+    # (coverage > 100%). This violates the 0–100% contract and confuses
+    # downstream classify_safety_tier which expects 0–100.
+    return min(100.0, round(100.0 * covered / total, 4)) if total > 0 else 0.0
 
 
 def _stage3_verify_coverage(

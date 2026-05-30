@@ -259,19 +259,40 @@ def _classify_ifc_element(ifc_class: str) -> IfcElementType:
     return _IFC_CLASS_MAP.get(ifc_class, IfcElementType.UNKNOWN)
 
 
-def _extract_fire_rating(element) -> Tuple[bool, float]:
+def _extract_fire_rating(
+    element,
+    element_type: Optional[IfcElementType] = None,
+) -> Tuple[bool, float]:
     """Extract fire rating from IFC element properties.
 
     Checks Pset_FireRatingCommon and similar property sets.
 
+    V96 FIX: For BLOCKING element types (walls, slabs, beams, etc.),
+    extraction failure now defaults to (True, 2.0) — assume fire-rated
+    until proven otherwise (fail-safe). Non-blocking types retain the
+    (False, 0.0) default since fire rating is less critical for them.
+
+    Rationale: A wall that IS fire-rated but whose extraction failed would
+    be treated as non-rated, meaning:
+    - Cable router won't flag penetrations as needing firestop
+    - Occupancy separation assumptions are wrong
+    - Fire compartment boundaries are silently dropped
+
     Args:
         element: IfcOpenShell element object.
+        element_type: Optional IfcElementType for fail-safe defaulting.
 
     Returns:
         (is_fire_rated, fire_rating_hours) tuple.
     """
-    is_rated = False
-    rating_hours = 0.0
+    # V96 FIX: Fail-safe defaults depend on element type.
+    # Blocking elements default to fire-rated (True, 2.0h) on failure.
+    _BLOCKING_DEFAULT = (True, 2.0)
+    _NON_BLOCKING_DEFAULT = (False, 0.0)
+
+    is_blocking = element_type is not None and element_type in _BLOCKING_TYPES
+    is_rated, rating_hours = _BLOCKING_DEFAULT if is_blocking else _NON_BLOCKING_DEFAULT
+
     try:
         for rel in element.IsDefinedBy:
             if hasattr(rel, 'RelatingPropertyDefinition'):
@@ -289,14 +310,17 @@ def _extract_fire_rating(element) -> Tuple[bool, float]:
                                 except (ValueError, TypeError):
                                     pass
     except Exception as exc:
-        # V67 SAFETY FIX: Fire rating extraction failure must be logged.
-        # Default to (False, 0.0) — but log the failure so engineers can verify.
-        # SAFETY NOTE: In a future version, consider defaulting to (True, 2.0)
-        # for walls/partitions — assume fire-rated until proven otherwise (fail-safe).
+        # V96 FIX: Extraction failure defaults to fail-safe per element type.
+        # Blocking elements default to fire-rated (True, 2.0h).
+        # Non-blocking elements default to not-rated (False, 0.0h).
+        is_rated, rating_hours = _BLOCKING_DEFAULT if is_blocking else _NON_BLOCKING_DEFAULT
         log.warning(
-            "V67: _extract_fire_rating() failed for element %s — "
-            "defaulting to not-rated (0h). Error: %s",
-            getattr(element, 'GlobalId', '?'), exc
+            "V96: _extract_fire_rating() failed for element %s (type=%s) — "
+            "defaulting to %s (fail-safe). Error: %s",
+            getattr(element, 'GlobalId', '?'),
+            element_type.value if element_type else 'UNKNOWN',
+            f"fire-rated {rating_hours}h" if is_rated else "not-rated",
+            exc
         )
     return is_rated, rating_hours
 
@@ -456,8 +480,9 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
         )
         return None
 
-    # Extract fire rating
-    is_rated, rating_hours = _extract_fire_rating(element)
+    # V96 FIX: Pass element_type so _extract_fire_rating can default
+    # to fire-rated (True, 2.0h) for blocking elements on failure.
+    is_rated, rating_hours = _extract_fire_rating(element, element_type)
 
     return BoundingBox3D(
         element_id=element_id,
@@ -572,8 +597,10 @@ def _extract_building_model(ifc_model) -> BuildingModel:
             break
     except Exception as exc:
         # V67 SAFETY FIX: Building name extraction failure must be logged.
+        # V96 FIX: Removed redundant pass — logging is sufficient, and building
+        # name defaults to empty string (non-safety-critical, but audit trail
+        # should note the failure).
         log.warning("V67: Building name extraction failed: %s", exc)
-        pass
 
     # Extract elements by type
     target_types = [

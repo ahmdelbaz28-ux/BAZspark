@@ -230,37 +230,29 @@ class TestGetDetectorSpacing:
     # --- Invalid inputs ---
 
     def test_negative_ceiling_height(self):
-        """Negative ceiling height returns conservative default."""
-        result = get_detector_spacing(-1.0, "smoke")
-        assert result.max_spacing_m == 3.00
-        # Fallback path computes 0.7 * 3.00 without explicit rounding,
-        # so we allow for floating-point imprecision
-        assert abs(result.coverage_radius_m - 0.7 * 3.00) < 1e-6
-        assert "invalid" in result.formula.lower()
+        """V96 FIX: Negative ceiling height raises ValueError (fail-safe)."""
+        with pytest.raises(ValueError, match="ceiling_height_m"):
+            get_detector_spacing(-1.0, "smoke")
 
     def test_zero_ceiling_height(self):
-        """Zero ceiling height returns conservative default."""
-        result = get_detector_spacing(0.0, "smoke")
-        assert result.max_spacing_m == 3.00
-        assert "invalid" in result.formula.lower()
+        """V96 FIX: Zero ceiling height raises ValueError (fail-safe)."""
+        with pytest.raises(ValueError, match="ceiling_height_m"):
+            get_detector_spacing(0.0, "smoke")
 
     def test_nan_ceiling_height(self):
-        """NaN ceiling height returns conservative default."""
-        result = get_detector_spacing(float("nan"), "smoke")
-        assert result.max_spacing_m == 3.00
-        assert "invalid" in result.formula.lower()
+        """V96 FIX: NaN ceiling height raises ValueError (fail-safe)."""
+        with pytest.raises(ValueError, match="ceiling_height_m"):
+            get_detector_spacing(float("nan"), "smoke")
 
     def test_inf_ceiling_height(self):
-        """Infinity ceiling height returns conservative default."""
-        result = get_detector_spacing(float("inf"), "smoke")
-        assert result.max_spacing_m == 3.00
-        assert "invalid" in result.formula.lower()
+        """V96 FIX: Infinity ceiling height raises ValueError (fail-safe)."""
+        with pytest.raises(ValueError, match="ceiling_height_m"):
+            get_detector_spacing(float("inf"), "smoke")
 
     def test_negative_inf_ceiling_height(self):
-        """Negative infinity ceiling height returns conservative default."""
-        result = get_detector_spacing(float("-inf"), "smoke")
-        assert result.max_spacing_m == 3.00
-        assert "invalid" in result.formula.lower()
+        """V96 FIX: Negative infinity ceiling height raises ValueError (fail-safe)."""
+        with pytest.raises(ValueError, match="ceiling_height_m"):
+            get_detector_spacing(float("-inf"), "smoke")
 
     # --- NFPA section reference ---
 
@@ -335,34 +327,28 @@ class TestEstimateDetectorCount:
     # --- Edge cases ---
 
     def test_zero_area(self):
-        """Zero area returns 1 detector (minimum)."""
+        """V96 FIX: Zero area returns count=0 with error (fail-safe)."""
         result = estimate_detector_count(0.0, 3.0, "smoke")
-        assert result["min_detector_count"] == 1
+        assert result["min_detector_count"] == 0
+        assert "error" in result
 
     def test_negative_area(self):
-        """Negative area returns 1 detector (minimum)."""
+        """V96 FIX: Negative area returns count=0 with error (fail-safe)."""
         result = estimate_detector_count(-10.0, 3.0, "smoke")
-        assert result["min_detector_count"] == 1
+        assert result["min_detector_count"] == 0
+        assert "error" in result
 
     def test_nan_area(self):
-        """NaN area returns 1 detector (minimum)."""
+        """V96 FIX: NaN area returns count=0 with error (fail-safe)."""
         result = estimate_detector_count(float("nan"), 3.0, "smoke")
-        assert result["min_detector_count"] == 1
+        assert result["min_detector_count"] == 0
+        assert "error" in result
 
     def test_inf_area(self):
-        """Inf area — math.ceil(Inf / finite) → still works or errors.
-        Actually, Inf / finite = Inf, ceil(Inf) should raise.
-        The function should handle this gracefully. Let's test that it
-        either returns a value or raises."""
-        # Inf area: ceil(inf) → OverflowError in some Pythons, inf in others
-        # The function will call math.ceil(inf) which may raise OverflowError
-        # or return a very large value. Either behavior is acceptable.
-        try:
-            result = estimate_detector_count(float("inf"), 3.0, "smoke")
-            # If it doesn't raise, just check it returns a dict
-            assert isinstance(result, dict)
-        except (OverflowError, ValueError):
-            pass  # Acceptable — infinite area is nonsensical
+        """V96 FIX: Inf area returns count=0 with error (fail-safe)."""
+        result = estimate_detector_count(float("inf"), 3.0, "smoke")
+        assert result["min_detector_count"] == 0
+        assert "error" in result
 
     def test_very_small_area(self):
         """Very small area still needs at least 1 detector."""
@@ -370,10 +356,10 @@ class TestEstimateDetectorCount:
         assert result["min_detector_count"] >= 1
 
     def test_invalid_ceiling_height_gives_count_1(self):
-        """Invalid ceiling height → conservative spacing → still returns count."""
-        result = estimate_detector_count(50.0, -1.0, "smoke")
-        # Invalid height → conservative spacing → count should still compute
-        assert result["min_detector_count"] >= 1
+        """V96 FIX: Invalid ceiling height now raises ValueError in
+        get_detector_spacing, which estimate_detector_count propagates."""
+        with pytest.raises(ValueError, match="ceiling_height_m"):
+            estimate_detector_count(50.0, -1.0, "smoke")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
