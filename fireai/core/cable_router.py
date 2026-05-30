@@ -65,6 +65,7 @@ from fireai.core.constraint_engine import (
     ELECTRICAL_PROXIMITY_PENALTY_M,
 )
 from fireai.core.cable_routing_engine import WireGauge
+from fireai.core.nfpa72_engine import temperature_corrected_resistance
 from fireai.core.contracts_validation import ContractViolation
 
 
@@ -382,6 +383,9 @@ class CableRouter:
         alarm_current_a: float = 0.0,
         route_id: str = "",
         verify_constraints: bool = True,
+        ambient_temp_c: float = 20.0,
+        num_current_carrying: int = 2,
+        conductor_temp_rating_c: float = 90,
     ) -> CableRoute:
         """Route a cable from start to end using Orthogonal A*.
 
@@ -399,6 +403,14 @@ class CableRouter:
             alarm_current_a: Alarm current for voltage drop.
             route_id: Optional route identifier.
             verify_constraints: Whether to verify constraints (default True).
+            ambient_temp_c: Conductor operating temperature in degC.
+                Default 20 degC (backward compatible, NEC Table 8 reference).
+                CRITICAL FOR EGYPT: Use 75.0 for THHN/THWN operating temp.
+                At 75 degC, resistance is 21.6% higher than at 20 degC.
+            num_current_carrying: Number of current-carrying conductors in
+                conduit (default 2 for single FA circuit).
+            conductor_temp_rating_c: Conductor insulation rating (60, 75, 90).
+                Default 90 for THHN/THWN-2.
 
         Returns:
             CableRoute with waypoints and constraint results.
@@ -477,7 +489,11 @@ class CableRouter:
         )
 
         # ── Voltage Drop ─────────────────────────────────────────────────
-        r_per_km = wire_gauge.resistance_ohm_per_km
+        # V60 FIX: Use temperature-corrected resistance per NEC practice.
+        # Previous code used R at 20 degC only, which UNDERESTIMATES voltage
+        # drop by 21.6% at 75 degC operating temp — DANGEROUS for Egypt.
+        r_at_20c = wire_gauge.resistance_ohm_per_km
+        r_per_km = temperature_corrected_resistance(r_at_20c, ambient_temp_c)
         length_km = total_length / 1000.0
         v_drop = alarm_current_a * 2.0 * r_per_km * length_km  # ×2 DC return
         v_drop_pct = (v_drop / ps_voltage) * 100.0 if ps_voltage > 0 else 0.0
@@ -493,6 +509,9 @@ class CableRouter:
                 min_electrical_separation_mm=300.0,
                 ps_voltage=ps_voltage,
                 alarm_current_a=alarm_current_a,
+                ambient_temp_c=ambient_temp_c,
+                num_current_carrying=num_current_carrying,
+                conductor_temp_rating_c=conductor_temp_rating_c,
             )
 
         is_compliant = (
@@ -832,6 +851,9 @@ class CableRouter:
         wire_gauge: WireGauge = WireGauge.AWG_14,
         ps_voltage: float = 24.0,
         project_name: str = "Fire Alarm System",
+        ambient_temp_c: float = 20.0,
+        num_current_carrying: int = 2,
+        conductor_temp_rating_c: float = 90,
     ) -> RoutingSchedule:
         """Route all cable connections and produce a complete schedule.
 
@@ -841,9 +863,15 @@ class CableRouter:
                 - 'end': (x, y, z) end point
                 - 'alarm_current_a': current (optional)
                 - 'route_id': route identifier (optional)
+                - 'ambient_temp_c': operating temp override (optional)
             wire_gauge: Wire gauge for all routes.
             ps_voltage: Power supply voltage.
             project_name: Project name for the schedule.
+            ambient_temp_c: Conductor operating temperature in degC.
+                Default 20 degC (backward compatible).
+                CRITICAL FOR EGYPT: Use 75.0 for THHN/THWN.
+            num_current_carrying: Number of current-carrying conductors.
+            conductor_temp_rating_c: Conductor insulation rating (60, 75, 90).
 
         Returns:
             RoutingSchedule with all routes and compliance summary.
@@ -859,6 +887,7 @@ class CableRouter:
             end = conn['end']
             current_a = conn.get('alarm_current_a', 0.0)
             rid = conn.get('route_id', f'R-{i + 1:03d}')
+            conn_ambient = conn.get('ambient_temp_c', ambient_temp_c)
 
             route = self.route(
                 start=start,
@@ -867,6 +896,9 @@ class CableRouter:
                 ps_voltage=ps_voltage,
                 alarm_current_a=current_a,
                 route_id=rid,
+                ambient_temp_c=conn_ambient,
+                num_current_carrying=num_current_carrying,
+                conductor_temp_rating_c=conductor_temp_rating_c,
             )
 
             routes.append(route)

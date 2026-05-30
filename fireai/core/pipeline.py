@@ -720,6 +720,7 @@ def analyze_room(
     circuit_length_m:  Optional[float] = None,
     awg_gauge:         str = "14",
     loop_data:         Optional[Dict] = None,
+    ambient_temperature_c: float = 20.0,
 ) -> PipelineResult:
     """
     Run the complete FireAI analysis pipeline for one room.
@@ -731,6 +732,10 @@ def analyze_room(
         circuit_length_m:  Optional circuit length for voltage drop calculation.
         awg_gauge:         Wire gauge for voltage drop (default AWG 14).
         loop_data:         Optional SLC loop data for fault isolation check.
+        ambient_temperature_c: Conductor operating temperature in degC.
+            Default 20 degC (backward compatible, NEC Table 8 reference).
+            CRITICAL FOR EGYPT: Use 75.0 for THHN/THWN operating temp.
+            At 75 degC, resistance is 21.6% higher than at 20 degC.
 
     Returns:
         PipelineResult — never raises, all errors captured inside result.
@@ -840,6 +845,7 @@ def analyze_room(
         sv = _run_stage(
             "S_voltage_drop", calculate_voltage_drop,
             alarm_current_a, circuit_length_m, awg_gauge,
+            ambient_temperature_c=ambient_temperature_c,
         )
         stages.append(sv)
         if sv.success and "result" in sv.data:

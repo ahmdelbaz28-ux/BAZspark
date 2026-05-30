@@ -76,7 +76,7 @@ class ConstraintSource(Enum):
     NEC_CH9_TABLE4 = "NEC Chapter 9, Table 4"     # Conduit fill
     NEC_CH9_TABLE8 = "NEC Chapter 9, Table 8"     # Wire resistance
     PROJECT_SPEC_CONDUIT = "Project Spec: Min 3/4\" EMT"
-    PROJECT_SPEC_BEND = "Project Spec: Max bend radius = 6 x O"
+    PROJECT_SPEC_BEND = "Project Spec: Max bend radius = 6 x D"
     PROJECT_SPEC_SEPARATION = "Project Spec: >= 300mm from electrical"
     PROJECT_SPEC_FASTENING = "Project Spec: Fasten every 457mm"
     PHYSICS = "Physics"                            # Fundamental physics constraints
@@ -290,6 +290,7 @@ class ConstraintEngine:
         wire_gauge: WireGauge,
         ps_voltage: float = 24.0,
         max_drop_pct: float = 10.0,
+        ambient_temp_c: float = 20.0,
     ) -> ConstraintResult:
         """Check voltage drop compliance per NFPA 72 §10.6.4.
 
@@ -297,11 +298,15 @@ class ConstraintEngine:
         sufficient to operate all devices under alarm conditions.
 
         Formula (NEC Chapter 9, Table 8):
-          V_drop = I × 2 × R_wire × L(km)
+          V_drop = I × 2 × R_wire(T) × L(km)
 
         The ×2 factor accounts for DC return path — current flows out
         on one conductor and returns on the other. This is CRITICAL:
         omitting ×2 would report voltage drop at 50% of actual.
+
+        V60 FIX: Added temperature-corrected resistance. Previous code
+        used R at 20 degC only, which UNDERESTIMATES voltage drop by
+        21.6% at 75 degC operating temp — DANGEROUS for Egypt.
 
         For 24V systems: V_drop must be ≤ 2.4V (10%)
 
@@ -311,18 +316,33 @@ class ConstraintEngine:
             wire_gauge: Wire gauge.
             ps_voltage: Power supply voltage (default 24V).
             max_drop_pct: Maximum allowed drop percentage (default 10%).
+            ambient_temp_c: Conductor operating temperature in degC.
+                Default 20 degC (backward compatible, NEC Table 8 reference).
+                CRITICAL FOR EGYPT: Use 75.0 for THHN/THWN operating temp.
 
         Returns:
             ConstraintResult with voltage drop analysis.
         """
         # Compute voltage drop with DC return path (×2)
-        r_per_km = wire_gauge.resistance_ohm_per_km
+        # V60 FIX: Use temperature-corrected resistance per NEC practice
+        r_at_20c = wire_gauge.resistance_ohm_per_km
+        r_per_km = temperature_corrected_resistance(r_at_20c, ambient_temp_c)
         length_km = cable_length_m / 1000.0
         v_drop = alarm_current_a * 2.0 * r_per_km * length_km
         v_drop_pct = (v_drop / ps_voltage) * 100.0 if ps_voltage > 0 else 0.0
         max_drop_v = ps_voltage * max_drop_pct / 100.0
 
         is_satisfied = v_drop_pct <= max_drop_pct
+
+        # Build formula with temperature info
+        temp_note = ""
+        if abs(ambient_temp_c - 20.0) > 1.0:
+            pct_increase = ((r_per_km / r_at_20c) - 1.0) * 100
+            temp_note = (
+                f" [R corrected: {r_at_20c:.3f}Ohm/km@20C -> "
+                f"{r_per_km:.3f}Ohm/km@{ambient_temp_c:.0f}C, "
+                f"+{pct_increase:.1f}%]"
+            )
 
         return ConstraintResult(
             constraint_name="Voltage Drop",
@@ -338,10 +358,11 @@ class ConstraintEngine:
                 f"Upgrade wire gauge or reduce circuit length per NFPA 72 §10.6.4."
             ) if not is_satisfied else "",
             formula=(
-                f"V_drop = I × 2 × R × L = "
+                f"V_drop = I × 2 × R(T) × L = "
                 f"{alarm_current_a:.4f}A × 2 × "
-                f"{r_per_km:.3f}Ω/km × "
+                f"{r_per_km:.3f}Ω/km@{ambient_temp_c:.0f}C × "
                 f"{length_km:.6f}km = {v_drop:.4f}V ({v_drop_pct:.2f}%)"
+                f"{temp_note}"
             ),
         )
 
@@ -420,8 +441,8 @@ class ConstraintEngine:
             severity="HIGH",
             remediation="",
             formula=(
-                f"R_bend = {self._bend_radius_factor} × Ø = "
-                f"{self._bend_radius_factor} × {conduit_diameter_mm:.2f}mm = "
+                f"R_bend = {self._bend_radius_factor} x D = "
+                f"{self._bend_radius_factor} x {conduit_diameter_mm:.2f}mm = "
                 f"{max_bend_radius:.1f}mm"
             ),
         )
@@ -845,7 +866,8 @@ class ConstraintEngine:
         # 2. Voltage drop
         if alarm_current_a > 0 and cable_length_m > 0:
             results.append(self.check_voltage_drop(
-                alarm_current_a, cable_length_m, wire_gauge, ps_voltage
+                alarm_current_a, cable_length_m, wire_gauge, ps_voltage,
+                ambient_temp_c=ambient_temp_c,
             ))
 
         # 3. Electrical separation
