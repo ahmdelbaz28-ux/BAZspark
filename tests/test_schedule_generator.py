@@ -100,7 +100,8 @@ class TestScheduleReport:
         rep = sg.to_report([])
         assert rep.route_count == 0
         assert rep.total_cable_length_m == 0.0
-        assert rep.all_compliant
+        # V97 FIX: Empty schedule reports all_compliant=False (fail-safe)
+        assert not rep.all_compliant
 
     def test_single_route_report(self, sg):
         rows = [ScheduleRow("A->B","(0,0)","(1,0)", 50.0, "14 AWG", 0.41, 23.59, 0, True)]

@@ -148,11 +148,16 @@ class ScheduleGenerator:
         Includes: total cable length, bends, max circuit length.
         """
         if not rows:
+            # V97 FIX: Empty schedule must report all_compliant=False (fail-safe).
+            # An empty schedule means no circuits were analyzed — claiming
+            # compliance is the false-GREEN anti-pattern. Per Rule 17:
+            # a half-solution (empty=True) is worse than no solution because
+            # it creates a false sense of security.
             return ScheduleReport(
                 generated=datetime.now(timezone.utc).isoformat(),
                 total_cable_length_m=0.0, total_bends=0,
                 max_circuit_length_m=0.0, min_end_voltage_v=0.0,
-                all_compliant=True, route_count=0, violations_count=0,
+                all_compliant=False, route_count=0, violations_count=0,
                 nfpa72_limits=_NFPA72_23_6_2_MAX_LEN_M,
                 code_refs=["NFPA 72 §23.6.2", "NEC 760.24(A)", "Project Spec"],
             )

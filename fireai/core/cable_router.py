@@ -175,13 +175,13 @@ class CableRoute:
                 f"{self.voltage_drop_pct:.6f}|{int(self.is_compliant)}|"
                 f"{wp_coords}"
             )
-            # V65 FIX NOTE: Hash is 16 hex chars (64 bits) for backward
-            # compatibility with existing tests. A future version should
-            # extend to 32 hex chars (128 bits) per NIST SP 800-107 when
-            # test expectations are updated.
+            # V97 FIX: Extended from 16 hex (64-bit) to 32 hex (128-bit)
+            # per NIST SP 800-107. 16 hex chars = 64 bits = collision risk
+            # at ~4 billion hashes (birthday attack). 128 bits = collision
+            # at ~2^64 hashes — practically impossible for audit trails.
             object.__setattr__(
                 self, "computation_hash",
-                hashlib.sha256(raw.encode()).hexdigest()[:16],
+                hashlib.sha256(raw.encode()).hexdigest()[:32],
             )
 
 
@@ -216,9 +216,10 @@ class RoutingSchedule:
                 f"{self.max_circuit_length_m:.6f}|{self.compliance_summary}|"
                 f"{route_hashes}"
             )
+            # V97 FIX: Extended from 16 to 32 hex chars per NIST SP 800-107
             object.__setattr__(
                 self, "computation_hash",
-                hashlib.sha256(raw.encode()).hexdigest()[:16],
+                hashlib.sha256(raw.encode()).hexdigest()[:32],
             )
 
 

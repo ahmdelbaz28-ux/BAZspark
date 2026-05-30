@@ -172,7 +172,7 @@ class StructuredCablingResult:
     def __post_init__(self):
         if self.computation_hash == "":
             raw = f"{self.max_horizontal_m}|{self.max_total_m}|{self.cable_type}|{self.is_compliant}"
-            object.__setattr__(self, 'computation_hash', hashlib.sha256(raw.encode()).hexdigest()[:16])
+            object.__setattr__(self, 'computation_hash', hashlib.sha256(raw.encode()).hexdigest()[:32])
 
 
 @dataclass(frozen=True)
@@ -193,7 +193,7 @@ class FiberOpticResult:
     def __post_init__(self):
         if self.computation_hash == "":
             raw = f"{self.fiber_type}|{self.max_length_m}|{self.is_compliant}|{self.total_attenuation_db}"
-            object.__setattr__(self, 'computation_hash', hashlib.sha256(raw.encode()).hexdigest()[:16])
+            object.__setattr__(self, 'computation_hash', hashlib.sha256(raw.encode()).hexdigest()[:32])
 
 
 @dataclass(frozen=True)
@@ -212,7 +212,7 @@ class CCTVResult:
     def __post_init__(self):
         if self.computation_hash == "":
             raw = f"{self.camera_count}|{self.lens_mm}|{self.height_m}|{self.is_compliant}"
-            object.__setattr__(self, 'computation_hash', hashlib.sha256(raw.encode()).hexdigest()[:16])
+            object.__setattr__(self, 'computation_hash', hashlib.sha256(raw.encode()).hexdigest()[:32])
 
 
 @dataclass(frozen=True)
@@ -230,7 +230,7 @@ class AccessControlResult:
     def __post_init__(self):
         if self.computation_hash == "":
             raw = f"{self.reader_height_m}|{self.egress_type}|{self.has_door_switch}|{self.has_rte}|{self.is_compliant}"
-            object.__setattr__(self, 'computation_hash', hashlib.sha256(raw.encode()).hexdigest()[:16])
+            object.__setattr__(self, 'computation_hash', hashlib.sha256(raw.encode()).hexdigest()[:32])
 
 
 # ─── Input Validation Helpers ───────────────────────────────────────────────

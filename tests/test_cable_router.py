@@ -309,7 +309,7 @@ class TestBuildingModel:
     def test_computation_hash(self, simple_building):
         assert simple_building.computation_hash != ""
         # Same model → same hash (deterministic)
-        assert len(simple_building.computation_hash) >= 16
+        assert len(simple_building.computation_hash) >= 32
 
     def test_empty_model(self):
         model = build_abstract_model([])
@@ -1167,7 +1167,8 @@ class TestCableRouteDataclass:
     def test_route_hash_auto_computed(self, router):
         route = router.route(start=(2.0, 2.0, 1.5), end=(5.0, 5.0, 1.5))
         assert route.computation_hash != ""
-        assert len(route.computation_hash) == 16
+        # V97 FIX: Hash extended from 16 to 32 hex chars per NIST SP 800-107
+        assert len(route.computation_hash) == 32
 
     def test_route_is_frozen(self, router):
         route = router.route(start=(2.0, 2.0, 1.5), end=(5.0, 5.0, 1.5))
@@ -1268,7 +1269,8 @@ class TestRoutingSchedule:
         ]
         schedule = router.route_all(connections)
         assert schedule.computation_hash != ""
-        assert len(schedule.computation_hash) == 16
+        # V97 FIX: Hash extended from 16 to 32 hex chars per NIST SP 800-107
+        assert len(schedule.computation_hash) == 32
 
     def test_schedule_max_circuit_length(self, router):
         connections = [

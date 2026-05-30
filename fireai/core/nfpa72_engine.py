@@ -94,8 +94,13 @@ COPPER_TEMP_COEFFICIENT = 0.00393  # per degC
 # Per NEC practice: 75 degC for THHN/THWN insulated FA cables
 # This is the temperature at which resistance should be calculated
 # for voltage drop, NOT 20 degC (which is the Table 8 reference).
-_DEFAULT_OPERATING_TEMP_C = 20.0  # Backward-compatible default (Table 8 ref)
-# For EGYPT: Use 75.0 for real calculations (THHN/THWN operating temp)
+# V97 FIX: Changed from 20.0 to 75.0 per NEC 310.16 practice.
+# At 20°C, temperature_corrected_resistance() is a no-op (T_actual == T_ref),
+# so voltage drop is underestimated by 21.6% at 75°C operating temp.
+# 75°C is the standard operating temperature for THHN/THWN fire alarm cables
+# per NEC 310.16 (75°C column). All callers that relied on 20°C default
+# must now explicitly pass 20°C if they want the old behavior.
+_DEFAULT_OPERATING_TEMP_C = 75.0
 
 # Reference temperature for NEC Chapter 9, Table 8 resistance values
 _TABLE8_REFERENCE_TEMP_C = 20.0
