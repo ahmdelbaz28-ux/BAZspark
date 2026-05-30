@@ -619,9 +619,9 @@ class TestCalculateVoltageDrop:
         # Expected WITHOUT ×2 factor (the old bug)
         expected_without_x2 = current * r_per_km * length_km
 
-        result = calculate_voltage_drop(current, length_m, gauge)
-
-        # Result must match the ×2 calculation
+        # V97 FIX: Explicitly pass ambient_temperature_c=20.0 to test the ×2
+        # factor at reference temperature. Default changed from 20→75°C.
+        result = calculate_voltage_drop(current, length_m, gauge, ambient_temperature_c=20.0)
         assert abs(result.voltage_drop_v - round(expected_with_x2, 4)) < 0.001
 
         # Result must NOT match the no-×2 calculation
@@ -636,7 +636,8 @@ class TestCalculateVoltageDrop:
         length_m = 200.0
 
         for gauge, r_per_km in AWG_RESISTANCE_OHM_PER_KM.items():
-            result = calculate_voltage_drop(current, length_m, gauge)
+            # V97 FIX: Use 20°C to match raw r_per_km in expected value
+            result = calculate_voltage_drop(current, length_m, gauge, ambient_temperature_c=20.0)
             length_km = length_m / 1000.0
             expected = current * 2.0 * r_per_km * length_km
             assert abs(result.voltage_drop_v - round(expected, 4)) < 0.01, (
@@ -672,11 +673,12 @@ class TestCalculateVoltageDrop:
         max_length_m = (24.0 * 0.10) / (current * 2.0 * r_per_km) * 1000.0
 
         # Just inside the boundary: should be compliant
-        result_inside = calculate_voltage_drop(current, max_length_m - 1.0, gauge)
+        # V97 FIX: Use 20°C to match r_per_km used in boundary calculation
+        result_inside = calculate_voltage_drop(current, max_length_m - 1.0, gauge, ambient_temperature_c=20.0)
         assert result_inside.is_compliant is True
 
         # Well over max length: non-compliant
-        result_over = calculate_voltage_drop(current, max_length_m + 10.0, gauge)
+        result_over = calculate_voltage_drop(current, max_length_m + 10.0, gauge, ambient_temperature_c=20.0)
         assert result_over.is_compliant is False
 
     # --- Max length calculation ---
@@ -690,7 +692,8 @@ class TestCalculateVoltageDrop:
         expected_max_length_km = max_drop_v / (current * 2.0 * r_per_km)
         expected_max_length_m = expected_max_length_km * 1000.0
 
-        result = calculate_voltage_drop(current, 50.0, gauge)
+        # V97 FIX: Use 20°C to match raw r_per_km in expected calculation
+        result = calculate_voltage_drop(current, 50.0, gauge, ambient_temperature_c=20.0)
         assert abs(result.max_length_m - round(expected_max_length_m, 2)) < 0.1
 
     def test_max_length_includes_x2_factor(self):
@@ -706,7 +709,8 @@ class TestCalculateVoltageDrop:
         # Buggy max length (without ×2) would be 2× too long
         buggy_max_m = (max_drop_v / (current * r_per_km)) * 1000.0
 
-        result = calculate_voltage_drop(current, 50.0, gauge)
+        # V97 FIX: Use 20°C to match raw r_per_km in expected calculation
+        result = calculate_voltage_drop(current, 50.0, gauge, ambient_temperature_c=20.0)
         assert abs(result.max_length_m - round(correct_max_m, 2)) < 0.1
 
         # Must NOT match the buggy (no ×2) calculation
@@ -822,8 +826,9 @@ class TestCalculateVoltageDrop:
 
     def test_formula_contains_gauge_resistance(self):
         """Formula should include the wire resistance value."""
-        result = calculate_voltage_drop(1.0, 100.0, "14")
-        # Should contain 8.450 (the Ω/km for 14 AWG)
+        # V97 FIX: Use 20°C so formula shows raw Table 8 resistance
+        result = calculate_voltage_drop(1.0, 100.0, "14", ambient_temperature_c=20.0)
+        # Should contain 8.450 (the Ω/km for 14 AWG at 20°C)
         assert "8.450" in result.formula
 
 
@@ -1131,7 +1136,8 @@ class TestCrossCutting:
         """At max_length_m, voltage drop should be at the threshold."""
         current = 1.0
         gauge = "14"
-        result = calculate_voltage_drop(current, 50.0, gauge)
+        # V97 FIX: Use 20°C to match raw r_per_km in hand calculation
+        result = calculate_voltage_drop(current, 50.0, gauge, ambient_temperature_c=20.0)
 
         # Calculate V_drop at max_length_m
         r_per_km = AWG_RESISTANCE_OHM_PER_KM[gauge]
