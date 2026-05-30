@@ -75,6 +75,19 @@ from fireai.core.release_gates import (
     verify_and_evaluate,
     describe_blockers,
 )
+from fireai.core.notification_appliance import (
+    NACLoadResult,
+    NotificationDevice,
+    calculate_nac_load,
+    SPLResult,
+    calculate_spl,
+    min_horn_rating_for_room,
+    StrobeResult,
+    calculate_strobe_candela,
+    CorridorStrobeResult,
+    calculate_corridor_strobes,
+    NotificationAssessment,
+)
 
 # ─── Best-effort imports — these modules may not be on disk ──────────────────
 
@@ -503,6 +516,18 @@ __all__ = [
     "PROOF_VERIFIED_THRESHOLD",
     "verify_and_evaluate",
     "describe_blockers",
+    # V97 — Notification Appliance (Phase 3)
+    "NACLoadResult",
+    "NotificationDevice",
+    "calculate_nac_load",
+    "SPLResult",
+    "calculate_spl",
+    "min_horn_rating_for_room",
+    "StrobeResult",
+    "calculate_strobe_candela",
+    "CorridorStrobeResult",
+    "calculate_corridor_strobes",
+    "NotificationAssessment",
 ]
 
 # Dynamically add successfully imported names to __all__
