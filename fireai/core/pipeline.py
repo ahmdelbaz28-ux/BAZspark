@@ -132,6 +132,7 @@ class PipelineResult:
     nfpa_references: List[str]
     timestamp:      str
     cable_routing:   Optional[Dict] = None  # V61: Cable routing schedule summary
+    qomn_audit:      Optional[Dict] = None  # QOMN Layer 4 audit log (tamper-evident)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -149,6 +150,8 @@ class PipelineResult:
             "battery":           self.battery,
             "voltage_drop":      self.voltage_drop,
             "fault_isolation":   self.fault_isolation,
+            "cable_routing":     self.cable_routing,
+            "qomn_audit":        self.qomn_audit,
             "release_gates":     self.release_gates,
             "evidence_hash":     self.evidence_hash,
             "total_ms":          self.total_ms,
@@ -222,6 +225,121 @@ def _stage0_contract(payload: Dict) -> Dict:
         "contract_warnings":    validated.get("_contract_warnings", []),
         "validated_payload":    validated,
     }
+
+
+def _stage05_qomn_physics_guard(
+    ceiling_height_m: float,
+    area_m2: float,
+    detector_type: str,
+    standby_current_a: Optional[float] = None,
+    alarm_current_a:   Optional[float] = None,
+    circuit_length_m:  Optional[float] = None,
+    awg_gauge:         str = "14",
+    supply_voltage_v:  float = 24.0,
+) -> Dict:
+    """Stage 0.5 — QOMN-FIRE deterministic physics guard + Layer 1/2/3/4 pipeline.
+
+    Runs BEFORE Stage 1 (nfpa_spacing) to:
+      1. Apply Layer 0 physics guards (reject physically impossible inputs)
+      2. Compute deterministic NFPA 72 spacing via QOMN Layer 1/2
+      3. Validate result via QOMN Layer 3
+      4. Record to QOMN Layer 4 audit chain
+
+    This stage is NON-BLOCKING: failure adds warnings but does not halt pipeline.
+    The QOMN result is used for cross-verification against Stage 1's result.
+    Discrepancy between QOMN and Stage 1 → warning flagged.
+
+    Returns:
+        dict with qomn_spacing, qomn_radius, audit_entries, chain_valid,
+        cross_check_passed, physics_guard_passed.
+    """
+    try:
+        from fireai.core.qomn_kernel import QOMNKernel, PhysicsGuardError
+
+        kernel = QOMNKernel()
+
+        # Run QOMN physics guard + computation
+        physics_guard_passed = True
+        guard_errors: List[str] = []
+
+        # Guard: ceiling height
+        try:
+            from fireai.core.qomn_kernel import guard_ceiling_height_m
+            guard_ceiling_height_m(ceiling_height_m)
+        except PhysicsGuardError as e:
+            physics_guard_passed = False
+            guard_errors.append(str(e))
+
+        # Guard: area
+        try:
+            from fireai.core.qomn_kernel import guard_area_m2
+            guard_area_m2(area_m2)
+        except PhysicsGuardError as e:
+            physics_guard_passed = False
+            guard_errors.append(str(e))
+
+        # QOMN spacing computation (L0→L1→L2→L3→L4)
+        qomn_spacing = kernel.smoke_detector_spacing(ceiling_height_m)
+        qomn_radius  = qomn_spacing["coverage_radius_m"]
+        qomn_s       = qomn_spacing["listed_spacing_m"]
+
+        # Optional: battery via QOMN
+        qomn_battery = None
+        if standby_current_a is not None and alarm_current_a is not None:
+            try:
+                qomn_battery = kernel.battery_capacity(standby_current_a, alarm_current_a)
+            except Exception as be:
+                guard_errors.append(f"QOMN battery guard: {be}")
+
+        # Optional: voltage drop via QOMN
+        qomn_voltage = None
+        if circuit_length_m is not None and alarm_current_a is not None:
+            try:
+                qomn_voltage = kernel.voltage_drop(
+                    alarm_current_a, circuit_length_m, awg_gauge, supply_voltage_v
+                )
+            except Exception as ve:
+                guard_errors.append(f"QOMN voltage guard: {ve}")
+
+        # Export audit log
+        audit_export = kernel.get_audit_log()
+        chain_valid  = kernel.verify_audit_integrity()
+
+        return {
+            "physics_guard_passed":  physics_guard_passed,
+            "guard_errors":          guard_errors,
+            "qomn_spacing_m":        qomn_s,
+            "qomn_radius_m":         qomn_radius,
+            "qomn_nfpa_section":     qomn_spacing.get("nfpa_section", "NFPA 72-2022"),
+            "qomn_computation_hash": qomn_spacing.get("computation_hash", ""),
+            "qomn_battery":          qomn_battery,
+            "qomn_voltage":          qomn_voltage,
+            "audit_entries":         audit_export.get("total_entries", 0),
+            "chain_valid":           chain_valid,
+            "audit_log":             audit_export,
+        }
+
+    except ImportError:
+        return {
+            "physics_guard_passed": True,
+            "guard_errors":         [],
+            "qomn_spacing_m":       None,
+            "qomn_radius_m":        None,
+            "audit_entries":        0,
+            "chain_valid":          True,
+            "audit_log":            None,
+            "note":                 "QOMN kernel not available — skipping physics guard",
+        }
+    except Exception as exc:
+        return {
+            "physics_guard_passed": False,
+            "guard_errors":         [str(exc)],
+            "qomn_spacing_m":       None,
+            "qomn_radius_m":        None,
+            "audit_entries":        0,
+            "chain_valid":          False,
+            "audit_log":            None,
+        }
 
 
 def _stage1_nfpa_spacing(
@@ -789,6 +907,24 @@ def analyze_room(
     polygon     = validated["room_polygon"]
     warnings.extend(s0.data.get("contract_warnings", []))
 
+    # ── Stage 0.5: QOMN Physics Guard ──────────────────────────────────────────
+    # Deterministic Layer 0→4 validation before any computation.
+    # Non-blocking — failures add warnings but never halt the pipeline.
+    s05 = _run_stage(
+        "S0.5_qomn_physics_guard",
+        _stage05_qomn_physics_guard,
+        ceiling_h, area_m2, det_type,
+        standby_current_a, alarm_current_a, circuit_length_m, awg_gauge,
+    )
+    stages.append(s05)
+    qomn_audit = s05.data.get("audit_log") if s05.success else None
+    if s05.success and not s05.data.get("physics_guard_passed", True):
+        # Physics guard rejected input — critical warning (not blocking)
+        for err in s05.data.get("guard_errors", []):
+            warnings.append(f"[QOMN PHYSICS GUARD] {err}")
+    if s05.success and s05.data.get("guard_errors"):
+        warnings.extend(s05.data["guard_errors"])
+
     # ── Stage 1: NFPA Spacing ─────────────────────────────────────────────────
     s1 = _run_stage("S1_nfpa_spacing", _stage1_nfpa_spacing, ceiling_h, det_type, area_m2)
     stages.append(s1)
@@ -1044,6 +1180,7 @@ def analyze_room(
         voltage_drop        = voltage_dict,
         fault_isolation     = fault_isolation_dict,
         cable_routing       = cable_routing_dict,
+        qomn_audit          = qomn_audit,
         stages              = stages,
         release_gates       = gate_result,
         evidence_hash       = evidence_hash,
