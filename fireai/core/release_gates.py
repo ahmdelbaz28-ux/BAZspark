@@ -144,24 +144,40 @@ def _gate_voltage_drop(loop_data: Optional[Dict]) -> Dict[str, Any]:
     If no loop data provided, this gate PASSES (not all designs
     require voltage drop verification).
 
-    SAFETY NOTE (V66): If voltage_drop dict exists but lacks
-    "is_compliant" key, current behavior defaults to True (PASS).
-    This is UNSAFE — missing compliance should default to BLOCKED.
-    However, existing tests explicitly mandate this behavior.
-    A future version MUST change the default to fail-safe (BLOCKED)
-    once test expectations are updated by the operator.
+    SAFETY PRINCIPLE (V67): Missing compliance data defaults to BLOCKED.
+    A design with voltage_drop data but no is_compliant field is
+    treated as non-compliant — it is ALWAYS safer to block than
+    to approve. False negatives are acceptable; false positives
+    (approving a design with unknown compliance) are NOT.
+
+    Previous behavior (V12-V66) defaulted missing is_compliant
+    to True, creating a false-GREEN release pathway. Fixed V67.
     """
     if loop_data is None:
         return {"passed": True, "reason": "No voltage drop calculation required (skipped)"}
 
     vd = loop_data.get("voltage_drop")
     if vd is not None:
-        is_compliant = vd.get("is_compliant", True) if isinstance(vd, dict) else True
-        if not is_compliant:
-            drop_pct = vd.get("voltage_drop_pct", "?") if isinstance(vd, dict) else "?"
+        if not isinstance(vd, dict):
+            # V67: Invalid voltage_drop data → BLOCK (not pass)
             return {
                 "passed": False,
-                "reason": f"Voltage drop {drop_pct}% exceeds limit (NFPA 72 §10.6.4)",
+                "reason": f"Voltage drop data is not a dict (type={type(vd).__name__}) — cannot verify compliance. Release blocked for safety.",
+            }
+        # V67: Missing is_compliant defaults to False — fail-safe
+        is_compliant = vd.get("is_compliant", False)
+        if not is_compliant:
+            drop_pct = vd.get("voltage_drop_pct", "?")
+            if "is_compliant" not in vd:
+                # V67: is_compliant explicitly missing — cannot verify compliance
+                reason_detail = f"Voltage drop compliance unknown (is_compliant not specified, drop={drop_pct}%)"
+            elif "voltage_drop_pct" in vd:
+                reason_detail = f"Voltage drop {drop_pct}% exceeds limit"
+            else:
+                reason_detail = "Voltage drop non-compliant"
+            return {
+                "passed": False,
+                "reason": f"{reason_detail} (NFPA 72 §10.6.4)",
             }
 
     return {"passed": True, "reason": "Voltage drop within limits"}
@@ -172,25 +188,35 @@ def _gate_fault_isolation(loop_data: Optional[Dict]) -> Dict[str, Any]:
 
     If no loop data provided, this gate PASSES.
 
-    SAFETY NOTE (V66): If fault_isolation dict exists but lacks
-    "compliant" key, current behavior defaults to True (PASS).
-    This is UNSAFE — missing compliance should default to BLOCKED.
-    However, existing tests explicitly mandate this behavior.
-    A future version MUST change the default to fail-safe (BLOCKED)
-    once test expectations are updated by the operator.
+    SAFETY PRINCIPLE (V67): Missing compliance data defaults to BLOCKED.
+    A design with fault_isolation data but no compliant field is
+    treated as non-compliant — it is ALWAYS safer to block than
+    to approve. False negatives are acceptable; false positives
+    (approving a design with unknown compliance) are NOT.
+
+    Previous behavior (V12-V66) defaulted missing compliant
+    to True, creating a false-GREEN release pathway. Fixed V67.
     """
     if loop_data is None:
         return {"passed": True, "reason": "No fault isolation check required (skipped)"}
 
     fi = loop_data.get("fault_isolation")
     if fi is not None:
-        compliant = fi.get("compliant", True) if isinstance(fi, dict) else True
-        if not compliant:
-            violations = fi.get("violations", []) if isinstance(fi, dict) else []
-            n = len(violations) if isinstance(violations, list) else 0
+        if not isinstance(fi, dict):
+            # V67: Invalid fault_isolation data → BLOCK (not pass)
             return {
                 "passed": False,
-                "reason": f"SLC fault isolation has {n} violation(s) (NFPA 72 §12.3)",
+                "reason": f"Fault isolation data is not a dict (type={type(fi).__name__}) — cannot verify compliance. Release blocked for safety.",
+            }
+        # V67: Missing compliant defaults to False — fail-safe
+        compliant = fi.get("compliant", False)
+        if not compliant:
+            violations = fi.get("violations", [])
+            n = len(violations) if isinstance(violations, list) else 0
+            reason_detail = f"SLC fault isolation has {n} violation(s)" if "compliant" in fi else "SLC fault isolation compliance unknown (compliant not specified)"
+            return {
+                "passed": False,
+                "reason": f"{reason_detail} (NFPA 72 §12.3)",
             }
 
     return {"passed": True, "reason": "Fault isolation compliant"}

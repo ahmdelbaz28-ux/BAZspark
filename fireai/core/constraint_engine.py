@@ -549,7 +549,28 @@ class ConstraintEngine:
         """
         max_interval_mm = self._max_fastening_interval_mm
 
-        if cable_length_m <= 0:
+        if cable_length_m < 0:
+            # V67 SAFETY FIX: Negative cable length is physically impossible.
+            # Previous behavior returned is_satisfied=True for L<=0, which
+            # means a data error (L=-1.0) would pass the fastening check.
+            # Negative length must be flagged, not silently accepted.
+            return ConstraintResult(
+                constraint_name="Cable Fastening Interval",
+                source=ConstraintSource.NEC_760_24_A.value,
+                is_satisfied=False,
+                actual_value=cable_length_m,
+                limit_value=max_interval_mm,
+                unit="mm",
+                severity="HIGH",
+                remediation=(
+                    f"Negative cable length ({cable_length_m}m) is physically impossible — "
+                    "data error upstream. Fix the cable length before proceeding."
+                ),
+                formula=f"L={cable_length_m}m < 0 — invalid input",
+            )
+
+        if cable_length_m == 0:
+            # Zero-length cable: no fastening needed (trivially satisfied)
             return ConstraintResult(
                 constraint_name="Cable Fastening Interval",
                 source=ConstraintSource.NEC_760_24_A.value,
@@ -954,21 +975,27 @@ class ConstraintEngine:
                 conductor_operating_temp_c=vdrop_temp,
             ))
         elif cable_length_m > 0:
-            # V65: Voltage drop not checked because current is zero.
-            # This is informational, not a violation, but must be visible.
+            # V67 SAFETY FIX: Voltage drop not checked because current is zero.
+            # Previous behavior (V65-V66) set is_satisfied=True, creating a
+            # false-positive: downstream code checking all_satisfied would see
+            # this as "passed" even though NFPA 72 §10.6.4 was NEVER verified.
+            # Zero current is physically impossible in a real FA circuit — if
+            # it occurs, it's a data error upstream, not a real condition.
+            # The safe default is: unchecked = NOT satisfied.
             results.append(ConstraintResult(
                 constraint_name="Voltage Drop (Not Checked)",
                 source=ConstraintSource.NFPA_72_10_6_4.value,
-                is_satisfied=True,
+                is_satisfied=False,
                 actual_value=0.0,
                 limit_value=ps_voltage * 0.10 if ps_voltage > 0 else 2.4,
                 unit="V",
                 severity="HIGH",
                 remediation=(
-                    "Voltage drop check skipped — alarm_current_a is 0. "
+                    "Voltage drop check BLOCKED — alarm_current_a is 0. "
+                    "This is physically impossible in a real fire alarm circuit. "
                     "Provide actual alarm current for NFPA 72 §10.6.4 compliance."
                 ),
-                formula="V_drop not calculated (I = 0A)",
+                formula="V_drop not calculated (I = 0A) — treated as non-compliant per V67 safety fix",
             ))
 
         # 3. Electrical separation

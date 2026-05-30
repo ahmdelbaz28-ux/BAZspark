@@ -337,17 +337,31 @@ class TestG6VoltageDrop:
         result = _gate_voltage_drop({"other_key": "value"})
         assert result["passed"] is True
 
-    def test_voltage_drop_not_a_dict_passes(self) -> None:
-        """If voltage_drop value is not a dict, defaults to compliant (True)."""
+    def test_voltage_drop_not_a_dict_blocks(self) -> None:
+        """V67 SAFETY FIX: If voltage_drop value is not a dict, release is BLOCKED.
+
+        Previous behavior (V12-V66) defaulted to True (PASS), creating a
+        false-GREEN release pathway. Missing/invalid compliance data must
+        default to BLOCKED — it is ALWAYS safer to block than to approve.
+        False negatives are acceptable; false positives are NOT.
+        """
         loop_data = {"voltage_drop": "invalid"}
         result = _gate_voltage_drop(loop_data)
-        assert result["passed"] is True
+        assert result["passed"] is False
+        assert "not a dict" in result["reason"].lower() or "cannot verify" in result["reason"].lower()
 
-    def test_voltage_drop_dict_missing_is_compliant_defaults_true(self) -> None:
-        """If voltage_drop dict lacks is_compliant, defaults to True."""
+    def test_voltage_drop_dict_missing_is_compliant_blocks(self) -> None:
+        """V67 SAFETY FIX: If voltage_drop dict lacks is_compliant, release is BLOCKED.
+
+        Previous behavior (V12-V66) defaulted to True (PASS), creating a
+        false-GREEN release pathway. Missing compliance data must default
+        to BLOCKED — approving a design with unknown compliance status
+        is a false positive that violates NFPA 72 safety requirements.
+        """
         loop_data = {"voltage_drop": {"voltage_drop_pct": 5.0}}
         result = _gate_voltage_drop(loop_data)
-        assert result["passed"] is True
+        assert result["passed"] is False
+        assert "unknown" in result["reason"].lower() or "not specified" in result["reason"].lower()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -400,17 +414,30 @@ class TestG7FaultIsolation:
         result = _gate_fault_isolation({"other_key": "value"})
         assert result["passed"] is True
 
-    def test_fault_isolation_not_a_dict_passes(self) -> None:
-        """If fault_isolation value is not a dict, defaults to compliant."""
+    def test_fault_isolation_not_a_dict_blocks(self) -> None:
+        """V67 SAFETY FIX: If fault_isolation value is not a dict, release is BLOCKED.
+
+        Previous behavior (V12-V66) defaulted to True (PASS), creating a
+        false-GREEN release pathway. Invalid compliance data must default
+        to BLOCKED per the safety principle: false positives are NOT acceptable.
+        """
         loop_data = {"fault_isolation": "invalid"}
         result = _gate_fault_isolation(loop_data)
-        assert result["passed"] is True
+        assert result["passed"] is False
+        assert "not a dict" in result["reason"].lower() or "cannot verify" in result["reason"].lower()
 
-    def test_fault_isolation_dict_missing_compliant_defaults_true(self) -> None:
-        """If fault_isolation dict lacks compliant, defaults to True."""
+    def test_fault_isolation_dict_missing_compliant_blocks(self) -> None:
+        """V67 SAFETY FIX: If fault_isolation dict lacks compliant, release is BLOCKED.
+
+        Previous behavior (V12-V66) defaulted to True (PASS), creating a
+        false-GREEN release pathway. Missing compliance data must default
+        to BLOCKED — approving a design with unknown compliance status
+        is a false positive that violates NFPA 72 §12.3 requirements.
+        """
         loop_data = {"fault_isolation": {"violations": []}}
         result = _gate_fault_isolation(loop_data)
-        assert result["passed"] is True
+        assert result["passed"] is False
+        assert "unknown" in result["reason"].lower() or "not specified" in result["reason"].lower()
 
     def test_non_compliant_with_non_list_violations(self) -> None:
         """If violations is not a list, len defaults to 0."""
