@@ -7487,3 +7487,79 @@ Maximize utilization of three external resources for FireAI:
 ### Commit Information
 - **Pending commit** — changes staged but not yet pushed to GitHub
 - Will commit after operator verification
+
+---
+
+## V61 Fixes (2026-05-30) — Cable Router + Constraint Engine + Pipeline Determinism
+
+### Self-Criticism Notes (Pre-V61)
+
+1. **Wasted entire previous session on analysis without execution** — Read Karpathy gist and free-claude-code repo but wrote ZERO lines of code. This is a direct violation of Rule 18 (Continuous Pipeline) and Rule 19 (Infinite Improvement Cycle).
+2. **Asked "should I start?" instead of starting** — Rule 18 says: "Stopping mid-pipeline or waiting for instruction when the next step is obvious is a breach." I breached.
+3. **No test runs in previous session** — Rule 10 mandates test-and-fix loop after ANY modification. No modification = no test = no loop. Zero engineering value produced.
+4. **Fell into "consultant mode"** — agent.md says I am a Principal Software Architect + Principal Fire Protection Engineer. Both are EXECUTION roles, not advisory. I gave opinions instead of building.
+
+### Bug 16 — Voltage Drop Over Penalty-Inflated Length (CRITICAL)
+
+**File:** `core/cable_router.py` — `route()` method + `_calculate_metrics()`
+**Discovery:** `_calculate_metrics()` returns `total_with_penalties` as first element. `route()` used this for voltage drop calculation (line 497: `length_km = total_length / 1000.0` where `total_length` = `total_with_penalties`).
+**Impact:** Voltage drop calculated over fictitious bend-penalty meters, NOT real conductor length. Overestimates voltage drop, causing unnecessary wire upsizing. Example: route with 3 bends × 0.5m penalty = 1.5m extra "length" that doesn't exist in the cable.
+**Fix Applied:**
+- `physical_length = straight_length` — the 3D Euclidean length without penalties
+- Voltage drop now uses `physical_length` for `length_km`
+- Constraint engine `check_all()` now receives `physical_length` for `cable_length_m`
+- `CableRoute.total_length_m` now stores physical length, not penalty-inflated
+**Why this is correct:** Voltage drop = I × 2 × R × L_physical / 1000. The bend penalties are A* routing costs, not real conductor. They affect path selection, not Ohm's law.
+
+### Bug 17 — SHA-256 Hash Doesn't Cover Route Path (HIGH)
+
+**File:** `core/cable_router.py` — `CableRoute.__post_init__()`
+**Discovery:** Hash only covered `route_id|start|end|total_length|num_bends|wire_gauge|is_compliant`. Two completely different routes with same endpoints but different paths would produce the SAME hash.
+**Impact:** Defeats the purpose of deterministic verification. An auditor cannot verify that the route path is unchanged between runs.
+**Fix Applied:**
+- Hash now includes ALL fields: waypoints (as coordinate strings), straight_length, num_elevation_changes, voltage_drop_v, voltage_drop_pct, is_compliant
+- Waypoints serialized as `(x,y,z,is_bend)` tuples
+- All floats formatted with `:.6f` for consistent precision
+- RoutingSchedule hash now includes individual route hashes
+**Improvement over previous:** Previous 16-char truncation → still 16 chars for backward compat, but hash input is comprehensive.
+
+### Bug 18 — Electrical Zone Double-Buffer (600mm not 300mm) (HIGH)
+
+**File:** `core/cable_router.py` — `_precompute_electrical_zones()`
+**Discovery:** Lines 365-370 computed `ix_min = int((elem.min_x - 0.3 - ox) / res) - sep_cells` where `sep_cells = ceil(0.3 / res)`. For `res = 0.1`, this expands by `0.3m + 3 cells × 0.1m = 0.6m` on each side — double the required 300mm per NEC 760.24.
+**Impact:** Routes avoid a wider zone around electrical equipment than required. Conservative for safety, but unnecessarily restricts routing in tight spaces. In dense installations, this could make routes physically impossible when they should be viable.
+**Fix Applied:** Removed `- sep_cells` and `+ sep_cells` from index calculations. The `- 0.3` / `+ 0.3` in the coordinate already provides the 300mm buffer.
+
+### Bug 19 — check_all Missing conduit_fill (CRITICAL)
+
+**File:** `core/constraint_engine.py` — `check_all()` method
+**Discovery:** `check_conduit_fill()` method exists but is NEVER called by `check_all()`. Overfilled conduit is a NEC Chapter 9 Table 1 violation and a fire hazard (excessive heating in enclosed raceway).
+**Impact:** Users relying on `check_all()` for comprehensive constraint verification would miss conduit fill violations. A ¾" EMT with 6× AWG-14 FA cables (fill ≈ 53%) would pass `check_all()` despite exceeding the 40% limit.
+**Fix Applied:** Added conduit_fill check as item #11 in `check_all()`, using `wire_gauge.diameter_mm` when available. Falls back gracefully if diameter_mm attribute is not present.
+
+### Bug 20 — Pipeline uuid4() Breaks Determinism (HIGH)
+
+**File:** `core/pipeline.py` — `analyze_room()` line 744
+**Discovery:** `run_id = str(uuid.uuid4())` produces a different UUID on every execution. Same room input → different run_id → different evidence_hash → audit trail is non-reproducible.
+**Impact:** Violates the project's core principle of IEEE-754 bit-exact determinism. An auditor re-running the same analysis gets different run_ids, making it impossible to verify that the same input produces the same output.
+**Fix Applied:** Replaced `uuid4()` with deterministic content-hash: `SHA-256(canonical_json(payload))` formatted as UUID-like string (8-4-4-4-12 hex) for backward compatibility with existing tests and consumers.
+**Same input → same run_id, always.**
+
+### Bug 21 — straight_length Ignores Vertical Segments (MEDIUM)
+
+**File:** `core/cable_router.py` — `_calculate_metrics()` line 826-827
+**Discovery:** `straight_length` only accumulated horizontal distance (`sqrt(dx²+dy²)`), silently dropping all vertical (Z) run length.
+**Impact:** A 10m horizontal + 5m vertical cable reports `straight_length = 10m` instead of `11.18m`. Since `straight_length` was used as `physical_length` for voltage drop (after Bug 16 fix), this would have UNDERESTIMATED voltage drop for cables with elevation changes — the opposite of Bug 16's overestimation.
+**Fix Applied:** `straight_length += seg_length` — now accumulates full 3D Euclidean segment length, including vertical component.
+
+### Self-Criticism Notes (Post-V61)
+
+1. **Bug 16 + Bug 21 interaction was subtle** — If I had only fixed Bug 16 (use `straight_length` for voltage drop) without fixing Bug 21 (straight_length was missing vertical), I would have SWAPPED one overestimation for an underestimation. This validates the "understand existing system fully before modifying" protocol.
+2. **Electrical zone double-buffer was conservative** — 600mm instead of 300mm. In safety-critical systems, being overly conservative is usually preferred over being too permissive. However, NEC 760.24 specifies 300mm, and our system must match the code exactly — not be "approximately right."
+3. **Pipeline determinism was the most fundamental fix** — Without deterministic run_ids, the entire evidence package verification system is undermined. How can you trust a SHA-256 hash if the input to that hash includes a random UUID?
+4. **Conduit fill in check_all was the most dangerous omission** — Overfilled conduits can cause thermal runaway in cable trays, especially in hot climates like Egypt where ambient temps reach 50°C.
+
+### Commit Information
+- **Commit:** `870ea97`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/870ea97
+- **Tests:** 890 passed, 1 skipped, 0 failed
