@@ -180,6 +180,20 @@ _cors_origins = os.getenv(
     "http://localhost:8000,http://127.0.0.1:8000",
 ).split(",")
 
+# SECURITY FIX: Validate CORS origins — reject wildcards when credentials are enabled.
+# Browsers actually reject `Access-Control-Allow-Origin: *` with credentials, but
+# detecting it at startup prevents misconfiguration from being silently accepted in
+# non-browser contexts (API gateways, proxy servers).
+if "*" in _cors_origins:
+    logger.critical(
+        "SECURITY: CORS_ORIGINS contains '*' wildcard. "
+        "allow_credentials=True with wildcard origins is a security risk — "
+        "any website can make authenticated cross-origin requests. "
+        "Remove '*' from CORS_ORIGINS and specify explicit origins."
+    )
+    # Remove the wildcard to prevent accidental exposure
+    _cors_origins = [o for o in _cors_origins if o != "*"]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
@@ -290,6 +304,29 @@ if os.getenv("FIREAI_API_KEY") is not None and _FIREAI_API_KEY == "":
             "FIREAI_API_KEY is set to empty string — auth disabled (development mode only)"
         )
 
+# SECURITY FIX: Detect placeholder API keys from .env.example.
+# Common placeholder values like "change-me-in-production" pass the non-empty
+# check but provide ZERO actual security — they are trivially guessable.
+_PLACEHOLDER_API_KEYS = frozenset({
+    "change-me-in-production",
+    "changeme",
+    "placeholder",
+    "test",
+    "dev",
+    "development",
+    "example",
+    "secret",
+    "password",
+    "your-api-key-here",
+})
+if _FIREAI_API_KEY and _FIREAI_API_KEY.lower() in _PLACEHOLDER_API_KEYS:
+    logger.critical(
+        "SECURITY: FIREAI_API_KEY is set to a known placeholder value "
+        f"'{_FIREAI_API_KEY}'. This provides NO security — the key is "
+        "trivially guessable. Generate a random key with: "
+        "python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+    )
+
 class ApiKeyMiddleware:
     """
     Pure ASGI middleware that validates X-API-Key header on mutating requests.
@@ -395,6 +432,10 @@ app.add_middleware(ApiKeyMiddleware)
 # V92 FIX (SS-4): Initialize slowapi limiter and attach to app state.
 # Required for environment router rate limiting (Nominatim 1/sec, etc.).
 # slowapi is in requirements.txt but was never initialized.
+# SECURITY FIX: Previously, slowapi was initialized but no routes had
+# @limiter.limit() decorators, making the limiter completely inert.
+# Now we also add a fallback in-memory rate limiter as ASGI middleware
+# that enforces a global default rate limit on ALL endpoints.
 try:
     from slowapi import Limiter, _rate_limit_exceeded_handler
     from slowapi.util import get_remote_address
@@ -408,6 +449,84 @@ try:
 except ImportError:
     logger.warning("slowapi not installed — rate limiting disabled")
     _limiter = None
+
+# ── Fallback in-memory rate limiting middleware ─────────────────────────────
+# SECURITY FIX: Even when slowapi is available, it requires per-route
+# decorators. This ASGI middleware provides a global rate limit as a
+# safety net — it limits ALL endpoints (not just decorated ones).
+# Uses a simple sliding-window counter per IP address.
+# In production, replace with Redis-backed rate limiter for distributed systems.
+
+import time as _time
+from collections import defaultdict as _defaultdict
+
+class InMemoryRateLimitMiddleware:
+    """
+    ASGI middleware that enforces a global per-IP rate limit.
+
+    This is a safety net for the slowapi decorators. It ensures that
+    even un-decorated endpoints have basic rate limiting. For a
+    safety-critical fire alarm engineering system, uncontrolled API
+    access could lead to DoS or resource exhaustion during an emergency.
+
+    Rate limit: 120 requests per minute per IP (configurable via
+    FIREAI_RATE_LIMIT env var as "requests/minutes", e.g. "60/1").
+
+    Thread-safe: uses a lock for the counters dictionary.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+        self._counts: dict = _defaultdict(list)  # ip -> [timestamps]
+        self._lock = __import__("threading").Lock()
+
+        # Parse rate limit from env var
+        _rate_str = os.getenv("FIREAI_RATE_LIMIT", "120/1")
+        try:
+            parts = _rate_str.split("/")
+            self._max_requests = int(parts[0])
+            self._window_seconds = int(parts[1]) * 60 if len(parts) > 1 else 60
+        except (ValueError, IndexError):
+            logger.warning(f"Invalid FIREAI_RATE_LIMIT '{_rate_str}', using default 120/1min")
+            self._max_requests = 120
+            self._window_seconds = 60
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # Extract client IP
+        client = scope.get("client")
+        ip = client[0] if client else "unknown"
+
+        now = _time.monotonic()
+        with self._lock:
+            # Remove expired timestamps
+            self._counts[ip] = [
+                t for t in self._counts[ip]
+                if now - t < self._window_seconds
+            ]
+            # Check if rate limit exceeded
+            if len(self._counts[ip]) >= self._max_requests:
+                response = Response(
+                    content=json.dumps({
+                        "success": False,
+                        "error": "Rate limit exceeded",
+                        "detail": f"Maximum {self._max_requests} requests per {self._window_seconds}s",
+                        "status_code": 429,
+                    }),
+                    status_code=429,
+                    media_type="application/json",
+                )
+                await response(scope, receive, send)
+                return
+            # Record this request
+            self._counts[ip].append(now)
+
+        await self.app(scope, receive, send)
+
+app.add_middleware(InMemoryRateLimitMiddleware)
 
 # ── Correlation ID middleware ──────────────────────────────────────────
 # Added LAST so it runs FIRST (Starlette middleware runs in reverse order).

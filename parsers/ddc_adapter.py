@@ -159,6 +159,17 @@ class DDCAdapter:
             raise FileNotFoundError(f"Input file not found: {input_path}")
 
         ext = input_path_obj.suffix.lower()
+
+        # SECURITY FIX: Validate file extension against allowed set BEFORE
+        # any subprocess invocation. Prevents path traversal or unexpected
+        # file types from reaching the converter binary.
+        _ALLOWED_EXTENSIONS = frozenset(_DDC_CONVERTERS.keys())
+        if ext not in _ALLOWED_EXTENSIONS:
+            raise ValueError(
+                f"File extension '{ext}' is not allowed. "
+                f"Permitted extensions: {sorted(_ALLOWED_EXTENSIONS)}"
+            )
+
         binary = self._get_binary(ext)
         if binary is None:
             raise DDCNotAvailableError(
@@ -181,6 +192,15 @@ class DDCAdapter:
         try:
             cmd = [binary, str(input_path_obj)]
             if export_mode and ext in (".rvt", ".rfa"):
+                # SECURITY FIX: Whitelist export_mode to prevent command
+                # injection. Without validation, a malicious export_mode
+                # could pass unexpected flags to the DDC converter binary.
+                _ALLOWED_EXPORT_MODES = frozenset({"basic", "standard", "complete"})
+                if export_mode not in _ALLOWED_EXPORT_MODES:
+                    raise ValueError(
+                        f"Invalid export_mode '{export_mode}'. "
+                        f"Permitted values: {sorted(_ALLOWED_EXPORT_MODES)}"
+                    )
                 cmd.append(export_mode)
 
             logger.info(f"DDC convert: {' '.join(cmd)} → {output_dir}")

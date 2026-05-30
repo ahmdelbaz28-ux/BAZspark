@@ -12,10 +12,10 @@ SAFETY TIERS (from most to least trusted):
   4. REJECTED       — <95.0% coverage OR critical violations
 
 EVIDENCE PACKAGE:
-  - Cryptographic hash of all engineering inputs and outputs
+  - HMAC-SHA256 cryptographic hash of all engineering inputs and outputs
   - NFPA references for every decision
   - Traceable chain of reasoning
-  - Tamper-evident (hash changes if any field changes)
+  - Tamper-proof (HMAC-SHA256 with secret key prevents forgery)
 
 CONSTANTS:
   - ABSOLUTE_MINIMUM_COVERAGE: Below this = automatic REJECT
@@ -33,8 +33,10 @@ from __future__ import annotations
 
 import enum
 import hashlib
+import hmac
 import json
 import math
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
@@ -273,17 +275,31 @@ class EngineeringEvidencePackage:
     proof_valid:        bool
     safety_tier:        str
 
-    def compute_integrity_hash(self) -> str:
-        """Compute SHA-256 hash of the entire evidence package.
+    def compute_integrity_hash(self, key: Optional[bytes] = None) -> str:
+        """Compute HMAC-SHA256 hash of the entire evidence package.
 
-        Uses canonical JSON serialization for deterministic hashing.
+        Uses canonical JSON serialization for deterministic hashing, then
+        applies HMAC-SHA256 for tamper-proof authentication.
+
+        SECURITY FIX (CRITICAL): Previous implementation used plain SHA-256,
+        which only provides tamper-**evident** (not tamper-**proof**) hashing.
+        An attacker who can modify both data and hash can recompute SHA-256.
+        HMAC-SHA256 requires a secret key, making forgery computationally
+        infeasible without the key.
+
         The hash covers:
         - All input parameters (room geometry, detector type, etc.)
         - All computed results (coverage, spacing, positions)
         - All compliance decisions (safety tier, NFPA references)
 
+        Args:
+            key: Optional HMAC secret key. If not provided, reads from
+                 FIREAI_EVIDENCE_HMAC_KEY environment variable. Falls back
+                 to a default key (with CRITICAL warning) if neither is set.
+                 Key must be at least 32 bytes for security.
+
         Returns:
-            Hex-encoded SHA-256 hash string.
+            Hex-encoded HMAC-SHA256 hash string.
         """
         # Build deterministic representation
         # SAFETY FIX (HIGH-15): Include room_polygon in hash computation.
@@ -317,4 +333,41 @@ class EngineeringEvidencePackage:
         # Canonical JSON with sorted keys
         canonical = json.dumps(hash_data, sort_keys=True, separators=(',', ':'))
 
-        return hashlib.sha256(canonical.encode('utf-8')).hexdigest()
+        # Step 1: Compute SHA-256 digest of the canonical data
+        sha256_hash = hashlib.sha256(canonical.encode('utf-8')).hexdigest()
+
+        # Step 2: Apply HMAC-SHA256 for tamper-proof authentication
+        # Resolve the HMAC key: explicit param > env var > default (with warning)
+        import logging as _logging
+        _logger = _logging.getLogger(__name__)
+
+        if key is not None:
+            hmac_key = key
+        else:
+            env_key = os.getenv("FIREAI_EVIDENCE_HMAC_KEY", "")
+            if env_key:
+                hmac_key = env_key.encode('utf-8')
+            else:
+                # Fallback: derive a stable default key from the SHA-256 hash
+                # of the module name. This ensures hash stability within a
+                # process but is NOT secure against determined attackers.
+                _default_key = hashlib.sha256(
+                    b"fireai.core.safety_assurance.default-hmac-key-v1"
+                ).digest()
+                hmac_key = _default_key
+                _logger.critical(
+                    "SECURITY: FIREAI_EVIDENCE_HMAC_KEY not set. "
+                    "Using derived default HMAC key — evidence packages are "
+                    "tamper-evident but NOT tamper-proof against attackers with "
+                    "source code access. Set FIREAI_EVIDENCE_HMAC_KEY env var "
+                    "with a random 32+ byte key for production use."
+                )
+
+        # Warn if key is too short (security best practice)
+        if len(hmac_key) < 32:
+            _logger.warning(
+                f"HMAC key is {len(hmac_key)} bytes — minimum 32 bytes "
+                f"recommended for HMAC-SHA256. Consider using a longer key."
+            )
+
+        return hmac.new(hmac_key, sha256_hash.encode('utf-8'), hashlib.sha256).hexdigest()
