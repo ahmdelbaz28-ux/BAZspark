@@ -7579,3 +7579,108 @@ Maximize utilization of three external resources for FireAI:
 
 **Commit:** `70003e6`
 **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/70003e6
+
+---
+
+## V62 Fixes (2026-05-30) — 6 Bugs Fixed: Conduit Fill, Temp Dual-Use, NameError, String Mismatch, 60°C Derating, NaN Validation
+
+### Bug 22 — Conduit Fill Never Checked in check_all() (CRITICAL — Life Safety)
+
+**File:** `core/cable_routing_engine.py` — `WireGauge` enum + `core/constraint_engine.py` — `check_all()` line 913
+
+**What was wrong:**
+- `WireGauge` did NOT have a `diameter_mm` attribute
+- `check_all()` at line 913: `wire_diameter_mm = getattr(wire_gauge, 'diameter_mm', None)` always returned `None`
+- The `if wire_diameter_mm is not None:` guard at line 914 was always `False`
+- Therefore, the conduit fill check was SILENTLY SKIPPED in every `check_all()` call
+- Overfilled conduit causes overheating — NEC code violation and fire hazard
+
+**Impact:** Every cable route that passed `check_all()` was never checked for conduit fill compliance. A conduit with 80% fill (double the NEC 760.154 limit of 40%) would pass without any warning. Overfilled conduit causes conductor overheating, insulation degradation, and fire hazard.
+
+**Fix Applied:**
+- Added `diameter_mm` property to `WireGauge` enum with NEC Chapter 9, Table 5/5A values
+- AWG 12: 3.30mm (THHN), AWG 14: 2.62mm (THHN), AWG 16: 2.00mm (FPL), AWG 18: 1.70mm (FPL)
+- Created `_AWG_DIAMETER_MM` module-level dict (Enum class variables become members, breaking `[]` access)
+- `check_all()` now correctly executes conduit fill check via `wire_gauge.diameter_mm`
+
+### Bug 23 — ambient_temp_c Dual-Use: Voltage Drop AND Ampacity Mutually Incorrect (CRITICAL — Life Safety)
+
+**File:** `core/cable_router.py` — `route()` + `core/constraint_engine.py` — `check_all()`
+
+**What was wrong:**
+The same parameter `ambient_temp_c` was used as two physically different quantities:
+- For voltage drop: conductor OPERATING temperature (typically 75°C for THHN) — used for resistance correction
+- For ampacity: ambient AIR temperature (typically 30-50°C in Egypt) — used for derating
+
+Using 75°C as ambient air: ampacity derating factor ≈ 0.51 for 90°C rated AWG 14 → adjusted ampacity = 15.3A. A 20A NAC circuit FAILS when it should PASS (correct ampacity at 40°C ambient = 27.3A). Valid designs are rejected.
+
+Using 40°C as conductor temp: resistance underestimated by 11.3% → voltage drop understated → circuit passes when it actually exceeds NFPA 72 §10.6.4 → devices may not operate during a fire.
+
+**Impact:** It was IMPOSSIBLE to get both correct voltage drop AND correct ampacity simultaneously. Either voltage drop was underestimated (devices may not operate) or ampacity was dramatically understated (valid designs rejected).
+
+**Fix Applied:**
+- Added `conductor_operating_temp_c` parameter to `CableRouter.route()` (default None)
+- Added `conductor_operating_temp_c` parameter to `ConstraintEngine.check_all()` (default None)
+- When None: falls back to `ambient_temp_c` for backward compatibility
+- `check_voltage_drop()` now uses `conductor_operating_temp_c` for resistance correction
+- `check_ampacity_compliance()` now uses `ambient_temp_c` (air temp) for derating
+- `cable_router.route()` passes both temperatures correctly to `check_all()`
+
+### Bug 24 — `log` instead of `logger` NameError (CRITICAL)
+
+**File:** `core/pipeline.py` line 940
+
+**What was wrong:** `log.warning("Cable routing stage failed: %s", e)` — `log` is undefined. Module defines `logger = logging.getLogger(__name__)` at line 86.
+
+**Impact:** If cable routing throws any exception, the except handler crashes with NameError, hiding the original error. Cable routing failure is silently lost — engineer has no idea routing was attempted and failed.
+
+**Fix Applied:** Changed `log.warning` → `logger.warning`
+
+### Bug 25 — String Mismatch: ALL_COMPLIANT vs ALL_PASS (HIGH)
+
+**File:** `core/pipeline.py` line 934 vs `core/cable_router.py` line 939
+
+**What was wrong:** `cable_router.py` produces `"ALL COMPLIANT"` but `pipeline.py` checks for `"ALL_PASS"`. Since `"ALL COMPLIANT" != "ALL_PASS"` is always True, the warning fires for EVERY compliant route.
+
+**Impact:** Engineers see spurious "Cable routing violations: ALL COMPLIANT" warnings for perfectly compliant designs. This trains engineers to ignore ALL cable routing warnings, including genuine violations. Warning fatigue in safety-critical systems is dangerous.
+
+**Fix Applied:** Changed `"ALL_PASS"` → `"ALL COMPLIANT"` in pipeline.py
+
+### Bug 26 — 60°C Conductor Rating Uses 75°C Derating Column (HIGH)
+
+**File:** `core/nfpa72_engine.py` — `AMBIENT_TEMP_CORRECTION_FACTORS` + `get_ambient_derating_factor()`
+
+**What was wrong:** `AMBIENT_TEMP_CORRECTION_FACTORS` only had columns for 75°C and 90°C rated conductors. When `conductor_temp_rating_c=60`, `col_idx=0` selected the 75°C column, which has LESS severe derating than the 60°C column would have. At 40°C ambient: 75°C rated factor = 0.88, 60°C rated factor should be 0.69. Using 0.88 instead of 0.69 overstates ampacity by 27.5%.
+
+**Impact:** A 60°C rated conductor would be allowed to carry more current than its derated ampacity, potentially causing insulation degradation and fire hazard.
+
+**Fix Applied:**
+- Added 60°C column to `AMBIENT_TEMP_CORRECTION_FACTORS` per NEC 310.15(B)(2)(A)
+- Updated `col_idx` mapping: `{60: 0, 75: 1, 90: 2}`
+- At 40°C ambient: 60C rated=0.69, 75C rated=0.88, 90C rated=0.91
+
+### Bug 27 — Missing NaN/Inf Validation for ps_voltage (MEDIUM)
+
+**File:** `core/cable_router.py` — `route()`
+
+**What was wrong:** `route()` validates `start` and `end` for NaN/Inf but NOT `ps_voltage` or `alarm_current_a`. NaN `ps_voltage` → `ps_voltage > 0` is False → `v_drop_pct = 0.0` → `is_compliant=True`. Negative `ps_voltage` → same silent pass.
+
+**Impact:** A NaN or negative ps_voltage produces a route that reports 0% voltage drop and is_compliant=True, when the voltage drop is unknown/invalid. Could allow non-compliant circuit to be approved.
+
+**Fix Applied:**
+- Added ContractViolation validation for `ps_voltage` and `alarm_current_a`
+- Rejects NaN, Inf, and negative ps_voltage at Layer 0 (Input Sanitization)
+
+### Commit Information
+- **Commit:** `97bae74`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/97bae74
+- **Tests:** 890 passed, 1 skipped
+
+### Self-Criticism Notes (V62)
+
+1. **Bug 22 was hiding in plain sight** — the `getattr(wire_gauge, 'diameter_mm', None)` pattern is a code smell. If a property is expected, it should be a hard attribute access, not a getattr with silent None fallback. The silent None is the dangerous pattern — it masks the missing attribute.
+2. **Bug 23 is the most dangerous** — using the same temperature for voltage drop AND ampacity is a PHYSICS ERROR, not just a coding bug. It reflects a failure to understand that resistance correction (conductor temp) and derating (ambient temp) use different reference temperatures. This is the kind of error that could result in a building fire where the horns don't sound because voltage drop was underestimated by 21.6%.
+3. **Bug 24 is embarrassing** — a simple typo (`log` vs `logger`) that would cause a NameError at runtime. This is what happens when exception handlers are not tested.
+4. **Bug 25 is a string comparison error** — two different parts of the code using different string constants. Should use an enum or constant.
+5. **Bug 26 shows incomplete NEC data** — only having 75°C and 90°C columns meant 60°C rated conductors (which are permitted by NEC for some PLFA applications) were silently given the wrong derating.
+6. **Bug 27 is a consistency gap** — validating start/end but not ps_voltage is inconsistent. NaN validation must be applied to ALL numeric inputs in a safety-critical system.
