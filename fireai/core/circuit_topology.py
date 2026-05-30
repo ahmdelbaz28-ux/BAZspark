@@ -433,7 +433,23 @@ class CircuitTopology:
                 ),
             })
 
-        # ── Check 5: NAC device current draw ──
+        # ── Check 5: Panel position at origin (0,0,0) — V96 FIX ──
+        # A panel at (0,0,0) likely means the position was never set, which
+        # causes segment lengths to be computed from the building origin
+        # instead of the actual panel location — catastrophic voltage drop errors.
+        if self.panel_position == (0.0, 0.0, 0.0) and len(self.devices) > 0:
+            warnings.append({
+                "type": "panel_at_origin",
+                "panel_position": self.panel_position,
+                "nfpa_section": "DATA_INTEGRITY",
+                "message": (
+                    "Panel position is (0,0,0) — if this is not the actual "
+                    "panel location, segment lengths and voltage drops will be "
+                    "WRONG. Set panel_position to the real coordinates."
+                ),
+            })
+
+        # ── Check 6: NAC device current draw ──
         if self.circuit_type == CircuitType.NAC:
             for dev in self.devices:
                 if not math.isfinite(dev.current_a) or dev.current_a < 0:

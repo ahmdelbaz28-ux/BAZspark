@@ -48,7 +48,13 @@ _RTI_SPOT_HEAT_HIGH = 120.0  # Slow spot heat detector
 _SMOKE_ACTIVATION_VELOCITY = 0.05  # Typical smoke entry velocity
 
 # Ambient temperature (°C)
-_AMBIENT_TEMP_C = 20.0
+# V96 FIX: Changed default from 20°C to 30°C (NEC baseline ambient).
+# At 20°C, a 57°C heat detector has 37°C rise to trigger; at 40–50°C
+# (Egypt), the rise is only 7–17°C — detector activates much faster.
+# Using 20°C underestimates activation time in hot climates, which could
+# mislead ASET/RSET analysis. The 30°C default matches NEC Table 310.16
+# baseline and NFPA 72 typical design ambient.
+_AMBIENT_TEMP_C = 30.0
 
 # Stefan-Boltzmann constant for radiative calculations
 _STEFAN_BOLTZMANN = 5.67e-8  # W/(m²·K⁴)
@@ -68,6 +74,9 @@ class DetectorResponseResult:
         activation_time_s:  Estimated time to activation (seconds)
         safety_margin_s:     Safety margin applied (seconds)
         total_with_margin:   Activation time + safety margin
+        activation_possible: V96 FIX — True if detector can activate, False if
+                             gas temperature never reaches activation temp.
+                             When False, time fields contain float('inf').
         model_used:          Name of the response model
         detector_type:       'smoke' or 'heat'
         fire_hrr_kw:         Fire heat release rate (kW)
@@ -78,12 +87,13 @@ class DetectorResponseResult:
     activation_time_s:   float
     safety_margin_s:     float
     total_with_margin:   float
-    model_used:          str
-    detector_type:       str
-    fire_hrr_kw:         float
-    distance_to_fire_m:  float
-    ceiling_height_m:    float
-    nfpa_section:        str
+    activation_possible: bool = True   # V96 FIX: explicit flag for inf results
+    model_used:          str = ""
+    detector_type:       str = ""
+    fire_hrr_kw:         float = 0.0
+    distance_to_fire_m:  float = 0.0
+    ceiling_height_m:    float = 0.0
+    nfpa_section:        str = ""
 
 
 def calculate_heat_detector_response(
@@ -162,10 +172,13 @@ def calculate_heat_detector_response(
 
     # If gas temperature never reaches activation temperature, detector won't activate
     if T_gas <= activation_temp_c:
+        # V96 FIX: Set activation_possible=False so downstream code can
+        # detect non-activation without checking for float('inf').
         return DetectorResponseResult(
             activation_time_s=float('inf'),
             safety_margin_s=float('inf'),
             total_with_margin=float('inf'),
+            activation_possible=False,
             model_used="Alpert_ceiling_jet_RTI",
             detector_type="heat",
             fire_hrr_kw=fire_hrr_kw,

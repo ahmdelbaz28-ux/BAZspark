@@ -418,7 +418,7 @@ class BuildingSystemsAssessment:
     hvac_results:       List[HVACShutdownResult]      = field(default_factory=list)
     smoke_control_results: List[SmokeControlResult]   = field(default_factory=list)
     fire_pump_results:  List[FirePumpResult]          = field(default_factory=list)
-    is_compliant:       bool = True
+    is_compliant:       bool = False  # V96 FIX: Fail-safe default — unevaluated must NOT claim compliance
     violations:         List[str] = field(default_factory=list)
     nfpa_references:    List[str] = field(default_factory=list)
 

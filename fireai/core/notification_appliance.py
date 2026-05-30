@@ -295,11 +295,14 @@ def min_horn_rating_for_room(
     Returns:
         Dict with min_horn_rating_dba, coverage_distance, compliance info.
     """
+    # V96 FIX: Invalid room dimension must return a clearly invalid horn rating,
+    # not 0.0 dBA (which looks like a valid value and could lead to specifying
+    # a silent notification appliance — life safety violation).
     if not math.isfinite(room_dimension_m) or room_dimension_m <= 0:
         return {
-            "min_horn_rating_dba": 0.0,
+            "min_horn_rating_dba": -1.0,  # Clearly invalid — no real horn is -1 dBA
             "coverage_distance_m": 0.0,
-            "error": "Invalid room dimension",
+            "error": f"Invalid room dimension: {room_dimension_m}",
         }
 
     spl_above_ambient = 5.0 if is_mechanical_room else _MIN_SPL_ABOVE_AMBIENT_DBA
@@ -623,7 +626,7 @@ class NotificationAssessment:
     spl_result:           Optional[SPLResult]       = None
     strobe_result:        Optional[StrobeResult]    = None
     corridor_strobe:      Optional[CorridorStrobeResult] = None
-    is_compliant:         bool = True
+    is_compliant:         bool = False  # V96 FIX: Fail-safe default — unevaluated must NOT claim compliance
     violations:           List[str] = field(default_factory=list)
     nfpa_references:      List[str] = field(default_factory=list)
 

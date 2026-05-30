@@ -221,6 +221,11 @@ class AuditLog:
 
     # -- Public API --------------------------------------------------------
 
+    def _check_closed(self) -> None:
+        """Raise if the log has been closed. V96 FIX."""
+        if self._conn is None:
+            raise RuntimeError("AuditLog is closed")
+
     def append(self, entry: AuditEntry) -> str:
         """Append an entry to the audit log.
 
@@ -241,9 +246,13 @@ class AuditLog:
             If the entry's ``entry_hash`` was explicitly set (not empty)
             but does not match the recomputed hash **after** fixing
             ``prev_entry_hash``.
+        RuntimeError
+            If the log has been closed.
         """
         # V69-11 FIX: Lock entire append for hash chain integrity
         with self._lock:
+            self._check_closed()
+
             # --- Fix hash-chain link ---
             last_hash = self._last_entry_hash()
             expected_prev = last_hash if last_hash else GENESIS_PREV_HASH
@@ -302,7 +311,18 @@ class AuditLog:
             the chain is intact and ``False`` otherwise.  The second
             element is a list of human-readable error descriptions (empty
             when the chain is valid).
+
+        Raises
+        ------
+        RuntimeError
+            If the log has been closed.
         """
+        with self._lock:
+            self._check_closed()
+            return self._verify_chain_unlocked()
+
+    def _verify_chain_unlocked(self) -> Tuple[bool, List[str]]:
+        """Internal: verify chain (caller must hold self._lock)."""
         errors: List[str] = []
 
         cur = self._conn.execute(
@@ -369,24 +389,39 @@ class AuditLog:
         """Retrieve a single entry by its ``entry_id``.
 
         Returns ``None`` if the entry does not exist.
+
+        Raises
+        ------
+        RuntimeError
+            If the log has been closed.
         """
-        cur = self._conn.execute(
-            "SELECT * FROM audit_entries WHERE entry_id = ?;", (entry_id,)
-        )
-        row = cur.fetchone()
-        if row is None:
-            return None
-        col_names = [desc[0] for desc in cur.description]
-        return self._row_to_entry(dict(zip(col_names, row)))
+        with self._lock:
+            self._check_closed()
+            cur = self._conn.execute(
+                "SELECT * FROM audit_entries WHERE entry_id = ?;", (entry_id,)
+            )
+            row = cur.fetchone()
+            if row is None:
+                return None
+            col_names = [desc[0] for desc in cur.description]
+            return self._row_to_entry(dict(zip(col_names, row)))
 
     def get_analysis(self, analysis_id: str) -> List[AuditEntry]:
-        """Retrieve all entries belonging to an analysis, in insertion order."""
-        cur = self._conn.execute(
-            "SELECT * FROM audit_entries WHERE analysis_id = ? ORDER BY rowid ASC;",
-            (analysis_id,),
-        )
-        col_names = [desc[0] for desc in cur.description]
-        return [self._row_to_entry(dict(zip(col_names, row))) for row in cur.fetchall()]
+        """Retrieve all entries belonging to an analysis, in insertion order.
+
+        Raises
+        ------
+        RuntimeError
+            If the log has been closed.
+        """
+        with self._lock:
+            self._check_closed()
+            cur = self._conn.execute(
+                "SELECT * FROM audit_entries WHERE analysis_id = ? ORDER BY rowid ASC;",
+                (analysis_id,),
+            )
+            col_names = [desc[0] for desc in cur.description]
+            return [self._row_to_entry(dict(zip(col_names, row))) for row in cur.fetchall()]
 
     def export_json(self, analysis_id: str) -> str:
         """Export an analysis audit trail as a signed JSON string.
@@ -395,7 +430,13 @@ class AuditLog:
         ``export_hmac`` field which is the HMAC-SHA256 of the canonical
         JSON of the entries list (only present when an HMAC key is
         configured).
+
+        Raises
+        ------
+        RuntimeError
+            If the log has been closed.
         """
+        # get_analysis already acquires _lock and checks closed
         entries = self.get_analysis(analysis_id)
         entries_payload = [asdict(e) for e in entries]
 
@@ -467,15 +508,31 @@ class AuditLog:
         return True, ""
 
     def count(self) -> int:
-        """Return the total number of entries in the log."""
-        cur = self._conn.execute("SELECT COUNT(*) FROM audit_entries;")
-        return cur.fetchone()[0]
+        """Return the total number of entries in the log.
+
+        Raises
+        ------
+        RuntimeError
+            If the log has been closed.
+        """
+        with self._lock:
+            self._check_closed()
+            cur = self._conn.execute("SELECT COUNT(*) FROM audit_entries;")
+            return cur.fetchone()[0]
 
     def close(self) -> None:
-        """Close the database connection."""
-        if self._conn is not None:
-            self._conn.close()
-            self._conn = None  # type: ignore[assignment]
+        """Close the database connection.
+
+        V96 FIX: close() now acquires ``_lock`` to prevent a race where
+        one thread closes the DB while another is mid-query.  All public
+        methods check ``_conn is None`` via ``_check_closed()`` under the
+        lock, so a closed log raises ``RuntimeError`` instead of the
+        cryptic ``AttributeError: 'NoneType' has no attribute 'execute'``.
+        """
+        with self._lock:
+            if self._conn is not None:
+                self._conn.close()
+                self._conn = None  # type: ignore[assignment]
 
     # -- Internal helpers --------------------------------------------------
 

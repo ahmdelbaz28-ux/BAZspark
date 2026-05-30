@@ -328,15 +328,14 @@ def get_detector_spacing(
     Returns:
         SpacingResult with max spacing, coverage radius, and NFPA reference.
     """
-    # Input validation — safety first
+    # V96 FIX: Invalid ceiling height must raise ValueError, not return
+    # a valid-looking SpacingResult. The old code returned max_spacing_m=3.00
+    # (a real NFPA table value) with table_row_used="fallback_conservative",
+    # but no downstream code checks that field. A NaN/negative ceiling height
+    # means the input is broken — fail loudly per Rule 5 (hard failure).
     if not math.isfinite(ceiling_height_m) or ceiling_height_m <= 0:
-        # Default to most conservative spacing for invalid input
-        return SpacingResult(
-            max_spacing_m=3.00,
-            coverage_radius_m=0.7 * 3.00,
-            nfpa_section="NFPA 72 §17.6.3.1",
-            formula="Conservative default (invalid ceiling height input)",
-            table_row_used="fallback_conservative",
+        raise ValueError(
+            f"ceiling_height_m must be positive finite, got {ceiling_height_m}"
         )
 
     det_type = detector_type.lower()
@@ -386,14 +385,18 @@ def estimate_detector_count(
     spacing_result = get_detector_spacing(ceiling_height_m, detector_type)
     radius_m = spacing_result.coverage_radius_m
 
-    # SAFETY FIX (CRITICAL-9): Reject infinite/NaN room areas explicitly
-    # instead of letting math.ceil(float('inf')) raise OverflowError.
+    # V96 FIX: Invalid room area must NOT return a success-like result.
+    # Returning min_detector_count=1 for NaN/negative area is the
+    # "failure returns success" anti-pattern — downstream code sees
+    # count >= 1 and treats the room as covered. Fail-safe: return
+    # count=0 with an explicit error field so callers can detect failure.
     if not math.isfinite(room_area_m2) or room_area_m2 <= 0:
         return {
-            "min_detector_count": 1,
-            "area_per_detector_m2": 0.0,
+            "min_detector_count": 0,
+            "area_per_detector_m2": float('nan'),
             "spacing_m": spacing_result.max_spacing_m,
             "coverage_radius_m": radius_m,
+            "error": f"Invalid room_area_m2: {room_area_m2}",
         }
 
     coverage_area_per_detector = math.pi * radius_m ** 2
