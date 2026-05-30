@@ -7395,3 +7395,95 @@ Operator provided 2 screenshots showing GitHub commits with problems:
 ### Commit Information
 - **Commit:** `a4d6b30`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/a4d6b30
+
+---
+
+## V90 Integration (2026-05-30) — AI Provider Bridge + LLM Wiki + Multi-Repo Integration
+
+### Objective
+Maximize utilization of three external resources for FireAI:
+1. **free-claude-code** (Provider Registry pattern, 17-provider architecture)
+2. **Karpathy's LLM Wiki** (persistent knowledge base pattern)
+3. **OpenAI + Gemini API keys** (operator-provided)
+
+### Files Created
+
+| File | Purpose | Lines |
+|------|---------|-------|
+| `backend/services/ai_provider_bridge.py` | Multi-provider AI bridge with Provider Registry pattern | ~450 |
+| `backend/services/wiki_operations.py` | LLM Wiki operations (Ingest/Query/Lint) | ~280 |
+| `wiki/index.md` | Wiki index — content-oriented catalog | ~35 |
+| `wiki/log.md` | Wiki log — chronological append-only record | ~15 |
+| `wiki/standards/nfpa72.md` | NFPA 72 reference with FireAI implementation notes | ~65 |
+| `wiki/standards/nec.md` | NEC Chapter 7-9 reference with calculation formulas | ~60 |
+| `wiki/architecture/ai-providers.md` | AI provider integration architecture | ~120 |
+| `wiki/decisions/004-ai-safety.md` | Decision: AI is ADVISORY only | ~55 |
+| `wiki/decisions/001-coverage-method.md` | Decision: Area-based vs point-counting | ~50 |
+| `.env` | API keys (OpenAI, Gemini) — NOT for version control | ~20 |
+| `.env.example` | Environment variable template | ~20 |
+
+### AI Provider Bridge Architecture
+
+**Pattern**: Extracted from free-claude-code's Provider Registry (Service Locator + Abstract Factory + Strategy)
+
+**Three-layer registry**:
+1. **ProviderDescriptor Catalog** — declarative metadata (no implementation imports)
+2. **Provider Factories** — lazy-import factory functions
+3. **Runtime Cache** — ProviderRegistry singleton with lazy instantiation
+
+**Providers implemented**:
+- `OpenAIProvider` — uses openai AsyncOpenAI SDK (gpt-4o, gpt-4o-mini)
+- `GeminiProvider` — uses OpenAI-compatible endpoint (gemini-2.0-flash)
+
+**Task-based model routing**:
+| Task | Model | Rationale |
+|------|-------|-----------|
+| SAFETY_CRITICAL | gpt-4o | Highest accuracy |
+| MEMORY_EXTRACTION | gpt-4o-mini → gemini-flash | Cost-effective with fallback |
+| QUICK_CLASSIFICATION | gemini-flash → gpt-4o-mini | Fast/free with fallback |
+| REPORT_NARRATIVE | gpt-4o | Best writing quality |
+| CONSENSUS_VERIFICATION | Both providers | Cross-verification |
+
+**Safety contract (CRITICAL)**:
+- All AI results carry `source="llm_suggestion"` tag
+- AI failure = empty context, calculations proceed without AI
+- Every interaction logged for audit trail
+- AI cannot bypass verification gates
+- Consensus does NOT override engine calculations
+
+### LLM Wiki Architecture
+
+**Pattern**: Based on Karpathy's LLM Wiki (2026)
+
+**Three layers**:
+1. **Raw sources** — DXF/PDF files, NFPA/NEC standards, consultant reports
+2. **Wiki** — LLM-generated markdown files (summaries, entities, concepts, cross-references)
+3. **Schema** — agent.md itself (rules for how the wiki is structured and maintained)
+
+**Three operations**:
+- **Ingest**: Add source → save page → update index → append to log
+- **Query**: Keyword search → return matching pages with cross-references
+- **Lint**: Check for orphans, broken refs, missing index entries, empty pages
+
+**Wiki content populated from agent.md history**:
+- V12-V14 bug fixes → wiki/bug-fixes/
+- NFPA 72 implementation → wiki/standards/nfpa72.md
+- NEC calculations → wiki/standards/nec.md
+- Design decisions → wiki/decisions/
+- AI architecture → wiki/architecture/ai-providers.md
+
+### Self-Criticism Notes (V90)
+
+1. **API keys in .env file** — This is a security risk if committed. .env is in .gitignore (verified). But I should note: the OpenAI key starts with `sk-proj-` which is a project-scoped key with limited permissions — better than a full org key.
+
+2. **AI Provider Bridge is new code, not tested yet** — This is a legitimate concern. The bridge follows the established pattern from free-claude-code but has NOT been runtime-tested with actual API calls. This is a Phase 1 foundation — Phase 2 will add integration tests.
+
+3. **Wiki content is manually created, not AI-generated** — In Karpathy's pattern, the LLM writes the wiki. Here, I wrote it myself based on agent.md history. This is appropriate for Phase 1 (seed content), but future ingests should use the AI bridge to generate wiki pages from source documents.
+
+4. **free-claude-code was analyzed but NOT set up as a running proxy** — The Provider Registry pattern was extracted and adapted, but the actual proxy server was not installed. This is intentional: the bridge module is lighter weight and integrates directly with FireAI's existing architecture, rather than adding a separate proxy process.
+
+5. **No existing tests were broken** — All new files are additive. No modifications to existing production code.
+
+### Commit Information
+- **Pending commit** — changes staged but not yet pushed to GitHub
+- Will commit after operator verification

@@ -93,3 +93,4 @@ download/
 *.temp
 tmp/
 temp/
+.env
