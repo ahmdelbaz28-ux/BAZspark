@@ -341,16 +341,21 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                 return None
 
     except Exception as exc:
-        # V67 SAFETY FIX: Element placement extraction failure must be logged.
-        # Setting coordinates to (0,0,0) is UNSAFE — elements at origin are
-        # invisible to the occupancy grid, allowing cables through walls.
-        log.warning(
-            "V67: Element placement extraction failed for %s — "
-            "coordinates defaulting to (0,0,0). This element will be "
-            "invisible to the cable router. Error: %s",
+        # V93 FIX: Element placement extraction failure MUST return None.
+        # V67 logged the warning but still defaulted to (0,0,0), making
+        # elements invisible to the cable router — cables routed through
+        # walls/partitions that failed geometry extraction. Per Rule 17:
+        # a half-solution (logging without blocking) is worse than no
+        # solution because it creates a false sense of security.
+        log.critical(
+            "V93 SAFETY: Element placement extraction failed for %s — "
+            "DROPPING element (returning None). Elements with unknown "
+            "position are MORE DANGEROUS than missing elements, because "
+            "they appear in the model at (0,0,0) but are invisible "
+            "to the cable router. Error: %s",
             getattr(element, 'GlobalId', '?'), exc
         )
-        cx, cy, cz = 0.0, 0.0, 0.0
+        return None
 
     # Try to get representation geometry for bounding box
     min_x = cx
@@ -411,16 +416,20 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                             max_y = min_y
                             max_z = min_z + depth
     except Exception as exc:
-        # V67 SAFETY FIX: Geometry extraction failure must be logged.
-        # When geometry extraction fails, the bounding box collapses to a point,
-        # making walls/partitions invisible to the occupancy grid.
-        log.warning(
-            "V67: Representation geometry extraction failed for %s — "
-            "bounding box will collapse to a point. This element will be "
-            "invisible to the cable router. Error: %s",
+        # V93 FIX: Geometry extraction failure MUST return None.
+        # V67 logged but continued, creating a zero-volume BoundingBox3D
+        # that was invisible to the occupancy grid. A zero-volume box at
+        # (0,0,0) is WORSE than missing the element entirely, because:
+        # 1. It appears in the elements list (false sense of coverage)
+        # 2. It occupies no grid cells (cable router ignores it)
+        # 3. It skews grid_origin calculation toward (0,0,0)
+        log.critical(
+            "V93 SAFETY: Representation geometry extraction failed for %s — "
+            "DROPPING element (returning None). A zero-volume bounding box "
+            "is more dangerous than a missing element. Error: %s",
             element_id, exc
         )
-        pass
+        return None
 
     # Ensure min < max
     if min_x > max_x:
@@ -429,6 +438,23 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
         min_y, max_y = max_y, min_y
     if min_z > max_z:
         min_z, max_z = max_z, min_z
+
+    # V93 SAFETY: Zero-volume bounding boxes are dangerous — they appear
+    # in the elements list but are invisible to the occupancy grid.
+    # A wall at (5,5,0)-(5,5,3) has zero width and occupies no cells.
+    # For BLOCKING types (walls, slabs, beams), this is CRITICAL —
+    # cables will route through an invisible wall.
+    volume = (max_x - min_x) * (max_y - min_y) * (max_z - min_z)
+    if volume == 0.0 and element_type in _BLOCKING_TYPES:
+        log.critical(
+            "V93 SAFETY: Zero-volume BoundingBox3D for BLOCKING element %s "
+            "(type=%s, bbox=(%s,%s,%s)-(%s,%s,%s)). This element will be "
+            "DROPPED — a zero-volume blocking element is invisible to the "
+            "cable router, creating a false sense of safety.",
+            element_id, element_type.value,
+            min_x, min_y, min_z, max_x, max_y, max_z,
+        )
+        return None
 
     # Extract fire rating
     is_rated, rating_hours = _extract_fire_rating(element)
@@ -536,6 +562,7 @@ def _extract_building_model(ifc_model) -> BuildingModel:
     """
     elements = []
     spaces = []
+    dropped_count = 0  # V93: Track dropped elements for safety audit
 
     # Get building name
     building_name = ""
@@ -569,6 +596,9 @@ def _extract_building_model(ifc_model) -> BuildingModel:
                             floor_elevation=bbox.min_z,
                             ceiling_elevation=bbox.max_z,
                         ))
+                else:
+                    # V93: Count dropped elements for safety audit
+                    dropped_count += 1
         except Exception as exc:
             # V67 SAFETY FIX: If extraction of one element type fails,
             # log it but continue with other types. However, missing
@@ -580,6 +610,19 @@ def _extract_building_model(ifc_model) -> BuildingModel:
                 ifc_type, exc, exc_info=True
             )
             continue
+
+    # V93 SAFETY: Warn if elements were dropped due to failed extraction.
+    # Dropped walls/partitions mean the cable router won't see them,
+    # potentially routing cables through fire-rated barriers.
+    if dropped_count > 0:
+        log.warning(
+            "V93 SAFETY: %d IFC elements were DROPPED due to geometry "
+            "extraction failures. These elements will NOT appear in the "
+            "occupancy grid. If any are fire-rated walls/partitions, "
+            "cables may be incorrectly routed through them. Manual "
+            "verification of the cable routing result is REQUIRED.",
+            dropped_count
+        )
 
     # Build occupancy grid
     grid_origin, grid_size, grid_data = _build_occupancy_grid(

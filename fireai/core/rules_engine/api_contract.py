@@ -141,13 +141,39 @@ class ContractValidator:
         """Validate a response against its contract.
 
         Returns the validated data. Raises on STRICT violations.
-        Logs on LOG violations. Skips on DISABLED.
-        """
-        if self.severity == ContractSeverity.DISABLED:
-            return data
+        Logs on LOG violations. Skips on DISABLED — EXCEPT for
+        safety-critical contracts which are ALWAYS enforced.
 
+        V93 FIX (V67-5): Safety-critical contracts bypass severity mode.
+        In a life-critical fire alarm system, a DISABLED or LOG mode
+        should NOT allow malformed safety data through. If a contract
+        is marked safety_critical=True, violations ALWAYS raise, even
+        in LOG or DISABLED mode. Non-critical contracts respect the
+        configured severity. This follows agent.md Priority 1 (Safety)
+        and Rule 12 (safety-first thinking).
+        """
         key = f"{method}:{endpoint}"
         contract = self._contracts.get(key)
+
+        # V93 FIX (V67-5): DISABLED mode short-circuits ONLY for
+        # non-registered, non-critical endpoints. If the contract
+        # exists and is safety_critical, we MUST validate regardless.
+        if self.severity == ContractSeverity.DISABLED:
+            if contract is None:
+                # No contract registered, DISABLED mode → skip entirely
+                return data
+            # Contract exists — check if safety-critical before skipping
+            if not contract.get("safety_critical", False):
+                # Non-critical contract, DISABLED mode → skip validation
+                logger.debug(f"Contract validation DISABLED for {key}")
+                return data
+            # Safety-critical contract — FALL THROUGH to validation
+            # even in DISABLED mode. Log a warning that we're overriding.
+            logger.warning(
+                f"V93: Severity is DISABLED but contract for {key} is "
+                f"safety_critical=True — OVERRIDING to enforce validation. "
+                f"Safety-critical data must NEVER pass unvalidated."
+            )
 
         if contract is None:
             # SAFETY FIX (MEDIUM-19): In STRICT mode, unregistered contracts
@@ -193,6 +219,10 @@ class ContractValidator:
                     f"In a fire alarm system, malformed data could cause "
                     f"incorrect engineering decisions."
                 )
+                # V93 FIX (V67-5): Safety-critical violations ALWAYS raise,
+                # regardless of severity mode. In a life-safety system,
+                # returning unvalidated safety data is worse than failing.
+                raise
 
             if self.severity == ContractSeverity.STRICT:
                 raise
