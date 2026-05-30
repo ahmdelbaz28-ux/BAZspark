@@ -605,7 +605,7 @@ class CableRouter:
         # penalty-inflated). The penalty-inflated length is for A* cost
         # comparison only — it does not represent real conductor.
         return CableRoute(
-            route_id=route_id or f"ROUTE-{hashlib.sha256(str(start).encode()).hexdigest()[:8]}",
+            route_id=route_id or f"ROUTE-{hashlib.sha256(str(start).encode()).hexdigest()[:32]}",
             start=start,
             end=end,
             waypoints=tuple(waypoints),

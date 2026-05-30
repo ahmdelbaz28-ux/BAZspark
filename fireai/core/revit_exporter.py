@@ -316,7 +316,7 @@ class RevitExporter:
 
                 # Generate unique ID
                 seg_id = f"{route.route_id}-S{i:03d}"
-                seg_hash = hashlib.sha256(seg_id.encode()).hexdigest()[:22]
+                seg_hash = hashlib.sha256(seg_id.encode()).hexdigest()[:32]
 
                 # Straight segment → IfcPipeSegment
                 description = (
@@ -340,7 +340,7 @@ class RevitExporter:
                 # If next waypoint is a bend, add IfcPipeFitting
                 if wp_end.is_bend:
                     bend_id = f"{route.route_id}-F{i:03d}"
-                    bend_hash = hashlib.sha256(bend_id.encode()).hexdigest()[:22]
+                    bend_hash = hashlib.sha256(bend_id.encode()).hexdigest()[:32]
 
                     bend_desc = (
                         f"FA Conduit Elbow 90°: {CONDUIT_TYPE}, "
