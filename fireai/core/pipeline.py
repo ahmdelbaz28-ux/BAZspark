@@ -931,13 +931,13 @@ def analyze_room(
                     "num_routes":          len(schedule.routes),
                     "computation_hash":    schedule.computation_hash,
                 }
-                if schedule.compliance_summary != "ALL_PASS":
+                if schedule.compliance_summary != "ALL COMPLIANT":
                     warnings.append(
                         f"Cable routing violations: {schedule.compliance_summary}"
                     )
         except Exception as e:
             warnings.append(f"Cable routing stage failed: {e}")
-            log.warning("Cable routing stage failed: %s", e)
+            logger.warning("Cable routing stage failed: %s", e)
 
     # ── Stage 3.5: Rules Engine Compliance (MOVED after battery/voltage/fault) ─
     # Now runs AFTER nfpa72_engine calculations so that battery,

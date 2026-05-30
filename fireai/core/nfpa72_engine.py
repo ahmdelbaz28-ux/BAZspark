@@ -145,18 +145,21 @@ AMPACITY_TABLE_NEC_310_16 = {
 #
 # Table from NEC 310.15(B)(2)(A):
 AMBIENT_TEMP_CORRECTION_FACTORS = {
-    # (ambient_degC): (75 degC rated, 90 degC rated)
-    21: (1.05, 1.04),
-    25: (1.00, 1.00),
-    30: (1.00, 1.00),   # NEC 310.16 baseline
-    35: (0.94, 0.96),
-    40: (0.88, 0.91),   # Common in Egyptian buildings
-    45: (0.82, 0.87),
-    50: (0.75, 0.82),   # Egyptian summer peak
-    55: (0.67, 0.76),
-    60: (0.58, 0.71),
-    65: (0.47, 0.65),
-    70: (0.33, 0.58),
+    # (ambient_degC): (60 degC rated, 75 degC rated, 90 degC rated)
+    # V62 FIX: Added 60 degC column per NEC 310.15(B)(2)(A).
+    # Previously, 60 degC rated conductors used the 75 degC column,
+    # overestimating ampacity by up to 7.3% — potential fire hazard.
+    21: (1.00, 1.05, 1.04),
+    25: (0.91, 1.00, 1.00),
+    30: (0.82, 1.00, 1.00),   # NEC 310.16 baseline
+    35: (0.76, 0.94, 0.96),
+    40: (0.69, 0.88, 0.91),   # Common in Egyptian buildings
+    45: (0.61, 0.82, 0.87),
+    50: (0.52, 0.75, 0.82),   # Egyptian summer peak
+    55: (0.41, 0.67, 0.76),
+    60: (0.29, 0.58, 0.71),
+    65: (0.15, 0.47, 0.65),
+    70: (0.00, 0.33, 0.58),   # 60C rated not permitted above 60C ambient
 }
 
 
@@ -725,7 +728,9 @@ def get_ambient_derating_factor(
 
     # Look up in the correction table
     # Find the nearest temperature entry at or below the requested temp
-    col_idx = 1 if conductor_temp_rating_c == 90 else 0  # 0=75C, 1=90C
+    # V62 FIX: Added 60 degC column support. Previously, 60 degC rated
+    # conductors incorrectly used the 75 degC column, overstating ampacity.
+    col_idx = {60: 0, 75: 1, 90: 2}[conductor_temp_rating_c]
 
     sorted_temps = sorted(AMBIENT_TEMP_CORRECTION_FACTORS.keys())
 

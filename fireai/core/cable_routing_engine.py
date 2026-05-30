@@ -79,6 +79,19 @@ class WireGauge(enum.Enum):
       - AWG 14: 8.450 Ω/km
       - AWG 16: 13.40 Ω/km
       - AWG 18: 21.40 Ω/km
+
+    Conductor overall diameter (with insulation) from NEC Chapter 9,
+    Table 5 (THHN/THWN-2) and Table 5A (FPL cables):
+      - AWG 12: 3.30 mm (THHN per NEC Table 5)
+      - AWG 14: 2.62 mm (THHN per NEC Table 5)
+      - AWG 16: 2.00 mm (FPL typical, conservative)
+      - AWG 18: 1.70 mm (FPL typical, conservative)
+
+    V62 FIX: Added diameter_mm property. Previously, check_all() in
+    constraint_engine.py tried getattr(wire_gauge, 'diameter_mm', None)
+    which always returned None, causing the conduit fill check to be
+    SILENTLY SKIPPED. Overfilled conduit causes overheating — NEC code
+    violation and fire hazard.
     """
     AWG_12 = "12"   # 5.310 Ω/km — main feeds, long NAC runs
     AWG_14 = "14"   # 8.450 Ω/km — standard NAC/SLC
@@ -95,6 +108,35 @@ class WireGauge(enum.Enum):
         """AWG gauge string (e.g. '12', '14')."""
         return self.value
 
+    @property
+    def diameter_mm(self) -> float:
+        """Conductor overall diameter with insulation in mm.
+
+        NEC Chapter 9, Table 5 (THHN/THWN-2) and Table 5A (FPL).
+        Used for conduit fill calculations per NEC 760.154.
+
+        V62 FIX: Added diameter_mm property. Previously, check_all() in
+        constraint_engine.py tried getattr(wire_gauge, 'diameter_mm', None)
+        which always returned None, causing the conduit fill check to be
+        SILENTLY SKIPPED. Overfilled conduit causes overheating — NEC code
+        violation and fire hazard.
+
+        Returns:
+            Diameter in millimeters (conservative/oversized for safety).
+        """
+        return _AWG_DIAMETER_MM[self.value]
+
+
+# NEC Chapter 9, Table 5 / Table 5A — conductor overall diameter
+# with insulation (mm). Used for conduit fill calculations.
+# Values are conservative (slightly oversized) for safety.
+# V62: Added to fix Bug 22 — conduit fill check was silently skipped.
+_AWG_DIAMETER_MM = {
+    "12": 3.30,   # THHN per NEC Ch.9 Table 5 (0.130")
+    "14": 2.62,   # THHN per NEC Ch.9 Table 5 (0.103")
+    "16": 2.00,   # FPL typical (conservative)
+    "18": 1.70,   # FPL typical (conservative)
+}
 
 # Ordered list of wire gauges from smallest (highest resistance) to largest
 # Used for automatic gauge selection — try smallest first, pick the minimum

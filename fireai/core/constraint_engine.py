@@ -823,6 +823,7 @@ class ConstraintEngine:
         outgoing_path: Optional[List[Tuple[float, float, float]]] = None,
         return_path: Optional[List[Tuple[float, float, float]]] = None,
         ambient_temp_c: float = 30.0,
+        conductor_operating_temp_c: Optional[float] = None,
         num_current_carrying: int = 2,
         conductor_temp_rating_c: float = 90,
     ) -> RoutingConstraintSet:
@@ -834,6 +835,24 @@ class ConstraintEngine:
         V59: Added ampacity, ambient derating, and conductor count
         derating checks. These are CRITICAL for Egypt where ambient
         temperatures reach 40-50 degC.
+
+        V62 FIX: Split temperature parameters into two physically
+        distinct quantities:
+          - ambient_temp_c: Ambient AIR temperature (for ampacity
+            derating per NEC 310.15(B)(2)(A)). Default 30 degC.
+            CRITICAL FOR EGYPT: Use 40-50 degC for summer conditions.
+          - conductor_operating_temp_c: Conductor OPERATING temperature
+            (for resistance correction per NEC Ch.9 Table 8 + physics).
+            Default None (uses ambient_temp_c for backward compatibility).
+            CRITICAL FOR EGYPT: Use 75.0 for THHN/THWN operating temp.
+
+        Previously, the same value was used for BOTH voltage drop
+        resistance correction AND ampacity derating. This is physically
+        wrong: voltage drop needs conductor operating temp (typically
+        75 degC for THHN), while ampacity needs ambient air temp
+        (typically 30-50 degC in Egypt). Using 75 degC as ambient air
+        would overstate derating; using 30 degC as conductor temp would
+        underestimate voltage drop by 21.6%. Either error is dangerous.
 
         Args:
             cable_length_m: Total cable length in meters.
@@ -848,8 +867,14 @@ class ConstraintEngine:
             is_class_a: Whether this is a Class A circuit.
             outgoing_path: Outgoing path points (for Class A check).
             return_path: Return path points (for Class A check).
-            ambient_temp_c: Ambient air temperature in degC (default 30 degC).
+            ambient_temp_c: Ambient AIR temperature in degC (default 30 degC).
+                Used for ampacity derating per NEC 310.15(B)(2)(A).
                 CRITICAL FOR EGYPT: Use 40-50 degC for summer conditions.
+            conductor_operating_temp_c: Conductor OPERATING temperature in
+                degC for resistance correction. Default None (falls back to
+                ambient_temp_c for backward compatibility).
+                CRITICAL FOR EGYPT: Use 75.0 for THHN/THWN operating temp.
+                At 75 degC, resistance is 21.6% higher than at 20 degC.
             num_current_carrying: Number of current-carrying conductors in
                 conduit (default 2 for single FA circuit).
             conductor_temp_rating_c: Conductor insulation rating (60, 75, 90).
@@ -864,10 +889,15 @@ class ConstraintEngine:
         results.append(self.check_nac_max_length(cable_length_m, wire_gauge, circuit_type))
 
         # 2. Voltage drop
+        # V62 FIX: Use conductor_operating_temp_c for resistance correction,
+        # NOT ambient_temp_c. These are physically different quantities.
+        # Voltage drop depends on conductor operating temperature (75C for
+        # THHN), while ampacity depends on ambient air temperature (30-50C).
+        vdrop_temp = conductor_operating_temp_c if conductor_operating_temp_c is not None else ambient_temp_c
         if alarm_current_a > 0 and cable_length_m > 0:
             results.append(self.check_voltage_drop(
                 alarm_current_a, cable_length_m, wire_gauge, ps_voltage,
-                ambient_temp_c=ambient_temp_c,
+                ambient_temp_c=vdrop_temp,
             ))
 
         # 3. Electrical separation
@@ -887,6 +917,9 @@ class ConstraintEngine:
             results.append(self.check_class_a_separation(outgoing_path, return_path))
 
         # 8. Wire Ampacity (NEC 310.16) — V59 addition
+        # V62 FIX: Use ambient_temp_c (air temp) for ampacity derating,
+        # NOT conductor_operating_temp_c. Ampacity derating per NEC
+        # 310.15(B)(2)(A) uses AMBIENT AIR temperature.
         if alarm_current_a > 0:
             results.append(self.check_ampacity_compliance(
                 alarm_current_a, wire_gauge,

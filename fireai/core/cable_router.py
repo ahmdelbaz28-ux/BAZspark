@@ -402,6 +402,7 @@ class CableRouter:
         route_id: str = "",
         verify_constraints: bool = True,
         ambient_temp_c: float = 20.0,
+        conductor_operating_temp_c: Optional[float] = None,
         num_current_carrying: int = 2,
         conductor_temp_rating_c: float = 90,
     ) -> CableRoute:
@@ -413,6 +414,16 @@ class CableRouter:
         3. Obstacle avoidance (BLOCKED cells are impassable)
         4. Constraint verification (every route is checked)
 
+        V62 FIX: Split ambient_temp_c into two parameters:
+          - ambient_temp_c: Ambient AIR temperature for ampacity derating
+          - conductor_operating_temp_c: Conductor operating temp for
+            resistance correction in voltage drop calculation
+
+        These are physically different quantities. Using the same value
+        for both (the old behavior) could either underestimate voltage
+        drop by 21.6% (dangerous) or overstate ampacity derating
+        (rejecting valid designs).
+
         Args:
             start: Starting point (x, y, z) in meters.
             end: Ending point (x, y, z) in meters.
@@ -421,8 +432,12 @@ class CableRouter:
             alarm_current_a: Alarm current for voltage drop.
             route_id: Optional route identifier.
             verify_constraints: Whether to verify constraints (default True).
-            ambient_temp_c: Conductor operating temperature in degC.
-                Default 20 degC (backward compatible, NEC Table 8 reference).
+            ambient_temp_c: Ambient AIR temperature in degC for ampacity
+                derating. Default 20 degC (backward compatible).
+                CRITICAL FOR EGYPT: Use 40-50 degC for summer conditions.
+            conductor_operating_temp_c: Conductor OPERATING temperature in
+                degC for resistance correction in voltage drop. Default None
+                (falls back to ambient_temp_c for backward compatibility).
                 CRITICAL FOR EGYPT: Use 75.0 for THHN/THWN operating temp.
                 At 75 degC, resistance is 21.6% higher than at 20 degC.
             num_current_carrying: Number of current-carrying conductors in
@@ -447,6 +462,26 @@ class CableRouter:
                         field=f"{label}[{i}]",
                         value=coord,
                     )
+
+        # V62 FIX: Validate ps_voltage and alarm_current_a for NaN/Inf.
+        # Previously, NaN ps_voltage would silently produce 0% voltage drop
+        # (is_compliant=True), allowing non-compliant circuits to be approved.
+        # Negative ps_voltage would also silently report 0% drop.
+        for label, value in [("ps_voltage", ps_voltage), ("alarm_current_a", alarm_current_a)]:
+            if not isinstance(value, (int, float)) or not math.isfinite(value):
+                raise ContractViolation(
+                    f"{label} = {value!r} is not finite — "
+                    f"QOMN-FIRE Layer 0 rejects NaN/Inf inputs.",
+                    field=label,
+                    value=value,
+                )
+        if ps_voltage < 0:
+            raise ContractViolation(
+                f"ps_voltage = {ps_voltage!r} is negative — "
+                f"QOMN-FIRE Layer 0 rejects negative voltage.",
+                field="ps_voltage",
+                value=ps_voltage,
+            )
 
         # ── Convert to Grid Coordinates ──────────────────────────────────
         start_grid = world_to_grid(self._model, *start)
@@ -507,16 +542,17 @@ class CableRouter:
         )
 
         # ── Voltage Drop ─────────────────────────────────────────────────
-        # V60 FIX: Use temperature-corrected resistance per NEC practice.
-        # Previous code used R at 20 degC only, which UNDERESTIMATES voltage
-        # drop by 21.6% at 75 degC operating temp — DANGEROUS for Egypt.
         # V61 FIX: Use physical_length (not penalty-inflated) for voltage
         # drop. Voltage drop occurs over real conductor, not fictitious
         # bend-penalty meters. Using total_with_penalties OVERESTIMATES
         # voltage drop and causes unnecessary wire upsizing.
         physical_length = straight_length  # physical length without bend penalties
+        # V62 FIX: Use conductor_operating_temp_c for resistance correction
+        # if provided. Falls back to ambient_temp_c for backward compatibility.
+        # These are physically different quantities — see method docstring.
+        vdrop_temp = conductor_operating_temp_c if conductor_operating_temp_c is not None else ambient_temp_c
         r_at_20c = wire_gauge.resistance_ohm_per_km
-        r_per_km = temperature_corrected_resistance(r_at_20c, ambient_temp_c)
+        r_per_km = temperature_corrected_resistance(r_at_20c, vdrop_temp)
         length_km = physical_length / 1000.0
         v_drop = alarm_current_a * 2.0 * r_per_km * length_km  # ×2 DC return
         v_drop_pct = (v_drop / ps_voltage) * 100.0 if ps_voltage > 0 else 0.0
@@ -533,6 +569,7 @@ class CableRouter:
                 ps_voltage=ps_voltage,
                 alarm_current_a=alarm_current_a,
                 ambient_temp_c=ambient_temp_c,
+                conductor_operating_temp_c=conductor_operating_temp_c,
                 num_current_carrying=num_current_carrying,
                 conductor_temp_rating_c=conductor_temp_rating_c,
             )
