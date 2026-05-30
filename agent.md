@@ -7321,3 +7321,77 @@ Real conduits don't go diagonal.
 ### Commit Information
 - **Commit:** `f2698d8`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/f2698d8
+
+---
+
+## V60 Fixes (2026-05-30) — NEC Temperature-Corrected Resistance + Encoding Fix
+
+### Source: Operator screenshots + self-criticism audit per agent.md §21
+
+Operator provided 2 screenshots showing GitHub commits with problems:
+1. `PROJECT_SPEC_BEND = "6 x O"` — Unicode Ø was corrupted to 0 then to O
+2. NEC ambient_temperature_c parameter missing from cable routing pipeline
+
+### Bug 16 — PROJECT_SPEC_BEND Encoding Corruption (HIGH)
+**File:** `fireai/core/constraint_engine.py` — `ConstraintSource` enum line 79
+**Discovery:** Operator screenshot showed `"6 x O"` where it should be diameter symbol.
+**Root Cause:** Unicode `Ø` (U+00D8, diameter) was replaced with `0` (ASCII zero), which was then read as `O` (letter O). The string "6 x 0" is meaningless (zero diameter?) and "6 x O" is also meaningless.
+**Verification:** ✅ CONFIRMED — `"Project Spec: Max bend radius = 6 x O"` in the enum value.
+**Impact:** Constraint source string is corrupted — any code comparing against this enum value gets wrong string. Audit logs show meaningless text.
+**Fix Applied:** Changed to `"6 x D"` (D = Diameter, standard engineering notation).
+  - Enum value: `PROJECT_SPEC_BEND = "Project Spec: Max bend radius = 6 x D"`
+  - Formula: `R_bend = 6 x D = 6 x 19.05mm = 114.3mm`
+**Why "D" instead of "Ø":** ASCII-only for maximum compatibility. "D" is standard engineering notation for diameter. The previous Unicode approach caused encoding corruption.
+
+### Bug 17 — Cable Router Voltage Drop NOT Temperature-Corrected (CRITICAL — Life Safety)
+**File:** `fireai/core/cable_router.py` — `route()` method lines 480-482
+**Discovery:** Self-criticism audit found that `cable_router.py` uses `wire_gauge.resistance_ohm_per_km` directly (at 20°C) while `nfpa72_engine.py` uses `temperature_corrected_resistance()`.
+**Root Cause:** `cable_router.py` was written before V59 added temperature correction to `nfpa72_engine.py`. The router was never updated.
+**Verification:** ✅ CONFIRMED — line 480: `r_per_km = wire_gauge.resistance_ohm_per_km` with no temperature correction.
+**Impact:** At 75°C (Egypt THHN/THWN operating temp), resistance is 21.6% higher than at 20°C. This means:
+  - Voltage drop was UNDERESTIMATED by 21.6%
+  - Example: 1.5A × AWG 14 × 300m:
+    - At 20°C: V_drop = 7.605V (31.69%)
+    - At 75°C: V_drop = 9.249V (38.54%)
+  - Devices at end-of-line may NOT operate during fire in Egyptian summer.
+  - This is a DIRECT LIFE SAFETY FAILURE.
+**Fix Applied:**
+  - Imported `temperature_corrected_resistance` from `nfpa72_engine`
+  - Changed voltage drop calculation to use temperature-corrected resistance
+  - Added `ambient_temp_c`, `num_current_carrying`, `conductor_temp_rating_c` parameters to `route()` and `route_all()`
+  - Pass `ambient_temp_c` to `check_all()` constraint verification
+
+### Bug 18 — Constraint Engine Voltage Drop NOT Temperature-Corrected (CRITICAL)
+**File:** `fireai/core/constraint_engine.py` — `check_voltage_drop()` method
+**Discovery:** Same audit found `check_voltage_drop()` uses `wire_gauge.resistance_ohm_per_km` directly.
+**Root Cause:** Method was written before V59. The constraint engine and cable router had the same gap.
+**Verification:** ✅ CONFIRMED — line 319: `r_per_km = wire_gauge.resistance_ohm_per_km` with no correction.
+**Impact:** Constraint checks report voltage drop at 20°C even when ambient is 75°C. False PASS possible.
+**Fix Applied:**
+  - Added `ambient_temp_c` parameter (default 20.0, backward compatible)
+  - Uses `temperature_corrected_resistance(r_at_20c, ambient_temp_c)` for calculation
+  - Formula now includes temperature: `V_drop = I × 2 × R(T) × L`
+  - `check_all()` now passes `ambient_temp_c` to `check_voltage_drop()`
+
+### Bug 19 — Pipeline NOT Passing ambient_temperature_c (HIGH)
+**File:** `fireai/core/pipeline.py` — `analyze_room()` and voltage drop stage
+**Discovery:** Pipeline calls `calculate_voltage_drop()` without `ambient_temperature_c` parameter.
+**Root Cause:** Pipeline was written before V59 added the parameter. Default 20°C was always used.
+**Verification:** ✅ CONFIRMED — line 842: `calculate_voltage_drop(alarm_current_a, circuit_length_m, awg_gauge)` with no temperature.
+**Impact:** Entire pipeline ignores conductor operating temperature — voltage drop underestimated for Egypt.
+**Fix Applied:**
+  - Added `ambient_temperature_c` parameter to `analyze_room()` (default 20.0)
+  - Passed to `calculate_voltage_drop()` as keyword argument
+  - `analyze_building()` inherits via `**kwargs`
+
+### Self-Criticism Notes (V60)
+
+1. **Bug 17 is the most dangerous fix since V14 DC Return Path** — a 21.6% under-estimate of voltage drop at 75°C means devices at end-of-line may not operate during a fire in Egypt. The fix in V59 (adding temperature correction to nfpa72_engine.py) was NOT propagated to cable_router.py or constraint_engine.py. This is a classic integration gap — fixing one module but not updating its consumers.
+2. **Bug 18 confirms the pattern** — the constraint engine had the SAME gap. Both files that compute voltage drop independently were not updated when nfpa72_engine got temperature correction.
+3. **Bug 19 is the pipeline equivalent** — even the central pipeline didn't pass the temperature parameter through. This means ALL voltage drop calculations in the entire system were at 20°C regardless of what the user specified.
+4. **The Ø → 0 → O corruption** shows why Unicode symbols are dangerous in engineering software. "D" for Diameter is unambiguous and ASCII-safe.
+5. **BACKWARD COMPATIBLE**: All new parameters have defaults that preserve old behavior (ambient_temp_c=20.0).
+
+### Commit Information
+- **Commit:** `a4d6b30`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/a4d6b30
