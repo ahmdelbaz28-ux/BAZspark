@@ -32,10 +32,13 @@ SAFETY CRITICAL:
 from __future__ import annotations
 
 import hashlib
+import logging
 import math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
+
+log = logging.getLogger(__name__)
 
 # ─── Lazy IfcOpenShell import ──────────────────────────────────────────────
 
@@ -285,8 +288,16 @@ def _extract_fire_rating(element) -> Tuple[bool, float]:
                                     is_rated = True
                                 except (ValueError, TypeError):
                                     pass
-    except Exception:
-        pass
+    except Exception as exc:
+        # V67 SAFETY FIX: Fire rating extraction failure must be logged.
+        # Default to (False, 0.0) — but log the failure so engineers can verify.
+        # SAFETY NOTE: In a future version, consider defaulting to (True, 2.0)
+        # for walls/partitions — assume fire-rated until proven otherwise (fail-safe).
+        log.warning(
+            "V67: _extract_fire_rating() failed for element %s — "
+            "defaulting to not-rated (0h). Error: %s",
+            getattr(element, 'GlobalId', '?'), exc
+        )
     return is_rated, rating_hours
 
 
@@ -329,7 +340,16 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
             if not math.isfinite(val):
                 return None
 
-    except Exception:
+    except Exception as exc:
+        # V67 SAFETY FIX: Element placement extraction failure must be logged.
+        # Setting coordinates to (0,0,0) is UNSAFE — elements at origin are
+        # invisible to the occupancy grid, allowing cables through walls.
+        log.warning(
+            "V67: Element placement extraction failed for %s — "
+            "coordinates defaulting to (0,0,0). This element will be "
+            "invisible to the cable router. Error: %s",
+            getattr(element, 'GlobalId', '?'), exc
+        )
         cx, cy, cz = 0.0, 0.0, 0.0
 
     # Try to get representation geometry for bounding box
@@ -390,8 +410,16 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                             max_x = min_x
                             max_y = min_y
                             max_z = min_z + depth
-    except Exception:
-        # Geometry extraction failed — use placement as point
+    except Exception as exc:
+        # V67 SAFETY FIX: Geometry extraction failure must be logged.
+        # When geometry extraction fails, the bounding box collapses to a point,
+        # making walls/partitions invisible to the occupancy grid.
+        log.warning(
+            "V67: Representation geometry extraction failed for %s — "
+            "bounding box will collapse to a point. This element will be "
+            "invisible to the cable router. Error: %s",
+            element_id, exc
+        )
         pass
 
     # Ensure min < max
@@ -515,7 +543,9 @@ def _extract_building_model(ifc_model) -> BuildingModel:
         for building in ifc_model.by_type('IfcBuilding'):
             building_name = building.Name or ""
             break
-    except Exception:
+    except Exception as exc:
+        # V67 SAFETY FIX: Building name extraction failure must be logged.
+        log.warning("V67: Building name extraction failed: %s", exc)
         pass
 
     # Extract elements by type
@@ -539,7 +569,16 @@ def _extract_building_model(ifc_model) -> BuildingModel:
                             floor_elevation=bbox.min_z,
                             ceiling_elevation=bbox.max_z,
                         ))
-        except Exception:
+        except Exception as exc:
+            # V67 SAFETY FIX: If extraction of one element type fails,
+            # log it but continue with other types. However, missing
+            # IfcWall elements are CRITICAL — cable router won't see walls.
+            log.critical(
+                "V67 SAFETY: Extraction of %s elements failed — "
+                "these elements will be INVISIBLE to cable router. "
+                "Error: %s",
+                ifc_type, exc, exc_info=True
+            )
             continue
 
     # Build occupancy grid

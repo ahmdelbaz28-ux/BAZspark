@@ -1183,11 +1183,20 @@ def _stage7_cable_routing(
         }
 
     except Exception as e:
-        logger.warning(f"Stage 7 cable routing failed: {e}", exc_info=True)
+        # V67 SAFETY FIX: Any cable routing failure must set safety_block=True.
+        # The inner handler (building_model=None) correctly sets this flag,
+        # but this outer handler was missing it. Downstream code checking
+        # for safety_block would not see it, potentially allowing the pipeline
+        # to proceed with a failed-but-not-safety-blocked cable routing result.
+        logger.critical(
+            "V67 SAFETY: Stage 7 cable routing failed — marking as safety_block. "
+            "Error: %s", e, exc_info=True
+        )
         return {
             "status": "failed",
             "error": str(e),
             "routes": [],
+            "safety_block": True,
         }
 
 
