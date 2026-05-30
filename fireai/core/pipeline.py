@@ -1115,21 +1115,38 @@ def _stage7_cable_routing(
 
     try:
         # Build model from polygon walls
+        # V67 SAFETY FIX: If building model construction fails, cable routing
+        # MUST NOT proceed — routing without wall awareness allows cables
+        # through walls, elevator shafts, and concrete obstructions.
         building_model = None
         if polygon:
             try:
                 building_model = build_abstract_model(polygon, room_height_m=3.0)
-            except Exception:
+            except Exception as bme:
+                logger.critical(
+                    "V67 SAFETY: build_abstract_model() failed — "
+                    "cable routing CANNOT proceed without wall geometry. "
+                    "Error: %s", bme, exc_info=True
+                )
                 building_model = None
+
+        if building_model is None:
+            logger.critical(
+                "V67 SAFETY: No building model available — cable routing "
+                "would route through walls. Returning FAILED status."
+            )
+            return {
+                "status": "failed",
+                "error": "Building model construction failed — cable routing requires wall geometry for safety. "
+                         "Cannot route cables without obstacle avoidance (would violate NEC 760.24).",
+                "routes": [],
+                "safety_block": True,
+            }
 
         constraint_engine = ConstraintEngine()
         router = CableRouter(
-            building_model=building_model,
-            grid_nx=nx, grid_ny=ny, grid_nz=nz,
-            grid_res_m=grid_res_m,
-            grid_origin=(bbox_x[0], bbox_y[0], room_z_m),
+            model=building_model,
             constraint_engine=constraint_engine,
-            source_voltage_v=24.0,
         )
 
         # Build device list: (device_id, (x, y, z))
