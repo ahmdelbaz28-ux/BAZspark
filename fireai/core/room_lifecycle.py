@@ -719,7 +719,7 @@ if __name__ == "__main__":
     lc.transition_to(RoomState.VERIFYING, "Triple consensus start", "system")
     assert lc.state == RoomState.VERIFYING
 
-    lc.transition_to(RoomState.VERIFIED, "3/3 engines PASS", "system", metadata={"n_pass": 3, "n_total": 3})
+    lc.transition_to(RoomState.VERIFIED, "3/3 engines PASS", "system", metadata={"n_pass": 3, "n_total": 3})  # nosec B105 — false positive: '3' is engine count, not password
     assert lc.state == RoomState.VERIFIED
 
     lc.transition_to(RoomState.CERTIFYING, "Generating proof certificate", "system")
@@ -748,7 +748,7 @@ if __name__ == "__main__":
     lc3.transition_to(RoomState.ANALYZING, "Start", "system")
     lc3.transition_to(RoomState.OPTIMIZED, "Done", "system")
     lc3.transition_to(RoomState.VERIFYING, "Verify", "system")
-    lc3.transition_to(RoomState.WARNING, "2/3 engines agree", "system", metadata={"n_pass": 2, "n_total": 3})
+    lc3.transition_to(RoomState.WARNING, "2/3 engines agree", "system", metadata={"n_pass": 2, "n_total": 3})  # nosec B105 — false positive: '2' is engine count, not password
     assert lc3.state == RoomState.WARNING
     assert not lc3.is_failed()
 
