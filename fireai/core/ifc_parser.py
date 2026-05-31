@@ -435,7 +435,8 @@ def _extract_extrusion_direction(item) -> Optional[Tuple[float, float, float]]:
             # DirectionRatios not available
             return None
         return None
-    except Exception:
+    except Exception as exc:
+        log.warning("Failed to extract extrusion direction from IFC element: %s", exc)
         return None
 
 

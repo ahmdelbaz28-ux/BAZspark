@@ -1101,8 +1101,8 @@ class NACBoosterAllocator:
                     ),
                     violations=violations if violations else None,
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.error("Failed to record distributed power routing decision audit: %s", exc)
 
         result_dict: Dict[str, Any] = {
             "decision_type": "distributed_power_routing",
@@ -1339,8 +1339,8 @@ class NACBoosterAllocator:
                     ),
                     violations=violations if violations else None,
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.error("Failed to record voltage drop validation decision audit: %s", exc)
 
         return {
             "decision_type": "voltage_drop_validation",
