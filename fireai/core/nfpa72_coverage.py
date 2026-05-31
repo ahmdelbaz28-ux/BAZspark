@@ -240,7 +240,7 @@ def compute_hvac_safe_zone(
 
     safe_zone = room_polygon
     for hx, hy in hvac_diffuser_positions:
-        exclusion_circle = Point(hx, hy).buffer(exclusion_radius_m)
+        exclusion_circle = Point(hx, hy).buffer(exclusion_radius_m, quad_segs=16)  # V111: Explicit quad_segs for deterministic NFPA compliance
         safe_zone = safe_zone.difference(exclusion_circle)
 
     if safe_zone.is_empty:
@@ -459,7 +459,7 @@ def check_coverage_polygon(
             # SMOKE: Circular coverage (Euclidean)
             for dx, dy in detector_positions:
                 pt = Point(dx, dy)
-                buf = pt.buffer(radius)
+                buf = pt.buffer(radius, quad_segs=16)  # V111: Explicit quad_segs for deterministic NFPA compliance
                 coverage_polys.append(buf)
 
         if coverage_polys:
@@ -739,7 +739,7 @@ def check_l_shaped_coverage(
         else:
             for dx, dy in detector_positions:
                 pt = Point(dx, dy)
-                buf = pt.buffer(radius)
+                buf = pt.buffer(radius, quad_segs=16)  # V111: Explicit quad_segs for deterministic NFPA compliance
                 coverage_polys.append(buf)
 
         if coverage_polys:
@@ -951,7 +951,7 @@ def verify_full_coverage(
         else:
             for dx, dy in detector_positions:
                 pt = Point(dx, dy)
-                buf = pt.buffer(radius)
+                buf = pt.buffer(radius, quad_segs=16)  # V111: Explicit quad_segs for deterministic NFPA compliance
                 coverage_polys.append(buf)
 
         if coverage_polys:
