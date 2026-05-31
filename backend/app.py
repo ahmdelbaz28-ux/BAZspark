@@ -22,8 +22,10 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Dict, List
 
 # ── Load .env file BEFORE any os.getenv() calls ────────────────────────────
 # V68 FIX: Without python-dotenv, .env file is never read. GEMINI_API_KEY
@@ -39,7 +41,7 @@ except ImportError:
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -266,6 +268,12 @@ class PerPathRateLimitMiddleware(BaseHTTPMiddleware):
     take precedence over less specific ones (e.g. /api/environment/weather).
     """
 
+    def __init__(self, app, **kwargs):
+        super().__init__(app, **kwargs)
+        self._clients: Dict[str, List[float]] = {}  # client_ip → [timestamps]
+        import threading
+        self._lock = threading.Lock()
+
     def _find_limit(self, path: str) -> tuple:
         """Find the rate limit for a path using longest-prefix match.
 
@@ -279,6 +287,36 @@ class PerPathRateLimitMiddleware(BaseHTTPMiddleware):
                 best_match = (max_req, window)
                 best_len = len(prefix)
         return best_match if best_match else _DEFAULT_RATE_LIMIT
+
+    def _is_rate_limited(self, client_ip: str, path: str) -> bool:
+        """Check if a client has exceeded the rate limit for a path."""
+        max_req, window_s = self._find_limit(path)
+        now = time.time()
+        with self._lock:
+            if client_ip not in self._clients:
+                self._clients[client_ip] = []
+            # Remove expired timestamps
+            self._clients[client_ip] = [
+                ts for ts in self._clients[client_ip]
+                if now - ts < window_s
+            ]
+            if len(self._clients[client_ip]) >= max_req:
+                return True
+            self._clients[client_ip].append(now)
+            return False
+
+    async def dispatch(self, request: Request, call_next):
+        """Enforce per-path rate limits on every request."""
+        client_ip = request.client.host if request.client else "unknown"
+        # V111 FIX: Actually enforce rate limiting — previous version only
+        # had _find_limit() but no dispatch(), making the middleware dead code.
+        if self._is_rate_limited(client_ip, request.url.path):
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Rate limit exceeded. Please try again later."},
+            )
+        response = await call_next(request)
+        return response
 
 # ── Security headers middleware ────────────────────────────────────────────
 # Ported from the original project's nginx.conf security headers.
