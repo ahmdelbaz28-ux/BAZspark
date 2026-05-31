@@ -67,11 +67,15 @@ class OutputGenerator:
             f"  COMPATIBLE UPGRADE OPTIONS:"
         ]
 
-        for idx, alt in enumerate(rec.alternatives, 1):
-            if alt:
-                table.append(f"    Alternative {idx}: Model {alt}")
-                table.append(f"      - Engineering Pro: Larger headroom margin to absorb expansion.")
-                table.append(f"      - Engineering Con: Higher initial capital expense.")
+        if rec.alternatives:
+            for idx, alt in enumerate(rec.alternatives, 1):
+                if alt:
+                    table.append(f"    Alternative {idx}: Model {alt}")
+                    table.append(f"      - Engineering Pro: Larger headroom margin to absorb expansion.")
+                    table.append(f"      - Engineering Con: Higher initial capital expense.")
+        else:
+            table.append("    No alternative panels available in the database that meet all requirements.")
+            table.append("    Consider specifying a different manufacturer or relaxing constraints.")
 
         table.append("=" * 80)
         return "\n".join(table)
