@@ -199,27 +199,36 @@ derating. 1.20 = 20% margin per industry practice and NFPA 72 §10.6.7."""
 # ============================================================================
 
 # AWG resistance table at 75°C — NEC Chapter 9 Table 8
-# V43 Bug #12: corrected to 75°C values (were ~50°C, ~10% too low)
+# V51 FIX: Corrected to NEC Table 8 DC resistance at 75°C (stranded copper).
+# Old values for AWG 14/12/10 were ~18% too low (20°C values, unsafe).
+# NEC Table 8 at 75°C: AWG 14 stranded = 3.070 Ω/kft = 10.07 Ω/km.
 AWG_RESISTANCE_OHM_PER_M: dict = {
-    18: 0.0255,  # NEC Ch.9 Table 8 at 75°C
-    16: 0.0161,  # NEC Ch.9 Table 8 at 75°C
-    14: 0.00820,  # NEC Ch.9 Table 8 at 75°C
-    12: 0.00525,  # NEC Ch.9 Table 8 at 75°C
-    10: 0.00328,  # NEC Ch.9 Table 8 at 75°C
+    18: 0.02549,  # NEC Ch.9 Table 8 at 75°C, solid — 7.770 Ω/kft
+    16: 0.01604,  # NEC Ch.9 Table 8 at 75°C, solid — 4.890 Ω/kft
+    14: 0.01007,  # NEC Ch.9 Table 8 at 75°C, stranded — 3.070 Ω/kft
+    12: 0.00633,  # NEC Ch.9 Table 8 at 75°C, stranded — 1.930 Ω/kft
+    10: 0.00397,  # NEC Ch.9 Table 8 at 75°C, stranded — 1.210 Ω/kft
 }
-"""DC resistance per meter for solid copper conductors at 75°C per
-NEC Chapter 9, Table 8. V43 Bug #12: AWG 18 was 0.0230 (should be
-0.0255), AWG 16 was 0.0145 (should be 0.0161). Old values were for
-~50°C, not 75°C, causing voltage drop underestimation."""
+"""DC resistance per meter for copper conductors at 75°C per
+NEC Chapter 9, Table 8. V51 FIX: Old values for AWG 14/12/10 were
+from 20°C reference (~18% too low), causing voltage drop underestimation
+in operating conditions. Now uses correct 75°C values per NEC Table 8."""
 
 AWG_AMPACITY_75C: dict = {
-    18: 18,  # NEC Table 310.16
-    16: 22,  # NEC Table 310.16
-    14: 30,  # NEC Table 310.16
-    12: 35,  # NEC Table 310.16
-    10: 45,  # NEC Table 310.16
+    # NEC Table 310.16 — 75°C column, copper, not more than 3 conductors
+    # AWG 18 and 16 are NOT listed in NEC 310.16 75°C column (too small)
+    # Values shown for 18/16 are from 90°C column for reference only
+    18: 14,  # NEC Table 310.16, 90°C column only (NOT rated at 75°C)
+    16: 18,  # NEC Table 310.16, 90°C column only (NOT rated at 75°C)
+    14: 20,  # NEC Table 310.16, 75°C column
+    12: 25,  # NEC Table 310.16, 75°C column
+    10: 35,  # NEC Table 310.16, 75°C column
 }
-"""Ampacity at 75°C for copper conductors per NEC Table 310.16."""
+"""Ampacity at 75°C for copper conductors per NEC Table 310.16.
+V51 FIX: Old values (14=30A, 12=35A, 10=45A) were from the 90°C
+column or another table, NOT the 75°C column. Using 90°C ampacity
+with 75°C rated terminations violates NEC 110.14(C)(1). The 75°C
+column is the correct reference for THHN/THWN fire alarm cables."""
 
 
 # ============================================================================

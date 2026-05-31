@@ -962,16 +962,18 @@ def required_battery_capacity_ah(
 # ============================================================================
 # AWG WIRE GAUGE TABLES — NEC/NFPA 70
 # ============================================================================
-# Resistance values from NEC Chapter 9, Table 8 (solid copper at 75 °C).
-# Used for automatic wire gauge selection based on voltage drop calculations.
+# Resistance values from NEC Chapter 9, Table 8 (copper at 75 °C).
+# V51 FIX: Corrected to NEC Table 8 DC resistance at 75°C (stranded copper).
+# Old values for AWG 14/12/10 were ~18% too low (20°C values, unsafe direction).
+# AWG 18/16 are solid in Table 8; all others are stranded (Class B).
 
 AWG_RESISTANCE_TABLE: Dict[int, Dict[str, float]] = {
     # AWG: {"ohm_per_1000ft": R, "ohm_per_m": R/304.8, "metric_mm2": area, "ampacity_75c": A}
-    18: {"ohm_per_1000ft": 6.40,  "ohm_per_m": 0.02101, "metric_mm2": 0.823, "ampacity_75c": 18},
-    16: {"ohm_per_1000ft": 4.00,  "ohm_per_m": 0.01312, "metric_mm2": 1.31,  "ampacity_75c": 22},
-    14: {"ohm_per_1000ft": 2.50,  "ohm_per_m": 0.00820, "metric_mm2": 2.08,  "ampacity_75c": 30},
-    12: {"ohm_per_1000ft": 1.60,  "ohm_per_m": 0.00525, "metric_mm2": 3.31,  "ampacity_75c": 35},
-    10: {"ohm_per_1000ft": 1.00,  "ohm_per_m": 0.00328, "metric_mm2": 5.26,  "ampacity_75c": 45},
+    18: {"ohm_per_1000ft": 7.770, "ohm_per_m": 0.02549, "metric_mm2": 0.823, "ampacity_75c": 14},
+    16: {"ohm_per_1000ft": 4.890, "ohm_per_m": 0.01604, "metric_mm2": 1.31,  "ampacity_75c": 18},
+    14: {"ohm_per_1000ft": 3.070, "ohm_per_m": 0.01007, "metric_mm2": 2.08,  "ampacity_75c": 20},
+    12: {"ohm_per_1000ft": 1.930, "ohm_per_m": 0.00633, "metric_mm2": 3.31,  "ampacity_75c": 25},
+    10: {"ohm_per_1000ft": 1.210, "ohm_per_m": 0.00397, "metric_mm2": 5.26,  "ampacity_75c": 35},
 }
 
 # Available AWG gauges for auto-selection (smallest to largest)
