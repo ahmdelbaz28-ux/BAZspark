@@ -26,9 +26,15 @@ class ComplianceVerifier:
         if rec.battery_size_ah <= 0.0:
             violations.append("Violation: Back-up battery size cannot be zero or negative.")
 
-        # 3. Voice evacuation validation
-        if req.requires_voice and "FM" not in rec.listings and rec.recommended_model == "FC901":
-            violations.append("Violation: Selected model does not support integrated voice evacuation routing.")
+        # 3. Voice evacuation validation — general check against database
+        if req.requires_voice:
+            from facp_system.panel_database import MASTER_PANEL_DATABASE
+            panel = next((p for p in MASTER_PANEL_DATABASE if p.model == rec.recommended_model), None)
+            if panel and not panel.supports_voice:
+                violations.append(
+                    "Violation: Project requires voice evacuation but selected panel "
+                    f"({rec.recommended_model}) does not support integrated voice evacuation."
+                )
 
         # 4. Local FDNY listing validation
         if req.jurisdiction == "FDNY" and "FDNY" not in rec.listings:
