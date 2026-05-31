@@ -1,15 +1,22 @@
 """
-QOMN-FIRE REVIT CAD SYNC EXPORTER LAYER
+QOMN-FIRE BIM EXCHANGE SCHEMA EXPORTER
 """
 
 import json
 from typing import List
-from qomn_fire.core.types import Device, ConduitRun
+from qomn_fire.core.types import Device, ConduitRun, PanelRecommendation
 
-def export_to_revit_json(devices: List[Device], runs: List[ConduitRun]) -> str:
+def export_to_revit_json(devices: List[Device], runs: List[ConduitRun], facp: PanelRecommendation) -> str:
     schema = {
         "SchemaVersion": "1.0",
-        "Project": "QOMN-FIRE EXPORT ENGINE",
+        "Project": "QOMN-FIRE INTEGRATED EXPORT ENGINE",
+        "SelectedFACP": {
+            "Model": facp.recommended_model,
+            "Manufacturer": facp.manufacturer,
+            "RequiredBatteryAh": facp.battery_size_ah,
+            "PointsUtilization": facp.capacity_utilization,
+            "Signature": facp.signature_hash
+        },
         "Devices": [],
         "ConduitRuns": []
     }

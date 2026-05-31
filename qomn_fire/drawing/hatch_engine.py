@@ -1,5 +1,5 @@
 """
-QOMN-FIRE SEMANTIC COVERAGE GRAPHICS ENGINE
+QOMN-FIRE HATCH AND PATTERN PLACEMENT MODULE
 Reference Standard: NFPA 72 spacing boundary shapes.
 """
 
@@ -26,9 +26,9 @@ def place_boundary_hatch(
 ) -> Result[Any, HatchPlacementError]:
     if spec.scale < 0.001:
         return Result(error=HatchPlacementError(
-            message=f"Hatch scaling factor {spec.scale} is too small (rendering boundaries < 0.001).",
-            code_ref="CAD Drafting standard",
-            remedy="Increase scale metric parameter above 0.01."
+            message=f"Hatch scaling factor {spec.scale} is too small (< 0.001).",
+            code_ref="CAD Drafting Standards",
+            remedy="Increase hatch scale parameter bounds above 0.01."
         ))
 
     msp = doc.modelspace()

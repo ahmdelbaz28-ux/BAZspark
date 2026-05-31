@@ -20,9 +20,9 @@ def place_smoke_detectors_room(
 
     if dx <= 0.0 or dy <= 0.0:
         return Result(error=PhysicalConstraintError(
-            message="Invalid boundary coordinates: coordinates must form positive volumes.",
-            code_ref="NFPA 72 S17.7.3",
-            remedy="Verify coordinate boundary points inside model."
+            message="Room dimensions must form positive volumes.",
+            code_ref="NFPA 72 §17.7.3",
+            remedy="Re-evaluate coordinate boundary bounding box input parameters."
         ))
 
     devices = []

@@ -1,1 +1,1 @@
-# Auto-generated package root
+# Integrated packages entry

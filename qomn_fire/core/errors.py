@@ -1,5 +1,5 @@
 """
-QOMN-FIRE DETERMINISTIC ERROR FRAMEWORK
+QOMN-FIRE UNIFIED ERROR FRAMEWORK
 """
 
 from typing import Generic, TypeVar, Optional, Union
@@ -39,14 +39,8 @@ class BaseEngineeringError:
     def __repr__(self) -> str:
         return f"[{self.code_ref}] Error: {self.message} (Remedy: {self.remedy})"
 
-class ConduitFillError(BaseEngineeringError):
-    pass
-
-class NECViolationError(BaseEngineeringError):
-    pass
-
-class HatchPlacementError(BaseEngineeringError):
-    pass
-
-class PhysicalConstraintError(BaseEngineeringError):
-    pass
+class ConduitFillError(BaseEngineeringError): pass
+class NECViolationError(BaseEngineeringError): pass
+class HatchPlacementError(BaseEngineeringError): pass
+class PhysicalConstraintError(BaseEngineeringError): pass
+class FACPSelectionError(BaseEngineeringError): pass

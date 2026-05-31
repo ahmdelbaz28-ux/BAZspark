@@ -1,9 +1,9 @@
 """
-QOMN-FIRE CABLE AND HATCH INTEGRATION CONTROLLER
+QOMN-FIRE INTEGRATION ROUTING AND BOUNDARY PLACEMENTS
 Reference Standard: NEC 760 spatial segregation compliance rules.
 """
 
-from typing import List, Tuple, Dict, Any, Union
+from typing import Tuple, List, Dict, Any, Union
 import ezdxf
 from qomn_fire.core.types import Point3D, ConduitType, ConduitRun, HatchSpec, Device
 from qomn_fire.core.errors import Result, NECViolationError, HatchPlacementError

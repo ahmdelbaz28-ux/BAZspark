@@ -713,9 +713,9 @@
   ],
   "Devices": [
     {
-      "Circuit": "FA-CIRCUIT-1",
+      "Circuit": "FA-LP1-1",
       "ElevationFt": 9.0,
-      "Hash": "d2eb9ed8b7ece21df749643d4142c4883dcb3b6c4e73eee943deeb435d8d0315",
+      "Hash": "db4bbb2c682cec115ac820855b4cc1d7e41891395df947727a002c0f6672d7f5",
       "Id": "SMOKE_ZONE_1_001",
       "Location": {
         "X": 4.572,
@@ -726,9 +726,9 @@
       "Zone": "ZONE_1"
     },
     {
-      "Circuit": "FA-CIRCUIT-2",
+      "Circuit": "FA-LP1-2",
       "ElevationFt": 9.0,
-      "Hash": "68239981ef384c07b0c10e1cf4b8b7382bad83c2f5e1185e59b06aecc2ef50da",
+      "Hash": "18b1e88220f9cb5a2824cb87f7c0f8268ca8665dd3249fe0af997f3f9fcf4709",
       "Id": "SMOKE_ZONE_1_002",
       "Location": {
         "X": 4.572,
@@ -739,9 +739,9 @@
       "Zone": "ZONE_1"
     },
     {
-      "Circuit": "FA-CIRCUIT-3",
+      "Circuit": "FA-LP1-3",
       "ElevationFt": 9.0,
-      "Hash": "e44cd3dfa5411403d8778cf874a1c97f9c9ec6a7c23f815e4e60e552b2b50182",
+      "Hash": "ec7b7dfe4efac9c08db250b748c75a983ada3d0afb08e004c60d812c0c5a1670",
       "Id": "SMOKE_ZONE_1_003",
       "Location": {
         "X": 13.716,
@@ -752,9 +752,9 @@
       "Zone": "ZONE_1"
     },
     {
-      "Circuit": "FA-CIRCUIT-4",
+      "Circuit": "FA-LP1-4",
       "ElevationFt": 9.0,
-      "Hash": "2ce798450eb517d218ca2b5623aa2d6e8fa52a2fe1e4541968291a454efa4a8f",
+      "Hash": "b7c3bf36034bc5f837dd79a473698fbdf7fe8ffb24073dcf826e147e7eb8fea7",
       "Id": "SMOKE_ZONE_1_004",
       "Location": {
         "X": 13.716,
@@ -765,9 +765,9 @@
       "Zone": "ZONE_1"
     },
     {
-      "Circuit": "FA-CIRCUIT-5",
+      "Circuit": "FA-LP1-5",
       "ElevationFt": 9.0,
-      "Hash": "c2fd74988dc894be0938f64a9faf61f099546f93f2267faafa84b666aafcbc83",
+      "Hash": "7655a32e5ba47224a6d30b7f91f3c9a40887905a3b088a8a7984eb63056a6ec2",
       "Id": "SMOKE_ZONE_1_005",
       "Location": {
         "X": 22.86,
@@ -778,9 +778,9 @@
       "Zone": "ZONE_1"
     },
     {
-      "Circuit": "FA-CIRCUIT-6",
+      "Circuit": "FA-LP1-6",
       "ElevationFt": 9.0,
-      "Hash": "e0713f45298de1d142e3bdb7ee49ba4e0e05adaff35494da0801d79778283d9c",
+      "Hash": "4bc174df18f8ea9e33d7c6b25adb3a61766234984e3f5999202e4d363a854f59",
       "Id": "SMOKE_ZONE_1_006",
       "Location": {
         "X": 22.86,
@@ -791,6 +791,13 @@
       "Zone": "ZONE_1"
     }
   ],
-  "Project": "QOMN-FIRE EXPORT ENGINE",
-  "SchemaVersion": "1.0"
+  "Project": "QOMN-FIRE INTEGRATED EXPORT ENGINE",
+  "SchemaVersion": "1.0",
+  "SelectedFACP": {
+    "Manufacturer": "SIEMENS",
+    "Model": "FC901",
+    "PointsUtilization": 0.144,
+    "RequiredBatteryAh": 4.06,
+    "Signature": "3d096a3207d614a37dac51373bf07b4317554f1e44bfa89768a631b95a2c63a1"
+  }
 }

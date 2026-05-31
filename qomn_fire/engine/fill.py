@@ -57,13 +57,10 @@ def calculate_conduit_fill(conduit_size: str, wire_gauge: str, wire_count: int) 
         limit = NEC_FILL_LIMIT_OVER_2_WIRES
 
     if fill_ratio > limit:
-        return Result(
-            value=fill_ratio,
-            error=ConduitFillError(
-                message=f"Conduit fill exceeds permissible NEC threshold limit: {fill_ratio:.2%} > {limit:.2%}",
-                code_ref="NEC Ch.9 Table 1",
-                remedy="Upsize conduit selection or reduce wire run count."
-            )
-        )
+        return Result(error=ConduitFillError(
+            message=f"Conduit fill exceeds permissible NEC threshold limit: {fill_ratio:.2%} > {limit:.2%}",
+            code_ref="NEC Ch.9 Table 1",
+            remedy="Upsize conduit selection or reduce wire run count."
+        ))
 
     return Result(value=fill_ratio)

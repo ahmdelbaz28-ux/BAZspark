@@ -1,5 +1,5 @@
 """
-QOMN-FIRE CORE DATA TYPES
+QOMN-FIRE UNIFIED DATA TYPES
 Conformant with ISO 19650 BIM Standards and QOMN Deterministic Software Design.
 """
 
@@ -15,9 +15,9 @@ class DeviceType(Enum):
     HORN_STROBE = "HORN_STROBE"
 
 class ConduitType(Enum):
-    EMT = "EMT"
-    RMC = "RMC"
-    FMC = "FMC"
+    EMT = "EMT"  # Electrical Metallic Tubing (NEC Art. 358)
+    RMC = "RMC"  # Rigid Metal Conduit (NEC Art. 344)
+    FMC = "FMC"  # Flexible Metal Conduit (NEC Art. 348)
 
 class FittingType(Enum):
     ELBOW_90 = "ELBOW_90"
@@ -51,7 +51,7 @@ class Device:
     zone: str
 
     def compute_hash(self) -> str:
-        serialized = f"{self.id}:{self.device_type.value}:{self.location.x},{self.location.y},{self.location.z}:{self.elevation_ft}:{self.circuit}:{self.zone}"
+        serialized = f"{self.id}:{self.device_type.value}:{self.location.x:.4f},{self.location.y:.4f},{self.location.z:.4f}:{self.elevation_ft}:{self.circuit}:{self.zone}"
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +75,46 @@ class ConduitRun:
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 @dataclass(frozen=True, slots=True)
+class FireAlarmPanel:
+    model: str
+    manufacturer: str
+    points_capacity: int
+    nac_capacity: int
+    supports_networking: bool
+    supports_voice: bool
+    max_slc_loops: int
+    listings: Tuple[str, ...]
+    standby_current_amps: float
+    alarm_current_amps: float
+    power_supply_watts: int
+
+@dataclass(frozen=True, slots=True)
+class ProjectRequirements:
+    device_count: int
+    nac_circuit_count: int
+    building_size_m2: float
+    building_floors: int
+    requires_network: bool
+    requires_voice: bool
+    requires_releasing: bool
+    jurisdiction: str
+    preferred_manufacturer: Optional[str] = None
+
+@dataclass(frozen=True, slots=True)
+class PanelRecommendation:
+    recommended_model: str
+    manufacturer: str
+    capacity_utilization: float
+    nac_utilization: float
+    battery_size_ah: float
+    power_supply_watts: int
+    listings: Tuple[str, ...]
+    code_compliance: Tuple[str, ...]
+    warnings: Tuple[str, ...]
+    alternatives: Tuple[str, ...]
+    signature_hash: str
+
+@dataclass(frozen=True, slots=True)
 class HatchSpec:
     pattern_name: str
     angle: float
@@ -96,12 +136,6 @@ class TitleBlock:
     pe_stamp: str
     client: str
     address: str
-
-@dataclass(frozen=True, slots=True)
-class Legend:
-    pattern_name: str
-    description: str
-    code_reference: str
 
 @dataclass(frozen=True, slots=True)
 class Revision:

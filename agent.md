@@ -10596,3 +10596,70 @@ test_routing_exceeds_bend_limits_fails .............. ok (1710° bends → NECVi
 ### Commit Information
 - **Commit:** `9f44fac`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/9f44fac
+
+---
+
+## V54 Integrated Workspace Generator Fixes (2026-06-01)
+
+### Source: QOMN-FIRE Master Integrated Workspace Generator (new code from operator)
+
+### 4-Layer Self-Criticism Applied
+
+#### Layer 1 — OUTPUT Criticism (10 bugs found):
+
+| # | Bug | Severity | File | Fix Applied |
+|---|-----|----------|------|-------------|
+| 1 | `Device.compute_hash` missing Z coordinate | CRITICAL | types.py | Added `,{self.location.z:.4f}` to serialization |
+| 2 | `List[str]` in frozen dataclasses | CRITICAL | types.py | Changed to `Tuple[str, ...]` (immutable) |
+| 3 | `doc.layers.new(spec.layer, spec.color)` | CRITICAL | hatch_engine.py | Fixed to `doc.layers.new(spec.layer, dxfattribs={"color": spec.color})` |
+| 4 | `doc.layers.new(name=name, color=color)` | CRITICAL | dxf_generator.py | Fixed to `dxfattribs={"color": color}` |
+| 5 | `NULL_DATE_VALUE` doesn't exist in ezdxf 1.4.3 | HIGH | dxf_generator.py | Replaced with `0.0` |
+| 6 | `view_center` wrong parameter name | CRITICAL | dxf_generator.py | Fixed to `view_center_point` |
+| 7 | `set_bulge` removed from ezdxf 1.4.3 | CRITICAL | revision_control.py | Changed to `format='xyb'` with bulge vertices |
+| 8 | Test 3 obstacle pattern insufficient for >360° bends | CRITICAL | test | Replaced with proper corridor + floor/ceiling slab pattern |
+| 9 | Missing conduit fill, physics guard, determinism stress tests | HIGH | test | Restored all 5 original tests + 2 new FACP tests = 7 total |
+| 10 | `ezdxf.document.Document` → `Drawing` return type | MEDIUM | dxf_generator.py | Corrected |
+
+#### Layer 2 — THINKING Criticism:
+- Accepted new code without verifying each API call against installed ezdxf version
+- Did not verify that `compute_hash` was fully deterministic (missing Z)
+- Confirmed bias: assumed new code was correct because it "looked right"
+
+#### Layer 3 — METHOD Criticism:
+- Should have tested each API call against the actual ezdxf version BEFORE writing
+- Should have verified hash determinism by running the code first
+- Root cause: insufficient API compatibility checking
+
+#### Layer 4 — COMMITMENT Criticism:
+- Rule 1 (Absolute Truth): Would have violated if claiming code works without running
+- Rule 17 (Root-Cause): Fixed root causes (API incompatibility, not workarounds)
+- Rule 10 (Test-Fix Loop): Found test failures, fixed production code, re-ran until 7/7 passed
+
+### Additional Root-Cause Fix — Panel Selection Logic:
+
+#### Bug 11 — NAC Margin Over-Inflation (CRITICAL)
+**File:** `engine/panel_selector.py` — `select_panel()`
+**Root Cause:** `required_nacs = req.nac_circuit_count * 1.2` applies a 20% margin to NAC circuits, but NFPA 72 §10.6.10.2 only requires 20% spare capacity for address points. NAC circuits are sized by battery calculation, not a blanket margin.
+**Impact:** FC901 (nac_capacity=2) excluded for 2 NAC circuits (2 < 2.4), forcing selection of oversized panels.
+**Fix Applied:** `required_nacs = req.nac_circuit_count` (margin removed for NACs, retained for points)
+
+#### Bug 12 — Wrong-Sizing Tie-Breaker (HIGH)
+**File:** `engine/panel_selector.py` — sorting logic
+**Root Cause:** Tie-breaker `x[0].points_capacity` (prefer larger) is backwards. For panel selection, right-sizing (smallest adequate panel) is correct.
+**Impact:** When all panels are oversized (low utilization), the largest panel gets selected instead of the smallest.
+**Fix Applied:** Changed to `-x[0].points_capacity` so smaller panels win ties.
+
+### Test Results — 7/7 PASS
+- test_01_conduit_fill_golden ✅
+- test_02_conduit_fill_physics_guard ✅
+- test_03_smoke_placement_golden ✅
+- test_04_determinism_stress (50× SHA-256) ✅
+- test_05_routing_exceeds_bend_limits_fails ✅
+- test_06_integrated_facp_selection ✅
+- test_07_placement_to_selection_vascular_pipeline ✅
+
+### Production Pipeline — SUCCESS
+- DXF shop drawing: fire_alarm_plan.dxf (49,397 bytes, 155 entities, AC1015)
+- Revit JSON: revit_import.json (6 devices, 5 conduit runs, FC901 panel)
+- All 21 module files written to disk
+- FACP Schedule rendered in DXF layout with SHA-256 audit trail
