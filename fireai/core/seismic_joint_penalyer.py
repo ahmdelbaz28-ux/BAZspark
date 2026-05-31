@@ -393,8 +393,8 @@ class SeismicJointPenalyer:
                     ),
                     violations=violations if violations else None,
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.error("Failed to record seismic joint routing decision audit: %s", exc)
 
         return {
             "decision_type": "seismic_joint_routing",

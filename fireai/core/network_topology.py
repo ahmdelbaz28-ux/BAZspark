@@ -454,8 +454,8 @@ class NetworkTopologyAuditor:
                     ),
                     violations=violations if violations else None,
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Failed to record network topology audit decision: %s", exc)
 
         return {
             "decision_type": "network_topology_audit",

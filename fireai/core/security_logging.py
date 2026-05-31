@@ -50,6 +50,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+logger = logging.getLogger(__name__)
+
 # ── loguru integration ─────────────────────────────────────────────────────
 # SECURITY FIX (V103): Replace RotatingFileHandler with loguru for:
 #   1. 500 MB rotation (was 50 MB — too small for production security logs)
@@ -299,8 +301,8 @@ def configure_log_rotation(
                     msg = self.format(record)
                     masked_msg = mask_sensitive(msg)
                     _loguru_logger.opt(depth=0).info(masked_msg)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.error("LoguruBridge.emit failed — security log message dropped: %s", exc)
 
         bridge = _LoguruBridge()
         bridge.setFormatter(logging.Formatter(
@@ -369,8 +371,8 @@ def configure_timed_rotation(
                     msg = self.format(record)
                     masked_msg = mask_sensitive(msg)
                     _loguru_logger.opt(depth=0).info(masked_msg)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.error("LoguruBridgeTimed.emit failed — security log message dropped: %s", exc)
 
         bridge = _LoguruBridgeTimed()
         bridge.setFormatter(logging.Formatter(
