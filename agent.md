@@ -10238,3 +10238,74 @@ QOMN Integration Engine: VERIFIED FUNCTIONAL ✅
 - **Files changed:** 141 files, 12604 insertions, 11491 deletions
 - **GitHub URL:** https://github.com/ahmdelbaz28-ux/revit/commit/5ab7187
 - **Conflict resolved:** AWG resistance table kept V51 NEC-corrected 75°C values (safer direction)
+
+---
+
+## V52 QOMN-FIRE Self-Healing Engine Integration & Bug Fixes (2026-06-01)
+
+### Context
+Operator provided the QOMN-FIRE Self-Healing Runtime Engine code for analysis and
+bug fixing. This is a three-tiered defense engine (Tier 1: Deterministic Rules,
+Tier 2: Local LLM, Tier 3: Circuit Breaker) designed for safety-critical fire
+protection software. All bugs were identified through line-by-line code analysis
+(per Rule 6/14) and verified through test execution.
+
+### Bug 40 — IndexError Tier 1 Blocks Tier 2 for Safety-Critical Functions (CRITICAL — Life Safety)
+**File:** `fireai/core/qomn_self_healing_engine.py` — Tier 1 IndexError handling
+**Discovery:** When `fetch_emergency_audio_sequence(["TONE_A"], 10)` raises IndexError,
+Tier 1's handler returns `args[0][-1]` = "TONE_A" (last list element). This passes the
+physics validator (it's a non-empty string) and returns as Tier 1 HEALED, completely
+bypassing Tier 2 which should return "DEFAULT_EVAC_TONE" (the configured safe default).
+**Impact:** In a fire alarm system, playing the WRONG audio tone (e.g., a test chime
+instead of an evacuation tone) during an emergency is a direct life-safety failure.
+People may not evacuate because the wrong tone was played.
+**Root Cause:** Tier 1 IndexError handling applies `args[0][-1]` universally, regardless
+of whether the function is safety-critical (has a physics_validator). The last-element
+fallback is inappropriate for safety-critical audio sequence lookups.
+**Fix Applied:** When `physics_validator` is provided (indicating a safety-critical
+function), IndexError Tier 1 handling is SKIPPED and the error falls through to Tier 2,
+which uses the configured `default_value` after golden verification. When no
+`physics_validator` is provided (non-safety-critical), Tier 1's last-element fallback
+is preserved.
+**Test Evidence:** `test_tier_2_verification_safety` was FAILING before fix, PASSES after.
+
+### Bug 41 — Missing functools.wraps Causes Loss of Function Identity (MEDIUM)
+**File:** `fireai/core/qomn_self_healing_engine.py` — `self_healing` decorator
+**Discovery:** Decorated functions have `__name__ = "wrapper"` and `__doc__ = None`,
+breaking introspection, debugging, and documentation tools.
+**Fix Applied:** Added `import functools` and `@functools.wraps(func)` to the wrapper.
+**Verification:** `calculate_sprinkler_pressure.__name__` now returns
+"calculate_sprinkler_pressure" (was "wrapper"). `__doc__` now preserves original docstring.
+
+### Bug 42 — AuditLogger.log_event Mutates Caller's Dictionary (LOW)
+**File:** `fireai/core/qomn_self_healing_engine.py` — `AuditLogger.log_event()`
+**Discovery:** The method adds `event_data["timestamp_utc"]` directly to the input
+dictionary, mutating the caller's data as a side effect. This could cause unexpected
+behavior if the caller reuses the dictionary.
+**Fix Applied:** `event_data = dict(event_data)` creates a shallow copy before modification.
+**Verification:** Caller's dictionary keys remain unchanged after `log_event()` call.
+
+### Additional Verification
+- Verified `AssertionError` spelling matches Python's `AssertionError.__name__` ✅
+- Verified `hmac.new()` is correct Python 3 API (not a typo) ✅
+- Verified `hmac.new()` in `qomn_kernel.py` uses the same correct API ✅
+- All 6 self-healing engine tests PASS
+- All 1221 project tests PASS (0 regressions)
+
+### Self-Criticism Notes (V52)
+1. **Bug 40 is the most dangerous** — wrong audio tone during fire alarm could mean
+   people don't evacuate. This is exactly the kind of silent failure that kills.
+2. **The fix is architecturally sound** — a physics_validator explicitly marks a function
+   as safety-critical. Safety-critical functions should NOT use simplistic Tier 1 fallbacks
+   that may return incorrect values. Tier 2's verified default_value is safer.
+3. **Bug 41 was caught during verification** — without `functools.wraps`, `inspect.getsource()`
+   on the decorated function returns the wrapper source, not the original function source.
+   This would confuse the Tier 2 Ollama prompt.
+4. **Bug 42 is minor but prevents subtle bugs** — dictionary mutation side effects can
+   cause cascading issues in audit logging systems.
+
+### Commit Information
+- **Commit:** `73cdd5a`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/73cdd5a
+- **Files added:** `fireai/core/qomn_self_healing_engine.py`, `tests/test_self_healing_engine.py`
+- **Tests:** 1221 passed, 1 skipped, 0 failed
