@@ -10663,3 +10663,68 @@ test_routing_exceeds_bend_limits_fails .............. ok (1710° bends → NECVi
 - Revit JSON: revit_import.json (6 devices, 5 conduit runs, FC901 panel)
 - All 21 module files written to disk
 - FACP Schedule rendered in DXF layout with SHA-256 audit trail
+
+## V60 QOMN-FIRE Input Parsing Pipeline (2026-06-01)
+
+### Context
+Implemented QOMN-FIRE Input Parsing and Validation Master Suite per user specification.
+The pipeline validates BIM files (IFC, DXF, DWG, RVT) before they enter the fire protection
+design engine, preventing corrupted geometry from producing unsafe designs.
+
+### Bugs Found and Fixed in Provided Code (8 total)
+
+| # | Bug | Severity | File | Fix |
+|---|-----|----------|------|-----|
+| BUG-1 | OLE signature `b"\\xd0\\xcf..."` uses escaped strings, not raw bytes | CRITICAL | format_detector.py | Changed to `b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"` — actual binary signature |
+| BUG-2 | DXF regex `r"\\$ACADVER\\s*\\n"` double-escaped | HIGH | format_detector.py | Fixed to `r"\$ACADVER\s*\n\s*9\s*\n\s*(AC\d+)"` |
+| BUG-3 | STEP regex `r"#(\\d+)\\s*=\\s*..."` double-escaped | CRITICAL | ifc_parser.py | Fixed to `r"#(\d+)\s*=\s*([A-Z0-9_]+)\s*\(([^)]*)\)\s*;"` |
+| BUG-4 | `area_m2=100.0` hardcoded in DXF parser | CRITICAL | dxf_parser.py | Now calculated from boundary vertices using Shoelace formula |
+| BUG-5 | Overlap check only detects identical bounding boxes | HIGH | geometry_validator.py | Now checks ALL AABB overlaps with percentage-based severity |
+| BUG-6 | File validator opens binary files with "r" (text) mode | MEDIUM | file_validator.py | Changed to "rb" mode for binary reads |
+| BUG-7 | Mock test files use `\\n` instead of actual newlines `\n` | HIGH | test_qomn_parsers.py | Fixed all mock files to use actual newlines |
+| BUG-8 | Building.compute_hash() only hashes room COUNT, not IDs | HIGH | core/types.py | Now includes room IDs and wall IDs for deterministic differentiation |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `qomn_fire/parsers/__init__.py` | Package entry point with all parser imports |
+| `qomn_fire/parsers/format_detector.py` | IFC/DXF/DWG/RVT format detection via magic bytes |
+| `qomn_fire/parsers/file_validator.py` | File integrity, size limits, SHA-256 hash, corruption detection |
+| `qomn_fire/parsers/dwg_converter.py` | DWG→DXF conversion via LibreDWG CLI |
+| `qomn_fire/parsers/rvt_converter.py` | RVT→IFC conversion via Revit CLI |
+| `qomn_fire/parsers/ifc_parser.py` | STEP/IFC regex parser for walls, rooms, openings |
+| `qomn_fire/parsers/dxf_parser.py` | DXF parser via ezdxf with text-based fallback |
+| `qomn_fire/parsers/geometry_validator.py` | Room area, boundary, overlap, and unit validation |
+| `tests/test_qomn_parsers.py` | 30 tests: format detection, validation, parsing, geometry |
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `qomn_fire/core/types.py` | Added Wall, Opening, Room, Building dataclasses |
+| `qomn_fire/core/errors.py` | Added FileValidationError, FormatError, VersionError, CorruptionError, ConversionError, GeometryError, UnitError |
+
+### Test Results
+- **QOMN Parser Tests:** 30/30 PASSED
+- **Existing Tests:** 1275 PASSED (7 pre-existing failures unrelated to this change)
+- **Total:** 1305 tests passing
+
+### Safety Analysis
+
+Each bug fix prevents a specific physical failure mode:
+- **BUG-1** (OLE bytes): RVT files never detected = Revit models never parsed = no fire protection
+- **BUG-3** (STEP regex): IFC entities never parsed = rooms never found = no detector placement
+- **BUG-4** (hardcoded area): Room area wrong = NFPA coverage wrong = too few/too many detectors
+- **BUG-5** (overlap check): Duplicate rooms not detected = double-counted detectors = false compliance
+- **BUG-8** (hash): Two different buildings produce same hash = audit trail broken = liability gap
+
+### Self-Criticism Notes (V60)
+
+1. **8 bugs in provided code validates Rule 6 and Rule 14** — blindly accepting the provided code would have deployed broken parsers. The OLE signature bug (BUG-1) would have made RVT detection impossible forever. The STEP regex bug (BUG-3) would have made IFC parsing return zero rooms.
+2. **BUG-4 (hardcoded area) is the most dangerous** — a 5m2 room claiming to be 100m2 gets detectors spaced for 100m2, leaving most of the actual room uncovered. This is a direct life-safety failure.
+3. **BUG-5 was a design oversight** — the original code checked for identical rooms but missed partial overlaps. Two rooms sharing 80% of their area would pass validation, causing double-counted NFPA coverage.
+4. **BUG-8 was discovered during testing** — the test_different_buildings_different_hash test caught that compute_hash() was not differentiating buildings with different rooms. This validates the "test to expose defects" policy.
+
+### Commit Information
+- **Commit:** (pending push)

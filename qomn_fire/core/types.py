@@ -1,6 +1,7 @@
 """
 QOMN-FIRE UNIFIED DATA TYPES
 Conformant with ISO 19650 BIM Standards and QOMN Deterministic Software Design.
+Extended with building model types for IFC/DXF parsing pipeline.
 """
 
 from dataclasses import dataclass, field
@@ -40,6 +41,54 @@ class Point3D:
 
     def to_dict(self) -> Dict[str, float]:
         return {"X": self.x, "Y": self.y, "Z": self.z}
+
+@dataclass(frozen=True, slots=True)
+class Wall:
+    """Structural wall element extracted from IFC/DXF parsing."""
+    id: str
+    start: Point3D
+    end: Point3D
+    height_m: float
+    thickness_m: float
+
+@dataclass(frozen=True, slots=True)
+class Opening:
+    """Door or window opening in a wall."""
+    id: str
+    opening_type: str  # "DOOR" or "WINDOW"
+    location: Point3D
+    width_m: float
+    height_m: float
+
+@dataclass(frozen=True, slots=True)
+class Room:
+    """Enclosed room/space with boundary polygon."""
+    id: str
+    name: str
+    boundary: Tuple[Point3D, ...]
+    area_m2: float
+    height_m: float
+
+@dataclass(frozen=True, slots=True)
+class Building:
+    """Top-level building model containing all parsed geometric elements."""
+    file_hash: str
+    format_detected: str
+    version_detected: str
+    units: str  # Expected "METERS"
+    walls: Tuple[Wall, ...]
+    rooms: Tuple[Room, ...]
+    openings: Tuple[Opening, ...]
+
+    def compute_hash(self) -> str:
+        # BUG FIX: Original hash only included COUNT of rooms/walls,
+        # not their IDs or data. Two buildings with 1 room each but
+        # different room IDs produced the SAME hash — broken traceability.
+        # Now includes room IDs and wall IDs for deterministic differentiation.
+        room_ids = ",".join(r.id for r in self.rooms)
+        wall_ids = ",".join(w.id for w in self.walls)
+        serialized = f"{self.file_hash}:{self.format_detected}:{self.version_detected}:{self.units}:{len(self.walls)}:{wall_ids}:{len(self.rooms)}:{room_ids}"
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 @dataclass(frozen=True, slots=True)
 class Device:
