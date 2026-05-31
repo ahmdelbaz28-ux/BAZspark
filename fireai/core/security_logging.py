@@ -288,7 +288,7 @@ def configure_log_rotation(
             compression="zip",                               # Zip compress rotated files
             format="{time:YYYY-MM-DD HH:mm:ss.SSS} [{level}] {name}: {message}",
             level="INFO",
-            filter=lambda record: record["extra"].get("audit_channel") is None,
+            filter=lambda record: True,                      # Accept all messages
             serialize=False,
         )
 
@@ -359,7 +359,7 @@ def configure_timed_rotation(
             compression="zip",
             format="{time:YYYY-MM-DD HH:mm:ss.SSS} [{level}] {name}: {message}",
             level="INFO",
-            filter=lambda record: record["extra"].get("audit_channel") is None,
+            filter=lambda record: True,
         )
 
         class _LoguruBridgeTimed(logging.Handler):
@@ -489,60 +489,36 @@ class SecurityAuditLogger:
         # Now we scan the existing log file to recover the last chain hash.
         self._chain_hash = self._recover_chain_hash()
 
-        # Set up dedicated logger (separate from root logger)
-        self._logger = logging.getLogger("fireai.security_audit")
+        # V105 FIX: SecurityAuditLogger writes DIRECTLY to the log file
+        # instead of routing through the global loguru singleton. The previous
+        # loguru-based approach had a fundamental design flaw: loguru is a
+        # GLOBAL process-level singleton, and multiple SecurityAuditLogger
+        # instances (e.g., in tests) would all share the same loguru instance.
+        # The `audit_channel="security"` filter tag was shared across instances,
+        # causing messages from one instance to appear in another instance's
+        # log file (cross-contamination). Direct file writes give each instance
+        # precise isolation, which is critical for a tamper-evident audit log.
+        #
+        # For log rotation, we use RotatingFileHandler which provides
+        # size-based rotation. While it lacks loguru's zip compression,
+        # the correctness guarantee is more important than disk savings
+        # for a safety-critical audit log. The application-level log
+        # (fireai.log) still uses loguru with compression.
+        from logging.handlers import RotatingFileHandler
+        self._logger = logging.getLogger(f"fireai.security_audit.{id(self)}")
         self._logger.setLevel(logging.INFO)
         self._logger.propagate = False  # Don't duplicate to root logger
 
-        if _LOGURU_AVAILABLE:
-            # V103 FIX: Use loguru as SOLE file writer for the security audit
-            # log with 500 MB rotation, 30-day retention, and zip compression.
-            #
-            # V104 FIX (CRITICAL): The loguru filter now uses audit_channel
-            # tag instead of logger name matching.
-            #
-            # V105 FIX (CRITICAL-2): This is the ONLY loguru sink for
-            # security_audit.log. configure_log_rotation() will skip it.
-            self._loguru_sink_id = _loguru_logger.add(
-                str(self._log_path),
-                rotation=max_bytes,                              # 500 MB
-                retention=f"{_DEFAULT_RETENTION_DAYS} days",     # 30 days
-                compression="zip",                               # zip compress
-                format="{message}",                              # Raw JSON
-                level="INFO",
-                filter=lambda record: record["extra"].get("audit_channel") == "security",
-                serialize=False,
-            )
-            # Bridge: forward standard Python logger to loguru file sink
-            class _SecurityAuditBridge(logging.Handler):
-                """Bridges fireai.security_audit logger to loguru."""
-                def emit(self, record: logging.LogRecord) -> None:
-                    try:
-                        msg = self.format(record)
-                        # V104 FIX: Do NOT apply mask_sensitive() here.
-                        # Data is already masked in log_event() before JSON
-                        # serialization. Re-masking corrupts chain_hash hex
-                        # strings, breaking verify_chain().
-                        _loguru_logger.bind(audit_channel="security").opt(depth=0).info(msg)
-                    except Exception:
-                        pass
-
-            bridge = _SecurityAuditBridge()
-            bridge.setFormatter(logging.Formatter("%(message)s"))  # Raw JSON
-            self._logger.addHandler(bridge)
-        else:
-            # Fallback: standard RotatingFileHandler without compression
-            from logging.handlers import RotatingFileHandler
-            handler = RotatingFileHandler(
-                self._log_path,
-                maxBytes=max_bytes,
-                backupCount=backup_count,
-                encoding="utf-8",
-            )
-            handler.setFormatter(logging.Formatter("%(message)s"))  # Raw JSON
-            # V104 FIX: Do NOT add SensitiveDataFilter here. Data is already
-            # masked in log_event() before JSON serialization.
-            self._logger.addHandler(handler)
+        handler = RotatingFileHandler(
+            self._log_path,
+            maxBytes=max_bytes,
+            backupCount=backup_count,
+            encoding="utf-8",
+        )
+        handler.setFormatter(logging.Formatter("%(message)s"))  # Raw JSON
+        # V104 FIX: Do NOT add SensitiveDataFilter here. Data is already
+        # masked in log_event() before JSON serialization.
+        self._logger.addHandler(handler)
 
     def _recover_chain_hash(self) -> str:
         """Recover the chain hash from the existing log file.
