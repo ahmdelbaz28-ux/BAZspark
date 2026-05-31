@@ -99,7 +99,7 @@ class ExactCoverageEngine:
         # Union of all detector coverage circles intersected with room
         covered = ShapelyPolygon()  # empty
         for x, y in detector_positions:
-            circle = Point(x, y).buffer(coverage_radius_m, resolution=32)
+            circle = Point(x, y).buffer(coverage_radius_m, quad_segs=32)
             covered = covered.union(circle.intersection(room_poly))
 
         covered_area = covered.area

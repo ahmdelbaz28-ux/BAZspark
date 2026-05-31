@@ -239,6 +239,7 @@ _BLOCKING_TYPES = {
     IfcElementType.BEAM,
     IfcElementType.COLUMN,
     IfcElementType.CURTAIN_WALL,
+    IfcElementType.WINDOW,  # V106 FIX: Windows are NOT cable pathways — glass cannot support cable routing
 }
 
 # Elements that allow cable passage
@@ -406,17 +407,50 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                         # Get extrusion dimensions
                         depth = float(item.Depth) if hasattr(item, 'Depth') else 0.0
 
+                        # V106 CRITICAL FIX: Validate all dimension values for NaN/Inf.
+                        # Previously, only position coordinates (cx, cy, cz, px, py, pz)
+                        # were validated. Dimensions like XDim, YDim, Radius, and Depth
+                        # could contain NaN from malformed IFC files, producing a
+                        # BoundingBox3D with NaN values that passes all checks because
+                        # NaN comparisons always return False — meaning NaN bounding
+                        # boxes are NEVER blocked in the occupancy grid, allowing cables
+                        # to route through phantom geometry.
+                        if not math.isfinite(depth):
+                            log.critical(
+                                "V106 SAFETY: Non-finite Depth (%s) in IFC element %s — "
+                                "DROPPING. NaN/Inf dimensions produce invisible bounding "
+                                "boxes that bypass the occupancy grid.", depth, element_id
+                            )
+                            return None
+
                         # Get profile bounds
                         profile = item.SweptArea
                         if hasattr(profile, 'Position') and profile.Position is not None:
                             prof_x = float(profile.Position.Location.Coordinates[0]) if hasattr(profile.Position.Location, 'Coordinates') else 0.0
                             prof_y = float(profile.Position.Location.Coordinates[1]) if len(profile.Position.Location.Coordinates) > 1 else 0.0
+                            # V106 FIX: Validate profile position
+                            for _pval in [prof_x, prof_y]:
+                                if not math.isfinite(_pval):
+                                    log.critical(
+                                        "V106 SAFETY: Non-finite profile position (%s) in "
+                                        "element %s — DROPPING.", _pval, element_id
+                                    )
+                                    return None
                         else:
                             prof_x, prof_y = 0.0, 0.0
 
                         if hasattr(profile, 'XDim') and hasattr(profile, 'YDim'):
                             xdim = float(profile.XDim)
                             ydim = float(profile.YDim)
+                            # V106 CRITICAL FIX: Validate dimensions
+                            if not math.isfinite(xdim) or not math.isfinite(ydim):
+                                log.critical(
+                                    "V106 SAFETY: Non-finite profile dimensions "
+                                    "(XDim=%s, YDim=%s) in element %s — DROPPING. "
+                                    "NaN dimensions produce phantom bounding boxes.",
+                                    xdim, ydim, element_id
+                                )
+                                return None
                             min_x = cx + px + prof_x
                             min_y = cy + py + prof_y
                             min_z = cz + pz
@@ -425,6 +459,14 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
                             max_z = min_z + depth
                         elif hasattr(profile, 'Radius'):
                             radius = float(profile.Radius)
+                            # V106 CRITICAL FIX: Validate radius
+                            if not math.isfinite(radius):
+                                log.critical(
+                                    "V106 SAFETY: Non-finite Radius (%s) in element %s — "
+                                    "DROPPING. NaN radius produces phantom bounding box.",
+                                    radius, element_id
+                                )
+                                return None
                             min_x = cx + px + prof_x - radius
                             min_y = cy + py + prof_y - radius
                             min_z = cz + pz
@@ -469,6 +511,8 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
     # For BLOCKING types (walls, slabs, beams), this is CRITICAL —
     # cables will route through an invisible wall.
     volume = (max_x - min_x) * (max_y - min_y) * (max_z - min_z)
+    # V106 FIX: Also reject zero-volume SPACE elements — phantom spaces
+    # without volume produce unrouteable targets for the cable router.
     if volume == 0.0 and element_type in _BLOCKING_TYPES:
         log.critical(
             "V93 SAFETY: Zero-volume BoundingBox3D for BLOCKING element %s "
@@ -476,6 +520,14 @@ def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
             "DROPPED — a zero-volume blocking element is invisible to the "
             "cable router, creating a false sense of safety.",
             element_id, element_type.value,
+            min_x, min_y, min_z, max_x, max_y, max_z,
+        )
+        return None
+    if volume == 0.0 and element_type == IfcElementType.SPACE:
+        log.warning(
+            "V106: Zero-volume SPACE element %s (bbox=(%s,%s,%s)-(%s,%s,%s)). "
+            "DROPPING — phantom spaces produce unrouteable cable targets.",
+            element_id,
             min_x, min_y, min_z, max_x, max_y, max_z,
         )
         return None
@@ -603,9 +655,17 @@ def _extract_building_model(ifc_model) -> BuildingModel:
         log.warning("V67: Building name extraction failed: %s", exc)
 
     # Extract elements by type
+    # V106 FIX: Added fire-safety IFC entities (IfcAlarm, IfcSensor, IfcProtectiveDevice)
+    # and structural entities (IfcStair, IfcRamp, IfcMember, IfcBuildingElementProxy)
     target_types = [
+        # Structural / Architectural
         'IfcWall', 'IfcWallStandardCase', 'IfcSlab', 'IfcBeam',
         'IfcSpace', 'IfcDoor', 'IfcWindow', 'IfcColumn', 'IfcCurtainWall',
+        # V106: Structural elements affecting cable routing
+        'IfcStair', 'IfcRamp', 'IfcMember', 'IfcBuildingElementProxy',
+        # V106: Fire safety elements — critical for a fire protection system
+        'IfcAlarm', 'IfcSensor', 'IfcProtectiveDevice',
+        'IfcElectricDistributionBoard',
     ]
 
     for ifc_type in target_types:
