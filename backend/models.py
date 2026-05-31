@@ -46,8 +46,8 @@ class Project(BaseModel):
     """A fire alarm engineering project."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = Field(min_length=1, max_length=255)
-    description: str = Field(default="")
-    author: str = Field(default="")
+    description: str = Field(default="", max_length=5000)  # V113: max_length prevents DoS via unbounded string
+    author: str = Field(default="", max_length=255)  # V113: max_length prevents memory exhaustion
     createdAt: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
@@ -62,15 +62,15 @@ class Project(BaseModel):
 class CreateProjectInput(BaseModel):
     """Input for creating a new project."""
     name: str = Field(min_length=1, max_length=255)
-    description: str = Field(default="")
-    author: str = Field(default="")
+    description: str = Field(default="", max_length=5000)  # V113: max_length prevents 100MB body DoS
+    author: str = Field(default="", max_length=255)  # V113: max_length prevents memory exhaustion
 
 
 class UpdateProjectInput(BaseModel):
     """Input for updating an existing project."""
     name: Optional[str] = Field(default=None, min_length=1, max_length=255)
-    description: Optional[str] = Field(default=None)
-    author: Optional[str] = Field(default=None)
+    description: Optional[str] = Field(default=None, max_length=5000)  # V113: max_length prevents DoS
+    author: Optional[str] = Field(default=None, max_length=255)  # V113: max_length prevents DoS
     status: Optional[Literal["active", "archived", "draft"]] = Field(default=None)
 
 

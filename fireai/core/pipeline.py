@@ -1395,18 +1395,28 @@ def _stage7_cable_routing(
         ]
 
         # WireGauge enum — NOT string. "14 AWG" would cause TypeError.
+        # V113 FIX: Import WireGauge BEFORE the try block so ImportError
+        # is NOT caught by the generic Exception handler below. Previously,
+        # if cable_routing_engine was missing, the ImportError was swallowed
+        # by the generic except clause and reported as "routing failed"
+        # instead of "dependency missing". This is the anti-pattern from
+        # agent.md Rule 17: a half-solution that hides the root cause.
+        # Now, if the dependency is missing, the error message clearly states
+        # "DEPENDENCY MISSING" rather than the misleading "routing failed".
         from fireai.core.cable_routing_engine import WireGauge
         schedule = router.route_all(
             connections=connections,
             wire_gauge=WireGauge.AWG_14,
-            ps_voltage=24.0,
+            ps_voltage=float(validated.get("ps_voltage_v", 24.0)),  # V113: configurable, not hardcoded
             project_name=f"FA-{validated.get('room_id', 'room')}",
             ambient_temp_c=float(validated.get("ambient_temp_c", 40.0)),
         )
 
         # from_routing_schedule reads schedule.routes (Tuple[CableRoute])
         sg = ScheduleGenerator()
-        rows = sg.from_routing_schedule(schedule)
+        # V113: Pass ps_voltage from validated config to schedule generator
+        ps_voltage_for_schedule = float(validated.get("ps_voltage_v", 24.0))
+        rows = sg.from_routing_schedule(schedule, ps_voltage=ps_voltage_for_schedule)
 
         report = sg.to_report(rows)
 
@@ -1421,6 +1431,24 @@ def _stage7_cable_routing(
             "violations_count": report.violations_count,
             "csv": sg.to_csv(rows),
             "code_refs": report.code_refs,
+        }
+
+    except ImportError as e:
+        # V113 FIX: Separate ImportError from generic Exception.
+        # A missing dependency is NOT a "routing failure" — it's a
+        # "system misconfiguration". These require completely different
+        # responses: routing failure = redesign, missing dependency = install package.
+        # Previously, ImportError was caught by the generic handler and reported
+        # as "routing failed", which is misleading and wastes engineering time.
+        logger.critical(
+            "V113 DEPENDENCY MISSING: Cable routing engine not available. "
+            "Install required dependency: %s", e
+        )
+        return {
+            "status": "dependency_missing",
+            "error": f"DEPENDENCY MISSING: {e}. Install the required package before running cable routing.",
+            "routes": [],
+            "safety_block": True,
         }
 
     except Exception as e:

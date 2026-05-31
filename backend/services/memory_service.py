@@ -528,7 +528,21 @@ class MemoryService:
         agent_id: Optional[str] = None,
         run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Get all memories for a given scope."""
+        """Get all memories for a given scope.
+
+        V113 FIX: mem0 v2 API compatibility.
+        In mem0 v1, get_all() accepted user_id/agent_id/run_id kwargs.
+        In mem0 v2.0.4+, get_all() rejects those kwargs with ValueError.
+        We now detect the API version and call appropriately:
+          - If the method signature accepts kwargs → pass them (v1)
+          - If it raises ValueError → retry without kwargs (v2)
+          - For v2, we filter results in Python after retrieval
+        This is a ROOT-CAUSE fix per agent.md Rule 17 — the previous
+        code would silently fail on every get_all() call with mem0 v2,
+        returning empty results and hiding the ValueError in the generic
+        except clause. In a safety-critical system, silent data loss
+        is unacceptable.
+        """
         if not self.is_initialized:
             return {
                 "success": False,
@@ -538,6 +552,8 @@ class MemoryService:
             }
 
         try:
+            # Strategy 1: Try v1 API (passes user_id/agent_id/run_id)
+            # This is the original interface that works with mem0 < 2.0
             results = self._memory.get_all(
                 user_id=user_id,
                 agent_id=agent_id,
@@ -550,6 +566,76 @@ class MemoryService:
                 "total": len(results) if isinstance(results, list) else 0,
                 "source": "memory",
             }
+
+        except (ValueError, TypeError) as api_error:
+            # Strategy 2: mem0 v2 API — get_all() doesn't accept these kwargs.
+            # The v2 API returns all memories and we filter in Python.
+            # ValueError: "get_all() got an unexpected keyword argument 'user_id'"
+            # TypeError: similar signature mismatch
+            logger.info(
+                f"mem0 get_all() v1 API failed ({type(api_error).__name__}: {api_error}). "
+                f"Trying v2 API (no kwargs) with Python-side filtering."
+            )
+            try:
+                # v2 API: call without filtering kwargs
+                results = self._memory.get_all()
+
+                # Normalize results format
+                if isinstance(results, dict) and "results" in results:
+                    items = results["results"]
+                elif isinstance(results, list):
+                    items = results
+                else:
+                    items = []
+
+                # Python-side filtering for v2 API
+                if user_id or agent_id or run_id:
+                    filtered = []
+                    for item in items:
+                        # v2 stores metadata differently — check both
+                        # dict format and object format
+                        if isinstance(item, dict):
+                            meta = item.get("metadata", {})
+                            item_user = meta.get("user_id") if isinstance(meta, dict) else None
+                            item_agent = meta.get("agent_id") if isinstance(meta, dict) else None
+                            item_run = meta.get("run_id") if isinstance(meta, dict) else None
+                        else:
+                            meta = getattr(item, "metadata", {}) or {}
+                            item_user = meta.get("user_id")
+                            item_agent = meta.get("agent_id")
+                            item_run = meta.get("run_id")
+
+                        # Match: if a filter is specified, the item must match it
+                        match = True
+                        if user_id and item_user != user_id:
+                            match = False
+                        if agent_id and item_agent != agent_id:
+                            match = False
+                        if run_id and item_run != run_id:
+                            match = False
+                        if match:
+                            filtered.append(item)
+                    items = filtered
+
+                return {
+                    "success": True,
+                    "results": items,
+                    "total": len(items),
+                    "source": "memory",
+                    "api_version": "v2",
+                }
+
+            except Exception as e2:
+                logger.error(
+                    f"Memory get_all failed with BOTH v1 and v2 APIs: {e2}",
+                    exc_info=True,
+                )
+                return {
+                    "success": False,
+                    "error": f"v1 API error: {api_error}; v2 API error: {e2}",
+                    "results": [],
+                    "source": "memory_error",
+                }
 
         except Exception as e:
             logger.error(f"Memory get_all failed: {e}", exc_info=True)

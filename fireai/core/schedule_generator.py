@@ -80,9 +80,21 @@ class ScheduleGenerator:
     Output formats: CSV, JSON, plain text.
     """
 
-    def from_routing_schedule(self, schedule) -> List[ScheduleRow]:
+    def from_routing_schedule(self, schedule, ps_voltage: float = 0.0) -> List[ScheduleRow]:
         """
         Convert a RoutingSchedule (from CableRouter.route_all) to ScheduleRow list.
+
+        V113 FIX: Added ps_voltage parameter with fail-safe default of 0.0.
+        Previously, this method hardcoded ps_voltage=24.0, which is WRONG for:
+          - 12VDC systems (common in small fire alarm panels per NFPA 72 §10.6.5)
+          - 48VDC systems (used in some notification appliance circuits)
+        A 12VDC system with hardcoded 24.0V would report end_voltage = 24.0 - vdrop,
+        appearing compliant when the actual voltage is 12.0 - vdrop (likely failing).
+        This is a life-safety calculation error per agent.md Priority 1.
+
+        The caller MUST pass ps_voltage explicitly. If 0.0 (default), a warning
+        is logged and we attempt to read from the schedule object. If still
+        unavailable, we use 24.0 as a LAST RESORT with a CRITICAL warning.
 
         REAL RoutingSchedule fields (verified from cable_router.py):
           schedule.routes: Tuple[CableRoute]         — all routes
@@ -105,6 +117,25 @@ class ScheduleGenerator:
         and schedule.wire_gauge (on CableRoute, not RoutingSchedule).
         Fixed to iterate schedule.routes and read per-CableRoute fields.
         """
+        # V113: Determine ps_voltage with fail-safe hierarchy:
+        # 1. Explicit parameter (preferred — caller knows the system voltage)
+        # 2. From schedule object (if it stores ps_voltage)
+        # 3. Default 24.0V with CRITICAL warning (last resort)
+        actual_ps_voltage = ps_voltage
+        if actual_ps_voltage <= 0.0:
+            actual_ps_voltage = float(getattr(schedule, "ps_voltage", 0.0))
+        if actual_ps_voltage <= 0.0:
+            # LAST RESORT: Default to 24.0VDC but log CRITICAL warning
+            # This is dangerous — 12VDC systems will show wrong end_voltage
+            actual_ps_voltage = 24.0
+            logger.critical(
+                "V113 SAFETY WARNING: ps_voltage not specified — defaulting to 24.0V. "
+                "If your system uses 12VDC or 48VDC, all voltage drop calculations "
+                "are WRONG. Pass ps_voltage explicitly to from_routing_schedule(). "
+                "NFPA 72 §10.6.5 requires accurate voltage calculations. "
+                "Wrong voltage = devices may not operate during a fire."
+            )
+
         rows = []
         for route in getattr(schedule, "routes", ()):
             start  = getattr(route, "start", (0.0, 0.0, 0.0))
@@ -112,7 +143,6 @@ class ScheduleGenerator:
             gauge  = getattr(route, "wire_gauge", None)
             awg    = gauge.awg_value if (gauge and hasattr(gauge, "awg_value")) else "14"
             vdrop  = float(getattr(route, "voltage_drop_v", 0.0))
-            ps_v   = 24.0  # RoutingSchedule does not store ps_voltage
             rows.append(ScheduleRow(
                 device_id     = str(getattr(route, "route_id", "ROUTE")),
                 from_location = f"({start[0]:.2f},{start[1]:.2f},{start[2]:.2f})",
@@ -120,14 +150,26 @@ class ScheduleGenerator:
                 length_m      = float(getattr(route, "total_length_m", 0.0)),
                 wire_type     = f"{awg} AWG in 3/4\" RED EMT",
                 voltage_drop_v= vdrop,
-                end_voltage_v = ps_v - vdrop,
+                end_voltage_v = actual_ps_voltage - vdrop,  # V113: Use actual system voltage
                 bend_count    = int(getattr(route, "num_bends", 0)),
                 compliant     = bool(getattr(route, "is_compliant", False)),
             ))
         return rows
 
-    def from_route_results(self, results: List[Any]) -> List[ScheduleRow]:
-        """Convert RouteResult list (from CableRoutingEngine) to ScheduleRow list."""
+    def from_route_results(self, results: List[Any], ps_voltage: float = 0.0) -> List[ScheduleRow]:
+        """Convert RouteResult list (from CableRoutingEngine) to ScheduleRow list.
+
+        V113 FIX: Added ps_voltage parameter (same as from_routing_schedule).
+        """
+        # V113: Same ps_voltage resolution logic as from_routing_schedule
+        actual_ps_voltage = ps_voltage
+        if actual_ps_voltage <= 0.0:
+            actual_ps_voltage = 24.0
+            logger.warning(
+                "V113: ps_voltage not specified for from_route_results() — "
+                "defaulting to 24.0V. Pass explicit ps_voltage for 12VDC/48VDC systems."
+            )
+
         rows = []
         for r in results:
             rows.append(ScheduleRow(
@@ -137,7 +179,7 @@ class ScheduleGenerator:
                 length_m=float(getattr(r, 'total_length_m', 0)),
                 wire_type=f"{getattr(r,'wire_gauge','14 AWG')} in 3/4\" RED EMT",
                 voltage_drop_v=float(getattr(r, 'voltage_drop_v', 0)),
-                end_voltage_v=float(getattr(r, 'end_voltage_v', 24.0)),
+                end_voltage_v=float(getattr(r, 'end_voltage_v', actual_ps_voltage)),  # V113: Use actual voltage
                 bend_count=int(getattr(r, 'bend_count', 0)),
                 compliant=bool(getattr(r, 'compliant', False)),  # V69-10 FIX: fail-safe default
             ))

@@ -241,6 +241,14 @@ app.add_middleware(
 # V110 FIX: Added PerPathRateLimitMiddleware with longest-prefix match algorithm.
 
 _PER_PATH_LIMITS = [
+    # V113: workflow/start gets a TIGHTER limit than general workflow endpoints.
+    # Starting a workflow allocates a LangGraph state machine, async tasks,
+    # checkpoint storage, and potentially 60+ second environmental API calls.
+    # Without this tighter limit, an attacker could start thousands of concurrent
+    # workflows, exhausting server memory (OOM) and API rate limits.
+    # Per agent.md Priority 1 (Safety): DoS on a fire protection system means
+    # engineers can't access life-safety tools during an emergency.
+    ("/api/workflow/start",             3, 60),   # 3 starts per minute — strict
     ("/api/environment/weather",     10, 60),
     ("/api/environment/geocoding",    1,  1),
     ("/api/environment/elevation",   10, 60),
@@ -248,7 +256,7 @@ _PER_PATH_LIMITS = [
     ("/api/environment/severe",      10, 60),
     ("/api/environment/hazmat",      30, 60),
     ("/api/environment/region",      10, 60),
-    ("/api/workflow",                10, 60),
+    ("/api/workflow",                10, 60),   # General workflow queries
     ("/api/memory",                  60, 60),
     ("/api/projects",               30, 60),
     ("/api/analyze",                 10, 60),
