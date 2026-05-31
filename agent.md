@@ -10110,3 +10110,101 @@ Same fix applied to `SetStringParameter()`.
 - **Tests:** 1215 passed, 1 skipped, 0 failed
 
 ---
+
+---
+
+## V51 NEC Table 8 Correction (2026-06-01) — CRITICAL Safety Fix
+
+### Context
+After analyzing screenshots showing CI failures and code with NEC data table issues,
+performed deep audit of ALL resistance tables across 4 files. Found catastrophic
+data inconsistency: 4 different resistance tables with mutually contradictory values,
+none fully correct.
+
+### Root Cause Analysis (per Rule 17)
+The project had FOUR separate resistance tables in different files with DIFFERENT
+values and DIFFERENT claimed sources:
+1. `voltage_drop.py` — NEC Table 9 (AC impedance), ~60% too high for AWG 14+
+2. `constants/__init__.py` — 20°C values mislabeled as 75°C, ~18% too low for AWG 14-10
+3. `nfpa72_engine.py` — 20°C values with temperature correction (approximately correct)
+4. `nfpa72_calculations.py` — Same wrong values as constants/__init__.py
+
+The DRY principle was violated, and no single source of truth existed.
+
+### Bug 51a — voltage_drop.py Uses NEC Table 9 (AC) Instead of Table 8 (DC) (CRITICAL)
+**File:** `fireai/core/voltage_drop.py` — `_AWG_RESISTANCE_OHM_PER_KM`
+**Discovery:** All 15 resistance values were from NEC Table 9 (AC impedance, Z = R + jX),
+not NEC Table 8 (DC resistance). Fire alarm systems operate on 24VDC.
+**Impact:**
+- AWG 14+: ~60% overestimation of resistance → conservative but wasteful
+- AWG 18/16: ~18% UNDERESTIMATION → UNSAFE (voltage drop underestimated)
+**Fix Applied:** Replaced all 15 values with correct NEC Table 8 DC resistance at 75°C.
+Verified values: AWG 14 stranded = 3.070 Ω/kft = 10.07 Ω/km (was 16.40).
+
+### Bug 51b — constants/__init__.py AWG 14-10 Values Are 20°C Not 75°C (CRITICAL)
+**File:** `fireai/constants/__init__.py` — `AWG_RESISTANCE_OHM_PER_M`
+**Discovery:** AWG 14/12/10 values (0.00820/0.00525/0.00328) are at 20°C reference,
+not 75°C as claimed. ~18% too low → voltage drop underestimation.
+**Fix Applied:** Updated to correct NEC Table 8 at 75°C values.
+AWG 14: 0.01007 Ω/m (was 0.00820), AWG 12: 0.00633 (was 0.00525), AWG 10: 0.00397 (was 0.00328).
+
+### Bug 51c — nfpa72_calculations.py Same Wrong Values as constants (CRITICAL)
+**File:** `fireai/core/nfpa72_calculations.py` — `AWG_RESISTANCE_TABLE`
+**Discovery:** Same incorrect 20°C resistance and wrong ampacity values.
+**Fix Applied:** Updated ohm_per_1000ft, ohm_per_m, and ampacity_75c to correct values.
+
+### Bug 51d — AWG_AMPACITY_75C Uses 90°C Column Values (HIGH — NEC 110.14 Violation)
+**File:** `fireai/constants/__init__.py` — `AWG_AMPACITY_75C`
+**Discovery:** AWG 14=30A, 12=35A, 10=45A are from NEC Table 310.16 90°C column.
+Using 90°C ampacity with 75°C rated terminations violates NEC 110.14(C)(1).
+**Fix Applied:** Updated to correct 75°C column values: AWG 14=20A, 12=25A, 10=35A.
+
+### Bug 51e — recommend_wire_gauge() Missing AWG 3, 3/0, 4/0 (MEDIUM)
+**File:** `fireai/core/voltage_drop.py` — `recommend_wire_gauge()`
+**Discovery:** gauges_ordered skipped AWG 3, 3/0, and 4/0, which exist in the table.
+**Fix Applied:** Added missing sizes to gauges_ordered.
+
+### Bug 51f — hypothesis Missing from requirements.txt (HIGH — CI Failure)
+**File:** `requirements.txt`
+**Discovery:** `hypothesis` package not listed in requirements.txt but used by
+test_pdf_hardening_properties.py and test_v22_hypothesis_radar.py.
+CI installs it separately, but local runs fail without it.
+**Fix Applied:** Added `hypothesis>=6.88.0` and `pytest-cov>=5.0.0` to requirements.txt.
+
+### Corrected NEC Table 8 Values (DC Resistance at 75°C, Copper Uncoated)
+
+| AWG | Ω/kft | Ω/km | Ω/m | Type |
+|-----|-------|------|-----|------|
+| 18 | 7.770 | 25.49 | 0.02549 | Solid |
+| 16 | 4.890 | 16.04 | 0.01604 | Solid |
+| 14 | 3.070 | 10.07 | 0.01007 | Stranded |
+| 12 | 1.930 | 6.33 | 0.00633 | Stranded |
+| 10 | 1.210 | 3.97 | 0.00397 | Stranded |
+| 8 | 0.778 | 2.55 | 0.00255 | Stranded |
+| 6 | 0.491 | 1.61 | 0.00161 | Stranded |
+| 4 | 0.308 | 1.01 | 0.00101 | Stranded |
+| 3 | 0.245 | 0.804 | 0.000804 | Stranded |
+| 2 | 0.194 | 0.636 | 0.000636 | Stranded |
+| 1 | 0.154 | 0.505 | 0.000505 | Stranded |
+| 1/0 | 0.122 | 0.400 | 0.000400 | Stranded |
+| 2/0 | 0.0967 | 0.317 | 0.000317 | Stranded |
+| 3/0 | 0.0766 | 0.251 | 0.000251 | Stranded |
+| 4/0 | 0.0608 | 0.200 | 0.000200 | Stranded |
+
+### Self-Criticism Notes (V51)
+
+1. **AWG 18/16 underestimation was the most dangerous finding** — These small gauges
+   are used in short-run circuits. An 18% underestimate in resistance means voltage
+   drop is underestimated, potentially allowing non-compliant circuits to pass.
+2. **The 4-table inconsistency was a maintenance bomb** — No single source of truth
+   guaranteed future divergence. nfpa72_engine.py is the most correct approach
+   (20°C base + temperature correction), but the other 3 files used wrong values.
+3. **The code comments claiming "Table 8 = 12.53" for AWG 14 were also wrong** —
+   12.53 is the SOLID conductor value at 75°C. Stranded (the standard for FA wiring)
+   is 10.07 Ω/km. The comments propagated incorrect data for future developers.
+4. **NEC ampacity values were from the wrong column** — Using 90°C ampacity with
+   75°C rated terminations violates NEC 110.14(C)(1). This is a code compliance issue
+   that could result in overloaded conductors.
+
+### Commit Information
+- **Tests:** 1215 passed, 1 skipped

@@ -37,46 +37,48 @@ from functools import lru_cache
 # ---------------------------------------------------------------------------
 # AWG Resistance Table — Ω per km at 75°C reference temperature
 #
-# ⚠️ DATA INTEGRITY NOTE (V117 Self-Criticism):
-# This table currently uses values from NEC Table 9 (AC impedance), NOT
-# Table 8 (DC resistance). Fire alarm systems operate on 24VDC, so the
-# correct reference is NEC Chapter 9, Table 8 (DC resistance).
+# NEC Chapter 9, Table 8 — DC Resistance at 75°C, Copper Uncoated
+# AWG 18 and 16 are solid; all others are stranded (Class B)
 #
-# Table 9 values include reactive components (Z = R + jX) which are
-# irrelevant for DC circuits, causing ~60% overestimation of resistance.
+# V51 CRITICAL FIX: Replaced NEC Table 9 (AC impedance) values with
+# correct NEC Table 8 (DC resistance) values. Fire alarm systems operate
+# on 24VDC, so Table 8 is the correct reference.
 #
-# However, changing these values is HIGH RISK because:
-#   1. All voltage drop calculations in the project depend on these values
-#   2. Existing test fixtures may rely on current outputs
-#   3. Compliant designs may be reclassified as non-compliant or vice versa
+# Previous values were from NEC Table 9 (AC impedance, Z = R + jX),
+# which overestimates DC resistance by ~60% for AWG 14+ because reactive
+# components are irrelevant for DC circuits. For AWG 18/16, previous values
+# were ~18% too LOW (unsafe direction — underestimating voltage drop).
 #
-# CORRECT Table 8 values (stranded copper at 75°C) for reference:
-#   AWG 14: 12.53 Ω/km (0.01253 Ω/m) vs current: 16.40 Ω/km (0.01640 Ω/m)
-#   AWG 12: 7.90 Ω/km (0.00790 Ω/m) vs current: 10.30 Ω/km (0.01030 Ω/m)
+# Impact of old Table 9 values:
+#   - AWG 14+: ~60% overestimation → conservative but wasteful
+#   - AWG 18/16: ~18% underestimation → UNSAFE (underestimates voltage drop)
 #
-# TODO: Phase 2 migration — replace with Table 8 values after test matrix
-# verification. Documented as V117-PENDING in agent.md.
+# Source verification (NEC 2023, Chapter 9, Table 8):
+#   Ω/km = Ω/kft / 0.3048
+#   AWG 14 stranded: 3.070 Ω/kft = 10.07 Ω/km (was 16.40 from Table 9)
+#   AWG 12 stranded: 1.930 Ω/kft = 6.33 Ω/km (was 10.30 from Table 9)
 #
 # BUG-12 FIX: Keyed by AWG string, not numeric index
+# V51 FIX: Corrected to NEC Table 8 DC resistance at 75°C
 # ---------------------------------------------------------------------------
 
 _AWG_RESISTANCE_OHM_PER_KM: dict[str, float] = {
-    # AWG : Ω/km — currently from NEC Table 9 (AC); migrate to Table 8 (DC)
-    "18": 20.80,  # TODO: Verify against NEC Table 8
-    "16": 13.10,  # TODO: Verify against NEC Table 8
-    "14": 16.40,  # 14 AWG = standard FA circuit. TODO: Table 8 = 12.53
-    "12": 10.30,  # 12 AWG. TODO: Table 8 = 7.90
-    "10": 6.53,  # 10 AWG. TODO: Table 8 = 4.95
-    "8": 4.10,  # 8 AWG. TODO: Table 8 = 3.10
-    "6": 2.58,  # 6 AWG. TODO: Table 8 = 1.96
-    "4": 1.62,  # 4 AWG. TODO: Table 8 = 1.23
-    "3": 1.29,  # 3 AWG
-    "2": 1.02,  # 2 AWG
-    "1": 0.811,  # 1 AWG
-    "1/0": 0.644,  # 1/0 AWG
-    "2/0": 0.511,  # 2/0 AWG
-    "3/0": 0.405,  # 3/0 AWG
-    "4/0": 0.321,  # 4/0 AWG
+    # AWG : Ω/km — NEC Chapter 9, Table 8 (DC resistance at 75°C, copper)
+    "18": 25.49,   # 7.770 Ω/kft, solid
+    "16": 16.04,   # 4.890 Ω/kft, solid
+    "14": 10.07,   # 3.070 Ω/kft, stranded — standard FA circuit
+    "12": 6.33,    # 1.930 Ω/kft, stranded
+    "10": 3.97,    # 1.210 Ω/kft, stranded
+    "8": 2.55,     # 0.778 Ω/kft, stranded
+    "6": 1.61,     # 0.491 Ω/kft, stranded
+    "4": 1.01,     # 0.308 Ω/kft, stranded
+    "3": 0.804,    # 0.245 Ω/kft, stranded
+    "2": 0.636,    # 0.194 Ω/kft, stranded
+    "1": 0.505,    # 0.154 Ω/kft, stranded
+    "1/0": 0.400,  # 0.122 Ω/kft, stranded
+    "2/0": 0.317,  # 0.0967 Ω/kft, stranded
+    "3/0": 0.251,  # 0.0766 Ω/kft, stranded
+    "4/0": 0.200,  # 0.0608 Ω/kft, stranded
 }
 
 # NEC Table 8 — Solid conductor areas (mm²) for reference
@@ -115,12 +117,12 @@ def get_wire_resistance_ohm_per_m(awg: str) -> float:
     Previous code used AWG number as list index → wrong gauge looked up.
 
     Returns resistance in Ω/m at 75°C (copper).
-    NEC Table 9, Chapter 9.
+    NEC Chapter 9, Table 8 (DC resistance).
     """
     awg_clean = str(awg).strip()
     if awg_clean not in _AWG_RESISTANCE_OHM_PER_KM:
         raise ValueError(
-            f"Unknown AWG gauge: {awg!r}. Supported: {sorted(_AWG_RESISTANCE_OHM_PER_KM.keys())}. NEC Table 9."
+            f"Unknown AWG gauge: {awg!r}. Supported: {sorted(_AWG_RESISTANCE_OHM_PER_KM.keys())}. NEC Chapter 9, Table 8."
         )
     # BUG-11 FIX: Convert Ω/km → Ω/m (divide by 1000)
     return _AWG_RESISTANCE_OHM_PER_KM[awg_clean] / 1000.0
@@ -230,7 +232,7 @@ def recommend_wire_gauge(
     NFPA 72-2022 §27.4.1.2.
     """
     # Try from thinnest to thickest (most economical first)
-    gauges_ordered = ["14", "12", "10", "8", "6", "4", "2", "1", "1/0", "2/0"]
+    gauges_ordered = ["14", "12", "10", "8", "6", "4", "3", "2", "1", "1/0", "2/0", "3/0", "4/0"]
 
     for awg in gauges_ordered:
         if awg not in _AWG_RESISTANCE_OHM_PER_KM:
