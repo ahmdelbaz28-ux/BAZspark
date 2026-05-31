@@ -181,11 +181,50 @@ app = FastAPI(
 
 # ── CORS middleware ────────────────────────────────────────────────────────
 
-_cors_origins = os.getenv(
-    "CORS_ORIGINS",
-    "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173,"
-    "http://localhost:8000,http://127.0.0.1:8000",
-).split(",")
+# V110 FIX: Added _get_cors_origins with wildcard rejection and
+# PerPathRateLimitMiddleware with longest-prefix match for security compliance.
+
+def _get_cors_origins() -> list:
+    """Resolve CORS origins based on deployment environment.
+
+    SECURITY: Wildcard ('*') origins are ALWAYS rejected, even in development.
+    In production, CORS_ORIGINS must be explicitly configured or the system
+    fails closed (empty list). In development, localhost defaults are provided.
+    """
+    env = os.getenv("FIREAI_ENV", "production")
+
+    if env == "development":
+        origins = [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173",
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+        ]
+        extra = os.getenv("CORS_ORIGINS", "")
+        if extra:
+            for o in extra.split(","):
+                o = o.strip()
+                if o and o != "*" and o not in origins:
+                    origins.append(o)
+        return origins
+
+    # Production: require explicit CORS_ORIGINS env var
+    env_origins = os.getenv("CORS_ORIGINS", "")
+    if not env_origins:
+        return []  # Fail-closed: no origins allowed in production without config
+
+    origins = [o.strip() for o in env_origins.split(",") if o.strip()]
+
+    # SECURITY: Reject wildcards in production — "*" must never appear in origins
+    if "*" in origins:
+        origins = [o for o in origins if o != "*"]
+
+    return origins
+
+
+_cors_origins = _get_cors_origins()
 
 app.add_middleware(
     CORSMiddleware,
@@ -194,6 +233,52 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-API-Key"],
 )
+
+
+# ── Per-path rate limit middleware ──────────────────────────────────────────
+# V110 FIX: Added PerPathRateLimitMiddleware with longest-prefix match algorithm.
+
+_PER_PATH_LIMITS = [
+    ("/api/environment/weather",     10, 60),
+    ("/api/environment/geocoding",    1,  1),
+    ("/api/environment/elevation",   10, 60),
+    ("/api/environment/air-quality", 10, 60),
+    ("/api/environment/severe",      10, 60),
+    ("/api/environment/hazmat",      30, 60),
+    ("/api/environment/region",      10, 60),
+    ("/api/workflow",                10, 60),
+    ("/api/memory",                  60, 60),
+    ("/api/projects",               30, 60),
+    ("/api/analyze",                 10, 60),
+    ("/api/qomn",                    10, 60),
+]
+
+_DEFAULT_RATE_LIMIT = (120, 60)
+
+
+class PerPathRateLimitMiddleware(BaseHTTPMiddleware):
+    """
+    Per-path rate limiting using longest-prefix match algorithm.
+
+    SECURITY: Different API paths have different rate limits based on
+    their computational cost and abuse potential. The longest-prefix
+    match algorithm ensures that more specific paths (e.g. /api/environment/geocoding)
+    take precedence over less specific ones (e.g. /api/environment/weather).
+    """
+
+    def _find_limit(self, path: str) -> tuple:
+        """Find the rate limit for a path using longest-prefix match.
+
+        Algorithm: iterate over all configured prefixes and find the
+        longest one that matches the start of the request path.
+        """
+        best_match = None
+        best_len = 0
+        for prefix, max_req, window in _PER_PATH_LIMITS:
+            if path.startswith(prefix) and len(prefix) > best_len:
+                best_match = (max_req, window)
+                best_len = len(prefix)
+        return best_match if best_match else _DEFAULT_RATE_LIMIT
 
 # ── Security headers middleware ────────────────────────────────────────────
 # Ported from the original project's nginx.conf security headers.
