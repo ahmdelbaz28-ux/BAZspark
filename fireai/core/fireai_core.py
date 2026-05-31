@@ -710,7 +710,7 @@ class FireAISystem:
                     "status": "completed",
                     "rooms_simulated": len(room_mc_results),
                     "all_reliable": all(
-                        r.get("is_reliable", True) for r in room_mc_results
+                        r.get("is_reliable", False) for r in room_mc_results  # V111 FIX: Fail-safe default
                     ),
                 }
             except Exception as exc:

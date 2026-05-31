@@ -240,7 +240,7 @@ class MCPipelineAdapter:
 
         warnings = list(getattr(layout, "warnings", []))
 
-        if not mc_result.get("is_reliable", True):
+        if not mc_result.get("is_reliable", False):  # V111 FIX: Fail-safe — missing reliability flag = UNRELIABLE
             warnings.append(
                 f"MC RELIABILITY WARNING: P(full_coverage)="
                 f"{mc_result['p_full_coverage']:.1%} < {self._threshold:.0%}. "
@@ -294,7 +294,7 @@ class MCPipelineAdapter:
             room_results[rs.room_id] = mc
 
         floor_reliable = all(
-            r.get("is_reliable", True) for r in room_results.values()
+            r.get("is_reliable", False) for r in room_results.values()  # V111 FIX: Fail-safe default
         )
         return {
             "floor_id":      getattr(floor_report, "floor_id", ""),
@@ -302,5 +302,5 @@ class MCPipelineAdapter:
             "floor_reliable": floor_reliable,
             "n_rooms":       len(room_results),
             "n_reliable":    sum(1 for r in room_results.values()
-                                 if r.get("is_reliable", True)),
+                                 if r.get("is_reliable", False)),  # V111 FIX: Fail-safe default
         }
