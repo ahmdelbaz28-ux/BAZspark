@@ -400,7 +400,7 @@ async def analyse_floor_v10(request: Request, body: AnalyseFloorRequestV10):
     results = system.analyse_floor(
         rooms=room_specs,
         user_id="api_user",
-        run_resilience=body.run_resilience if hasattr(body, 'run_resilience') else True,
+        run_resilience=body.run_resilience if hasattr(body, 'run_resilience') else False,  # V112: FAIL-SAFE — don't run resilience unless explicitly requested
     )
 
     return {
@@ -469,7 +469,7 @@ async def analyse_floor_async(
             results = system.analyse_floor(
                 rooms=room_specs,
                 user_id="async_api_user",
-                run_resilience=body_data.run_resilience if hasattr(body_data, 'run_resilience') else True,
+                run_resilience=body_data.run_resilience if hasattr(body_data, 'run_resilience') else False,  # V112: FAIL-SAFE
             )
             _task_store[task_id] = {
                 "status": "completed",

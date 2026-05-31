@@ -597,7 +597,7 @@ class CableRouter:
             )
 
         is_compliant = (
-            constraint_results.all_satisfied if constraint_results else True
+            constraint_results.all_satisfied if constraint_results else False  # V112: FAIL-SAFE — no constraints = NOT compliant
         )
 
         # Add bend decision log entries

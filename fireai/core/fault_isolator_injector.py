@@ -61,7 +61,7 @@ class IsolatorInjectionResult:
     secure_loop: List[Dict[str, Any]]  # Devices + isolators in order
     isolator_placements: List[IsolatorPlacement]
     violations: List[str] = field(default_factory=list)
-    is_compliant: bool = True
+    is_compliant: bool = False  # V112: FAIL-SAFE — starts NOT compliant until verified
 
 
 # ============================================================================

@@ -251,7 +251,7 @@ class MCPipelineAdapter:
                 "NFPA 72-2022 Section 14."
             )
 
-        if mc_result.get("p_full_coverage", 1.0) < 0.90:
+        if mc_result.get("p_full_coverage", 0.0) < 0.90:  # V112: FAIL-SAFE — missing probability = 0%
             # Conservative: invalidate proof if MC shows < 90% P(full coverage)
             try:
                 layout.proof_valid = False

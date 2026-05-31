@@ -292,7 +292,7 @@ class RouteResult:
         total_return_length_m: Return path length for Class A circuits.
     """
     circuit_id: str = ""
-    is_compliant: bool = True
+    is_compliant: bool = False  # V112: FAIL-SAFE — new circuit starts as NOT compliant until verified
     total_voltage_drop_v: float = 0.0
     total_voltage_drop_pct: float = 0.0
     end_of_line_voltage_v: float = 0.0

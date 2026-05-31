@@ -1198,7 +1198,7 @@ class IntegrationBridge:
 
         # Digital Twin Sync: check for success attribute
         if result.twin_result is not None:
-            twin_compliant = getattr(result.twin_result, "success", True)
+            twin_compliant = getattr(result.twin_result, "success", False)  # V112: FAIL-SAFE — missing success = NOT compliant
             # Also check for a 'compliant' attribute if it exists
             if hasattr(result.twin_result, "compliant"):
                 twin_compliant = result.twin_result.compliant
