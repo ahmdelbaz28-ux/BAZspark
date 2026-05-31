@@ -256,6 +256,12 @@ class SmokeControlResult:
     nfpa_section:         str
 
 
+# V106: Constants for NFPA 92 compliance — replaces magic numbers
+MIN_STAIRWELL_PRESSURIZATION_PA = 25.0   # NFPA 92 §6.3: minimum 25 Pa (0.10 in. w.g.)
+MAX_PRESSURE_DIFFERENTIAL_PA = 133.0     # NFPA 92 §6.3.3: max force to open door (~0.5 in. w.g.)
+VALID_SMOKE_CONTROL_METHODS = ("pressurization", "exhaust")
+
+
 def evaluate_smoke_control(
     zone_id: str,
     method: str = "pressurization",
@@ -267,6 +273,7 @@ def evaluate_smoke_control(
 
     NFPA 92 requires:
       - Stairwell pressurization: minimum 25 Pa (0.10 in. w.g.)
+      - Maximum pressure differential: ~133 Pa (0.5 in. w.g.) for door opening force
       - Zone smoke control: either pressurization or exhaust
       - Fire alarm interlock for automatic activation
       - Manual override at firefighter's control panel
@@ -280,17 +287,57 @@ def evaluate_smoke_control(
 
     Returns:
         SmokeControlResult with compliance assessment.
+
+    Raises:
+        ValueError: If design_pressure_pa is NaN/Inf, negative, or method is invalid.
     """
     violations = []
 
+    # V106 CRITICAL FIX: Validate method — invalid method bypasses ALL checks
+    if method not in VALID_SMOKE_CONTROL_METHODS:
+        raise ValueError(
+            f"method must be one of {VALID_SMOKE_CONTROL_METHODS}, "
+            f"got '{method}'. An invalid method would bypass all NFPA 92 checks, "
+            f"falsely claiming compliance."
+        )
+
+    # V106 CRITICAL FIX: Reject negative pressure — negative pressure draws smoke
+    # INTO egress paths instead of keeping it out. This is lethal.
     if not math.isfinite(design_pressure_pa):
         raise ValueError(f"design_pressure_pa must be finite, got {design_pressure_pa}")
+    if design_pressure_pa < 0:
+        raise ValueError(
+            f"design_pressure_pa must be non-negative, got {design_pressure_pa}. "
+            f"Negative pressure draws smoke INTO egress paths — lethal condition."
+        )
+
+    # V106 FIX: Reject empty zone_id — makes violations untraceable
+    if not zone_id or not zone_id.strip():
+        raise ValueError("zone_id must not be empty — violations must be traceable")
 
     # NFPA 92 §6.3: Minimum pressurization
-    if method == "pressurization" and design_pressure_pa < 25.0:
+    if method == "pressurization" and design_pressure_pa < MIN_STAIRWELL_PRESSURIZATION_PA:
         violations.append(
             f"Zone '{zone_id}': Design pressure {design_pressure_pa:.1f} Pa "
-            f"below minimum 25 Pa per NFPA 92 §6.3"
+            f"below minimum {MIN_STAIRWELL_PRESSURIZATION_PA} Pa per NFPA 92 §6.3"
+        )
+
+    # V106 FIX: NFPA 92 §6.3.3: Maximum pressure differential — excessive
+    # pressure prevents doors from opening, trapping occupants
+    if method == "pressurization" and design_pressure_pa > MAX_PRESSURE_DIFFERENTIAL_PA:
+        violations.append(
+            f"Zone '{zone_id}': Design pressure {design_pressure_pa:.1f} Pa "
+            f"exceeds maximum {MAX_PRESSURE_DIFFERENTIAL_PA} Pa — "
+            f"door opening force exceeds 30 lbf per NFPA 92 §6.3.3, "
+            f"occupants may be TRAPPED"
+        )
+
+    # V106 FIX: Exhaust method — must verify minimum exhaust rate
+    # NFPA 92 §6.4: Exhaust method requires defined air changes
+    if method == "exhaust" and design_pressure_pa <= 0:
+        violations.append(
+            f"Zone '{zone_id}': Exhaust method with zero/negative flow rate "
+            f"({design_pressure_pa:.1f}) — smoke cannot be removed per NFPA 92 §6.4"
         )
 
     # NFPA 72 §21.5: Fire alarm interlock
@@ -423,10 +470,28 @@ class BuildingSystemsAssessment:
     nfpa_references:    List[str] = field(default_factory=list)
 
     def evaluate(self) -> None:
-        """Aggregate all sub-assessments."""
+        """Aggregate all sub-assessments.
+
+        V106 SAFETY FIX: Empty assessment lists means NO evaluation was performed.
+        An unevaluated building must NOT claim compliance — fail-safe default.
+        """
         self.violations = []
         self.nfpa_references = []
-        self.is_compliant = True
+
+        # V106 CRITICAL FIX: If no assessments were performed, is_compliant
+        # must remain False (fail-safe). Previously, is_compliant started as
+        # True even when all lists were empty, falsely claiming compliance.
+        total_assessments = (
+            len(self.elevator_results)
+            + len(self.hvac_results)
+            + len(self.smoke_control_results)
+            + len(self.fire_pump_results)
+        )
+        if total_assessments == 0:
+            self.is_compliant = False  # No evaluation = not compliant (fail-safe)
+            return
+
+        self.is_compliant = True  # Start True only when assessments exist
 
         for r in self.elevator_results:
             if not r.is_compliant:
