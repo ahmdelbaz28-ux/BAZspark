@@ -79,15 +79,23 @@ class Building:
     walls: Tuple[Wall, ...]
     rooms: Tuple[Room, ...]
     openings: Tuple[Opening, ...]
+    # BUG-9 FIX: Flag indicates if the building model contains fallback/placeholder
+    # geometry rather than real parsed geometry. Downstream systems MUST check this
+    # flag — fire protection design based on fallback geometry is INVALID.
+    # If True, the building model should be treated as unvalidated and the
+    # user must provide a properly parsed BIM file.
+    has_fallback_geometry: bool = False
 
     def compute_hash(self) -> str:
         # BUG FIX: Original hash only included COUNT of rooms/walls,
         # not their IDs or data. Two buildings with 1 room each but
         # different room IDs produced the SAME hash — broken traceability.
         # Now includes room IDs and wall IDs for deterministic differentiation.
+        # Also includes has_fallback_geometry flag — a building with fallback
+        # geometry is fundamentally different from one with real geometry.
         room_ids = ",".join(r.id for r in self.rooms)
         wall_ids = ",".join(w.id for w in self.walls)
-        serialized = f"{self.file_hash}:{self.format_detected}:{self.version_detected}:{self.units}:{len(self.walls)}:{wall_ids}:{len(self.rooms)}:{room_ids}"
+        serialized = f"{self.file_hash}:{self.format_detected}:{self.version_detected}:{self.units}:{len(self.walls)}:{wall_ids}:{len(self.rooms)}:{room_ids}:{self.has_fallback_geometry}"
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 @dataclass(frozen=True, slots=True)

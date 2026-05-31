@@ -7,6 +7,12 @@ BUG-5 FIX: Overlap detection now checks ALL overlapping bounding boxes, not just
 identical ones. The original code only flagged rooms with IDENTICAL bounding boxes,
 missing rooms that overlap partially (e.g., two rooms sharing a wall drawn twice).
 
+BUG-7 FIX: Overlap detection now uses 3D-aware AABB checks. Rooms on different
+floors (different Z elevations) with identical X,Y footprints are NOT flagged as
+overlapping. This prevents false errors for multi-story buildings where rooms
+stack vertically. The 2D-only check was flagging rooms on different floors as
+duplicates — same bug as Bug 9 (2D BIM Collapse) in bridges/digital_twin_bridge.py.
+
 Standards: NFPA 72 (2022) §17, ISO 16739 (IFC Spatial Schemas)
 """
 
@@ -100,6 +106,16 @@ class GeometryValidator:
         # This misses rooms that overlap PARTIALLY — e.g., a room drawn twice with
         # slight offset, or rooms on different layers that occupy the same space.
         # Fixed: now checks ALL AABB overlaps and reports them.
+        #
+        # BUG-7 FIX: The overlap check was 2D-only (X,Y). Rooms on different floors
+        # with identical X,Y footprints were incorrectly flagged as overlapping.
+        # Now uses 3D AABB: if rooms have different Z ranges that do NOT overlap,
+        # they are on different floors and cannot be duplicates. This mirrors the
+        # same fix applied to bridges/digital_twin_bridge.py (Bug 9 — 2D BIM Collapse).
+        # A typical floor-to-floor height is 3-5m; we use the room height_m to
+        # determine the Z range of each room. If boundary points have non-zero Z,
+        # those are used directly; otherwise, the room is assumed at ground level
+        # (z_min=0, z_max=height_m).
         for i in range(len(b.rooms)):
             for j in range(i + 1, len(b.rooms)):
                 r1, r2 = b.rooms[i], b.rooms[j]
@@ -114,9 +130,34 @@ class GeometryValidator:
                 min_y2 = min(p.y for p in r2.boundary)
                 max_y2 = max(p.y for p in r2.boundary)
 
-                # AABB overlap detection — rooms that share ANY space
+                # BUG-7 FIX: Compute Z ranges for 3D-aware overlap detection
+                z_values_1 = [p.z for p in r1.boundary]
+                z_values_2 = [p.z for p in r2.boundary]
+
+                # Determine Z range for each room
+                # If boundary points have explicit Z, use those; otherwise infer from height_m
+                if any(z != 0.0 for z in z_values_1):
+                    min_z1 = min(z_values_1)
+                    max_z1 = max(z_values_1) + r1.height_m
+                else:
+                    min_z1 = 0.0
+                    max_z1 = r1.height_m
+
+                if any(z != 0.0 for z in z_values_2):
+                    min_z2 = min(z_values_2)
+                    max_z2 = max(z_values_2) + r2.height_m
+                else:
+                    min_z2 = 0.0
+                    max_z2 = r2.height_m
+
+                # 3D AABB overlap detection — rooms must overlap in ALL three axes
                 overlaps_x = not (max_x1 <= min_x2 or max_x2 <= min_x1)
                 overlaps_y = not (max_y1 <= min_y2 or max_y2 <= min_y1)
+                overlaps_z = not (max_z1 <= min_z2 or max_z2 <= min_z1)
+
+                # If rooms don't overlap in Z, they're on different floors — NOT a collision
+                if not overlaps_z:
+                    continue
 
                 if overlaps_x and overlaps_y:
                     # Calculate overlap percentage for severity assessment
@@ -132,13 +173,14 @@ class GeometryValidator:
                         abs(min_x1 - min_x2) < 1e-4 and
                         abs(max_x1 - max_x2) < 1e-4 and
                         abs(min_y1 - min_y2) < 1e-4 and
-                        abs(max_y1 - max_y2) < 1e-4
+                        abs(max_y1 - max_y2) < 1e-4 and
+                        abs(min_z1 - min_z2) < 1e-4
                     )
 
                     if is_duplicate:
                         return Result(error=GeometryError(
                             message=f"Duplicate overlapping rooms detected: '{r1.id}' and '{r2.id}'. "
-                                    f"Both rooms occupy identical space — likely a CAD layer duplication error.",
+                                    f"Both rooms occupy identical 3D space — likely a CAD layer duplication error.",
                             code_ref="BIM Quality Standard",
                             remedy="Remove overlapping or duplicate layers in CAD before exporting."
                         ))
@@ -148,7 +190,7 @@ class GeometryValidator:
                         if overlap_pct > 50.0:
                             return Result(error=GeometryError(
                                 message=f"Significant room overlap detected: '{r1.id}' and '{r2.id}' "
-                                        f"share {overlap_pct:.1f}% of their area. "
+                                        f"share {overlap_pct:.1f}% of their area on the same floor. "
                                         f"This causes double-counting in NFPA coverage calculations.",
                                 code_ref="BIM Quality Standard",
                                 remedy="Remove overlapping or duplicate layers in CAD before exporting."

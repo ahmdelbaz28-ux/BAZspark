@@ -7,6 +7,15 @@ BUG-4 FIX: Area is now CALCULATED from boundary vertices using Shoelace formula,
 NOT hardcoded to 100.0 m2. A hardcoded area is a safety lie — it claims
 a room is 100m2 when it could be 5m2 or 500m2, producing WRONG NFPA coverage.
 
+BUG-9 FIX: has_fallback_geometry flag is now set when fallback room is used.
+Downstream systems MUST check this flag — design based on fallback geometry is INVALID.
+
+BUG-10 FIX: _dxf_group_pairs() now preserves multi-value group codes (like repeated
+group code 10/20 for LWPOLYLINE vertices) using lists instead of overwriting.
+
+BUG-11 FIX: _extract_polyline_points() now actually extracts vertices from the
+multi-value group codes, instead of always returning an empty list.
+
 Standards: AutoCAD DXF Specification, NFPA 72 (2022)
 """
 
@@ -67,8 +76,10 @@ class DxfParser:
             # ezdxf failed — fall back to text-based DXF parsing
             DxfParser._parse_dxf_text(filepath, walls, rooms)
 
-        # Ensure a minimal valid room is present to allow routing computations.
-        # WARNING: Fallback room means DXF parsing found no real rooms.
+        # BUG-9 FIX: Set has_fallback_geometry flag when fallback room is injected.
+        # Downstream systems MUST check this flag — fire protection design based
+        # on fallback geometry is INVALID and must be rejected.
+        has_fallback = False
         if not rooms:
             fallback_boundary = (
                 Point3D(0.0, 0.0, 0.0),
@@ -83,6 +94,7 @@ class DxfParser:
                 area_m2=DxfParser._calculate_polygon_area(fallback_boundary),
                 height_m=3.0
             ))
+            has_fallback = True
 
         b = Building(
             file_hash=file_hash,
@@ -91,7 +103,8 @@ class DxfParser:
             units="METERS",
             walls=tuple(walls),
             rooms=tuple(rooms),
-            openings=tuple(openings)
+            openings=tuple(openings),
+            has_fallback_geometry=has_fallback
         )
         return Result(value=b)
 
@@ -116,12 +129,13 @@ class DxfParser:
 
             if etype == "LWPOLYLINE":
                 # Check if closed (group code 70, bit 1 = closed)
-                flags = int(entity.get("70", "0"))
+                try:
+                    flags = int(entity.get("70", "0"))
+                except (ValueError, TypeError):
+                    flags = 0
                 is_closed = bool(flags & 1)
 
-                # Extract vertices (group codes 10, 20 for X, Y)
-                xs = [float(v) for k, v in entity.get("_coords", [])]
-                # Simplified: just try to extract coordinate pairs
+                # BUG-11 FIX: Extract vertices from multi-value group codes
                 pts = DxfParser._extract_polyline_points(entity)
                 if is_closed and len(pts) >= 3:
                     area = DxfParser._calculate_polygon_area(tuple(pts))
@@ -152,7 +166,19 @@ class DxfParser:
 
     @staticmethod
     def _dxf_group_pairs(lines: List[str]) -> List[dict]:
-        """Parse DXF text into group code/value pair dictionaries."""
+        """
+        Parse DXF text into group code/value pair dictionaries.
+
+        BUG-10 FIX: The original code used current[str(int_code)] = value which
+        OVERWRITES previous values of the same group code. In DXF, LWPOLYLINE
+        vertices appear as multiple group code 10 (X) and 20 (Y) pairs. With
+        overwriting, only the LAST vertex was preserved — all others were lost.
+
+        Now uses lists to accumulate multiple values for the same group code.
+        Single-value codes (like "0" for entity type) are stored as strings.
+        Multi-value codes (like "10" for X coordinates) are stored as lists.
+        The _extract_polyline_points() method reads from these lists.
+        """
         entities = []
         current = {}
         i = 0
@@ -161,29 +187,86 @@ class DxfParser:
             value = lines[i + 1].strip()
             try:
                 int_code = int(code)
-                current[str(int_code)] = value
+                str_code = str(int_code)
+
                 if int_code == 0 and current and len(current) > 1:
                     # New entity starts — save the previous one
                     prev = dict(current)
-                    prev.pop("0", None)  # Remove the entity type marker from previous
+                    prev.pop("0", None)
                     if prev:
                         entities.append(prev)
                     current = {"0": value}
+                elif int_code == 0:
+                    # First entity marker
+                    current = {"0": value}
+                else:
+                    # BUG-10 FIX: Accumulate multi-value group codes as lists
+                    # Group codes 10, 20, 30, 11, 21, 31 are coordinate pairs
+                    # that can repeat within a single entity (LWPOLYLINE vertices)
+                    if str_code in current:
+                        # Already have a value for this code — convert to list
+                        existing = current[str_code]
+                        if isinstance(existing, list):
+                            existing.append(value)
+                        else:
+                            current[str_code] = [existing, value]
+                    else:
+                        current[str_code] = value
             except ValueError:
                 pass
             i += 2
-        if current:
-            entities.append(current)
+        if current and len(current) > 1:
+            current.pop("0", None)
+            if current:
+                entities.append(current)
         return entities
 
     @staticmethod
     def _extract_polyline_points(entity: dict) -> List[Point3D]:
-        """Extract 2D points from LWPOLYLINE group codes."""
+        """
+        Extract 2D points from LWPOLYLINE group codes.
+
+        BUG-11 FIX: The original code always returned an empty list because
+        it read from entity.get("_raw_coords", []) which was never populated.
+        Now reads from the actual group code 10 (X) and 20 (Y) values that
+        were accumulated by the fixed _dxf_group_pairs() method.
+
+        In DXF, LWPOLYLINE vertices are specified as repeating pairs:
+          Group 10 = X coordinate (repeats for each vertex)
+          Group 20 = Y coordinate (repeats for each vertex)
+        The values are stored as lists when multiple vertices exist.
+        """
         points = []
-        # In DXF, LWPOLYLINE vertices are in group codes 10 (X) and 20 (Y)
-        # appearing as repeating pairs
-        raw = entity.get("_raw_coords", [])
-        # Simplified extraction
+
+        # Get X values (group code 10) and Y values (group code 20)
+        x_raw = entity.get("10", [])
+        y_raw = entity.get("20", [])
+
+        # Normalize to lists
+        if isinstance(x_raw, str):
+            x_vals = [x_raw]
+        elif isinstance(x_raw, list):
+            x_vals = x_raw
+        else:
+            x_vals = []
+
+        if isinstance(y_raw, str):
+            y_vals = [y_raw]
+        elif isinstance(y_raw, list):
+            y_vals = y_raw
+        else:
+            y_vals = []
+
+        # Must have equal number of X and Y coordinates
+        count = min(len(x_vals), len(y_vals))
+        for idx in range(count):
+            try:
+                x = float(x_vals[idx])
+                y = float(y_vals[idx])
+                points.append(Point3D(x, y, 0.0))
+            except (ValueError, TypeError, IndexError):
+                continue
+
         return points
 
     @staticmethod

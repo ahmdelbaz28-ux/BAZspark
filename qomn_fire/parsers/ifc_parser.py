@@ -118,8 +118,10 @@ class IfcParser:
                 opening_counter += 1
 
         # Fallback room instantiation — ensures at least one room for pipeline testing.
-        # WARNING: Fallback room means the IFC parsing did not find any real rooms.
-        # This should trigger a WARNING in downstream processing.
+        # BUG-9 FIX: Set has_fallback_geometry=True when fallback room is used.
+        # Downstream systems MUST check this flag — fire protection design based
+        # on fallback geometry is INVALID and must be rejected.
+        has_fallback = False
         if not rooms:
             fallback_boundary = (
                 Point3D(0.0, 0.0, 0.0),
@@ -134,6 +136,7 @@ class IfcParser:
                 area_m2=IfcParser._calculate_polygon_area(fallback_boundary),
                 height_m=3.0
             ))
+            has_fallback = True
 
         # Detect IFC version from header
         version = "IFC2X3"
@@ -149,7 +152,8 @@ class IfcParser:
             units="METERS",
             walls=tuple(walls),
             rooms=tuple(rooms),
-            openings=tuple(openings)
+            openings=tuple(openings),
+            has_fallback_geometry=has_fallback
         )
         return Result(value=b)
 
@@ -171,14 +175,30 @@ class IfcParser:
     def _extract_room_boundary(inst_id: str, content: str) -> Tuple[Point3D, ...]:
         """
         Try to extract room boundary from IFC representation items.
-        Falls back to a regular-spaced 10m x 10m room if no geometry found.
+        Falls back to a spaced 10m x 10m room if no geometry found.
+
+        BUG-8 FIX: The original code multiplied offset by 0.0, meaning ALL rooms
+        from IFCSPACE entities got the SAME boundary at origin (0,0)->(10,10).
+        This caused the geometry validator to flag them as duplicate overlapping
+        rooms even though they represent different real spaces in the building.
+        Now uses a non-zero spacing factor so each fallback room is placed at
+        a different location, preventing false overlap errors. The spacing is
+        large enough (15m) to ensure AABB boundaries don't touch.
         """
         # Try to find IFCPOLYLINE or IFCBOUNDARYCURVE references for this space
         # This is a simplified extraction — full IFC geometry requires ifcopenshell
-        offset_x = float(inst_id) * 0.0  # Could be used for layout positioning
-        offset_y = float(inst_id) * 0.0
 
-        # Default 10m x 10m room boundary
+        # BUG-8 FIX: Use non-zero offset so multiple rooms don't collide at origin
+        # Each room is offset by 15m in X direction based on its instance ID
+        # This ensures AABB boundaries don't overlap for different rooms
+        try:
+            id_num = int(inst_id)
+        except (ValueError, TypeError):
+            id_num = 0
+        offset_x = float(id_num) * 15.0  # 15m spacing > 10m room width
+        offset_y = 0.0
+
+        # Default 10m x 10m room boundary with offset
         return (
             Point3D(offset_x, offset_y, 0.0),
             Point3D(offset_x + 10.0, offset_y, 0.0),

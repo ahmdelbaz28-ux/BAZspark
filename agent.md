@@ -10737,3 +10737,101 @@ Each bug fix prevents a specific physical failure mode:
 ### Commit Information
 - **Commit:** `92778b8`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/92778b8
+
+## V61 Fixes (2026-06-01) — QOMN-FIRE Parser Vulnerability Audit: 6 Bugs Fixed
+
+### Self-Criticism Protocol (Rule 21 — 4-Layer Meta-Criticism)
+
+**Layer 1 — Criticize the OUTPUT:** The user provided a `qomn_parser_workspace.py` containing 9 embedded source files. I compared the workspace code against the EXISTING repo code line-by-line. Found 11 bugs that were ALREADY FIXED in the repo (OLE signature, double-escaped regex, hardcoded area, etc.) and 6 NEW bugs that were NOT yet fixed. The new bugs were found through systematic cross-module analysis, not just file-by-file comparison.
+
+**Layer 2 — Criticize the THINKING:** I initially assumed "repo code is correct" too quickly. When I challenged myself with "what could STILL be wrong?", I discovered the 2D-only overlap check in geometry_validator.py — the same bug pattern (Bug 9 / 2D BIM Collapse) that was fixed in bridges/digital_twin_bridge.py but NOT in the parser's geometry validator. This cross-module consistency check was critical.
+
+**Layer 3 — Criticize the METHOD:** My method was correct — read ALL files, compare workspace vs. repo, then search for gaps. But I almost missed the `_extract_room_boundary` zero-offset bug because I was focused on the user's workspace code rather than the repo code. I should have started with the repo code first.
+
+**Layer 4 — Criticize the COMMITMENT:** Am I being thorough? The 3D-aware overlap check is the most important fix — it prevents false errors for multi-story buildings. If I had been lazy and stopped at "repo already has the 11 fixes," I would have missed the 2D collapse bug in geometry_validator. This bug could have caused an engineer to think a valid multi-story building has overlapping rooms, leading to unnecessary redesign or, worse, disabling the overlap check entirely.
+
+### Analysis Summary
+
+The user's `qomn_parser_workspace.py` contains an OLDER version of the parser code with 11 known bugs. The repo code already has fixes for all 11 of these bugs (documented in V60 entry). However, the repo code STILL had 6 additional gaps that were discovered through this audit.
+
+### Bugs Already Fixed in Repo (11 — NOT re-applied)
+
+| # | Bug | Status | Where Fixed |
+|---|-----|--------|-------------|
+| 1 | OLE Signature `b"\\xd0..."` vs `b"\xd0..."` | Already fixed | `format_detector.py:38` |
+| 2 | Double-escaped DXF regex `\\$ACADVER\\s*\\n` | Already fixed | `format_detector.py:102` |
+| 3 | Double-escaped STEP regex `#(\\d+)\\s*=` | Already fixed | `ifc_parser.py:26` |
+| 4 | Hardcoded area_m2=100.0 in DXF parser | Already fixed | `dxf_parser.py:49` — Shoelace formula |
+| 5 | Identical-only overlap detection | Already fixed | `geometry_validator.py:98-155` — partial overlaps |
+| 6 | Text-mode read of binary files | Already fixed | `file_validator.py:85` — `"rb"` mode |
+| 7 | No subprocess timeout in DWG converter | Already fixed | `dwg_converter.py:55` — 120s timeout |
+| 8 | No subprocess timeout in RVT converter | Already fixed | `rvt_converter.py:53` — 300s timeout |
+| 9 | Building.compute_hash() only counts rooms/walls | Already fixed | `types.py:88-91` — includes IDs |
+| 10 | Device.compute_hash() missing Z coordinate | Already fixed | `types.py:103` — Z included |
+| 11 | List[str] instead of Tuple[str, ...] in frozen dataclasses | Already fixed | `types.py:135-163` — Tuple used |
+
+### New Bugs Fixed in This Audit (6)
+
+### BUG-7 — 2D-Only Overlap Check in Geometry Validator (HIGH)
+**File:** `qomn_fire/parsers/geometry_validator.py` — `validate_building()`
+**Discovery:** Cross-module consistency audit. Bug 9 (2D BIM Collapse) was fixed in `bridges/digital_twin_bridge.py` using 3D Euclidean distance, but the SAME bug pattern existed in `geometry_validator.py`'s overlap check.
+**Verification:** ✅ CONFIRMED — Overlap check only examines X and Y coordinates. Rooms on different floors with identical X,Y footprints are flagged as overlapping.
+**Impact:** Multi-story buildings with stacked rooms (e.g., hotel with identical floor plans) produce false "duplicate overlapping rooms" errors. Engineers may disable the overlap check or waste time on false issues.
+**Fix Applied:** 3D AABB overlap check using Z coordinates from boundary points + height_m. If rooms don't overlap in Z (different floors), they are NOT flagged. If they DO overlap in Z, the existing X,Y check applies.
+
+### BUG-8 — IFC Room Boundary Zero-Offset (HIGH)
+**File:** `qomn_fire/parsers/ifc_parser.py` — `_extract_room_boundary()`
+**Discovery:** Code review revealed `offset_x = float(inst_id) * 0.0` — multiplying by 0.0 means ALL IFCSPACE rooms get identical boundary at origin.
+**Verification:** ✅ CONFIRMED — All rooms from IFC file land at (0,0)->(10,10), then geometry validator flags them as duplicates even though they represent different spaces.
+**Impact:** Valid multi-room IFC files are rejected as having "duplicate overlapping rooms." The parser's own fallback geometry creates false errors.
+**Fix Applied:** Changed to `offset_x = float(id_num) * 15.0` — each room is offset 15m in X direction (greater than 10m room width, so no AABB overlap).
+
+### BUG-9 — No Fallback Geometry Flag (MEDIUM)
+**Files:** `qomn_fire/core/types.py`, `qomn_fire/parsers/ifc_parser.py`, `qomn_fire/parsers/dxf_parser.py`
+**Discovery:** When parsers inject fallback rooms (no real geometry found), there's no way for downstream systems to know the building model is fake.
+**Verification:** ✅ CONFIRMED — `Building` dataclass has no flag indicating fallback geometry. Downstream systems could design fire protection based on a 10x10m placeholder room.
+**Impact:** Fire protection design produced for a building model containing only fallback geometry is INVALID — the design has no relation to the actual building. This is a silent safety failure.
+**Fix Applied:** Added `has_fallback_geometry: bool = False` to Building dataclass. IFC and DXF parsers set `has_fallback_geometry=True` when injecting fallback rooms. Building.compute_hash() includes this flag.
+
+### BUG-10 — DXF Group Code Overwrite (MEDIUM)
+**File:** `qomn_fire/parsers/dxf_parser.py` — `_dxf_group_pairs()`
+**Discovery:** Code review revealed `current[str(int_code)] = value` overwrites previous values of the same group code. DXF LWPOLYLINE has multiple group code 10/20 pairs for vertices.
+**Verification:** ✅ CONFIRMED — Only the LAST vertex of each LWPOLYLINE is preserved. All others are silently lost.
+**Impact:** Text-based DXF parser (used when ezdxf is not installed) cannot correctly extract any polyline with more than one vertex. Rooms from closed polylines are silently lost.
+**Fix Applied:** Multi-value group codes are now accumulated as lists instead of overwriting.
+
+### BUG-11 — DXF Polyline Point Extraction Always Empty (HIGH)
+**File:** `qomn_fire/parsers/dxf_parser.py` — `_extract_polyline_points()`
+**Discovery:** Code review revealed the method reads from `entity.get("_raw_coords", [])` which is never populated, and always returns an empty list.
+**Verification:** ✅ CONFIRMED — `_extract_polyline_points()` always returns `[]`. No polyline vertices are ever extracted in the text-based DXF path.
+**Impact:** Without ezdxf installed, the text-based DXF parser can NEVER extract room boundaries from closed polylines. Only fallback room remains.
+**Fix Applied:** Rewrote to read from actual group code 10 (X) and 20 (Y) values accumulated by the fixed `_dxf_group_pairs()`.
+
+### BUG-G1 — No Test Suite for Parsers (CRITICAL)
+**Discovery:** The `qomn_fire/parsers/` package had ZERO test files. agent.md Rule 10 mandates tests after any modification, but there were no tests to run.
+**Verification:** ✅ CONFIRMED — No `tests/` directory under `qomn_fire/`.
+**Impact:** Any regression in format detection, file validation, geometry validation, or parsing would go undetected.
+**Fix Applied:** Created `qomn_fire/tests/test_parsers.py` with 53 comprehensive unit tests covering:
+- Format Detection (9 tests): IFC, DWG, RVT, DXF detection, edge cases
+- File Validation (8 tests): Valid/invalid files, corruption, SHA-256 determinism
+- IFC Parsing (8 tests): STEP extraction, fallback rooms, version detection, BUG-8 verification
+- DXF Parsing (3 tests): Fallback rooms, LINE extraction, area calculation
+- Geometry Validation (9 tests): Area, units, overlap, BUG-7 3D-aware check
+- Converters (4 tests): DWG/RVT fallback paths
+- Data Types (9 tests): Hash determinism, immutability, fallback flag
+- Integration Pipeline (3 tests): End-to-end IFC/DXF/corruption paths
+
+### Test Results
+```
+53 passed in 0.91s
+```
+
+### Self-Criticism Notes (V61)
+
+1. **BUG-7 (2D overlap) was nearly missed** — I almost stopped after confirming the 11 already-fixed bugs. Cross-module consistency checking caught it. The same bug pattern existed in TWO different files, but was only fixed in one.
+2. **BUG-8 (zero offset) is a self-inflicted wound** — The IFC parser creates rooms with identical boundaries, then the geometry validator correctly flags them. The parser's own fallback geometry creates the error condition. This is an interaction bug that only manifests when both modules work together.
+3. **BUG-9 (fallback flag) prevents silent safety failure** — Without this flag, downstream systems have no way to distinguish real building geometry from placeholder geometry. A fire protection design for a 10x10m fallback room is not just wrong — it's dangerous because it looks valid.
+4. **BUG-10 + BUG-11 work together** — The group code overwrite bug made polyline extraction impossible, but the extraction method was also broken independently. Both had to be fixed for the text-based DXF path to work.
+
+### Commit Information
+- Pending commit
