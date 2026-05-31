@@ -1,0 +1,60 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# FireAI — Safety-Critical Fire Protection Digital Twin
+# ═══════════════════════════════════════════════════════════════════════════
+# Python 3.12+
+#
+# Sections:
+#   1. Core Web Framework
+#   2. Data & Geometry
+#   3. CAD/BIM Parsing
+#   4. AI / LLM Integration
+#   5. Security & Auth
+#   6. Logging & Observability
+#   7. Testing
+#   8. Utilities
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── 1. Core Web Framework ─────────────────────────────────────────────────
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+starlette>=0.36.0
+pydantic>=2.5.0
+python-dotenv>=1.0.0
+python-multipart>=0.0.6
+websockets>=12.0
+
+# ── 2. Data & Geometry ────────────────────────────────────────────────────
+shapely>=2.0.0
+numpy>=1.26.0
+matplotlib>=3.8.0
+
+# ── 3. CAD/BIM Parsing ───────────────────────────────────────────────────
+ezdxf>=1.2.0
+openpyxl>=3.1.0
+# ifcopenshell>=0.7.0   # Optional — install manually for IFC support
+
+# ── 4. AI / LLM Integration ──────────────────────────────────────────────
+httpx>=0.27.0
+aiohttp>=3.9.0
+# google-generativeai>=0.5.0   # Optional — for Gemini AI provider
+# langgraph>=0.1.0             # Optional — for workflow engine
+# mem0>=0.1.0                  # Optional — for long-term memory
+# qdrant-client>=1.7.0         # Optional — for vector DB (mem0 dependency)
+
+# ── 5. Security & Auth ────────────────────────────────────────────────────
+cryptography>=42.0.0
+# slowapi>=0.1.9              # Optional — replaced by PerPathRateLimitMiddleware
+
+# ── 6. Logging & Observability ────────────────────────────────────────────
+loguru>=0.7.0
+
+# ── 7. Reporting ──────────────────────────────────────────────────────────
+reportlab>=4.1.0
+Pillow>=10.0.0
+
+# ── 8. Testing ────────────────────────────────────────────────────────────
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+
+# ── 9. Utilities ──────────────────────────────────────────────────────────
+packaging>=24.0

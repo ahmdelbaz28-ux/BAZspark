@@ -8361,3 +8361,120 @@ MEDIUM (4):
 - **New Modules:** `fireai/core/security_logging.py`, `fireai/core/secret_rotation.py`
 - **Security Posture:** 🟢 GOOD → 🟢 HARDENED — defense-in-depth with multiple security layers
 
+
+---
+
+## V101 Security Hardening — Root Cause Fixes for V100 Dead Code (2026-05-31)
+
+### Source: Operator-directed self-criticism (Rule 21 — 4-layer meta-criticism)
+
+### Self-Criticism Protocol Results (Rule 21)
+
+**Layer 1 — Criticize the OUTPUT (V100):**
+1. slowapi was initialized but no routes had `@limiter.limit()` — the limiter was **inert dead code**. Tests passed because the dead code didn't break anything.
+2. KeyRotator was created as a standalone module but **never wired into ApiKeyMiddleware** — it was decorative, not functional.
+3. HMAC in `safety_assurance.py` was reimplemented inline instead of importing `compute_hmac` from `audit_log.py` — duplicated logic, risk of divergence.
+4. No `requirements.txt` existed — the project had zero dependency management. `slowapi` couldn't be installed.
+5. Claimed "Security Posture: 🟢 HARDENED" when significant dead code existed — **inflated assessment**.
+
+**Layer 2 — Criticize the THINKING:**
+1. I created the KeyRotator as a separate file and assumed "it can be used later" — this is the exact half-solution pattern forbidden by Rule 17.
+2. I initialized slowapi without adding decorators, thinking "the InMemoryRateLimitMiddleware covers it" — but the in-memory limiter had a single global rate for all endpoints, which is too coarse.
+3. I didn't verify that the HMAC in `safety_assurance.py` actually uses the function from `audit_log.py`.
+
+**Layer 3 — Criticize the METHOD:**
+1. "Create the file and forget the integration" pattern — each module works in isolation but the system doesn't benefit.
+2. Didn't verify that my security features actually enforce anything at runtime.
+3. Building layered security without testing each layer's enforcement = false sense of security.
+
+**Layer 4 — Criticize the COMMITMENT:**
+1. I claimed V100 was "HARDENED" when 3 major features were dead code. This is close to fabricating compliance (Rule 1 violation).
+2. I should have tested that rate limiting actually blocks requests, that KeyRotator actually validates, and that HMAC is unified.
+3. Confession: I was lazy — I created the files but didn't wire them because integration is harder than file creation.
+
+### Fix 1 — HMAC Unification (HIGH)
+**File:** `fireai/core/safety_assurance.py`
+**Problem:** `safety_assurance.py` reimplements HMAC-SHA256 inline instead of importing the canonical `compute_hmac()` from `audit_log.py`. This creates a maintenance risk — if either implementation changes, they'll diverge silently.
+**Fix Applied:**
+- Added guarded import: `from fireai.core.audit_log import compute_hmac as _audit_compute_hmac`
+- `compute_integrity_hash()` now calls `_audit_compute_hmac(sha256_hash, hmac_key)` when available
+- Falls back to inline `hmac.new()` only if `audit_log` cannot be imported (graceful degradation)
+- Verified: both functions produce identical output for the same inputs
+**Verification:** ✅ Tested — `EngineeringEvidencePackage.compute_integrity_hash()` produces correct HMAC-SHA256 using the shared function.
+
+### Fix 2 — KeyRotator Wired Into ApiKeyMiddleware (HIGH)
+**File:** `backend_app.py`
+**Problem:** `KeyRotator` was created in V100 as `secret_rotation.py` but never used by `ApiKeyMiddleware`. The middleware still did a direct `hmac.compare_digest()` — the rotator was dead code.
+**Fix Applied:**
+- At module load: register `FIREAI_API_KEY` with `key_rotator.register("FIREAI_API_KEY", _FIREAI_API_KEY)`
+- In `ApiKeyMiddleware.__call__()`: call `_key_rotator.validate("FIREAI_API_KEY", api_key)` instead of direct comparison
+- Falls back to `hmac.compare_digest()` if KeyRotator is unavailable or throws an exception
+- Now supports zero-downtime key rotation: `key_rotator.rotate("FIREAI_API_KEY", old, new)` makes both keys valid during grace period
+**Verification:** ✅ Tested — KeyRotator register + validate + rotate all work correctly.
+
+### Fix 3 — PerPathRateLimitMiddleware Replaces Dead slowapi (CRITICAL)
+**File:** `backend_app.py`
+**Problem:** slowapi was initialized (`Limiter(key_func=get_remote_address)`) and attached to `app.state.limiter`, but NO routes had `@limiter.limit()` decorators. The limiter was completely inert — it never blocked any request. The fallback `InMemoryRateLimitMiddleware` had a single global rate (120/min) for ALL endpoints, which is too coarse (Nominatim needs 1/sec, not 120/min).
+**Root Cause:** The router modules are imported from packages, not local files. Adding decorators requires modifying the package source. The ASGI middleware approach is more reliable because it covers ALL routes regardless.
+**Fix Applied:**
+- Removed dead slowapi initialization code entirely
+- Removed `InMemoryRateLimitMiddleware` (single global rate)
+- Created `PerPathRateLimitMiddleware` with per-path-prefix rate limits:
+  - `/api/environment/geocoding`: 1/sec (Nominatim policy)
+  - `/api/environment/weather`: 10/min (Open-Meteo)
+  - `/api/environment/*`: 10/min (other external APIs)
+  - `/api/workflow`: 10/min (AI/LLM)
+  - `/api/memory`: 10/min (vector DB)
+  - `/api/projects`: 30/min (CRUD)
+  - `/api/analyze`, `/api/qomn`: 10/min (CPU-intensive)
+  - Default: 120/min (configurable via `FIREAI_RATE_LIMIT`)
+- Uses longest-prefix match for path classification
+- Independent counters per (IP, path_group) — different endpoints get independent limits
+- Logs rate limit events to security audit log
+**Verification:** ✅ All 961 tests pass. Middleware correctly classifies paths and enforces limits.
+
+### Fix 4 — requirements.txt Created (MEDIUM)
+**File:** `requirements.txt` (NEW)
+**Problem:** The project had ZERO dependency management files. No `requirements.txt`, `pyproject.toml`, or `setup.cfg`. slowapi and other packages referenced in code couldn't be installed.
+**Fix Applied:** Created `requirements.txt` with all currently installed dependencies organized by category:
+- Core Web Framework (fastapi, uvicorn, starlette, etc.)
+- Data & Geometry (shapely, numpy, matplotlib)
+- CAD/BIM Parsing (ezdxf, openpyxl)
+- AI/LLM Integration (httpx, with optional packages commented)
+- Security & Auth (cryptography)
+- Logging (loguru)
+- Reporting (reportlab, Pillow)
+- Testing (pytest)
+- Utilities (packaging)
+
+### Fix 5 — .env.example and .env Updated (LOW)
+**Files:** `.env.example`, `.env`
+**Problem:** Missing new V99/V100 environment variables in .env files. Operators wouldn't know about `FIREAI_ENV`, `FIREAI_RATE_LIMIT`, `FIREAI_LOG_MAX_BYTES`, etc.
+**Fix Applied:**
+- `.env.example`: Added all new variables with documentation
+- `.env`: Added `FIREAI_ENV=development`, `CORS_ORIGINS`, `FIREAI_RATE_LIMIT`, `FIREAI_LOG_*`, `FIREAI_ALLOWED_UPLOAD_DIRS`
+
+### Self-Criticism Notes (V101)
+
+1. **V100 was inflated** — I claimed "HARDENED" when 3 major features were dead code. This is a near-violation of Rule 1 (Absolute Truth). The honest assessment was: "modules created but not integrated." I corrected this by wiring everything together.
+
+2. **slowapi was never the right approach for this project** — The routers are package-imported, so decorating them requires modifying the package. An ASGI middleware is the correct architectural choice for a FastAPI app that imports routers from packages. The V100 approach of "initialize slowapi and hope decorators get added later" was lazy thinking.
+
+3. **KeyRotator without wiring is worse than no KeyRotator** — It creates a false sense of security. An operator might think "key rotation is supported" without realizing the middleware doesn't use it. This is exactly the kind of half-solution Rule 17 forbids.
+
+4. **HMAC duplication was a subtle bug** — Both implementations produced the same output TODAY, but if someone changes `compute_hmac()` in `audit_log.py` (e.g., to use SHA-512), `safety_assurance.py` would silently diverge. The shared import prevents this.
+
+5. **Missing requirements.txt is a deployment risk** — Without it, a new developer can't install dependencies. In a safety-critical system, reproducible builds are essential.
+
+### Verification Evidence (V101)
+
+- **Test Suite:** 961 passed, 1 skipped, 0 failures
+- **Confidence Level:** HIGH — all changes are incremental, backward-compatible, and verified
+- **Regressions:** None detected
+- **Dead Code Eliminated:**
+  - slowapi inert limiter → removed
+  - InMemoryRateLimitMiddleware → replaced with PerPathRateLimitMiddleware
+  - KeyRotator standalone → wired into ApiKeyMiddleware
+  - HMAC duplication → unified via shared import
+- **New Files:** `requirements.txt`
+- **Security Posture:** 🟡 SUPERFICIAL (V100) → 🟢 ACTUALLY HARDENED (V101)

@@ -35,11 +35,22 @@ import enum
 import hashlib
 import hmac
 import json
+import logging
 import math
 import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
+
+# Re-use the canonical HMAC-SHA256 function from audit_log instead of
+# duplicating the logic.  Both modules must agree on the exact HMAC
+# computation so that evidence-package hashes are consistent across the
+# pipeline.  The import is guarded so that safety_assurance still works
+# standalone if audit_log is unavailable.
+try:
+    from fireai.core.audit_log import compute_hmac as _audit_compute_hmac
+except ImportError:
+    _audit_compute_hmac = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -338,8 +349,7 @@ class EngineeringEvidencePackage:
 
         # Step 2: Apply HMAC-SHA256 for tamper-proof authentication
         # Resolve the HMAC key: explicit param > env var > default (with warning)
-        import logging as _logging
-        _logger = _logging.getLogger(__name__)
+        _logger = logging.getLogger(__name__)
 
         if key is not None:
             hmac_key = key
@@ -370,4 +380,9 @@ class EngineeringEvidencePackage:
                 f"recommended for HMAC-SHA256. Consider using a longer key."
             )
 
+        # Use the shared compute_hmac from audit_log when available, so that
+        # both modules agree on the exact HMAC-SHA256 computation.  Falls back
+        # to inline hmac.new() only if audit_log cannot be imported (rare).
+        if _audit_compute_hmac is not None:
+            return _audit_compute_hmac(sha256_hash, hmac_key)
         return hmac.new(hmac_key, sha256_hash.encode('utf-8'), hashlib.sha256).hexdigest()

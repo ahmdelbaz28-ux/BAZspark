@@ -385,6 +385,22 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 _FIREAI_API_KEY = os.getenv("FIREAI_API_KEY")
 
+# ── Secret rotation integration ────────────────────────────────────────────
+# Wire the KeyRotator into the API key lifecycle.  When KeyRotator is
+# available, the middleware uses its validate() method which accepts both
+# the current key AND any grace-period key.  This enables zero-downtime
+# key rotation in multi-worker deployments.
+_key_rotator = None
+try:
+    from fireai.core.secret_rotation import key_rotator as _key_rotator_singleton
+    _key_rotator = _key_rotator_singleton
+    # Register the current API key with the rotator so validate() works
+    if _FIREAI_API_KEY and _key_rotator is not None:
+        _key_rotator.register("FIREAI_API_KEY", _FIREAI_API_KEY)
+    logger.info("KeyRotator integrated with API key middleware")
+except ImportError:
+    logger.debug("secret_rotation module not available — key rotation disabled")
+
 # V92 FIX (SS-3): Warn loudly if FIREAI_API_KEY is explicitly set to empty in production.
 # An empty string passes `not _FIREAI_API_KEY` check (disabling auth) but the
 # operator may have intended to set a key. Without this warning, a misconfigured
@@ -504,7 +520,21 @@ class ApiKeyMiddleware:
         # No matching origin — require API key
         import hmac
         api_key = headers_dict.get("x-api-key", "")
-        if not hmac.compare_digest(api_key, _FIREAI_API_KEY):
+
+        # Use KeyRotator.validate() when available — it checks both the
+        # current key AND any grace-period key from a recent rotation.
+        # Falls back to direct comparison when rotator is not integrated.
+        key_valid = False
+        if _key_rotator is not None and _FIREAI_API_KEY:
+            try:
+                key_valid = _key_rotator.validate("FIREAI_API_KEY", api_key)
+            except Exception:
+                # KeyRotator should never crash auth — fall back to direct
+                key_valid = hmac.compare_digest(api_key, _FIREAI_API_KEY)
+        elif _FIREAI_API_KEY:
+            key_valid = hmac.compare_digest(api_key, _FIREAI_API_KEY)
+
+        if not key_valid:
             path = scope.get("path", "?")
             client = scope.get("client")
             client_addr = f"{client[0]}:{client[1]}" if client else "unknown"
@@ -542,68 +572,92 @@ class ApiKeyMiddleware:
 
 app.add_middleware(ApiKeyMiddleware)
 
-# ── Rate limiting (slowapi) ──────────────────────────────────────────────
-# V92 FIX (SS-4): Initialize slowapi limiter and attach to app state.
-# Required for environment router rate limiting (Nominatim 1/sec, etc.).
-# slowapi is in requirements.txt but was never initialized.
-# SECURITY FIX: Previously, slowapi was initialized but no routes had
-# @limiter.limit() decorators, making the limiter completely inert.
-# Now we also add a fallback in-memory rate limiter as ASGI middleware
-# that enforces a global default rate limit on ALL endpoints.
-try:
-    from slowapi import Limiter, _rate_limit_exceeded_handler
-    from slowapi.util import get_remote_address
-    from slowapi.errors import RateLimitExceeded
-    from starlette.requests import Request as StarletteRequest
-
-    _limiter = Limiter(key_func=get_remote_address, enabled=True)
-    app.state.limiter = _limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    logger.info("Rate limiter initialized (slowapi)")
-except ImportError:
-    logger.warning("slowapi not installed — rate limiting disabled")
-    _limiter = None
-
-# ── Fallback in-memory rate limiting middleware ─────────────────────────────
-# SECURITY FIX: Even when slowapi is available, it requires per-route
-# decorators. This ASGI middleware provides a global rate limit as a
-# safety net — it limits ALL endpoints (not just decorated ones).
-# Uses a simple sliding-window counter per IP address.
-# In production, replace with Redis-backed rate limiter for distributed systems.
+# ── Rate limiting ──────────────────────────────────────────────────────
+# V101 FIX: Replaced dual slowapi + InMemoryRateLimiter approach with a
+# single, path-aware ASGI middleware.  The previous approach had two
+# problems: (1) slowapi was initialized but no routes had @limiter.limit()
+# decorators, making it inert dead code; (2) the InMemoryRateLimiter had
+# a single global rate for ALL endpoints, which is too coarse.
+#
+# The new PerPathRateLimitMiddleware enforces different limits per path
+# prefix, so that expensive external API calls (weather, geocoding, AI)
+# get stricter limits than cheap internal operations.
+#
+# In production with multiple workers, replace the in-memory counters
+# with a Redis-backed store.  For single-worker deployments (which is
+# the typical FireAI deployment), this is sufficient.
 
 import time as _time
 from collections import defaultdict as _defaultdict
 
-class InMemoryRateLimitMiddleware:
+# Per-path rate limit configuration.
+# Format: (path_prefix, max_requests, window_seconds)
+# More specific prefixes should come first (longest-prefix match).
+_PER_PATH_LIMITS = [
+    # External API proxies — strict limits to respect upstream rate limits
+    ("/api/environment/weather",     10, 60),   # Open-Meteo: 10/min
+    ("/api/environment/geocoding",    1,  1),   # Nominatim:  1/sec
+    ("/api/environment/elevation",   10, 60),   # Open Topo Data: 10/min
+    ("/api/environment/air-quality", 10, 60),   # WAQI: 10/min
+    ("/api/environment/severe",      10, 60),   # NWS: 10/min
+    ("/api/environment/hazmat",      30, 60),   # Local DB: 30/min
+    ("/api/environment/region",      10, 60),   # REST Countries: 10/min
+    # AI/LLM endpoints — moderate limits
+    ("/api/workflow",                10, 60),   # LangGraph: 10/min
+    ("/api/memory",                  10, 60),   # Mem0: 10/min
+    # Mutating endpoints — moderate limits (safety-critical)
+    ("/api/projects",               30, 60),   # CRUD: 30/min
+    # Analysis engine — CPU-intensive
+    ("/api/analyze",                 10, 60),   # 10/min
+    ("/api/qomn",                    10, 60),   # 10/min
+]
+
+_DEFAULT_RATE_LIMIT = (120, 60)  # 120 requests per 60 seconds for unmatched paths
+
+
+class PerPathRateLimitMiddleware:
     """
-    ASGI middleware that enforces a global per-IP rate limit.
+    ASGI middleware that enforces per-IP, per-path-prefix rate limits.
 
-    This is a safety net for the slowapi decorators. It ensures that
-    even un-decorated endpoints have basic rate limiting. For a
-    safety-critical fire alarm engineering system, uncontrolled API
-    access could lead to DoS or resource exhaustion during an emergency.
-
-    Rate limit: 120 requests per minute per IP (configurable via
-    FIREAI_RATE_LIMIT env var as "requests/minutes", e.g. "60/1").
+    This replaces both the inert slowapi initialization and the previous
+    single-global-limit InMemoryRateLimitMiddleware.  Each path prefix
+    gets its own rate limit counter, so that external API calls are
+    throttled more aggressively than internal operations.
 
     Thread-safe: uses a lock for the counters dictionary.
     """
 
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
-        self._counts: dict = _defaultdict(list)  # ip -> [timestamps]
+        # Key: (ip, path_prefix) -> [timestamps]
+        self._counts: dict = _defaultdict(list)
         self._lock = __import__("threading").Lock()
 
-        # Parse rate limit from env var
+        # Also allow override via env var for the default limit
         _rate_str = os.getenv("FIREAI_RATE_LIMIT", "120/1")
         try:
             parts = _rate_str.split("/")
-            self._max_requests = int(parts[0])
-            self._window_seconds = int(parts[1]) * 60 if len(parts) > 1 else 60
+            self._default_max = int(parts[0])
+            self._default_window = int(parts[1]) * 60 if len(parts) > 1 else 60
         except (ValueError, IndexError):
             logger.warning(f"Invalid FIREAI_RATE_LIMIT '{_rate_str}', using default 120/1min")
-            self._max_requests = 120
-            self._window_seconds = 60
+            self._default_max = 120
+            self._default_window = 60
+
+        # Log the per-path limits at startup
+        for prefix, max_req, window in _PER_PATH_LIMITS:
+            logger.info(f"Rate limit: {prefix} → {max_req}/{window}s")
+        logger.info(f"Rate limit: (default) → {self._default_max}/{self._default_window}s")
+
+    def _find_limit(self, path: str) -> tuple:
+        """Find the rate limit for a path (longest-prefix match)."""
+        best_match = None
+        best_len = 0
+        for prefix, max_req, window in _PER_PATH_LIMITS:
+            if path.startswith(prefix) and len(prefix) > best_len:
+                best_match = (max_req, window)
+                best_len = len(prefix)
+        return best_match if best_match else (self._default_max, self._default_window)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -613,21 +667,45 @@ class InMemoryRateLimitMiddleware:
         # Extract client IP
         client = scope.get("client")
         ip = client[0] if client else "unknown"
+        path = scope.get("path", "/")
+
+        # Find the applicable rate limit for this path
+        max_requests, window_seconds = self._find_limit(path)
+
+        # Use (ip, path_group) as the counter key so that different
+        # path groups get independent counters per IP.
+        # Group by the matched prefix for aggregate limiting.
+        group = None
+        for prefix, _, _ in _PER_PATH_LIMITS:
+            if path.startswith(prefix):
+                group = prefix
+                break
+        if group is None:
+            group = "_default"
+        counter_key = (ip, group)
 
         now = _time.monotonic()
         with self._lock:
             # Remove expired timestamps
-            self._counts[ip] = [
-                t for t in self._counts[ip]
-                if now - t < self._window_seconds
+            self._counts[counter_key] = [
+                t for t in self._counts[counter_key]
+                if now - t < window_seconds
             ]
             # Check if rate limit exceeded
-            if len(self._counts[ip]) >= self._max_requests:
+            if len(self._counts[counter_key]) >= max_requests:
+                # Log to security audit
+                if _SECURITY_AUDIT_AVAILABLE:
+                    security_audit.log_event(
+                        SecurityEventType.RATE_LIMIT_EXCEEDED,
+                        client_ip=ip,
+                        path=path,
+                        limit=f"{max_requests}/{window_seconds}s",
+                    )
                 response = Response(
                     content=json.dumps({
                         "success": False,
                         "error": "Rate limit exceeded",
-                        "detail": f"Maximum {self._max_requests} requests per {self._window_seconds}s",
+                        "detail": f"Maximum {max_requests} requests per {window_seconds}s for {group}",
                         "status_code": 429,
                     }),
                     status_code=429,
@@ -636,11 +714,11 @@ class InMemoryRateLimitMiddleware:
                 await response(scope, receive, send)
                 return
             # Record this request
-            self._counts[ip].append(now)
+            self._counts[counter_key].append(now)
 
         await self.app(scope, receive, send)
 
-app.add_middleware(InMemoryRateLimitMiddleware)
+app.add_middleware(PerPathRateLimitMiddleware)
 
 # ── Correlation ID middleware ──────────────────────────────────────────
 # Added LAST so it runs FIRST (Starlette middleware runs in reverse order).
