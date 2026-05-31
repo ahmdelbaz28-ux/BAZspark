@@ -114,11 +114,12 @@ MAX_CONDUIT_FILL_PCT = 0.40  # 40% fill per NEC 760.154
 # NFPA 72 §23.6.2 — NAC circuit maximum lengths by wire gauge
 # These are practical limits ensuring voltage drop compliance
 # for typical 24V NAC circuits with standard device loads
+# V108 FIX: WireGauge uses string keys ("12", "14", etc.), not enum attributes
 _NAC_MAX_LENGTHS_M = {
-    WireGauge.AWG_12: 914.0,    # 3000 ft practical max
-    WireGauge.AWG_14: 610.0,    # 2000 ft practical max
-    WireGauge.AWG_16: 381.0,    # 1250 ft practical max
-    WireGauge.AWG_18: 229.0,    # 750 ft practical max
+    "12": 914.0,    # 3000 ft practical max (12 AWG)
+    "14": 610.0,    # 2000 ft practical max (14 AWG)
+    "16": 381.0,    # 1250 ft practical max (16 AWG)
+    "18": 229.0,    # 750 ft practical max (18 AWG)
 }
 
 # Cable routing penalty constants (in meters equivalent)

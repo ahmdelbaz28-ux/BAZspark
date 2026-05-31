@@ -148,7 +148,7 @@ class CableRoute:
     straight_length_m: float
     num_bends: int
     num_elevation_changes: int
-    wire_gauge: WireGauge
+    wire_gauge: str  # V108 FIX: Wire gauge as string key ("12", "14", etc.)
     voltage_drop_v: float
     voltage_drop_pct: float
     is_compliant: bool
@@ -287,7 +287,7 @@ class CableRouter:
         route = router.route(
             start=(1.0, 2.0, 3.0),
             end=(10.0, 5.0, 3.0),
-            wire_gauge=WireGauge.AWG_14,
+            wire_gauge="14",
             ps_voltage=24.0,
             alarm_current_a=1.5,
         )
@@ -411,7 +411,7 @@ class CableRouter:
         self,
         start: Tuple[float, float, float],
         end: Tuple[float, float, float],
-        wire_gauge: WireGauge = WireGauge.AWG_14,
+        wire_gauge: str = "14",  # V108: Wire gauge as string key
         ps_voltage: float = 24.0,
         alarm_current_a: float = 0.0,
         route_id: str = "",
@@ -927,7 +927,7 @@ class CableRouter:
     def route_all(
         self,
         connections: List[Dict[str, Any]],
-        wire_gauge: WireGauge = WireGauge.AWG_14,
+        wire_gauge: str = "14",  # V108: Wire gauge as string key
         ps_voltage: float = 24.0,
         project_name: str = "Fire Alarm System",
         ambient_temp_c: float = 20.0,

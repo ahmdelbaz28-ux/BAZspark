@@ -83,6 +83,47 @@ logger = logging.getLogger(__name__)
 # 1. NEC 760 WIRE GAUGE CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+class _WireGaugeInstance:
+    """A single wire gauge instance with NEC Table 8 properties.
+
+    Provides both string-based and attribute-based access so that
+    downstream code (constraint_engine, cable_router) can use either
+    ``WireGauge.AWG_14.resistance_ohm_per_km`` or string keys like ``"14"``.
+    """
+
+    __slots__ = ('awg_value', 'resistance_ohm_per_km', 'resistance_ohm_per_m',
+                 'diameter_mm', 'ampacity_a')
+
+    def __init__(
+        self,
+        awg_value: str,
+        resistance_ohm_per_km: float,
+        diameter_mm: float,
+        ampacity_a: float,
+    ):
+        self.awg_value = awg_value
+        self.resistance_ohm_per_km = resistance_ohm_per_km
+        self.resistance_ohm_per_m = resistance_ohm_per_km / 1000.0
+        self.diameter_mm = diameter_mm
+        self.ampacity_a = ampacity_a
+
+    def __str__(self) -> str:
+        return self.awg_value
+
+    def __repr__(self) -> str:
+        return f"WireGauge.AWG_{self.awg_value}"
+
+    def __hash__(self) -> int:
+        return hash(self.awg_value)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, _WireGaugeInstance):
+            return self.awg_value == other.awg_value
+        if isinstance(other, str):
+            return self.awg_value == other
+        return NotImplemented
+
+
 class WireGauge:
     """
     NEC Article 760 / NEC Chapter 9 Table 8 — Fire alarm wire gauges.
@@ -93,6 +134,9 @@ class WireGauge:
     These are the standard fire alarm circuit wire gauges permitted by
     NEC 760.154 for PLFA (Power-Limited Fire Alarm) circuits.
 
+    Supports both enum-style access (WireGauge.AWG_14) and string-key
+    lookups for backward compatibility with all downstream modules.
+
     WARNING: Do NOT confuse these with building power conductors.
     Fire alarm circuits have different ampacity and routing requirements.
 
@@ -102,37 +146,74 @@ class WireGauge:
       - NEC Table 9  — AC resistance and reactance (used for DC FA circuits)
     """
 
+    # ── Enum-style instances (NEC Chapter 9 Table 8, stranded copper, 75 °C) ──
+    # Resistance in Ω/km at 75 °C.  NEC Table 8 DC resistance at 75 °C:
+    #   AWG 18: 21.40 Ω/km   AWG 16: 13.40 Ω/km
+    #   AWG 14:  8.450 Ω/km  AWG 12:  5.310 Ω/km
+    #   AWG 10:  3.354 Ω/km  AWG  8:  2.098 Ω/km  AWG 6: 1.322 Ω/km
+    AWG_18: _WireGaugeInstance = _WireGaugeInstance("18", 21.40, 1.024, 1.0)
+    AWG_16: _WireGaugeInstance = _WireGaugeInstance("16", 13.40, 1.291, 2.0)
+    AWG_14: _WireGaugeInstance = _WireGaugeInstance("14",  8.450, 1.628, 2.0)
+    AWG_12: _WireGaugeInstance = _WireGaugeInstance("12",  5.310, 2.053, 3.0)
+    AWG_10: _WireGaugeInstance = _WireGaugeInstance("10",  3.354, 2.588, 5.0)
+    AWG_8:  _WireGaugeInstance = _WireGaugeInstance("8",   2.098, 3.264, 8.0)
+    AWG_6:  _WireGaugeInstance = _WireGaugeInstance("6",   1.322, 4.115, 12.0)
+
+    # Ordered list of all gauge instances (for iteration)
+    _ALL_GAUGES: Tuple[_WireGaugeInstance, ...] = (AWG_18, AWG_16, AWG_14, AWG_12, AWG_10, AWG_8, AWG_6)
+
     # Resistance per 1000 ft at 75°C (NEC Table 9, copper, uncoated)
     RESISTANCE_PER_1000FT: Dict[str, float] = {
-        "14": 3.070,   # 14 AWG — most common FA circuit wire
-        "12": 1.930,   # 12 AWG — used for longer runs
-        "10": 1.210,   # 10 AWG — high-current NAC circuits
-        "8":  0.764,   # 8 AWG  — trunk/feeder
-        "6":  0.491,   # 6 AWG  — main riser cable
+        "18": 6.510,
+        "16": 4.080,
+        "14": 2.570,
+        "12": 1.620,
+        "10": 1.020,
+        "8":  0.640,
+        "6":  0.410,
     }
 
     # Resistance per metre at 75°C (derived: Ω/1000ft × 3.28084 / 1000)
-    # Cross-referenced with fireai.core.voltage_drop._AWG_RESISTANCE_OHM_PER_KM
     RESISTANCE_PER_M: Dict[str, float] = {
-        "14": 0.01640,   # 16.40 Ω/km ÷ 1000
-        "12": 0.01030,   # 10.30 Ω/km ÷ 1000
-        "10": 0.00653,   # 6.53 Ω/km ÷ 1000
-        "8":  0.00410,   # 4.10 Ω/km ÷ 1000
-        "6":  0.00258,   # 2.58 Ω/km ÷ 1000
+        "18": 0.02140,
+        "16": 0.01340,
+        "14": 0.00845,
+        "12": 0.00531,
+        "10": 0.00335,
+        "8":  0.00210,
+        "6":  0.00132,
     }
 
     # Ampacity for PLFA circuits (NEC Table 760.154, limited to 600V)
-    # These are conservative values for power-limited fire alarm circuits.
     AMPACITY_A: Dict[str, float] = {
-        "14": 2.0,    # 14 AWG FPL — conservative PLFA limit
-        "12": 3.0,    # 12 AWG FPL
-        "10": 5.0,    # 10 AWG FPL
-        "8":  8.0,    # 8 AWG FPL
-        "6":  12.0,   # 6 AWG FPL
+        "18": 1.0,
+        "16": 2.0,
+        "14": 2.0,
+        "12": 3.0,
+        "10": 5.0,
+        "8":  8.0,
+        "6":  12.0,
     }
 
     # Valid gauge strings (for input validation)
-    VALID_GAUGES: Tuple[str, ...] = ("14", "12", "10", "8", "6")
+    VALID_GAUGES: Tuple[str, ...] = ("18", "16", "14", "12", "10", "8", "6")
+
+    @classmethod
+    def __iter__(cls):
+        """Iterate over all gauge instances."""
+        return iter(cls._ALL_GAUGES)
+
+    @classmethod
+    def __len__(cls) -> int:
+        return len(cls._ALL_GAUGES)
+
+    @classmethod
+    def __contains__(cls, item) -> bool:
+        if isinstance(item, _WireGaugeInstance):
+            return item in cls._ALL_GAUGES
+        if isinstance(item, str):
+            return item in cls.VALID_GAUGES
+        return False
 
     @classmethod
     def get_resistance_per_m(cls, awg: str) -> float:
@@ -225,6 +306,30 @@ class CircuitTopology(str, Enum):
 # ═══════════════════════════════════════════════════════════════════════════════
 # 3. OBSTACLE DATA STRUCTURES
 # ═══════════════════════════════════════════════════════════════════════════════
+
+# V108 FIX: Add ObstacleType enum for type-safe obstacle classification
+class ObstacleType(Enum):
+    """Classification of routing obstacles.
+    
+    Determines clearance requirements and routing behavior:
+    - WALL: Solid wall — cable must route around (firestop on penetration)
+    - COLUMN: Structural column — route around
+    - BEAM: Structural beam — route around or below
+    - SLAB: Floor/roof slab — vertical routing boundary
+    - DOOR: Door opening — cable can pass horizontally
+    - SHAFT: Vertical shaft — cable can pass vertically
+    - ELECTRICAL: Electrical equipment — separation required per NEC
+    - HVAC: HVAC duct — maintain clearance per project spec
+    """
+    WALL = "WALL"
+    COLUMN = "COLUMN"
+    BEAM = "BEAM"
+    SLAB = "SLAB"
+    DOOR = "DOOR"
+    SHAFT = "SHAFT"
+    ELECTRICAL = "ELECTRICAL"
+    HVAC = "HVAC"
+
 
 @dataclass(frozen=True)
 class RoutingObstacle3D:

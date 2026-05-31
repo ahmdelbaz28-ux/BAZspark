@@ -33,8 +33,8 @@ from fireai.core.cable_routing_engine import (
     ObstacleType,
     RouteResult,
     VoltageDropSegment,
-    _MAX_VOLTAGE_DROP_PCT,
-    _SYSTEM_VOLTAGE,
+    MAX_VOLTAGE_DROP_PCT,
+    NOMINAL_VOLTAGE_FA,
 )
 from fireai.core.circuit_topology import (
     CircuitTopology,
@@ -292,8 +292,8 @@ class TestCableRoutingEngineInit:
 
     def test_default_init(self):
         e = CableRoutingEngine()
-        assert e._ps_voltage == _SYSTEM_VOLTAGE
-        assert e._max_drop_pct == _MAX_VOLTAGE_DROP_PCT
+        assert e._ps_voltage == NOMINAL_VOLTAGE_FA
+        assert e._max_drop_pct == MAX_VOLTAGE_DROP_PCT
 
     def test_custom_voltage(self):
         e = CableRoutingEngine(ps_voltage=12.0)
@@ -452,7 +452,7 @@ class TestVoltageDrop:
         """Short circuit with low current must be compliant per NFPA 72 §10.6.4."""
         result = engine.route_circuit(simple_slc_class_b)
         assert result.is_compliant is True
-        assert result.total_voltage_drop_pct <= _MAX_VOLTAGE_DROP_PCT
+        assert result.total_voltage_drop_pct <= MAX_VOLTAGE_DROP_PCT
 
     def test_non_compliant_very_long_circuit(self):
         """Extremely long NAC must fail compliance (500m, high current, AWG18)."""
@@ -464,7 +464,7 @@ class TestVoltageDrop:
         result = engine.route_circuit(c, wire_gauge=WireGauge.AWG_18)
         assert result.is_compliant is False
         assert len(result.violations) > 0
-        assert result.total_voltage_drop_pct > _MAX_VOLTAGE_DROP_PCT
+        assert result.total_voltage_drop_pct > MAX_VOLTAGE_DROP_PCT
 
     def test_zero_current_zero_drop(self, engine):
         """Circuit with no current draw must have zero voltage drop."""
@@ -584,7 +584,7 @@ class TestClassACircuit:
         c.add_device(CircuitDevice("D1", "detector", 50.0, 0.0, 0.0, 0.500))
         result = engine.route_circuit(c, wire_gauge=WireGauge.AWG_18)
         # If loop drop exceeds 10%, should report violation
-        if result.total_voltage_drop_pct > _MAX_VOLTAGE_DROP_PCT:
+        if result.total_voltage_drop_pct > MAX_VOLTAGE_DROP_PCT:
             assert not result.is_compliant
 
 
@@ -801,7 +801,7 @@ class TestIntegrationScenarios:
         assert result.total_return_length_m == 92.0
         # Should be compliant with auto-selected gauge
         if result.is_compliant:
-            assert result.total_voltage_drop_pct <= _MAX_VOLTAGE_DROP_PCT
+            assert result.total_voltage_drop_pct <= MAX_VOLTAGE_DROP_PCT
 
     def test_route_result_is_immutable(self, engine, simple_slc_class_b):
         """RouteResult must be immutable (frozen dataclass) — prevents accidental mutation."""
