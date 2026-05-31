@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Any, Dict
@@ -74,7 +75,14 @@ def _analyse_room(data: Dict[str, Any]) -> int:
         from fireai.core.polygon_optimizer import PolygonRoom, PolygonDensityOptimizer
 
         polygon = data.get("polygon_coords")
-        ceiling_h = float(data.get("ceiling_height", 3.0))
+        # V114 FIX: Validate ceiling_height for NaN/Inf — float() accepts NaN silently
+        _raw_ceiling_h = data.get("ceiling_height", 3.0)
+        ceiling_h = float(_raw_ceiling_h)
+        if not math.isfinite(ceiling_h):
+            raise ValueError(
+                f"ceiling_height must be a finite number, got {ceiling_h!r} "
+                f"(from input: {_raw_ceiling_h!r}). NaN/Inf corrupt all NFPA 72 calculations."
+            )
         det_type = data.get("detector_type", "smoke")
 
         if polygon and not is_rectangular(polygon):
@@ -98,8 +106,14 @@ def _analyse_room(data: Dict[str, Any]) -> int:
                 "duct_warnings": summary.duct_warnings,
             }
         else:
+            # V114 FIX: Validate width/length for NaN/Inf
             width  = float(data.get("width",  data.get("length", 10.0)))
             length = float(data.get("length", 10.0))
+            if not math.isfinite(width) or not math.isfinite(length):
+                raise ValueError(
+                    f"Room dimensions must be finite, got width={width!r} length={length!r}. "
+                    f"NaN/Inf corrupt NFPA 72 detector placement calculations."
+                )
             room = Room(
                 name=data.get("room_id", "room-cli"),
                 width=width,

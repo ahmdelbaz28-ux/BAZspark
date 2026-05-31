@@ -149,8 +149,23 @@ async def start_workflow(
     _validate_file_path(file_path)
 
     if skip_human_review:
+        # V114 FIX: Block skip_human_review in production environments.
+        # NFPA 72 requires PE review for all fire alarm designs.
+        # Allowing this in production is a direct violation of NFPA 72.
+        import os
+        env = os.getenv("FIREAI_ENV", os.getenv("NODE_ENV", "production")).lower()
+        if env not in ("development", "dev", "test", "testing"):
+            from fastapi import HTTPException
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    "skip_human_review=True is FORBIDDEN in production. "
+                    "NFPA 72 requires Professional Engineer review for all "
+                    "fire alarm designs. Set FIREAI_ENV=development to enable."
+                ),
+            )
         logger.warning(
-            f"⚠️ PRODUCTION WARNING: Human review gate BYPASSED for {file_path}. "
+            f"⚠️ DEVELOPMENT ONLY: Human review gate BYPASSED for {file_path}. "
             f"This is acceptable for development/testing ONLY. "
             f"NFPA 72 requires PE review for all fire alarm designs."
         )

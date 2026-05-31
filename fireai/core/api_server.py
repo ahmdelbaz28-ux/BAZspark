@@ -221,9 +221,21 @@ app = FastAPI(
 )
 
 # ✅ CORS — restrict in production
+# V114 FIX: Reject wildcard CORS origins for safety-critical system
+_api_cors_origins = os.environ.get("FIREAI_CORS_ORIGINS", "http://localhost:3000").split(",")
+if "*" in _api_cors_origins:
+    import logging
+    logging.getLogger("fireai.security").critical(
+        "CORS wildcard '*' detected in FIREAI_CORS_ORIGINS — REJECTED. "
+        "Safety-critical system: specify explicit origins."
+    )
+    _api_cors_origins = [o for o in _api_cors_origins if o.strip() != "*"]
+    if not _api_cors_origins:
+        _api_cors_origins = ["http://localhost:3000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.environ.get("FIREAI_CORS_ORIGINS", "http://localhost:3000").split(","),
+    allow_origins=_api_cors_origins,
     allow_methods=["GET", "POST"],
     allow_headers=["X-API-Key", "Content-Type"],
 )

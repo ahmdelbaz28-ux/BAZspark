@@ -203,7 +203,8 @@ class SLCLoop:
     floors_served: Set[str] = field(default_factory=set)
     panel_id: str = ""
     cable_length_m: float = 0.0
-    voltage_drop_compliant: bool = True
+    # V114 FIX: Fail-safe — voltage compliance must be PROVEN, not assumed
+    voltage_drop_compliant: bool = False
     warnings: List[str] = field(default_factory=list)
     nfpa_reference: str = _CITE_NFPA72_21_2_2
 
@@ -245,7 +246,8 @@ class VerticalZone:
     occupancy_type: str = "business"
     total_area_sqm: float = 0.0
     total_devices: int = 0
-    area_compliant: bool = True
+    # V114 FIX: Fail-safe — area compliance must be PROVEN, not assumed
+    area_compliant: bool = False
     warnings: List[str] = field(default_factory=list)
     nfpa_reference: str = _CITE_NFPA72_21_3_3
 

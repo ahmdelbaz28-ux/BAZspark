@@ -475,8 +475,9 @@ def calculate_cctv_coverage(
 
 def validate_access_control(
     reader_height_m: float = 1.22,
-    has_door_switch: bool = True,
-    has_rte: bool = True,
+    # V114 FIX: Fail-safe — door monitoring and RTE must be confirmed, not assumed
+    has_door_switch: bool = False,
+    has_rte: bool = False,
     egress_type: str = "fail_safe",
 ) -> AccessControlResult:
     """Validate access control installation per NFPA 101 / ADA.

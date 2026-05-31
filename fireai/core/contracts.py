@@ -475,7 +475,15 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
                     f"which leads to incorrect detector counts. Fix the polygon geometry."
                 )
     except ImportError:
-        pass  # Shapely not available — skip geometric validation
+        # V114 FIX: Shapely unavailable = geometric validation SKIPPED = potential danger.
+        # Must warn, not silently pass. Self-intersecting polygons produce wrong
+        # detector counts — a life-safety catastrophe.
+        import logging as _logging
+        _logging.getLogger(__name__).critical(
+            "Shapely not available — polygon self-intersection validation SKIPPED. "
+            "Self-intersecting polygons produce wrong area calculations and incorrect "
+            "detector counts. Install Shapely for full geometric validation."
+        )
 
     # 5. Validate ceiling_height_m is positive
     ceiling_height = payload.get("ceiling_height_m")

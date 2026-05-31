@@ -86,7 +86,8 @@ def evaluate_elevator_recall(
     has_shaft_sprinkler: bool,
     designated_floor: str = "1",
     fire_floor: str = "1",
-    has_phase_ii: bool = True,
+    # V114 FIX: Fail-safe — Phase II must be confirmed, not assumed
+    has_phase_ii: bool = False,
 ) -> ElevatorRecallResult:
     """Evaluate elevator recall compliance per NFPA 72 §21.3.
 
@@ -271,8 +272,9 @@ def evaluate_smoke_control(
     zone_id: str,
     method: str = "pressurization",
     design_pressure_pa: float = 25.0,
-    has_fire_alarm_interlock: bool = True,
-    has_stairwell_pressurization: bool = True,
+    # V114 FIX: Fail-safe defaults — missing interlock = NOT present
+    has_fire_alarm_interlock: bool = False,
+    has_stairwell_pressurization: bool = False,
 ) -> SmokeControlResult:
     """Evaluate smoke control compliance per NFPA 92 / NFPA 72 §21.5.
 
@@ -399,9 +401,10 @@ class FirePumpResult:
 
 def evaluate_fire_pump(
     pump_id: str,
-    has_running_signal: bool = True,
-    has_power_monitor: bool = True,
-    has_phase_reversal: bool = True,
+    # V114 FIX: Fail-safe defaults — missing signals = NOT present (NFPA 20 §10.4)
+    has_running_signal: bool = False,
+    has_power_monitor: bool = False,
+    has_phase_reversal: bool = False,
     has_suction_pressure: bool = False,
 ) -> FirePumpResult:
     """Evaluate fire pump monitoring per NFPA 20 / NFPA 72 §21.8.

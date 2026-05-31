@@ -320,15 +320,18 @@ def _stage05_qomn_physics_guard(
         }
 
     except ImportError:
+        # V114 FIX: Missing QOMN kernel = physics guard CANNOT be performed.
+        # Must NEVER report True when the check was not actually performed.
+        # A missing physics check is a FAIL-SAFE condition per agent.md Rule 5.
         return {
-            "physics_guard_passed": True,
-            "guard_errors":         [],
+            "physics_guard_passed": False,
+            "guard_errors":         ["QOMN kernel not available — physics guard CANNOT be performed"],
             "qomn_spacing_m":       None,
             "qomn_radius_m":        None,
             "audit_entries":        0,
-            "chain_valid":          True,
+            "chain_valid":          False,
             "audit_log":            None,
-            "note":                 "QOMN kernel not available — skipping physics guard",
+            "note":                 "QOMN kernel not available — physics guard FAILED (fail-safe)",
         }
     except Exception as exc:
         return {

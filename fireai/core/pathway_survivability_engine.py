@@ -144,7 +144,8 @@ class SurvivabilityResult:
     cable_requirements: List[CableRequirement] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
-    compliant: bool = True
+    # V114 FIX: Fail-safe — compliance must be PROVEN, not assumed
+    compliant: bool = False
     nfpa_version: str = "NFPA 72-2022"
     classification_rationale: List[str] = field(default_factory=list)
 

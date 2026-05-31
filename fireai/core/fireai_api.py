@@ -47,6 +47,19 @@ def create_app() -> FastAPI:
     )
     # Security Fix (VULN-006): Read allowed CORS origins from environment variable
     _cors_origins = os.getenv("FIREAI_CORS_ORIGINS", os.getenv("CORS_ORIGINS", "http://localhost:3000")).split(",")
+    # V114 FIX: Reject wildcard CORS origins — safety-critical system must not
+    # allow any website to modify fire protection designs via cross-origin requests
+    if "*" in _cors_origins:
+        import logging
+        logging.getLogger("fireai.security").critical(
+            "CORS wildcard '*' detected in FIREAI_CORS_ORIGINS — REJECTED. "
+            "This is a safety-critical fire protection system. Cross-origin "
+            "requests from any domain could modify NFPA 72 compliance data. "
+            "Specify explicit origins instead."
+        )
+        _cors_origins = [o for o in _cors_origins if o.strip() != "*"]
+        if not _cors_origins:
+            _cors_origins = ["http://localhost:3000"]
     application.add_middleware(CORSMiddleware, allow_origins=_cors_origins, allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["Authorization", "Content-Type", "X-API-Key"])
     application.state.limiter = limiter
     application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

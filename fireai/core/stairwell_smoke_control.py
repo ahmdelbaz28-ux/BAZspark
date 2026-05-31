@@ -237,7 +237,8 @@ class StairwellZone:
     design_pressure_pa: Optional[float] = None
     has_pressurization_fan: bool = False
     has_pressure_switches: bool = False
-    has_fire_alarm_interlock: bool = True
+    # V114 FIX: Fail-safe — interlock must be confirmed, not assumed
+    has_fire_alarm_interlock: bool = False
     fail_safe_state: FailSafeState = FailSafeState.MAINTAIN_PRESSURIZATION
     has_emergency_power: bool = False
     vestibule_type: VestibuleType = VestibuleType.NO_VESTIBULE

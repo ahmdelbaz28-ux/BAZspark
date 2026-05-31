@@ -194,10 +194,26 @@ async def update_device(
 
 @router.delete("/{device_id}")
 async def delete_device(project_id: str, device_id: str):
-    """Delete a device from a project."""
+    """Delete a device from a project.
+
+    V114 FIX: Safety-critical device deletion now logs audit trail.
+    Fire alarm devices (smoke detectors, pull stations, notification appliances)
+    are safety-critical — deletion must be traceable for liability and NFPA compliance.
+    """
     _verify_project(project_id)
     db = get_db()
-    deleted = db.delete_device(project_id, device_id)
-    if not deleted:
+    # V114 FIX: Record device data BEFORE deletion for audit trail
+    device = db.get_device(project_id, device_id)
+    if not device:
         raise HTTPException(status_code=404, detail="Device not found")
+    import logging
+    logging.getLogger("fireai.audit").critical(
+        "SAFETY-CRITICAL: Device DELETED — project=%s device_id=%s "
+        "device_type=%s name=%s — NFPA 72 requires traceability for all "
+        "fire alarm device changes. Deletion affects coverage calculations.",
+        project_id, device_id,
+        device.get("device_type", "unknown"),
+        device.get("name", "unknown"),
+    )
+    deleted = db.delete_device(project_id, device_id)
     return {"data": None, "success": True, "message": "Device deleted"}

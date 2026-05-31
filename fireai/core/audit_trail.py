@@ -53,7 +53,10 @@ class AuditEntry:
             "nfpa_reference": self.nfpa_reference,
             "notes": self.notes,
         }, sort_keys=True, ensure_ascii=False)
-        return hashlib.sha256(content.encode()).hexdigest()[:16]
+        # V114 FIX: Extend hash from 16→32 hex chars (64→128 bits).
+        # 64-bit hashes are vulnerable to birthday collision (~4B attempts).
+        # Matches V99 fix standard for cable_router.py and revit_exporter.py.
+        return hashlib.sha256(content.encode()).hexdigest()[:32]
 
     def to_dict(self) -> dict:
         return {

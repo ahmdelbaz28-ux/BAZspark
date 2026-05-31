@@ -66,7 +66,8 @@ class PluginDetectorLayout:
     coverage_pct:  float
     proof_valid:   bool
     method:        str
-    nfpa_compliant: bool = True
+    # V114 FIX: Fail-safe default — no compliance until proven
+    nfpa_compliant: bool = False
     warnings:      Tuple[str, ...] = ()
 
 
@@ -205,7 +206,8 @@ class FireAIPluginAPI:
                 coverage_pct=getattr(result, "coverage_pct", 0.0),
                 proof_valid=getattr(result, "proof_valid", False),
                 method=getattr(result, "method", "unknown"),
-                nfpa_compliant=getattr(result, "nfpa_valid", True),
+                # V114 FIX: Fail-safe — missing nfpa_valid = NOT compliant
+                nfpa_compliant=getattr(result, "nfpa_valid", False),
                 warnings=tuple(getattr(result, "warnings", [])),
             )
         except Exception as exc:

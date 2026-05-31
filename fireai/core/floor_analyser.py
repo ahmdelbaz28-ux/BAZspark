@@ -250,7 +250,8 @@ class FloorReport:
     analysis_time_s:      float                = 0.0
     # V3.0: Scenario verification aggregation
     scenario_non_compliant_rooms: List[str]     = field(default_factory=list)
-    scenario_safe_to_submit: bool               = True
+    # V114 FIX: Fail-safe — must be consistent with safe_to_submit=False
+    scenario_safe_to_submit: bool               = False
     # V3.1: Duct detector aggregation
     total_duct_devices: int                    = 0
 

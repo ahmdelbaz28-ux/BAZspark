@@ -190,7 +190,8 @@ class RoutingConstraintSet:
         total_violations: Count of all violations.
     """
     results: Tuple[ConstraintResult, ...]
-    all_satisfied: bool = True
+    # V114 FIX: Fail-safe — all_satisfied must be PROVEN, not assumed
+    all_satisfied: bool = False
     critical_violations: int = 0
     total_violations: int = 0
 

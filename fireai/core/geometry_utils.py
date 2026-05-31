@@ -286,7 +286,15 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
                 f"which leads to incorrect detector counts."
             )
     except ImportError:
-        pass  # Shapely not available — already checked via _segments_intersect above
+        # V114 FIX: Shapely unavailable = geometric validation INCOMPLETE.
+        # The O(n²) segment intersection check above does NOT catch all
+        # self-intersection cases. Must warn, not silently pass.
+        import logging as _logging
+        _logging.getLogger(__name__).warning(
+            "Shapely not available — polygon is_valid check SKIPPED. "
+            "The segment intersection check above may miss some self-intersection "
+            "cases. Install Shapely for full geometric validation."
+        )
 
     return ValidationResult(not errors, errors, warnings)
 

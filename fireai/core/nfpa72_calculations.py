@@ -607,6 +607,16 @@ def calculate_coverage_radius_from_height(
     if ceiling_height is None:
         raise TypeError("ceiling_height must be a float, got None.")
 
+    # V114 FIX: NaN bypasses `<= 0` guard (NaN <= 0 → False in IEEE 754).
+    # A NaN ceiling height poisons every downstream Shapely geometry operation
+    # and produces NaN spacing/radius/coverage — rooms appear "compliant" because
+    # NaN comparisons always return False. Must use isfinite() BEFORE comparison.
+    if not isinstance(ceiling_height, (int, float)) or not math.isfinite(ceiling_height):
+        raise ValueError(
+            f"ceiling_height must be a finite number, got {ceiling_height!r}. "
+            f"NaN/Inf values bypass safety guards and corrupt all downstream calculations."
+        )
+
     if ceiling_height <= 0:
         raise ValueError(f"ceiling_height {ceiling_height}m must be positive.")
 
@@ -855,6 +865,33 @@ def check_voltage_drop(
             drop_fraction: Drop as fraction of supply.
             compliant    : True if drop ≤ max_drop_fraction.
     """
+    # V114 FIX: Input validation — NaN/Inf and negative values produce
+    # false compliance (e.g., negative cable_length_m → negative drop → compliant).
+    # Must validate ALL parameters before computation per agent.md Rule 5.
+    for name, val in [
+        ("supply_voltage_v", supply_voltage_v),
+        ("load_current_a", load_current_a),
+        ("cable_resistance_ohm_per_m", cable_resistance_ohm_per_m),
+        ("cable_length_m", cable_length_m),
+        ("max_drop_fraction", max_drop_fraction),
+    ]:
+        if not isinstance(val, (int, float)) or not math.isfinite(val):
+            raise ValueError(
+                f"{name} must be a finite number, got {val!r}. "
+                f"NaN/Inf values corrupt voltage drop calculations — "
+                f"NFPA 72 §10.14 compliance cannot be verified."
+            )
+    if supply_voltage_v <= 0:
+        raise ValueError(f"supply_voltage_v must be positive, got {supply_voltage_v}")
+    if cable_length_m < 0:
+        raise ValueError(f"cable_length_m must be non-negative, got {cable_length_m}")
+    if cable_resistance_ohm_per_m < 0:
+        raise ValueError(f"cable_resistance_ohm_per_m must be non-negative, got {cable_resistance_ohm_per_m}")
+    if load_current_a < 0:
+        raise ValueError(f"load_current_a must be non-negative, got {load_current_a}")
+    if max_drop_fraction <= 0 or max_drop_fraction > 1:
+        raise ValueError(f"max_drop_fraction must be in (0, 1], got {max_drop_fraction}")
+
     total_resistance = cable_resistance_ohm_per_m * cable_length_m * 2  # return path
     drop_v           = load_current_a * total_resistance
     drop_fraction    = drop_v / supply_voltage_v if supply_voltage_v > 0 else float("inf")
@@ -891,6 +928,32 @@ def required_battery_capacity_ah(
     Returns:
         Required battery capacity in ampere-hours (Ah).
     """
+    # V114 FIX: Input validation — NaN/Inf and negative/zero values produce
+    # impossible battery capacities (e.g., safety_factor=0 → 0 Ah → no battery).
+    for name, val in [
+        ("standby_current_ma", standby_current_ma),
+        ("alarm_current_ma", alarm_current_ma),
+        ("standby_hours", standby_hours),
+        ("alarm_minutes", alarm_minutes),
+        ("safety_factor", safety_factor),
+    ]:
+        if not isinstance(val, (int, float)) or not math.isfinite(val):
+            raise ValueError(
+                f"{name} must be a finite number, got {val!r}. "
+                f"NaN/Inf values corrupt battery capacity calculations — "
+                f"NFPA 72 §10.6.7 compliance cannot be verified."
+            )
+    if standby_current_ma < 0:
+        raise ValueError(f"standby_current_ma must be non-negative, got {standby_current_ma}")
+    if alarm_current_ma < 0:
+        raise ValueError(f"alarm_current_ma must be non-negative, got {alarm_current_ma}")
+    if standby_hours <= 0:
+        raise ValueError(f"standby_hours must be positive, got {standby_hours}")
+    if alarm_minutes <= 0:
+        raise ValueError(f"alarm_minutes must be positive, got {alarm_minutes}")
+    if safety_factor < 1.0:
+        raise ValueError(f"safety_factor must be >= 1.0, got {safety_factor} — below 1.0 undersizes battery")
+
     standby_ah = (standby_current_ma / 1000.0) * standby_hours
     alarm_ah   = (alarm_current_ma   / 1000.0) * (alarm_minutes / 60.0)
     return round((standby_ah + alarm_ah) * safety_factor, 3)

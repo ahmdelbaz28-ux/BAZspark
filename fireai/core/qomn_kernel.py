@@ -31,8 +31,10 @@ STANDARDS:
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import math
+import os
 import struct
 import time
 from dataclasses import dataclass, field
@@ -704,7 +706,17 @@ class QOMNAuditLog:
 
     def __init__(self) -> None:
         self._entries: List[AuditEntry] = []
-        self._chain_hash: str = hashlib.sha256(b"QOMN-GENESIS").hexdigest()
+        # V114 FIX: Use HMAC-SHA256 for chain integrity (matching V105 fix
+        # for security_logging.py). Plain SHA-256 is tamper-evident but NOT
+        # tamper-proof — any attacker with source access can recompute chains.
+        self._hmac_key = os.environ.get("FIREAI_QOMN_HMAC_KEY", "").encode()
+        self._chain_hash: str = self._compute_chain_hash(b"QOMN-GENESIS")
+
+    def _compute_chain_hash(self, data: bytes) -> str:
+        """Compute chain hash using HMAC-SHA256 if key available, else SHA-256."""
+        if self._hmac_key:
+            return hmac.new(self._hmac_key, data, hashlib.sha256).hexdigest()
+        return hashlib.sha256(data).hexdigest()
 
     def record(
         self,
@@ -723,8 +735,8 @@ class QOMNAuditLog:
         ).hexdigest()
 
         # Chain hash: links this entry to all previous entries
-        chain_input = f"{self._chain_hash}:{result_hash}:{timestamp}"
-        self._chain_hash = hashlib.sha256(chain_input.encode()).hexdigest()
+        chain_input = f"{self._chain_hash}:{result_hash}:{timestamp}".encode()
+        self._chain_hash = self._compute_chain_hash(chain_input)
 
         entry = AuditEntry(
             timestamp_utc    = timestamp,
