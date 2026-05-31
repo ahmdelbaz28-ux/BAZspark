@@ -9095,3 +9095,93 @@ After re-reading agent.md (Rule 20) and performing the 4-layer meta-criticism pr
 ### Commit Information
 - **Cycle 2 Commit:** `3d529f8` → https://github.com/ahmdelbaz28-ux/revit/commit/3d529f8
 - **Cycle 3 Commit:** `7a9e6b8` → https://github.com/ahmdelbaz28-ux/revit/commit/7a9e6b8
+
+---
+
+## V113 Security Hardening (2026-05-31) — 10 Vulnerability Fixes
+
+### Security Audit — 10 Vulnerabilities Identified by Operator
+
+The operator performed a security audit and identified 10 vulnerabilities ranked by severity:
+
+| # | Severity | Vulnerability | File(s) | Status |
+|---|----------|--------------|---------|--------|
+| 1 | CRITICAL | Path Traversal in workflow endpoint | `workflow.py`, `workflow_service.py` | ✅ FIXED |
+| 2 | CRITICAL | `memory_service.get_all()` mem0 v1/v2 API | `memory_service.py:541` | ✅ FIXED |
+| 3 | HIGH | SQL Injection via sort parameter | `db_service.py`, routers | ✅ FIXED |
+| 4 | HIGH | Unbounded `description`/`author` fields | `models.py:49,50,65,66` | ✅ FIXED |
+| 5 | HIGH | Hardcoded secret in evidence_chain | `evidence_chain.py:21` | ✅ FIXED |
+| 6 | HIGH | Internal stack traces exposed to clients | 4 router files | ✅ FIXED |
+| 7 | MEDIUM | Lazy import hiding ImportError | `pipeline.py:1387` | ✅ FIXED |
+| 8 | MEDIUM | No rate limiting on workflow/start | `app.py` | ✅ FIXED |
+| 9 | MEDIUM | Hardcoded `ps_voltage=24.0` | `schedule_generator.py` | ✅ FIXED |
+| 10 | LOW | DDC adapter extension whitelist | `ddc_adapter.py:366` | ✅ ALREADY FIXED |
+
+### Fix Details
+
+#### V113-1: Path Traversal Defense-in-Depth (CRITICAL)
+**Problem:** `workflow.py:38` accepts `file_path` from query string without validation. `?file_path=../../../../etc/passwd` could read any file on the server.
+**Impact:** In a fire protection system, a compromised system produces fake compliance reports = catastrophic loss of life.
+**Fix:** Added `_validate_file_path()` at the router layer with:
+- Null byte injection prevention (`\x00`)
+- Extension whitelist (`.dxf`, `.dwg`, `.pdf`, `.ifc`, `.rvt` only)
+- Directory jail using `os.path.realpath()` against `FIREAI_DATA_DIRS`
+- Defense-in-depth: service layer (node_initialize) also validates
+
+#### V113-2: mem0 v1/v2 API Compatibility (CRITICAL)
+**Problem:** `memory_service.get_all()` passes `user_id=, agent_id=, run_id=` to `self._memory.get_all()`. mem0 v2.0.4+ rejects these kwargs with `ValueError`. Every `get_all()` call fails silently — returns empty results through the generic `except Exception` handler.
+**Impact:** All memory context retrieval silently returns empty. Engineers lose access to stored engineering patterns and past decisions.
+**Fix:** Dual-API strategy:
+- Try v1 API first (passes kwargs)
+- On `ValueError`/`TypeError`, retry with v2 API (no kwargs)
+- Python-side filtering for v2 results
+- Clear error messages for both failure modes
+
+#### V113-3: Sort Field Whitelist (HIGH)
+**Problem:** `_normalize_sort()` in `db_service.py` used `re.sub(r'([A-Z])', r'_\1', sort_by).lower()` to blindly convert ANY user input to snake_case. Allowed arbitrary sort keys like `__class__`, `__dict__`, `1; DROP TABLE projects--`.
+**Impact:** While currently used for Python `sorted()` (not SQL), future code using sort_key in f-strings would become full SQL injection.
+**Fix:** Strict whitelist of allowed sort fields. Unknown fields → safe default (`created_at`) with warning log. Added `_CAMEL_TO_SNAKE` mapping for frontend compatibility.
+
+#### V113-4: max_length on Text Fields (HIGH)
+**Problem:** `description: str = Field(default="")` and `author: str = Field(default="")` had no max_length. An attacker could send 100MB in a single body → DoS + memory exhaustion.
+**Fix:** `description: max_length=5000`, `author: max_length=255` across all 3 model classes (Project, CreateProjectInput, UpdateProjectInput).
+
+#### V113-5: Reject Weak Secret Keys (HIGH)
+**Problem:** `evidence_chain.py:21` example code uses `secret_key="project-key"`. Anyone reading the source code can forge evidence envelopes. In a fire protection system, forged evidence = fake compliance = people die.
+**Fix:**
+- `_WEAK_SECRET_KEYS` frozenset rejects "project-key", "secret", "password", etc.
+- Warning for keys < 32 chars (insufficient for HMAC-SHA256)
+- Updated docstring: use `os.environ["FIREAI_EVIDENCE_SECRET"]`
+
+#### V113-6: Remove Stack Trace Leakage (HIGH)
+**Problem:** `str(e)` in error responses exposes server paths, class names, internal state to attackers.
+**Fix:**
+- `exports.py:329`: `str(e)` → generic "IFC export failed — internal error"
+- `conflicts.py:89`: RuntimeError → generic "Conflict resolution failed"
+- `elements.py:74`: ValueError → sanitized (paths replaced with `[PATH]`)
+- `reports.py:424`: PDF error → generic "PDF generation failed"
+
+#### V113-7: Separate ImportError from Exception (MEDIUM)
+**Problem:** `pipeline.py:1387` imports `WireGauge` inside a try block. If the import fails, the generic `except Exception` reports "routing failed" instead of "dependency missing". Misleading error wastes engineering time.
+**Fix:** Added `except ImportError` handler before `except Exception`. Returns `status: "dependency_missing"` with clear install instructions.
+
+#### V113-8: Rate Limit for workflow/start (MEDIUM)
+**Problem:** `/api/workflow/start` had no specific rate limit. An attacker could start thousands of LangGraph state machines, exhausting memory.
+**Fix:** Added `/api/workflow/start: 3 req/60s` in `_PER_PATH_LIMITS` (stricter than general `/api/workflow: 10 req/60s`).
+
+#### V113-9: Configurable ps_voltage (MEDIUM)
+**Problem:** `schedule_generator.py` hardcoded `ps_voltage=24.0`. For 12VDC systems (NFPA 72 §10.6.5), this reports `end_voltage = 24.0 - vdrop` instead of `12.0 - vdrop`, making failing circuits appear compliant. Devices may not operate during a fire.
+**Fix:** Added `ps_voltage` parameter to both `from_routing_schedule()` and `from_route_results()`. Fail-safe hierarchy: explicit param → schedule attribute → 24.0V with CRITICAL warning. Pipeline now passes `ps_voltage_v` from validated config.
+
+### Self-Criticism Notes (V113)
+
+1. **V113-1 (Path Traversal):** The service layer already had validation, but single-layer security is not defense-in-depth. If someone modifies the service layer without realizing the router depends on it, the protection disappears. Two layers is the minimum for safety-critical systems.
+
+2. **V113-2 (mem0 API):** This was a SILENT failure — the worst kind. The generic `except Exception` caught the `ValueError` from mem0 v2 and returned empty results. No error, no warning, just nothing. In a safety-critical system, silent data loss is a violation of agent.md Rule 1 (Absolute Truth).
+
+3. **V113-5 (Hardcoded Secret):** I initially thought "the docstring is just an example." But in a safety-critical system, examples ARE code — engineers copy-paste them. "project-key" in an example WILL be used in production. Rejecting it at runtime is the only safe approach.
+
+4. **V113-9 (ps_voltage):** This is the most dangerous of all the fixes. A 12VDC system with hardcoded 24.0V would show `end_voltage = 24.0 - 2.5 = 21.5V` (PASS) when the actual voltage is `12.0 - 2.5 = 9.5V` (FAIL). Horns and strobes at 9.5V will NOT sound during a fire. This is literally the bug that kills people.
+
+### Commit Information
+- **Commit:** `3fd03a2` → https://github.com/ahmdelbaz28-ux/revit/commit/3fd03a2
