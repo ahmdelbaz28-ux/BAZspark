@@ -20,6 +20,7 @@ Safety-critical features tested:
 """
 
 import json
+import dataclasses
 import os
 import sys
 import threading
@@ -200,7 +201,7 @@ class TestAuditEntry:
             output_hash="b" * 64,
             status="COMPLIANT",
         )
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(dataclasses.FrozenInstanceError):
             entry.analysis_id = "changed"
 
     def test_entry_hash_is_computed(self):
@@ -262,6 +263,7 @@ class TestAuditEntry:
         )
         # Should be parseable as ISO format
         from datetime import datetime
+
         datetime.fromisoformat(entry.timestamp.replace("Z", "+00:00"))
 
     def test_custom_timestamp(self):
@@ -293,6 +295,7 @@ class TestAuditEntry:
             status="COMPLIANT",
         )
         import uuid
+
         uuid.UUID(entry.entry_id)  # Should not raise
 
     def test_custom_entry_id(self):
@@ -329,6 +332,7 @@ class TestAuditLogInit:
     def test_custom_db_path(self):
         """Custom db_path should be used."""
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "test_audit.db")
             log = AuditLog(db_path)
@@ -365,7 +369,7 @@ class TestAuditLogAppend:
     def test_append_chain_integrity(self):
         """Entries should form a proper hash chain."""
         log = AuditLog()
-        
+
         entries = []
         for i in range(3):
             prev_hash = log._last_entry_hash() or GENESIS_PREV_HASH
@@ -401,7 +405,7 @@ class TestAuditLogAppend:
             status="COMPLIANT",
         )
         log.append(entry)
-        
+
         retrieved = log.get_entry(entry.entry_id)
         assert retrieved is not None
         assert retrieved.hmac_signature is not None
@@ -421,7 +425,7 @@ class TestAuditLogAppend:
             status="COMPLIANT",
         )
         log.append(entry)
-        
+
         retrieved = log.get_entry(entry.entry_id)
         assert retrieved is not None
         assert retrieved.hmac_signature is None
@@ -451,19 +455,19 @@ class TestAuditLogVerifyChain:
             status="COMPLIANT",
         )
         log.append(entry)
-        
+
         is_valid, errors = log.verify_chain()
         assert is_valid
         assert len(errors) == 0
 
     def test_detects_tampered_prev_hash(self):
         """Should detect tampering with prev_entry_hash.
-        
+
         Note: The append() method automatically patches prev_entry_hash to the
         correct chain value, so we test tampering by directly modifying the DB.
         """
         log = AuditLog()
-        
+
         # Append two entries normally (append fixes prev_entry_hash)
         entry1 = create_audit_entry(
             analysis_id="analysis-1",
@@ -476,7 +480,7 @@ class TestAuditLogVerifyChain:
             status="COMPLIANT",
         )
         log.append(entry1)
-        
+
         entry2 = create_audit_entry(
             analysis_id="analysis-1",
             layer=1,
@@ -488,14 +492,11 @@ class TestAuditLogVerifyChain:
             status="COMPLIANT",
         )
         log.append(entry2)
-        
+
         # Tamper with prev_entry_hash directly in the database
-        log._conn.execute(
-            "UPDATE audit_entries SET prev_entry_hash = ? WHERE rowid = 2",
-            ("tampered_hash" + "0" * 48,)
-        )
+        log._conn.execute("UPDATE audit_entries SET prev_entry_hash = ? WHERE rowid = 2", ("tampered_hash" + "0" * 48,))
         log._conn.commit()
-        
+
         is_valid, errors = log.verify_chain()
         assert not is_valid
         assert any("prev_entry_hash" in e for e in errors)
@@ -518,7 +519,7 @@ class TestAuditLogGetEntry:
             status="COMPLIANT",
         )
         log.append(entry)
-        
+
         retrieved = log.get_entry(entry.entry_id)
         assert retrieved is not None
         assert retrieved.entry_id == entry.entry_id
@@ -538,7 +539,7 @@ class TestAuditLogGetAnalysis:
         """Should retrieve all entries for an analysis."""
         log = AuditLog()
         analysis_id = "analysis-test-123"
-        
+
         for i in range(3):
             entry = create_audit_entry(
                 analysis_id=analysis_id,
@@ -551,7 +552,7 @@ class TestAuditLogGetAnalysis:
                 status="COMPLIANT",
             )
             log.append(entry)
-        
+
         entries = log.get_analysis(analysis_id)
         assert len(entries) == 3
         for e in entries:
@@ -567,7 +568,7 @@ class TestAuditLogGetAnalysis:
         """Entries should be in insertion order."""
         log = AuditLog()
         analysis_id = "analysis-order-test"
-        
+
         for i in range(5):
             entry = create_audit_entry(
                 analysis_id=analysis_id,
@@ -580,7 +581,7 @@ class TestAuditLogGetAnalysis:
                 status="COMPLIANT",
             )
             log.append(entry)
-        
+
         entries = log.get_analysis(analysis_id)
         descriptions = [e.computation_description for e in entries]
         assert descriptions == [f"Entry {i}" for i in range(5)]
@@ -593,7 +594,7 @@ class TestAuditLogExport:
         """Export of empty analysis should be valid JSON."""
         log = AuditLog()
         json_str = log.export_json("nonexistent-analysis")
-        
+
         data = json.loads(json_str)
         assert data["analysis_id"] == "nonexistent-analysis"
         assert data["entries"] == []
@@ -603,7 +604,7 @@ class TestAuditLogExport:
         """Export should include all entries."""
         log = AuditLog(hmac_key=b"test_key")
         analysis_id = "export-test-analysis"
-        
+
         for i in range(2):
             entry = create_audit_entry(
                 analysis_id=analysis_id,
@@ -616,10 +617,10 @@ class TestAuditLogExport:
                 status="COMPLIANT",
             )
             log.append(entry)
-        
+
         json_str = log.export_json(analysis_id)
         data = json.loads(json_str)
-        
+
         assert data["analysis_id"] == analysis_id
         assert len(data["entries"]) == 2
         assert data["export_hmac"] is not None  # HMAC key was provided
@@ -628,7 +629,7 @@ class TestAuditLogExport:
         """Valid export should verify successfully."""
         log = AuditLog(hmac_key=b"test_key")
         analysis_id = "verify-test-analysis"
-        
+
         entry = create_audit_entry(
             analysis_id=analysis_id,
             layer=1,
@@ -640,7 +641,7 @@ class TestAuditLogExport:
             status="COMPLIANT",
         )
         log.append(entry)
-        
+
         json_str = log.export_json(analysis_id)
         is_valid, msg = log.verify_export(json_str)
         assert is_valid, f"Export should be valid: {msg}"
@@ -649,7 +650,7 @@ class TestAuditLogExport:
         """Tampered export should fail verification."""
         log = AuditLog(hmac_key=b"test_key")
         analysis_id = "tamper-test-analysis"
-        
+
         entry = create_audit_entry(
             analysis_id=analysis_id,
             layer=1,
@@ -661,13 +662,13 @@ class TestAuditLogExport:
             status="COMPLIANT",
         )
         log.append(entry)
-        
+
         json_str = log.export_json(analysis_id)
         data = json.loads(json_str)
-        
+
         # Tamper with an entry
         data["entries"][0]["output_value"] = "999"
-        
+
         tampered_json = json.dumps(data)
         is_valid, msg = log.verify_export(tampered_json)
         assert not is_valid
@@ -700,7 +701,7 @@ class TestAuditLogCount:
     def test_count_after_append(self):
         """Count should reflect number of entries."""
         log = AuditLog()
-        
+
         for i in range(5):
             entry = create_audit_entry(
                 analysis_id="analysis-1",
@@ -713,7 +714,7 @@ class TestAuditLogCount:
                 status="COMPLIANT",
             )
             log.append(entry)
-        
+
         assert log.count() == 5
 
 
@@ -724,7 +725,7 @@ class TestAuditLogClose:
         """Close should clear the connection."""
         log = AuditLog()
         assert log._conn is not None
-        
+
         log.close()
         assert log._conn is None
 
@@ -744,16 +745,17 @@ class TestAuditLogThreadSafety:
         analysis_id = "concurrent-test"
         num_threads = 5
         entries_per_thread = 10
-        
+
         errors = []
-        
+
         def append_entries(thread_id):
             try:
                 for i in range(entries_per_thread):
                     entry = create_audit_entry(
                         analysis_id=analysis_id,
                         layer=1,
-                        input_hash=f"thread_{thread_id}_entry_{i}".encode().hex() + "0" * (64 - len(f"thread_{thread_id}_entry_{i}".encode().hex())),
+                        input_hash=f"thread_{thread_id}_entry_{i}".encode().hex()
+                        + "0" * (64 - len(f"thread_{thread_id}_entry_{i}".encode().hex())),
                         formula_reference="NFPA 72 §17.6.3.1",
                         computation_description=f"Thread {thread_id} Entry {i}",
                         output_value=f"{thread_id}-{i}",
@@ -763,23 +765,23 @@ class TestAuditLogThreadSafety:
                     log.append(entry)
             except Exception as e:
                 errors.append(str(e))
-        
+
         threads = []
         for t in range(num_threads):
             thread = threading.Thread(target=append_entries, args=(t,))
             threads.append(thread)
             thread.start()
-        
+
         for thread in threads:
             thread.join()
-        
+
         # Check for errors during append
         assert len(errors) == 0, f"Append errors: {errors}"
-        
+
         # Verify chain integrity
         is_valid, chain_errors = log.verify_chain()
         assert is_valid, f"Chain should be valid despite concurrent access: {chain_errors}"
-        
+
         # Total count should be correct
         assert log.count() == num_threads * entries_per_thread
 
@@ -790,10 +792,10 @@ class TestAuditLogPersistence:
     def test_persistent_log(self):
         """Log should persist entries to disk."""
         import tempfile
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "persistent_audit.db")
-            
+
             # Write entries
             log1 = AuditLog(db_path, hmac_key=b"test_key")
             for i in range(3):
@@ -809,11 +811,11 @@ class TestAuditLogPersistence:
                 )
                 log1.append(entry)
             log1.close()
-            
+
             # Read entries from new instance
             log2 = AuditLog(db_path, hmac_key=b"test_key")
             assert log2.count() == 3
-            
+
             entries = log2.get_analysis("persistent-test")
             assert len(entries) == 3
             log2.close()

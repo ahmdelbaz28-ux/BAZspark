@@ -79,10 +79,10 @@ _ALLOWED_BINARIES: Dict[str, List[str]] = {
     "ddc-dwgconverter": ["/usr/bin/ddc-dwgconverter", "/usr/local/bin/ddc-dwgconverter"],
     "ddc-ifcconverter": ["/usr/bin/ddc-ifcconverter", "/usr/local/bin/ddc-ifcconverter"],
     "ddc-dgnconverter": ["/usr/bin/ddc-dgnconverter", "/usr/local/bin/ddc-dgnconverter"],
-    "RvtExporter.exe": [],   # Windows — paths resolved from converter_dir
-    "DwgExporter.exe": [],   # Windows — paths resolved from converter_dir
-    "IfcExporter.exe": [],   # Windows — paths resolved from converter_dir
-    "DgnExporter.exe": [],   # Windows — paths resolved from converter_dir
+    "RvtExporter.exe": [],  # Windows — paths resolved from converter_dir
+    "DwgExporter.exe": [],  # Windows — paths resolved from converter_dir
+    "IfcExporter.exe": [],  # Windows — paths resolved from converter_dir
+    "DgnExporter.exe": [],  # Windows — paths resolved from converter_dir
 }
 
 # SECURITY: The subprocess working directory (cwd) is restricted to a
@@ -94,12 +94,14 @@ _SAFE_CWD_BASE = Path(os.getenv("FIREAI_DDC_CWD_BASE", tempfile.gettempdir())).r
 
 class DDCNotAvailableError(RuntimeError):
     """Raised when DDC CLI converter is not installed."""
+
     pass
 
 
 @dataclass
 class DDCConversionResult:
     """Result of a DDC converter run."""
+
     success: bool
     source_file: str
     xlsx_path: Optional[str] = None
@@ -144,6 +146,7 @@ class DDCAdapter:
             return False
         try:
             import shutil
+
             resolved = shutil.which(binary)
             return resolved is not None
         except Exception:
@@ -180,6 +183,7 @@ class DDCAdapter:
             FileNotFoundError: If input file doesn't exist
         """
         import time
+
         start = time.monotonic()
 
         input_path_obj = Path(input_path)
@@ -198,9 +202,7 @@ class DDCAdapter:
             "FIREAI_ALLOWED_UPLOAD_DIRS",
             "/tmp,/var/tmp,/var/fireai/uploads",
         )
-        _allowed_bases = [
-            Path(d).resolve() for d in _allowed_bases_str.split(",") if d.strip()
-        ]
+        _allowed_bases = [Path(d).resolve() for d in _allowed_bases_str.split(",") if d.strip()]
 
         # Always allow temp directories (created by tempfile.mkdtemp)
         _temp_dir = Path(tempfile.gettempdir()).resolve()
@@ -268,15 +270,13 @@ class DDCAdapter:
         _ALLOWED_EXTENSIONS = frozenset(_DDC_CONVERTERS.keys())
         if ext not in _ALLOWED_EXTENSIONS:
             raise ValueError(
-                f"File extension '{ext}' is not allowed. "
-                f"Permitted extensions: {sorted(_ALLOWED_EXTENSIONS)}"
+                f"File extension '{ext}' is not allowed. Permitted extensions: {sorted(_ALLOWED_EXTENSIONS)}"
             )
 
         binary = self._get_binary(ext)
         if binary is None:
             raise DDCNotAvailableError(
-                f"No DDC converter registered for extension '{ext}'. "
-                f"Supported: {list(_DDC_CONVERTERS.keys())}"
+                f"No DDC converter registered for extension '{ext}'. Supported: {list(_DDC_CONVERTERS.keys())}"
             )
 
         # Use temp dir if no output specified
@@ -292,6 +292,7 @@ class DDCAdapter:
         # We use shutil.which() to resolve the full path, then verify
         # the resolved path matches one of the allowed locations.
         import shutil
+
         resolved_binary = shutil.which(binary)
         if resolved_binary is None:
             raise DDCNotAvailableError(
@@ -306,9 +307,7 @@ class DDCAdapter:
 
         # For Windows with converter_dir, add converter_dir to allowed paths
         if self._platform == "windows" and self._converter_dir:
-            _allowed_paths = list(_allowed_paths) + [
-                str(Path(self._converter_dir).resolve() / _binary_name)
-            ]
+            _allowed_paths = list(_allowed_paths) + [str(Path(self._converter_dir).resolve() / _binary_name)]
 
         if _allowed_paths:
             _binary_in_allowed = False
@@ -348,8 +347,7 @@ class DDCAdapter:
                 _ALLOWED_EXPORT_MODES = frozenset({"basic", "standard", "complete"})
                 if export_mode not in _ALLOWED_EXPORT_MODES:
                     raise ValueError(
-                        f"Invalid export_mode '{export_mode}'. "
-                        f"Permitted values: {sorted(_ALLOWED_EXPORT_MODES)}"
+                        f"Invalid export_mode '{export_mode}'. Permitted values: {sorted(_ALLOWED_EXPORT_MODES)}"
                     )
                 cmd.append(export_mode)
 
@@ -363,7 +361,7 @@ class DDCAdapter:
 
             logger.info(f"DDC convert: {' '.join(cmd)} → {output_dir}")
 
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: S603 — command from class constant, not user input
                 cmd,
                 capture_output=True,
                 text=True,
@@ -441,6 +439,7 @@ class DDCAdapter:
         except ImportError:
             try:
                 import xlrd  # type: ignore[import-not-found]
+
                 return self._extract_rooms_xlrd(xlsx_path)
             except ImportError:
                 logger.warning("openpyxl not installed — cannot parse DDC XLSX output")
@@ -466,14 +465,16 @@ class DDCAdapter:
                 if "room" in category or "space" in category:
                     area = row_dict.get("Area", 0) or 0
                     # DDC exports in ft² for imperial projects — check unit
-                    rooms.append({
-                        "name": row_dict.get("Name", "") or row_dict.get("Number", ""),
-                        "area_m2": float(area) if area else 0.0,
-                        "level": str(row_dict.get("Level", "")) or "1",
-                        "volume_m3": float(row_dict.get("Volume", 0) or 0),
-                        "source": "ddc",
-                        "raw": row_dict,
-                    })
+                    rooms.append(
+                        {
+                            "name": row_dict.get("Name", "") or row_dict.get("Number", ""),
+                            "area_m2": float(area) if area else 0.0,
+                            "level": str(row_dict.get("Level", "")) or "1",
+                            "volume_m3": float(row_dict.get("Volume", 0) or 0),
+                            "source": "ddc",
+                            "raw": row_dict,
+                        }
+                    )
 
             wb.close()
         except Exception as e:
@@ -512,6 +513,7 @@ class DDCAdapter:
     def _extract_rooms_xlrd(self, xlsx_path: str) -> List[Dict[str, Any]]:
         """Fallback room extraction using xlrd (for .xls files)."""
         import xlrd  # type: ignore[import-not-found]
+
         rooms = []
         try:
             wb = xlrd.open_workbook(xlsx_path)
@@ -521,13 +523,15 @@ class DDCAdapter:
                 row_dict = {headers[c]: ws.cell_value(r, c) for c in range(ws.ncols)}
                 category = str(row_dict.get("Category", "")).lower()
                 if "room" in category or "space" in category:
-                    rooms.append({
-                        "name": row_dict.get("Name", ""),
-                        "area_m2": float(row_dict.get("Area", 0) or 0),
-                        "level": str(row_dict.get("Level", "1")),
-                        "source": "ddc",
-                        "raw": row_dict,
-                    })
+                    rooms.append(
+                        {
+                            "name": row_dict.get("Name", ""),
+                            "area_m2": float(row_dict.get("Area", 0) or 0),
+                            "level": str(row_dict.get("Level", "1")),
+                            "source": "ddc",
+                            "raw": row_dict,
+                        }
+                    )
         except Exception as e:
             logger.error(f"xlrd extraction failed: {e}", exc_info=True)
         return rooms
