@@ -46,13 +46,65 @@ from backend.schemas import (
 logger = logging.getLogger(__name__)
 
 
+# V113 FIX: Sort field whitelist to prevent injection.
+# The old _normalize_sort blindly converted any string to snake_case
+# using regex, allowing arbitrary sort keys like "__class__",
+# "__dict__", or other Python dunder attributes. While the sort key
+# is used for Python's sorted() (not SQL), an attacker could:
+# 1. Access internal Python object attributes via dict.get()
+# 2. Cause unexpected behavior or information leakage
+# 3. If future code uses sort_key in SQL (f-string interpolation),
+#    it becomes a full SQL injection
+# Per agent.md Rule 17: fix the root cause — use a strict whitelist.
+_SORT_WHITELIST = frozenset({
+    "created_at", "created_timestamp", "last_modified_timestamp",
+    "updated_at", "name", "description", "author", "status",
+    "type", "category", "voltage", "current", "load",
+    "element_type", "version", "project_id", "length",
+    "cable_size",
+})
+
+# Map from camelCase (frontend) to snake_case (backend)
+_CAMEL_TO_SNAKE = {
+    "createdAt": "created_at",
+    "updatedAt": "updated_at",
+    "createdTimestamp": "created_timestamp",
+    "lastModifiedTimestamp": "last_modified_timestamp",
+    "cableSize": "cable_size",
+    "projectId": "project_id",
+    "elementType": "element_type",
+}
+
+
 def _normalize_sort(sort_by: str) -> str:
-    """Convert camelCase sort parameter to snake_case."""
-    import re
-    # Insert underscore before uppercase letters and lowercase
-    result = re.sub(r'([A-Z])', r'_\1', sort_by).lower()
-    # Remove leading underscore if present
-    return result.lstrip('_')
+    """Convert camelCase sort parameter to snake_case WITH whitelist validation.
+
+    V113 SECURITY FIX: Only allows known sort fields. Unknown fields
+    are silently mapped to 'created_at' (safe default) instead of
+    being blindly converted from user input. This prevents injection
+    of arbitrary Python attribute names or SQL column names.
+
+    Previous code used regex: re.sub(r'([A-Z])', r'_\1', sort_by).lower()
+    This would convert ANY string, including "__class__", "__dict__",
+    "1; DROP TABLE projects--", etc. to snake_case and use it as a
+    sort key — a potential security vulnerability.
+    """
+    # Step 1: Try the camelCase → snake_case mapping first
+    if sort_by in _CAMEL_TO_SNAKE:
+        return _CAMEL_TO_SNAKE[sort_by]
+
+    # Step 2: Already snake_case? Check against whitelist
+    if sort_by in _SORT_WHITELIST:
+        return sort_by
+
+    # Step 3: Unknown sort field — log warning and use safe default
+    import logging
+    logging.getLogger(__name__).warning(
+        f"Rejected sort field '{sort_by}' — not in whitelist. "
+        f"Falling back to 'created_at'. "
+        f"Allowed: {sorted(_SORT_WHITELIST)}"
+    )
+    return "created_at"
 
 
 class DatabaseService:

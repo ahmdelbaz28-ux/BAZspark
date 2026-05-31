@@ -71,7 +71,14 @@ async def create_element(element_data: ElementCreate):
         element = db.create_element(element_data)
         return ApiResponse(success=True, data=element, message="Element created successfully")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # V113 SECURITY: ValueError messages may contain internal paths
+        # or class details. Sanitize before exposing to client.
+        safe_msg = str(e)[:200]  # Truncate to prevent overflow
+        # Remove common path patterns that leak server structure
+        import re
+        safe_msg = re.sub(r'/[\w./-]+', '[PATH]', safe_msg)
+        safe_msg = re.sub(r'<class \w+>', '[CLASS]', safe_msg)
+        raise HTTPException(status_code=400, detail=safe_msg)
     except Exception as e:
         import logging
         logging.getLogger(__name__).error(f"create_element failed: {e}", exc_info=True)

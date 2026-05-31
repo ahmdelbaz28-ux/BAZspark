@@ -86,7 +86,11 @@ async def resolve_conflict(conflict_id: str, resolve_data: ConflictResolveReques
     except HTTPException:
         raise
     except RuntimeError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        # V113 SECURITY: Don't expose internal error details to client.
+        # RuntimeError may contain server paths, class names, or internal
+        # state that helps attackers. Log internally, return generic message.
+        logger.error(f"resolve_conflict RuntimeError: {e}", exc_info=True)
+        raise HTTPException(status_code=422, detail="Conflict resolution failed — check server logs for details")
     except Exception as e:
         logger.error(f"resolve_conflict failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")

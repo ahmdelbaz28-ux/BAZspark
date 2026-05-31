@@ -18,9 +18,19 @@ the evidence chain provides cryptographic proof.
 Usage:
     from fireai.core.evidence_chain import EvidenceChain
 
-    chain = EvidenceChain(secret_key="project-key", signer_id="fireai-v1")
+    # V113: NEVER hardcode secret keys. Use environment variables.
+    import os
+    secret = os.environ["FIREAI_EVIDENCE_SECRET"]  # Required — will fail if not set
+    chain = EvidenceChain(secret_key=secret, signer_id="fireai-v1")
     envelope = chain.build_envelope(snapshot_payload, analysis_payload)
     assert chain.verify_envelope(envelope, snapshot_payload, analysis_payload)
+
+SECURITY WARNING:
+    The secret_key MUST be a cryptographically random string (>= 32 chars).
+    Using predictable keys like "project-key" allows attackers to forge
+    evidence envelopes, compromising the entire audit trail. In a fire
+    protection system, forged evidence = fake compliance = lives at risk.
+    The EvidenceChain constructor now REJECTS known-weak keys.
 """
 
 from __future__ import annotations
@@ -122,11 +132,49 @@ class EvidenceChain:
         namespace:   Project namespace for HMAC domain separation (e.g. "fireai-project-42").
     """
 
+    # V113: Known-weak secret keys that MUST be rejected.
+    # These are commonly used in examples/tutorials and provide ZERO security.
+    # Using any of these allows anyone who reads the source code to forge
+    # evidence envelopes — completely defeating the audit trail integrity.
+    _WEAK_SECRET_KEYS = frozenset({
+        "project-key", "secret", "password", "key", "test",
+        "fireai", "default", "changeme", "123456", "abc123",
+    })
+
     def __init__(self, secret_key: str, signer_id: str, namespace: str = "fireai"):
         if not secret_key:
             raise ValueError("secret_key must not be empty")
         if not signer_id:
             raise ValueError("signer_id must not be empty")
+
+        # V113 SECURITY: Reject known-weak secret keys.
+        # Per agent.md Priority 1 (Safety): a forged evidence chain in a fire
+        # protection system means fake compliance reports that can kill people.
+        # A predictable secret key makes HMAC signatures worthless.
+        key_lower = secret_key.strip().lower()
+        if key_lower in self._WEAK_SECRET_KEYS:
+            raise ValueError(
+                f"SECURITY: secret_key '{secret_key[:8]}...' is a known-weak key "
+                f"that provides NO cryptographic protection. Evidence envelopes "
+                f"signed with this key can be forged by anyone who reads the "
+                f"source code. Use a cryptographically random key (>= 32 chars) "
+                f"from os.environ['FIREAI_EVIDENCE_SECRET'] or secrets.token_hex(32). "
+                f"Per agent.md Priority 1 (Safety): fake evidence = fake compliance = "
+                f"catastrophic loss of life."
+            )
+
+        # V113 SECURITY: Warn if key is too short (< 32 chars)
+        # HMAC-SHA256 needs at least 32 bytes of entropy for full security.
+        # Shorter keys are vulnerable to brute force.
+        if len(secret_key) < 32:
+            import logging
+            logging.getLogger(__name__).warning(
+                f"SECURITY: secret_key is only {len(secret_key)} chars — "
+                f"recommend >= 32 chars for HMAC-SHA256. Short keys are "
+                f"vulnerable to brute force. Use os.environ['FIREAI_EVIDENCE_SECRET'] "
+                f"or secrets.token_hex(32)."
+            )
+
         self._secret_key = secret_key.encode("utf-8")
         self._signer_id = signer_id
         # V59 FIX (Finding 4): Include namespace in HMAC domain

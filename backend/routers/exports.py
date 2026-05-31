@@ -324,7 +324,12 @@ async def export_ifc(
             },
         )
     except Exception as e:
+        # V113 SECURITY: Never expose str(e) to client — may contain
+        # server paths (/home/...), Python class names, internal state.
+        # In a safety-critical system, this information helps attackers
+        # craft targeted exploits. Log internally only.
+        logger.error(f"IFC export failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"IFC export failed: {str(e)}",
+            detail="IFC export failed — an internal error occurred. Contact administrator.",
         )

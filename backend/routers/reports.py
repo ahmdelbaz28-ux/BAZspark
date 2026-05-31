@@ -419,9 +419,12 @@ async def export_report(
                 detail="PDF export requires the reportlab package",
             )
         except Exception as e:
+            # V113 SECURITY: Never expose str(e) to client
+            import logging
+            logging.getLogger(__name__).error(f"PDF generation failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500,
-                detail=f"PDF generation failed: {str(e)}",
+                detail="PDF generation failed — an internal error occurred. Contact administrator.",
             )
     elif format == "dxf":
         # DXF export of report data

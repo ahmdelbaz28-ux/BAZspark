@@ -18,6 +18,7 @@ LIFE-SAFETY NOTE:
 from __future__ import annotations
 
 import logging
+import os
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -29,6 +30,84 @@ from backend.services.workflow_service import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ── Path Traversal Defense-in-Depth (V113) ─────────────────────────────────
+# SECURITY: file_path comes from user-controlled query string.
+# Without validation, an attacker can read ANY file on the server:
+#   ?file_path=../../../../etc/passwd
+#   ?file_path=/etc/shadow
+# The service layer (workflow_service.py:node_initialize) also validates,
+# but defense-in-depth requires BOTH layers reject traversal.
+# Per agent.md Priority 1 (Safety): a compromised FireAI system produces
+# fake compliance reports = catastrophic loss of life.
+
+ALLOWED_DATA_DIRS = os.environ.get(
+    "FIREAI_DATA_DIRS",
+    "/tmp/fireai_uploads:/data:/uploads",
+).split(":")
+
+ALLOWED_FILE_EXTENSIONS = frozenset({".dxf", ".dwg", ".pdf", ".ifc", ".rvt"})
+
+
+def _validate_file_path(file_path: str) -> str:
+    """Validate file_path against path traversal and extension whitelist.
+
+    SECURITY: This is the FIRST line of defense at the router layer.
+    The service layer (node_initialize) provides a SECOND check.
+    Both are required — defense-in-depth per agent.md Priority 1 (Safety).
+
+    Raises HTTPException 400 if:
+      - Path resolves outside allowed directories
+      - File extension is not in allowed set
+      - Path contains null bytes
+    """
+    # Null byte injection (e.g., "file.pdf\x00.sh")
+    if "\x00" in file_path:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file path: null byte detected",
+        )
+
+    # Extension whitelist — only BIM/CAD file types
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext not in ALLOWED_FILE_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"File extension '{ext}' not allowed. "
+                f"Permitted: {sorted(ALLOWED_FILE_EXTENSIONS)}"
+            ),
+        )
+
+    # Path traversal check — resolve and verify within allowed dirs
+    real_path = os.path.realpath(file_path)
+    for allowed_dir in ALLOWED_DATA_DIRS:
+        if not allowed_dir:
+            continue
+        allowed_real = os.path.realpath(allowed_dir)
+        if real_path.startswith(allowed_real):
+            return file_path  # OK — within allowed directory
+
+    # If file doesn't exist yet (upload pending), check the parent path
+    # This handles cases where the path is within an allowed dir but
+    # the file hasn't been created yet
+    parent_dir = os.path.dirname(real_path)
+    for allowed_dir in ALLOWED_DATA_DIRS:
+        if not allowed_dir:
+            continue
+        allowed_real = os.path.realpath(allowed_dir)
+        if parent_dir.startswith(allowed_real):
+            return file_path
+
+    raise HTTPException(
+        status_code=400,
+        detail=(
+            f"Path traversal blocked: '{file_path}' resolves outside "
+            f"allowed directories. Per security policy, file access is "
+            f"restricted to designated data directories."
+        ),
+    )
 
 router = APIRouter(prefix="/workflow", tags=["workflow"])
 
@@ -66,6 +145,9 @@ async def start_workflow(
     LIFE-SAFETY: skip_human_review=True should NEVER be used in production.
     It bypasses the PE review gate required by NFPA 72.
     """
+    # V113: Path traversal defense-in-depth — validate at router level
+    _validate_file_path(file_path)
+
     if skip_human_review:
         logger.warning(
             f"⚠️ PRODUCTION WARNING: Human review gate BYPASSED for {file_path}. "
