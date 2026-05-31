@@ -177,10 +177,12 @@ from fireai.core.hybrid_survivability import (
 from fireai.core.cable_routing_engine import (
     CableRoutingEngine,
     RouteResult,
-    CircuitTopology,
     WireGauge,
     RoutingObstacle3D,
     VoltageDropSegment,
+    ObstacleType,
+    MAX_VOLTAGE_DROP_PCT,
+    NOMINAL_VOLTAGE_FA,
 )
 from fireai.core.digital_twin_sync import (
     DigitalTwinSync,
