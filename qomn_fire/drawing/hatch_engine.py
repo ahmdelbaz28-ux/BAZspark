@@ -31,9 +31,19 @@ def place_boundary_hatch(
             remedy="Increase hatch scale parameter bounds above 0.01."
         ))
 
+    # SAFETY: A hatch boundary with fewer than 3 points is geometrically invalid.
+    # A 0/1/2 point boundary produces a degenerate polyline that renders
+    # incorrectly in CAD viewers and may cause DXF file corruption.
+    if len(boundary_points) < 3:
+        return Result(error=HatchPlacementError(
+            message=f"Hatch boundary for '{run_id}' has {len(boundary_points)} points — minimum 3 required for a valid polygon.",
+            code_ref="CAD Drafting Standards / ISO 19650",
+            remedy="Ensure the hatch boundary encloses a valid area with at least 3 distinct vertices."
+        ))
+
     msp = doc.modelspace()
     if spec.layer not in doc.layers:
-        doc.layers.new(spec.layer, dxfattribs={"color": spec.color})
+        doc.layers.add(spec.layer, color=spec.color)
 
     hatch = msp.add_hatch(color=spec.color)
     hatch.dxf.layer = spec.layer

@@ -1,9 +1,10 @@
 {
   "ConduitRuns": [
     {
-      "Bends": 0,
+      "BendCount": 0,
+      "BendDegrees": 0,
       "ConduitType": "EMT",
-      "Hash": "d7d46255f80b5b3849ca9abcd3df59cdfb9e449f6b78517278391bdd23e8c158",
+      "Hash": "e538db23bbf7c71ea3efdd00ebb436aacdf295062faf8b0c9e17040e5d6e3061",
       "Id": "CONDUIT_RUN_00",
       "Path": [
         {
@@ -102,13 +103,14 @@
           "Z": 0.0
         }
       ],
-      "TotalLengthFt": 31.16798,
+      "TotalLengthFt": 29.52756,
       "TradeSize": "1/2"
     },
     {
-      "Bends": 270,
+      "BendCount": 3,
+      "BendDegrees": 270,
       "ConduitType": "EMT",
-      "Hash": "5a56ec02d7072e03a804952200ea516434e1789359c64c7f7dad2921f4958ab5",
+      "Hash": "2ea84001c57a475bd817d1dbe220891f4a9e43e946bbbf885929aeeca38e0049",
       "Id": "CONDUIT_RUN_01",
       "Path": [
         {
@@ -297,13 +299,14 @@
           "Z": 0.0
         }
       ],
-      "TotalLengthFt": 60.69554,
+      "TotalLengthFt": 59.05512,
       "TradeSize": "1/2"
     },
     {
-      "Bends": 0,
+      "BendCount": 0,
+      "BendDegrees": 0,
       "ConduitType": "EMT",
-      "Hash": "70901ffbe7c3bb3cab8d9864f26b4aebafe470d9a8a4255c5a88234ade5eaa9f",
+      "Hash": "9588057310d880435ddac0fd40cd3c05da02cd743d6549408bcbda30e8e6fbb6",
       "Id": "CONDUIT_RUN_02",
       "Path": [
         {
@@ -402,13 +405,14 @@
           "Z": 0.0
         }
       ],
-      "TotalLengthFt": 31.16798,
+      "TotalLengthFt": 29.52756,
       "TradeSize": "1/2"
     },
     {
-      "Bends": 270,
+      "BendCount": 3,
+      "BendDegrees": 270,
       "ConduitType": "EMT",
-      "Hash": "66422deace38a1638268c1791a16574da1dc06ec22d70b9ed5d8a7fcc1f97386",
+      "Hash": "32a9fad07ffbf4dedb68ec298a11447c8a278a2b07545fc1d619a610d30469ab",
       "Id": "CONDUIT_RUN_03",
       "Path": [
         {
@@ -602,13 +606,14 @@
           "Z": 0.0
         }
       ],
-      "TotalLengthFt": 62.33596,
+      "TotalLengthFt": 60.69554,
       "TradeSize": "1/2"
     },
     {
-      "Bends": 0,
+      "BendCount": 0,
+      "BendDegrees": 0,
       "ConduitType": "EMT",
-      "Hash": "658caf1d31e683a23d74097ec76f17a9ba2843ae8834bef448f7a7462666ff90",
+      "Hash": "2c541b960fc7ee1e746c7c3c0b107b455e5887fef62b23e8e6331dbcd108394f",
       "Id": "CONDUIT_RUN_04",
       "Path": [
         {
@@ -707,7 +712,7 @@
           "Z": 0.0
         }
       ],
-      "TotalLengthFt": 31.16798,
+      "TotalLengthFt": 29.52756,
       "TradeSize": "1/2"
     }
   ],

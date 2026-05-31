@@ -4,18 +4,28 @@ Reference Standard: NEC 760 spatial segregation compliance rules.
 
 BUG-22 FIX: Boundary generation now handles diagonal (non-axis-aligned) segments.
 The original code only generated boundary rectangles for horizontal and vertical
-segments, ignoring diagonal segments entirely. This produced empty boundary lists
-for routes with diagonal segments, causing hatch placement to fail silently.
-Now uses perpendicular offset to generate boundaries for any segment orientation.
+segments, ignoring diagonal segments entirely. Now uses perpendicular offset
+to generate boundaries for any segment orientation.
+
+SAFETY FIX: Now validates conduit fill ratio before producing output.
+A conduit run that exceeds NEC fill limits is a fire hazard —
+overheated wires in overfilled conduit can ignite surrounding materials.
 """
 
 import math
-from typing import Tuple, List, Dict, Any, Union
+from typing import Tuple, List, Dict, Any, Union, Optional
 import ezdxf
 from qomn_fire.core.types import Point3D, ConduitType, ConduitRun, HatchSpec, Device
-from qomn_fire.core.errors import Result, NECViolationError, HatchPlacementError
+from qomn_fire.core.errors import Result, NECViolationError, HatchPlacementError, ConduitFillError
 from qomn_fire.engine.routing import GridMap3D, astar_route_3d
+from qomn_fire.engine.fill import calculate_conduit_fill
 from qomn_fire.drawing.hatch_engine import place_boundary_hatch
+
+# Default wire configuration for fire alarm circuits per NFPA 72
+# Most FA circuits use 14 AWG with 2-4 conductors per conduit
+_DEFAULT_WIRE_GAUGE = "14 AWG"
+_DEFAULT_WIRE_COUNT = 4
+
 
 def route_conduit_and_hatch(
     grid_map: GridMap3D,
@@ -24,15 +34,25 @@ def route_conduit_and_hatch(
     end: Point3D,
     conduit: ConduitType,
     conduit_id: str,
-    spec: HatchSpec
-) -> Result[Tuple[ConduitRun, Any], Union[NECViolationError, HatchPlacementError]]:
+    spec: HatchSpec,
+    wire_gauge: str = _DEFAULT_WIRE_GAUGE,
+    wire_count: int = _DEFAULT_WIRE_COUNT
+) -> Result[Tuple[ConduitRun, Any], Union[NECViolationError, HatchPlacementError, ConduitFillError]]:
+    # Step 1: Route the conduit path
     route_res = astar_route_3d(grid_map, start, end, conduit, conduit_id)
     if route_res.is_failure:
         return Result(error=route_res.error())
 
     conduit_run = route_res.unwrap()
-    pts = conduit_run.points
 
+    # Step 2: SAFETY — Validate conduit fill ratio (NEC Chapter 9 Table 1)
+    # A conduit that is overfilled violates NEC and creates fire hazard
+    fill_res = calculate_conduit_fill(conduit_run.trade_size, wire_gauge, wire_count)
+    if fill_res.is_failure:
+        return Result(error=fill_res.error())
+
+    # Step 3: Generate boundary hatch points for conduit corridor
+    pts = conduit_run.points
     boundary_points = []
     width_m = 0.20
 
@@ -60,15 +80,23 @@ def route_conduit_and_hatch(
             (round(p1.x - perp_x, 4), round(p1.y - perp_y, 4))
         ])
 
+    # Deduplicate boundary points
     unique_points = []
     for p in boundary_points:
         if p not in unique_points:
             unique_points.append(p)
 
-    hatch_res = place_boundary_hatch(doc, unique_points, spec, conduit_id)
-    if hatch_res.is_failure:
-        return Result(error=hatch_res.error())
+    # Step 4: Place hatch only if boundary has valid geometry
+    if len(unique_points) >= 3:
+        hatch_res = place_boundary_hatch(doc, unique_points, spec, conduit_id)
+        if hatch_res.is_failure:
+            return Result(error=hatch_res.error())
+        hatch_entity = hatch_res.unwrap()
+    else:
+        # Zero-length or single-segment path — no meaningful boundary to hatch
+        hatch_entity = None
 
+    # Step 5: Draw conduit lines in model space
     msp = doc.modelspace()
     for i in range(len(pts) - 1):
         msp.add_line(
@@ -77,4 +105,4 @@ def route_conduit_and_hatch(
             dxfattribs={"layer": "A-FIRE-CABLES", "color": 2}
         )
 
-    return Result(value=(conduit_run, hatch_res.unwrap()))
+    return Result(value=(conduit_run, hatch_entity))

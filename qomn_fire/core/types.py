@@ -140,12 +140,13 @@ class ConduitRun:
     trade_size: str
     points: Tuple[Point3D, ...]
     total_length_ft: float
-    bend_count: int
+    bend_count: int  # Number of 90-degree bends (actual count, NOT degrees)
+    bend_degrees: int  # Total bend angle in degrees (NEC 358.26: max 360)
     fittings: Tuple[Fitting, ...]
 
     def compute_hash(self) -> str:
         pt_strs = ",".join([f"{p.x:.4f},{p.y:.4f},{p.z:.4f}" for p in self.points])
-        serialized = f"{self.id}:{self.conduit_type.value}:{self.trade_size}:{pt_strs}:{self.total_length_ft:.4f}:{self.bend_count}"
+        serialized = f"{self.id}:{self.conduit_type.value}:{self.trade_size}:{pt_strs}:{self.total_length_ft:.4f}:{self.bend_count}:{self.bend_degrees}"
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 @dataclass(frozen=True, slots=True)

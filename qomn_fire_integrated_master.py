@@ -266,6 +266,9 @@ def execute_integrated_master_project():
     # 3. NFPA-Compliant Automatic Space Device Placement
     print(" -> Resolving detector layouts...")
     place_res = place_smoke_detectors_room(room_min, room_max, 9.0, "FA-LP1", "ZONE_1")
+    if place_res.is_failure:
+        print(f"\n[CRITICAL] Detector placement failed: {place_res.error()}")
+        sys.exit(1)
     devices = place_res.unwrap()
 
     h_spec_coverage = HatchSpec("ANSI31", 45.0, 0.1, 3, "A-FIRE-HATC", "Smoke Coverage", "NFPA 72 SS17")
@@ -275,7 +278,9 @@ def execute_integrated_master_project():
         msp.add_text(d.id, dxfattribs={"insert": (d.location.x + 0.5, d.location.y + 0.5), "height": 0.25, "layer": "A-FIRE-TEXT", "color": 5})
 
         boundary = generate_circle_polyline(d.location, NFPA_SMOKE_DETECTOR_SPACING_M)
-        place_boundary_hatch(doc, boundary, h_spec_coverage, d.id)
+        hatch_res = place_boundary_hatch(doc, boundary, h_spec_coverage, d.id)
+        if hatch_res.is_failure:
+            print(f"   [WARNING] Hatch placement failed for {d.id}: {hatch_res.error()}")
 
     # 4. NFPA & NEC Compliant FACP Selection (Direct Vascular Linkage)
     print(" -> Dynamically selecting panel based on device loads...")
@@ -292,6 +297,9 @@ def execute_integrated_master_project():
     )
 
     selection_res = SelectionEngine.select_panel(req)
+    if selection_res.is_failure:
+        print(f"\n[CRITICAL] FACP selection failed: {selection_res.error()}")
+        sys.exit(1)
     rec = selection_res.unwrap()
     print(f"   -> Selected FACP: {rec.recommended_model} ({rec.manufacturer})")
     print(f"   -> Battery: {rec.battery_size_ah} Ah ({rec.battery_derating_details.get('method', 'N/A')})")
@@ -329,6 +337,8 @@ def execute_integrated_master_project():
         if res.is_success:
             run_item, _ = res.unwrap()
             conduit_runs.append(run_item)
+        else:
+            print(f"   [WARNING] Conduit route {idx} failed: {res.error()}")
 
     # 6. Dimensions and Layout Graphics
     if len(devices) >= 2:
@@ -363,16 +373,24 @@ def execute_integrated_master_project():
     ]
     draw_revision_table(doc, revs)
 
-    # 7. Compile files to disk
+    # 7. Compile files to disk with error handling
     dxf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fire_alarm_plan.dxf")
-    doc.saveas(dxf_path)
-    print(f"\n -> CAD shop drawing compiled: '{dxf_path}'")
+    try:
+        doc.saveas(dxf_path)
+        print(f"\n -> CAD shop drawing compiled: '{dxf_path}'")
+    except Exception as e:
+        print(f"\n[CRITICAL] DXF save failed: {e}")
+        sys.exit(1)
 
     revit_json = export_to_revit_json(devices, conduit_runs, rec)
     revit_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "revit_import.json")
-    with open(revit_path, "w", encoding="utf-8") as f:
-        f.write(revit_json)
-    print(f" -> Revit BIM metadata compiled: '{revit_path}'")
+    try:
+        with open(revit_path, "w", encoding="utf-8") as f:
+            f.write(revit_json)
+        print(f" -> Revit BIM metadata compiled: '{revit_path}'")
+    except Exception as e:
+        print(f"\n[CRITICAL] Revit JSON save failed: {e}")
+        sys.exit(1)
 
     print("\n[QOMN-FIRE INTEGRATION] Compilation run completed successfully.")
 

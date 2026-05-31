@@ -38,7 +38,8 @@ def export_to_revit_json(devices: List[Device], runs: List[ConduitRun], facp: Pa
             "ConduitType": r.conduit_type.value,
             "TradeSize": r.trade_size,
             "TotalLengthFt": r.total_length_ft,
-            "Bends": r.bend_count,
+            "BendCount": r.bend_count,
+            "BendDegrees": r.bend_degrees,
             "Path": [p.to_dict() for p in r.points],
             "Hash": r.compute_hash()
         })

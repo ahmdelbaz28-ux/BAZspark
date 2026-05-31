@@ -100,12 +100,13 @@ class ConduitRun:
     trade_size: str
     points: Tuple[Point3D, ...]
     total_length_ft: float
-    bend_count: int
+    bend_count: int  # Number of 90-degree bends (actual count, NOT degrees)
+    bend_degrees: int  # Total bend angle in degrees (NEC 358.26: max 360)
     fittings: Tuple[Fitting, ...]
 
     def compute_hash(self) -> str:
         pt_strs = ",".join([f"{p.x:.4f},{p.y:.4f},{p.z:.4f}" for p in self.points])
-        serialized = f"{self.id}:{self.conduit_type.value}:{self.trade_size}:{pt_strs}:{self.total_length_ft:.4f}:{self.bend_count}"
+        serialized = f"{self.id}:{self.conduit_type.value}:{self.trade_size}:{pt_strs}:{self.total_length_ft:.4f}:{self.bend_count}:{self.bend_degrees}"
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 @dataclass(frozen=True, slots=True)
@@ -731,7 +732,8 @@ def astar_route_3d(
 
             pts = tuple([grid_map.to_physical(p) for p in path])
 
-            bends = 0
+            bend_count = 0  # Number of individual 90-degree bends
+            bend_degrees = 0  # Total cumulative bend angle in degrees
             fittings: List[Fitting] = []
             if len(pts) >= 3:
                 prev_dir = (
@@ -752,18 +754,20 @@ def astar_route_3d(
                     if mag_p > 0 and mag_c > 0:
                         cos_a = dot / (mag_p * mag_c)
                         if abs(cos_a - 1.0) > 1e-4:
-                            bends += 90
+                            bend_count += 1
+                            bend_degrees += 90
                             fittings.append(Fitting(FittingType.ELBOW_90, pts[i]))
                             prev_dir = curr_dir
 
             tot_len_m = len(path) * grid_map.step_m
             tot_len_ft = tot_len_m * 3.28084
 
-            if bends > 360:
+            # NEC Article 358.26: No more than 360 degrees of bends between pull points
+            if bend_degrees > 360:
                 return Result(error=NECViolationError(
-                    message=f"Conduit bends exceed 360 degree threshold limit ({bends} degrees).",
+                    message=f"Conduit run exceeds 360 degrees of bend limits ({bend_degrees} degrees, {bend_count} bends).",
                     code_ref="NEC Article 358.26",
-                    remedy="Insert pull boxes or redesign physical path to reduce elbows."
+                    remedy="Install junction boxes to partition the conduit run segment."
                 ))
 
             run = ConduitRun(
@@ -772,7 +776,8 @@ def astar_route_3d(
                 trade_size="1/2",
                 points=pts,
                 total_length_ft=tot_len_ft,
-                bend_count=bends,
+                bend_count=bend_count,
+                bend_degrees=bend_degrees,
                 fittings=tuple(fittings)
             )
             return Result(value=run)
@@ -1111,7 +1116,8 @@ def export_to_revit_json(devices: List[Device], runs: List[ConduitRun], facp: Pa
             "ConduitType": r.conduit_type.value,
             "TradeSize": r.trade_size,
             "TotalLengthFt": r.total_length_ft,
-            "Bends": r.bend_count,
+            "BendCount": r.bend_count,
+            "BendDegrees": r.bend_degrees,
             "Path": [p.to_dict() for p in r.points],
             "Hash": r.compute_hash()
         })

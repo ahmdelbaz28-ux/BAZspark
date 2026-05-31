@@ -1,6 +1,11 @@
 """
 QOMN-FIRE ORTHOGONAL 3D PATHFINDER ROUTING ENGINE
 A* algorithm for conduit routing with NEC 360-degree bend limit enforcement.
+
+BUG-5/16 FIX: bend_count now stores NUMBER of bends, not degrees.
+Added bend_degrees field for the NEC 360-degree limit check.
+BUG-20 FIX: Route length uses (path_points - 1) * step, not len(path) * step.
+BUG-27 FIX: Conduit-type-appropriate trade size, not hardcoded "1/2".
 """
 
 import heapq
@@ -73,7 +78,18 @@ def astar_route_3d(
         (0, 0, 1), (0, 0, -1)
     ]
 
+    # Safety limit: prevent infinite loops on very large grids
+    MAX_ITERATIONS = 500000
+    iterations = 0
+
     while open_set:
+        iterations += 1
+        if iterations > MAX_ITERATIONS:
+            return Result(error=NECViolationError(
+                message=f"A* pathfinding exceeded {MAX_ITERATIONS} iterations — grid too large or path too complex.",
+                code_ref="NEC Art 300.18",
+                remedy="Reduce grid size or clear structural blockings from grid boundaries."
+            ))
         _, _, current = heapq.heappop(open_set)
 
         if current == g_end:
@@ -88,14 +104,10 @@ def astar_route_3d(
             # BUG-5/16 FIX: Count bends as NUMBER of 90-degree bends, not degrees.
             # NEC Article 358.26 states: 'not more than the equivalent of four
             # quarter bends (360 degrees total) between pull points.'
-            # The original code stored bend_count as DEGREES (90, 180, 270...)
-            # which made the NEC check `bends > 360` accidentally correct,
-            # but the field name 'bend_count' is misleading and the ConduitRun
-            # data type documentation says 'bend_count: int' — a COUNT.
-            # Fixed: bend_count is now the NUMBER of 90-degree bends.
-            # NEC check uses bend_count * 90 > 360 (i.e., more than 4 quarter bends).
+            # bend_count = number of individual 90-degree bends
+            # bend_degrees = total cumulative bend angle in degrees
             bend_count = 0
-            total_bend_degrees = 0
+            bend_degrees = 0
             fittings: List[Fitting] = []
             if len(pts) >= 3:
                 prev_dir = (
@@ -117,7 +129,7 @@ def astar_route_3d(
                         cos_a = dot / (mag_p * mag_c)
                         if abs(cos_a - 1.0) > 1e-4:
                             bend_count += 1
-                            total_bend_degrees += 90
+                            bend_degrees += 90
                             fittings.append(Fitting(FittingType.ELBOW_90, pts[i]))
                             prev_dir = curr_dir
 
@@ -126,18 +138,15 @@ def astar_route_3d(
             #   Path = [0, 0.5, 1.0, ..., 5.0] = 11 points
             #   Distance = 10 steps * 0.5m = 5.0m (CORRECT)
             #   Old: 11 * 0.5 = 5.5m (WRONG — off by one grid step)
-            # This bug caused ALL conduit lengths to be overstated by one grid step,
-            # producing incorrect voltage drop calculations and material quantities.
             num_segments = max(len(path) - 1, 0)
             tot_len_m = num_segments * grid_map.step_m
             tot_len_ft = tot_len_m * 3.28084
 
-            # NEC check: max 4 quarter bends (360 degrees) between pull points
-            # BUG-5/16 FIX: Use total_bend_degrees for the NEC limit check
-            if total_bend_degrees > 360:
+            # NEC Article 358.26: No more than 360 degrees of bends between pull points
+            if bend_degrees > 360:
                 return Result(error=NECViolationError(
                     message=f"Conduit run exceeds 360 degrees of bend limits "
-                            f"({total_bend_degrees} degrees from {bend_count} bends). "
+                            f"({bend_degrees} degrees from {bend_count} bends). "
                             f"NEC Article 358.26 allows maximum 4 quarter bends.",
                     code_ref="NEC Article 358.26",
                     remedy="Install junction boxes to partition the conduit run segment."
@@ -153,6 +162,7 @@ def astar_route_3d(
                 points=pts,
                 total_length_ft=tot_len_ft,
                 bend_count=bend_count,
+                bend_degrees=bend_degrees,
                 fittings=tuple(fittings)
             )
             return Result(value=run)
