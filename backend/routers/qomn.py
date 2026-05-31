@@ -29,7 +29,8 @@ STANDARDS:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+import threading
+from typing import Any, Dict, List, NoReturn, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -40,13 +41,22 @@ router = APIRouter(tags=["qomn"])
 
 # Module-level kernel instance (stateful audit log per server session)
 _kernel = None
+_kernel_lock = threading.Lock()
 
 
 def _get_kernel():
+    """Lazy-initialize QOMNKernel singleton with thread-safe double-checked locking.
+
+    V58 FIX (BUG #7): Added threading.Lock for thread safety. Previously,
+    two concurrent requests could both see _kernel is None and create
+    separate instances, splitting the audit trail.
+    """
     global _kernel
     if _kernel is None:
-        from fireai.core.qomn_kernel import QOMNKernel
-        _kernel = QOMNKernel()
+        with _kernel_lock:
+            if _kernel is None:  # double-checked locking
+                from fireai.core.qomn_kernel import QOMNKernel
+                _kernel = QOMNKernel()
     return _kernel
 
 
@@ -146,10 +156,14 @@ async def compute_heat_spacing(req: HeatSpacingRequest):
     """Compute heat detector spacing per NFPA 72 §17.6.3.1.
 
     Formula: S = 0.7 × √A  Maximum: 15.24m (50 ft)
+
+    V58 FIX (BUG #2): Now routes through kernel with full L0→L4 pipeline
+    (previously called compute_heat_detector_spacing directly, bypassing
+    L3 validation and L4 audit).
     """
     try:
-        from fireai.core.qomn_kernel import compute_heat_detector_spacing
-        result = compute_heat_detector_spacing(req.ceiling_height_m, req.area_per_detector_m2)
+        kernel = _get_kernel()
+        result = kernel.heat_detector_spacing(req.ceiling_height_m, req.area_per_detector_m2)
         return {"success": True, "data": result}
     except Exception as exc:
         _handle_error(exc)
@@ -527,8 +541,12 @@ async def run_golden_tests():
 
 # ── Error Handler ─────────────────────────────────────────────────────────────
 
-def _handle_error(exc: Exception) -> None:
-    """Convert QOMN kernel exceptions to HTTP responses."""
+def _handle_error(exc: Exception) -> NoReturn:
+    """Convert QOMN kernel exceptions to HTTP responses.
+
+    V58 FIX (BUG #17): Return type changed from None to NoReturn since
+    this function always raises HTTPException.
+    """
     from fireai.core.qomn_kernel import PhysicsGuardError, ComputationError, ValidationError
     if isinstance(exc, PhysicsGuardError):
         raise HTTPException(

@@ -247,15 +247,16 @@ def recommend_wire_gauge(
                 "nfpa_reference": "NFPA 72-2022 §27.4.1.2",
             }
 
-    # Even 2/0 not sufficient — flag engineering review
-    last = calculate_voltage_drop(current_a, one_way_length_m, "2/0", nominal_voltage)
+    # V58 FIX (BUG #7): Use 4/0 (largest gauge tried) instead of 2/0 for
+    # failure reporting. 2/0 understates the system's best achievable performance.
+    last = calculate_voltage_drop(current_a, one_way_length_m, "4/0", nominal_voltage)
     return {
         "recommended_awg": "ENGINEERING_REVIEW",
         "voltage_drop_pct": last["voltage_drop_pct"],
         "voltage_drop_v": last["voltage_drop_v"],
         "is_compliant": False,
         "nfpa_reference": "NFPA 72-2022 §27.4.1.2",
-        "note": "Circuit exceeds NEC conductor size table. Engineering analysis required.",
+        "note": "Even 4/0 AWG insufficient. Engineering analysis required.",
     }
 
 
@@ -329,7 +330,7 @@ def calculate_battery_backup(
         "derating_factor": derating_factor,
         "temperature_c": temperature_c,
         "temp_derating": round(temp_derating, 4),
-        "nfpa_compliant": True,
+        "nfpa_compliant": standby_hours >= 24.0,  # V58 FIX (BUG #2): Was hardcoded True
         "nfpa_reference": "NFPA 72-2022 §10.6.7",
         "standby_hours": standby_hours,
         "alarm_hours": alarm_hours,

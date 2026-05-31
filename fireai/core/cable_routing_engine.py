@@ -113,18 +113,25 @@ class WireGauge(metaclass=_WireGaugeMeta):
     These are the gauges permitted by NEC 760.154 for PLFA circuits.
     """
 
-    AWG_18: _WireGaugeInstance = _WireGaugeInstance("18", 21.40, 1.024, 1.0)
-    AWG_16: _WireGaugeInstance = _WireGaugeInstance("16", 13.40, 1.291, 2.0)
-    AWG_14: _WireGaugeInstance = _WireGaugeInstance("14", 8.450, 1.628, 2.0)
-    AWG_12: _WireGaugeInstance = _WireGaugeInstance("12", 5.310, 2.053, 3.0)
+    # V58 FIX (BUG #1): Resistance values updated from 20°C to 75°C per
+    # NEC Chapter 9 Table 8 (copper, stranded, DC resistance at 75°C).
+    # Previous values were at 20°C reference temperature, causing voltage
+    # drop underestimation by 16-20%. This means circuits calculated as
+    # compliant could actually have horns/strobes failing during a fire.
+    # Source: NEC 2023 Chapter 9 Table 8, aligned with qomn_kernel.py
+    AWG_18: _WireGaugeInstance = _WireGaugeInstance("18", 25.49, 1.024, 1.0)
+    AWG_16: _WireGaugeInstance = _WireGaugeInstance("16", 16.04, 1.291, 2.0)
+    AWG_14: _WireGaugeInstance = _WireGaugeInstance("14", 10.07, 1.628, 2.0)
+    AWG_12: _WireGaugeInstance = _WireGaugeInstance("12", 6.33, 2.053, 3.0)
 
     _ALL_GAUGES: Tuple[_WireGaugeInstance, ...] = (AWG_18, AWG_16, AWG_14, AWG_12)
 
+    # V58 FIX (BUG #1): Resistance values updated to 75°C to match AWG instances
     RESISTANCE_PER_M: Dict[str, float] = {
-        "18": 0.02140,
-        "16": 0.01340,
-        "14": 0.00845,
-        "12": 0.00531,
+        "18": 0.02549,  # 25.49 Ω/km at 75°C
+        "16": 0.01604,  # 16.04 Ω/km at 75°C
+        "14": 0.01007,  # 10.07 Ω/km at 75°C
+        "12": 0.00633,  # 6.33 Ω/km at 75°C
     }
 
     VALID_GAUGES: Tuple[str, ...] = ("12", "14", "16", "18")
@@ -478,8 +485,11 @@ class CableRoutingEngine:
                         selected_gauge_is_minimum=(gauge == WireGauge._ALL_GAUGES[0]),
                         total_return_length_m=getattr(circuit, "return_length_m", 0.0),
                     )
-            # No compliant gauge found — use the smallest and report violation
-            gauge = WireGauge._ALL_GAUGES[0]
+            # No compliant gauge found — use the largest gauge tried and report violation
+            # V58 FIX (BUG #6): Use largest gauge (_ALL_GAUGES[-1]) instead of smallest
+            # (_ALL_GAUGES[0]). Reporting the smallest gauge makes the situation appear
+            # worse than it is, potentially leading to unnecessary expensive design changes.
+            gauge = WireGauge._ALL_GAUGES[-1]
             result = self._compute_route(circuit, gauge, voltage)
             return RouteResult(
                 circuit_id=circuit.circuit_id,

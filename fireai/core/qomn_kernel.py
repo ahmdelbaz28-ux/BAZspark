@@ -647,6 +647,34 @@ def validate_voltage_drop_result(result: Dict) -> Dict:
     return result
 
 
+def validate_heat_spacing_result(result: Dict) -> Dict:
+    """Validate computed heat detector spacing against code limits.
+
+    V58 FIX (BUG #3): This function was completely missing — heat detector
+    spacing results were returned without any L3 validation.
+
+    Source: NFPA 72-2022 §17.6.3.1
+    """
+    S = result["spacing_m"]
+    R = result["coverage_radius_m"]
+
+    if not math.isfinite(S) or not math.isfinite(R):
+        raise ComputationError("Heat spacing produced NaN/Inf — reject all outputs")
+    if S <= 0:
+        raise ValidationError(f"Heat spacing {S}m ≤ 0 — physically impossible")
+    if S > NFPA72_HEAT_MAX_SPACING_M:
+        raise ValidationError(
+            f"Computed heat spacing {S:.3f}m > NFPA 72 max {NFPA72_HEAT_MAX_SPACING_M}m"
+        )
+    # Verify coverage radius = 0.7 × spacing
+    if abs(R - 0.7 * S) > 1e-5:
+        raise ValidationError(
+            f"Coverage radius {R:.6f}m ≠ 0.7 × {S:.6f}m = {0.7 * S:.6f}m — computation error"
+        )
+    result["layer3_validated"] = True
+    return result
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # LAYER 4 — AUDIT LOG (Immutable Tamper-Evident Record)
 # Source: QOMN Specification Section 3, Layer 4
@@ -745,13 +773,20 @@ class QOMNAuditLog:
         }
 
     def verify_chain_integrity(self) -> bool:
-        """Verify the hash chain is intact (tamper detection)."""
+        """Verify the hash chain is intact (tamper detection).
+
+        V58 FIX (BUG #1): Now uses _compute_chain_hash() instead of plain
+        hashlib.sha256() so that verification matches recording when HMAC
+        key is configured. Previously, verify always used SHA-256 while
+        record used HMAC-SHA256, causing ALL verifications to fail in
+        production (when FIREAI_QOMN_HMAC_KEY is set).
+        """
         if not self._entries:
             return True
-        chain = hashlib.sha256(b"QOMN-GENESIS").hexdigest()
+        chain = self._compute_chain_hash(b"QOMN-GENESIS")
         for e in self._entries:
             chain_input = f"{chain}:{e.result_hash}:{e.timestamp_utc}"
-            chain = hashlib.sha256(chain_input.encode()).hexdigest()
+            chain = self._compute_chain_hash(chain_input.encode())
         return chain == self._chain_hash
 
 
@@ -783,22 +818,35 @@ class QOMNKernel:
         # L3 validation
         result = validate_smoke_spacing_result(result)
         # L4 audit
+        # V58 FIX (BUG #5): Pass layer3_passed=True — L3 validation was
+        # performed but the audit log recorded layer3_passed=False (default)
         self.audit.record(
             "smoke_detector_spacing",
             {"ceiling_height_m": ceiling_height_m},
             result["nfpa_section"],
             result,
+            layer3_passed=True,
         )
         return result
 
     def heat_detector_spacing(self, ceiling_height_m: float, area_per_detector_m2: float) -> Dict[str, Any]:
-        """Compute heat detector spacing. Full L0→L4 pipeline."""
+        """Compute heat detector spacing. Full L0→L4 pipeline.
+
+        V58 FIX (BUG #3): Now includes L3 validation before audit record.
+        Previously skipped validation entirely — no validate_heat_spacing_result()
+        function even existed.
+        """
+        # L2 computation
         result = compute_heat_detector_spacing(ceiling_height_m, area_per_detector_m2)
+        # L3 validation
+        result = validate_heat_spacing_result(result)
+        # L4 audit
         self.audit.record(
             "heat_detector_spacing",
             {"ceiling_height_m": ceiling_height_m, "area_m2": area_per_detector_m2},
             result["nfpa_section"],
             result,
+            layer3_passed=True,
         )
         return result
 
@@ -811,11 +859,13 @@ class QOMNKernel:
         """Compute battery capacity. Full L0→L4 pipeline."""
         result = compute_battery_capacity_ah(standby_load_a, alarm_load_a, **kwargs)
         result = validate_battery_result(result)
+        # V58 FIX (BUG #5): Pass layer3_passed=True
         self.audit.record(
             "battery_capacity",
             {"standby_a": standby_load_a, "alarm_a": alarm_load_a},
             result["nfpa_section"],
             result,
+            layer3_passed=True,
         )
         return result
 
@@ -830,11 +880,13 @@ class QOMNKernel:
         """Compute voltage drop. Full L0→L4 pipeline."""
         result = compute_voltage_drop(current_a, length_m, awg_gauge, supply_voltage_v, max_drop_pct)
         result = validate_voltage_drop_result(result)
+        # V58 FIX (BUG #5): Pass layer3_passed=True
         self.audit.record(
             "voltage_drop",
             {"current_a": current_a, "length_m": length_m, "awg": awg_gauge},
             result["nec_section"],
             result,
+            layer3_passed=True,
         )
         return result
 
