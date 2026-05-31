@@ -1555,7 +1555,7 @@ class MultiFloorOrchestrator:
 
                         # Extract compliance from audit result
                         if isinstance(audit_result, dict):
-                            if not audit_result.get("safe", True):
+                            if not audit_result.get("safe", False):  # V111 FIX: Fail-safe default — missing key = UNSAFE
                                 result.shunt_trip_compliant = False
                                 result.violations.append(
                                     f"Shunt-trip audit FAILED for elevator "

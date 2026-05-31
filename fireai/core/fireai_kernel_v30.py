@@ -209,7 +209,7 @@ class VectorEngine:
 
         if uncovered_fine:
             bad_pts = np.vstack(uncovered_fine)
-            frac    = covered / total if total else 1.0
+            frac    = covered / total if total else 0.0  # V111 FIX: Fail-safe — no test points = 0% coverage, NOT 100%
             return CoverageResult(
                 coverage_fraction = max(0.0, frac - len(bad_pts) / max(fine_total, 1)),
                 covered_count     = covered,
@@ -218,7 +218,7 @@ class VectorEngine:
                 uncovered_pts     = [tuple(p) for p in bad_pts[:500]],
             )
 
-        frac = covered / total if total else 1.0
+        frac = covered / total if total else 0.0  # V111 FIX: Fail-safe — no test points = 0% coverage, NOT 100%
         return CoverageResult(
             coverage_fraction = frac,
             covered_count     = covered,

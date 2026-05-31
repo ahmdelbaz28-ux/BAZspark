@@ -345,9 +345,9 @@ def generate_isolator_boq(loops: List[Dict]) -> List[BOQItem]:
 
         existing = compliance.get("isolator_count", 0)
 
-        if not compliance.get("compliant", True):
+        if not compliance.get("compliant", False):  # V111 FIX: Fail-safe default — missing key = NOT compliant
             # Estimate needed isolators from the worst segment
-            worst_segment = compliance.get("max_segment_devices", 0)
+            worst_segment = compliance.get("max_segment_devices", 0)  # 0 is safe default — no segment = no isolator need
             # Each isolator splits a segment; need enough to bring
             # all segments under max_between
             if worst_segment > max_between:
