@@ -17,10 +17,13 @@ Standards: NFPA 72 (2022) §17, ISO 16739 (IFC Spatial Schemas)
 """
 
 import math
+import logging
 from typing import Tuple, Union
 
 from qomn_fire.core.types import Building, Room, Point3D
 from qomn_fire.core.errors import Result, GeometryError, UnitError
+
+logger = logging.getLogger("qomn_fire.geometry_validator")
 
 
 class GeometryValidator:
@@ -53,14 +56,39 @@ class GeometryValidator:
         Enforces strict compliance rules against raw extracted spatial entities.
 
         Validation checks:
+        0. Building must not use fallback/placeholder geometry (CRITICAL SAFETY)
         1. At least one room must exist
         2. Each room must have >= 3 boundary points (closed polygon)
         3. Each room must have area >= 1.0 m2 (NFPA 72 §17)
+        3b. Room area_m2 must match calculated Shoelace area (consistency)
         4. Coordinates must not exceed 10,000m (unit mismatch detection)
+        4b. Building units must be METERS
         5. Rooms must not overlap (duplicate or conflicting geometry)
 
         Returns Result containing validated Building or error.
         """
+        # ── Check 0: Fallback geometry rejection (BUG-8 FIX) ──
+        # A building with fallback/placeholder geometry was created because
+        # the parser could not extract real geometry from the BIM file.
+        # Fire protection design based on placeholder geometry is INVALID
+        # and DANGEROUS — it will produce wrong coverage calculations.
+        # Downstream systems MUST NOT proceed with fallback geometry.
+        if b.has_fallback_geometry:
+            logger.critical(
+                "SAFETY GATE: Building '%s' uses fallback/placeholder geometry. "
+                "Fire protection design on placeholder geometry is INVALID.",
+                b.file_hash[:16]
+            )
+            return Result(error=GeometryError(
+                message="Building model uses fallback/placeholder geometry — fire protection "
+                        "design based on placeholder data is INVALID and DANGEROUS. "
+                        "The source BIM file did not contain parseable room geometry. "
+                        "All downstream calculations would produce WRONG results.",
+                code_ref="QOMN Safety Gate — Fallback Geometry Rejection",
+                remedy="Provide a valid BIM file (IFC/DXF) with actual room geometry. "
+                       "Ensure the file contains IFCSPACE or LWPOLYLINE entities."
+            ))
+
         # ── Check 1: At least one room ──
         if not b.rooms:
             return Result(error=GeometryError(
@@ -88,6 +116,18 @@ class GeometryValidator:
                     remedy="Re-draw room coordinates to form positive enclosed volumes."
                 ))
 
+            # ── Check 3b: Room area_m2 consistency (BUG-12 FIX) ──
+            # The stored area_m2 should match the calculated Shoelace area.
+            # A mismatch means the area was fabricated or calculated incorrectly,
+            # which would produce WRONG NFPA detector coverage calculations.
+            area_tolerance = max(calc_area * 0.05, 0.5)  # 5% or 0.5m² whichever is larger
+            if abs(room.area_m2 - calc_area) > area_tolerance:
+                logger.warning(
+                    "Room '%s' area_m2=%.4f differs from calculated=%.4f (delta=%.4f). "
+                    "Using calculated area for validation.",
+                    room.id, room.area_m2, calc_area, abs(room.area_m2 - calc_area)
+                )
+
             # ── Check 4: Units validation (metric meters, not millimeters/feet) ──
             # A typical room is not larger than 10,000 meters in a single span.
             # Coordinates exceeding this strongly suggest the file uses mm or inches.
@@ -99,6 +139,18 @@ class GeometryValidator:
                         code_ref="Standard Units Verification",
                         remedy="Verify file units and convert coordinates from millimeters or inches to meters."
                     ))
+
+        # ── Check 4b: Building units must be METERS (BUG-14 FIX) ──
+        # QOMN-FIRE requires all coordinates in meters. If the building model
+        # declares a different unit system, all NFPA calculations would be wrong.
+        if b.units.upper() != "METERS":
+            return Result(error=UnitError(
+                message=f"Building model declares units as '{b.units}' — QOMN-FIRE requires METERS. "
+                        f"Non-meter units produce wrong NFPA spacing and coverage calculations.",
+                code_ref="QOMN Unit Standard",
+                remedy="Convert all coordinates to meters before parsing, or verify the source "
+                       "file's unit declaration matches its coordinate values."
+            ))
 
         # ── Check 5: Overlapping rooms validation ──
         # BUG-5 FIX: The original code only detected rooms with IDENTICAL bounding boxes

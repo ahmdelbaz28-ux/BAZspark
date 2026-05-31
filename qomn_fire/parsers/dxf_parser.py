@@ -20,10 +20,14 @@ Standards: AutoCAD DXF Specification, NFPA 72 (2022)
 """
 
 import math
+import logging
+import re
 from typing import Tuple, List, Optional
 
 from qomn_fire.core.types import Point3D, Wall, Room, Opening, Building
 from qomn_fire.core.errors import Result, GeometryError
+
+logger = logging.getLogger("qomn_fire.dxf_parser")
 
 
 class DxfParser:
@@ -96,10 +100,15 @@ class DxfParser:
             ))
             has_fallback = True
 
+        # BUG-39 FIX: Detect actual DXF version from $ACADVER header
+        # instead of hardcoding "DXF R2000". The version affects which
+        # entities and features are available.
+        version_detected = DxfParser._detect_dxf_version(filepath)
+
         b = Building(
             file_hash=file_hash,
             format_detected="DXF",
-            version_detected="DXF R2000",
+            version_detected=version_detected,
             units="METERS",
             walls=tuple(walls),
             rooms=tuple(rooms),
@@ -113,11 +122,18 @@ class DxfParser:
         """
         Simple text-based DXF parser for environments without ezdxf.
         Extracts LWPOLYLINE and LINE entities from DXF text format.
+
+        BUG-26 FIX: Previously returned silently on read error with no logging.
+        In a safety-critical system, silent failures are DANGEROUS — a corrupted
+        DXF file would produce an empty building model with fallback geometry,
+        and no one would know why. Now logs a warning on read failure.
         """
         try:
             with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
-        except Exception:
+        except Exception as e:
+            # BUG-26 FIX: Log the error instead of silently returning
+            logger.warning("Failed to read DXF file for text parsing: '%s': %s", filepath, e)
             return
 
         # Simple DXF text parser — reads group code/value pairs
@@ -281,3 +297,32 @@ class DxfParser:
             area += boundary[i].x * boundary[j].y
             area -= boundary[j].x * boundary[i].y
         return abs(area) / 2.0
+
+    @staticmethod
+    def _detect_dxf_version(filepath: str) -> str:
+        """BUG-39 FIX: Detect DXF version from $ACADVER header variable.
+
+        Returns the DXF version string (e.g., 'DXF R2000', 'DXF R2018')
+        instead of hardcoding 'DXF R2000'. If version cannot be detected,
+        returns 'DXF (unknown version)' as a safe default.
+        """
+        # Map of ACADVER codes to DXF version names
+        version_map = {
+            "AC1015": "DXF R2000",
+            "AC1018": "DXF R2004",
+            "AC1021": "DXF R2007",
+            "AC1024": "DXF R2010",
+            "AC1027": "DXF R2013",
+            "AC1032": "DXF R2018",
+        }
+        try:
+            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                # Read first 2000 chars — $ACADVER is in HEADER section near start
+                header = f.read(2000)
+            ver_match = re.search(r"\$ACADVER\s*\n\s*1\s*\n\s*(AC\d+)", header)
+            if ver_match:
+                acadver = ver_match.group(1)
+                return version_map.get(acadver, f"DXF {acadver}")
+        except Exception:
+            pass
+        return "DXF (unknown version)"

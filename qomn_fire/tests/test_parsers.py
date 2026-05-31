@@ -770,7 +770,7 @@ class TestDataTypes(unittest.TestCase):
             r.error()
 
     def test_error_hierarchy(self):
-        """All error types inherit from BaseEngineeringError."""
+        """All error types inherit from BaseEngineeringError and Exception."""
         error_types = [FileValidationError, FormatError, VersionError, CorruptionError,
                       ConversionError, GeometryError, UnitError, ConduitFillError,
                       NECViolationError, HatchPlacementError, PhysicalConstraintError,
@@ -778,6 +778,9 @@ class TestDataTypes(unittest.TestCase):
         for et in error_types:
             err = et(message="m", code_ref="r", remedy="fix")
             self.assertIsInstance(err, BaseEngineeringError)
+            # BUG-3 FIX: All engineering errors must also be Exception subclass
+            self.assertIsInstance(err, Exception,
+                               f"{et.__name__} must inherit from Exception for proper error handling")
             self.assertIn("m", err.message)
             self.assertIn("r", err.code_ref)
             self.assertIn("fix", err.remedy)
@@ -827,7 +830,13 @@ class TestIntegrationPipeline(unittest.TestCase):
             os.unlink(path)
 
     def test_dxf_pipeline_full(self):
-        """Full DXF pipeline: validate → detect → parse → geometry validate."""
+        """Full DXF pipeline: validate → detect → parse → geometry validate.
+
+        BUG-8 FIX: DXF file with no entities produces fallback geometry, which
+        is now correctly REJECTED by the GeometryValidator. Fallback geometry is
+        INVALID for fire protection design — the validator must reject it.
+        This test now verifies the correct rejection behavior.
+        """
         content = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nEOF\n"
         with tempfile.NamedTemporaryFile(mode='w', suffix='.dxf', delete=False) as f:
             f.write(content)
@@ -849,10 +858,16 @@ class TestIntegrationPipeline(unittest.TestCase):
             self.assertTrue(parse_res.is_success)
             building = parse_res.unwrap()
 
-            # Geometry validate (fallback room should still pass basic checks)
+            # BUG-8 FIX: Fallback geometry must be REJECTED by the validator.
+            # A DXF with no entities produces fallback/placeholder geometry,
+            # which is INVALID for fire protection design.
+            self.assertTrue(building.has_fallback_geometry,
+                           "Empty DXF should have has_fallback_geometry=True")
             geom_res = GeometryValidator.validate_building(building)
-            self.assertTrue(geom_res.is_success,
-                           f"Geometry validation failed: {geom_res.error() if geom_res.is_failure else ''}")
+            self.assertTrue(geom_res.is_failure,
+                           "BUG-8: Fallback geometry must be REJECTED by validator")
+            self.assertIsInstance(geom_res.error(), GeometryError)
+            self.assertIn("fallback", geom_res.error().message.lower())
         finally:
             os.unlink(path)
 
@@ -870,6 +885,70 @@ class TestIntegrationPipeline(unittest.TestCase):
             # Pipeline stops here — no parsing attempted
         finally:
             os.unlink(path)
+
+    # ── BUG-8 FIX TEST: Fallback geometry rejection ──
+    def test_fallback_geometry_rejected_by_validator(self):
+        """BUG-8 FIX: Building with has_fallback_geometry=True is REJECTED."""
+        r = Room(id="FALLBACK", name="Fallback",
+                 boundary=(Point3D(0,0), Point3D(10,0), Point3D(10,10), Point3D(0,10)),
+                 area_m2=100, height_m=3.0)
+        b = Building(
+            file_hash="H", format_detected="IFC", version_detected="IFC2X3",
+            units="METERS", walls=(), rooms=(r,), openings=(),
+            has_fallback_geometry=True
+        )
+        res = GeometryValidator.validate_building(b)
+        self.assertTrue(res.is_failure, "BUG-8: Fallback geometry must be REJECTED")
+        self.assertIsInstance(res.error(), GeometryError)
+        self.assertIn("fallback", res.error().message.lower())
+
+    # ── BUG-14 FIX TEST: Non-METERS units rejected ──
+    def test_non_meters_units_rejected(self):
+        """BUG-14 FIX: Building with units != METERS is rejected."""
+        r = Room(id="R1", name="A",
+                 boundary=(Point3D(0,0), Point3D(10,0), Point3D(10,10), Point3D(0,10)),
+                 area_m2=100, height_m=3.0)
+        b = Building(
+            file_hash="H", format_detected="IFC", version_detected="IFC2X3",
+            units="MILLIMETERS", walls=(), rooms=(r,), openings=()
+        )
+        res = GeometryValidator.validate_building(b)
+        self.assertTrue(res.is_failure, "BUG-14: Non-METERS units must be REJECTED")
+        self.assertIsInstance(res.error(), UnitError)
+
+    # ── BUG-1 FIX TEST: Result cannot hold both value and error ──
+    def test_result_cannot_hold_both_value_and_error(self):
+        """BUG-1 FIX: Result with both value and error raises ValueError."""
+        with self.assertRaises(ValueError):
+            Result(value=42, error=GeometryError(message="test", code_ref="r", remedy="f"))
+
+    # ── BUG-30+36 FIX TEST: Building hash includes wall geometry and openings ──
+    def test_building_hash_includes_wall_geometry(self):
+        """BUG-30 FIX: Buildings with same wall ID but different geometry have different hashes."""
+        r = Room(id="R1", name="A",
+                 boundary=(Point3D(0,0), Point3D(5,0), Point3D(5,5), Point3D(0,5)),
+                 area_m2=25, height_m=3.0)
+        w1 = Wall(id="W1", start=Point3D(0,0), end=Point3D(5,0), height_m=3.0, thickness_m=0.20)
+        w2 = Wall(id="W1", start=Point3D(0,0), end=Point3D(10,0), height_m=3.0, thickness_m=0.40)
+        b1 = Building(file_hash="H", format_detected="IFC", version_detected="IFC2X3",
+                      units="METERS", walls=(w1,), rooms=(r,), openings=())
+        b2 = Building(file_hash="H", format_detected="IFC", version_detected="IFC2X3",
+                      units="METERS", walls=(w2,), rooms=(r,), openings=())
+        self.assertNotEqual(b1.compute_hash(), b2.compute_hash(),
+                           "BUG-30: Different wall geometry must produce different hashes")
+
+    def test_building_hash_includes_openings(self):
+        """BUG-36 FIX: Buildings with different openings have different hashes."""
+        r = Room(id="R1", name="A",
+                 boundary=(Point3D(0,0), Point3D(5,0), Point3D(5,5), Point3D(0,5)),
+                 area_m2=25, height_m=3.0)
+        o1 = Opening(id="D1", opening_type="DOOR", location=Point3D(0,0), width_m=0.9, height_m=2.1)
+        b1 = Building(file_hash="H", format_detected="IFC", version_detected="IFC2X3",
+                      units="METERS", walls=(), rooms=(r,), openings=())
+        b2 = Building(file_hash="H", format_detected="IFC", version_detected="IFC2X3",
+                      units="METERS", walls=(), rooms=(r,), openings=(o1,))
+        self.assertNotEqual(b1.compute_hash(), b2.compute_hash(),
+                           "BUG-36: Different openings must produce different hashes")
 
 
 if __name__ == '__main__':

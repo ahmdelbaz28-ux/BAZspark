@@ -13,6 +13,15 @@ E = TypeVar('E')
 
 class Result(Generic[T, E]):
     def __init__(self, value: Optional[T] = None, error: Optional[E] = None):
+        # BUG-1 FIX: Prevent constructing Result with BOTH value and error.
+        # A Result should be in exactly one state: success (value, no error)
+        # or failure (error, no value). Having both is a logic error.
+        if value is not None and error is not None:
+            raise ValueError(
+                f"Result cannot hold both value and error. "
+                f"Got value={value!r} and error={error!r}. "
+                f"Use Result(value=x) for success or Result(error=e) for failure."
+            )
         self._value = value
         self._error = error
 
@@ -27,21 +36,47 @@ class Result(Generic[T, E]):
     def unwrap(self) -> T:
         if self._error is not None:
             raise ValueError(f"Panic: Attempted to unwrap failure Result: {self._error}")
+        if self._value is None:
+            raise ValueError("Panic: Attempted to unwrap None value from success Result")
         return self._value
+
+    def unwrap_or(self, default: T) -> T:
+        """Return value if success, otherwise return default."""
+        if self._error is not None:
+            return default
+        return self._value if self._value is not None else default
 
     def error(self) -> E:
         if self._error is None:
             raise ValueError("Panic: Attempted to fetch error of successful Result")
         return self._error
 
-class BaseEngineeringError:
+    # BUG-37 FIX: Add __repr__ for debugging
+    def __repr__(self) -> str:
+        if self.is_success:
+            return f"Result.ok({self._value!r})"
+        return f"Result.err({self._error!r})"
+
+class BaseEngineeringError(Exception):
+    """Base class for all QOMN-FIRE engineering errors.
+
+    BUG-3 FIX: Now inherits from Exception so errors can be caught by
+    standard exception handlers and participate in Python's exception hierarchy.
+    Previously, BaseEngineeringError was a plain class, so `except Exception`
+    would NOT catch it — errors could escape error handling boundaries silently.
+    In a safety-critical system, uncaught errors = silent failures = people die.
+    """
     def __init__(self, message: str, code_ref: str, remedy: str):
+        super().__init__(message)
         self.message = message
         self.code_ref = code_ref
         self.remedy = remedy
 
     def __repr__(self) -> str:
         return f"[{self.code_ref}] Error: {self.message} (Remedy: {self.remedy})"
+
+    def __str__(self) -> str:
+        return f"[{self.code_ref}] {self.message}"
 
 class ConduitFillError(BaseEngineeringError): pass
 class NECViolationError(BaseEngineeringError): pass

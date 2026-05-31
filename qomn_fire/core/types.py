@@ -93,9 +93,26 @@ class Building:
         # Now includes room IDs and wall IDs for deterministic differentiation.
         # Also includes has_fallback_geometry flag — a building with fallback
         # geometry is fundamentally different from one with real geometry.
-        room_ids = ",".join(r.id for r in self.rooms)
-        wall_ids = ",".join(w.id for w in self.walls)
-        serialized = f"{self.file_hash}:{self.format_detected}:{self.version_detected}:{self.units}:{len(self.walls)}:{wall_ids}:{len(self.rooms)}:{room_ids}:{self.has_fallback_geometry}"
+        #
+        # BUG-30+36 FIX: Hash now includes wall GEOMETRY (start/end coords),
+        # room AREAS, and opening IDs — not just IDs. Two buildings with the
+        # same room/wall IDs but different geometry must produce different hashes.
+        # Previously, changing a wall's length or thickness produced the same hash,
+        # breaking audit trail traceability. Openings were completely excluded.
+        room_data = ";".join(
+            f"{r.id}:{r.area_m2:.4f}:{r.height_m:.4f}:{len(r.boundary)}"
+            for r in self.rooms
+        )
+        wall_data = ";".join(
+            f"{w.id}:{w.start.x:.4f},{w.start.y:.4f}:{w.end.x:.4f},{w.end.y:.4f}:{w.height_m:.4f}:{w.thickness_m:.4f}"
+            for w in self.walls
+        )
+        opening_ids = ",".join(o.id for o in self.openings)
+        serialized = (
+            f"{self.file_hash}:{self.format_detected}:{self.version_detected}:{self.units}:"
+            f"WALLS[{wall_data}]:ROOMS[{room_data}]:OPENINGS[{opening_ids}]:"
+            f"{self.has_fallback_geometry}"
+        )
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 @dataclass(frozen=True, slots=True)

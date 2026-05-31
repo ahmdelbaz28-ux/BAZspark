@@ -33,12 +33,22 @@ class GridMap3D:
         self.obstacles.add(self.to_grid(p))
 
 
+# BUG-27 FIX: Map conduit type to appropriate default trade size.
+# The original code hardcoded trade_size="1/2" regardless of conduit type.
+# RMC (Rigid Metal Conduit) is typically 3/4" minimum; FMC starts at 1/2".
+_DEFAULT_TRADE_SIZE = {
+    ConduitType.EMT: "1/2",
+    ConduitType.RMC: "3/4",
+    ConduitType.FMC: "1/2",
+}
+
 def astar_route_3d(
     grid_map: GridMap3D,
     start: Point3D,
     end: Point3D,
     conduit: ConduitType,
-    conduit_id: str
+    conduit_id: str,
+    trade_size: str = ""
 ) -> Result[ConduitRun, NECViolationError]:
     g_start = grid_map.to_grid(start)
     g_end = grid_map.to_grid(end)
@@ -75,7 +85,17 @@ def astar_route_3d(
 
             pts = tuple([grid_map.to_physical(p) for p in path])
 
-            bends = 0
+            # BUG-5/16 FIX: Count bends as NUMBER of 90-degree bends, not degrees.
+            # NEC Article 358.26 states: 'not more than the equivalent of four
+            # quarter bends (360 degrees total) between pull points.'
+            # The original code stored bend_count as DEGREES (90, 180, 270...)
+            # which made the NEC check `bends > 360` accidentally correct,
+            # but the field name 'bend_count' is misleading and the ConduitRun
+            # data type documentation says 'bend_count: int' — a COUNT.
+            # Fixed: bend_count is now the NUMBER of 90-degree bends.
+            # NEC check uses bend_count * 90 > 360 (i.e., more than 4 quarter bends).
+            bend_count = 0
+            total_bend_degrees = 0
             fittings: List[Fitting] = []
             if len(pts) >= 3:
                 prev_dir = (
@@ -96,27 +116,43 @@ def astar_route_3d(
                     if mag_p > 0 and mag_c > 0:
                         cos_a = dot / (mag_p * mag_c)
                         if abs(cos_a - 1.0) > 1e-4:
-                            bends += 90
+                            bend_count += 1
+                            total_bend_degrees += 90
                             fittings.append(Fitting(FittingType.ELBOW_90, pts[i]))
                             prev_dir = curr_dir
 
-            tot_len_m = len(path) * grid_map.step_m
+            # BUG-20 FIX: Route length must use (path_points - 1) * step, not
+            # len(path) * step. For a 5m straight line with 0.5m grid:
+            #   Path = [0, 0.5, 1.0, ..., 5.0] = 11 points
+            #   Distance = 10 steps * 0.5m = 5.0m (CORRECT)
+            #   Old: 11 * 0.5 = 5.5m (WRONG — off by one grid step)
+            # This bug caused ALL conduit lengths to be overstated by one grid step,
+            # producing incorrect voltage drop calculations and material quantities.
+            num_segments = max(len(path) - 1, 0)
+            tot_len_m = num_segments * grid_map.step_m
             tot_len_ft = tot_len_m * 3.28084
 
-            if bends > 360:
+            # NEC check: max 4 quarter bends (360 degrees) between pull points
+            # BUG-5/16 FIX: Use total_bend_degrees for the NEC limit check
+            if total_bend_degrees > 360:
                 return Result(error=NECViolationError(
-                    message=f"Conduit run exceeds 360 degrees of bend limits ({bends} degrees).",
+                    message=f"Conduit run exceeds 360 degrees of bend limits "
+                            f"({total_bend_degrees} degrees from {bend_count} bends). "
+                            f"NEC Article 358.26 allows maximum 4 quarter bends.",
                     code_ref="NEC Article 358.26",
                     remedy="Install junction boxes to partition the conduit run segment."
                 ))
 
+            # BUG-27 FIX: Use conduit-type-appropriate trade size, not hardcoded "1/2"
+            selected_trade_size = trade_size if trade_size else _DEFAULT_TRADE_SIZE.get(conduit, "1/2")
+
             run = ConduitRun(
                 id=conduit_id,
                 conduit_type=conduit,
-                trade_size="1/2",
+                trade_size=selected_trade_size,
                 points=pts,
                 total_length_ft=tot_len_ft,
-                bend_count=bends,
+                bend_count=bend_count,
                 fittings=tuple(fittings)
             )
             return Result(value=run)
