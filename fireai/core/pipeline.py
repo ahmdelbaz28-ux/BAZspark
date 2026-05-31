@@ -1216,6 +1216,13 @@ def analyze_room(
     stages.append(s7)
     cable_routing_data = s7.data if s7.success else {}
 
+    # ── Stage 8: Conduit Fitting Engine (optional) ─────────────────────────
+    s8 = _run_stage(
+        "S8_conduit_fittings", _stage8_conduit_fittings,
+        validated, positions, cable_routing_data,
+    )
+    stages.append(s8)
+
     # Populate cable_routing_dict from Stage 7 when it succeeds
     # (Path A via cable_connections is for pre-wired inputs; Stage 7 is the standard path)
     if cable_routing_dict is None and s7.success and cable_routing_data.get("status") == "completed":
@@ -1537,6 +1544,90 @@ def _stage7_cable_routing(
             "routes": [],
             "safety_block": True,
         }
+
+
+
+def _stage8_conduit_fittings(
+    validated: dict,
+    positions: list,
+    cable_routing_data: dict,
+) -> dict:
+    """Stage 8: Conduit filling, bend verification, fitting placement.
+
+    Optional stage — does not block Stages 0-7 from completing.
+    Reference: NEC 2022 Ch.9 Table 1; NEC 358.26; NFPA 72-2022 §12.2.2.
+    """
+    try:
+        from fireai.conduit import (
+            ConduitType, TradeSize, Point3D,
+            calculate_fill, orthogonal_astar, place_fittings,
+            generate_revit_conduit, generate_schedules,
+        )
+    except ImportError as ie:
+        return {"status": "unavailable", "reason": str(ie)}
+
+    if len(positions) < 2:
+        return {"status": "skipped", "reason": "fewer than 2 positions", "runs": []}
+
+    conduit_type = ConduitType.EMT
+    trade_size   = TradeSize.HALF
+    cable_od_in  = cable_routing_data.get("cable_od_in", 0.105)
+    z = float(validated.get("ceiling_height_m", 3.0)) * 0.9
+
+    runs_out = []
+    all_compliant = True
+    total_violations = 0
+
+    for i in range(len(positions) - 1):
+        x0, y0 = float(positions[i][0]),   float(positions[i][1])
+        x1, y1 = float(positions[i+1][0]), float(positions[i+1][1])
+        start = Point3D(x0, y0, z)
+        end   = Point3D(x1, y1, z)
+
+        fill_r = calculate_fill(conduit_type, trade_size, [cable_od_in, cable_od_in])
+        if fill_r.is_err():
+            trade_size = TradeSize.THREE_QTR
+
+        route_r = orthogonal_astar(start, end, conduit_type=conduit_type, trade_size=trade_size)
+        if route_r.is_err():
+            runs_out.append({"segment": i, "status": "routing_failed",
+                             "reason": route_r.error.message})
+            continue
+
+        run_r = place_fittings(route_r.value, conduit_type, trade_size, run_id=f"SEG-{i:03d}")
+        if run_r.is_err():
+            runs_out.append({"segment": i, "status": "fitting_failed"})
+            continue
+
+        run = run_r.value
+        if not run.is_compliant:
+            all_compliant = False
+            total_violations += len(run.violations)
+
+        runs_out.append({
+            "segment":        i,
+            "status":         "completed",
+            "run_id":         run.run_id,
+            "conduit_type":   conduit_type.value,
+            "trade_size":     trade_size.value,
+            "total_length_m": run.total_length_m,
+            "total_bend_deg": run.total_bend_deg,
+            "is_compliant":   run.is_compliant,
+            "violations":     run.violations,
+            "nec_reference":  "NEC Ch.9 Table 1 + NEC 358.26",
+        })
+
+    return {
+        "status":           "completed",
+        "conduit_type":     conduit_type.value,
+        "trade_size":       trade_size.value,
+        "run_count":        sum(1 for r in runs_out if r.get("status") == "completed"),
+        "all_compliant":    all_compliant,
+        "total_violations": total_violations,
+        "runs":             runs_out,
+        "nfpa_reference":   "NFPA 72-2022 §12.2.2",
+        "nec_reference":    "NEC Ch.9 Table 1 + NEC 358.26",
+    }
 
 
 def _count_wall_violations(
