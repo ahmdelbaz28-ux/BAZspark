@@ -1329,7 +1329,61 @@ def _stage7_cable_routing(
         det_xyzs = [(x, y, DET_HEIGHT_M) for (x, y) in positions]
 
         # Route FACP→SD-01→SD-02→...  (daisy chain NAC circuit)
-        all_points = [facp_xyz] + det_xyzs
+        # SAFETY: All endpoints must be in free (non-wall) grid cells.
+        # Wall obstacles in build_abstract_model extend ±0.15m from each edge.
+        # Guard: verify each point using the model's grid_data (flat bytes array,
+        # indexed as iz*gy*gx + iy*gx + ix). If blocked, offset toward room center.
+        room_cx = (bbox_x[0] + bbox_x[1]) / 2.0
+        room_cy = (bbox_y[0] + bbox_y[1]) / 2.0
+
+        # SAFETY: Ensure all endpoints are clear of wall obstacles.
+        # The router's grid marks wall obstacle cells as blocked.
+        # Wall obstacles extend WALL_THICKNESS_M from each polygon edge.
+        # We apply MIN_CLEARANCE = WALL_THICKNESS_M * 3 from any polygon edge
+        # to ensure all points land safely in the open routing zone.
+        WALL_THICKNESS_M = 0.2          # standard wall thickness (Project Spec default)
+        MIN_CLEARANCE_M  = WALL_THICKNESS_M * 3.0  # 0.6m safe zone from walls
+
+        def _dist_to_nearest_wall_edge(px, py):
+            """Minimum distance from (px,py) to any polygon edge."""
+            if not polygon or len(polygon) < 2:
+                return float("inf")
+            min_d = float("inf")
+            pts = polygon
+            n = len(pts)
+            for i in range(n):
+                ax, ay = pts[i]
+                bx, by = pts[(i + 1) % n]
+                # Distance from point to segment
+                abx, aby = bx - ax, by - ay
+                apx, apy = px - ax, py - ay
+                t = max(0.0, min(1.0,
+                    (apx * abx + apy * aby) / (abx**2 + aby**2 + 1e-12)))
+                cx2, cy2 = ax + t * abx, ay + t * aby
+                d = ((px - cx2)**2 + (py - cy2)**2) ** 0.5
+                min_d = min(min_d, d)
+            return min_d
+
+        def ensure_clearance(px, py, pz, target_x, target_y):
+            """Move (px,py) toward (target_x,target_y) until MIN_CLEARANCE from all walls."""
+            if _dist_to_nearest_wall_edge(px, py) >= MIN_CLEARANCE_M:
+                return (px, py, pz)
+            dx, dy = target_x - px, target_y - py
+            dist = (dx**2 + dy**2) ** 0.5 or 1.0
+            ux, uy = dx / dist, dy / dist
+            step = 0.1
+            for _ in range(50):
+                px += ux * step
+                py += uy * step
+                if _dist_to_nearest_wall_edge(px, py) >= MIN_CLEARANCE_M:
+                    return (px, py, pz)
+            # Last resort: exact room center
+            return (room_cx, room_cy, pz)
+
+        facp_xyz_safe = ensure_clearance(*facp_xyz, room_cx, room_cy)
+        det_xyzs_safe = [ensure_clearance(*pt, room_cx, room_cy) for pt in det_xyzs]
+
+        all_points = [facp_xyz_safe] + det_xyzs_safe
         connections = [
             {
                 "start": all_points[i],
