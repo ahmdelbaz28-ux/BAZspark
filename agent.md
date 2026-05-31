@@ -9061,3 +9061,37 @@ After re-reading agent.md (Rule 20) and performing the 4-layer meta-criticism pr
 4. **18 silent except blocks in safety-critical code** — Each one is a potential mask for a life-threatening failure. The spatial_engine ones are especially dangerous: an obstacle that fails to clip means the system reports coverage that doesn't exist.
 5. **Path traversal in workflow_service** — The file_path came from user input (state dict) and was passed directly to `open()`. In a safety-critical system, this could leak /etc/passwd, audit logs, or HMAC secrets.
 6. **More false-green defaults likely remain** — Next cycle must search ALL `.get("key", True)` patterns across the entire codebase systematically.
+
+### V112 Cycle 2–3 Additional Fixes
+
+#### Cycle 2: 6 more false-green defaults fixed
+- `monte_carlo_pipeline.py`: `.get("p_full_coverage", 1.0)` → `0.0` — missing MC probability = 0% coverage
+- `integration_bridge.py`: `getattr(twin_result, "success", True)` → `False` — missing success = NOT compliant
+- `cable_router.py`: `constraint_results else True` → `False` — no constraints = NOT compliant
+- `cable_routing_engine.py`: `is_compliant: bool = True` → `False` — new circuit starts NOT compliant
+- `fault_isolator_injector.py`: `is_compliant: bool = True` → `False` — starts NOT compliant until verified
+- `fireai_api.py`: `run_resilience else True` → `False` (2 instances)
+
+#### Cycle 3: 7 more false-green defaults in dataclass fields
+- `nfpa72_models.py`: `proof_valid=True` → `False`, `coverage_fraction=1.0` → `0.0`
+- `routing_engine_v10.py`: `valid=True` → `False`
+- `exact_coverage.py`: `room_shape_valid=True` → `False`
+- `integration_bridge.py`: `all_routes_valid=True` → `False`, `all_voltage_drop_compliant=True` → `False`
+- `multi_floor_orchestrator.py`: `voltage_drop_compliant=True` → `False`, `route_valid=True` → `False`
+- `qomn_kernel.py`: `layer3_passed=True` → `False`
+
+#### Total false-green defaults eliminated across all cycles: 18+
+- V111 (Cycle 2-4): 7 instances
+- V112 Cycle 1: 3 instances
+- V112 Cycle 2: 6 instances
+- V112 Cycle 3: 7 instances
+
+### Self-Criticism Notes (V112 Cycles 2-3)
+1. **The false-green default pattern is deeply embedded** — we found 18+ instances across 4 cycles. The original codebase consistently used `True`/`1.0` defaults for compliance/safety/validity fields. This is the SINGLE MOST DANGEROUS anti-pattern in a safety-critical system. A missing key or uninitialized field that defaults to "compliant" is literally a ticking time bomb.
+2. **Coverage fraction=1.0 was the most insidious** — an uninitialized CoverageResult with `coverage_fraction=1.0` and `proof_valid=True` would report 100% coverage with valid proof, even though no computation was ever performed. This could approve a building with zero detectors.
+3. **Route valid=True in multi_floor_orchestrator** — a newly created CableRouteResult with `route_valid=True` and `voltage_drop_compliant=True` would pass all checks before any routing was actually computed. This is the same false-green pattern.
+4. **Per Rule 19 (infinite improvement), the next cycle MUST search even more thoroughly** — especially in bridges/, adapters/, and cli/ directories which haven't been fully audited for this pattern.
+
+### Commit Information
+- **Cycle 2 Commit:** `3d529f8` → https://github.com/ahmdelbaz28-ux/revit/commit/3d529f8
+- **Cycle 3 Commit:** `7a9e6b8` → https://github.com/ahmdelbaz28-ux/revit/commit/7a9e6b8
