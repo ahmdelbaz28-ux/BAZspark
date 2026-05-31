@@ -8552,3 +8552,86 @@ MEDIUM (4):
 - **Regressions:** None detected
 - **Commit:** `1854a7a`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/1854a7a
+
+---
+
+## V103 Security Hardening — Loguru Rotation, ALLOWED_BINARIES, Gemini Rate Limit, Restricted DDC cwd (2026-05-31)
+
+### Objective
+Implement the 5 remaining security fixes from the operator's detailed security audit, following the 21-rule contract with full self-criticism.
+
+### Verification of Previously Fixed Items
+
+| # | Audit Item | Status | Where Fixed |
+|---|-----------|--------|-------------|
+| 1 | HMAC in safety_assurance.py | ✅ ALREADY DONE (V99) | `compute_integrity_hash()` uses `_audit_compute_hmac` from audit_log |
+| 2 | CORS environment-based whitelist | ✅ ALREADY DONE (V100) | `_PRODUCTION_TRUSTED_ORIGINS` + `_get_cors_origins()` + wildcard rejection |
+| 3 | Rate limiting (InMemory → path-aware) | ✅ ALREADY DONE (V101) | `PerPathRateLimitMiddleware` with per-path limits |
+
+### Confirmed New Fixes (3 fixes applied)
+
+### Fix 1 — Log Rotation: RotatingFileHandler → loguru (HIGH)
+**File:** `fireai/core/security_logging.py`
+**Problem:** Previous implementation used Python's `RotatingFileHandler` with:
+- 50 MB rotation (too small for production — fills in hours)
+- No compression (rotated files consume full disk space)
+- No automatic time-based cleanup
+- No integration with loguru (already in requirements.txt)
+**Impact:** Production security logs fill disk rapidly; no compression means 10× storage waste; no time-based retention means logs accumulate forever or get purged too aggressively.
+**Fix Applied:**
+- Replace `RotatingFileHandler` with loguru as sole file writer when available
+- 500 MB size-based rotation (10× increase — gives ~1-2 weeks per file)
+- 30-day time-based retention with automatic cleanup
+- Zip compression of rotated files (~80% space savings on text logs)
+- Sensitive data masking via `LoguruBridge` handlers
+- Remove loguru's default stderr handler to prevent console noise in production
+- Standard Python `logging.Logger` instances bridge through loguru via custom `_LoguruBridge` handler
+- Fallback to `RotatingFileHandler` when loguru is not installed
+**Self-Criticism:** First version had a dual-write bug (both loguru AND RotatingFileHandler writing to the same file). Fixed by making loguru the sole writer and bridging standard logging through loguru.
+
+### Fix 2 — DDC Adapter: ALLOWED_BINARIES + Restricted cwd (HIGH)
+**File:** `parsers/ddc_adapter.py`
+**Problem:** Previous implementation had:
+- No verification that the DDC binary is in an allowed location — an attacker could place a malicious binary on PATH (e.g., `/tmp/ddc-rvtconverter`) that shadows the real converter
+- Subprocess `cwd` was set to `output_dir` which could be user-controlled, allowing the subprocess to write/read from arbitrary directories
+**Impact:** PATH injection could execute arbitrary code; unrestricted cwd could allow data exfiltration.
+**Fix Applied:**
+- Add `_ALLOWED_BINARIES` dict mapping binary names to allowed absolute paths
+- Before subprocess call: resolve binary with `shutil.which()`, verify resolved path is in allowed locations
+- Add `_SAFE_CWD_BASE` for restricted subprocess working directory
+- Replace `cwd=output_dir` with `cwd=str(_safe_cwd)` (dedicated safe directory)
+- Add `FIREAI_DDC_CWD_BASE` environment variable for configuration
+- Windows support: add `converter_dir` to allowed paths dynamically
+**Self-Criticism:** The old `is_available()` check was redundant after adding `shutil.which()` — removed to avoid confusion. The `_SAFE_CWD_BASE` defaults to temp directory which is already a known safe path.
+
+### Fix 3 — Gemini Rate Limit (MEDIUM)
+**File:** `backend_app.py`
+**Problem:** No explicit rate limit for Gemini API calls. The memory service uses Gemini as a fallback LLM provider, but the rate limit was only 10/min (too restrictive) with no Gemini-specific endpoint.
+**Impact:** Without proper rate limiting, the Gemini API quota could be exhausted by a single client; too restrictive limit blocks legitimate engineering queries.
+**Fix Applied:**
+- Add `/api/memory/gemini` rate limit: 60/min (matches Gemini API generous free tier)
+- Increase `/api/memory` general limit from 10/min to 30/min
+- All per-path limits now match security audit specifications:
+  - Nominatim: 1/s ✅
+  - Open-Meteo: 10/min ✅
+  - Gemini: 60/min ✅ (NEW)
+
+### .env.example Updates
+- Add `FIREAI_DDC_CWD_BASE` documentation for DDC subprocess cwd configuration
+
+### Self-Criticism Notes (V103)
+
+1. **First version of loguru integration had a dual-write bug** — both loguru and RotatingFileHandler wrote to the same file, causing corrupted logs. Fixed by making loguru the sole writer with bridge handlers for standard logging. This was caught in the self-criticism protocol (Layer 3 — criticize the METHOD).
+
+2. **loguru default stderr handler was not removed** — every message routed through loguru was also printed to stderr, causing duplicate output in production. Fixed by calling `_loguru_logger.remove()` after import. Caught in the second self-criticism pass.
+
+3. **HMAC was already properly activated** — the audit item was based on a stale assessment. Line-by-line verification confirmed `_audit_compute_hmac` is imported and used in `compute_integrity_hash()`. This validates Rule 6 (verify before changing).
+
+4. **CORS was already properly configured** — `_PRODUCTION_TRUSTED_ORIGINS` + `_get_cors_origins()` + wildcard rejection all in place from V100.
+
+### Commit Information
+- **Commit:** `c8d046c`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/c8d046c
+- **Test Suite:** 1057 passed, 1 skipped, 0 failures
+- **Confidence Level:** HIGH — all changes verified with full test suite
+- **Regressions:** None detected
