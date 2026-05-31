@@ -25,8 +25,10 @@ logger = logging.getLogger("fireai.dwg_parser")
 # EXCEPTIONS
 # ═══════════════════════════════════════════════════════
 
+
 class DWGConversionError(Exception):
     """Raised when DWG → DXF conversion fails."""
+
     pass
 
 
@@ -34,9 +36,11 @@ class DWGConversionError(Exception):
 # DATA CLASS
 # ═══════════════════════════════════════════════════════
 
+
 @dataclass
 class DWGParseResult:
     """Result of parsing a DWG file."""
+
     source_file: str
     success: bool
     room_count: int = 0
@@ -48,6 +52,7 @@ class DWGParseResult:
 # ═══════════════════════════════════════════════════════
 # DWG PARSER
 # ═══════════════════════════════════════════════════════
+
 
 class DWGParser:
     """
@@ -78,17 +83,15 @@ class DWGParser:
         """Check if dxf-out is available."""
         if self._tool_checked:
             return self._tool_available
-            
+
         try:
-            result = subprocess.run(
-                [self.DXF_OUT_CMD, "--version"],
-                capture_output=True,
-                timeout=5
+            result = subprocess.run(  # noqa: S603 — command from class constant, not user input
+                [self.DXF_OUT_CMD, "--version"], capture_output=True, timeout=5
             )
             self._tool_available = result.returncode == 0
         except (FileNotFoundError, subprocess.TimeoutExpired):
             self._tool_available = False
-            
+
         self._tool_checked = True
         return self._tool_available
 
@@ -102,6 +105,7 @@ class DWGParser:
         try:
             f = float(value)
             import math
+
             return math.isfinite(f)
         except (TypeError, ValueError):
             return False
@@ -211,8 +215,8 @@ class DWGParser:
                         continue
                     ls, le = lines[idx]
 
-                    d_ts = (ls[0] - tail[0])**2 + (ls[1] - tail[1])**2
-                    d_te = (le[0] - tail[0])**2 + (le[1] - tail[1])**2
+                    d_ts = (ls[0] - tail[0]) ** 2 + (ls[1] - tail[1]) ** 2
+                    d_te = (le[0] - tail[0]) ** 2 + (le[1] - tail[1]) ** 2
 
                     if d_ts <= tol_sq:
                         chain_vertices.append(le)
@@ -234,8 +238,8 @@ class DWGParser:
                         continue
                     ls, le = lines[idx]
 
-                    d_hs = (ls[0] - head[0])**2 + (ls[1] - head[1])**2
-                    d_he = (le[0] - head[0])**2 + (le[1] - head[1])**2
+                    d_hs = (ls[0] - head[0]) ** 2 + (ls[1] - head[1]) ** 2
+                    d_he = (le[0] - head[0]) ** 2 + (le[1] - head[1]) ** 2
 
                     if d_hs <= tol_sq:
                         chain_vertices.insert(0, le)
@@ -252,7 +256,7 @@ class DWGParser:
             if len(chain_vertices) >= 3:
                 head = chain_vertices[0]
                 tail = chain_vertices[-1]
-                close_dist_sq = (head[0] - tail[0])**2 + (head[1] - tail[1])**2
+                close_dist_sq = (head[0] - tail[0]) ** 2 + (head[1] - tail[1]) ** 2
                 if close_dist_sq <= tol_sq:
                     closed_polygons.append(chain_vertices[:-1])
 
@@ -295,18 +299,19 @@ class DWGParser:
         # adds fireai/ to sys.path.
         import sys as _sys
         import importlib
-        _project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+        _project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         if _project_root not in _sys.path:
             _sys.path.insert(0, _project_root)
         # Also remove fireai/ if it shadows the project root
-        _fireai_path = os.path.join(_project_root, 'fireai')
+        _fireai_path = os.path.join(_project_root, "fireai")
         while _fireai_path in _sys.path:
             _sys.path.remove(_fireai_path)
         # Clear cached 'core' module if it resolved to fireai/core/
-        if 'core' in _sys.modules:
-            _mod = _sys.modules['core']
-            if hasattr(_mod, '__file__') and _mod.__file__ and '/fireai/core/' in _mod.__file__:
-                for _k in [k for k in list(_sys.modules.keys()) if k == 'core' or k.startswith('core.')]:
+        if "core" in _sys.modules:
+            _mod = _sys.modules["core"]
+            if hasattr(_mod, "__file__") and _mod.__file__ and "/fireai/core/" in _mod.__file__:
+                for _k in [k for k in list(_sys.modules.keys()) if k == "core" or k.startswith("core.")]:
                     del _sys.modules[_k]
 
         from core.models import UniversalElement, Geometry, Point3D, ElementType
@@ -326,7 +331,7 @@ class DWGParser:
             except Exception:
                 continue
 
-            if etype == 'LINE':
+            if etype == "LINE":
                 # ── Validate start / end coordinates ──
                 try:
                     sx = float(entity.dxf.start.x)
@@ -337,12 +342,19 @@ class DWGParser:
                     logger.debug("extract_rooms_from_chaos: LINE entity missing coords — skipped")
                     continue
 
-                if not (self._is_valid_coordinate(sx) and self._is_valid_coordinate(sy)
-                        and self._is_valid_coordinate(ex) and self._is_valid_coordinate(ey)):
+                if not (
+                    self._is_valid_coordinate(sx)
+                    and self._is_valid_coordinate(sy)
+                    and self._is_valid_coordinate(ex)
+                    and self._is_valid_coordinate(ey)
+                ):
                     logger.warning(
                         "extract_rooms_from_chaos: LINE with NaN/Inf coords "
                         "(%.4g,%.4g)→(%.4g,%.4g) — poisoned entity dropped",
-                        sx, sy, ex, ey
+                        sx,
+                        sy,
+                        ex,
+                        ey,
                     )
                     continue
 
@@ -352,20 +364,20 @@ class DWGParser:
                 # walls are drawn as separate LINE entities, not polylines).
                 valid_lines.append(((sx, sy), (ex, ey)))
 
-            elif etype in ('LWPOLYLINE', 'POLYLINE'):
+            elif etype in ("LWPOLYLINE", "POLYLINE"):
                 # ── Validate polyline vertices ──
                 try:
                     vertices = []
                     # LWPOLYLINE: entity.get_points() or iterate
-                    if hasattr(entity, 'get_points'):
+                    if hasattr(entity, "get_points"):
                         raw_pts = entity.get_points()
-                    elif hasattr(entity, '__iter__'):
+                    elif hasattr(entity, "__iter__"):
                         raw_pts = list(entity)
                     else:
                         continue
 
                     for pt in raw_pts:
-                        if hasattr(pt, 'dxf'):
+                        if hasattr(pt, "dxf"):
                             vx, vy = float(pt.dxf.location.x), float(pt.dxf.location.y)
                         elif isinstance(pt, (list, tuple)) and len(pt) >= 2:
                             vx, vy = float(pt[0]), float(pt[1])
@@ -373,9 +385,7 @@ class DWGParser:
                             continue
 
                         if not (self._is_valid_coordinate(vx) and self._is_valid_coordinate(vy)):
-                            logger.warning(
-                                "extract_rooms_from_chaos: POLYLINE vertex NaN/Inf — entity dropped"
-                            )
+                            logger.warning("extract_rooms_from_chaos: POLYLINE vertex NaN/Inf — entity dropped")
                             vertices = []  # reject entire entity
                             break
                         vertices.append((vx, vy))
@@ -414,18 +424,19 @@ class DWGParser:
     def parse(self, dwg_path: str) -> DWGParseResult:
         """
         Parse DWG or DXF file to rooms.
-        
+
         Args:
             dwg_path: Path to .dwg or .dxf file
-            
+
         Returns:
             DWGParseResult with room count
         """
         import time
+
         start = time.monotonic()
-        
+
         result = DWGParseResult(source_file=dwg_path, success=False)
-        
+
         # Step 0: Verify file exists
         if not Path(dwg_path).exists():
             result.errors.append(f"File not found: {dwg_path}")
@@ -434,23 +445,21 @@ class DWGParser:
         # V46 FIX: If file is already DXF, skip LibreDWG conversion and
         # parse directly with ezdxf. This handles the common case where
         # tests create DXF files and pass them to DWGParser.
-        if dwg_path.lower().endswith('.dxf'):
+        if dwg_path.lower().endswith(".dxf"):
             return self._parse_dxf_directly(dwg_path, start)
-            
+
         # Step 1: Check LibreDWG
         if not self._check_tool():
-            result.errors.append(
-                "LibreDWG not installed. Install with: sudo apt install libredwg-tools"
-            )
+            result.errors.append("LibreDWG not installed. Install with: sudo apt install libredwg-tools")
             return result
-            
+
         # Step 2: Convert DWG → DXF
         try:
             dxf_path = self._convert_to_dxf(dwg_path)
         except DWGConversionError as e:
             result.errors.append(str(e))
             return result
-            
+
         # Step 3: Parse DXF
         try:
             dxf_result = self._parse_dxf_directly(dxf_path, start)
@@ -465,12 +474,13 @@ class DWGParser:
 
     def _parse_dxf_directly(self, dxf_path: str, start_time: float = None) -> DWGParseResult:
         """Parse DXF file directly using ezdxf without LibreDWG conversion.
-        
+
         V46: Extracted from parse() to support both DWG→DXF pipeline and
         direct DXF input. Also provides extract_rooms_from_chaos() for
         adversarial/chaotic input handling.
         """
         import time
+
         if start_time is None:
             start_time = time.monotonic()
 
@@ -478,6 +488,7 @@ class DWGParser:
 
         try:
             import ezdxf
+
             doc = ezdxf.readfile(dxf_path)
 
             # Use chaos-safe extractor for robust room extraction
@@ -500,6 +511,7 @@ class DWGParser:
         """Parse DWG/DXF file and return list of room elements.
         Backward compatibility alias — returns list, not DWGParseResult."""
         import ezdxf
+
         doc = ezdxf.readfile(dwg_path)
         return self.extract_rooms_from_chaos(doc)
 
@@ -508,21 +520,21 @@ class DWGParser:
         # Create temp file
         temp_fd, temp_path = tempfile.mkstemp(suffix=".dxf", prefix="fireai_dwg_")
         os.close(temp_fd)
-        
+
         cmd = [self.DXF_OUT_CMD, "--file", dwg_path, "--output", temp_path]
-        
+
         try:
-            proc = subprocess.run(cmd, capture_output=True, timeout=60)
-            
+            proc = subprocess.run(cmd, capture_output=True, timeout=60)  # noqa: S603 — cmd built from class constant, not user input
+
             if proc.returncode != 0:
                 error = proc.stderr.decode() or proc.stdout.decode()
                 raise DWGConversionError(f"dxf-out failed: {error}")
-                
+
             if not Path(temp_path).exists() or Path(temp_path).stat().st_size == 0:
                 raise DWGConversionError("Empty DXF output")
-                
+
             return temp_path
-            
+
         except subprocess.TimeoutExpired:
             raise DWGConversionError("Conversion timeout")
 
@@ -530,6 +542,7 @@ class DWGParser:
 # ═══════════════════════════════════════════════════════
 # CONVENIENCE FUNCTION
 # ═══════════════════════════════════════════════════════
+
 
 def parse_dwg(dwg_path: str) -> DWGParseResult:
     """Quick parse DWG file."""

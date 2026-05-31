@@ -17,6 +17,7 @@ This module verifies fundamental mathematical properties of:
 
 import math
 import pytest
+from pydantic import ValidationError
 from hypothesis import given, settings, assume, HealthCheck
 from hypothesis import strategies as st
 
@@ -266,10 +267,10 @@ def test_nan_inf_rejected_in_schemas(value):
     """NaN and Inf values MUST be rejected in all Pydantic schemas.
     V114 Fix: NaN bypasses comparison guards, producing false compliance."""
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         NFPA72Input(spacing_m=value, ceiling_height_m=3.0)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         NFPA72Input(spacing_m=9.1, ceiling_height_m=value)
 
 
@@ -285,7 +286,7 @@ def test_coverage_factor_equals_0_7():
 def test_smoke_radius_equals_0_7_times_spacing():
     """Smoke coverage radius must be R = 0.7 × 9.1 = 6.37m."""
     expected = round(COVERAGE_FACTOR_FLAT_CEILING * SMOKE_MAX_SPACING_M, 2)
-    assert SMOKE_COVERAGE_RADIUS_M == expected
+    assert expected == SMOKE_COVERAGE_RADIUS_M
 
 
 def test_dc_return_path_factor_is_2():

@@ -33,6 +33,7 @@ from typing import Dict, List
 # load_dotenv() does NOT override existing env vars (safe for Docker/K8s).
 try:
     from dotenv import load_dotenv
+
     _env_path = Path(__file__).resolve().parent.parent / ".env"
     if _env_path.is_file():
         load_dotenv(_env_path, override=False)
@@ -63,6 +64,7 @@ try:
         configure_log_rotation,
         security_audit,
     )
+
     configure_log_rotation(logger, "fireai.log")
     _SECURITY_AUDIT_AVAILABLE = True
 except ImportError:
@@ -70,6 +72,7 @@ except ImportError:
     _SECURITY_AUDIT_AVAILABLE = False
 
 # ── Application lifecycle ──────────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -88,6 +91,7 @@ async def lifespan(app: FastAPI):
 
     # Initialize database (creates tables if needed)
     from backend.database import get_db
+
     get_db()  # Ensure singleton is created
     logger.info("Database initialized")
 
@@ -99,6 +103,7 @@ async def lifespan(app: FastAPI):
     from backend.services.air_quality_service import get_air_quality_service
     from backend.services.severe_weather_service import get_severe_weather_service
     from backend.services.hazmat_service import get_hazmat_service
+
     get_weather_service()
     get_geocoding_service()
     get_region_service()
@@ -106,14 +111,17 @@ async def lifespan(app: FastAPI):
     get_air_quality_service()
     get_severe_weather_service()
     get_hazmat_service()
-    logger.info("External API services initialized (Open-Meteo, Nominatim, REST Countries, Open Topo Data, WAQI, NWS, Hazmat DB)")
+    logger.info(
+        "External API services initialized (Open-Meteo, Nominatim, REST Countries, Open Topo Data, WAQI, NWS, Hazmat DB)"
+    )
 
     # Initialize workflow service (LangGraph-based pipeline engine)
     # V91 FIX: Wrap in try/except — langgraph may not be installed.
     try:
         from backend.services.workflow_service import get_workflow_service
+
         svc = get_workflow_service()
-        if hasattr(svc, '_langgraph_available') and svc._langgraph_available:
+        if hasattr(svc, "_langgraph_available") and svc._langgraph_available:
             logger.info("Workflow service initialized (LangGraph State Machine)")
         else:
             logger.warning("Workflow service in DEGRADED mode — LangGraph not installed")
@@ -124,6 +132,7 @@ async def lifespan(app: FastAPI):
     # V91 FIX: Wrap in try/except — mem0/qdrant may not be installed.
     try:
         from backend.services.memory_service import get_memory_service
+
         mem_svc = get_memory_service()
         if mem_svc.is_initialized:
             logger.info("Memory service initialized (Mem0 + Qdrant)")
@@ -145,6 +154,7 @@ async def lifespan(app: FastAPI):
     from backend.services.air_quality_service import close_air_quality_service
     from backend.services.severe_weather_service import close_severe_weather_service
     from backend.services.hazmat_service import close_hazmat_service
+
     await close_weather_service()
     await close_geocoding_service()
     await close_region_service()
@@ -156,11 +166,13 @@ async def lifespan(app: FastAPI):
 
     # Shutdown — close workflow service
     from backend.services.workflow_service import close_workflow_service
+
     await close_workflow_service()
     logger.info("Workflow service closed")
 
     # Shutdown — close memory service
     from backend.services.memory_service import close_memory_service
+
     await close_memory_service()
     logger.info("Memory service closed")
 
@@ -185,6 +197,7 @@ app = FastAPI(
 
 # V110 FIX: Added _get_cors_origins with wildcard rejection and
 # PerPathRateLimitMiddleware with longest-prefix match for security compliance.
+
 
 def _get_cors_origins() -> list:
     """Resolve CORS origins based on deployment environment.
@@ -248,19 +261,19 @@ _PER_PATH_LIMITS = [
     # workflows, exhausting server memory (OOM) and API rate limits.
     # Per agent.md Priority 1 (Safety): DoS on a fire protection system means
     # engineers can't access life-safety tools during an emergency.
-    ("/api/workflow/start",             3, 60),   # 3 starts per minute — strict
-    ("/api/environment/weather",     10, 60),
-    ("/api/environment/geocoding",    1,  1),
-    ("/api/environment/elevation",   10, 60),
+    ("/api/workflow/start", 3, 60),  # 3 starts per minute — strict
+    ("/api/environment/weather", 10, 60),
+    ("/api/environment/geocoding", 1, 1),
+    ("/api/environment/elevation", 10, 60),
     ("/api/environment/air-quality", 10, 60),
-    ("/api/environment/severe",      10, 60),
-    ("/api/environment/hazmat",      30, 60),
-    ("/api/environment/region",      10, 60),
-    ("/api/workflow",                10, 60),   # General workflow queries
-    ("/api/memory",                  60, 60),
-    ("/api/projects",               30, 60),
-    ("/api/analyze",                 10, 60),
-    ("/api/qomn",                    10, 60),
+    ("/api/environment/severe", 10, 60),
+    ("/api/environment/hazmat", 30, 60),
+    ("/api/environment/region", 10, 60),
+    ("/api/workflow", 10, 60),  # General workflow queries
+    ("/api/memory", 60, 60),
+    ("/api/projects", 30, 60),
+    ("/api/analyze", 10, 60),
+    ("/api/qomn", 10, 60),
 ]
 
 _DEFAULT_RATE_LIMIT = (120, 60)
@@ -280,6 +293,7 @@ class PerPathRateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app, **kwargs)
         self._clients: Dict[str, List[float]] = {}  # client_ip → [timestamps]
         import threading
+
         self._lock = threading.Lock()
 
     def _find_limit(self, path: str) -> tuple:
@@ -304,10 +318,7 @@ class PerPathRateLimitMiddleware(BaseHTTPMiddleware):
             if client_ip not in self._clients:
                 self._clients[client_ip] = []
             # Remove expired timestamps
-            self._clients[client_ip] = [
-                ts for ts in self._clients[client_ip]
-                if now - ts < window_s
-            ]
+            self._clients[client_ip] = [ts for ts in self._clients[client_ip] if now - ts < window_s]
             if len(self._clients[client_ip]) >= max_req:
                 return True
             self._clients[client_ip].append(now)
@@ -326,9 +337,11 @@ class PerPathRateLimitMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         return response
 
+
 # ── Security headers middleware ────────────────────────────────────────────
 # Ported from the original project's nginx.conf security headers.
 # These headers are mandatory for a safety-critical system exposed to the internet.
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
@@ -382,6 +395,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 # If FIREAI_API_KEY is not set, auth is disabled (development mode only).
 
 _FIREAI_API_KEY = os.getenv("FIREAI_API_KEY")
+
 
 class ApiKeyMiddleware(BaseHTTPMiddleware):
     """
@@ -447,6 +461,7 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
         # This covers: (1) requests without Origin header, (2) external origins
         # Use constant-time comparison to prevent timing attacks
         import hmac
+
         api_key = request.headers.get("X-API-Key", "")
         if not hmac.compare_digest(api_key, _FIREAI_API_KEY):
             logger.warning(
@@ -483,6 +498,7 @@ app.add_middleware(CorrelationIdMiddleware)
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     """Return structured JSON for all HTTP exceptions."""
@@ -496,60 +512,84 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
             media_type="application/json",
         )
     return Response(
-        content=json.dumps({
-            "success": False,
-            "error": str(detail),
-            "status_code": exc.status_code,
-        }),
+        content=json.dumps(
+            {
+                "success": False,
+                "error": str(detail),
+                "status_code": exc.status_code,
+            }
+        ),
         status_code=exc.status_code,
         media_type="application/json",
     )
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Return structured JSON for request validation errors."""
     errors = []
     for err in exc.errors():
-        errors.append({
-            "field": ".".join(str(loc) for loc in err.get("loc", [])),
-            "message": err.get("msg", ""),
-            "type": err.get("type", ""),
-        })
+        errors.append(
+            {
+                "field": ".".join(str(loc) for loc in err.get("loc", [])),
+                "message": err.get("msg", ""),
+                "type": err.get("type", ""),
+            }
+        )
     logger.warning(f"Validation error on {request.method} {request.url.path}: {errors}")
     return Response(
-        content=json.dumps({
-            "success": False,
-            "error": "Request validation failed",
-            "details": errors,
-            "status_code": 422,
-        }),
+        content=json.dumps(
+            {
+                "success": False,
+                "error": "Request validation failed",
+                "details": errors,
+                "status_code": 422,
+            }
+        ),
         status_code=422,
         media_type="application/json",
     )
+
 
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
     """Catch-all for unhandled exceptions — prevent stack trace leakage."""
     logger.error(
-        f"Unhandled exception on {request.method} {request.url.path}: "
-        f"{type(exc).__name__}: {exc}",
+        f"Unhandled exception on {request.method} {request.url.path}: {type(exc).__name__}: {exc}",
         exc_info=True,
     )
     is_dev = os.getenv("FIREAI_ENV") == "development"
     error_detail = f"{type(exc).__name__}: {exc}" if is_dev else "Internal server error"
     return Response(
-        content=json.dumps({
-            "success": False,
-            "error": error_detail,
-            "status_code": 500,
-        }),
+        content=json.dumps(
+            {
+                "success": False,
+                "error": error_detail,
+                "status_code": 500,
+            }
+        ),
         status_code=500,
         media_type="application/json",
     )
 
+
 # ── Import and mount routers ───────────────────────────────────────────────
 
-from backend.routers import projects, devices, connections, reports, exports, sync, health, elements, conflicts, connections_v2, environment, workflow, memory
+from backend.routers import (
+    projects,
+    devices,
+    connections,
+    reports,
+    exports,
+    sync,
+    health,
+    elements,
+    conflicts,
+    connections_v2,
+    environment,
+    workflow,
+    memory,
+)
 
 # Health check at /api/health
 app.include_router(health.router, prefix="/api")
@@ -598,6 +638,7 @@ app.include_router(sync.ws_router)
 # Only add the API-info root endpoint when there is no frontend build.
 # When frontend/dist exists, the SPA catch-all serves index.html at /.
 if not (Path(__file__).resolve().parent.parent / "frontend" / "dist").is_dir():
+
     @app.get("/")
     async def root():
         """Root endpoint — API information (only when no frontend build)."""
@@ -646,10 +687,7 @@ if _FRONTEND_DIST.is_dir():
 
     logger.info(f"Frontend build served from {_FRONTEND_DIST}")
 else:
-    logger.info(
-        f"Frontend build not found at {_FRONTEND_DIST}. "
-        "Run 'npm run build' in frontend/ to serve the SPA."
-    )
+    logger.info(f"Frontend build not found at {_FRONTEND_DIST}. Run 'npm run build' in frontend/ to serve the SPA.")
 
 
 # ── Core module compatibility ─────────────────────────────────────────────
@@ -658,6 +696,7 @@ else:
 _core_loaded = False
 try:
     from core.database import UniversalDataModel  # noqa: F401
+
     _core_loaded = True
     logger.info("Core modules loaded successfully")
 except ImportError as e:
@@ -673,6 +712,7 @@ except Exception as e:
 
 # Update health router with core module status
 from backend.routers.health import set_core_modules_loaded
+
 set_core_modules_loaded(_core_loaded)
 
 
@@ -680,7 +720,8 @@ set_core_modules_loaded(_core_loaded)
 
 if __name__ == "__main__":
     import uvicorn
-    host = os.getenv("HOST", "0.0.0.0")
+
+    host = os.getenv("HOST", "0.0.0.0")  # noqa: S104 — binding to 0.0.0.0 is standard for Docker/container deployment
     port = int(os.getenv("PORT", "8000"))
     uvicorn.run(
         "backend.app:app",

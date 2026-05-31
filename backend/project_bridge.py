@@ -44,9 +44,7 @@ def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
         # Check if project already exists in UDM
         existing = udm.get_project(project_id)
         if existing is not None:
-            logger.info(
-                "Project %s already exists in UDM — skipping sync", project_id
-            )
+            logger.info("Project %s already exists in UDM — skipping sync", project_id)
             return True
 
         # Create in UDM — use the SAME ID from System A.
@@ -90,33 +88,27 @@ def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
 
                 # Update in-memory cache
                 udm._projects[project_id] = {
-                "project_id": project_id,
-                "name": name,
-                "description": description,
-                "status": status,
-                "metadata": metadata,
-                "created_timestamp": created_at,
-                "last_modified_timestamp": updated_at,
-            }
+                    "project_id": project_id,
+                    "name": name,
+                    "description": description,
+                    "status": status,
+                    "metadata": metadata,
+                    "created_timestamp": created_at,
+                    "last_modified_timestamp": updated_at,
+                }
 
             logger.info("Project %s synced to UDM successfully", project_id)
             return True
         except Exception as e:
-            logger.error(
-                "Failed to sync project %s to UDM: %s", project_id, e
-            )
+            logger.error("Failed to sync project %s to UDM: %s", project_id, e)
             return False
 
     except Exception as e:
-        logger.critical(
-            "UDM bridge unavailable during project sync: %s", e
-        )
+        logger.critical("UDM bridge unavailable during project sync: %s", e)
         return False
 
 
-def sync_project_update_to_udm(
-    project_id: str, updates: Dict[str, Any]
-) -> bool:
+def sync_project_update_to_udm(project_id: str, updates: Dict[str, Any]) -> bool:
     """Sync a project update from System A to System B.
 
     Returns True if sync succeeded, False if it failed (but does NOT block).
@@ -129,9 +121,7 @@ def sync_project_update_to_udm(
         # Check if project exists in UDM
         existing = udm.get_project(project_id)
         if existing is None:
-            logger.warning(
-                "Project %s not found in UDM — attempting to create", project_id
-            )
+            logger.warning("Project %s not found in UDM — attempting to create", project_id)
             # Attempt to create it from scratch
             return sync_project_to_udm({"id": project_id, **updates})
 
@@ -171,7 +161,7 @@ def sync_project_update_to_udm(
                 if set_clauses:
                     values.append(project_id)
                     cursor.execute(
-                        f"UPDATE projects SET {', '.join(set_clauses)} "
+                        f"UPDATE projects SET {', '.join(set_clauses)} "  # noqa: S608 — set_clauses built from whitelisted column names
                         f"WHERE project_id = ?",
                         values,
                     )
@@ -187,9 +177,7 @@ def sync_project_update_to_udm(
                         for field, value in updates.items():
                             if value is not None and field in field_map:
                                 udm._projects[project_id][field_map[field]] = value
-                        udm._projects[project_id][
-                            "last_modified_timestamp"
-                        ] = now
+                        udm._projects[project_id]["last_modified_timestamp"] = now
                         # Update metadata.author if author changed
                         if "author" in updates and updates["author"] is not None:
                             meta = udm._projects[project_id].get("metadata", {})
@@ -199,15 +187,11 @@ def sync_project_update_to_udm(
             logger.info("Project %s update synced to UDM", project_id)
             return True
         except Exception as e:
-            logger.error(
-                "Failed to sync project %s update to UDM: %s", project_id, e
-            )
+            logger.error("Failed to sync project %s update to UDM: %s", project_id, e)
             return False
 
     except Exception as e:
-        logger.critical(
-            "UDM bridge unavailable during project update: %s", e
-        )
+        logger.critical("UDM bridge unavailable during project update: %s", e)
         return False
 
 
@@ -231,13 +215,13 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
                 # Ensure element_projects table exists before deleting from it.
                 # This table is created lazily by DatabaseService; it may not
                 # exist yet if no elements have ever been associated with a project.
-                cursor.execute('''
+                cursor.execute("""
                     CREATE TABLE IF NOT EXISTS element_projects (
                         element_id TEXT,
                         project_id TEXT,
                         PRIMARY KEY (element_id, project_id)
                     )
-                ''')
+                """)
 
                 # Delete element associations first (referential integrity)
                 cursor.execute(
@@ -257,13 +241,9 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
             logger.info("Project %s deletion synced to UDM", project_id)
             return True
         except Exception as e:
-            logger.error(
-                "Failed to sync project %s deletion to UDM: %s", project_id, e
-            )
+            logger.error("Failed to sync project %s deletion to UDM: %s", project_id, e)
             return False
 
     except Exception as e:
-        logger.critical(
-            "UDM bridge unavailable during project deletion: %s", e
-        )
+        logger.critical("UDM bridge unavailable during project deletion: %s", e)
         return False

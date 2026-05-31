@@ -54,12 +54,16 @@ class DXFParser:
     MAX_ROOM_AREA_M2: float = 50_000.0
 
     INSUNITS_TO_METERS = {
-        0: 1.0, 1: 0.0254, 2: 0.3048, 4: 0.001,
-        5: 0.01, 6: 1.0, 8: 1000.0,
+        0: 1.0,
+        1: 0.0254,
+        2: 0.3048,
+        4: 0.001,
+        5: 0.01,
+        6: 1.0,
+        8: 1000.0,
     }
 
-    def __init__(self, min_area: float = MIN_ROOM_AREA_M2,
-                 max_area: float = MAX_ROOM_AREA_M2):
+    def __init__(self, min_area: float = MIN_ROOM_AREA_M2, max_area: float = MAX_ROOM_AREA_M2):
         self.min_area = min_area
         self.max_area = max_area
 
@@ -73,13 +77,10 @@ class DXFParser:
             logger.warning("DXF corrupt — attempting recovery")
             doc, auditor = recover.readfile(dxf_path)
             if auditor.has_errors:
-                raise RuntimeError(
-                    f"DXF '{dxf_path}' unrecoverable. "
-                    f"Errors: {len(auditor.errors)}"
-                )
+                raise RuntimeError(f"DXF '{dxf_path}' unrecoverable. Errors: {len(auditor.errors)}")
 
         units = self._detect_units(doc)
-        
+
         # Validate and get scale
         if units not in self.INSUNITS_TO_METERS:
             raise ValueError(f"Unknown DXF units code: '{units}'")
@@ -93,7 +94,7 @@ class DXFParser:
         skipped = 0
 
         for i, poly in enumerate(polys):
-            rid = f"ROOM_{i+1:03d}"
+            rid = f"ROOM_{i + 1:03d}"
 
             if poly.area < self.min_area:
                 skipped += 1
@@ -101,12 +102,14 @@ class DXFParser:
             if poly.area > self.max_area:
                 logger.warning(f"{rid}: area {poly.area:.1f}m² > max")
 
-            rooms.append(ParsedRoom(
-                room_id=rid,
-                polygon=poly,
-                source_layer="A-WALL",
-                warnings=[],
-            ))
+            rooms.append(
+                ParsedRoom(
+                    room_id=rid,
+                    polygon=poly,
+                    source_layer="A-WALL",
+                    warnings=[],
+                )
+            )
 
         if not rooms:
             raise RuntimeError(f"No valid rooms in '{dxf_path}'")
@@ -121,57 +124,58 @@ class DXFParser:
 
     def _detect_units(self, doc) -> int:
         """Detect DXF units using heuristic for INSUNITS=0 files.
-        
+
         CRITICAL SAFETY: For unitless (0) DXF files, we must detect the actual unit
         by analyzing coordinate values. Wrong unit = wrong room areas = failed coverage
         detection = LIVES LOST.
-        
+
         Strategy:
         1. If INSUNITS != 0, use standard mapping
         2. If INSUNITS == 0, try multiple scales and validate
         3. Reject if no valid scale found (safety-first)
         """
         units = doc.header.get("$INSUNITS", 6)
-        
+
         # Non-zero units: trust the header
         if units != 0:
             return units
-        
+
         # INSUNITS = 0: Must detect actual unit via heuristic
         # This is CRITICAL for safety - we cannot guess
         detected = self._detect_unit_heuristic(doc)
         if detected is not None:
             logger.info(f"Units auto-detected: {detected}")
             return detected
-        
+
         # Failed to detect: safety-first approach
         raise RuntimeError(
             f"Cannot determine DXF units. INSUNITS=0 and coordinate analysis inconclusive. "
             f"File may be corrupted or use non-standard units. "
             f"CRITICAL: Cannot proceed - incorrect unit = incorrect coverage calculation."
         )
-    
+
     def _detect_unit_heuristic(self, doc) -> int:
         """Detect actual unit by testing scale factors.
-        
+
         CRITICAL SAFETY: We try multiple scales and check which produces valid
         NFPA 72-compliant room areas. Only accept if EXACTLY ONE scale works.
         """
         from shapely.geometry import LineString
         from shapely.ops import unary_union, polygonize
         from shapely.validation import make_valid
+
         msp = doc.modelspace()
-        
+
         # Try different unit scales
         candidates = [
-            (1, "meters"),      # 1:1 direct
-            (0.001, "mm x 1000 -> m"),    # mm
-            (0.01, "cm x 100 -> m"),      # cm  
-            (0.3048, "feet x 0.3048 -> m"), # feet
+            (1, "meters"),  # 1:1 direct
+            (0.001, "mm x 1000 -> m"),  # mm
+            (0.01, "cm x 100 -> m"),  # cm
+            (0.3048, "feet x 0.3048 -> m"),  # feet
         ]
-        
+
         valid_scales = []
-        
+
         for scale, unit_name in candidates:
             lines = []
             for ent in msp:
@@ -182,29 +186,29 @@ class DXFParser:
                         lines.append(LineString([s, e]))
                 elif ent.dxftype() in ("LWPOLYLINE", "POLYLINE"):
                     try:
-                        pts = [(p[0]*scale, p[1]*scale) for p in ent.get_points()]
+                        pts = [(p[0] * scale, p[1] * scale) for p in ent.get_points()]
                         if len(pts) >= 3 and ent.closed:
                             lines.append(LineString(pts))
                     except Exception as exc:
                         logger.debug("Polyline point extraction failed: %s", exc)
-            
+
             if not lines:
                 continue
-            
+
             # Try to create polygons
             merged = unary_union(lines)
             raw_polys = polygonize(merged)
-            
+
             valid_count = 0
             for p in raw_polys:
                 if not p.is_valid:
                     p = make_valid(p)
                 if p.is_valid and self.MIN_ROOM_AREA_M2 <= p.area <= self.MAX_ROOM_AREA_M2:
                     valid_count += 1
-            
+
             if valid_count > 0:
                 valid_scales.append((scale, unit_name, valid_count))
-        
+
         # CRITICAL: Must have exactly one valid scale OR pick the best one
         # If multiple: pick the one with MOST valid rooms (most likely correct)
         if len(valid_scales) >= 1:
@@ -212,24 +216,19 @@ class DXFParser:
             valid_scales.sort(key=lambda x: -x[2])
             scale, name, count = valid_scales[0]
             logger.info(f"Unit detected: {name} -> {count} valid rooms")
-            
+
             # Map back to DXF unit code
-            if scale == 0.001:
-                return 4  # mm
-            elif scale == 0.01:
-                return 5  # cm
-            elif scale == 0.3048:
-                return 2  # feet
-            else:
-                return 6  # meters
-        
+            _SCALE_TO_UNIT = {0.001: 4, 0.01: 5, 0.3048: 2}
+            return _SCALE_TO_UNIT.get(scale, 6)  # default: meters
+
         # No valid scale: fail closed (safety-first)
         logger.error("No valid unit scale found")
-        
+
         return None
 
     def _extract_lines(self, msp, scale: float) -> List:
         from shapely.geometry import LineString
+
         lines = []
         for ent in msp:
             if ent.dxftype() == "LINE":
@@ -239,7 +238,7 @@ class DXFParser:
                     lines.append(LineString([s, e]))
             elif ent.dxftype() in ("LWPOLYLINE", "POLYLINE"):
                 try:
-                    pts = [(p[0]*scale, p[1]*scale) for p in ent.get_points()]
+                    pts = [(p[0] * scale, p[1] * scale) for p in ent.get_points()]
                     if len(pts) >= 3 and ent.closed:
                         lines.append(LineString(pts))
                 except Exception as e:
@@ -277,31 +276,33 @@ class DXFParser:
     def _arc_to_segments(self, entity, scale, num_points: int = 32):
         """Convert ARC to LineString segments (default 32 points)"""
         import math
+
         c = Point(entity.dxf.center.x * scale, entity.dxf.center.y * scale)
         r = entity.dxf.radius * scale
-        
+
         # Get start and end angles in radians
         start_angle = math.radians(entity.dxf.start_angle)
         end_angle = math.radians(entity.dxf.end_angle)
-        
+
         # Handle the case where arc goes through 0/360 degrees
         if end_angle < start_angle:
             end_angle += 2 * math.pi
-        
+
         # Calculate angular step
         total_angle = end_angle - start_angle
         step = total_angle / num_points
-        
+
         points = []
         for i in range(num_points + 1):
             angle = start_angle + (i * step)
             x = c.x + r * math.cos(angle)
             y = c.y + r * math.sin(angle)
             points.append((x, y))
-        
+
         # Add proper closing point if needed
         if len(points) >= 2:
             from shapely.geometry import LineString
+
             ls = LineString(points)
             return [ls]
         return []
@@ -313,19 +314,19 @@ class DXFParser:
             ctrl_pts = entity.control_points
             if ctrl_pts is None or len(ctrl_pts) < 2:
                 return []
-            
+
             # Convert to scaled coordinates
-            points = [(p.dxf.location.x * scale, p.dxf.location.y * scale) 
-                     for p in ctrl_pts]
-            
+            points = [(p.dxf.location.x * scale, p.dxf.location.y * scale) for p in ctrl_pts]
+
             # Generate more points along the spline using linear interpolation
             if len(points) < 2:
                 return []
-            
+
             # Create a line through control points and sample it
             from shapely.geometry import LineString
+
             base_line = LineString(points)
-            
+
             # Sample the line into num_segments points
             sampled_points = []
             for i in range(num_segments + 1):
@@ -333,12 +334,12 @@ class DXFParser:
                 if t <= 1.0:
                     pt = base_line.interpolate(t, normalized=True)
                     sampled_points.append((pt.x, pt.y))
-            
+
             # Convert to line segments
             segments = []
             for i in range(len(sampled_points) - 1):
-                segments.append(LineString([sampled_points[i], sampled_points[i+1]]))
-            
+                segments.append(LineString([sampled_points[i], sampled_points[i + 1]]))
+
             return segments
         except Exception as e:
             logger.debug(f"Spline conversion failed: {e}")
@@ -348,15 +349,15 @@ class DXFParser:
         """Check if two polygons are duplicates (>90% overlap)"""
         if not poly1.intersects(poly2):
             return False
-        
+
         intersection = poly1.intersection(poly2)
         min_area = min(poly1.area, poly2.area)
-        
+
         if min_area <= 0:
             return False
-        
+
         overlap_ratio = intersection.area / min_area
-        
+
         # 90% overlap = duplicate
         return overlap_ratio > 0.9
 
@@ -364,7 +365,7 @@ class DXFParser:
         """Remove duplicate polygons (keep larger one)"""
         if len(polygons) <= 1:
             return polygons
-        
+
         unique = []
         for poly in polygons:
             is_dup = False
@@ -378,7 +379,7 @@ class DXFParser:
                     break
             if not is_dup:
                 unique.append(poly)
-        
+
         return unique
 
     def _lines_to_valid_polygons(self, lines) -> List[Polygon]:
@@ -388,7 +389,7 @@ class DXFParser:
 
         merged = unary_union(lines)
         raw_polys = list(polygonize(merged))
-        
+
         # CRITICAL: Remove duplicate polygons (>90% overlap)
         valid_polys = self._remove_duplicates(raw_polys)
 

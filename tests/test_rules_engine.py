@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import math
 import pytest
+from pydantic import ValidationError
 from typing import List
 
 from fireai.core.rules_engine.engine import (
@@ -45,6 +46,7 @@ from fireai.core.rules_engine.api_contract import (
 # ═══════════════════════════════════════════════════════════════════════════════
 # ENGINE BASICS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestFactBasics:
     """Test Fact creation and matching."""
@@ -151,10 +153,12 @@ class TestEngineBasics:
         )
 
         engine.add_rule(rule)
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={"ceiling_height_m": 4.0},
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={"ceiling_height_m": 4.0},
+            )
+        )
         results = engine.evaluate()
         assert len(results) == 1
         assert results[0].rule_id == "TEST-001"
@@ -182,10 +186,12 @@ class TestEngineBasics:
         )
 
         engine.add_rule(rule)
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={"ceiling_height_m": 3.0},
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={"ceiling_height_m": 3.0},
+            )
+        )
         results = engine.evaluate()
         assert len(results) == 0
 
@@ -207,25 +213,30 @@ class TestEngineBasics:
                         matched_facts=[f.fact_id for f in facts],
                     )
                 ]
+
             return action
 
         # Add rules in reverse priority order
-        engine.add_rule(Rule(
-            rule_id="LOW",
-            rule_name="Low Priority",
-            nfpa_reference=None,
-            priority=RulePriority.ADVISORY,
-            fact_type="room",
-            action=make_action("LOW", fired_order),
-        ))
-        engine.add_rule(Rule(
-            rule_id="HIGH",
-            rule_name="High Priority",
-            nfpa_reference=None,
-            priority=RulePriority.CRITICAL_SAFETY,
-            fact_type="room",
-            action=make_action("HIGH", fired_order),
-        ))
+        engine.add_rule(
+            Rule(
+                rule_id="LOW",
+                rule_name="Low Priority",
+                nfpa_reference=None,
+                priority=RulePriority.ADVISORY,
+                fact_type="room",
+                action=make_action("LOW", fired_order),
+            )
+        )
+        engine.add_rule(
+            Rule(
+                rule_id="HIGH",
+                rule_name="High Priority",
+                nfpa_reference=None,
+                priority=RulePriority.CRITICAL_SAFETY,
+                fact_type="room",
+                action=make_action("HIGH", fired_order),
+            )
+        )
 
         engine.assert_fact(Fact(fact_type="room"))
         engine.evaluate()
@@ -238,40 +249,44 @@ class TestEngineBasics:
         """Every rule evaluation must be logged — fired or not."""
         engine = RulesEngine()
 
-        engine.add_rule(Rule(
-            rule_id="FIRES",
-            rule_name="Fires",
-            nfpa_reference="Test",
-            priority=RulePriority.COMPLIANCE_CHECK,
-            fact_type="room",
-            action=lambda facts, eng: [
-                RuleResult(
-                    rule_id="FIRES",
-                    rule_name="Fires",
-                    nfpa_reference="Test",
-                    severity=RulePriority.COMPLIANCE_CHECK,
-                    message="ok",
-                    matched_facts=[f.fact_id for f in facts],
-                )
-            ],
-        ))
-        engine.add_rule(Rule(
-            rule_id="DOES_NOT_FIRE",
-            rule_name="Does Not Fire",
-            nfpa_reference="Test",
-            priority=RulePriority.COMPLIANCE_CHECK,
-            fact_type="detector",
-            action=lambda facts, eng: [
-                RuleResult(
-                    rule_id="DOES_NOT_FIRE",
-                    rule_name="Does Not Fire",
-                    nfpa_reference="Test",
-                    severity=RulePriority.COMPLIANCE_CHECK,
-                    message="ok",
-                    matched_facts=[f.fact_id for f in facts],
-                )
-            ],
-        ))
+        engine.add_rule(
+            Rule(
+                rule_id="FIRES",
+                rule_name="Fires",
+                nfpa_reference="Test",
+                priority=RulePriority.COMPLIANCE_CHECK,
+                fact_type="room",
+                action=lambda facts, eng: [
+                    RuleResult(
+                        rule_id="FIRES",
+                        rule_name="Fires",
+                        nfpa_reference="Test",
+                        severity=RulePriority.COMPLIANCE_CHECK,
+                        message="ok",
+                        matched_facts=[f.fact_id for f in facts],
+                    )
+                ],
+            )
+        )
+        engine.add_rule(
+            Rule(
+                rule_id="DOES_NOT_FIRE",
+                rule_name="Does Not Fire",
+                nfpa_reference="Test",
+                priority=RulePriority.COMPLIANCE_CHECK,
+                fact_type="detector",
+                action=lambda facts, eng: [
+                    RuleResult(
+                        rule_id="DOES_NOT_FIRE",
+                        rule_name="Does Not Fire",
+                        nfpa_reference="Test",
+                        severity=RulePriority.COMPLIANCE_CHECK,
+                        message="ok",
+                        matched_facts=[f.fact_id for f in facts],
+                    )
+                ],
+            )
+        )
 
         engine.assert_fact(Fact(fact_type="room"))
         engine.evaluate()
@@ -288,20 +303,23 @@ class TestEngineBasics:
 # NFPA 72 RULES
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestNFPA72Rules:
     """Test NFPA 72 declarative rules."""
 
     def test_ceiling_height_spacing_smoke(self):
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={
-                "room_id": "R1",
-                "ceiling_height_m": 3.0,
-                "detector_type": "smoke",
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={
+                    "room_id": "R1",
+                    "ceiling_height_m": 3.0,
+                    "detector_type": "smoke",
+                },
+            )
+        )
         results = engine.evaluate()
 
         # Should produce spacing and coverage facts
@@ -314,14 +332,16 @@ class TestNFPA72Rules:
     def test_ceiling_height_spacing_heat(self):
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={
-                "room_id": "R2",
-                "ceiling_height_m": 3.0,
-                "detector_type": "heat",
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={
+                    "room_id": "R2",
+                    "ceiling_height_m": 3.0,
+                    "detector_type": "heat",
+                },
+            )
+        )
         results = engine.evaluate()
         spacing_facts = engine.get_facts("spacing")
         assert len(spacing_facts) >= 1
@@ -332,22 +352,22 @@ class TestNFPA72Rules:
     def test_ceiling_height_exceeds_table(self):
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={
-                "room_id": "R3",
-                "ceiling_height_m": 15.0,
-                "detector_type": "smoke",
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={
+                    "room_id": "R3",
+                    "ceiling_height_m": 15.0,
+                    "detector_type": "smoke",
+                },
+            )
+        )
         results = engine.evaluate()
 
         # Should produce AHJ_REVIEW_REQUIRED flag
         critical = engine.get_safety_violations()
         assert len(critical) >= 1
-        assert any(
-            r.rule_id == "NFPA72-003" for r in critical
-        )
+        assert any(r.rule_id == "NFPA72-003" for r in critical)
 
         flags = engine.get_facts("safety_flag")
         assert len(flags) >= 1
@@ -356,13 +376,15 @@ class TestNFPA72Rules:
     def test_dead_air_space_violation(self):
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="detector",
-            properties={
-                "detector_id": "D1",
-                "distance_to_wall_m": 0.05,  # Less than 0.1m
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="detector",
+                properties={
+                    "detector_id": "D1",
+                    "distance_to_wall_m": 0.05,  # Less than 0.1m
+                },
+            )
+        )
         results = engine.evaluate()
         violations = engine.get_safety_violations()
         assert any(r.rule_id == "NFPA72-004" for r in violations)
@@ -370,31 +392,32 @@ class TestNFPA72Rules:
     def test_dead_air_space_ok(self):
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="detector",
-            properties={
-                "detector_id": "D2",
-                "distance_to_wall_m": 0.5,  # More than 0.1m
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="detector",
+                properties={
+                    "detector_id": "D2",
+                    "distance_to_wall_m": 0.5,  # More than 0.1m
+                },
+            )
+        )
         results = engine.evaluate()
-        violations = [
-            r for r in results
-            if r.rule_id == "NFPA72-004"
-        ]
+        violations = [r for r in results if r.rule_id == "NFPA72-004"]
         assert len(violations) == 0
 
     def test_duct_detector_required(self):
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="hvac_unit",
-            properties={
-                "unit_id": "AHU-1",
-                "cfm": 5000,
-                "has_duct_detector": False,
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="hvac_unit",
+                properties={
+                    "unit_id": "AHU-1",
+                    "cfm": 5000,
+                    "has_duct_detector": False,
+                },
+            )
+        )
         results = engine.evaluate()
         violations = engine.get_safety_violations()
         assert any(r.rule_id == "NFPA72-006" for r in violations)
@@ -402,32 +425,33 @@ class TestNFPA72Rules:
     def test_duct_detector_not_required_below_threshold(self):
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="hvac_unit",
-            properties={
-                "unit_id": "AHU-2",
-                "cfm": 1500,  # Below 2000 CFM threshold
-                "has_duct_detector": False,
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="hvac_unit",
+                properties={
+                    "unit_id": "AHU-2",
+                    "cfm": 1500,  # Below 2000 CFM threshold
+                    "has_duct_detector": False,
+                },
+            )
+        )
         results = engine.evaluate()
-        violations = [
-            r for r in results
-            if r.rule_id == "NFPA72-006"
-        ]
+        violations = [r for r in results if r.rule_id == "NFPA72-006"]
         assert len(violations) == 0
 
     def test_elevator_recall_violation(self):
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="elevator",
-            properties={
-                "elevator_id": "E1",
-                "has_lobby_detector": False,
-                "has_hoistway_detector": True,
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="elevator",
+                properties={
+                    "elevator_id": "E1",
+                    "has_lobby_detector": False,
+                    "has_hoistway_detector": True,
+                },
+            )
+        )
         results = engine.evaluate()
         violations = engine.get_safety_violations()
         assert any(r.rule_id == "NFPA72-007" for r in violations)
@@ -435,15 +459,17 @@ class TestNFPA72Rules:
     def test_corridor_spacing_applied(self):
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={
-                "room_id": "C1",
-                "is_corridor": True,
-                "ceiling_height_m": 3.0,
-                "detector_type": "smoke",
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={
+                    "room_id": "C1",
+                    "is_corridor": True,
+                    "ceiling_height_m": 3.0,
+                    "detector_type": "smoke",
+                },
+            )
+        )
         results = engine.evaluate()
         corridor_flags = engine.get_facts("corridor_flag")
         assert len(corridor_flags) >= 1
@@ -451,14 +477,16 @@ class TestNFPA72Rules:
     def test_compliance_summary(self):
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={
-                "room_id": "R1",
-                "ceiling_height_m": 3.0,
-                "detector_type": "smoke",
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={
+                    "room_id": "R1",
+                    "ceiling_height_m": 3.0,
+                    "detector_type": "smoke",
+                },
+            )
+        )
         engine.evaluate()
         summary = engine.get_compliance_summary()
         assert "is_safe" in summary
@@ -469,6 +497,7 @@ class TestNFPA72Rules:
 # ═══════════════════════════════════════════════════════════════════════════════
 # TRUTH MAINTENANCE SYSTEM
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestTruthMaintenance:
     """Test the Truth Maintenance System."""
@@ -564,6 +593,7 @@ class TestTruthMaintenance:
 # API CONTRACT VALIDATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestAPIContract:
     """Test the type-safe API contract system."""
 
@@ -609,7 +639,7 @@ class TestAPIContract:
         validator.register("/api/test", "GET", TestResponse)
 
         data = {"id": "1"}  # Missing 'name'
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             validator.validate_response("/api/test", "GET", data)
 
     def test_contract_validation_log_mode(self):
@@ -646,6 +676,7 @@ class TestAPIContract:
 # RULESET METADATA
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestNFPA72RuleSetMetadata:
     """Test the NFPA 72 rule set metadata and querying."""
 
@@ -658,8 +689,7 @@ class TestNFPA72RuleSetMetadata:
         """Every rule MUST have an NFPA reference for auditability."""
         for rule in NFPA72RuleSet.all_rules():
             assert rule.nfpa_reference is not None, (
-                f"Rule {rule.rule_id} ({rule.rule_name}) is missing "
-                f"NFPA reference — required for safety audit"
+                f"Rule {rule.rule_id} ({rule.rule_name}) is missing NFPA reference — required for safety audit"
             )
 
     def test_critical_rules_first(self):
@@ -685,6 +715,7 @@ class TestNFPA72RuleSetMetadata:
 # ═══════════════════════════════════════════════════════════════════════════════
 # EDGE CASES & ADVERSARIAL
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestEdgeCases:
     """Test edge cases and adversarial inputs."""
@@ -725,14 +756,16 @@ class TestEdgeCases:
                 )
             ]
 
-        engine.add_rule(Rule(
-            rule_id="LOOP",
-            rule_name="Loop",
-            nfpa_reference=None,
-            priority=RulePriority.INFORMATIONAL,
-            fact_type="room",
-            action=looping_action,
-        ))
+        engine.add_rule(
+            Rule(
+                rule_id="LOOP",
+                rule_name="Loop",
+                nfpa_reference=None,
+                priority=RulePriority.INFORMATIONAL,
+                fact_type="room",
+                action=looping_action,
+            )
+        )
         engine.assert_fact(Fact(fact_type="room"))
         engine.evaluate()
         # Should stop after max_iterations, not run forever
@@ -742,24 +775,26 @@ class TestEdgeCases:
         """Rule condition that raises should not crash the engine."""
         engine = RulesEngine()
 
-        engine.add_rule(Rule(
-            rule_id="CRASH",
-            rule_name="Crash Condition",
-            nfpa_reference=None,
-            priority=RulePriority.COMPLIANCE_CHECK,
-            fact_type="room",
-            condition=lambda f: 1 / 0,  # Division by zero
-            action=lambda facts, eng: [
-                RuleResult(
-                    rule_id="CRASH",
-                    rule_name="Crash Condition",
-                    nfpa_reference=None,
-                    severity=RulePriority.COMPLIANCE_CHECK,
-                    message="Should not reach",
-                    matched_facts=[],
-                )
-            ],
-        ))
+        engine.add_rule(
+            Rule(
+                rule_id="CRASH",
+                rule_name="Crash Condition",
+                nfpa_reference=None,
+                priority=RulePriority.COMPLIANCE_CHECK,
+                fact_type="room",
+                condition=lambda f: 1 / 0,  # Division by zero
+                action=lambda facts, eng: [
+                    RuleResult(
+                        rule_id="CRASH",
+                        rule_name="Crash Condition",
+                        nfpa_reference=None,
+                        severity=RulePriority.COMPLIANCE_CHECK,
+                        message="Should not reach",
+                        matched_facts=[],
+                    )
+                ],
+            )
+        )
 
         engine.assert_fact(Fact(fact_type="room"))
         # Should NOT raise — engine handles condition errors gracefully
@@ -770,14 +805,16 @@ class TestEdgeCases:
         """Negative ceiling height should be handled gracefully."""
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="room",
-            properties={
-                "room_id": "BAD",
-                "ceiling_height_m": -1.0,
-                "detector_type": "smoke",
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="room",
+                properties={
+                    "room_id": "BAD",
+                    "ceiling_height_m": -1.0,
+                    "detector_type": "smoke",
+                },
+            )
+        )
         # Should not crash — may produce conservative spacing
         results = engine.evaluate()
         # No assertion on specific result — just no crash
@@ -786,19 +823,18 @@ class TestEdgeCases:
         """Zero CFM HVAC unit should not require duct detector."""
         engine = RulesEngine()
         engine.add_rules(NFPA72RuleSet.all_rules())
-        engine.assert_fact(Fact(
-            fact_type="hvac_unit",
-            properties={
-                "unit_id": "AHU-ZERO",
-                "cfm": 0,
-                "has_duct_detector": False,
-            },
-        ))
+        engine.assert_fact(
+            Fact(
+                fact_type="hvac_unit",
+                properties={
+                    "unit_id": "AHU-ZERO",
+                    "cfm": 0,
+                    "has_duct_detector": False,
+                },
+            )
+        )
         results = engine.evaluate()
-        violations = [
-            r for r in results
-            if r.rule_id == "NFPA72-006"
-        ]
+        violations = [r for r in results if r.rule_id == "NFPA72-006"]
         assert len(violations) == 0
 
     def test_explain_derived_fact(self):

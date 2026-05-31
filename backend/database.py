@@ -28,10 +28,7 @@ logger = logging.getLogger(__name__)
 
 # Database file location — sibling to the core fireai_universal.db
 _DB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "db")
-_DB_PATH = os.environ.get(
-    "DIGITAL_TWIN_DB_PATH",
-    os.path.join(_DB_DIR, "digital_twin.db")
-)
+_DB_PATH = os.environ.get("DIGITAL_TWIN_DB_PATH", os.path.join(_DB_DIR, "digital_twin.db"))
 
 
 class Database:
@@ -168,26 +165,16 @@ class Database:
             """)
 
             # ── Indexes for performance ─────────────────────────────────
-            cur.execute(
-                "CREATE INDEX IF NOT EXISTS idx_devices_project ON devices(project_id)"
-            )
-            cur.execute(
-                "CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)"
-            )
-            cur.execute(
-                "CREATE INDEX IF NOT EXISTS idx_reports_project ON reports(project_id)"
-            )
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_project ON devices(project_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_project ON reports(project_id)")
             # SAFETY FIX: Missing indexes on connections.from_id and connections.to_id
             # Every device deletion triggers DELETE FROM connections WHERE from_id=? OR to_id=?
             # Without these indexes, that's a full table scan — O(n) per deletion.
             # For a project with 10,000 connections, deleting one device scans all rows.
             # Slow operations could cause timeouts that appear as failures in a safety system.
-            cur.execute(
-                "CREATE INDEX IF NOT EXISTS idx_connections_from ON connections(from_id)"
-            )
-            cur.execute(
-                "CREATE INDEX IF NOT EXISTS idx_connections_to ON connections(to_id)"
-            )
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_from ON connections(from_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_to ON connections(to_id)")
 
     # ========================================================================
     # Projects CRUD
@@ -251,12 +238,14 @@ class Database:
         order: str = "desc",
     ) -> dict:
         """List projects with pagination."""
-        # Validate sort column to prevent SQL injection
-        allowed_sorts = {"created_at", "updated_at", "name", "status", "author"}
-        if sort not in allowed_sorts:
+        # Whitelist sort columns and order direction to prevent SQL injection
+        _ALLOWED_PROJECT_SORTS = {"id", "name", "created_at", "updated_at", "status", "author"}
+        if sort not in _ALLOWED_PROJECT_SORTS:
             sort = "created_at"
-        if order not in ("asc", "desc"):
-            order = "desc"
+        if order.upper() not in ("ASC", "DESC"):
+            order = "DESC"
+        else:
+            order = order.upper()
 
         with self._lock:
             cur = self._conn.cursor()
@@ -268,7 +257,7 @@ class Database:
             # Get paginated results
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM projects ORDER BY {sort} {order} LIMIT ? OFFSET ?",
+                f"SELECT * FROM projects ORDER BY {sort} {order} LIMIT ? OFFSET ?",  # noqa: S608 — sort/order whitelisted above
                 (limit, offset),
             )
             rows = cur.fetchall()
@@ -323,7 +312,7 @@ class Database:
 
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE projects SET {', '.join(set_clauses)} WHERE id = ?",
+                f"UPDATE projects SET {', '.join(set_clauses)} WHERE id = ?",  # noqa: S608 — set_clauses built from whitelisted field_map keys
                 values,
             )
 
@@ -428,11 +417,24 @@ class Database:
         order: str = "desc",
     ) -> dict:
         """List devices in a project with pagination."""
-        allowed_sorts = {"created_at", "updated_at", "name", "type", "category", "voltage", "current", "load"}
-        if sort not in allowed_sorts:
+        # Whitelist sort columns and order direction to prevent SQL injection
+        _ALLOWED_DEVICE_SORTS = {
+            "id",
+            "created_at",
+            "updated_at",
+            "name",
+            "type",
+            "category",
+            "voltage",
+            "current",
+            "load",
+        }
+        if sort not in _ALLOWED_DEVICE_SORTS:
             sort = "created_at"
-        if order not in ("asc", "desc"):
-            order = "desc"
+        if order.upper() not in ("ASC", "DESC"):
+            order = "DESC"
+        else:
+            order = order.upper()
 
         with self._lock:
             cur = self._conn.cursor()
@@ -444,7 +446,7 @@ class Database:
 
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM devices WHERE project_id = ? ORDER BY {sort} {order} LIMIT ? OFFSET ?",
+                f"SELECT * FROM devices WHERE project_id = ? ORDER BY {sort} {order} LIMIT ? OFFSET ?",  # noqa: S608 — sort/order whitelisted above
                 (project_id, limit, offset),
             )
             rows = cur.fetchall()
@@ -459,9 +461,7 @@ class Database:
             "totalPages": total_pages,
         }
 
-    def update_device(
-        self, project_id: str, device_id: str, updates: dict
-    ) -> Optional[dict]:
+    def update_device(self, project_id: str, device_id: str, updates: dict) -> Optional[dict]:
         """Update a device. Returns updated device or None if not found."""
         existing = self.get_device(project_id, device_id)
         if not existing:
@@ -496,7 +496,7 @@ class Database:
 
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE devices SET {', '.join(set_clauses)} WHERE id = ? AND project_id = ?",
+                f"UPDATE devices SET {', '.join(set_clauses)} WHERE id = ? AND project_id = ?",  # noqa: S608 — set_clauses built from whitelisted simple_fields keys
                 values,
             )
 
@@ -519,6 +519,7 @@ class Database:
             deleted_conns = cur.rowcount
             if deleted_conns > 0:
                 import logging
+
                 logging.getLogger(__name__).info(
                     f"Deleted {deleted_conns} orphaned connection(s) for device {device_id}"
                 )
@@ -569,18 +570,14 @@ class Database:
             )
             if not cur.fetchone():
                 raise ValueError(
-                    f"Cannot create connection: from_id '{from_id}' does not exist "
-                    f"in project '{project_id}'"
+                    f"Cannot create connection: from_id '{from_id}' does not exist in project '{project_id}'"
                 )
             cur.execute(
                 "SELECT id FROM devices WHERE id = ? AND project_id = ?",
                 (to_id, project_id),
             )
             if not cur.fetchone():
-                raise ValueError(
-                    f"Cannot create connection: to_id '{to_id}' does not exist "
-                    f"in project '{project_id}'"
-                )
+                raise ValueError(f"Cannot create connection: to_id '{to_id}' does not exist in project '{project_id}'")
 
             cur.execute(
                 """INSERT INTO connections
@@ -622,11 +619,14 @@ class Database:
         order: str = "desc",
     ) -> dict:
         """List connections in a project with pagination."""
-        allowed_sorts = {"created_at", "type", "length", "cable_size"}
-        if sort not in allowed_sorts:
+        # Whitelist sort columns and order direction to prevent SQL injection
+        _ALLOWED_CONNECTION_SORTS = {"id", "created_at", "type", "length", "cable_size"}
+        if sort not in _ALLOWED_CONNECTION_SORTS:
             sort = "created_at"
-        if order not in ("asc", "desc"):
-            order = "desc"
+        if order.upper() not in ("ASC", "DESC"):
+            order = "DESC"
+        else:
+            order = order.upper()
 
         with self._lock:
             cur = self._conn.cursor()
@@ -638,7 +638,7 @@ class Database:
 
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM connections WHERE project_id = ? ORDER BY {sort} {order} LIMIT ? OFFSET ?",
+                f"SELECT * FROM connections WHERE project_id = ? ORDER BY {sort} {order} LIMIT ? OFFSET ?",  # noqa: S608 — sort/order whitelisted above
                 (project_id, limit, offset),
             )
             rows = cur.fetchall()
@@ -731,11 +731,14 @@ class Database:
         order: str = "desc",
     ) -> dict:
         """List reports in a project with pagination."""
-        allowed_sorts = {"created_at", "type", "status", "name"}
-        if sort not in allowed_sorts:
+        # Whitelist sort columns and order direction to prevent SQL injection
+        _ALLOWED_REPORT_SORTS = {"id", "created_at", "type", "status", "name"}
+        if sort not in _ALLOWED_REPORT_SORTS:
             sort = "created_at"
-        if order not in ("asc", "desc"):
-            order = "desc"
+        if order.upper() not in ("ASC", "DESC"):
+            order = "DESC"
+        else:
+            order = order.upper()
 
         with self._lock:
             cur = self._conn.cursor()
@@ -747,7 +750,7 @@ class Database:
 
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM reports WHERE project_id = ? ORDER BY {sort} {order} LIMIT ? OFFSET ?",
+                f"SELECT * FROM reports WHERE project_id = ? ORDER BY {sort} {order} LIMIT ? OFFSET ?",  # noqa: S608 — sort/order whitelisted above
                 (project_id, limit, offset),
             )
             rows = cur.fetchall()
@@ -787,7 +790,7 @@ class Database:
         values.extend([report_id, project_id])
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE reports SET {', '.join(set_clauses)} WHERE id = ? AND project_id = ?",
+                f"UPDATE reports SET {', '.join(set_clauses)} WHERE id = ? AND project_id = ?",  # noqa: S608 — set_clauses built from whitelisted simple_fields keys
                 values,
             )
 
