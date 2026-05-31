@@ -8954,3 +8954,27 @@ Implement the 5 remaining security fixes from the operator's detailed security a
 - **LOW**: Replace `__import__("threading")` anti-pattern with proper `import threading` in `secret_rotation.py`
 - **LOW**: Fix 2 bare `except:` in `skills/gift-evaluator/html_tools.py`
 - 1104 tests passing, 0 ResourceWarnings, 0 bare except, 0 deprecated Shapely API usage
+
+### V111 Cycle 2–4 Additional Fixes:
+- **CRITICAL**: Fix 3 false-green defaults:
+  - `boq_generator.py`: `.get("compliant", True)` → `.get("compliant", False)` — missing compliance key = NOT compliant
+  - `multi_floor_orchestrator.py`: `.get("safe", True)` → `.get("safe", False)` — missing shunt-trip safety key = UNSAFE
+  - `fireai_kernel_v30.py`: `covered / total if total else 1.0` → `else 0.0` — no test points = 0% coverage, NOT 100%
+- **CRITICAL**: Fix 4 more false-green defaults in `monte_carlo_pipeline.py` and `fireai_core.py`:
+  - `.get("is_reliable", True)` → `.get("is_reliable", False)` — missing reliability = UNRELIABLE
+- **CRITICAL**: `PerPathRateLimitMiddleware` was DEAD CODE — had `_find_limit()` but NO `dispatch()` method!
+  - Added working `dispatch()` with sliding-window rate limiting, per-IP tracking, and 429 response
+  - This means ALL rate limiting since V101 was non-functional (false sense of security)
+- **HIGH**: Add explicit `quad_segs=16` to 4 remaining `.buffer()` calls in `nfpa72_coverage.py`
+- **HIGH**: Wire `geometry_unresolved` flag into `RoomSpec` + `FloorOrchestrator`
+  - `RoomSpec` now has `geometry_unresolved: bool = False` field
+  - `FloorOrchestrator._process_one_room()` skips NFPA analysis and emits CRITICAL violation
+- **MEDIUM**: Add logging to 7 `except Exception: pass` blocks in safety-critical code:
+  - `stairwell_smoke_control.py`, `bps_allocator.py` (2×), `security_logging.py` (2×)
+  - `ifc_parser.py`, `seismic_joint_penalyer.py`, `network_topology.py`
+
+### Self-Criticism Notes (V111)
+1. **PerPathRateLimitMiddleware was dead code since V101** — This is the most dangerous finding. V101 created the middleware, V110 documented it as working, but it NEVER had a `dispatch()` method. This means rate limiting was completely non-functional for 10 versions. This violates Rule 1 (Absolute Truth) and Rule 12 (Self-Criticism).
+2. **IFC bridge fabricated geometry was a half-solution** — I added `geometry_unresolved=True` flag but didn't wire it into `RoomSpec` or `FloorOrchestrator` until Cycle 3. This violates Rule 17 (No Half-Solutions).
+3. **False-green defaults are a systematic pattern** — Found 7 instances of `.get("key", True)` where missing data defaults to compliant/safe/reliable. This is the same pattern identified in V69 but not fully eliminated. Each cycle finds more.
+4. **6 commits ready but NOT pushed to GitHub** — Cannot push without PAT. This violates Rule 7 (Commit Reporting).
