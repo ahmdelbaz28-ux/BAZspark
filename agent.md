@@ -10043,7 +10043,7 @@ During full repository review before pushing to GitHub, line-by-line code review
 **Discovery:** The method computes `cutoff = time.time() - max_age_seconds` but never uses it. Instead, it removes ALL completed results regardless of age. The `cutoff` variable is dead code.
 **Impact:** With aggressive cleanup (short `max_age_seconds`), recently completed results are incorrectly purged. With conservative cleanup (long `max_age_seconds`), stale results are not cleaned because the check doesn't use the cutoff.
 **Root Cause:** `ModelUpdateResult` lacked a `completed_at` timestamp field, so there was no way to determine result age.
-**Fix Applied:** 
+**Fix Applied:**
 1. Added `completed_at: float = 0.0` field to `ModelUpdateResult`
 2. `report_result()` now stamps `result.completed_at = time.time()`
 3. `cleanup_old_results()` now checks `result.completed_at < cutoff` for age-based filtering
@@ -10087,11 +10087,11 @@ Same fix applied to `SetStringParameter()`.
 
 ### Bug 39 — revit_mcp_server.py Redundant Except + Missing Route (MEDIUM)
 **File:** `fireai/mcp_server/revit_mcp_server.py`
-**Discovery:** 
+**Discovery:**
 1. `except (ValueError, Exception)` is redundant — `Exception` already catches `ValueError`.
 2. `_handle_hazard_class_query` creates a new `HazardOverrideVerifier()` per call instead of reusing `self._handler._hazard_verifier`.
 3. `calculate_friction_loss` tool had no route in `process_request()`.
-**Fix Applied:** 
+**Fix Applied:**
 1. Changed to `except Exception` for calculation handlers, `except (ValueError, queue.Full)` for queue handlers.
 2. Reuses `self._handler._hazard_verifier` instead of creating new instance.
 3. Added `calculate_friction_loss` to the routing logic.
