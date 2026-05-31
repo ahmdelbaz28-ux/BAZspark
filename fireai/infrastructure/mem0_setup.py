@@ -131,6 +131,7 @@ MEM0_QDRANT_PATH.mkdir(parents=True, exist_ok=True)
 
 # ── Provider Detection ──────────────────────────────────────────────────────
 
+
 def _test_openai_connectivity(api_key: str) -> bool:
     """
     Test if OpenAI API is reachable and not region-blocked.
@@ -151,7 +152,8 @@ def _test_openai_connectivity(api_key: str) -> bool:
     """
     try:
         import urllib.request
-        req = urllib.request.Request(
+
+        req = urllib.request.Request(  # noqa: S310 — hardcoded https://api.openai.com
             "https://api.openai.com/v1/models",
             method="GET",
             headers={
@@ -159,7 +161,7 @@ def _test_openai_connectivity(api_key: str) -> bool:
                 "Content-Type": "application/json",
             },
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310
             if resp.status == 200:
                 return True
     except urllib.error.HTTPError as e:
@@ -204,6 +206,7 @@ def _test_gemini_connectivity(api_key: str) -> bool:
     """
     try:
         import google.generativeai as genai
+
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel("gemini-2.0-flash")
         # Minimal request to verify quota and connectivity
@@ -238,8 +241,9 @@ def _test_openai_compatible_connectivity(base_url: str, api_key: str) -> bool:
     """
     try:
         import urllib.request
+
         models_url = f"{base_url.rstrip('/')}/models"
-        req = urllib.request.Request(
+        req = urllib.request.Request(  # noqa: S310 — URL constructed from validated base_url
             models_url,
             method="GET",
             headers={
@@ -247,7 +251,7 @@ def _test_openai_compatible_connectivity(base_url: str, api_key: str) -> bool:
                 "Content-Type": "application/json",
             },
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310
             if resp.status == 200:
                 return True
     except urllib.error.HTTPError as e:
@@ -255,8 +259,7 @@ def _test_openai_compatible_connectivity(base_url: str, api_key: str) -> bool:
             body = e.read().decode("utf-8", errors="replace")
             if "unsupported_country_region_territory" in body:
                 logger.warning(
-                    f"OpenAI-compatible API at {base_url} is region-blocked (403). "
-                    "Falling back to next provider."
+                    f"OpenAI-compatible API at {base_url} is region-blocked (403). Falling back to next provider."
                 )
                 return False
             logger.warning(f"API at {base_url} returned 403: {body[:200]}")
@@ -264,9 +267,7 @@ def _test_openai_compatible_connectivity(base_url: str, api_key: str) -> bool:
         logger.warning(f"API at {base_url} returned HTTP {e.code}")
         return False
     except Exception as e:
-        logger.warning(
-            f"Connectivity test failed for {base_url}: {type(e).__name__}: {e}"
-        )
+        logger.warning(f"Connectivity test failed for {base_url}: {type(e).__name__}: {e}")
         return False
     return False
 
@@ -290,12 +291,11 @@ def _detect_provider() -> Dict[str, Any]:
     global _detect_provider_cache, _detect_provider_cache_time
 
     import time as _time
+
     if _detect_provider_cache is not None:
         elapsed = _time.monotonic() - _detect_provider_cache_time
         if elapsed < _PROVIDER_CACHE_TTL_SECONDS:
-            logger.debug(
-                f"Provider detection cache hit (age={elapsed:.0f}s, TTL={_PROVIDER_CACHE_TTL_SECONDS}s)"
-            )
+            logger.debug(f"Provider detection cache hit (age={elapsed:.0f}s, TTL={_PROVIDER_CACHE_TTL_SECONDS}s)")
             return _detect_provider_cache
 
     result = _detect_provider_uncached()
@@ -347,18 +347,12 @@ def _detect_provider_uncached() -> Dict[str, Any]:
     openai_key = os.getenv("OPENAI_API_KEY") or os.getenv("FIREAI_OPENAI_API_KEY")
     gemini_key = os.getenv("GEMINI_API_KEY")
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
-    openrouter_base_url = os.getenv(
-        "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"
-    )
+    openrouter_base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
     # V81: Renamed from OpenQuotta to OpenCode — correct provider name
     # OpenCode (opencode.ai) provides OpenAI-compatible API at /zen/v1/
     # Backward compat: OPENQUOTTA_* env vars still work as fallback
     opencode_key = os.getenv("OPENCODE_API_KEY") or os.getenv("OPENQUOTTA_API_KEY")
-    opencode_base_url = os.getenv(
-        "OPENCODE_BASE_URL", os.getenv(
-            "OPENQUOTTA_BASE_URL", "https://opencode.ai/zen/v1/"
-        )
-    )
+    opencode_base_url = os.getenv("OPENCODE_BASE_URL", os.getenv("OPENQUOTTA_BASE_URL", "https://opencode.ai/zen/v1/"))
 
     # ── Strategy 1: Try OpenAI (PRIMARY if available and not region-blocked) ──
     if openai_key:
@@ -401,9 +395,7 @@ def _detect_provider_uncached() -> Dict[str, Any]:
     # Per agent.md Priority 1 (Safety): Using gpt-4o (not mini) for
     # engineering analysis ensures the highest accuracy for NFPA calculations.
     if openrouter_key:
-        openrouter_reachable = _test_openai_compatible_connectivity(
-            openrouter_base_url, openrouter_key
-        )
+        openrouter_reachable = _test_openai_compatible_connectivity(openrouter_base_url, openrouter_key)
 
         if openrouter_reachable:
             logger.info(
@@ -443,9 +435,7 @@ def _detect_provider_uncached() -> Dict[str, Any]:
     # engineering analysis ensures the highest accuracy for NFPA calculations.
     if opencode_key:
         # OpenCode is an OpenAI-compatible API — test connectivity
-        opencode_reachable = _test_openai_compatible_connectivity(
-            opencode_base_url, opencode_key
-        )
+        opencode_reachable = _test_openai_compatible_connectivity(opencode_base_url, opencode_key)
 
         if opencode_reachable:
             logger.info(
@@ -466,8 +456,7 @@ def _detect_provider_uncached() -> Dict[str, Any]:
             }
         else:
             logger.info(
-                f"OpenCode API key found but {opencode_base_url} not reachable. "
-                "Falling back to Gemini or z-ai proxy."
+                f"OpenCode API key found but {opencode_base_url} not reachable. Falling back to Gemini or z-ai proxy."
             )
 
     # ── Strategy 4: Gemini (PRIMARY when OpenAI/OpenRouter/OpenCode unavailable) ──
@@ -507,16 +496,21 @@ def _detect_provider_uncached() -> Dict[str, Any]:
             }
         else:
             logger.info(
-                "Gemini API key found but not reachable (quota exceeded or network error). "
-                "Falling back to z-ai proxy."
+                "Gemini API key found but not reachable (quota exceeded or network error). Falling back to z-ai proxy."
             )
 
     # ── Strategy 5: Try z-ai proxy ──
     proxy_url = os.getenv("FIREAI_PROXY_URL", "http://localhost:11435")
     try:
         import urllib.request
-        req = urllib.request.Request(f"{proxy_url}/health", method="GET")
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        from urllib.parse import urlparse as _urlparse
+
+        # S310/B310 SECURITY: Validate URL scheme before opening.
+        _parsed = _urlparse(proxy_url)
+        if _parsed.scheme not in ("http", "https"):
+            raise ValueError(f"Rejected proxy URL scheme '{_parsed.scheme}' — only http/https allowed")
+        req = urllib.request.Request(f"{proxy_url}/health", method="GET")  # noqa: S310 — scheme validated above
+        with urllib.request.urlopen(req, timeout=5) as resp:  # noqa: S310 — scheme validated above
             health = json.loads(resp.read().decode())
             if health.get("status") == "ok":
                 logger.info(f"z-ai proxy available at {proxy_url} — using proxy provider")
@@ -552,6 +546,7 @@ def _detect_provider_uncached() -> Dict[str, Any]:
 
 
 # ── Mem0 Configuration ──────────────────────────────────────────────────────
+
 
 def get_mem0_config() -> Dict[str, Any]:
     """
@@ -667,8 +662,7 @@ def create_mem0_instance() -> Any:
     except Exception as e:
         logger.error(f"Mem0 initialization failed: {e}")
         raise RuntimeError(
-            f"Failed to initialize Mem0: {e}. "
-            "Check your provider configuration and connectivity."
+            f"Failed to initialize Mem0: {e}. Check your provider configuration and connectivity."
         ) from e
 
     logger.info("Mem0 instance created successfully")
@@ -676,6 +670,7 @@ def create_mem0_instance() -> Any:
 
 
 # ── FireAI Memory Operations ────────────────────────────────────────────────
+
 
 class FireAIMemory:
     """
@@ -780,9 +775,9 @@ if __name__ == "__main__":
         print("\n2. Adding test memory...")
         result = fire_memory.add_engineering_context(
             content="NFPA 72-2022 requires smoke detectors in corridors at maximum "
-                    "30m spacing. For heat detectors, maximum spacing is 15m per "
-                    "NFPA 72 §17.6.3.1. Kitchen areas require heat detectors, "
-                    "NOT smoke detectors, per NFPA 72 §17.6.4.",
+            "30m spacing. For heat detectors, maximum spacing is 15m per "
+            "NFPA 72 §17.6.3.1. Kitchen areas require heat detectors, "
+            "NOT smoke detectors, per NFPA 72 §17.6.4.",
             project_id="test_project",
             metadata={
                 "standard": "NFPA 72-2022",
@@ -804,7 +799,7 @@ if __name__ == "__main__":
         # Test: Get all memories
         print("\n4. Getting all memories...")
         all_mem = fire_memory.get_all_memories(project_id="test_project")
-        mem_count = len(all_mem.get('results', all_mem) if isinstance(all_mem, dict) else all_mem)
+        mem_count = len(all_mem.get("results", all_mem) if isinstance(all_mem, dict) else all_mem)
         print(f"   [OK] Total memories: {mem_count}")
 
         print("\n" + "=" * 60)

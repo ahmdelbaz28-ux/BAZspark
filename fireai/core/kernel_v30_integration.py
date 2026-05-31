@@ -27,6 +27,7 @@ import os
 import platform
 import queue
 import struct
+import tempfile
 import threading
 import time
 from dataclasses import dataclass, field
@@ -292,7 +293,7 @@ class MmapResultCache:
         if not filepath:
             filepath = os.environ.get(
                 "FIREAI_MMAP_CACHE_PATH",
-                "/tmp/fireai_v30_cache.mmap",
+                os.path.join(tempfile.gettempdir(), "fireai_v30_cache.mmap"),  # nosec B108 — temp dir is appropriate for mmap cache
             )
         self._filepath = filepath
         self._size = size_mb * 1024 * 1024

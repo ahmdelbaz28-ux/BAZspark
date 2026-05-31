@@ -42,6 +42,9 @@ jobs:
           pip install -r requirements.txt
           pip install ruff bandit mypy
 
+      - name: Create reports directory
+        run: mkdir -p reports
+
       - name: Ruff lint
         run: ruff check fireai/ --exit-non-zero-on-fix
 
@@ -50,6 +53,12 @@ jobs:
       # be auto-formatted. Lint (safety) is enforced; format (style) is advisory.
       # - name: Ruff format check
       #   run: ruff format --check fireai/
+
+      - name: MyPy type check
+        run: mypy fireai/ --ignore-missing-imports --no-strict-optional || true
+        # V53: mypy is advisory for now — strict mode not yet enforced.
+        # Ignores missing third-party stubs. Exit code does not block pipeline.
+        continue-on-error: true
 
       - name: Bandit security scan
         run: bandit -r fireai/ -f json -o reports/bandit.json
