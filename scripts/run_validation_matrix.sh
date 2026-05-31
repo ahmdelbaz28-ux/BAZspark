@@ -116,7 +116,7 @@ cat > "${SUMMARY_FILE}" << EOF
 ## Overall Result
 EOF
 
-if [ "${RUFF_EXIT}" -eq 0 ] && [ "${PYTEST_EXIT}" -eq 0 ]; then
+if [ "${RUFF_EXIT}" -eq 0 ] && [ "${PYTEST_EXIT}" -eq 0 ] && [ "${PIP_AUDIT_EXIT}" -eq 0 ]; then
     echo "The validation matrix has **PASSED**. All checks have passed successfully." >> "${SUMMARY_FILE}"
     echo "[+] SUCCESS: All validation checks passed."
 else
@@ -144,8 +144,14 @@ echo "[*] Evidence package created: ${ARCHIVE_NAME}"
 echo "[*] SHA256 Checksum: ${SHA256_CHECKSUM}"
 echo "[*] Please review the full logs in ${EVIDENCE_BASE_DIR} and the SUMMARY.md."
 
-# Exit with proper code
-if [ "${PYTEST_EXIT}" -ne 0 ]; then
+# Exit with proper code — V117 FIX: ALL gates must pass, not just pytest
+# Previous version only checked PYTEST_EXIT, allowing ruff/pip-audit failures
+# to go undetected. For a safety-critical system, ALL gates are mandatory.
+if [ "${RUFF_EXIT}" -ne 0 ] || [ "${PYTEST_EXIT}" -ne 0 ] || [ "${PIP_AUDIT_EXIT}" -ne 0 ]; then
+    echo "[-] FAILURE: Gate failures detected:"
+    [ "${RUFF_EXIT}" -ne 0 ] && echo "  - Ruff (lint/format): FAILED (exit ${RUFF_EXIT})"
+    [ "${PYTEST_EXIT}" -ne 0 ] && echo "  - Pytest (test suite): FAILED (exit ${PYTEST_EXIT})"
+    [ "${PIP_AUDIT_EXIT}" -ne 0 ] && echo "  - Pip-audit (dependencies): FAILED (exit ${PIP_AUDIT_EXIT})"
     exit 1
 fi
 exit 0

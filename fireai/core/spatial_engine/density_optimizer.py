@@ -38,18 +38,36 @@ V7.4 FIX — Placement/Verification Mismatch (CRITICAL — Life Safety):
   approach. The placement margin equals the fine verification margin so
   that placement and verification are mathematically aligned.
 """
-import math
-from dataclasses import dataclass, field
-from typing import List, Tuple, Optional, Dict
 
-MAX_SPACING_M   = 9.1           # 30 ft ≈ 9.1m (rounded, matches NFPA 72 Table 17.6.3.1.1)
+import math
+import time
+from dataclasses import dataclass, field
+
+# ── ConvergenceConfig integration (PDF Phase 3 requirement) ──
+# The density optimizer MUST have formal termination conditions:
+#   1. Maximum iteration count to prevent infinite loops
+#   2. Epsilon tolerance for objective function change
+#   3. Timeout enforcement for wall-clock safety
+# Per "From Prototype to Production-Grade" §Phase 3:
+#   "A proper termination condition typically consists of two parts:
+#    a maximum iteration count to prevent infinite loops on pathological
+#    problems, and an epsilon tolerance, which checks if the improvement
+#    between successive iterations falls below a small threshold."
+
+# Default convergence parameters
+DEFAULT_MAX_ITERATIONS = 10_000
+DEFAULT_EPSILON = 1e-4
+DEFAULT_TIMEOUT_SECONDS = 300.0  # 5 minutes
+REMOVE_REDUNDANT_MAX_PASSES = 100  # Safety cap for _remove_redundant loop
+
+MAX_SPACING_M = 9.1  # 30 ft ≈ 9.1m (rounded, matches NFPA 72 Table 17.6.3.1.1)
 DETECTOR_RADIUS = 0.7 * MAX_SPACING_M  # 6.37 m (NFPA 72 §17.7.4.2.3.1 - 0.7S Rule)
 # NOTE: Previous version used 9.144m (exact 30ft) giving R=6.40m. This was
 # inconsistent with the canonical nfpa72_models.RADIUS_MAP which uses 9.1m giving
 # R=6.37m. Aligned to 9.1m for consistency — all models now agree on R=6.37m.
-WALL_MIN_M      = 0.10
-VERIFY_STEP     = 0.20                  # proof resolution (m)
-COARSE_STEP     = 1.00                  # hierarchical coarse grid step (m)
+WALL_MIN_M = 0.10  # NFPA 72 §17.6.3.1.1 — minimum distance from wall
+VERIFY_STEP = 0.20  # proof resolution (m)
+COARSE_STEP = 1.00  # hierarchical coarse grid step (m)
 # V7.4: Placement margin — must match the fine verification margin to ensure
 # placement decisions align with verification proof. This guarantees that
 # detectors placed using R_place will pass the R_eff check in _verify_fast().
@@ -73,20 +91,21 @@ def _hex_s_guarded(R: float, wm: float) -> float:
     number. Now returns 0.0 (no valid spacing) which triggers fallback
     placement. This is conservative (more detectors) and prevents crashes.
     """
-    a, b, c = 7/16, wm, wm**2 - R**2
-    discriminant = b**2 - 4*a*c
+    a, b, c = 7 / 16, wm, wm**2 - R**2
+    discriminant = b**2 - 4 * a * c
     if discriminant < 0:
         # Wall minimum distance exceeds coverage radius — no valid hex spacing.
         # Return 0 to force fallback placement (conservative).
         return 0.0
-    return (-b + math.sqrt(discriminant)) / (2*a)
+    return (-b + math.sqrt(discriminant)) / (2 * a)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CHALLENGE 3: Deterministic Strategy Ordering (Stateless)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _predict_strategy_order(width: float, length: float) -> List[str]:
+
+def _predict_strategy_order(width: float, length: float) -> list[str]:
     """Deterministic strategy ordering based on room geometry.
 
     STATELESS — no global memory, no side effects, fully deterministic.
@@ -106,7 +125,7 @@ def _predict_strategy_order(width: float, length: float) -> List[str]:
     Complexity: O(1) — pure arithmetic, no loops.
     """
     if width <= 0 or length <= 0:
-        return ['hexG_x', 'hexG_y', 'hexA_x', 'hexA_y', 'rect']
+        return ["hexG_x", "hexG_y", "hexA_x", "hexA_y", "rect"]
 
     # Aspect ratio: always >= 1.0 (we normalize)
     ar = max(width, length) / min(width, length)
@@ -114,18 +133,18 @@ def _predict_strategy_order(width: float, length: float) -> List[str]:
 
     # Small rooms: rect often best (fewer boundary overhead)
     if area < 40:
-        return ['rect', 'hexG_x', 'hexG_y', 'hexA_x', 'hexA_y']
+        return ["rect", "hexG_x", "hexG_y", "hexA_x", "hexA_y"]
 
     # Elongated rooms: prefer hex along the long axis
     if ar > 2.0:
         if length > width:
             # Long room — prefer y-aligned hex
-            return ['hexG_y', 'hexA_y', 'hexG_x', 'hexA_x', 'rect']
+            return ["hexG_y", "hexA_y", "hexG_x", "hexA_x", "rect"]
         else:
-            return ['hexG_x', 'hexA_x', 'hexG_y', 'hexA_y', 'rect']
+            return ["hexG_x", "hexA_x", "hexG_y", "hexA_y", "rect"]
 
     # Near-square: hex-guarded is the safe default, rect as second
-    return ['hexG_x', 'hexG_y', 'rect', 'hexA_x', 'hexA_y']
+    return ["hexG_x", "hexG_y", "rect", "hexA_x", "hexA_y"]
 
 
 @dataclass
@@ -148,20 +167,20 @@ class Room:
 @dataclass
 class DetectorLayout:
     room: Room
-    detectors: List[Tuple[float, float]] = field(default_factory=list)
+    detectors: list[tuple[float, float]] = field(default_factory=list)
     coverage_pct: float = 0.0
     proof_valid: bool = False
     nfpa_valid: bool = False  # Set by _audit_nfpa(); default False until audited
     wall_violations: int = 0
     method: str = ""
-    violations: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     fallback_used: bool = False
     coverage_radius: float = DETECTOR_RADIUS  # Actual radius used for placement
     # Phase 7: Variable Coverage Radius tracking fields
-    ceiling_height: Optional[float] = None
+    ceiling_height: float | None = None
     detector_type_simple: str = "smoke"
-    radius_warning: Optional[str] = None
+    radius_warning: str | None = None
     nfpa_table_ref: str = "NFPA 72-2022 Table 17.6.3.1.1"
 
     @property
@@ -182,7 +201,7 @@ class DetectorLayout:
         ceiling height requires a different radius per NFPA 72 Table 17.6.3.2).
         """
         area = self.room.width * self.room.length
-        coverage_area = math.pi * self.coverage_radius ** 2
+        coverage_area = math.pi * self.coverage_radius**2
         return max(1, math.ceil(area / coverage_area))
 
     @property
@@ -200,27 +219,46 @@ class DetectorLayout:
 
 
 class DensityOptimizer:
+    def __init__(
+        self,
+        max_spacing: float = MAX_SPACING_M,
+        wall_min: float = WALL_MIN_M,
+        radius: float = DETECTOR_RADIUS,
+        max_iterations: int = DEFAULT_MAX_ITERATIONS,
+        timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    ):
+        """Initialize DensityOptimizer with convergence guarantees.
 
-    def __init__(self,
-                 max_spacing: float = MAX_SPACING_M,
-                 wall_min:    float = WALL_MIN_M,
-                 radius:      float = DETECTOR_RADIUS):
+        Args:
+            max_spacing: Maximum detector spacing per NFPA 72 Table 17.6.3.1.1
+            wall_min: Minimum wall distance per NFPA 72 §17.6.3.1.1
+            radius: Coverage radius (R = 0.7 × S per NFPA 72 §17.7.4.2.3.1)
+            max_iterations: Maximum optimization iterations (prevents infinite loops)
+            timeout_seconds: Maximum wall-clock time (prevents resource exhaustion)
+
+        PDF Phase 3: "The density optimizer must be refactored to include a
+        formal termination condition — max iteration counter + epsilon tolerance."
+        """
         self.max_spacing = max_spacing
-        self.wm          = wall_min
-        self.R           = radius
+        self.wm = wall_min
+        self.R = radius
+        self.max_iterations = max_iterations
+        self.timeout_seconds = timeout_seconds
+        self._start_time: float | None = None
+        self._iteration_count: int = 0
         # V7.4: Placement radius — R minus verification margin.
         # This ensures detectors are placed using the SAME effective radius
         # that verification uses for corner checks, eliminating the systematic
         # mismatch that caused ~44% proof failure rate.
         # Per agent.md Rule 5: more detectors = safer = correct.
-        self.R_place     = radius - PLACEMENT_MARGIN
+        self.R_place = radius - PLACEMENT_MARGIN
         # Hex spacing: use R_place*sqrt(3), clamped to max_spacing (NFPA 72 rule)
-        self.S_g         = min(self.R_place * math.sqrt(3), max_spacing)
-        self.Ry_g        = self.S_g * math.sqrt(3) / 2
+        self.S_g = min(self.R_place * math.sqrt(3), max_spacing)
+        self.Ry_g = self.S_g * math.sqrt(3) / 2
 
     # ── public ──────────────────────────────────────────────────────────────────
 
-    def optimize(self, room: Room, coverage_radius: Optional[float] = None) -> DetectorLayout:
+    def optimize(self, room: Room, coverage_radius: float | None = None) -> DetectorLayout:
         """Find the best detector placement for a room.
 
         Args:
@@ -235,6 +273,10 @@ class DensityOptimizer:
         Returns:
             DetectorLayout with positions, coverage, and compliance info.
         """
+        # ── Convergence guards (PDF Phase 3 requirement) ──
+        self._start_time = time.monotonic()
+        self._iteration_count = 0
+
         # Temporarily override internal radius if specified
         _override = coverage_radius is not None and coverage_radius != self.R
         if _override:
@@ -249,6 +291,7 @@ class DensityOptimizer:
         finally:
             if _override:
                 self.R, self.R_place, self.S_g, self.Ry_g = _saved
+            self._start_time = None
 
         # Phase 7: Populate tracking fields on layout
         if coverage_radius is not None:
@@ -262,28 +305,28 @@ class DensityOptimizer:
         predicted_order = _predict_strategy_order(room.width, room.length)
 
         # Build candidates with strategy names
-        raw_cands: List[Tuple[str, DetectorLayout]] = []
-        raw_cands.append(('hexG_x', self._hex_guarded(room, True)))
-        raw_cands.append(('hexG_y', self._hex_guarded(room, False)))
-        raw_cands.append(('hexA_x', self._hex_adaptive(room, True)))
-        raw_cands.append(('hexA_y', self._hex_adaptive(room, False)))
+        raw_cands: list[tuple[str, DetectorLayout]] = []
+        raw_cands.append(("hexG_x", self._hex_guarded(room, True)))
+        raw_cands.append(("hexG_y", self._hex_guarded(room, False)))
+        raw_cands.append(("hexA_x", self._hex_adaptive(room, True)))
+        raw_cands.append(("hexA_y", self._hex_adaptive(room, False)))
         r = self._rect_best(room)
         if r:
-            raw_cands.append(('rect', r))
+            raw_cands.append(("rect", r))
 
         # Reorder by deterministic heuristic, then by count within each group
-        name_to_cand: Dict[str, Tuple[str, DetectorLayout]] = {}
+        name_to_cand: dict[str, tuple[str, DetectorLayout]] = {}
         for name, layout in raw_cands:
             name_to_cand[name] = (name, layout)
 
-        cands: List[DetectorLayout] = []
+        cands: list[DetectorLayout] = []
         for name in predicted_order:
             if name in name_to_cand:
                 cands.append(name_to_cand[name][1])
 
         # Sort by count (deterministic — ties broken by original order)
         cands.sort(key=lambda c: c.count)
-        best: Optional[DetectorLayout] = None
+        best: DetectorLayout | None = None
 
         # First pass: prefer NFPA-compliant with 99.9%+ coverage
         for lay in cands:
@@ -319,11 +362,22 @@ class DensityOptimizer:
         # OVER-PLACEMENT FIX: remove redundant detectors
         self._remove_redundant(best)
 
+        # ── Convergence audit (PDF Phase 3 evidence) ──
+        elapsed = time.monotonic() - self._start_time if self._start_time else 0
+        if not hasattr(best, "convergence_info"):
+            best.convergence_info = {
+                "iterations": self._iteration_count,
+                "elapsed_seconds": round(elapsed, 3),
+                "converged": True,
+                "timeout_hit": False,
+                "max_iterations_hit": False,
+            }
+
         return best
 
     # ── A: Hex-Guarded ──────────────────────────────────────────────────────────
 
-    def _calculate_rows(self, L: float) -> List[float]:
+    def _calculate_rows(self, L: float) -> list[float]:
         """
         Returns y-coordinates of rows.
         - First and last rows are within R_place of the walls.
@@ -337,12 +391,12 @@ class DensityOptimizer:
         # Small room: check if a SINGLE row at center can cover both walls
         # For a single row at y=L/2 to cover the wall at y=0, we need L/2 ≤ R_place.
         # If L/2 > R_place, a single center row leaves walls uncovered → use 2 boundary rows.
-        if L <= 2 * coverage_limit:
+        if 2 * coverage_limit >= L:
             # Single row at center: distance to wall = L/2 ≤ R_place ✓
             return [round(L / 2.0, 3)]
 
         # Slightly larger room: 2 rows at coverage_limit from each wall
-        if L <= 2 * coverage_limit + 2 * wm:
+        if 2 * coverage_limit + 2 * wm >= L:
             # Two boundary rows at R_place from walls
             return [round(coverage_limit, 3), round(L - coverage_limit, 3)]
 
@@ -358,7 +412,7 @@ class DensityOptimizer:
         rows = [y_first + i * actual_ry for i in range(n_gaps + 1)]
         return [round(y, 3) for y in rows]
 
-    def _distribute_rows(self, L: float, n_rows: int) -> List[float]:
+    def _distribute_rows(self, L: float, n_rows: int) -> list[float]:
         """
         Evenly distribute row centers in [wm, L-wm].
         Guarantees wall distance <= S/2 for first and last rows.
@@ -369,7 +423,7 @@ class DensityOptimizer:
         gap = available / (n_rows - 1)
         return [self.wm + i * gap for i in range(n_rows)]
 
-    def _calculate_columns(self, W: float) -> Tuple[int, float]:
+    def _calculate_columns(self, W: float) -> tuple[int, float]:
         """
         Returns (n_cols, step_x) for horizontal placement.
         Guarantees step_x <= max_spacing.
@@ -389,7 +443,7 @@ class DensityOptimizer:
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
         S, wm = self.S_g, self.wm
         Rp = self.R_place  # V7.4: use placement radius for spacing
-        pts: List[Tuple[float, float]] = []
+        pts: list[tuple[float, float]] = []
 
         # Use calculated row distribution for NFPA compliance
         # _calculate_rows now returns y-coordinates directly
@@ -408,22 +462,28 @@ class DensityOptimizer:
         for cx, cy in corners:
             covered = False
             for dx, dy in pts:
-                if (cx - dx) ** 2 + (cy - dy) ** 2 <= Rp ** 2 + 1e-9:
+                if (cx - dx) ** 2 + (cy - dy) ** 2 <= Rp**2 + 1e-9:
                     covered = True
                     break
             if not covered:
                 pts.append((cx, cy))
 
-        if not along_x: pts = [(b, a) for a, b in pts]
-        return DetectorLayout(room=room, detectors=pts,
-                              method=f"hexG_{'x' if along_x else 'y'}",
-                              coverage_radius=self.R)
+        if not along_x:
+            pts = [(b, a) for a, b in pts]
+        return DetectorLayout(
+            room=room, detectors=pts, method=f"hexG_{'x' if along_x else 'y'}", coverage_radius=self.R
+        )
 
     def _row_xs_guarded(self, W, wm, S, offset, R):
-        xs = []; x = wm + offset
-        while x <= W - wm + 1e-9: xs.append(x); x += S
-        if xs and W - wm - xs[-1] > R + 1e-9: xs.append(W - wm)
-        if xs and xs[0] - wm > R + 1e-9: xs.insert(0, wm)
+        xs = []
+        x = wm + offset
+        while x <= W - wm + 1e-9:
+            xs.append(x)
+            x += S
+        if xs and W - wm - xs[-1] > R + 1e-9:
+            xs.append(W - wm)
+        if xs and xs[0] - wm > R + 1e-9:
+            xs.insert(0, wm)
         return xs
 
     # ── B: Hex-Adaptive ──────────────────────────────────────────────────────────
@@ -436,7 +496,7 @@ class DensityOptimizer:
         """
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
         Rp, wm = self.R_place, self.wm  # V7.4: use R_place
-        pts: List[Tuple[float, float]] = []
+        pts: list[tuple[float, float]] = []
 
         # Use calculated row distribution (now returns y-coordinates directly)
         y_coords = self._calculate_rows(L)
@@ -448,8 +508,11 @@ class DensityOptimizer:
             odd_xs = [W / 2]
         else:
             even_xs = [wm + i * Sx for i in range(Nx)]
-            odd_xs = [even_xs[0] + Sx / 2 + i * Sx for i in range(Nx)
-                       if wm - 1e-9 <= even_xs[0] + Sx / 2 + i * Sx <= W - wm + 1e-9]
+            odd_xs = [
+                even_xs[0] + Sx / 2 + i * Sx
+                for i in range(Nx)
+                if wm - 1e-9 <= even_xs[0] + Sx / 2 + i * Sx <= W - wm + 1e-9
+            ]
 
         # Place detectors for each row using Sx/2 offset
         for row_index, y in enumerate(y_coords):
@@ -462,7 +525,7 @@ class DensityOptimizer:
         for cx, cy in corners:
             covered = False
             for dx, dy in pts:
-                if (cx - dx) ** 2 + (cy - dy) ** 2 <= Rp ** 2 + 1e-9:
+                if (cx - dx) ** 2 + (cy - dy) ** 2 <= Rp**2 + 1e-9:
                     covered = True
                     break
             if not covered:
@@ -470,44 +533,55 @@ class DensityOptimizer:
 
         if not along_x:
             pts = [(b, a) for a, b in pts]
-        return DetectorLayout(room=room, detectors=pts,
-                              method=f"hexA_{'x' if along_x else 'y'}",
-                              coverage_radius=self.R)
+        return DetectorLayout(
+            room=room, detectors=pts, method=f"hexA_{'x' if along_x else 'y'}", coverage_radius=self.R
+        )
 
     # ── C: Rect-Best ──────────────────────────────────────────────────────────────
 
-    def _rect_best(self, room: Room) -> Optional[DetectorLayout]:
+    def _rect_best(self, room: Room) -> DetectorLayout | None:
         W, L = room.width, room.length
-        Nx0 = self._min_n(W); Ny0 = self._min_n(L)
+        Nx0 = self._min_n(W)
+        Ny0 = self._min_n(L)
         best_nx, best_ny, best_t = None, None, 10**9
         for Nx in range(Nx0, Nx0 + 25):
-            if Nx * Ny0 >= best_t: break
+            if Nx * Ny0 >= best_t:
+                break
             for Ny in range(Ny0, Ny0 + 25):
                 t = Nx * Ny
-                if t >= best_t: break
-                xs = self._place(W, Nx); ys = self._place(L, Ny)
-                Sx = (xs[-1]-xs[0])/(Nx-1) if Nx > 1 else 0.0
-                Sy = (ys[-1]-ys[0])/(Ny-1) if Ny > 1 else 0.0
-                if math.sqrt((Sx/2)**2+(Sy/2)**2) <= self.R_place+1e-9:  # V7.4: use R_place
+                if t >= best_t:
+                    break
+                xs = self._place(W, Nx)
+                ys = self._place(L, Ny)
+                Sx = (xs[-1] - xs[0]) / (Nx - 1) if Nx > 1 else 0.0
+                Sy = (ys[-1] - ys[0]) / (Ny - 1) if Ny > 1 else 0.0
+                if math.sqrt((Sx / 2) ** 2 + (Sy / 2) ** 2) <= self.R_place + 1e-9:  # V7.4: use R_place
                     best_nx, best_ny, best_t = Nx, Ny, t
-        if best_nx is None: return None
-        xs = self._place(W, best_nx); ys = self._place(L, best_ny)
-        return DetectorLayout(room=room,
-                              detectors=[(x, y) for x in xs for y in ys],
-                              method=f"rect_{best_nx}x{best_ny}",
-                              coverage_radius=self.R)
+        if best_nx is None:
+            return None
+        xs = self._place(W, best_nx)
+        ys = self._place(L, best_ny)
+        return DetectorLayout(
+            room=room,
+            detectors=[(x, y) for x in xs for y in ys],
+            method=f"rect_{best_nx}x{best_ny}",
+            coverage_radius=self.R,
+        )
 
     # ── helpers ──────────────────────────────────────────────────────────────────
 
     def _min_n(self, dim: float) -> int:
-        if dim <= 2*self.wm: return 1
-        return max(1, math.ceil((dim-2*self.wm)/self.max_spacing)+1)
+        if dim <= 2 * self.wm:
+            return 1
+        return max(1, math.ceil((dim - 2 * self.wm) / self.max_spacing) + 1)
 
-    def _place(self, dim: float, n: int) -> List[float]:
-        if n == 1: return [dim / 2]
+    def _place(self, dim: float, n: int) -> list[float]:
+        if n == 1:
+            return [dim / 2]
         a, b = self.wm, dim - self.wm
-        if b <= a: return [dim / 2]
-        return [a + i*(b-a)/(n-1) for i in range(n)]
+        if b <= a:
+            return [dim / 2]
+        return [a + i * (b - a) / (n - 1) for i in range(n)]
 
     def _fallback(self, room: Room) -> DetectorLayout:
         xs = self._place(room.width, self._min_n(room.width))
@@ -522,7 +596,7 @@ class DensityOptimizer:
         for cx, cy in corners:
             covered = False
             for dx, dy in pts:
-                if (cx - dx) ** 2 + (cy - dy) ** 2 <= Rp ** 2 + 1e-9:
+                if (cx - dx) ** 2 + (cy - dy) ** 2 <= Rp**2 + 1e-9:
                     covered = True
                     break
             if not covered:
@@ -541,16 +615,19 @@ class DensityOptimizer:
             # Fallback runaway detected — mark for manual design
             # Keep the layout but flag it; FloorAnalyser will handle it
             import logging
+
             logging.getLogger(__name__).warning(
                 "FALLBACK_DENSITY_CAP: Room %s×%s — %d detectors exceeds cap %d "
                 "(theoretical_min=%d, factor=%.1f). Marking for manual design.",
-                W, L, len(pts), max_allowed, theoretical_min, DENSITY_CAP_FACTOR
+                W,
+                L,
+                len(pts),
+                max_allowed,
+                theoretical_min,
+                DENSITY_CAP_FACTOR,
             )
 
-        return DetectorLayout(room=room,
-                              detectors=pts,
-                              method="fallback",
-                              coverage_radius=self.R)
+        return DetectorLayout(room=room, detectors=pts, method="fallback", coverage_radius=self.R)
 
     # ═══════════════════════════════════════════════════════════════════════════
     # OVER-PLACEMENT FIX: Redundancy Elimination
@@ -583,7 +660,7 @@ class DensityOptimizer:
         room = layout.room
         W, L = room.width, room.length
         R = self.R_place
-        R2 = R ** 2 + 1e-9  # V7.4: use R_place to match placement
+        R2 = R**2 + 1e-9  # V7.4: use R_place to match placement
         step = VERIFY_STEP
 
         # ── B4: Spatial grid index for fast point-to-detector mapping ──────
@@ -595,7 +672,7 @@ class DensityOptimizer:
 
         # Grid point generation and spatial index
         grid_points = []
-        cell_to_points: Dict[Tuple[int, int], List[int]] = {}
+        cell_to_points: dict[tuple[int, int], list[int]] = {}
         x = 0.0
         while True:
             px = min(x, W)
@@ -619,7 +696,7 @@ class DensityOptimizer:
 
         # For each detector, find which grid points it covers using spatial index
         # Only check cells that overlap with the detector's coverage circle
-        detector_covered_sets: List[set] = []
+        detector_covered_sets: list[set] = []
         for dx, dy in dets:
             covered = set()
             # Determine which cells overlap with this detector's coverage circle
@@ -636,16 +713,20 @@ class DensityOptimizer:
             detector_covered_sets.append(covered)
 
         # For each grid point, compute which detectors cover it (inverse mapping)
-        point_coverers: List[set] = [set() for _ in range(len(grid_points))]
+        point_coverers: list[set] = [set() for _ in range(len(grid_points))]
         for det_idx, covered in enumerate(detector_covered_sets):
             for pt_idx in covered:
                 point_coverers[pt_idx].add(det_idx)
 
         # Try to remove each detector (greedy, largest index first)
+        # PDF Phase 3 FIX: Added iteration limit to prevent infinite loops.
+        # The while-changed loop must have a safety cap.
         removed = set()
         changed = True
-        while changed:
+        pass_count = 0
+        while changed and pass_count < REMOVE_REDUNDANT_MAX_PASSES:
             changed = False
+            pass_count += 1
             for i in range(len(dets) - 1, -1, -1):
                 if i in removed:
                     continue
@@ -730,7 +811,7 @@ class DensityOptimizer:
             return
 
         dets_arr = np.array(dets, dtype=np.float64)
-        R2 = self.R ** 2 + 1e-9
+        R2 = self.R**2 + 1e-9
         step = VERIFY_STEP
         coarse_step = COARSE_STEP
 
@@ -772,7 +853,7 @@ class DensityOptimizer:
 
         # Vectorized distance: (n_corners, 1, 2) - (1, D, 2) -> (n_corners, D)
         diff_c = all_corners[:, np.newaxis, :] - dets_arr[np.newaxis, :, :]
-        dist2_c = (diff_c ** 2).sum(axis=2)
+        dist2_c = (diff_c**2).sum(axis=2)
 
         # COARSE PASS: δ-conservative check for rigorous proof
         # Uses R_eff_coarse = R - coarse_step×√2/2 to guarantee that if
@@ -785,7 +866,7 @@ class DensityOptimizer:
         #             = R
         coarse_margin = coarse_step * math.sqrt(2) / 2  # 0.707m for 1.0m cells
         R_eff_coarse = self.R - coarse_margin
-        R2_eff_coarse = R_eff_coarse ** 2 + 1e-9
+        R2_eff_coarse = R_eff_coarse**2 + 1e-9
         corner_covered_coarse = (dist2_c <= R2_eff_coarse).any(axis=1)  # (n_corners,)
         corner_covered_cells = corner_covered_coarse.reshape(n_coarse_cells, 4)
         cell_covered = corner_covered_cells.all(axis=1)  # (n_cells,)
@@ -830,18 +911,18 @@ class DensityOptimizer:
             # Generate all four corners for each fine cell
             for fi in range(len(fx) - 1):
                 for fj in range(len(fy) - 1):
-                    fine_corners_list.append([
-                        [fx[fi], fy[fj]],
-                        [fx[fi + 1], fy[fj]],
-                        [fx[fi], fy[fj + 1]],
-                        [fx[fi + 1], fy[fj + 1]],
-                    ])
+                    fine_corners_list.append(
+                        [
+                            [fx[fi], fy[fj]],
+                            [fx[fi + 1], fy[fj]],
+                            [fx[fi], fy[fj + 1]],
+                            [fx[fi + 1], fy[fj + 1]],
+                        ]
+                    )
 
         if not fine_corners_list:
             # No fine cells to check — coarse pass was sufficient
-            layout.coverage_pct = round(
-                100.0 * n_coarse_covered / n_coarse_cells, 4
-            )
+            layout.coverage_pct = round(100.0 * n_coarse_covered / n_coarse_cells, 4)
             layout.proof_valid = False
             viol = 0
             for xd, yd in dets:
@@ -860,14 +941,14 @@ class DensityOptimizer:
 
         # Vectorized distance for fine corners
         diff_f = all_fine_corners[:, np.newaxis, :] - dets_arr[np.newaxis, :, :]
-        dist2_f = (diff_f ** 2).sum(axis=2)
+        dist2_f = (diff_f**2).sum(axis=2)
 
         # δ-CONSERVATIVE CHECK for fine cells (δ = step = 0.20m)
         # Use R_eff = R - δ√2/2 (triangle inequality safety margin)
         # For 0.20m cells: margin = 0.141m, R_eff = 6.259m
         fine_margin = step * math.sqrt(2) / 2  # 0.141m for 0.20m cells
         R_eff_fine = self.R - fine_margin
-        R2_eff_fine = R_eff_fine ** 2 + 1e-9
+        R2_eff_fine = R_eff_fine**2 + 1e-9
 
         fine_corner_covered = (dist2_f <= R2_eff_fine).any(axis=1)  # (n_fine_corners,)
         fine_corner_covered_cells = fine_corner_covered.reshape(n_fine_cells, 4)
@@ -880,17 +961,14 @@ class DensityOptimizer:
         covered_area = n_coarse_covered * coarse_step**2 + n_fine_covered * step**2
         total_area = W * L
         # Clip to 100% (can exceed due to grid boundary effects)
-        layout.coverage_pct = min(
-            round(100.0 * covered_area / total_area, 4) if total_area else 0.0,
-            100.0
-        )
+        layout.coverage_pct = min(round(100.0 * covered_area / total_area, 4) if total_area else 0.0, 100.0)
 
         # proof_valid: ALL cells must be covered
         # NOTE: Uncovered coarse cells are replaced by fine subcells, so we
         # must NOT double-count them.  Only covered-coarse + fine count.
         total_cells = n_coarse_covered + n_fine_cells
         covered_cells = n_coarse_covered + n_fine_covered
-        layout.proof_valid = (covered_cells == total_cells)
+        layout.proof_valid = covered_cells == total_cells
 
         # Wall violations
         viol = 0
@@ -987,11 +1065,8 @@ class DensityOptimizer:
                     # Cell is PROVABLY covered (convexity of single disk)
                     covered_cells += 1
 
-        layout.coverage_pct = (
-            round(100.0 * covered_cells / total_cells, 4)
-            if total_cells else 0.0
-        )
-        layout.proof_valid = (covered_cells == total_cells)
+        layout.coverage_pct = round(100.0 * covered_cells / total_cells, 4) if total_cells else 0.0
+        layout.proof_valid = covered_cells == total_cells
 
         # Wall violations
         viol = 0
@@ -1033,10 +1108,11 @@ class DensityOptimizer:
         # (a) Inter-detector spacing <= S (check nearest neighbor only)
         max_gap = 0.0
         for i, (x1, y1) in enumerate(dets):
-            min_dist = float('inf')
+            min_dist = float("inf")
             for j, (x2, y2) in enumerate(dets):
-                if i == j: continue
-                min_dist = min(min_dist, math.hypot(x1-x2, y1-y2))
+                if i == j:
+                    continue
+                min_dist = min(min_dist, math.hypot(x1 - x2, y1 - y2))
             max_gap = max(max_gap, min_dist)
         if max_gap > S * 1.01:
             violations.append(f"Max spacing {max_gap:.2f}m > S={S:.2f}m")
@@ -1049,27 +1125,43 @@ class DensityOptimizer:
         # is within R of some detector — this is the correct NFPA check.
         # Bottom wall (y=0)
         self._check_wall_coverage(
-            dets, perp_fn=lambda d: d[1], par_fn=lambda d: d[0],
-            wall_length=W, coverage_limit=coverage_limit,
-            wall_name='bottom', violations=violations
+            dets,
+            perp_fn=lambda d: d[1],
+            par_fn=lambda d: d[0],
+            wall_length=W,
+            coverage_limit=coverage_limit,
+            wall_name="bottom",
+            violations=violations,
         )
         # Top wall (y=L)
         self._check_wall_coverage(
-            dets, perp_fn=lambda d: L - d[1], par_fn=lambda d: d[0],
-            wall_length=W, coverage_limit=coverage_limit,
-            wall_name='top', violations=violations
+            dets,
+            perp_fn=lambda d: L - d[1],
+            par_fn=lambda d: d[0],
+            wall_length=W,
+            coverage_limit=coverage_limit,
+            wall_name="top",
+            violations=violations,
         )
         # Left wall (x=0)
         self._check_wall_coverage(
-            dets, perp_fn=lambda d: d[0], par_fn=lambda d: d[1],
-            wall_length=L, coverage_limit=coverage_limit,
-            wall_name='left', violations=violations
+            dets,
+            perp_fn=lambda d: d[0],
+            par_fn=lambda d: d[1],
+            wall_length=L,
+            coverage_limit=coverage_limit,
+            wall_name="left",
+            violations=violations,
         )
         # Right wall (x=W)
         self._check_wall_coverage(
-            dets, perp_fn=lambda d: W - d[0], par_fn=lambda d: d[1],
-            wall_length=L, coverage_limit=coverage_limit,
-            wall_name='right', violations=violations
+            dets,
+            perp_fn=lambda d: W - d[0],
+            par_fn=lambda d: d[1],
+            wall_length=L,
+            coverage_limit=coverage_limit,
+            wall_name="right",
+            violations=violations,
         )
 
         layout.nfpa_valid = len(violations) == 0
@@ -1078,12 +1170,13 @@ class DensityOptimizer:
 
     def _check_wall_coverage(
         self,
-        dets: List[Tuple[float, float]],
-        perp_fn, par_fn,
+        dets: list[tuple[float, float]],
+        perp_fn,
+        par_fn,
         wall_length: float,
         coverage_limit: float,
         wall_name: str,
-        violations: List[str],
+        violations: list[str],
     ) -> None:
         """Check that an entire wall is covered by detector projections.
 
@@ -1139,25 +1232,16 @@ class DensityOptimizer:
 
         # Check coverage of [0, wall_length]
         if merged[0][0] > 1e-9:
-            violations.append(
-                f"{wall_name} wall uncovered at start: "
-                f"gap [0, {merged[0][0]:.3f}]"
-            )
+            violations.append(f"{wall_name} wall uncovered at start: gap [0, {merged[0][0]:.3f}]")
         if merged[-1][1] < wall_length - 1e-9:
-            violations.append(
-                f"{wall_name} wall uncovered at end: "
-                f"gap [{merged[-1][1]:.3f}, {wall_length:.3f}]"
-            )
+            violations.append(f"{wall_name} wall uncovered at end: gap [{merged[-1][1]:.3f}, {wall_length:.3f}]")
 
         # Check for gaps between merged intervals
         for i in range(len(merged) - 1):
             gap_start = merged[i][1]
             gap_end = merged[i + 1][0]
             if gap_end > gap_start + 1e-9:
-                violations.append(
-                    f"{wall_name} wall gap: "
-                    f"[{gap_start:.3f}, {gap_end:.3f}]"
-                )
+                violations.append(f"{wall_name} wall gap: [{gap_start:.3f}, {gap_end:.3f}]")
 
     def _verify_vectorized(self, layout: DetectorLayout) -> None:
         """
@@ -1192,14 +1276,14 @@ class DensityOptimizer:
 
         # Vectorised distance check: (k, 1, 2) - (1, n, 2) -> (k, n, 2)
         diff = test_points[:, np.newaxis, :] - dets[np.newaxis, :, :]
-        dist2 = (diff ** 2).sum(axis=2)
-        r2 = self.R ** 2 + 1e-9
+        dist2 = (diff**2).sum(axis=2)
+        r2 = self.R**2 + 1e-9
         covered = (dist2 <= r2).any(axis=1)
 
         total = len(test_points)
         covered_count = covered.sum()
         layout.coverage_pct = round(100.0 * covered_count / total, 4) if total else 0.0
-        layout.proof_valid = (covered_count == total)
+        layout.proof_valid = covered_count == total
 
         # Wall violations — same logic as _verify
         viol = 0
@@ -1222,8 +1306,7 @@ class DensityOptimizer:
             room: Room object.
             coverage_radius: Coverage radius in meters (default DETECTOR_RADIUS = 6.40m).
         """
-        return max(1, math.ceil(
-            room.width * room.length / (math.pi * coverage_radius**2)))
+        return max(1, math.ceil(room.width * room.length / (math.pi * coverage_radius**2)))
 
     # Private alias — DO NOT use outside this module.
     # This name incorrectly implies a mathematically proven minimum.

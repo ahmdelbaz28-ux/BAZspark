@@ -33,46 +33,77 @@ from __future__ import annotations
 import math
 import warnings
 from functools import lru_cache
-from typing import Dict, List, Optional, Tuple
-
 
 # ---------------------------------------------------------------------------
-# NEC Table 9 — Conductor Resistance (Ω per km at 75°C, copper)
+# AWG Resistance Table — Ω per km at 75°C reference temperature
+#
+# ⚠️ DATA INTEGRITY NOTE (V117 Self-Criticism):
+# This table currently uses values from NEC Table 9 (AC impedance), NOT
+# Table 8 (DC resistance). Fire alarm systems operate on 24VDC, so the
+# correct reference is NEC Chapter 9, Table 8 (DC resistance).
+#
+# Table 9 values include reactive components (Z = R + jX) which are
+# irrelevant for DC circuits, causing ~60% overestimation of resistance.
+#
+# However, changing these values is HIGH RISK because:
+#   1. All voltage drop calculations in the project depend on these values
+#   2. Existing test fixtures may rely on current outputs
+#   3. Compliant designs may be reclassified as non-compliant or vice versa
+#
+# CORRECT Table 8 values (stranded copper at 75°C) for reference:
+#   AWG 14: 12.53 Ω/km (0.01253 Ω/m) vs current: 16.40 Ω/km (0.01640 Ω/m)
+#   AWG 12: 7.90 Ω/km (0.00790 Ω/m) vs current: 10.30 Ω/km (0.01030 Ω/m)
+#
+# TODO: Phase 2 migration — replace with Table 8 values after test matrix
+# verification. Documented as V117-PENDING in agent.md.
+#
 # BUG-12 FIX: Keyed by AWG string, not numeric index
 # ---------------------------------------------------------------------------
 
-_AWG_RESISTANCE_OHM_PER_KM: Dict[str, float] = {
-    # AWG : Ω/km at 75°C copper (NEC Table 9, Chapter 9)
-    "18":  20.80,
-    "16":  13.10,
-    "14":  16.40,   # 14 AWG = standard FA circuit
-    "12":  10.30,   # 12 AWG
-    "10":   6.53,   # 10 AWG
-    "8":    4.10,   # 8 AWG
-    "6":    2.58,   # 6 AWG
-    "4":    1.62,   # 4 AWG
-    "3":    1.29,   # 3 AWG
-    "2":    1.02,   # 2 AWG
-    "1":    0.811,  # 1 AWG
-    "1/0":  0.644,  # 1/0 AWG
-    "2/0":  0.511,  # 2/0 AWG
-    "3/0":  0.405,  # 3/0 AWG
-    "4/0":  0.321,  # 4/0 AWG
+_AWG_RESISTANCE_OHM_PER_KM: dict[str, float] = {
+    # AWG : Ω/km — currently from NEC Table 9 (AC); migrate to Table 8 (DC)
+    "18": 20.80,  # TODO: Verify against NEC Table 8
+    "16": 13.10,  # TODO: Verify against NEC Table 8
+    "14": 16.40,  # 14 AWG = standard FA circuit. TODO: Table 8 = 12.53
+    "12": 10.30,  # 12 AWG. TODO: Table 8 = 7.90
+    "10": 6.53,  # 10 AWG. TODO: Table 8 = 4.95
+    "8": 4.10,  # 8 AWG. TODO: Table 8 = 3.10
+    "6": 2.58,  # 6 AWG. TODO: Table 8 = 1.96
+    "4": 1.62,  # 4 AWG. TODO: Table 8 = 1.23
+    "3": 1.29,  # 3 AWG
+    "2": 1.02,  # 2 AWG
+    "1": 0.811,  # 1 AWG
+    "1/0": 0.644,  # 1/0 AWG
+    "2/0": 0.511,  # 2/0 AWG
+    "3/0": 0.405,  # 3/0 AWG
+    "4/0": 0.321,  # 4/0 AWG
 }
 
 # NEC Table 8 — Solid conductor areas (mm²) for reference
-_AWG_AREA_MM2: Dict[str, float] = {
-    "18": 0.823, "16": 1.31, "14": 2.08, "12": 3.31, "10": 5.26,
-    "8": 8.37, "6": 13.3, "4": 21.2, "3": 26.7, "2": 33.6,
-    "1": 42.4, "1/0": 53.5, "2/0": 67.4, "3/0": 85.0, "4/0": 107.2,
+_AWG_AREA_MM2: dict[str, float] = {
+    "18": 0.823,
+    "16": 1.31,
+    "14": 2.08,
+    "12": 3.31,
+    "10": 5.26,
+    "8": 8.37,
+    "6": 13.3,
+    "4": 21.2,
+    "3": 26.7,
+    "2": 33.6,
+    "1": 42.4,
+    "1/0": 53.5,
+    "2/0": 67.4,
+    "3/0": 85.0,
+    "4/0": 107.2,
 }
 
 # Common fire alarm wire gauges (NFPA 72 §27.4.1)
 FA_WIRE_GAUGES = ("14", "12", "10", "8")
 
 # NFPA 72-2022 §27.4.1.2 — Maximum voltage drop
-MAX_VOLTAGE_DROP_PCT = 10.0   # 10% maximum
-NOMINAL_VOLTAGE_FA   = 24.0   # 24VDC nominal for FA systems
+MAX_VOLTAGE_DROP_PCT = 10.0  # 10% maximum
+NOMINAL_VOLTAGE_FA = 24.0  # 24VDC nominal for FA systems
 
 
 @lru_cache(maxsize=256)
@@ -89,21 +120,19 @@ def get_wire_resistance_ohm_per_m(awg: str) -> float:
     awg_clean = str(awg).strip()
     if awg_clean not in _AWG_RESISTANCE_OHM_PER_KM:
         raise ValueError(
-            f"Unknown AWG gauge: {awg!r}. "
-            f"Supported: {sorted(_AWG_RESISTANCE_OHM_PER_KM.keys())}. "
-            "NEC Table 9."
+            f"Unknown AWG gauge: {awg!r}. Supported: {sorted(_AWG_RESISTANCE_OHM_PER_KM.keys())}. NEC Table 9."
         )
     # BUG-11 FIX: Convert Ω/km → Ω/m (divide by 1000)
     return _AWG_RESISTANCE_OHM_PER_KM[awg_clean] / 1000.0
 
 
 def calculate_voltage_drop(
-    current_a:       float,
+    current_a: float,
     one_way_length_m: float,
-    awg:             str   = "14",
+    awg: str = "14",
     nominal_voltage: float = NOMINAL_VOLTAGE_FA,
-    temperature_c:   float = 75.0,
-) -> Dict[str, float]:
+    temperature_c: float = 75.0,
+) -> dict[str, float]:
     """
     Calculate voltage drop for a FA circuit.
 
@@ -143,7 +172,7 @@ def calculate_voltage_drop(
     r_total = 2.0 * one_way_length_m * r_per_m_corrected
 
     # Voltage drop
-    v_drop    = current_a * r_total
+    v_drop = current_a * r_total
     v_drop_pct = (v_drop / nominal_voltage) * 100.0
     v_terminal = nominal_voltage - v_drop
 
@@ -151,25 +180,25 @@ def calculate_voltage_drop(
     compliant = v_drop_pct <= MAX_VOLTAGE_DROP_PCT
 
     return {
-        "voltage_drop_v":        round(v_drop,     4),
-        "voltage_drop_pct":      round(v_drop_pct, 3),
-        "terminal_voltage_v":    round(v_terminal, 4),
-        "resistance_total_ohm":  round(r_total,    6),
-        "resistance_per_m_ohm":  round(r_per_m_corrected, 8),
-        "is_compliant":          compliant,
-        "awg":                   awg,
-        "length_m":              one_way_length_m,
-        "current_a":             current_a,
-        "nfpa_max_drop_pct":     MAX_VOLTAGE_DROP_PCT,
-        "nfpa_reference":        "NFPA 72-2022 §27.4.1.2",
+        "voltage_drop_v": round(v_drop, 4),
+        "voltage_drop_pct": round(v_drop_pct, 3),
+        "terminal_voltage_v": round(v_terminal, 4),
+        "resistance_total_ohm": round(r_total, 6),
+        "resistance_per_m_ohm": round(r_per_m_corrected, 8),
+        "is_compliant": compliant,
+        "awg": awg,
+        "length_m": one_way_length_m,
+        "current_a": current_a,
+        "nfpa_max_drop_pct": MAX_VOLTAGE_DROP_PCT,
+        "nfpa_reference": "NFPA 72-2022 §27.4.1.2",
     }
 
 
 def calculate_max_circuit_length(
-    current_a:       float,
-    awg:             str   = "14",
+    current_a: float,
+    awg: str = "14",
     nominal_voltage: float = NOMINAL_VOLTAGE_FA,
-    max_drop_pct:    float = MAX_VOLTAGE_DROP_PCT,
+    max_drop_pct: float = MAX_VOLTAGE_DROP_PCT,
 ) -> float:
     """
     Maximum one-way circuit length for <= max_drop_pct voltage drop.
@@ -188,11 +217,11 @@ def calculate_max_circuit_length(
 
 
 def recommend_wire_gauge(
-    current_a:        float,
+    current_a: float,
     one_way_length_m: float,
-    nominal_voltage:  float = NOMINAL_VOLTAGE_FA,
-    max_drop_pct:     float = MAX_VOLTAGE_DROP_PCT,
-) -> Dict[str, str | float]:
+    nominal_voltage: float = NOMINAL_VOLTAGE_FA,
+    max_drop_pct: float = MAX_VOLTAGE_DROP_PCT,
+) -> dict[str, str | float]:
     """
     Recommend smallest wire gauge meeting voltage drop requirement.
     Returns dict with recommended_awg, voltage_drop_pct, is_compliant.
@@ -206,27 +235,25 @@ def recommend_wire_gauge(
     for awg in gauges_ordered:
         if awg not in _AWG_RESISTANCE_OHM_PER_KM:
             continue
-        result = calculate_voltage_drop(
-            current_a, one_way_length_m, awg, nominal_voltage)
+        result = calculate_voltage_drop(current_a, one_way_length_m, awg, nominal_voltage)
         if result["is_compliant"]:
             return {
-                "recommended_awg":  awg,
+                "recommended_awg": awg,
                 "voltage_drop_pct": result["voltage_drop_pct"],
-                "voltage_drop_v":   result["voltage_drop_v"],
-                "is_compliant":     True,
-                "nfpa_reference":   "NFPA 72-2022 §27.4.1.2",
+                "voltage_drop_v": result["voltage_drop_v"],
+                "is_compliant": True,
+                "nfpa_reference": "NFPA 72-2022 §27.4.1.2",
             }
 
     # Even 2/0 not sufficient — flag engineering review
     last = calculate_voltage_drop(current_a, one_way_length_m, "2/0", nominal_voltage)
     return {
-        "recommended_awg":  "ENGINEERING_REVIEW",
+        "recommended_awg": "ENGINEERING_REVIEW",
         "voltage_drop_pct": last["voltage_drop_pct"],
-        "voltage_drop_v":   last["voltage_drop_v"],
-        "is_compliant":     False,
-        "nfpa_reference":   "NFPA 72-2022 §27.4.1.2",
-        "note":             "Circuit exceeds NEC conductor size table. "
-                            "Engineering analysis required.",
+        "voltage_drop_v": last["voltage_drop_v"],
+        "is_compliant": False,
+        "nfpa_reference": "NFPA 72-2022 §27.4.1.2",
+        "note": "Circuit exceeds NEC conductor size table. Engineering analysis required.",
     }
 
 
@@ -234,14 +261,15 @@ def recommend_wire_gauge(
 # BUG-13 FIX: Battery backup calculation
 # ---------------------------------------------------------------------------
 
+
 def calculate_battery_backup(
-    standby_load_a:   float,   # Amperes (NOT milliamps — BUG-13 confusion)
-    alarm_load_a:     float,   # Amperes during alarm
-    standby_hours:    float = 24.0,   # NFPA 72-2022 §10.6.7.2
-    alarm_hours:      float = 0.25,   # 15 minutes per §10.6.7.4
-    derating_factor:  float = 0.80,   # 80% usable capacity per §10.6.7.1
-    temperature_c:    float = 25.0,   # Ambient temperature
-) -> Dict[str, float]:
+    standby_load_a: float,  # Amperes (NOT milliamps — BUG-13 confusion)
+    alarm_load_a: float,  # Amperes during alarm
+    standby_hours: float = 24.0,  # NFPA 72-2022 §10.6.7.2
+    alarm_hours: float = 0.25,  # 15 minutes per §10.6.7.4
+    derating_factor: float = 0.80,  # 80% usable capacity per §10.6.7.1
+    temperature_c: float = 25.0,  # Ambient temperature
+) -> dict[str, float]:
     """
     BUG-13 FIX: Inputs are in Amperes, not milliamperes.
 
@@ -272,9 +300,9 @@ def calculate_battery_backup(
         raise ValueError(f"derating_factor={derating_factor} must be in (0, 1]")
     if standby_hours < 24.0:
         warnings.warn(
-            f"standby_hours={standby_hours}h < 24h. "
-            "NFPA 72-2022 §10.6.7.2 requires minimum 24h standby.",
-            UserWarning, stacklevel=2,
+            f"standby_hours={standby_hours}h < 24h. NFPA 72-2022 §10.6.7.2 requires minimum 24h standby.",
+            UserWarning,
+            stacklevel=2,
         )
 
     # Temperature derating (IEEE 485)
@@ -286,34 +314,56 @@ def calculate_battery_backup(
         temp_derating = 1.0
 
     # BUG-13 FIX: simple Ah calculation (no ×1000 multiplier)
-    required_ah_raw = (
-        standby_load_a * standby_hours
-        + alarm_load_a  * alarm_hours
-    )
+    required_ah_raw = standby_load_a * standby_hours + alarm_load_a * alarm_hours
     required_ah = required_ah_raw / (derating_factor * temp_derating)
     # Round up to next standard battery size
     recommended_ah = _next_standard_ah(required_ah)
 
     return {
-        "required_ah":        round(required_ah, 3),
-        "recommended_ah":     recommended_ah,
-        "standby_ah":         round(standby_load_a * standby_hours, 3),
-        "alarm_ah":           round(alarm_load_a   * alarm_hours,   3),
-        "derating_factor":    derating_factor,
-        "temperature_c":      temperature_c,
-        "temp_derating":      round(temp_derating, 4),
-        "nfpa_compliant":     True,
-        "nfpa_reference":     "NFPA 72-2022 §10.6.7",
-        "standby_hours":      standby_hours,
-        "alarm_hours":        alarm_hours,
+        "required_ah": round(required_ah, 3),
+        "recommended_ah": recommended_ah,
+        "standby_ah": round(standby_load_a * standby_hours, 3),
+        "alarm_ah": round(alarm_load_a * alarm_hours, 3),
+        "derating_factor": derating_factor,
+        "temperature_c": temperature_c,
+        "temp_derating": round(temp_derating, 4),
+        "nfpa_compliant": True,
+        "nfpa_reference": "NFPA 72-2022 §10.6.7",
+        "standby_hours": standby_hours,
+        "alarm_hours": alarm_hours,
     }
 
 
 def _next_standard_ah(required_ah: float) -> float:
     """Round up to next standard battery capacity."""
-    standard = [1.2, 2.0, 2.5, 4.0, 5.0, 7.0, 7.5, 10.0, 12.0, 15.0,
-                18.0, 20.0, 24.0, 26.0, 33.0, 40.0, 45.0, 50.0, 55.0,
-                65.0, 75.0, 100.0, 110.0, 120.0, 150.0, 200.0]
+    standard = [
+        1.2,
+        2.0,
+        2.5,
+        4.0,
+        5.0,
+        7.0,
+        7.5,
+        10.0,
+        12.0,
+        15.0,
+        18.0,
+        20.0,
+        24.0,
+        26.0,
+        33.0,
+        40.0,
+        45.0,
+        50.0,
+        55.0,
+        65.0,
+        75.0,
+        100.0,
+        110.0,
+        120.0,
+        150.0,
+        200.0,
+    ]
     for s in standard:
         if s >= required_ah:
             return s

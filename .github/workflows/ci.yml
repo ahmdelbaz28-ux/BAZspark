@@ -49,8 +49,8 @@ jobs:
         run: ruff format --check fireai/
 
       - name: Bandit security scan
-        run: bandit -r fireai/ -f json -o reports/bandit.json || true
-        continue-on-error: true
+        run: bandit -r fireai/ -f json -o reports/bandit.json
+        # Bandit findings must be reviewed. Do NOT use continue-on-error.
 
   # ── Gate 2: Runtime Validation ──────────────────────────────────────────
   test-suite:
@@ -155,28 +155,30 @@ jobs:
       - name: Install pip-audit
         run: pip install pip-audit
 
-      - name: Audit dependencies
+      - name: Audit dependencies (JSON report)
         run: pip-audit -r requirements.txt --format json -o reports/pip_audit.json || true
-        continue-on-error: true
+        continue-on-error: true  # JSON report is informational; strict check above gates
 
-      - name: Check for known vulnerabilities
-        run: pip-audit -r requirements.txt --desc || true
-        continue-on-error: true
+      - name: Audit dependencies (strict)
+        run: pip-audit -r requirements.txt --desc
+        # V117 FIX: Removed continue-on-error. Dependency vulnerabilities
+        # MUST block the build for a safety-critical system.
 
   # ── Deployment Gate ────────────────────────────────────────────────────
   deploy-gate:
     name: "Deployment Gate"
     runs-on: ubuntu-latest
-    needs: [static-analysis, test-suite, property-tests, regression-check]
+    needs: [static-analysis, test-suite, property-tests, regression-check, dependency-audit]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: All gates passed
         run: |
-          echo "✅ All validation gates passed."
-          echo "  - Gate 1: Static Analysis ✅"
-          echo "  - Gate 2: Test Suite ✅"
-          echo "  - Gate 3: Property-Based Tests ✅"
-          echo "  - Gate 4: Regression Check ✅"
-          echo "  - Gate 5: Dependency Audit ✅"
+          echo "All validation gates passed."
+          echo "  - Gate 1: Static Analysis"
+          echo "  - Gate 2: Test Suite"
+          echo "  - Gate 3: Property-Based Tests"
+          echo "  - Gate 4: Regression Check"
+          echo "  - Gate 5: Dependency Audit"
           echo ""
           echo "Deployment authorized for main branch."
+          echo "Note: dependency-audit gate must pass (strict mode) for deployment."

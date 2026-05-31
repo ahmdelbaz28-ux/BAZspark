@@ -28,10 +28,10 @@ Standards Referenced:
 # NFPA 72 — DETECTOR SPACING & COVERAGE (Chapter 17)
 # ============================================================================
 
-# Coverage radius factor: R = 0.7 × S
+# Coverage radius factor: R = 0.7 x S
 # NFPA 72-2022 §17.7.4.2.3.1
 COVERAGE_FACTOR_FLAT_CEILING: float = 0.7
-"""Coverage radius factor for flat ceilings. R = 0.7 × S where S is the
+"""Coverage radius factor for flat ceilings. R = 0.7 x S where S is the
 listed spacing. Per NFPA 72 §17.7.4.2.3.1, when detectors are placed on
 a square grid at spacing S, the circular coverage radius R = 0.7S ensures
 all points (including grid corners) are covered."""
@@ -41,7 +41,7 @@ all points (including grid corners) are covered."""
 SMOKE_MAX_SPACING_M: float = 9.10
 """Maximum listed spacing for smoke detectors on smooth flat ceilings
 ≤ 3.0m (10 ft). Per NFPA 72 Table 17.6.3.1.1. At h=3.0m, S=9.1m
-(30 ft), producing coverage radius R = 0.7 × 9.1 = 6.37m."""
+(30 ft), producing coverage radius R = 0.7 x 9.1 = 6.37m."""
 
 # Maximum listed spacing for heat detectors on flat ceilings ≤ 3.0m
 # NFPA 72-2022 §17.6.2.1, Table 17.6.3.5.1
@@ -51,9 +51,9 @@ HEAT_MAX_SPACING_M: float = 6.10
 (20 ft). Heat detectors use square-grid (Chebyshev) coverage geometry."""
 
 # Coverage radius at ceiling height ≤ 3.0m (smoke)
-# Derived: R = COVERAGE_FACTOR_FLAT_CEILING × SMOKE_MAX_SPACING_M
+# Derived: R = COVERAGE_FACTOR_FLAT_CEILING x SMOKE_MAX_SPACING_M
 SMOKE_COVERAGE_RADIUS_M: float = round(COVERAGE_FACTOR_FLAT_CEILING * SMOKE_MAX_SPACING_M, 2)  # 6.37
-"""Coverage radius for smoke detectors at h≤3.0m. R = 0.7 × 9.1 = 6.37m."""
+"""Coverage radius for smoke detectors at h≤3.0m. R = 0.7 x 9.1 = 6.37m."""
 
 # Wall minimum distance — dead air space
 # NFPA 72-2022 §17.6.3.1.1
@@ -65,7 +65,7 @@ smoke may not reach the detector due to boundary layer effects."""
 # Maximum wall distance = S/2
 # NFPA 72-2022 §17.6.3.1.1
 SMOKE_MAX_WALL_DISTANCE_M: float = SMOKE_MAX_SPACING_M / 2.0  # 4.55
-HEAT_MAX_WALL_DISTANCE_M: float = HEAT_MAX_SPACING_M / 2.0     # 3.05
+HEAT_MAX_WALL_DISTANCE_M: float = HEAT_MAX_SPACING_M / 2.0  # 3.05
 
 # Ridge zone buffer for sloped ceilings
 # NFPA 72-2022 §17.6.3.4
@@ -91,7 +91,7 @@ be reduced within each beam pocket."""
 # NFPA 72-2022 §17.7.4.2.3.1 (grid verification methodology)
 VERIFY_STEP_M: float = 0.20
 """Step size for verification grid in coverage checking. Per V26 fix,
-PLACEMENT_MARGIN = VERIFY_STEP × √2/2 ≈ 0.141m ensures alignment
+PLACEMENT_MARGIN = VERIFY_STEP x sqrt2/2 ≈ 0.141m ensures alignment
 between placement and verification radii."""
 
 # Placement margin derived from verification step
@@ -102,19 +102,19 @@ PLACEMENT_MARGIN_M: float = VERIFY_STEP_M * (2**0.5) / 2.0  # ≈ 0.141
 # NFPA 72-2022 Table 17.6.3.1.1
 NFPA72_HEIGHT_SPACING_TABLE = [
     # (ceiling_height_max_m, smoke_adjusted_spacing_m, heat_adjusted_spacing_m)
-    (3.0,   9.10,  6.10),   # Listed spacings at h≤3.0m
-    (3.7,   8.70,  5.80),
-    (4.6,   8.20,  5.50),
-    (5.5,   7.70,  5.20),
-    (6.1,   7.30,  4.90),
-    (7.6,   6.80,  4.60),
-    (9.1,   6.40,  4.30),
-    (10.7,  6.00,  4.00),
-    (12.2,  5.60,  3.70),
+    (3.0, 9.10, 6.10),  # Listed spacings at h≤3.0m
+    (3.7, 8.70, 5.80),
+    (4.6, 8.20, 5.50),
+    (5.5, 7.70, 5.20),
+    (6.1, 7.30, 4.90),
+    (7.6, 6.80, 4.60),
+    (9.1, 6.40, 4.30),
+    (10.7, 6.00, 4.00),
+    (12.2, 5.60, 3.70),
 ]
 NFPA72_ABSOLUTE_MAX_HEIGHT_M: float = 12.2
-NFPA72_SMOKE_SPACING_FALLBACK_M: float = 5.20   # Beyond 12.2m → conservative
-NFPA72_HEAT_SPACING_FALLBACK_M: float = 3.50    # Beyond 12.2m → conservative
+NFPA72_SMOKE_SPACING_FALLBACK_M: float = 5.20  # Beyond 12.2m → conservative
+NFPA72_HEAT_SPACING_FALLBACK_M: float = 3.50  # Beyond 12.2m → conservative
 
 # Coverage area threshold
 # NFPA 72-2022 §17.7.6.1
@@ -139,8 +139,8 @@ not less."""
 # NFPA 72-2022 §10.14
 DC_RETURN_PATH_FACTOR: float = 2.0
 """Voltage drop must include both supply and return conductors.
-V_drop = 2 × I × R × L per NFPA 72 §10.14. V14 Bug #12: code was
-missing this ×2 factor, reporting 50% of actual voltage drop."""
+V_drop = 2 x I x R x L per NFPA 72 §10.14. V14 Bug #12: code was
+missing this x2 factor, reporting 50% of actual voltage drop."""
 
 # Minimum terminal voltage for notification appliances
 # NFPA 72-2022 §10.14.1
@@ -201,8 +201,8 @@ derating. 1.20 = 20% margin per industry practice and NFPA 72 §10.6.7."""
 # AWG resistance table at 75°C — NEC Chapter 9 Table 8
 # V43 Bug #12: corrected to 75°C values (were ~50°C, ~10% too low)
 AWG_RESISTANCE_OHM_PER_M: dict = {
-    18: 0.0255,   # NEC Ch.9 Table 8 at 75°C
-    16: 0.0161,   # NEC Ch.9 Table 8 at 75°C
+    18: 0.0255,  # NEC Ch.9 Table 8 at 75°C
+    16: 0.0161,  # NEC Ch.9 Table 8 at 75°C
     14: 0.00820,  # NEC Ch.9 Table 8 at 75°C
     12: 0.00525,  # NEC Ch.9 Table 8 at 75°C
     10: 0.00328,  # NEC Ch.9 Table 8 at 75°C
@@ -213,11 +213,11 @@ NEC Chapter 9, Table 8. V43 Bug #12: AWG 18 was 0.0230 (should be
 ~50°C, not 75°C, causing voltage drop underestimation."""
 
 AWG_AMPACITY_75C: dict = {
-    18: 18,   # NEC Table 310.16
-    16: 22,   # NEC Table 310.16
-    14: 30,   # NEC Table 310.16
-    12: 35,   # NEC Table 310.16
-    10: 45,   # NEC Table 310.16
+    18: 18,  # NEC Table 310.16
+    16: 22,  # NEC Table 310.16
+    14: 30,  # NEC Table 310.16
+    12: 35,  # NEC Table 310.16
+    10: 45,  # NEC Table 310.16
 }
 """Ampacity at 75°C for copper conductors per NEC Table 310.16."""
 
@@ -290,16 +290,16 @@ values caused contradictory zone extent and detector elevation decisions."""
 MOLAR_VOLUME_STP_M3_PER_MOL: float = 0.0224
 """Molar volume of ideal gas at STP (0°C, 101.325 kPa). Per IEC Annex B
 Eq. B.1. V40a Bug: not temperature-corrected — now corrected with
-ideal gas law: V_T = V_STP × (273.15 + T) / 273.15."""
+ideal gas law: V_T = V_STP x (273.15 + T) / 273.15."""
 
 # Vapor density tiers
 # IEC 60079-10-1:2015 §B.4
 VAPOR_DENSITY_LIGHT_THRESHOLD: float = 0.97
 VAPOR_DENSITY_HEAVY_THRESHOLD: float = 1.03
 """Three-tier vapor density classification per models_v21.py:
-  - ratio < 0.97 → HIGH (light gas, rises, 1.5× vertical extent)
-  - 0.97 ≤ ratio ≤ 1.03 → BREATHING_ZONE (near-air, 1.0× extent)
-  - ratio > 1.03 → LOW (heavy gas, sinks, 0.5× extent)
+  - ratio < 0.97 → HIGH (light gas, rises, 1.5x vertical extent)
+  - 0.97 ≤ ratio ≤ 1.03 → BREATHING_ZONE (near-air, 1.0x extent)
+  - ratio > 1.03 → LOW (heavy gas, sinks, 0.5x extent)
 V25 Bug #25: hac_classification_engine used binary mw < 29.0 while
 models_v21 used 3-tier with 0.97/1.03 thresholds."""
 
@@ -307,7 +307,7 @@ models_v21 used 3-tier with 0.97/1.03 thresholds."""
 # Burgess & Wheeler (1929), IEC 60079-10-1 Annex B
 BURGESS_WHEELER_COEFFICIENT: float = 0.001824
 """Coefficient for Burgess-Wheeler LFL thermal correction:
-LFL_T = LFL_25C × (1 - 0.001824 × (T - 25)). Per IEC 60079-10-1
+LFL_T = LFL_25C x (1 - 0.001824 x (T - 25)). Per IEC 60079-10-1
 Annex B. V31 Bug: 50% floor was non-conservative at high temperatures."""
 
 # LFL floor ratio default (backward-compatible)

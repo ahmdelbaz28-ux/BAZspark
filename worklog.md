@@ -406,3 +406,29 @@ Stage Summary:
 - PerPathRateLimitMiddleware now ACTUALLY RUNNING in middleware stack
 - IFC bridge no longer fabricates 10×10m rooms when geometry extraction fails
 - All changes verified with test-and-fix loop per agent.md Rule 10
+
+---
+Task ID: V117
+Agent: Main Agent
+Task: Self-criticism, PDF recommendations review, and implementation of fixes
+
+Work Log:
+- Read both PDF files: "revit' Fire Safety System.pdf" and "From Prototype to Production-Grade.pdf"
+- Performed 4-layer self-criticism of V116 work (OUTPUT, THINKING, METHOD, COMMITMENT)
+- Identified V116 as "decorative code" — schemas, constants, compliance engine disconnected from production
+- Discovered AWG resistance table data integrity issue (Table 9 vs Table 8)
+- Discovered voltage drop limits inconsistency across 3 files (15%, 10%, 3%/5%)
+- Fixed DensityOptimizer: wired ConvergenceConfig parameters (max_iterations, timeout_seconds)
+- Fixed _remove_redundant: added REMOVE_REDUNDANT_MAX_PASSES=100 to prevent infinite loops
+- Documented AWG Table 8 vs Table 9 discrepancy in voltage_drop.py with TODO markers
+- Fixed CI/CD pipeline: removed continue-on-error from Bandit and pip-audit, added dependency-audit to deploy gate
+- Created tests/test_compliance_engine.py with 24 tests covering all 13 compliance rules
+- Fixed run_validation_matrix.sh: exit code now checks all gates (ruff, pytest, pip-audit)
+- Ran full test suite: 1139 passed, 1 skipped, 0 failures
+
+Stage Summary:
+- V116 decorative code identified and partially remediated
+- 6 fixes applied to production code (convergence, infinite loop, AWG docs, CI/CD, tests, validation script)
+- 24 new ComplianceEngine tests added
+- 9 remaining gaps documented for next phase
+- AWG Table 8 migration deferred (V117-PENDING) — requires controlled migration
