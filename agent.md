@@ -11592,3 +11592,105 @@ a fake value gives false confidence while the real danger remains.
 - **Commit:** `a3f54af`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/a3f54afedadcfa6197426b7baeebc336c4a132b8
 - **File:** https://github.com/ahmdelbaz28-ux/revit/blob/main/fireai/core/qomn_fire_v4_fail_loud.py
+
+---
+
+## V76 Fixes (2026-06-01) — Nominal Physics Validation + Config NaN/Inf + Hash Chain
+
+### Context
+After re-reading agent.md (21 mandatory rules + 5 verification gates) and reviewing
+3 vulnerability proposals from the operator, performed line-by-line code verification
+(Rule 6/14) against actual source code. Applied all 3 fixes with corrections to the
+original proposals where the proposals had design flaws.
+
+### Bug V76-1 — Nominal Path Physics Validation (CRITICAL — Life Safety)
+**File:** `fireai/core/qomn_self_healing_engine.py` — `self_healing()` decorator
+**Discovery:** The nominal execution path (line 1072) calls `func(*args, **kwargs)`,
+then immediately stores the result in LRU cache and returns NOMINAL status — WITHOUT
+any validation against physics constraints. A function returning `float('nan')`,
+negative pressure, or any physically impossible value is reported as NOMINAL.
+**Impact:** The system tells operators "everything is fine" while producing dangerous
+values. NaN sprinkler pressure, negative coverage areas, or infinite voltage drops
+all pass as NOMINAL. In a fire, operators trust these values and make decisions
+that could kill people.
+**Three improvements over the original proposal:**
+1. **LRU cache update moved AFTER validation** — the proposal stored values before
+   validation, meaning wrong values become "Last Known Good" and are recovered on
+   MemoryError, propagating the error.
+2. **Circuit breaker notified** — `NominalPhysicsViolation` registered with weighted
+   CB (severity=CRITICAL), so repeated physics violations accumulate toward the
+   breaker threshold, eventually tripping it.
+3. **default_value preferred over safe_minimum** — the proposal always used
+   safe_minimum as replacement, but safe_minimum=0.0 for audio functions means
+   "no alarm sound." Now tries default_value first (if it passes the validator).
+**Additional guard:** NaN/Inf in nominal path WITHOUT a physics_validator is also
+caught — a dedicated `NominalNaNInf` error type with CATASTROPHIC severity.
+**Reference:** NFPA 72 §10.3, IEEE-754 §6.1
+
+### Bug V76-2 — Config._safe_float NaN/Inf Bypass (CRITICAL — Circuit Breaker Defeat)
+**File:** `fireai/core/qomn_self_healing_engine.py` — `Config._safe_float()`
+**Discovery:** `_safe_float()` checks `val < min_val` after `float(raw)`, but
+`float('nan') < 1.0` evaluates to False in IEEE-754 (NaN comparisons always False).
+This means NaN bypasses the minimum value check. Similarly, `float('inf')` passes
+the minimum check. With `QOMN_CB_THRESHOLD=nan`, the circuit breaker NEVER trips
+because `current_weight > NaN` is always False. With `QOMN_CB_THRESHOLD=inf`,
+the threshold is unreachable.
+**Impact:** A circuit breaker that never trips = zero fault protection. The system
+accumulates errors without limit, returning wrong values indefinitely.
+**Fix Applied:** Added `math.isfinite(val)` check BEFORE `min_val` check. NaN and
+Inf from environment variables now fall back to safe defaults.
+**Reference:** IEEE-754 (2019) §6.1, NFPA 72 §10.3
+
+### Bug V76-3 — Audit Log Hash Chain (HIGH — Tamper Detection)
+**File:** `fireai/core/qomn_self_healing_engine.py` — `AsyncAuditLogger`
+**Discovery:** Each audit entry was independently signed with HMAC-SHA256, which
+prevents forgery but does NOT detect deletion. An attacker could remove entries
+from the middle of the log (e.g., evidence of a healing action) and all remaining
+entries would still have valid signatures.
+**Impact:** In a fire investigation, deleted audit entries could hide that a healing
+action occurred — making it appear the system was functioning normally when it was
+actually in degraded mode.
+**Fix Applied:**
+- Each entry now includes `previous_hash` — the SHA-256 hash of the previous entry.
+- Chain starts with genesis hash `"0" * 64`.
+- On file rotation, `_last_chain_hash` carries forward to the new file (fixing the
+  proposal's gap where rotation would break the chain).
+- Added `verify_chain()` method for forensic analysis — reads entire file and checks
+  that each entry's `previous_hash` matches the hash of the preceding entry.
+- `stats()` now includes `chain_hash` for operational monitoring.
+**Chain survives rotation:** `_last_chain_hash` is maintained in memory and carries
+forward when a new file is created after rotation. The first entry in the new file
+has `previous_hash` equal to the hash of the last entry in the old file.
+
+### New Error Types in ERROR_WEIGHTS
+
+| Error Type | Severity | Rationale |
+|------------|----------|-----------|
+| NominalPhysicsViolation | CRITICAL (5) | Function returned physically impossible value |
+| PhysicsValidatorCrash | CRITICAL (5) | Validator itself failed — cannot trust any value |
+| NominalNaNInf | CATASTROPHIC (10) | NaN/Inf in nominal path without validator — worst case |
+
+### Test Results
+- 9/9 custom V76 verification tests PASSED
+- 4975/4975 project tests PASSED (1 skipped)
+- 511/511 self-healing related tests PASSED
+- All existing functionality preserved (calculate_sprinkler_pressure, circuit breaker,
+  LRU cache, audit logging, Tier 1/2/3 healing)
+
+### Self-Criticism Notes (V76)
+
+1. **The original proposal had 3 real flaws** — (a) LRU cache before validation,
+   (b) no CB notification, (c) safe_minimum-only fallback. Blindly applying would
+   have introduced new bugs. This validates Rule 6 (verify before changing).
+2. **The hash chain newline bug was caught by testing** — I wrote the chain hash
+   using `entry_str` (with \n) but verify_chain used `line.strip()` (without \n).
+   The hashes didn't match. Testing caught this immediately. This validates Rule 10
+   (test-and-fix loop).
+3. **Config NaN bypass is the most dangerous fix** — NaN < 1.0 is False is a
+   fundamental IEEE-754 behavior that most developers don't think about. This is
+   exactly the kind of "silent failure" that Rule 12 warns about.
+4. **I applied Rule 21 (4-layer meta-criticism) BEFORE implementing** — this
+   prevented the 3 flaws from the original proposal from reaching production code.
+
+### Commit Information
+- **Commit:** (pending — to be pushed after this entry)
