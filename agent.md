@@ -11308,3 +11308,34 @@ The 1.5× factor is conservative for most installations and dramatically safer t
 
 ### Commit Information
 - **Commit:** Pending push
+
+### V65 Batch 5 — Placement & Orchestrator Audit: 3 CRITICAL Bugs Fixed
+
+### Bug 39 — NaN Room Dimensions Bypass Validation (CRITICAL)
+**File:** `core/device_placement.py` — `Room.validate()` line 141
+**Discovery:** Forensic audit Finding #1
+**Bug:** `if self.width_m <= 0 or self.length_m <= 0` — NaN comparisons return False in Python, so NaN dimensions pass validation silently. NaN propagates into area, detector coordinates, and coverage calculations, producing a room with "zero detectors" but appearing to pass.
+**Impact:** A room with NaN dimensions could appear in the output with zero detectors and NaN coordinates, leading to incorrect compliance reporting.
+**Fix Applied:** Added `math.isfinite()` check BEFORE the `<=0` check.
+
+### Bug 40 — Spacing=0 Causes Infinite Loop in Hex Grid (CRITICAL)
+**File:** `core/device_placement.py` — hex grid placement lines 267-268
+**Discovery:** Forensic audit Finding #3
+**Bug:** `S = spacing_result.get("listed_spacing_m") or spacing_result.get("spacing_m")` — the `or` operator treats `0.0` as falsy. If both yield `0.0` or `None`, the hex grid loop `y += 0.0` never increments → infinite loop. `S=None` causes TypeError.
+**Impact:** Infinite loop hangs the entire fire alarm design process. In a safety-critical system, a hung process = denial of service.
+**Fix Applied:** Added explicit guards for S and R — both must be finite positive numbers. `PhysicsGuardError` raised for invalid values.
+
+### Bug 41 — Silent 3.0m Default Ceiling for Missing Ceiling Spec (CRITICAL)
+**File:** `core/floor_orchestrator.py` — `_process_one_room()` line 256
+**Discovery:** Forensic audit Finding #2
+**Bug:** `ceiling_h = spec.ceiling_spec.height_at_low_point_m if spec.ceiling_spec else 3.0` — silently defaulted to 3.0m when ceiling_spec is None. A 12m warehouse with missing ceiling data would get 9.1m spacing instead of ~5.2m — 40% fewer detectors than required.
+**Impact:** A tall building could be signed off as "APPROVED" while having massive uncovered areas — detectors too far apart to respond in time.
+**Fix Applied:** When ceiling_spec is None, the room result is now "ERROR" with a clear message. No more silent defaults for life-safety parameters.
+
+### Self-Criticism Notes (V65 Batch 5)
+1. **Bug 41 is the most dangerous** — a 12m warehouse getting 3.0m ceiling height treatment means 40% fewer detectors. This is a direct life-safety failure.
+2. **Bug 40 (infinite loop) is catastrophic for operations** — a hung design process means engineers can't complete ANY work, not just the room with the bad spacing.
+3. **Bug 39 (NaN bypass) is the same pattern** found across the codebase — NaN comparisons returning False. This suggests a systematic codebase-wide audit of ALL `<=0` and `>=0` checks is needed.
+
+### Commit Information
+- **Commit:** Pending push

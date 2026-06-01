@@ -138,6 +138,16 @@ class RoomSpec:
     def validate(self) -> None:
         """Run physics guards on room specification."""
         guard_ceiling_height_m(self.ceiling_height_m)
+        # V65 FIX: NaN bypasses <=0 check (NaN <= 0 is False in Python).
+        # This allows NaN room dimensions to pass validation, producing NaN
+        # area, NaN detector coordinates, and zero detectors placed.
+        if not math.isfinite(self.width_m) or not math.isfinite(self.length_m):
+            raise PhysicsGuardError(
+                "room_dimensions",
+                f"{self.width_m!r}×{self.length_m!r}",
+                "room dimensions must be finite numbers (NaN/Inf rejected)",
+                "Physics"
+            )
         if self.width_m <= 0 or self.length_m <= 0:
             raise PhysicsGuardError(
                 "room_dimensions", f"{self.width_m}×{self.length_m}", "room dimensions must be > 0", "Physics"
@@ -266,6 +276,21 @@ class DetectorPlacementEngine:
 
         S = spacing_result.get("listed_spacing_m") or spacing_result.get("spacing_m")
         R = spacing_result.get("coverage_radius_m")
+        # V65 FIX: Guard against S=0 or S=None → infinite loop in hex grid.
+        # S=0 makes row_height=0, causing y+=0 infinite loop.
+        # S=None causes TypeError. Both are catastrophic in a safety-critical system.
+        if S is None or not math.isfinite(S) or S <= 0:
+            raise PhysicsGuardError(
+                "spacing_m", S,
+                "detector spacing must be a positive finite number — cannot place detectors without valid spacing",
+                "NFPA 72"
+            )
+        if R is None or not math.isfinite(R) or R <= 0:
+            raise PhysicsGuardError(
+                "coverage_radius_m", R,
+                "coverage radius must be a positive finite number — cannot verify coverage without valid radius",
+                "NFPA 72 §17.7"
+            )
         wall_min = spacing_result.get("wall_min_m", 0.305)  # default 0.3m
 
         # ── Beam obstruction check ─────────────────────────────────────────────

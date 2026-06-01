@@ -253,7 +253,19 @@ class FloorOrchestrator:
             # Use DensityOptimizer V6 with hexagonal placement strategies
             # CRITICAL FIX: RoomSpec has depth_m not length_m,
             # and ceiling_spec not ceiling_height_m.
-            ceiling_h = spec.ceiling_spec.height_at_low_point_m if spec.ceiling_spec else 3.0
+            # V65 FIX: Silently defaulting to 3.0m ceiling when ceiling_spec is None
+            # is a life-safety defect. A 12m warehouse with missing ceiling data would
+            # get 9.1m spacing instead of ~5.2m — 40% fewer detectors than required.
+            # The system must fail loudly rather than silently approve unsafe designs.
+            if spec.ceiling_spec is None:
+                result = RoomResult(
+                    room_id=spec.name,
+                    status="ERROR",
+                    errors=[f"Room '{spec.name}' has no ceiling specification — cannot compute NFPA 72 detector placement. All rooms require ceiling height data."],
+                )
+                self._log_room_result(spec.name, result, start)
+                return result
+            ceiling_h = spec.ceiling_spec.height_at_low_point_m
             room_data = Room(name=spec.name, width=spec.width_m, length=spec.depth_m, ceiling_height=ceiling_h)
             # CRITICAL FIX: Use height-adjusted coverage radius per NFPA 72
             # Table 17.6.3.1.1. Previously, DensityOptimizer always used R=6.37m
