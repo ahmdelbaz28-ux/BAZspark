@@ -73,7 +73,14 @@ class TestQomnFireSelfHealing(unittest.TestCase):
         # Circuit breaker must be open, forcing safe fallback static return
         final_res = calculate_sprinkler_pressure(100.0, 0.0)
         self.assertEqual(final_res.status, "CRITICAL_CIRCUIT_OPEN")
-        self.assertEqual(final_res.value, float('inf')) # Safe default value configured
+        # V FIX: Changed expected value from float('inf') to 7.0 (safe_minimum).
+        # float('inf') violates the QOMN kernel safety principle:
+        # "NaN/Inf NEVER propagate — always caught and rejected."
+        # The safe_minimum (7.0 psi per NFPA 13) is the correct conservative
+        # value for a circuit-breaker-open condition. The old test expected
+        # float('inf') because default_value was float('inf'), but that has
+        # been fixed to 7.0 as well.
+        self.assertEqual(final_res.value, 7.0)
 
     def test_cryptographic_audit_ledger(self):
         """Verify audit logger generates tamper-evident, HMAC-signed JSON Lines."""

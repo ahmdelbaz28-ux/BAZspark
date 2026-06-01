@@ -54,20 +54,46 @@ logger = logging.getLogger(__name__)
 
 
 class _WireGaugeInstance:
-    """A single wire gauge instance with NEC Table 8 properties."""
+    """A single wire gauge instance with NEC Table 8 properties.
 
-    __slots__ = ("awg_value", "resistance_ohm_per_km", "resistance_ohm_per_m", "diameter_mm", "ampacity_a")
+    Stores BOTH 20°C and 75°C NEC published resistance values to avoid
+    the temperature-coefficient approximation error (~2% for AWG 14).
+    Using NEC published values directly is more accurate than the formula
+    R_T = R_20 × [1 + α(T-20)] for the standard 75°C operating temperature.
+
+    - resistance_ohm_per_km: NEC Table 8 value at 75°C (standard operating
+      temperature for THHN/THWN per NEC 310.16). This is the PRIMARY
+      property used for voltage drop calculations.
+    - resistance_ohm_per_km_at_20c: NEC Table 8 value at 20°C (reference
+      temperature). Used by constraint_engine.py and nfpa72_engine.py
+      for temperature correction to non-standard temperatures.
+
+    V FIX: Previous design stored only 20°C values and relied on the
+    temperature coefficient formula, which introduces ~2% error vs NEC
+    published values. For AWG 14: formula gives 10.277 Ω/km but NEC
+    publishes 10.07 Ω/km at 75°C. Storing both eliminates this error
+    while preserving the temperature correction path for non-75°C temps.
+    """
+
+    __slots__ = (
+        "awg_value", "resistance_ohm_per_km", "resistance_ohm_per_m",
+        "resistance_ohm_per_km_at_20c", "diameter_mm", "ampacity_a",
+    )
 
     def __init__(
         self,
         awg_value: str,
-        resistance_ohm_per_km: float,
+        resistance_ohm_per_km_20c: float,
+        resistance_ohm_per_km_75c: float,
         diameter_mm: float,
         ampacity_a: float,
     ):
         self.awg_value = awg_value
-        self.resistance_ohm_per_km = resistance_ohm_per_km
-        self.resistance_ohm_per_m = resistance_ohm_per_km / 1000.0
+        # Primary: 75°C resistance (NEC operating temperature for THHN/THWN)
+        self.resistance_ohm_per_km = resistance_ohm_per_km_75c
+        self.resistance_ohm_per_m = resistance_ohm_per_km_75c / 1000.0
+        # Reference: 20°C resistance (NEC Table 8 reference temperature)
+        self.resistance_ohm_per_km_at_20c = resistance_ohm_per_km_20c
         self.diameter_mm = diameter_mm
         self.ampacity_a = ampacity_a
 
@@ -113,28 +139,32 @@ class WireGauge(metaclass=_WireGaugeMeta):
     These are the gauges permitted by NEC 760.154 for PLFA circuits.
     """
 
-    # NEC Chapter 9 Table 8 — DC resistance at 20°C reference temperature
-    # (copper, uncoated, stranded). Base values stored at 20°C; temperature
-    # correction applied at calculation time per NEC practice.
-    # NOTE: V58 had changed these to 75°C values, but that broke the
-    # downstream temperature correction in constraint_engine.py and
-    # nfpa72_engine.py which apply R_T = R_20 × [1 + α(T − 20)].
-    # Storing 75°C values caused double-correction (overestimation) or
-    # no correction when default T=20°C was used, leading to inconsistent
-    # voltage drop results across the codebase.
-    AWG_18: _WireGaugeInstance = _WireGaugeInstance("18", 21.40, 1.024, 1.0)
-    AWG_16: _WireGaugeInstance = _WireGaugeInstance("16", 13.40, 1.291, 2.0)
-    AWG_14: _WireGaugeInstance = _WireGaugeInstance("14",  8.450, 1.628, 2.0)
-    AWG_12: _WireGaugeInstance = _WireGaugeInstance("12",  5.310, 2.053, 3.0)
+    # NEC Chapter 9 Table 8 — DC resistance (copper, uncoated, stranded).
+    # V FIX: Store BOTH 20°C and 75°C NEC published values.
+    # 20°C values: reference temperature for NEC Table 8.
+    # 75°C values: standard operating temperature for THHN/THWN per NEC 310.16.
+    # Using NEC published 75°C values directly avoids the ~2% approximation
+    # error from the temperature coefficient formula.
+    # Source: NEC Chapter 9, Table 8, stranded copper conductors.
+    #   AWG 18: 6.510 Ω/kft @ 20°C → 7.770 Ω/kft @ 75°C
+    #   AWG 16: 4.080 Ω/kft @ 20°C → 4.890 Ω/kft @ 75°C
+    #   AWG 14: 2.570 Ω/kft @ 20°C → 3.070 Ω/kft @ 75°C
+    #   AWG 12: 1.620 Ω/kft @ 20°C → 1.930 Ω/kft @ 75°C
+    AWG_18: _WireGaugeInstance = _WireGaugeInstance("18", 21.40, 25.49, 1.024, 1.0)
+    AWG_16: _WireGaugeInstance = _WireGaugeInstance("16", 13.40, 16.04, 1.291, 2.0)
+    AWG_14: _WireGaugeInstance = _WireGaugeInstance("14",  8.450, 10.07, 1.628, 2.0)
+    AWG_12: _WireGaugeInstance = _WireGaugeInstance("12",  5.310,  6.33, 2.053, 3.0)
 
     _ALL_GAUGES: Tuple[_WireGaugeInstance, ...] = (AWG_18, AWG_16, AWG_14, AWG_12)
 
-    # NEC Chapter 9 Table 8 — DC resistance at 20°C (Ω/m)
+    # NEC Chapter 9 Table 8 — DC resistance at 75°C (Ω/m)
+    # V FIX: Updated to 75°C operating temperature values to match
+    # resistance_ohm_per_km (primary property).
     RESISTANCE_PER_M: Dict[str, float] = {
-        "18": 0.02140,  # 21.40 Ω/km at 20°C
-        "16": 0.01340,  # 13.40 Ω/km at 20°C
-        "14": 0.008450, # 8.450 Ω/km at 20°C
-        "12": 0.005310, # 5.310 Ω/km at 20°C
+        "18": 0.02549,  # 25.49 Ω/km at 75°C
+        "16": 0.01604,  # 16.04 Ω/km at 75°C
+        "14": 0.01007,  # 10.07 Ω/km at 75°C
+        "12": 0.00633,  # 6.33 Ω/km at 75°C
     }
 
     VALID_GAUGES: Tuple[str, ...] = ("12", "14", "16", "18")
@@ -540,6 +570,12 @@ class CableRoutingEngine:
         from fireai.core.circuit_topology import CircuitClass
 
         awg = wire_gauge.awg_value
+        # V FIX: Use NEC published 75°C resistance directly from WireGauge.
+        # WireGauge now stores both 20°C and 75°C NEC published values.
+        # resistance_ohm_per_km returns the 75°C value (standard operating
+        # temperature for THHN/THWN per NEC 310.16). No temperature
+        # correction formula needed — using NEC published values directly
+        # is more accurate than the formula (avoids ~2% approximation error).
         resistance_per_m = wire_gauge.resistance_ohm_per_m
 
         panel_pos = getattr(circuit, "panel_position", (0.0, 0.0, 0.0))

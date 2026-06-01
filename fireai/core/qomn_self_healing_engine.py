@@ -397,7 +397,12 @@ def self_healing(
 
                 # Check physics validity of safe fallback
                 if physics_validator and not physics_validator(safe_fallback):
-                    safe_fallback = 0.0  # Absolute floor
+                    safe_fallback = safe_minimum  # V FIX: was 0.0 (absolute floor).
+                    # 0.0 is dangerous for pressure calculations — 0 psi is
+                    # "no pressure" which is physically wrong and could be
+                    # misinterpreted as "no sprinkler protection needed."
+                    # safe_minimum (7.0 psi per NFPA 13) is the correct
+                    # conservative fallback.
 
                 after_hash = compute_hash(safe_fallback)
 
@@ -445,24 +450,32 @@ def self_healing(
                 tier_1_applied = False
 
                 if err_type == "ZeroDivisionError":
-                    # V58 FIX (BUG #8) + V59 CORRECTION: For ZeroDivisionError,
-                    # prefer default_value (developer-configured) if the physics
-                    # validator accepts it. Fall back to safe_minimum if the
-                    # validator rejects default_value or no validator exists.
-                    # This preserves IEEE-754 infinity semantics for functions
-                    # where infinity is a valid result (e.g., sprinkler pressure
-                    # at zero k-factor), while still protecting against infinity
-                    # propagation into kernels that cannot handle it.
+                    # V58 FIX (BUG #8) + V59 CORRECTION + V FIX: For ZeroDivisionError,
+                    # prefer safe_minimum over default_value when default_value is
+                    # NaN/Inf. Per QOMN kernel safety principle, NaN/Inf NEVER
+                    # propagate — always caught and rejected. float('inf') fed into
+                    # any QOMN kernel computation (voltage drop, battery) crashes
+                    # with PhysicsGuardError. The safe_minimum is the correct
+                    # conservative value for life-safety systems.
                     if default_value is not None and physics_validator is not None:
                         try:
-                            if physics_validator(default_value):
+                            # V FIX: NaN/Inf guard — reject infinite defaults even
+                            # if a permissive validator would accept them. Safety
+                            # principle overrides validator permissiveness.
+                            if isinstance(default_value, float) and (math.isnan(default_value) or math.isinf(default_value)):
+                                healed_val = safe_minimum
+                            elif physics_validator(default_value):
                                 healed_val = default_value
                             else:
                                 healed_val = safe_minimum
                         except Exception:
                             healed_val = safe_minimum
                     elif default_value is not None:
-                        healed_val = default_value
+                        # V FIX: Same NaN/Inf guard for paths without validator
+                        if isinstance(default_value, float) and (math.isnan(default_value) or math.isinf(default_value)):
+                            healed_val = safe_minimum
+                        else:
+                            healed_val = default_value
                     else:
                         healed_val = safe_minimum
                     tier_1_applied = True
@@ -732,12 +745,21 @@ def query_local_ollama_engine(
 # =====================================================================
 
 def validate_sprinkler_pressure(val: Any) -> bool:
-    """Sprinkler operating pressure must be positive or infinity under zero flow."""
+    """Sprinkler operating pressure must be positive and finite.
+
+    V FIX: Removed `or val == float('inf')` clause. Per the QOMN kernel
+    safety principle, float('inf') must NEVER be accepted as a valid
+    healed value because it propagates into downstream kernel computations
+    (voltage drop, battery calculations) causing PhysicsGuardError crashes.
+    A sprinkler pressure of infinity is physically meaningless — the correct
+    response to zero k-factor is the safe_minimum (7.0 psi per NFPA 13),
+    not infinity.
+    """
     if isinstance(val, (int, float)):
-        return val >= 0.0 or val == float('inf')
+        return val >= 0.0 and math.isfinite(val)
     return False
 
-@self_healing(safe_minimum=7.0, default_value=float('inf'), physics_validator=validate_sprinkler_pressure)
+@self_healing(safe_minimum=7.0, default_value=7.0, physics_validator=validate_sprinkler_pressure)
 def calculate_sprinkler_pressure(flow_gpm: float, k_factor: float) -> float:
     """
     Computes required operating pressure: P = (Q / K)^2

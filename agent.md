@@ -10894,3 +10894,63 @@ The user's `qomn_parser_workspace.py` contains an OLDER version of the parser co
 ### Commit Information
 - **Commit:** `d7fd895`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/d7fd895
+
+---
+
+## V62 Fixes (2026-06-01) — CRITICAL Safety Fixes: Voltage Drop Temperature + NaN/Inf Guard
+
+### Root Cause: 3 Safety-Critical Bugs (9 Failing Tests)
+
+#### Bug A — Voltage Drop Uses 20°C Resistance (CRITICAL — Life Safety)
+**Files:** `core/cable_routing_engine.py`, `core/constraint_engine.py`, `core/cable_router.py`
+**Symptom:** 8 tests failing — WireGauge stores 20°C but tests expect 75°C values
+**Root Cause:** V58 reverted WireGauge from 75°C to 20°C values (to avoid double-correction) but consuming code never applied temperature correction. cable_routing_engine.py used raw 20°C resistance directly — underestimating voltage drop by 21.6%. constraint_engine.py defaulted to conductor_operating_temp_c=20.0, making temperature_corrected_resistance() a no-op.
+**Impact:** Voltage drop underestimated by 21.6% at 75°C operating temperature. Circuits that should FAIL NFPA 72 §10.6.4 get APPROVED. Horns/strobes may not operate during a fire.
+**Fix Applied:**
+1. Redesigned _WireGaugeInstance to store BOTH 20°C and 75°C NEC published values:
+   - `resistance_ohm_per_km`: NEC published 75°C value (primary, used for voltage drop)
+   - `resistance_ohm_per_km_at_20c`: NEC published 20°C value (for temperature correction formula)
+2. cable_routing_engine.py: Uses 75°C published value directly (no formula needed, more accurate)
+3. constraint_engine.py: Uses `resistance_ohm_per_km_at_20c` + temperature correction for non-75°C temps; uses NEC published 75°C value directly for 75°C (avoids ~2% formula error)
+4. constraint_engine.py: Changed default conductor_operating_temp_c from 20.0 to 75.0
+5. constraint_engine.py: Changed check_all() fallback from ambient_temp_c to 75.0 when conductor_operating_temp_c is None
+6. cable_router.py: Same fixes — uses resistance_ohm_per_km_at_20c for correction, defaults to 75°C
+7. Updated RESISTANCE_PER_M dict to 75°C values to match primary property
+
+**NEC Published Values (AWG stranded copper, Chapter 9 Table 8):**
+| AWG | 20°C (Ω/km) | 75°C (Ω/km) | Source |
+|-----|-------------|-------------|--------|
+| 18  | 21.40       | 25.49       | 6.510/7.770 Ω/kft |
+| 16  | 13.40       | 16.04       | 4.080/4.890 Ω/kft |
+| 14  | 8.450       | 10.07       | 2.570/3.070 Ω/kft |
+| 12  | 5.310       | 6.33        | 1.620/1.930 Ω/kft |
+
+#### Bug B — NaN/Inf Propagation in Self-Healing Engine (HIGH)
+**File:** `core/qomn_self_healing_engine.py`
+**Symptom:** test_tier_1_zero_division expects value=7.0 but gets float('inf')
+**Root Cause:** validate_sprinkler_pressure() accepted float('inf') as valid ("val >= 0.0 or val == float('inf')"). Tier 1 ZeroDivisionError handler preferred default_value=float('inf') over safe_minimum=7.0 because the validator accepted it. Circuit breaker Tier 3 fallback used 0.0 as absolute floor (physically wrong for pressure).
+**Impact:** float('inf') propagates into QOMN kernel computations (voltage drop, battery) causing PhysicsGuardError crashes. 0.0 psi for sprinkler pressure is physically meaningless.
+**Fix Applied:**
+1. validate_sprinkler_pressure(): Removed `or val == float('inf')` clause. Now requires val >= 0.0 AND math.isfinite(val).
+2. Tier 1 ZeroDivisionError handler: Added NaN/Inf guard — rejects infinite default_values even if a permissive validator accepts them. Safety principle overrides validator permissiveness.
+3. Changed decorator default_value from float('inf') to 7.0 (safe_minimum per NFPA 13).
+4. Tier 3 circuit breaker fallback: Changed from 0.0 to safe_minimum (7.0 psi per NFPA 13).
+
+#### Bug C — Test Expecting Unsafe Value (MEDIUM)
+**File:** `tests/test_self_healing_engine.py`
+**Symptom:** test_tier_3_circuit_breaker_trips expects float('inf') as safe fallback
+**Root Cause:** Test documented existing (unsafe) behavior. float('inf') is NOT a safe value per QOMN kernel principle.
+**Fix Applied:** Updated test to expect 7.0 (safe_minimum) instead of float('inf'). Safety principle overrides test immutability when the test expects an unsafe value.
+
+### Self-Criticism Notes
+
+1. **The WireGauge dual-temperature design is the right approach.** Storing only 20°C values forced all consuming code to apply temperature correction, creating multiple opportunities for bugs (forgetting to correct, using wrong default temp, formula vs table discrepancy). Storing both eliminates these risks.
+2. **The ~2% formula vs NEC table discrepancy was a real safety concern.** The temperature coefficient formula gives 10.277 Ω/km for AWG14@75°C but NEC publishes 10.07 Ω/km. Using the formula would OVER-estimate voltage drop (conservative but wrong), while using NEC published values is both more accurate and what inspectors would verify against.
+3. **The NaN/Inf guard should have been in the self-healing engine from the start.** Allowing float('inf') to propagate is a fundamental violation of the QOMN kernel safety principle. The Tier 3 fallback using 0.0 psi was also wrong — 0 psi means "no sprinkler pressure" which could be misinterpreted as "no protection needed."
+4. **V58's partial revert was the root cause of Bug A.** V58 changed to 75°C, then reverted to 20°C to avoid double-correction, but forgot to update (a) the consuming code to apply correction, and (b) the tests back to 20°C values. This left the system in an inconsistent state for multiple versions.
+
+### Verification Evidence
+- All 4822 tests pass, 0 failures, 1 skipped
+- Previously failing 9 tests now pass
+- Full test suite runtime: 68.27s
+- No regression detected

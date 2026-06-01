@@ -564,15 +564,26 @@ class CableRouter:
         # V62 FIX: Use conductor_operating_temp_c for resistance correction
         # if provided. Falls back to ambient_temp_c for backward compatibility.
         # These are physically different quantities — see method docstring.
-        vdrop_temp = conductor_operating_temp_c if conductor_operating_temp_c is not None else ambient_temp_c
+        # V FIX: Default to 75°C (NEC practice) when conductor_operating_temp_c is None.
+        # Using ambient_temp_c (30-50°C) underestimates resistance by 10-14.6%.
+        vdrop_temp = conductor_operating_temp_c if conductor_operating_temp_c is not None else 75.0
         # V109 FIX: wire_gauge param is a string key (e.g. "14"), not a
         # _WireGaugeInstance. Must resolve to instance for resistance lookup.
         if isinstance(wire_gauge, str):
             wg_instance = WireGauge.get_resistance_per_m(wire_gauge)
             # Convert Ω/m to Ω/km for the temperature correction formula
-            r_at_20c = wg_instance * 1000.0
+            # V FIX: get_resistance_per_m returns 75°C value (Ω/m),
+            # but we need 20°C base for temperature correction formula.
+            # Use WireGauge object's resistance_ohm_per_km_at_20c instead.
+            # Fallback: estimate 20°C from 75°C published value using
+            # reverse correction (less accurate but safe).
+            r_at_20c = wg_instance * 1000.0  # This is 75°C value, not 20°C
+            # Estimate 20°C from 75°C: R_20 = R_75 / (1 + α * 55)
+            r_at_20c = r_at_20c / (1.0 + 0.00393 * 55.0)
         else:
-            r_at_20c = wire_gauge.resistance_ohm_per_km
+            # V FIX: Use resistance_ohm_per_km_at_20c for temperature correction
+            # (not resistance_ohm_per_km which is now the 75°C published value).
+            r_at_20c = wire_gauge.resistance_ohm_per_km_at_20c
         r_per_km = temperature_corrected_resistance(r_at_20c, vdrop_temp)
         length_km = physical_length / 1000.0
         v_drop = alarm_current_a * 2.0 * r_per_km * length_km  # ×2 DC return

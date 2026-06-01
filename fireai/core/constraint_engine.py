@@ -300,7 +300,7 @@ class ConstraintEngine:
         wire_gauge: WireGauge,
         ps_voltage: float = 24.0,
         max_drop_pct: float = 10.0,
-        conductor_operating_temp_c: float = 20.0,
+        conductor_operating_temp_c: float = 75.0,
     ) -> ConstraintResult:
         """Check voltage drop compliance per NFPA 72 §10.6.4.
 
@@ -326,6 +326,12 @@ class ConstraintEngine:
         temp (30°C) instead of conductor operating temp (75°C),
         underestimating voltage drop by 21.6%.
 
+        V FIX: Changed default from 20.0 to 75.0 degC. The 20 degC default
+        made temperature_corrected_resistance() a no-op (T_actual == T_ref),
+        so voltage drop was underestimated by 21.6%. Per NEC 310.16, 75 degC
+        is the standard operating temperature for THHN/THWN fire alarm cables.
+        This aligns with nfpa72_engine.py's _DEFAULT_OPERATING_TEMP_C (V97 fix).
+
         For 24V systems: V_drop must be ≤ 2.4V (10%)
 
         Args:
@@ -335,16 +341,29 @@ class ConstraintEngine:
             ps_voltage: Power supply voltage (default 24V).
             max_drop_pct: Maximum allowed drop percentage (default 10%).
             conductor_operating_temp_c: Conductor operating temperature in degC.
-                Default 20 degC (backward compatible, NEC Table 8 reference).
-                CRITICAL FOR EGYPT: Use 75.0 for THHN/THWN operating temp.
+                Default 75.0 degC (NEC 310.16 practice for THHN/THWN).
+                LIFE-SAFETY: Using 20°C underestimates voltage drop by 21.6%.
 
         Returns:
             ConstraintResult with voltage drop analysis.
         """
         # Compute voltage drop with DC return path (×2)
         # V60 FIX: Use temperature-corrected resistance per NEC practice
-        r_at_20c = _resolve_wire_gauge(wire_gauge).resistance_ohm_per_km
-        r_per_km = temperature_corrected_resistance(r_at_20c, conductor_operating_temp_c)
+        # V FIX: Use NEC published resistance values when available.
+        # WireGauge stores both 20°C and 75°C NEC published values.
+        # For the standard 75°C operating temperature, use the NEC published
+        # 75°C value directly (more accurate than formula — avoids ~2%
+        # approximation error). For non-standard temperatures, use the
+        # temperature correction formula from 20°C base.
+        wg = _resolve_wire_gauge(wire_gauge)
+        if abs(conductor_operating_temp_c - 75.0) < 1.0:
+            # Use NEC published 75°C value directly (exact per NEC Table 8)
+            r_per_km = wg.resistance_ohm_per_km  # 75°C published value
+            r_at_20c = wg.resistance_ohm_per_km_at_20c
+        else:
+            # Use temperature correction formula from 20°C base
+            r_at_20c = wg.resistance_ohm_per_km_at_20c
+            r_per_km = temperature_corrected_resistance(r_at_20c, conductor_operating_temp_c)
         length_km = cable_length_m / 1000.0
         v_drop = alarm_current_a * 2.0 * r_per_km * length_km
         v_drop_pct = (v_drop / ps_voltage) * 100.0 if ps_voltage > 0 else 0.0
@@ -981,7 +1000,12 @@ class ConstraintEngine:
         # instead of silently skipping. The absence of a voltage drop
         # result could be misinterpreted as "compliant" when it actually
         # means "not checked."
-        vdrop_temp = conductor_operating_temp_c if conductor_operating_temp_c is not None else ambient_temp_c
+        # V FIX: When conductor_operating_temp_c is None, default to 75.0 degC
+        # (NEC practice for THHN/THWN), NOT ambient_temp_c. Using ambient
+        # (30-50 degC) still underestimates resistance by 10-14.6% compared
+        # to the correct 75 degC operating temperature. This aligns with
+        # nfpa72_engine.py's _DEFAULT_OPERATING_TEMP_C (V97 fix).
+        vdrop_temp = conductor_operating_temp_c if conductor_operating_temp_c is not None else 75.0
         if alarm_current_a > 0 and cable_length_m > 0:
             results.append(
                 self.check_voltage_drop(
