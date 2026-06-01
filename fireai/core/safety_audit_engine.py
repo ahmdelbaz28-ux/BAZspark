@@ -770,10 +770,15 @@ class SafetyAuditEngine:
                         gate="FOULING",
                         severity="CRITICAL",
                         code="FOUL-006",
-                        description=(
+                        message=(
                             f"NaN/Inf min_transmittance={min_transmittance!r}. "
                             f"Cannot verify optical path integrity. Per FM Global DS 5-48 §3.2.1, "
                             f"flame detector audit requires valid spectral transmittance data."
+                        ),
+                        standard_ref="FM Global DS 5-48 §3.2.1",
+                        remediation=(
+                            "Investigate data pipeline for NaN/Inf contamination. "
+                            "Provide valid spectral transmittance value before re-running audit."
                         ),
                     )
                 )
@@ -1060,6 +1065,33 @@ class SafetyAuditEngine:
 
         for i, z in enumerate(detector_z_positions):
             total_checks += 1
+
+            # MED-02 FIX: NaN z_position silently falls through to BREATHING_ZONE
+            # in elevation_tier_from_detector_z(). A detector with unknown elevation
+            # is NOT correctly placed — emit CRITICAL violation.
+            if not isinstance(z, (int, float)) or not math.isfinite(z):
+                violations.append(
+                    AuditViolation(
+                        gate="Z_AXIS",
+                        severity="CRITICAL",
+                        code="ZAX-004",
+                        message=(
+                            f"Detector #{i + 1} has NaN/Inf Z-position ({z!r}). "
+                            f"Cannot verify detector elevation placement. "
+                            f"NaN elevation silently defaults to BREATHING_ZONE tier, "
+                            f"which may be incorrect for the substance. "
+                            f"Detector placement audit is INVALID without valid Z-coordinates."
+                        ),
+                        standard_ref="IEC 60079-10-1:2015 §B.4, NFPA 497 §4.5",
+                        remediation=(
+                            "Provide valid Z-coordinate for this detector. "
+                            "NaN/Inf elevation prevents verification of detector placement "
+                            "against gas buoyancy behavior."
+                        ),
+                    )
+                )
+                continue
+
             detector_tier = elevation_tier_from_detector_z(z, ceiling_height_m)
 
             if detector_tier != required_tier:

@@ -31,8 +31,11 @@ traced to its NFPA/NEC source section.
 from __future__ import annotations
 
 import math
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # NAC SIZING — NFPA 72 §10.6.4, §18.3
@@ -445,6 +448,18 @@ def calculate_strobe_candela(
         if room_area_sqft <= max_area:
             required_candela = candela
             break
+
+    # V76 MED-04 FIX: Rooms exceeding the NFPA 72 table maximum (4000 sq ft)
+    # require engineering analysis per NFPA 72 §18.5.5.1. The last table value
+    # may not provide adequate coverage. Flag for manual FPE review.
+    if room_area_sqft > table[-1][0]:
+        logger.warning(
+            f"Room area {room_area_sqft:.0f} sq ft exceeds NFPA 72 "
+            f"Table 18.5.5.1 maximum ({table[-1][0]} sq ft). "
+            f"Using {required_candela} cd (last table value) — "
+            f"manual fire protection engineer review REQUIRED per "
+            f"NFPA 72 §18.5.5.1."
+        )
 
     # NFPA 72 §18.5.5.2: Multiple strobes
     # When more than one strobe is in the room, the candela per

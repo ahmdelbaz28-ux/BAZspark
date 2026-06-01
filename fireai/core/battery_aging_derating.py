@@ -639,6 +639,12 @@ def size_battery(
         installed_ah = battery.amp_hour_20h
         usable_ah = installed_ah * combined_derating
         is_adequate = installed_ah >= required_ah  # V20.2 FIX #14: was usable_ah >= required_ah
+        # V76 HIGH-06 FIX: CRITICAL violations must override is_adequate.
+        # A battery may have sufficient capacity but still violate NFPA 72
+        # (e.g., standby < 24h, alarm < 5min). These are life-safety violations
+        # that must not be masked by is_adequate=True.
+        if is_adequate and any(v.get("severity") == "CRITICAL" for v in violations):
+            is_adequate = False
         margin_pct = ((installed_ah - required_ah) / max(required_ah, 0.01)) * 100.0
 
         if not is_adequate:

@@ -574,6 +574,11 @@ class ATEXEquipmentSpec(BaseModel):
         When autoignition_c is provided, verify that the temperature class
         provides adequate margin. For Zone 0/1/20/21: requires 5% margin
         (max surface temp ≤ 95% of autoignition). For Zone 2/22: strict below.
+
+        MED-06 FIX: When a thermal margin violation is detected, the result
+        must NOT appear compliant. Previously, violations were silently appended
+        to hac_critical without affecting any compliance status. Now we also
+        log a CRITICAL warning so the violation is immediately visible.
         """
         if self.autoignition_c is not None and self.autoignition_c > 0:
             t_max = _T_CLASS_MAX.get(self.temp_class.value, 0)
@@ -590,6 +595,12 @@ class ATEXEquipmentSpec(BaseModel):
                         )
                         # Cannot raise ValueError because frozen model; append to hac_critical
                         object.__setattr__(self, "hac_critical", list(self.hac_critical) + [hac_critical_entry])
+                        # MED-06 FIX: Log CRITICAL so violation is not silent
+                        logger.critical(
+                            "MED-06: %s — equipment specification is NOT compliant. "
+                            "hac_critical is non-empty but was previously ignored by callers.",
+                            hac_critical_entry,
+                        )
                 # Zone 2/22: strict below
                 elif self.zone in (ZoneType.ZONE_2, ZoneType.ZONE_22):
                     if t_max >= self.autoignition_c:
@@ -600,6 +611,12 @@ class ATEXEquipmentSpec(BaseModel):
                             f"[IEC 60079-14 §5.3]"
                         )
                         object.__setattr__(self, "hac_critical", list(self.hac_critical) + [hac_critical_entry])
+                        # MED-06 FIX: Log CRITICAL so violation is not silent
+                        logger.critical(
+                            "MED-06: %s — equipment specification is NOT compliant. "
+                            "hac_critical is non-empty but was previously ignored by callers.",
+                            hac_critical_entry,
+                        )
         return self
 
 

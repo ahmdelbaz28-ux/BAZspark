@@ -1083,7 +1083,12 @@ class StairwellSmokeControlIntegrator:
             status = FanStatus.UNKNOWN
 
         # NFPA 72 §21.5.2: FAULT and UNKNOWN require supervisory signal
-        is_supervisory = status in (FanStatus.FAULT, FanStatus.UNKNOWN)
+        # MED-07 FIX: STOPPED also requires supervisory signal. Per NFPA 72 §21.5.2,
+        # the FACP must supervise the operational status of smoke control equipment.
+        # A STOPPED fan in a building requiring pressurization means the egress path
+        # may not be protected — this is a supervisory condition requiring operator
+        # awareness and acknowledgment, not just an informational status.
+        is_supervisory = status in (FanStatus.FAULT, FanStatus.UNKNOWN, FanStatus.STOPPED)
 
         descriptions = {
             FanStatus.RUNNING: (
@@ -1091,7 +1096,9 @@ class StairwellSmokeControlIntegrator:
             ),
             FanStatus.STOPPED: (
                 f"Stairwell '{name}' ({zone_id}) fan '{fan_id}' is STOPPED. "
-                f"Verify if this is expected (standby) or a fault condition."
+                f"Supervisory signal required at FACP per NFPA 72 §21.5.2. "
+                f"Verify if this is expected (standby) or a fault condition. "
+                f"Stairwell may not maintain pressurization if fire occurs."
             ),
             FanStatus.FAULT: (
                 f"Stairwell '{name}' ({zone_id}) fan '{fan_id}' FAULT. "
