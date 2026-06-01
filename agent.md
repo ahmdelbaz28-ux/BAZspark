@@ -11548,3 +11548,47 @@ Total: 54 passed in 5.67s
 4. **V72 required a second attempt** — my first fix put the SafetyCriticalFailure check at the END of the except block, after all healing attempts. But Tier 2 successfully healed it, so the check was never reached. The root-cause fix is to check BEFORE any healing is attempted.
 5. **All 10 vulnerabilities were independently discovered** through line-by-line code reading, not from any external consultant report.
 
+
+---
+## V4.0 QOMN-FIRE Rewrite — Fail-Loud Philosophy (2026-06-01)
+
+### Context
+Original qomn_fire_v3.1 used "silent self-healing" — errors replaced with fallback values
+and the pipeline continued as if nothing happened. In a fire safety system, this is dangerous:
+a fake value gives false confidence while the real danger remains.
+
+### Philosophy Change
+- v3.1: "Fail-Safe, Never Fail-Silent" (claimed but violated — errors WERE silent)
+- v4.0: "Fail-Loud, Never Fail-Silent" (errors are LOUD — pipeline stops or demands human review)
+
+### Changes Applied
+
+#### Core Architecture
+| Component | v3.1 (Dangerous) | v4.0 (Safe) |
+|-----------|------------------|-------------|
+| ZeroDivisionError | → healed to inf | → REJECTED (FATAL) |
+| MemoryError | → healed to default | → REJECTED (FATAL) |
+| Unknown errors | → healed silently | → REJECTED (no risk) |
+| Healed values | used directly | require human review |
+| float('inf') default | allowed | FORBIDDEN |
+| float('nan') default | allowed | FORBIDDEN |
+
+#### File: `fireai/core/qomn_fire_v4_fail_loud.py`
+- **Config**: Removed `DEV_MODE_FALLBACK` secret, added `REFUSE_ON_MISSING_SECRET`
+- **AsyncAuditLogger**: Singleton (no thread leak), thread-safe `_last_ref`, real `flush()` with timeout
+- **WeightedCircuitBreaker**: Retains total error count (never clears history)
+- **SafetyResult**: Added `REJECTED` status, `human_review_required`, `rejection_reason`
+- **fail_loud_v4 decorator**: Three-tier error classification (FATAL/RECOVERABLE/UNKNOWN)
+- **_validate_fallback**: Rejects NaN and Inf as fallback values
+- **SprayHydraulicAdapter**: `allow_healing=False` — safety-critical, no healing allowed
+- **SafeGuardAiAdapter**: `ValueError` instead of `MemoryError` for SRAM limit (domain limit)
+- **All scenarios**: Pipeline STOPS on REJECTED, human review gate enforced
+
+### Test Results
+- 43/43 tests passing
+- Covers: all 8 adapters, all 5 scenarios, error classification, fallback validation, SafetyResult behavior
+
+### Commit Information
+- **Commit:** `a3f54af`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/a3f54afedadcfa6197426b7baeebc336c4a132b8
+- **File:** https://github.com/ahmdelbaz28-ux/revit/blob/main/fireai/core/qomn_fire_v4_fail_loud.py
