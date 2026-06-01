@@ -195,23 +195,73 @@ class Config:
 
     V2.0 FEATURE (from consultant): Centralized configuration with env-var overrides.
     """
+    @staticmethod
+    def _safe_float(env_var: str, default: float, min_val: float = 0.0) -> float:
+        """V71 FIX: Parse float from env var with validation. Falls back to
+        default on invalid values instead of crashing the module import.
+
+        In a safety-critical system, a typo in an environment variable
+        (e.g., QOMN_CB_THRESHOLD=abc) must NOT crash the entire system.
+        The safe default is always preferable to a crash.
+        """
+        raw = os.environ.get(env_var, "")
+        if not raw:
+            return default
+        try:
+            val = float(raw)
+            if val < min_val:
+                logging.warning(
+                    f"[CONFIG] {env_var}={val} is below minimum {min_val}. "
+                    f"Using default: {default}."
+                )
+                return default
+            return val
+        except (ValueError, TypeError):
+            logging.warning(
+                f"[CONFIG] {env_var}='{raw}' is not a valid number. "
+                f"Using default: {default}."
+            )
+            return default
+
+    @staticmethod
+    def _safe_int(env_var: str, default: int, min_val: int = 1) -> int:
+        """V71 FIX: Parse int from env var with validation."""
+        raw = os.environ.get(env_var, "")
+        if not raw:
+            return default
+        try:
+            val = int(raw)
+            if val < min_val:
+                logging.warning(
+                    f"[CONFIG] {env_var}={val} is below minimum {min_val}. "
+                    f"Using default: {default}."
+                )
+                return default
+            return val
+        except (ValueError, TypeError):
+            logging.warning(
+                f"[CONFIG] {env_var}='{raw}' is not a valid integer. "
+                f"Using default: {default}."
+            )
+            return default
+
     def __init__(self):
         # Circuit Breaker Configuration
-        self.CB_THRESHOLD: float = float(os.environ.get("QOMN_CB_THRESHOLD", "10.0"))
-        self.CB_WINDOW: float = float(os.environ.get("QOMN_CB_WINDOW", "60.0"))
-        self.CB_COOLDOWN: float = float(os.environ.get("QOMN_CB_COOLDOWN", "10.0"))
-        self.CB_HALF_OPEN_MAX: int = int(os.environ.get("QOMN_CB_HALF_OPEN_MAX", "3"))
+        self.CB_THRESHOLD: float = self._safe_float("QOMN_CB_THRESHOLD", 10.0, min_val=1.0)
+        self.CB_WINDOW: float = self._safe_float("QOMN_CB_WINDOW", 60.0, min_val=1.0)
+        self.CB_COOLDOWN: float = self._safe_float("QOMN_CB_COOLDOWN", 10.0, min_val=1.0)
+        self.CB_HALF_OPEN_MAX: int = self._safe_int("QOMN_CB_HALF_OPEN_MAX", 3, min_val=1)
 
         # LLM / Ollama Configuration
-        self.OLLAMA_TIMEOUT: float = float(os.environ.get("QOMN_OLLAMA_TIMEOUT", "2.0"))
-        self.OLLAMA_MAX_RPS: float = float(os.environ.get("QOMN_OLLAMA_MAX_RPS", "5.0"))
+        self.OLLAMA_TIMEOUT: float = self._safe_float("QOMN_OLLAMA_TIMEOUT", 2.0, min_val=0.1)
+        self.OLLAMA_MAX_RPS: float = self._safe_float("QOMN_OLLAMA_MAX_RPS", 5.0, min_val=1.0)
 
         # Audit Logger Configuration
-        self.AUDIT_MAX_BYTES: int = int(os.environ.get(
-            "QOMN_AUDIT_MAX_BYTES", str(10 * 1024 * 1024)
-        ))  # 10MB default
-        self.AUDIT_BACKUP_COUNT: int = int(os.environ.get("QOMN_AUDIT_BACKUP_COUNT", "5"))
-        self.AUDIT_FLUSH_INTERVAL: float = float(os.environ.get("QOMN_AUDIT_FLUSH_INTERVAL", "1.0"))
+        self.AUDIT_MAX_BYTES: int = self._safe_int(
+            "QOMN_AUDIT_MAX_BYTES", 10 * 1024 * 1024, min_val=1024
+        )  # 10MB default
+        self.AUDIT_BACKUP_COUNT: int = self._safe_int("QOMN_AUDIT_BACKUP_COUNT", 5, min_val=1)
+        self.AUDIT_FLUSH_INTERVAL: float = self._safe_float("QOMN_AUDIT_FLUSH_INTERVAL", 1.0, min_val=0.1)
 
         # HMAC Secret Key
         self.SECRET_KEY: Optional[bytes] = None
@@ -398,13 +448,20 @@ class AsyncAuditLogger:
 
                 return True
 
-            except OSError as e:
+            except Exception as e:
                 # V53 FIX (BUG 7): Never let I/O errors crash the safety system
+                # V70 FIX (MEDIUM): Broadened from OSError to Exception.
+                # The old code only caught OSError, but json.dumps() can raise
+                # TypeError (non-serializable objects whose __str__ also fails),
+                # and hmac.new() can raise TypeError if secret_key is corrupted.
+                # Any of these would crash the safety system. In a life-safety
+                # system, the audit logger must NEVER be the cause of a crash.
+                # Better to lose an audit event than to lose the entire system.
                 self._failed_writes += 1
                 logging.critical(
-                    f"[AUDIT LOGGER I/O FAILURE] Cannot write to {self.filepath}: {e}. "
-                    f"Event data preserved in log but NOT persisted to disk. "
-                    f"Event: {json.dumps(event_data, default=str)[:200]}"
+                    f"[AUDIT LOGGER FAILURE] Cannot write to {self.filepath}: {type(e).__name__}: {e}. "
+                    f"Event data NOT persisted to disk. "
+                    f"Event: {str(event_data)[:200]}"
                 )
                 return False
 
@@ -658,9 +715,9 @@ class WeightedCircuitBreaker:
                     return True
             return False
 
-    def check_and_cooldown(self) -> bool:
+    def check_and_cooldown(self) -> Tuple[bool, str]:
         """
-        Combined check: returns True if breaker is OPEN (after attempting cooldown).
+        Combined check: returns (is_fully_open, state_at_check) tuple.
 
         V58 FIX (BUG #6): Acquires lock ONCE instead of twice. The original
         code called try_cooldown() then is_open(), which released and
@@ -669,9 +726,21 @@ class WeightedCircuitBreaker:
         V2.0 EXTENSION: Cooldown now transitions to HALF_OPEN instead of CLOSED,
         allowing probe requests before full recovery.
 
+        V66 FIX (CRITICAL): Now returns the state at time of check as a second
+        element, eliminating the race condition where the caller reads cb.state
+        without holding the lock. Previously, between check_and_cooldown()
+        releasing the lock and the caller reading cb.state, another thread
+        could transition the state -- causing was_half_open to be incorrect.
+        This could lead to: (a) record_probe_failure() called when it shouldn't
+        be, prematurely returning the breaker to OPEN, or (b) DEGRADED status
+        returned when HEALED was correct, or vice versa. In a safety-critical
+        fire protection system, an incorrect status means operators don't know
+        the true system state during a fire event.
+
         Returns:
-            True  -- breaker is fully OPEN, caller should use Tier 3 fallback
-            False -- breaker is CLOSED or HALF_OPEN, caller may proceed
+            (True, state)  -- breaker is fully OPEN, caller should use Tier 3 fallback
+            (False, state) -- breaker is CLOSED or HALF_OPEN, caller may proceed
+            state is the state at the moment of the atomic check
         """
         with self.lock:
             if self.state == self.OPEN:
@@ -681,11 +750,11 @@ class WeightedCircuitBreaker:
                     logging.info(
                         "[CIRCUIT BREAKER] Cooldown complete. Transitioning to HALF_OPEN."
                     )
-                    return False  # just cooled down to HALF_OPEN, not fully OPEN
-                return True  # still OPEN
+                    return (False, self.HALF_OPEN)  # just cooled down to HALF_OPEN
+                return (True, self.OPEN)  # still OPEN
             elif self.state == self.HALF_OPEN:
-                return False  # HALF_OPEN, allow probe
-            return False  # CLOSED
+                return (False, self.HALF_OPEN)  # HALF_OPEN, allow probe
+            return (False, self.CLOSED)  # CLOSED
 
     def is_half_open_and_available(self) -> bool:
         """
@@ -762,6 +831,13 @@ class LLMCircuitBreaker:
         """
         Check if an LLM request is allowed within the rate limit.
         Returns True if the request is allowed, False if rate limited.
+
+        V74 FIX: Only consumes a rate limit slot when the request is actually
+        allowed. Previously, allow_request() would append a timestamp even
+        if the caller was just "checking" availability. This violated
+        Command-Query Separation and could cause false rate limiting when
+        the caller checks availability but doesn't make the request.
+        Now, the timestamp is only recorded on success (True return).
         """
         with self.lock:
             now = time.time()
@@ -773,6 +849,18 @@ class LLMCircuitBreaker:
                 self._call_timestamps.append(now)
                 return True
             return False
+
+    def peek(self) -> bool:
+        """
+        V74 FIX: Pure query -- check if a request WOULD be allowed without
+        consuming a rate limit slot. This allows callers to check
+        availability without side effects.
+        """
+        with self.lock:
+            now = time.time()
+            while self._call_timestamps and (now - self._call_timestamps[0]) > 1.0:
+                self._call_timestamps.popleft()
+            return len(self._call_timestamps) < self.max_rps
 
     def record_failure(self):
         """Record an LLM call failure for monitoring."""
@@ -817,9 +905,36 @@ global_llm_breaker = LLMCircuitBreaker(
 
 
 def compute_hash(data: Any) -> str:
-    """Computes deterministic SHA-256 hash representation of values."""
+    """Computes deterministic SHA-256 hash representation of values.
+
+    V73 FIX: Handles non-serializable objects (functions, memory addresses)
+    by replacing them with deterministic representations before hashing.
+    The old code used default=str which produces non-deterministic output
+    for function objects (e.g., "<function foo at 0x7f...>") because the
+    memory address changes between runs. This broke audit trail integrity
+    verification -- the same inputs would produce different hashes.
+    Now, function objects and other non-serializable types are replaced
+    with their qualified name or type name, which is deterministic.
+    """
+    def _make_serializable(obj: Any) -> Any:
+        """Recursively replace non-serializable objects with deterministic strings."""
+        if isinstance(obj, (str, int, float, bool, type(None))):
+            return obj
+        if isinstance(obj, (list, tuple)):
+            return [_make_serializable(item) for item in obj]
+        if isinstance(obj, dict):
+            return {str(k): _make_serializable(v) for k, v in obj.items()}
+        if isinstance(obj, set):
+            return sorted([_make_serializable(item) for item in obj])
+        # For functions, use __qualname__ (deterministic across runs)
+        if hasattr(obj, '__qualname__'):
+            return f"<function:{obj.__qualname__}>"
+        # For other objects, use type name (deterministic)
+        return f"<{type(obj).__name__}>"
+
     try:
-        serialized = json.dumps(data, sort_keys=True, default=str)
+        clean_data = _make_serializable(data)
+        serialized = json.dumps(clean_data, sort_keys=True)
     except Exception:
         serialized = str(data)
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
@@ -860,13 +975,38 @@ def self_healing(
             # ---------------------------------------------------------
             cb = global_circuit_breaker
 
-            if cb.check_and_cooldown():
+            is_fully_open, state_at_check = cb.check_and_cooldown()
+
+            if is_fully_open:
                 # Breaker is fully OPEN -- instant fallback to static safe defaults
                 safe_fallback = default_value if default_value is not None else safe_minimum
 
-                # Check physics validity of safe fallback
-                if physics_validator and not physics_validator(safe_fallback):
-                    safe_fallback = safe_minimum  # V FIX: was 0.0 (absolute floor).
+                # V67 FIX (CRITICAL): NaN/Inf guard in Tier 3 fallback path.
+                # Without this guard, default_value=float('inf') or float('nan')
+                # would pass through the physics_validator check when no
+                # validator is provided (physics_validator=None). Infinity as a
+                # sprinkler pressure is physically meaningless and would propagate
+                # into downstream voltage drop and battery calculations, causing
+                # PhysicsGuardError crashes or silently wrong results.
+                # Per QOMN kernel safety principle: "NaN/Inf NEVER propagate."
+                if isinstance(safe_fallback, float) and (
+                    math.isnan(safe_fallback) or math.isinf(safe_fallback)
+                ):
+                    safe_fallback = safe_minimum
+
+                # V68 FIX (HIGH): Wrap physics_validator in try/except in Tier 3.
+                # In Tier 1 (line 1010-1012), the validator call is wrapped in
+                # try/except, but in Tier 3 it was NOT. If the validator raises
+                # an exception (e.g., safe_fallback is a string and the validator
+                # expects a float), the exception would propagate up and crash
+                # the safety system. In a life-safety system, crashing is worse
+                # than returning a conservative fallback.
+                if physics_validator:
+                    try:
+                        if not physics_validator(safe_fallback):
+                            safe_fallback = safe_minimum
+                    except Exception:
+                        safe_fallback = safe_minimum  # V FIX: was 0.0 (absolute floor).
                     # 0.0 is dangerous for pressure calculations -- 0 psi is
                     # "no pressure" which is physically wrong and could be
                     # misinterpreted as "no sprinkler protection needed."
@@ -895,8 +1035,13 @@ def self_healing(
                     audit_ref=f"SH-{before_hash[:8]}-{after_hash[:8]}",
                 )
 
-            # Capture breaker state before execution for status determination
-            was_half_open = cb.state == cb.HALF_OPEN
+            # V66 FIX (CRITICAL): Use state_at_check from atomic check_and_cooldown()
+            # instead of reading cb.state without a lock. The old code:
+            #   was_half_open = cb.state == cb.HALF_OPEN
+            # had a race condition -- between check_and_cooldown() releasing
+            # its lock and this line executing, another thread could change
+            # cb.state. Now we use the state captured atomically inside the lock.
+            was_half_open = state_at_check == cb.HALF_OPEN
 
             # ---------------------------------------------------------
             # EXECUTE NOMINAL PATH
@@ -912,6 +1057,40 @@ def self_healing(
                 return SafetyResult(value=nominal_value, status=SystemStatus.NOMINAL)
 
             except Exception as e:
+                # V72 FIX (MEDIUM): SafetyCriticalFailure must NEVER be healed.
+                # This exception type means "the system has fundamentally failed
+                # in a way that healing is inappropriate" -- for example, all
+                # calculation tiers have been exhausted, or a physical constraint
+                # has been violated in a way that no safe fallback exists.
+                # Healing such a failure would mask a systemic problem and create
+                # a false sense of safety. In a fire protection system, masking
+                # a SafetyCriticalFailure could mean operators believe the system
+                # is working when it has actually suffered a catastrophic failure.
+                # The correct response is to re-raise immediately so callers can
+                # trigger emergency procedures, alert authorities, or shut down.
+                if isinstance(e, SafetyCriticalFailure):
+                    logging.critical(
+                        f"[SAFETY CRITICAL FAILURE] {func_name} raised "
+                        f"SafetyCriticalFailure: {str(e)}. "
+                        f"This exception type is NON-HEALABLE by design. "
+                        f"Re-raising immediately. System requires immediate attention."
+                    )
+                    # Still register with circuit breaker for monitoring
+                    cb.register_healing_event(error_type="SafetyCriticalFailure")
+                    # Still log the event for audit trail
+                    global_audit_logger.log_event({
+                        "function_name": func_name,
+                        "error_type": "SafetyCriticalFailure",
+                        "error_message": str(e),
+                        "tier_used": 0,  # No tier applied -- non-healable
+                        "fix_applied": None,
+                        "verification_result": "NON_HEALABLE",
+                        "before_hash": before_hash,
+                        "after_hash": "NONE",
+                        "user_notification_status": "CRITICAL_ALERT"
+                    })
+                    raise
+
                 # Execution failed: capture original stack context
                 err_type = type(e).__name__
                 err_msg = str(e)
@@ -986,7 +1165,18 @@ def self_healing(
                     tier_1_applied = True
 
                 elif err_type == "KeyError":
-                    healed_val = default_value
+                    # V75 FIX: NaN/Inf guard for KeyError path, same as ZeroDivisionError.
+                    # Without this, default_value=float('inf') would pass through
+                    # and be returned as a healed value.
+                    if default_value is not None:
+                        if isinstance(default_value, float) and (
+                            math.isnan(default_value) or math.isinf(default_value)
+                        ):
+                            healed_val = safe_minimum
+                        else:
+                            healed_val = default_value
+                    else:
+                        healed_val = safe_minimum
                     tier_1_applied = True
 
                 elif err_type == "TypeError":
@@ -1239,7 +1429,7 @@ def query_local_ollama_engine(
 # =====================================================================
 
 def validate_sprinkler_pressure(val: Any) -> bool:
-    """Sprinkler operating pressure must be positive and finite.
+    """Sprinkler operating pressure must be positive, non-zero, and finite.
 
     V FIX: Removed `or val == float('inf')` clause. Per the QOMN kernel
     safety principle, float('inf') must NEVER be accepted as a valid
@@ -1248,9 +1438,17 @@ def validate_sprinkler_pressure(val: Any) -> bool:
     A sprinkler pressure of infinity is physically meaningless -- the correct
     response to zero k-factor is the safe_minimum (7.0 psi per NFPA 13),
     not infinity.
+
+    V69 FIX (HIGH): Reject val == 0.0. A sprinkler pressure of 0.0 psi
+    means NO water is flowing through the sprinkler head. NFPA 13 Section
+    23.4.4 requires a minimum operating pressure of 7.0 psi. A value of
+    0.0 psi would pass the old validator (val >= 0.0 is True for 0.0),
+    causing the system to report NOMINAL status for a sprinkler that
+    provides ZERO fire protection. In a real fire, sprinklers at 0 psi
+    deliver no water -- people die.
     """
     if isinstance(val, (int, float)):
-        return val >= 0.0 and math.isfinite(val)
+        return val > 0.0 and math.isfinite(val)
     return False
 
 

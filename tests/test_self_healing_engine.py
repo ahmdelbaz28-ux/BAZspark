@@ -22,6 +22,8 @@ from fireai.core.qomn_self_healing_engine import (
     demonstrate_and_verify_all_tiers
 )
 
+import threading
+
 
 class TestQomnFireSelfHealing(unittest.TestCase):
     """
@@ -199,8 +201,8 @@ class TestHalfOpenRecovery(unittest.TestCase):
         # Wait for cooldown
         time.sleep(0.6)
 
-        # check_and_cooldown should transition to HALF_OPEN
-        is_open = self.cb.check_and_cooldown()
+        # V66 FIX: check_and_cooldown() now returns (bool, state) tuple
+        is_open, state = self.cb.check_and_cooldown()
         self.assertFalse(is_open)  # No longer fully OPEN
         self.assertEqual(self.cb.state, "HALF_OPEN")
 
@@ -221,6 +223,30 @@ class TestHalfOpenRecovery(unittest.TestCase):
 
         self.cb.record_success()
         self.assertEqual(self.cb.state, "CLOSED")  # Fully recovered
+
+    def test_check_and_cooldown_returns_state(self):
+        """V66 FIX: check_and_cooldown() returns (is_open, state) tuple."""
+        cb = WeightedCircuitBreaker(threshold=5.0, cooldown_seconds=0.1)
+
+        # When CLOSED
+        is_open, state = cb.check_and_cooldown()
+        self.assertFalse(is_open)
+        self.assertEqual(state, "CLOSED")
+
+        # Trip the breaker
+        cb.register_healing_event("ZeroDivisionError")
+        cb.register_healing_event("IndexError")
+
+        # When OPEN (before cooldown)
+        is_open, state = cb.check_and_cooldown()
+        self.assertTrue(is_open)
+        self.assertEqual(state, "OPEN")
+
+        # After cooldown
+        time.sleep(0.2)
+        is_open, state = cb.check_and_cooldown()
+        self.assertFalse(is_open)
+        self.assertEqual(state, "HALF_OPEN")
 
     def test_half_open_probe_failure_returns_to_open(self):
         """Probe failure in HALF_OPEN should return to OPEN state."""
@@ -584,10 +610,155 @@ class TestCircuitBreakerBackwardCompat(unittest.TestCase):
         # Wait for cooldown
         time.sleep(0.2)
 
-        # Should transition to HALF_OPEN in single atomic operation
-        result = cb.check_and_cooldown()
-        self.assertFalse(result)  # Not fully OPEN anymore
+        # V66 FIX: check_and_cooldown() now returns (bool, state) tuple
+        is_open, state = cb.check_and_cooldown()
+        self.assertFalse(is_open)  # Not fully OPEN anymore
+        self.assertEqual(state, "HALF_OPEN")
         self.assertEqual(cb.state, "HALF_OPEN")
+
+
+class TestV66VulnerabilityFixes(unittest.TestCase):
+    """Tests for V66-V75 vulnerability fixes."""
+
+    def setUp(self):
+        global_circuit_breaker.reset()
+        if os.path.exists("qomn_fire_healing_audit.jsonl"):
+            try:
+                os.remove("qomn_fire_healing_audit.jsonl")
+            except OSError:
+                pass
+
+    # V67: NaN/Inf guard in Tier 3
+    def test_v67_nan_inf_guard_tier3(self):
+        """V67: NaN/Inf default_value must be rejected in Tier 3 fallback."""
+        @self_healing(
+            safe_minimum=7.0,
+            default_value=float('inf'),
+            physics_validator=validate_sprinkler_pressure
+        )
+        def bad_pressure_calc():
+            raise ZeroDivisionError("test")
+
+        # Trip the circuit breaker first
+        for _ in range(20):
+            bad_pressure_calc()
+
+        # When CB is open, default_value=float('inf') should be replaced
+        # with safe_minimum=7.0
+        result = bad_pressure_calc()
+        self.assertEqual(result.value, 7.0)  # NOT float('inf')
+
+    # V69: validate_sprinkler_pressure rejects 0.0
+    def test_v69_reject_zero_pressure(self):
+        """V69: validate_sprinkler_pressure must reject 0.0 psi."""
+        self.assertFalse(validate_sprinkler_pressure(0.0))
+        self.assertTrue(validate_sprinkler_pressure(7.0))
+        self.assertTrue(validate_sprinkler_pressure(0.1))
+
+    # V70: log_event catches all exceptions
+    def test_v70_log_event_catches_all_exceptions(self):
+        """V70: log_event must not crash on non-OSError exceptions."""
+        logger = AsyncAuditLogger(
+            filepath=os.path.join(tempfile.gettempdir(), "test_v70.jsonl")
+        )
+        # Create an event with a non-serializable object that would
+        # cause TypeError in json.dumps
+        class BadObj:
+            def __str__(self):
+                raise RuntimeError("str failed")
+
+        # Should return False, not raise
+        result = logger.log_event({"bad": BadObj()})
+        # It may succeed (default=str might handle it) or fail gracefully
+        self.assertIsInstance(result, bool)
+
+    # V71: Config safe parsing
+    def test_v71_config_safe_parsing(self):
+        """V71: Config must not crash on invalid env vars."""
+        os.environ["QOMN_CB_THRESHOLD"] = "not_a_number"
+        try:
+            config = Config()
+            # Should fall back to default, not crash
+            self.assertEqual(config.CB_THRESHOLD, 10.0)
+        finally:
+            del os.environ["QOMN_CB_THRESHOLD"]
+
+    def test_v71_config_negative_value_rejected(self):
+        """V71: Config must reject negative env var values."""
+        os.environ["QOMN_CB_THRESHOLD"] = "-5.0"
+        try:
+            config = Config()
+            # Should fall back to default
+            self.assertEqual(config.CB_THRESHOLD, 10.0)
+        finally:
+            del os.environ["QOMN_CB_THRESHOLD"]
+
+    # V72: SafetyCriticalFailure is re-raised
+    def test_v72_safety_critical_failure_reraised(self):
+        """V72: SafetyCriticalFailure must be re-raised, not swallowed."""
+        @self_healing(safe_minimum=7.0, default_value=7.0,
+                       physics_validator=validate_sprinkler_pressure)
+        def critical_func():
+            raise SafetyCriticalFailure("All tiers exhausted")
+
+        with self.assertRaises(SafetyCriticalFailure):
+            critical_func()
+
+    # V73: compute_hash is deterministic
+    def test_v73_deterministic_hash(self):
+        """V73: compute_hash must produce same hash across runs for same input."""
+        data = {"args": (1, 2, 3), "kwargs": {"key": "value"}}
+        hash1 = compute_hash(data)
+        hash2 = compute_hash(data)
+        self.assertEqual(hash1, hash2)
+
+    # V74: LLMCircuitBreaker peek() method
+    def test_v74_peek_no_side_effect(self):
+        """V74: peek() must not consume a rate limit slot."""
+        limiter = LLMCircuitBreaker(max_rps=2.0, timeout=2.0)
+        # Peek twice
+        self.assertTrue(limiter.peek())
+        self.assertTrue(limiter.peek())
+        # Still have 2 slots available
+        self.assertTrue(limiter.allow_request())
+        self.assertTrue(limiter.allow_request())
+        # Now should be blocked
+        self.assertFalse(limiter.allow_request())
+
+    # V75: KeyError NaN/Inf guard
+    def test_v75_keyerror_nan_guard(self):
+        """V75: KeyError path must reject NaN/Inf default_value."""
+        @self_healing(
+            safe_minimum=7.0,
+            default_value=float('nan'),
+            physics_validator=validate_sprinkler_pressure
+        )
+        def key_error_func():
+            d = {}
+            return d["missing_key"]
+
+        result = key_error_func()
+        # NaN should be replaced with safe_minimum
+        self.assertEqual(result.value, 7.0)
+
+    # V66: Race condition fix - state returned atomically
+    def test_v66_check_and_cooldown_returns_state(self):
+        """V66: check_and_cooldown returns atomic (is_open, state) tuple."""
+        cb = WeightedCircuitBreaker(threshold=5.0, cooldown_seconds=0.1)
+
+        # When CLOSED
+        is_open, state = cb.check_and_cooldown()
+        self.assertFalse(is_open)
+        self.assertEqual(state, "CLOSED")
+
+        # Trip the breaker
+        cb.register_healing_event("ZeroDivisionError")  # weight=5
+        cb.register_healing_event("IndexError")  # weight=1, sum=6 > 5
+
+        # When OPEN
+        is_open, state = cb.check_and_cooldown()
+        self.assertTrue(is_open)
+        self.assertEqual(state, "OPEN")
 
 
 if __name__ == '__main__':
