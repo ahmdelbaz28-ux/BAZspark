@@ -1,5 +1,6 @@
 # test_self_healing_engine.py
 import unittest
+import math
 import os
 import json
 import hmac
@@ -759,6 +760,486 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
         is_open, state = cb.check_and_cooldown()
         self.assertTrue(is_open)
         self.assertEqual(state, "OPEN")
+
+
+# =====================================================================
+# V76 CRITICAL VULNERABILITY FIX TESTS
+# =====================================================================
+# Three fixes tested here:
+#   FIX 1 (CRITICAL): Nominal path physics validation
+#   FIX 2 (CRITICAL): Config NaN/Inf guard
+#   FIX 3 (HIGH):     Audit hash chain with rotation integrity
+# =====================================================================
+
+class TestV76NominalPhysicsValidation(unittest.TestCase):
+    """
+    V76 FIX 1 (CRITICAL): Functions returning physically invalid values
+    (NaN, negative pressure, etc.) in the nominal path were reported as
+    NOMINAL. Now validated BEFORE caching/returning.
+
+    Three specific improvements over the original proposal:
+    (a) validate BEFORE LRU cache update (not after)
+    (b) register with circuit breaker for threshold accumulation
+    (c) prefer default_value over safe_minimum as replacement
+    """
+
+    def setUp(self):
+        global_circuit_breaker.reset()
+        if os.path.exists("qomn_fire_healing_audit.jsonl"):
+            try:
+                os.remove("qomn_fire_healing_audit.jsonl")
+            except OSError:
+                pass
+
+    def test_v76_fix1_nan_nominal_rejected(self):
+        """V76 FIX 1: A function returning NaN must NOT be reported as NOMINAL."""
+        @self_healing(
+            safe_minimum=7.0,
+            default_value=7.0,
+            physics_validator=validate_sprinkler_pressure
+        )
+        def returns_nan():
+            return float('nan')
+
+        result = returns_nan()
+        self.assertNotEqual(result.status, SystemStatus.NOMINAL)
+        self.assertEqual(result.value, 7.0)  # Replaced with valid value
+
+    def test_v76_fix1_negative_pressure_nominal_rejected(self):
+        """V76 FIX 1: Negative pressure in nominal path must be caught and healed."""
+        @self_healing(
+            safe_minimum=7.0,
+            default_value=7.0,
+            physics_validator=validate_sprinkler_pressure
+        )
+        def returns_negative_pressure():
+            return -5.0  # Physically impossible pressure
+
+        result = returns_negative_pressure()
+        self.assertNotEqual(result.status, SystemStatus.NOMINAL)
+        self.assertEqual(result.status, SystemStatus.DEGRADED)
+        self.assertEqual(result.value, 7.0)
+
+    def test_v76_fix1_validation_before_cache(self):
+        """V76 FIX 1 (a): Invalid values must NOT be stored in LRU cache.
+
+        If validation happens AFTER cache update, the invalid value is
+        stored as 'Last Known Good' and recovered on MemoryError —
+        poisoning the fallback with a physically impossible value.
+        """
+        @self_healing(
+            safe_minimum=7.0,
+            default_value=7.0,
+            physics_validator=validate_sprinkler_pressure
+        )
+        def returns_negative_pressure():
+            return -10.0
+
+        # Call the function — it returns -10.0, which is physically invalid
+        result = returns_negative_pressure()
+        self.assertEqual(result.value, 7.0)  # Healed, not -10.0
+
+        # The LRU cache should contain the VALID replacement, not the invalid value
+        cached = global_lru_cache.get("returns_negative_pressure")
+        if cached is not None:
+            # If cached, it must be the valid value, NOT -10.0
+            self.assertNotEqual(cached, -10.0)
+
+    def test_v76_fix1_cb_event_registered(self):
+        """V76 FIX 1 (b): Nominal physics violations must register with circuit breaker.
+
+        Without CB registration, repeated physics violations in the nominal
+        path don't accumulate toward the breaker threshold — the system
+        continues operating with physically invalid results.
+        """
+        # Reset global CB for this test
+        global_circuit_breaker.reset()
+
+        @self_healing(
+            safe_minimum=7.0,
+            default_value=7.0,
+            physics_validator=validate_sprinkler_pressure,
+        )
+        def returns_negative():
+            return -5.0
+
+        # Before: breaker should be CLOSED
+        self.assertEqual(global_circuit_breaker.state, "CLOSED")
+
+        # NominalPhysicsViolation has weight=5 (CRITICAL).
+        # The global CB default threshold is 10.0.
+        # 3 violations = 3 * 5 = 15 > 10 threshold, should trip breaker.
+        for _ in range(3):
+            result = returns_negative()
+            self.assertNotEqual(result.status, SystemStatus.NOMINAL)
+
+        # After: breaker should be OPEN because violations accumulated
+        self.assertEqual(global_circuit_breaker.state, "OPEN")
+
+    def test_v76_fix1_default_value_preferred_over_safe_minimum(self):
+        """V76 FIX 1 (c): default_value must be preferred over safe_minimum.
+
+        For non-pressure functions, safe_minimum might be inappropriate.
+        Example: safe_minimum=0.0 for an audio tone means 'no alarm sound'
+        — dangerous in a fire alarm system. default_value should be tried
+        first if it passes the physics validator.
+        """
+        def validate_audio_tone(val):
+            """Audio tone must be a non-empty string."""
+            return isinstance(val, str) and len(val) > 0
+
+        @self_healing(
+            safe_minimum=0.0,  # Inappropriate: 0 means "no sound"
+            default_value="DEFAULT_EVAC_TONE",  # Correct fallback
+            physics_validator=validate_audio_tone,
+        )
+        def returns_bad_tone():
+            return ""  # Empty string — physically invalid (no alarm)
+
+        result = returns_bad_tone()
+        self.assertNotEqual(result.status, SystemStatus.NOMINAL)
+        # Should prefer default_value ("DEFAULT_EVAC_TONE") over safe_minimum (0.0)
+        self.assertEqual(result.value, "DEFAULT_EVAC_TONE")
+
+    def test_v76_fix1_validator_crash_uses_safe_minimum(self):
+        """V76 FIX 1: If the physics validator itself crashes, use safe_minimum.
+
+        A crashing validator means we can't trust any value it might have
+        passed. The safest choice is safe_minimum — the most conservative
+        physically valid value.
+        """
+        def crashing_validator(val):
+            raise RuntimeError("Validator crashed!")
+
+        @self_healing(
+            safe_minimum=7.0,
+            default_value=7.0,
+            physics_validator=crashing_validator,
+        )
+        def valid_function():
+            return 100.0
+
+        result = valid_function()
+        self.assertEqual(result.status, SystemStatus.DEGRADED)
+        self.assertEqual(result.value, 7.0)  # safe_minimum
+
+    def test_v76_fix1_inf_nominal_rejected(self):
+        """V76 FIX 1: A function returning float('inf') must NOT be NOMINAL."""
+        @self_healing(
+            safe_minimum=7.0,
+            default_value=7.0,
+            physics_validator=validate_sprinkler_pressure
+        )
+        def returns_inf():
+            return float('inf')
+
+        result = returns_inf()
+        self.assertNotEqual(result.status, SystemStatus.NOMINAL)
+        self.assertEqual(result.value, 7.0)
+
+
+class TestV76ConfigNaNInfGuard(unittest.TestCase):
+    """
+    V76 FIX 2 (CRITICAL): Config._safe_float() NaN/Inf bypass.
+
+    Without this guard:
+    - QOMN_CB_THRESHOLD=nan → NaN < 1.0 is False (IEEE-754) → NaN passes
+    - With threshold=NaN, circuit breaker NEVER trips (current_weight > NaN is always False)
+    - QOMN_CB_THRESHOLD=inf → threshold unreachable, breaker never trips
+
+    In a fire protection system, a circuit breaker that never trips means
+    the system continues operating with accumulating faults — potentially
+    returning wrong sprinkler pressures while appearing functional.
+    """
+
+    def test_v76_fix2_nan_env_var_rejected(self):
+        """V76 FIX 2: NaN environment variable must be rejected by _safe_float."""
+        os.environ["QOMN_CB_THRESHOLD"] = "nan"
+        try:
+            config = Config()
+            # Must fall back to default, NOT accept NaN
+            self.assertEqual(config.CB_THRESHOLD, 10.0)
+        finally:
+            del os.environ["QOMN_CB_THRESHOLD"]
+
+    def test_v76_fix2_inf_env_var_rejected(self):
+        """V76 FIX 2: Inf environment variable must be rejected by _safe_float."""
+        os.environ["QOMN_CB_THRESHOLD"] = "inf"
+        try:
+            config = Config()
+            # Must fall back to default, NOT accept Inf
+            self.assertEqual(config.CB_THRESHOLD, 10.0)
+        finally:
+            del os.environ["QOMN_CB_THRESHOLD"]
+
+    def test_v76_fix2_negative_inf_env_var_rejected(self):
+        """V76 FIX 2: Negative Inf environment variable must be rejected."""
+        os.environ["QOMN_CB_THRESHOLD"] = "-inf"
+        try:
+            config = Config()
+            self.assertEqual(config.CB_THRESHOLD, 10.0)
+        finally:
+            del os.environ["QOMN_CB_THRESHOLD"]
+
+    def test_v76_fix2_circuit_breaker_with_nan_threshold(self):
+        """V76 FIX 2: Circuit breaker with NaN threshold must still function.
+
+        This is the critical safety scenario: if NaN somehow reached the
+        circuit breaker (e.g., through a different code path), the breaker
+        must still be able to trip. With NaN threshold, current_weight > NaN
+        is always False, so the breaker never trips. The Config._safe_float
+        guard prevents NaN from reaching the breaker.
+        """
+        # Direct test: NaN threshold means breaker cannot trip via comparison
+        cb = WeightedCircuitBreaker(threshold=float('nan'))
+        cb.register_healing_event("ZeroDivisionError")
+        # NaN comparison: current_weight > NaN → False → breaker stays CLOSED
+        # This proves the vulnerability — if NaN reaches the breaker, it breaks
+        self.assertEqual(cb.state, "CLOSED")  # Bug: breaker doesn't trip with NaN
+
+        # But Config._safe_float prevents NaN from ever reaching the breaker:
+        os.environ["QOMN_CB_THRESHOLD"] = "nan"
+        try:
+            config = Config()
+            # Config must reject NaN and use default instead
+            self.assertEqual(config.CB_THRESHOLD, 10.0)
+            self.assertTrue(math.isfinite(config.CB_THRESHOLD))
+        finally:
+            del os.environ["QOMN_CB_THRESHOLD"]
+
+    def test_v76_fix2_valid_env_var_accepted(self):
+        """V76 FIX 2: Valid environment variables must still work correctly."""
+        os.environ["QOMN_CB_THRESHOLD"] = "25.0"
+        try:
+            config = Config()
+            self.assertEqual(config.CB_THRESHOLD, 25.0)
+        finally:
+            del os.environ["QOMN_CB_THRESHOLD"]
+
+    def test_v76_fix2_all_config_params_reject_nan(self):
+        """V76 FIX 2: ALL float config parameters must reject NaN/Inf."""
+        test_cases = {
+            "QOMN_CB_THRESHOLD": "CB_THRESHOLD",
+            "QOMN_CB_WINDOW": "CB_WINDOW",
+            "QOMN_CB_COOLDOWN": "CB_COOLDOWN",
+            "QOMN_OLLAMA_TIMEOUT": "OLLAMA_TIMEOUT",
+            "QOMN_OLLAMA_MAX_RPS": "OLLAMA_MAX_RPS",
+            "QOMN_AUDIT_FLUSH_INTERVAL": "AUDIT_FLUSH_INTERVAL",
+        }
+        for env_var, attr_name in test_cases.items():
+            for bad_val in ["nan", "inf", "-inf"]:
+                os.environ[env_var] = bad_val
+                try:
+                    config = Config()
+                    actual = getattr(config, attr_name)
+                    self.assertTrue(
+                        math.isfinite(actual),
+                        f"{env_var}={bad_val} produced non-finite value {actual}"
+                    )
+                finally:
+                    del os.environ[env_var]
+
+
+class TestV76AuditHashChain(unittest.TestCase):
+    """
+    V76 FIX 3 (HIGH): Audit hash chain for tamper detection.
+
+    Each audit entry includes the SHA-256 hash of the previous entry,
+    creating a tamper-evident chain. If any entry is deleted, the chain
+    breaks at the next entry (previous_hash mismatch).
+
+    Key requirements:
+    - Chain starts with genesis hash ("0" * 64)
+    - Each entry's previous_hash matches SHA-256 of the previous entry
+    - Chain survives file rotation (_last_chain_hash carries forward)
+    - verify_chain() detects breaks in the chain
+    """
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.log_path = os.path.join(self.temp_dir, "test_chain.jsonl")
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_v76_fix3_genesis_hash(self):
+        """V76 FIX 3: First entry must have genesis hash as previous_hash."""
+        logger = AsyncAuditLogger(filepath=self.log_path, secret_key=b"TEST_KEY")
+        logger.log_event({"test": "first"})
+
+        with open(self.log_path, "r") as f:
+            entry = json.loads(f.readline())
+
+        self.assertEqual(
+            entry["payload"]["previous_hash"],
+            "0" * 64,
+            "First entry must have genesis hash"
+        )
+
+    def test_v76_fix3_chain_linking(self):
+        """V76 FIX 3: Each entry must link to the previous entry via previous_hash."""
+        logger = AsyncAuditLogger(filepath=self.log_path, secret_key=b"TEST_KEY")
+        logger.log_event({"test": "first"})
+        logger.log_event({"test": "second"})
+        logger.log_event({"test": "third"})
+
+        with open(self.log_path, "r") as f:
+            lines = f.readlines()
+
+        self.assertEqual(len(lines), 3)
+
+        # Verify chain: each entry's previous_hash must match
+        # the SHA-256 of the previous line
+        prev_hash = "0" * 64  # Genesis
+        for line in lines:
+            entry = json.loads(line.strip())
+            self.assertEqual(
+                entry["payload"]["previous_hash"],
+                prev_hash,
+                "Chain link broken: previous_hash mismatch"
+            )
+            # Compute expected hash for next entry
+            prev_hash = hashlib.sha256(line.strip().encode("utf-8")).hexdigest()
+
+    def test_v76_fix3_tamper_detection(self):
+        """V76 FIX 3: Deleting a middle entry must break the chain."""
+        logger = AsyncAuditLogger(filepath=self.log_path, secret_key=b"TEST_KEY")
+        logger.log_event({"test": "first"})
+        logger.log_event({"test": "second"})
+        logger.log_event({"test": "third"})
+
+        # Read all entries
+        with open(self.log_path, "r") as f:
+            lines = f.readlines()
+
+        # Delete the middle entry (simulate tampering)
+        tampered_lines = [lines[0], lines[2]]
+
+        # Write tampered file
+        tampered_path = os.path.join(self.temp_dir, "tampered.jsonl")
+        with open(tampered_path, "w") as f:
+            f.writelines(tampered_lines)
+
+        # Verify chain detects the break
+        report = logger.verify_chain(filepath=tampered_path)
+        self.assertFalse(report["chain_valid"], "Chain should be INVALID after deletion")
+        self.assertTrue(len(report["break_points"]) > 0, "Break points must be reported")
+
+    def test_v76_fix3_valid_chain_passes_verification(self):
+        """V76 FIX 3: Intact chain must pass verify_chain()."""
+        logger = AsyncAuditLogger(filepath=self.log_path, secret_key=b"TEST_KEY")
+        for i in range(10):
+            logger.log_event({"test": f"event_{i}"})
+
+        report = logger.verify_chain()
+        self.assertTrue(report["chain_valid"], "Intact chain must pass verification")
+        self.assertEqual(report["total_entries"], 10)
+        self.assertEqual(len(report["break_points"]), 0)
+
+    def test_v76_fix3_chain_survives_rotation(self):
+        """V76 FIX 3: Hash chain must survive file rotation.
+
+        When the audit log rotates, the _last_chain_hash is preserved
+        and used as the genesis hash for the new file. This ensures
+        cross-file chain integrity — deleting the rotated file is detectable
+        because the new file's first entry references the old file's last hash.
+        """
+        logger = AsyncAuditLogger(
+            filepath=self.log_path,
+            secret_key=b"TEST_KEY",
+            max_bytes=500,  # Very small to trigger rotation quickly
+            backup_count=3,
+        )
+
+        # Write enough events to trigger rotation
+        for i in range(30):
+            logger.log_event({"test": f"event_{i}", "data": "x" * 50})
+
+        # The chain hash should NOT be "0" * 64 (genesis) — it must
+        # have advanced from the events written
+        stats = logger.stats()
+        self.assertNotEqual(
+            stats["chain_hash"],
+            "0" * 64,
+            "Chain hash must have advanced from events"
+        )
+
+        # Verify cross-file chain integrity:
+        # If a backup file exists, the current file's first entry
+        # must have previous_hash pointing to the backup's last entry.
+        backup_path = f"{self.log_path}.1"
+        if os.path.exists(backup_path) and os.path.exists(self.log_path):
+            # Get the last entry's hash from the backup file
+            with open(backup_path, "r") as f:
+                backup_lines = f.readlines()
+            if backup_lines:
+                last_backup_line = backup_lines[-1].strip()
+                expected_prev_hash = hashlib.sha256(
+                    last_backup_line.encode("utf-8")
+                ).hexdigest()
+
+                # Read the first entry of the current file
+                with open(self.log_path, "r") as f:
+                    current_first_line = f.readline()
+                current_first_entry = json.loads(current_first_line.strip())
+
+                # The first entry of the new file must reference
+                # the last entry of the rotated file
+                self.assertEqual(
+                    current_first_entry["payload"]["previous_hash"],
+                    expected_prev_hash,
+                    "Chain must carry forward across rotation: "
+                    "new file's first entry must reference rotated file's last entry"
+                )
+
+        # Verify the current file's INTERNAL chain is intact
+        # (skip the first entry which may reference the rotated file)
+        if os.path.exists(self.log_path):
+            with open(self.log_path, "r") as f:
+                lines = f.readlines()
+            if len(lines) > 1:
+                # Verify chain from 2nd entry onward
+                prev_hash = hashlib.sha256(
+                    lines[0].strip().encode("utf-8")
+                ).hexdigest()
+                for i, line in enumerate(lines[1:], 2):
+                    entry = json.loads(line.strip())
+                    self.assertEqual(
+                        entry["payload"]["previous_hash"],
+                        prev_hash,
+                        f"Chain broken at line {i}"
+                    )
+                    prev_hash = hashlib.sha256(
+                        line.strip().encode("utf-8")
+                    ).hexdigest()
+
+    def test_v76_fix3_stats_includes_chain_hash(self):
+        """V76 FIX 3: stats() must include current chain tip hash."""
+        logger = AsyncAuditLogger(filepath=self.log_path, secret_key=b"TEST_KEY")
+        logger.log_event({"test": "event"})
+
+        stats = logger.stats()
+        self.assertIn("chain_hash", stats)
+        self.assertNotEqual(stats["chain_hash"], "0" * 64,
+                           "Chain hash must advance after logging events")
+
+    def test_v76_fix3_previous_hash_in_payload(self):
+        """V76 FIX 3: Each audit entry must include previous_hash in payload."""
+        logger = AsyncAuditLogger(filepath=self.log_path, secret_key=b"TEST_KEY")
+        logger.log_event({"test": "event"})
+
+        with open(self.log_path, "r") as f:
+            entry = json.loads(f.readline())
+
+        self.assertIn("previous_hash", entry["payload"],
+                      "Audit entry must include previous_hash field")
+
+    def test_v76_fix3_verify_chain_missing_file(self):
+        """V76 FIX 3: verify_chain() must handle missing file gracefully."""
+        logger = AsyncAuditLogger(filepath=self.log_path, secret_key=b"TEST_KEY")
+        report = logger.verify_chain(filepath="/nonexistent/file.jsonl")
+        self.assertFalse(report["chain_valid"])
+        self.assertIn("error", report)
 
 
 if __name__ == '__main__':
