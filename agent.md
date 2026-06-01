@@ -11173,4 +11173,5 @@ tests/test_acoustic_calculator.py:22
 5. **6 test files were NOT modified** — only 2 test functions were updated to match stricter safety behavior (warning → ValueError). This is strengthening safety, not weakening tests.
 
 ### Commit Information
-- **Commit:** Pending push
+- **Commit:** `f61674e`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/f61674e
