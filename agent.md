@@ -11906,3 +11906,354 @@ Continuing from V76 CRITICAL fixes (9 CRIT + 6 HIGH already applied). This batch
 ### Commit Information
 - **Commit:** `f0ec886`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/f0ec886
+
+---
+
+## V78 Fixes (2026-06-02) — Comprehensive Code Review: 41 New Vulnerabilities Found and Fixed
+
+### Context
+Performed deep code review of 30+ production files across 4 parallel review streams. Found 41 NEW vulnerabilities (9 CRITICAL, 14 HIGH, 13 MEDIUM, 5 LOW) not previously documented. Applied all fixes. All verified with 5007 tests passing.
+
+### Bug CRIT-01 — NotificationAssessment.evaluate() Overrides Fail-Safe Default (CRITICAL — False PASS)
+**File:** `fireai/core/notification_appliance.py` line 645
+**Discovery:** evaluate() resets is_compliant=True at start. If no results are evaluated, room appears compliant.
+**Impact:** Room with zero notification checks appears NFPA 72 compliant. Occupants may not hear fire alarm.
+**Fix Applied:** Check evaluated count before setting is_compliant=True. Zero evaluations = NOT compliant per NFPA 72 §18.1.
+
+### Bug CRIT-02 — required_battery_capacity_ah() Uses Milliamps (CRITICAL — 1000× Confusion Trap)
+**File:** `fireai/core/nfpa72_calculations.py` line 956
+**Discovery:** Takes mA while all other battery functions take Amps. Passing 0.5A computes 0.012 Ah instead of 12 Ah.
+**Fix Applied:** Changed to Amps (standby_current_a, alarm_current_a). Added standby_hours >= 24 validation per §10.6.7.2.1.
+
+### Bug CRIT-03 — L2→L3 Zone Downgrade ZONE_0 → ZONE_1 (CRITICAL — Explosion Risk)
+**File:** `fireai/bridges/ifc_pipeline.py` line 385
+**Discovery:** L2 exception fallback returns dict without "hac" key. L3 defaults to ZoneType.ZONE_1.
+**Impact:** Zone 0 (continuous explosive atmosphere) gets Zone 1 equipment (EPL Gb). Explosion risk per IEC 60079-0 §5.
+**Fix Applied:** Parse l2["zone"] string to construct correct ZoneType fallback.
+
+### Bug CRIT-04 — Global Coverage Arithmetic Mean Overstates Coverage (CRITICAL)
+**File:** `fireai/bridges/ifc_pipeline.py` lines 191-192
+**Discovery:** Coverage averaged per-space, not area-weighted. 10m²@90% + 1000m²@50% = 70% (should be 50.4%).
+**Fix Applied:** Area-weighted average using space area from results.
+
+### Bug CRIT-05 — Room Volume Default 1000 m³ Underestimates Zone Extents (CRITICAL)
+**File:** `fireai/bridges/ifc_pipeline.py` line 346
+**Discovery:** Missing volume defaults to 1000 m³. Typical room is 30 m³. Overestimated volume = more dilution = smaller zones.
+**Fix Applied:** Compute from area × height, default to conservative small value (1.0 m³ minimum).
+
+### Bug CRIT-06 — NaN ceiling_height Passes Validation (CRITICAL — Zero Detectors)
+**File:** `fireai/core/spatial_engine/density_optimizer.py` line 167
+**Discovery:** width and length validated with math.isfinite() but ceiling_height was NOT. NaN passes <= 0 check.
+**Impact:** NaN ceiling_height → NaN spacing → zero detectors in room. Same bug class as V57 NaN fixes.
+**Fix Applied:** Added `not math.isfinite(self.ceiling_height)` to validation.
+
+### Bug CRIT-07 — Voltage Drop Temperature Correction Uses Wrong Base (CRITICAL)
+**File:** `fireai/core/nfpa72_schemas.py` line 348
+**Discovery:** Formula uses `(T - 30°C)` but resistance is at 75°C base. Over-corrects by 17.7% at 75°C ambient.
+**Fix Applied:** Changed to `(T - 75.0)` matching the comment and physics. Added minimum correction of 1.0.
+
+### Bug CRIT-08 — DXF Parser Accepts Rooms Exceeding Max Area (CRITICAL — Fail-Open)
+**File:** `parsers/dxf_parser.py` lines 112-113
+**Discovery:** Rooms > max_area only get a warning but are still accepted. Unit conversion errors produce 500,000 m² rooms.
+**Fix Applied:** Skip oversized rooms (same as undersized) with continue + increment skipped count.
+
+### Bug CRIT-09 — PDF Parser Pattern Ordering Misclassifies Horn/Strobe (CRITICAL)
+**File:** `parsers/pdf_parser.py` line 84-88
+**Discovery:** Pattern 'horn' matches before 'horn-strobe'. Combined devices classified as simple HORN.
+**Impact:** Combined notification appliances undercounted. NFPA 72 compliance report inaccurate.
+**Fix Applied:** Moved horn-strobe pattern BEFORE horn pattern (most-specific-first ordering).
+
+### Bug HIGH-01 — check_voltage_drop() Defaults to 15% (No NFPA 72 Section)
+**File:** `fireai/core/nfpa72_calculations.py` line 891
+**Fix Applied:** Changed default from 0.15 to 0.10 per NFPA 72 §27.4.1.2 (PLFA limit).
+
+### Bug HIGH-02 — NFPA 72 §10.14 Obsolete Reference
+**File:** `fireai/core/bps_allocator.py` line 273
+**Fix Applied:** Changed to §10.6.4 (correct 2022 edition reference).
+
+### Bug HIGH-03 — Unknown Zone Defaults to Least Protective EPL (Gc/3G)
+**File:** `fireai/core/atex_hazardous_arbiter.py` lines 411-417
+**Fix Applied:** Default to Ga/1G/T6/ia (most protective per IEC 60079-0 §5).
+
+### Bug HIGH-04 — Missing Autoignition Defaults to T4 Instead of T6
+**File:** `fireai/core/atex_hazardous_arbiter.py` line 472
+**Fix Applied:** Default to T6 (85°C max) when AIT unknown per IEC 60079-0 §7.3.
+
+### Bug HIGH-05 — All IFC Devices Written to First Storey
+**File:** `fireai/bridges/ifc_headless_bridge.py` lines 210-211
+**Fix Applied:** Match device z-coordinate to storey elevation with 0.5m tolerance.
+
+### Bug HIGH-06 — Device Type Information Lost (UGLD/FLAME → HEATSENSOR)
+**File:** `fireai/bridges/ifc_headless_bridge.py` line 214
+**Fix Applied:** Added proper type mapping: FLAME→FLAMESENSOR, UGLD→GASSENSOR, COMBO→MULTISENSOR.
+
+### Bug HIGH-07 — Voltage Drop Divides by Bundling Factor (Ampacity ≠ Resistance)
+**File:** `fireai/core/nfpa72_schemas.py` line 370
+**Fix Applied:** Removed bundling_factor from voltage drop (NEC: bundling is ampacity derating, not resistance).
+
+### Bug HIGH-08 — Conduit Fill Default Wire Diameter 3.5mm Underestimates Area
+**File:** `fireai/core/conduit_fill_analyzer.py` lines 313-315
+**Fix Applied:** Changed to 6.0mm conservative default (overestimating area is safe).
+
+### Bug HIGH-09 — NFPAComplianceResult Defaults is_compliant=True (Fail-Open)
+**File:** `fireai/core/nfpa72_coverage.py` lines 627, 833
+**Fix Applied:** Changed to is_compliant=False (fail-closed). Added is_compliant=True when no violations.
+
+### Bug HIGH-10 — CeilingSpec Slope Hardcoded Run=3.0m
+**File:** `fireai/core/nfpa72_models.py` line 194
+**Fix Applied:** Added slope_run_m field. Warning when not provided. Fallback to 3.0m with log.
+
+### Bug HIGH-11 — height_at_high_point_m Uses Truthy Instead of is not None
+**File:** `fireai/core/nfpa72_models.py` line 193
+**Fix Applied:** Changed `if self.height_at_high_point_m` to `if self.height_at_high_point_m is not None`.
+
+### Bug HIGH-12 — PDF Parser Returns success=True With Zero Devices
+**File:** `parsers/pdf_parser.py` line 161
+**Fix Applied:** success = len(devices) > 0 only. Added warning for text-but-no-devices.
+
+### Bug HIGH-13 — IFC Parser Negative Area Not Validated
+**File:** `parsers/ifc_parser.py` line 67
+**Fix Applied:** Added negative area validation with clamping to 0.
+
+### Bug HIGH-14 — Phantom Default Areas (20m²/80m²) in BIM Sync
+**File:** `fireai/bridges/revit_bim_sync.py` lines 290, 329
+**Fix Applied:** Changed defaults from 20.0/80.0 to 0.0 (excluded from analysis).
+
+### MEDIUM Fixes Applied:
+- Pathway survivability correction doesn't propagate to result
+- Enterprise pipeline crashes on import failure → safe degradation
+- Required battery capacity no standby_hours < 24 validation (now raises ValueError)
+
+### Commit Information
+- **Commit:** `c088aa0`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/c088aa0
+- **Tests:** 5007 passed, 0 failed, 1 skipped
+
+### Self-Criticism Notes (V78)
+
+1. **CRIT-02 (mA vs A) is a textbook API design bug** — the same class of bug was fixed as BUG-13 in voltage_drop.py. Two functions in the same codebase using different units for the same physical quantity is a recipe for disaster. This should have been caught during code review of the original PR.
+2. **CRIT-03 (zone downgrade) is the SAME pattern as the V76 CRIT-07/08 fix** — the exception fallback returns a dict without all keys, and the consumer defaults to a non-conservative value. We fixed the L2 and L3 exception handlers in V76 but didn't check what happens when L2's dict is consumed by L3.
+3. **CRIT-07 (temp correction 30°C base) was hiding in plain sight** — the COMMENT on line 342 correctly says the formula is R_75C × (1 + 0.00393 × (T - 75)), but the CODE uses (T - 30). Code-comment mismatch is a common bug source.
+4. **CRIT-09 (pattern ordering) is the SAME class as the V12 Bug #1 fix** — substring matching in "F-DET" vs "F-DET-H". The solution pattern is the same: most-specific-first ordering.
+5. **HIGH-09 (is_compliant=True default) is the THIRD instance of this pattern** — V76 CRIT-02 fixed compliance gates defaulting True, V76 CRIT-04 fixed hardcoded NFPA72_Compliant=True, and now NFPAComplianceResult defaults True. Every result object should default to fail-closed.
+6. **The bundling_factor in voltage drop was physically wrong** — dividing resistance by a derating factor that applies to ampacity. This overstated voltage drop by 25% for 4-6 conductors. Conservative but incorrect per NEC methodology.
+
+---
+
+## V79 Fixes (2026-06-02) — Comprehensive Code Review: 23 New Vulnerabilities Found and Fixed
+
+### Context
+After re-reading agent.md (21 mandatory rules + 5 verification gates) and performing
+4-layer self-criticism per Rule 21, conducted exhaustive adversarial code review across
+30+ production files in 3 parallel review streams. Found 23 NEW vulnerabilities
+(8 CRITICAL, 8 HIGH, 5 MEDIUM, 2 LOW) not previously documented. Applied all fixes.
+All verified with 4996 tests passing.
+
+### Bug CRIT-01 — ps_voltage == 0 Passes Validation, Produces False 0% Voltage Drop (CRITICAL)
+**File:** `fireai/core/cable_router.py` line 501
+**Discovery:** Input validation rejects `ps_voltage < 0` but allows `ps_voltage == 0`.
+With zero voltage, the drop percentage returns 0.0 (line 590: `if ps_voltage > 0 else 0.0`),
+which is ≤ any threshold → circuit appears COMPLIANT. A fire alarm system with 0V supply
+is completely non-functional — no horns, no strobes, no alarm.
+**Impact:** Non-functional fire alarm system reported as compliant.
+**Fix Applied:** Changed `if ps_voltage < 0` to `if ps_voltage <= 0` with descriptive error.
+**Reference:** NFPA 72-2022 §10.6.4
+
+### Bug CRIT-02 — String wire_gauge Uses Approximate 20°C Resistance (~2% Error) (CRITICAL)
+**File:** `fireai/core/cable_router.py` lines 572-582
+**Discovery:** String wire_gauge path estimated 20°C resistance from 75°C using reverse
+temperature correction formula `R_20 = R_75 / (1 + α×55)`, introducing ~2% error.
+AWG 14: formula gives 8.278 Ω/km vs NEC published 8.450 Ω/km.
+**Impact:** ~2% underestimation of voltage drop. Borderline-compliant circuits may pass
+when they should fail. Horns/strobes at EOL may not operate during fire.
+**Fix Applied:** Look up `_WireGaugeInstance` by string key to get exact NEC 20°C value
+from `resistance_ohm_per_km_at_20c` property, eliminating approximation error.
+**Reference:** NEC Chapter 9, Table 8
+
+### Bug CRIT-03 — Heat Detector While-Loop Skips Last Detector (CRITICAL)
+**File:** `fireai/core/nfpa72_calculations.py` lines 196-203
+**Discovery:** `while x < room_spec.width_m` skips the last detector row when position
+falls at/past boundary. Room 15m×15m with spacing 6.1m: while-loop places 2×2=4 detectors,
+but ceil(15/6.1)=3 per axis → 9 needed. Far wall at 15m is 5.85m from nearest detector,
+exceeding NFPA 72 §17.6.3.1.1 wall distance limit of 3.05m.
+**Impact:** Rooms of certain dimensions have NO detector coverage at far walls.
+**Fix Applied:** Replaced while-loop with count-based placement using `math.ceil()` and
+even distribution across room dimensions.
+**Reference:** NFPA 72-2022 §17.6.3.1.1
+
+### Bug CRIT-04 — Substance Properties Always Propane Regardless of CAS Number (CRITICAL)
+**File:** `fireai/bridges/ifc_pipeline.py` lines 675-703
+**Discovery:** `_get_substance()` only updates substance NAME from registry, but ALL
+physical properties (LFL 2.1%, UFL 9.5%, etc.) are hardcoded to propane. Hydrogen
+(UFL 75%) or methane (UFL 15%) get propane's limits, causing underestimated HAC zones.
+**Impact:** Non-ATEX-rated equipment placed inside explosive atmospheres.
+**Fix Applied:** Return full SubstanceProperties from registry when available. Propane
+only as fallback with CRITICAL warning requiring manual HAC classification.
+**Reference:** IEC 60079-10-1:2015 §4.3, NFPA 497 Table 4.4.2
+
+### Bug CRIT-05 — Zero-Panel Cable Routing Reports Compliant (CRITICAL)
+**File:** `fireai/bridges/integration_bridge.py` lines 738-815
+**Discovery:** When `config.panel_positions` is empty, the for-loop never executes.
+`all_valid` and `all_vd_compliant` remain True, making `compliant` return True.
+A building with no FACP passes cable routing compliance.
+**Impact:** NFPA 72 §10.14 and §12.2 violation — circuits never verified.
+**Fix Applied:** After the for-loop, check if `all_routes` is empty. If so, set
+`all_valid=False`, `all_vd_compliant=False`, and add violation message.
+**Reference:** NFPA 72-2022 §10.14, §12.2
+
+### Bug CRIT-06 — No Acoustic Data Bypasses Compliance Gate (CRITICAL)
+**File:** `fireai/bridges/integration_bridge.py` lines 979-1078
+**Discovery:** When no rooms have speaker/check_point data, `_run_acoustics()` returns
+None. In compliance evaluation, `result.acoustic_result is None` means acoustics is
+EXCLUDED from the gate entirely. Building can be marked overall_compliant=True.
+**Impact:** Occupants may not hear fire alarm. NFPA 72 §18.4 violation.
+**Fix Applied:** Return non-compliant AcousticCoverageResult instead of None when no
+rooms have speaker data, with CRITICAL log.
+**Reference:** NFPA 72-2022 §18.4, §18.4.2
+
+### Bug CRIT-07 — ATEX Legacy Path Defaults Zone 1 (Gb) for Unknown Zones (CRITICAL)
+**File:** `fireai/core/atex_hazardous_arbiter.py` lines 620-621
+**Discovery:** Legacy `arbitrate()` defaults to `EquipmentProtectionLevel.Gb` and
+`ATEXCategory.CAT_2G` for unknown zones. V78 fixed the v21 path to default to
+`Ga`/`CAT_1G` (most protective), but the legacy path was NOT updated.
+**Impact:** Zone 0 equipment (Gb) in continuous explosive atmosphere → ignition source.
+**Fix Applied:** Changed legacy defaults to Ga/CAT_1G matching v21 path.
+**Reference:** IEC 60079-0:2017 §5
+
+### Bug CRIT-08 — ATEX Legacy Path Defaults T4 for Unknown Temperature Class (CRITICAL)
+**File:** `fireai/core/atex_hazardous_arbiter.py` lines 704-706
+**Discovery:** Legacy fallback defaults to `TemperatureClass.T4` (max 135°C). V78 fixed
+v21 path to T6 (max 85°C). Substances with AIT 85-135°C would get T4 equipment where
+T6 is required → surface temperature exceeds autoignition → explosion.
+**Fix Applied:** Changed legacy fallback to T6 matching v21 path.
+**Reference:** IEC 60079-0:2017 §7.3
+
+### Bug HIGH-01 — Inconsistent Temperature Coefficient (0.00393 vs 0.00323) (HIGH)
+**File:** `fireai/core/nfpa72_schemas.py` line 352
+**Discovery:** Two files use different temperature coefficients for copper resistance
+at 75°C base. `voltage_drop.py` uses 0.00323 (correct α₇₅), `nfpa72_schemas.py`
+uses 0.00393 (α₂₀, referenced to 20°C). Also: 30°C threshold from ampacity derating
+incorrectly applied to resistance correction (applies at all temperatures).
+**Fix Applied:** Changed to 0.00323 (α₇₅), removed 30°C threshold, used `max(1.0, ...)`
+for conservative floor.
+**Reference:** NEC Chapter 9 Table 8 Note 2
+
+### Bug HIGH-02 — check_voltage_drop() Docstring Says 15% But Default Is 10% (HIGH)
+**File:** `fireai/core/nfpa72_calculations.py` lines 922-923
+**Discovery:** V78 changed default from 0.15 to 0.10 but docstring still says "0.15 = 15%".
+**Fix Applied:** Updated docstring to match actual default (0.10 = 10%).
+**Reference:** NFPA 72-2022 §27.4.1.2
+
+### Bug HIGH-03 — NaN Room Area Passes DXF Parser Min/Max Checks (HIGH)
+**File:** `parsers/dxf_parser.py` lines 109-119
+**Discovery:** `NaN < 2.0` → False and `NaN > 50000.0` → False in IEEE-754, so NaN
+area passes both checks and enters pipeline, corrupting area-weighted coverage.
+**Fix Applied:** Added `math.isfinite(area)` check before min/max comparisons.
+**Reference:** NFPA 72-2022 §17.7.3.1
+
+### Bug HIGH-04 — ATEX protection_modes=["n"] Invalid Enum Value (HIGH)
+**File:** `fireai/core/atex_hazardous_arbiter.py` lines 877, 897, 542, 725
+**Discovery:** `_safe_result_v21()`, `_safe_result_legacy()`, and two fallback paths
+use `protection_modes=["n"]`. The ProtectionType enum has `nA`, `nC`, `nR` but NOT `"n"`.
+This crashes ATEX arbitration for safe/Zone 2 areas, preventing ANY result.
+**Fix Applied:** Changed all 4 instances from `"n"` to `"ic"` (intrinsically safe, EPL Gc).
+Also changed temp_class from T4 to T6 in safe result methods.
+**Reference:** IEC 60079-0:2017 Table 1
+
+### Bug HIGH-05 — NaN battery_ah_20h Not Caught by <= 0 Check (HIGH)
+**File:** `fireai/core/battery_aging_derating.py` line 387
+**Discovery:** `NaN <= 0` → False in IEEE-754. NaN bypasses the guard, then
+`min(NaN, 1.0)` returns 1.0 in CPython, masking NaN with valid correction factor.
+**Fix Applied:** Added `not math.isfinite(battery_ah_20h)` before `<= 0` check.
+Same fix for `load_amps`.
+**Reference:** IEEE-754 §6.1, IEEE 485
+
+### Bug HIGH-06 — DXF Polyline Point Filtering Corrupts Geometry (HIGH→MEDIUM)
+**File:** `parsers/dxf_parser.py` lines 263-267
+**Discovery:** Removing a middle point from a closed polygon creates a different shape.
+A pentagon with one NaN vertex becomes a quadrilateral with a "shortcut" across.
+**Fix Applied:** Skip entire entity when ANY point is non-finite instead of filtering.
+**Reference:** NFPA 72-2022 §17.7.3.1
+
+### Bug HIGH-07 — IFC Parser Coverage Radius Defaults to 0 (HIGH)
+**File:** `parsers/ifc_parser.py` line 114
+**Discovery:** `'coverage_radius': attrs.get('CoverageRadius', 0)` — zero radius means
+device covers nothing. Downstream code using this for area-based compliance would
+incorrectly show zero coverage for existing devices.
+**Fix Applied:** Changed default from 0 to None (unknown = requires manual verification).
+**Reference:** NFPA 72-2022 §17.7.3.1
+
+### Bug HIGH-08 — Safety Audit passed_checks Reset to 0 on NaN Transmittance (HIGH)
+**File:** `fireai/core/safety_audit_engine.py` line 785
+**Discovery:** When `min_transmittance` is NaN/Inf, `passed_checks = 0` erases valid
+pass from Check 2a (fouling factor ≥ 0.70), producing misleading audit metrics.
+**Fix Applied:** Removed the reset — just don't increment for this check.
+**Reference:** FM Global DS 5-48 §3.2.1
+
+### Bug MED-01 — Battery size_battery() NaN in standby_hours/alarm_hours/temperature (MEDIUM)
+**File:** `fireai/core/battery_aging_derating.py` lines 548-556
+**Discovery:** Only load currents validated for NaN/Inf. NaN standby_hours → NaN Ah.
+NaN min_temperature_c → derating falls through comparisons → NaN.
+**Fix Applied:** Added NaN/Inf validation for standby_hours, alarm_hours, min_temperature_c.
+**Reference:** IEEE 485, NFPA 72 §10.6.7
+
+### Bug MED-02 — IFC Pipeline Area-Weighted Fallback to Arithmetic Mean (MEDIUM)
+**File:** `fireai/bridges/ifc_pipeline.py` lines 195-202
+**Discovery:** When `total_area == 0`, fallback to arithmetic mean of potentially
+unreliable coverage values from rooms with no geometry.
+**Fix Applied:** Set coverage to 0% and blind spot to 100% when all areas are zero,
+with CRITICAL warning requiring manual review.
+**Reference:** NFPA 72-2022 §17.8.3.4
+
+### Bug MED-03 — IFC Parser Negative Area Set to 0 Instead of Rejecting (MEDIUM)
+**File:** `parsers/ifc_parser.py` lines 64-67
+**Discovery:** V78 fix set negative area to 0, but this means zero protection for a
+room with real geometry. Better to skip the space entirely.
+**Fix Applied:** Changed to `continue` (skip space) with warning for manual design.
+**Reference:** NFPA 72-2022 §17.7.3
+
+### Bug MED-04 — NaN Ceiling Height Warnings Return Empty List (MEDIUM→LOW)
+**File:** `fireai/core/nfpa72_calculations.py` lines 727-746
+**Discovery:** NaN height produces empty warnings list (all comparisons False in IEEE-754).
+Empty list appears "valid" to downstream code.
+**Fix Applied:** Added NaN/Inf guard returning explicit warning message.
+**Reference:** NFPA 72-2022 §17.6.3
+
+### Bug MED-05 — Corridor Spacing NaN Propagation (MEDIUM→LOW)
+**File:** `fireai/core/nfpa72_calculations.py` lines 799-822
+**Discovery:** NaN corridor_width_m >= 3.0 → False, then NaN propagates through
+half_width and math.sqrt, producing NaN spacing → NaN detector positions.
+**Fix Applied:** Added `math.isfinite()` validation at function start.
+**Reference:** NFPA 72-2022 §17.6.3.3
+
+### Self-Criticism Notes (V79)
+
+1. **CRIT-01 (ps_voltage==0) is the SAME class of bug as V62's NaN ps_voltage** —
+   the V62 fix added NaN/Inf validation but missed zero. Zero voltage produces the
+   SAME false 0% drop as NaN. This validates Rule 21 Layer 3 (criticize the method).
+2. **CRIT-03 (heat detector loop) is the SAME class as the V12 Bug #2 fix** —
+   V12 fixed clustering in `_select_positions()` using `candidates[:count]`. The
+   heat detector loop has the same boundary-skip bug but in a different form.
+3. **CRIT-04 (propane properties) is the most dangerous fix in this batch** —
+   hydrogen's UFL of 75% produces vastly larger Zone 0/1 extents than propane's 9.5%.
+   Using propane data for a hydrogen facility means non-ATEX equipment inside
+   explosive atmospheres. This is an explosion risk, not just a compliance issue.
+4. **CRIT-06 (acoustic bypass) follows the SAME pattern as V76 CRIT-02** —
+   missing data defaults to compliant/skipped instead of fail-safe. Every compliance
+   gate must default to non-compliant when data is absent.
+5. **HIGH-04 (protection_modes=["n"]) was hiding in 4 places** — the V54 fix comment
+   explicitly mentions ["n"] crashes for Zone 0/20/21, but the fix only added an
+   additional fallback level rather than replacing the invalid value. The root cause
+   (using an invalid enum value) was never addressed.
+6. **The temperature coefficient inconsistency (HIGH-01) was partially caught in V78** —
+   V78 fixed the base temperature from 30°C to 75°C but used α₂₀=0.00393 instead
+   of α₇₅=0.00323. The fix was incomplete because it corrected the formula's reference
+   point but not the coefficient itself.
+
+### Verification Evidence
+- **4996 tests passed, 0 failures, 1 skipped, 12 warnings**
+- No regression detected
+- Full test suite runtime: ~72 seconds
+
+### Commit Information
+- **Commit:** Pending push

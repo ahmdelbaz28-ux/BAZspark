@@ -384,13 +384,17 @@ def _compute_discharge_rate_correction(
     # silently accepted. Returning 1.0 would make size_battery() compute
     # required_ah = load / (derating * 1.0), then adequacy fails at
     # installed_ah=0 >= required_ah — but the data error is hidden.
-    if battery_ah_20h <= 0:
+    # V79 FIX: Added NaN/Inf guard. NaN <= 0 → False in IEEE-754, so NaN
+    # battery_ah_20h bypasses the check, then min(NaN, 1.0) returns 1.0 in
+    # CPython (NaN < 1.0 is False), masking the NaN with a seemingly valid
+    # correction factor. This propagates NaN through battery sizing.
+    if not math.isfinite(battery_ah_20h) or battery_ah_20h <= 0:
         raise ValueError(
             f"battery_ah_20h must be positive, got {battery_ah_20h!r}. "
             f"Zero/negative battery capacity is physically impossible and "
             f"indicates corrupted data upstream."
         )
-    if load_amps <= 0:
+    if not math.isfinite(load_amps) or load_amps <= 0:
         raise ValueError(
             f"load_amps must be positive, got {load_amps!r}. "
             f"Zero/negative load current is physically impossible."
@@ -551,6 +555,17 @@ def size_battery(
             f"standby={standby_load_amps}, alarm={alarm_load_amps}. "
             f"NaN/Inf inputs indicate data corruption upstream."
         )
+    # V79 FIX: Validate remaining numeric inputs for NaN/Inf.
+    # NaN standby_hours → standby_ah = NaN → confusing results.
+    # NaN min_temperature_c → temp_derating falls through comparisons → NaN.
+    for _name, _val in [("standby_hours", standby_hours),
+                         ("alarm_hours", alarm_hours),
+                         ("min_temperature_c", min_temperature_c)]:
+        if not math.isfinite(_val):
+            raise ValueError(
+                f"Battery sizing parameter '{_name}' must be finite, got {_val!r}. "
+                f"NaN/Inf indicates data corruption."
+            )
     standby_ah = standby_load_amps * standby_hours
     alarm_ah = alarm_load_amps * alarm_hours
     total_load_ah = standby_ah + alarm_ah

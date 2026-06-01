@@ -782,7 +782,11 @@ class SafetyAuditEngine:
                         ),
                     )
                 )
-                passed_checks = 0
+                # V79 FIX: Don't reset passed_checks to 0 — this erases the valid
+                # pass from Check 2a (fouling factor ≥ 0.70). Just don't increment
+                # for this check. The NaN/Inf case is already handled above with
+                # a CRITICAL violation, which will correctly mark the audit as failed.
+                # passed_checks = 0  ← REMOVED
             else:
                 effective_t = min_transmittance * fouling
                 if effective_t < self.MIN_TRANSMITTANCE_CRITICAL:

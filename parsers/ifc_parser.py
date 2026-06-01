@@ -61,10 +61,16 @@ class IFCParser:
                 dims = bounds.get('dimensions', {})
                 
                 # V78 FIX: Validate area — negative areas corrupt total_area calculation
+                # V79 FIX: Negative area → skip space entirely (not set to 0).
+                # Setting to 0 means zero protection for a room with real geometry.
                 raw_area = attrs.get('Area', 0)
                 if raw_area < 0:
-                    import logging; logging.getLogger(__name__).warning(f"Negative area for space {inst.get('id')}: {raw_area}")
-                    raw_area = 0
+                    import logging; logging.getLogger(__name__).warning(
+                        "Negative area for space %s: %s. Space REJECTED — "
+                        "manual fire protection design REQUIRED.",
+                        inst.get('id'), raw_area,
+                    )
+                    continue
 
                 space = {
                     'id': inst.get('id'),
@@ -111,7 +117,7 @@ class IFCParser:
                     'name': attrs.get('Name'),
                     'detector_type': attrs.get('DetectorType'),
                     'sensitivity': attrs.get('Sensitivity'),
-                    'coverage_radius': attrs.get('CoverageRadius', 0),
+                    'coverage_radius': attrs.get('CoverageRadius', None),  # V79 FIX: was 0 — zero radius means device covers nothing
                     'mounting_height': attrs.get('MountingHeight', 0),
                     'applicable_spaces': applicable,
                 }

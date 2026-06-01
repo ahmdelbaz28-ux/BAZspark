@@ -193,14 +193,26 @@ def generate_heat_detector_positions(
     else:
         spacing = spacing_m
     positions = []
-    # Generate grid positions
-    x = spacing / 2
-    while x < room_spec.width_m:
-        y = spacing / 2
-        while y < room_spec.depth_m:
-            positions.append((x, y))
-            y += spacing
-        x += spacing
+    # V79 FIX: Replaced while-loop with count-based placement.
+    # The while-loop used `x < room_spec.width_m` which skipped the last
+    # detector row when x fell at or past the boundary. E.g., room 15m × 15m
+    # with spacing 6.1m: while-loop places 2×2=4 detectors (x=3.05, 9.15 only;
+    # 15.25 > 15 → stops), but ceil(15/6.1)=3 per axis → 9 detectors needed.
+    # The far wall at 15m is 5.85m from nearest detector, exceeding NFPA 72
+    # §17.6.3.1.1 wall distance limit of S/2 = 3.05m.
+    num_w = max(1, math.ceil(room_spec.width_m / spacing))
+    num_d = max(1, math.ceil(room_spec.depth_m / spacing))
+    for col in range(num_w):
+        if num_w > 1:
+            x = spacing / 2 + col * (room_spec.width_m - spacing) / (num_w - 1)
+        else:
+            x = room_spec.width_m / 2
+        for row in range(num_d):
+            if num_d > 1:
+                y = spacing / 2 + row * (room_spec.depth_m - spacing) / (num_d - 1)
+            else:
+                y = room_spec.depth_m / 2
+            positions.append((round(x, 4), round(y, 4)))
     return positions
 def is_point_covered_by_heat_detectors(
     point: Tuple[float, float],
@@ -724,6 +736,10 @@ def get_ceiling_height_warnings(height: float) -> list[str]:
     Returns:
         List of warning strings.
     """
+    # V79 FIX: NaN height produces empty warnings list (all comparisons False).
+    # An empty list appears "valid" to downstream code, hiding data corruption.
+    if not isinstance(height, (int, float)) or not math.isfinite(height):
+        return [f"Height {height!r} is not a finite number — cannot validate."]
     warnings = []
     if height < 2.1:
         warnings.append(f"Height {height}m below habitable minimum (2.1m).")
@@ -803,6 +819,11 @@ def calculate_corridor_spacing(
     Returns:
         Maximum allowable along-corridor spacing in metres.
     """
+    # V79 FIX: Validate corridor_width_m for NaN/Inf.
+    # NaN corridor_width_m >= 3.0 → False, then NaN propagates through
+    # half_width and math.sqrt, producing NaN spacing → NaN detector positions.
+    if not math.isfinite(corridor_width_m) or corridor_width_m <= 0:
+        raise ValueError(f"corridor_width_m must be finite positive, got {corridor_width_m!r}")
     base = calculate_max_spacing(ceiling, detector_type)
     if corridor_width_m >= 3.0:
         return base
@@ -908,7 +929,9 @@ def check_voltage_drop(
         cable_resistance_ohm_per_m: Cable resistance per unit length (Ω/m).
         cable_length_m:            One-way cable length (m).
         max_drop_fraction:         Maximum allowable voltage drop as fraction
-                                   of supply (default 0.15 = 15 %).
+                                   of supply (default 0.10 = 10 %).
+                                   NFPA 72 §27.4.1.2 limits PLFA circuits to 10%.
+                                   NFPA 72 §10.6.4 allows NAC circuits up to 20%.
 
     Returns:
         Dict with keys:

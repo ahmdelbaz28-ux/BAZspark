@@ -811,6 +811,18 @@ class IntegrationBridge:
                 violations.append(f"Circuit {route.circuit_id}: {v}")
 
         cable_result.routes = all_routes
+        # V79 FIX: Zero-panel cable routing is NOT compliant.
+        # Previously, if no panels were defined, the for-loop never executed
+        # and all_valid/all_vd_compliant remained True, making compliant=True.
+        # NFPA 72 §10.14 requires verification of ALL circuits. Zero circuits ≠ compliant.
+        if not all_routes:
+            all_valid = False
+            all_vd_compliant = False
+            violations.append(
+                "No cable circuits were routed. Either no panels defined or no "
+                "device positions found. Cable routing verification per NFPA 72 "
+                "§10.14 was NOT performed — cannot claim compliance."
+            )
         cable_result.all_routes_valid = all_valid
         cable_result.all_voltage_drop_compliant = all_vd_compliant
         cable_result.total_cable_length_m = round(total_length, 2)
@@ -1070,10 +1082,27 @@ class IntegrationBridge:
                     worst_result.margin_dba,
                 )
         else:
-            logger.info(
-                "%s: no rooms with speaker/check point data found — acoustic analysis produced no results.",
+            # V79 FIX: No rooms with speaker/check_point data is NOT just "no results"
+            # — it means audible notification was never verified. NFPA 72 §18.4
+            # requires audible coverage in ALL occupiable spaces. Returning None
+            # means acoustics is excluded from the compliance gate entirely, allowing
+            # overall_compliant=True even though occupants may not hear the fire alarm.
+            logger.critical(
+                "%s: NO rooms had speaker/check_point data. Audible notification "
+                "coverage per NFPA 72-2022 §18.4 was NOT verified for ANY room. "
+                "This is a life-safety gap — occupants may not hear the fire alarm.",
                 self._SUB_ACOUSTICS,
             )
+            # Return a non-compliant result so the compliance gate sees acoustics as FAILED
+            try:
+                from fireai.core.acoustic_calculator import AcousticCoverageResult
+                worst_result = AcousticCoverageResult(
+                    room_id="BUILDING_WIDE",
+                    compliant=False,
+                    margin_dba=float('-inf'),
+                )
+            except Exception:
+                worst_result = None
 
         return worst_result
 
