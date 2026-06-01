@@ -364,11 +364,24 @@ class WeatherService:
 _weather_service: Optional[WeatherService] = None
 
 
+import threading
+
+_weather_lock = threading.Lock()
+
+
 def get_weather_service() -> WeatherService:
-    """Get the singleton WeatherService instance."""
+    """Get the singleton WeatherService instance.
+
+    V65 FIX: Added thread-safe double-checked locking, matching the pattern
+    used in database.py and qomn.py. Old code was not thread-safe — two
+    concurrent startup requests could both see _weather_service is None and
+    create separate instances, leaking the first instance's HTTP connections.
+    """
     global _weather_service
     if _weather_service is None:
-        _weather_service = WeatherService()
+        with _weather_lock:
+            if _weather_service is None:
+                _weather_service = WeatherService()
     return _weather_service
 
 

@@ -93,7 +93,14 @@ class VoltageDropRequest(BaseModel):
     """Input for voltage drop calculation per NEC Chapter 9, Table 8."""
     current_a:        float = Field(..., gt=0, description="Circuit current in Amperes")
     length_m:         float = Field(..., gt=0, description="One-way circuit length in meters")
-    awg_gauge:        str   = Field("14",  description="Wire gauge (18, 16, 14, 12, 10, ...)")
+    # V65 FIX: Validate AWG gauge against NEC Table 8 valid sizes.
+    # An invalid gauge could produce incorrect voltage drop — in a fire alarm
+    # system, underestimated voltage drop means devices may not operate.
+    awg_gauge:        str   = Field(
+        "14",
+        pattern=r"^(18|16|14|12|10|8|6|4|3|2|1|1/0|2/0|3/0|4/0|250|300|350|400|500)$",
+        description="Wire gauge per NEC Table 8 (18, 16, 14, 12, 10, 8, 6, 4, 3, 2, 1, 1/0, 2/0, 3/0, 4/0, 250, 300, 350, 400, 500)"
+    )
     supply_voltage_v: float = Field(24.0, gt=0, description="Supply voltage (default 24VDC)")
     max_drop_pct:     float = Field(10.0, gt=0, le=50, description="Max allowable drop %")
 

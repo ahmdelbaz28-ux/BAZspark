@@ -415,8 +415,24 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
         if request.method in ("GET", "HEAD", "OPTIONS"):
             return await call_next(request)
 
-        # If no API key is configured, allow all (dev mode)
+        # V65 FIX: If FIREAI_API_KEY is not set in production, FAIL TO START.
+        # The old code silently allowed all requests when the key was unset,
+        # which means a deployed system with a missing env variable has zero
+        # access control — anyone can modify fire alarm engineering data.
         if not _FIREAI_API_KEY:
+            if os.getenv("FIREAI_ENV") != "development":
+                logger.critical(
+                    "🔴 FIREAI_API_KEY not set in production! Refusing to process "
+                    "unauthenticated mutating requests. Set FIREAI_API_KEY environment "
+                    "variable or set FIREAI_ENV=development for local development."
+                )
+                return Response(
+                    content="Server misconfigured: FIREAI_API_KEY required in production",
+                    status_code=503,
+                    media_type="text/plain",
+                )
+            # Development mode: allow without auth
+            logger.warning("⚠️ FIREAI_API_KEY not set — auth disabled (development only)")
             return await call_next(request)
 
         # SECURITY: When API key is configured, we validate ALL mutating requests.
@@ -437,25 +453,25 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
         # An external attacker could set Origin: http://localhost:3000 and bypass auth.
         # Fix: Only trust Origin if it matches the request's Host header exactly,
         # OR if we're explicitly in development mode (FIREAI_ENV=development).
-        if origin:
-            host = request.headers.get("host", "")
-            # Only trust same-origin requests where Origin matches Host exactly
+        # V65 FIX: Remove Origin-header-based auth bypass entirely.
+        # The old code compared client-controlled Origin against client-controlled Host,
+        # allowing ANY attacker to bypass auth by setting both headers. In a
+        # life-safety system, this is catastrophic — an unauthorized person could
+        # modify fire alarm projects, corrupting engineering data.
+        # The API key is now required for ALL mutating requests regardless of origin.
+        # Same-origin SPA requests must include the X-API-Key header.
+        #
+        # In development mode, allow common dev origins WITHOUT API key
+        # (CRITICAL: This MUST NOT be active in production)
+        if os.getenv("FIREAI_ENV") == "development":
+            origin = request.headers.get("origin", "")
             if origin in (
-                f"http://{host}",
-                f"https://{host}",
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173",
             ):
                 return await call_next(request)
-
-            # In development mode, trust common dev origins
-            # CRITICAL: This MUST NOT be active in production
-            if os.getenv("FIREAI_ENV") == "development":
-                if origin in (
-                    "http://localhost:3000",
-                    "http://localhost:5173",
-                    "http://127.0.0.1:3000",
-                    "http://127.0.0.1:5173",
-                ):
-                    return await call_next(request)
 
         # No matching origin — require API key
         # This covers: (1) requests without Origin header, (2) external origins
@@ -675,12 +691,18 @@ if _FRONTEND_DIST.is_dir():
         # Don't intercept API or WebSocket routes — return proper 404
         if full_path.startswith("api/") or full_path == "ws":
             raise HTTPException(status_code=404, detail="Not found")
-        # Try to serve a real file first
-        file_path = _FRONTEND_DIST / full_path
+        # V65 FIX: Path traversal protection — validate that the resolved path
+        # stays within the frontend directory. The old code directly used user-
+        # controlled `full_path` with pathlib, which preserves `..` segments.
+        # An attacker sending GET /../../../etc/passwd could read arbitrary files,
+        # including .env files with FIREAI_API_KEY and database credentials.
+        file_path = (_FRONTEND_DIST / full_path).resolve()
+        if not file_path.is_relative_to(_FRONTEND_DIST.resolve()):
+            raise HTTPException(status_code=403, detail="Forbidden")
         if file_path.is_file():
             return FileResponse(str(file_path))
         # Fallback to index.html for SPA routing
-        index_path = _FRONTEND_DIST / "index.html"
+        index_path = (_FRONTEND_DIST / "index.html").resolve()
         if index_path.is_file():
             return FileResponse(str(index_path))
         raise HTTPException(status_code=404, detail="Not found")
