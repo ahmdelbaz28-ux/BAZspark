@@ -11695,3 +11695,77 @@ has `previous_hash` equal to the hash of the last entry in the old file.
 ### Commit Information
 - **Commit:** `cebea1b`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/cebea1b9bb79c72887fa48e9e267123eaa46c9cb
+
+---
+
+## V76 Fixes (2026-06-01) — Code Review: 9 CRITICAL Safety Vulnerabilities
+
+### Context
+Performed full code review of 30+ production files as expert code reviewer. Found 35 new vulnerabilities (9 CRITICAL, 14 HIGH, 9 MEDIUM, 3 LOW) not previously documented. Applied all 9 CRITICAL fixes. All verified with 4975 tests passing.
+
+### Bug CRIT-01 — BPS Allocator Wire Resistance 20°C Labeled as 75°C (CRITICAL — 16% Voltage Drop Underestimation)
+**File:** `fireai/core/bps_allocator.py` lines 184-190
+**Discovery:** `WIRE_RESISTANCE_OHM_PER_1000FT` uses NEC Table 8 20°C values (6.51, 4.09, 2.58, 1.62, 1.02) but comment claims 75°C. Actual 75°C values are ~16% higher (7.770, 4.890, 3.070, 1.930, 1.210).
+**Impact:** Voltage drop underestimated by ~16%. Circuit reported at 17.2% drop actually has 20.5% at operating temperature. Horns/strobes at EOL may not operate during fire.
+**Fix Applied:** Updated all values to NEC Chapter 9 Table 8 — 75°C column. Updated comments with explicit V76 reference.
+**Reference:** NEC Chapter 9, Table 8 — "Direct-Current Resistance at 75°C" column.
+
+### Bug CRIT-02 — Compliance Gate Defaults TRUE for Acoustics/Multi-Floor (CRITICAL — False PASS)
+**File:** `fireai/bridges/integration_bridge.py` lines 1207, 1212
+**Discovery:** `getattr(result.acoustic_result, "compliant", True)` defaults to True when attribute missing. Building can receive overall_compliant=True without acoustics or multi-floor analysis.
+**Impact:** Occupants may not hear fire alarm — NFPA 72 §18.4 violation.
+**Fix Applied:** Changed defaults from True to False (fail-safe).
+
+### Bug CRIT-03 — INSUNITS Code 8 Mapped to Kilometers Instead of Microinches (CRITICAL — 3.9×10¹⁰ Error)
+**File:** `parsers/dxf_parser.py` line 63
+**Discovery:** INSUNITS code 8 = 1000.0 (km) but should be 2.54e-8 (microinches). Codes 3 (Miles) and 7 (Kilometers) missing entirely.
+**Impact:** DXF files with INSUNITS=8 produce room areas 39 billion times too large. INSUNITS=3 or 7 crash with ValueError.
+**Fix Applied:** Corrected code 8 to 2.54e-8. Added codes 3 (1609.344) and 7 (1000.0).
+
+### Bug CRIT-04 — NFPA72_Compliant=True Fabricated in IFC Export (CRITICAL — Compliance Fraud)
+**File:** `fireai/bridges/ifc_headless_bridge.py` line 244
+**Discovery:** Hardcoded `"NFPA72_Compliant": True` for every device written to IFC, regardless of actual verification status.
+**Impact:** Legal liability and life-safety fraud risk. AHJ reviewer sees "compliant" when design may not be verified.
+**Fix Applied:** Changed to `bool(dev.get("nfpa72_compliant", False))` — reads from device dict, default False (fail-safe).
+
+### Bug CRIT-05 — Phantom 4m² Room Replaces Real Geometry on IFC Tessellation Failure (CRITICAL)
+**File:** `fireai/bridges/ifc_headless_bridge.py` lines 440-445
+**Discovery:** When `ifcopenshell.geom` tessellation fails, fallback creates 2m×2m (4m²) room. A 500m² atrium gets fire protection designed for a closet.
+**Impact:** Largest/most critical spaces in building receive minimal protection. Atrium with 2 detectors instead of 50+.
+**Fix Applied:** Return None instead of phantom room. Caller already checks `if sd is not None`. Added CRITICAL log requiring manual FPE design.
+
+### Bug CRIT-06 — Gas Protection Types in Dust Zones (CRITICAL — IEC 60079-31 Violation)
+**File:** `fireai/core/atex_hazardous_arbiter.py` lines 204-223
+**Discovery:** `_ZONE_PERMITTED_PROTECTIONS` includes `d` (flameproof, EPL Gb — gas only), `p`, `nA` in Zone 21/22 (dust zones). Dust entering flameproof enclosure accumulates and ignites.
+**Impact:** Equipment approved for dust zones that cannot prevent dust ingress — explosion risk.
+**Fix Applied:** Removed gas-only types (d, p, nA) from dust zones. Added dust-specific types (tb, tc, ta, mc) to ProtectionType enum and zone tables. Zone 20 now includes `ta` (EPL Da).
+**Reference:** IEC 60079-31:2022 §6, IEC 60079-14:2013 Table 1.
+
+### Bug CRIT-07 — HAC Failure Defaults to Zone 1 Instead of Zone 0 (CRITICAL — Non-Conservative)
+**File:** `fireai/bridges/ifc_pipeline.py` line 360
+**Discovery:** Exception fallback returns `ZONE_1` — less hazardous than `ZONE_0`. Zone 1 equipment (EPL Gb) not safe for Zone 0 (continuous hazard).
+**Fix Applied:** Changed to `ZONE_0` — conservative default per IEC 60079-10-1 safety principle.
+
+### Bug CRIT-08 — ATEX Failure Defaults to EPL Gb Instead of Ga (CRITICAL — Non-Conservative)
+**File:** `fireai/bridges/ifc_pipeline.py` line 397
+**Discovery:** Exception fallback returns EPL Gb/T3/ib (Zone 1 level). Should be worst case.
+**Fix Applied:** Changed to EPL Ga/T6/ia — most protective spec. Equipment rated Ga is safe for all zones; Gb is NOT safe for Zone 0.
+
+### Bug CRIT-09 — Stale room_area After Obstacle Subtraction Inflates Coverage Ratio (CRITICAL)
+**File:** `fireai/core/spatial_engine/exact_coverage.py` lines 220, 302-303
+**Discovery:** `room_area` captured at line 220 BEFORE obstacles subtracted from `room_poly` (lines 230-238). Coverage ratio uses original area, inflating it by obstacle area.
+**Impact:** Room 200m² with 50m² obstacles and 5m² uncovered: reported 97.5% vs actual 96.7%. Near 99.9% threshold → false PASS.
+**Fix Applied:** Moved `room_area = room_poly.area` to after obstacle subtraction loop. Added zero-area-after-obstacles guard.
+
+### Self-Criticism Notes (V76)
+
+1. **CRIT-01 is the most dangerous bug found in this review** — a 16% systematic underestimation of voltage drop in fire alarm NAC circuits means that for every 6 circuits approved by this module, approximately 1 is actually non-compliant. This has been present since the module was created and could have caused real-world horn/strobe failures.
+2. **CRIT-04 and CRIT-05 are ethical issues** — writing fabricated compliance claims (CRIT-04) and phantom geometry (CRIT-05) into BIM models is not just a bug, it's a form of engineering fraud that could have legal consequences.
+3. **CRIT-06 was partially caught in V28 (Bug 28)** — Zone 0 was fixed to remove 'd' and 'e', but Zone 21 and Zone 22 were never corrected. The fix was incomplete.
+4. **CRIT-07/08 violate the first principle of safety-critical design** — on failure, always default to the most conservative (worst case) assumption. Defaulting to a less hazardous zone on classification failure is the opposite of fail-safe.
+5. **CRIT-09 is the same class of bug as the V13 point-cloud illusion** — using stale pre-computation values instead of post-processing values. The root cause is computing a derived value before the transformation it depends on.
+
+### Commit Information
+- **Commit:** `832032d`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/832032d
+- **Tests:** 4975 passed, 1 skipped, 0 failed

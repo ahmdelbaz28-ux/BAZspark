@@ -65,7 +65,11 @@ DETECTOR_RADIUS = 0.7 * MAX_SPACING_M  # 6.37 m (NFPA 72 §17.7.4.2.3.1 - 0.7S R
 # NOTE: Previous version used 9.144m (exact 30ft) giving R=6.40m. This was
 # inconsistent with the canonical nfpa72_models.RADIUS_MAP which uses 9.1m giving
 # R=6.37m. Aligned to 9.1m for consistency — all models now agree on R=6.37m.
-WALL_MIN_M = 0.10  # NFPA 72 §17.6.3.1.1 — minimum distance from wall
+# V76 HIGH-12 FIX: Changed from 0.10m to 0.1016m per NFPA 72 §17.6.3.1.1.
+# NFPA 72 specifies 4 inches minimum wall distance = 101.6mm, not 100mm.
+# The 1.6mm difference caused detectors at 100mm to pass density_optimizer
+# NFPA audit but fail nfpa72_coverage validation (which uses 0.1016m).
+WALL_MIN_M = 0.1016  # NFPA 72 §17.6.3.1.1 — 4 inches = 101.6mm
 VERIFY_STEP = 0.20  # proof resolution (m)
 COARSE_STEP = 1.00  # hierarchical coarse grid step (m)
 # V7.4: Placement margin — must match the fine verification margin to ensure
@@ -1114,7 +1118,12 @@ class DensityOptimizer:
                     continue
                 min_dist = min(min_dist, math.hypot(x1 - x2, y1 - y2))
             max_gap = max(max_gap, min_dist)
-        if max_gap > S * 1.01:
+        # V76 HIGH-13 FIX: Removed 1% tolerance (S * 1.01). NFPA 72 uses
+        # "shall not exceed" — mandatory language with no tolerance. The 1%
+        # tolerance (91mm for S=9.1m) masked real spacing violations. V65
+        # already removed this tolerance for ridge zones; same principle applies
+        # to all detector spacing. Using 1e-6 as floating-point guard only.
+        if max_gap > S + 1e-6:
             violations.append(f"Max spacing {max_gap:.2f}m > S={S:.2f}m")
 
         # (b) EXACT wall coverage audit using interval merging

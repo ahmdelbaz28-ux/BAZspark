@@ -308,7 +308,10 @@ class DetectorPlacementEngine:
 
         # ── Verify coverage ────────────────────────────────────────────────────
         coverage_pct = self._verify_coverage(room, detectors, R)
-        if coverage_pct < 99.0:
+        # V76 HIGH-04 FIX: Changed threshold from 99.0% to 99.9% to match
+        # floor_orchestrator's adaptive re-solve threshold. Inconsistent thresholds
+        # allowed designs at 99.5% to pass device_placement but fail orchestrator.
+        if coverage_pct < 99.9:
             violations.append(
                 f"Coverage {coverage_pct:.2f}% < 100% — NFPA 72 §17.5 requires full coverage. "
                 "Additional detectors required."

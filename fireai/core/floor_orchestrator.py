@@ -82,8 +82,14 @@ class FloorResult:
         # V13 Fix: Replace "PARTIAL" with legally safer terminology.
         # "PARTIAL" could be misinterpreted by contractors as partial approval.
         # A building either meets code (APPROVED) or doesn't (REQUIRES_REVIEW).
+        # V76 HIGH-03 FIX: Added ERROR status for all-errored buildings.
+        # When every room has status ERROR, the building was NOT analyzed —
+        # labeling it "REJECTED" implies analysis found non-compliance, which
+        # is misleading. "ERROR" correctly signals the system failed to process.
         elif self.rooms_errored == 0 and self.rooms_failed == 0:
             self.status = "APPROVED"
+        elif self.rooms_errored > 0 and self.rooms_passed == 0 and self.rooms_failed == 0:
+            self.status = "ERROR"
         elif self.rooms_passed == 0:
             self.status = "REJECTED"
         else:
@@ -235,17 +241,15 @@ class FloorOrchestrator:
                 spec.name,
             )
             result.status = "REQUIRES_MANUAL_REVIEW"
-            result.violations = [
-                {
-                    "rule": "IFC_GEOMETRY_UNRESOLVED",
-                    "severity": "CRITICAL",
-                    "message": (
-                        f"Room '{spec.name}' has no valid geometry — "
-                        "NFPA analysis cannot proceed. "
-                        "Resolve IFC geometry extraction before analysis."
-                    ),
-                }
-            ]
+            # V76 HIGH-02 FIX: Changed result.violations to result.errors.
+            # RoomResult dataclass has no 'violations' field — only 'errors: List[str]'.
+            # Dynamic attribute would be invisible to serialization and downstream checks.
+            result.errors.append(
+                "IFC_GEOMETRY_UNRESOLVED (CRITICAL): "
+                f"Room '{spec.name}' has no valid geometry — "
+                "NFPA analysis cannot proceed. "
+                "Resolve IFC geometry extraction before analysis."
+            )
             return result
 
         try:
@@ -263,7 +267,10 @@ class FloorOrchestrator:
                     status="ERROR",
                     errors=[f"Room '{spec.name}' has no ceiling specification — cannot compute NFPA 72 detector placement. All rooms require ceiling height data."],
                 )
-                self._log_room_result(spec.name, result, start)
+                # V76 HIGH-01 FIX: Removed call to self._log_room_result() which
+                # does not exist — would raise AttributeError, crashing entire building
+                # analysis when any room has missing ceiling spec. The result is already
+                # an ERROR RoomResult and will be returned to process() for logging.
                 return result
             ceiling_h = spec.ceiling_spec.height_at_low_point_m
             room_data = Room(name=spec.name, width=spec.width_m, length=spec.depth_m, ceiling_height=ceiling_h)

@@ -279,10 +279,11 @@ class TestFloorResultCompute:
         assert "licensed fire protection engineer" in fr.disclaimer
 
     def test_all_error_no_pass_rejected(self, error_room_result):
-        """All rooms ERROR and no PASS → REJECTED.
+        """All rooms ERROR and no PASS → ERROR (not REJECTED).
 
-        Source code logic: rooms_passed == 0 → REJECTED.
-        This is correct — no rooms passed verification.
+        V76 HIGH-03 FIX: When every room has status ERROR, the building was NOT
+        analyzed — labeling it "REJECTED" implies analysis found non-compliance.
+        "ERROR" correctly signals the system failed to process.
         """
         fr = FloorResult(
             project_name="TestProject",
@@ -291,7 +292,7 @@ class TestFloorResultCompute:
             room_results=[error_room_result],
         )
         fr.compute()
-        assert fr.status == "REJECTED"
+        assert fr.status == "ERROR"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -465,11 +466,10 @@ class TestProcessOneRoomUnresolvedGeometry:
         fo = FloorOrchestrator()
         spec = self._make_unresolved_spec()
         result = fo._process_one_room(spec)
-        # Check the violations attribute (set directly on RoomResult)
-        violations = getattr(result, "violations", None)
-        assert violations is not None
-        assert len(violations) > 0
-        assert any("IFC_GEOMETRY_UNRESOLVED" in str(v) for v in violations)
+        # V76 HIGH-02 FIX: violations attribute removed — data is now in errors list.
+        # RoomResult has no 'violations' field; the data is stored in 'errors'.
+        assert len(result.errors) > 0
+        assert any("IFC_GEOMETRY_UNRESOLVED" in str(e) for e in result.errors)
 
     def test_unresolved_geometry_no_detector_count(self):
         fo = FloorOrchestrator()
