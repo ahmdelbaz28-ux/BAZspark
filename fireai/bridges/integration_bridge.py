@@ -772,14 +772,24 @@ class IntegrationBridge:
                 )
                 continue
 
+            # V76 HIGH-14 FIX: Previously hardcoded 0.5A and AWG 14 for all NAC
+            # circuits. This underestimates current for multi-device circuits and
+            # uses incorrect wire gauge. Now calculates current from device count.
+            # Default 0.1A per notification appliance (typical horn/strobe per
+            # NFPA 72 Table 18.5.2.1). Default AWG 14 for NAC circuits per
+            # NEC 760.154 — should be overridden by actual circuit specification.
+            DEFAULT_NAC_CURRENT_PER_DEVICE_A = 0.1
+            DEFAULT_NAC_AWG = "14"
+            nac_current = max(0.5, len(device_positions) * DEFAULT_NAC_CURRENT_PER_DEVICE_A)
+
             # Route Class B (home-run) circuit from this panel
             route = engine.route_loop(
                 circuit_id=f"NAC-{len(all_routes) + 1}",
                 topology=CircuitTopology.CLASS_B,
                 panel_pos=panel_pos,
                 device_positions=device_positions,
-                current_a=0.5,
-                awg="14",
+                current_a=nac_current,
+                awg=DEFAULT_NAC_AWG,
             )
 
             all_routes.append(route)

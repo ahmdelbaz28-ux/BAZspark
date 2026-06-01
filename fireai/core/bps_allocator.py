@@ -499,6 +499,18 @@ def calculate_eol_voltage(
     v_nom = _guard_positive_finite(nominal_voltage_vdc, "nominal_voltage_vdc")
     v_drop = calculate_voltage_drop_vdc(total_current_a, one_way_length_ft, awg, v_nom)
     v_eol = v_nom - v_drop
+
+    # V76 MED-09 FIX: EOL voltage can be negative when voltage drop exceeds
+    # supply. This is physically impossible (can't have negative voltage).
+    # Clamped to 0.0 and flagged as CRITICAL violation.
+    if v_eol < 0:
+        logger.critical(
+            f"EOL voltage is NEGATIVE ({v_eol:.2f} VDC) — voltage drop "
+            f"exceeds supply voltage. Circuit cannot operate. "
+            f"Per NFPA 72 §10.6.4, terminal voltage must be >= 80% of nominal."
+        )
+        v_eol = 0.0
+
     return round(v_eol, 6)
 
 

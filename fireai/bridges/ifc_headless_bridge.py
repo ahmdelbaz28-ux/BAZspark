@@ -556,26 +556,13 @@ class HeadlessIFCBridge:
             except Exception:
                 pass
 
-        # Fallback: use placement center with small default AABB
-        try:
-            x, y, z = self._resolve_local_placement(entity.ObjectPlacement)
-            half = 0.15  # 30cm default thickness
-            return {
-                "guid": entity.GlobalId,
-                "ifc_type": ifc_type,
-                "name": entity.Name or "",
-                "aabb_min": (x - half, y - half, z - half),
-                "aabb_max": (x + half, y + half, z + half),
-                "aabb_vertices": [
-                    (x - half, y - half, z - half),
-                    (x + half, y - half, z - half),
-                    (x + half, y + half, z - half),
-                    (x - half, y + half, z - half),
-                    (x - half, y - half, z + half),
-                    (x + half, y - half, z + half),
-                    (x + half, y + half, z + half),
-                    (x - half, y + half, z + half),
-                ],
-            }
-        except Exception:
-            return None
+        # V76 HIGH-09 FIX: Previously created a phantom 30cm AABB when geometry
+        # extraction failed. A 30cm box replacing a 10m wall means corridors
+        # appear unobstructed — detectors placed inside real walls.
+        # Now returns None, forcing caller to flag for manual FPE review.
+        logger.critical(
+            f"IFC entity {entity.GlobalId} ({ifc_type}): geometry extraction "
+            f"failed. Cannot create accurate obstacle representation. "
+            f"Manual fire protection engineer review REQUIRED."
+        )
+        return None

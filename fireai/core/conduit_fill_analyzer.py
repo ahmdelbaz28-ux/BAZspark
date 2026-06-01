@@ -432,6 +432,31 @@ class ConduitSizer:
         for cable in wire_inventory:
             awg = cable.get("awg", 16)
             qty = cable.get("count", 1)
+
+            # LOW-02 FIX: Negative wire count is physically impossible.
+            # A negative count would reduce total area, potentially making
+            # an overfilled conduit appear compliant — a life-safety hazard.
+            if not isinstance(qty, int) or qty < 0:
+                violations.append(
+                    Violation(
+                        severity="CRITICAL",
+                        citation="NEC Chapter 9 Table 1",
+                        description=(
+                            f"Bundle '{bundle_id}' has invalid wire count: "
+                            f"AWG {awg} count={qty}. Wire count must be a "
+                            f"non-negative integer. Negative counts reduce "
+                            f"total area, potentially masking overfill."
+                        ),
+                    )
+                    if Violation
+                    else {
+                        "severity": "CRITICAL",
+                        "citation": "NEC Chapter 9 Table 1",
+                        "description": f"Invalid wire count: AWG {awg} count={qty}",
+                    }
+                )
+                qty = 0  # Safe default: skip this entry
+
             insul_str = cable.get("insulation", "FPLP").upper()
             cc_str = cable.get("circuit_class", "PLFA").upper()
 

@@ -708,7 +708,15 @@ class CableRoutingEngine:
         if getattr(circuit, "circuit_class", None) == CircuitClass.CLASS_A:
             return_length = getattr(circuit, "return_length_m", 0.0)
             if return_length > 0 and total_current > 0:
-                return_drop = 2.0 * total_current * resistance_per_m * return_length
+                # V76 MED-08 FIX: Class A return path uses 1.0× instead of 2.0×.
+                # Under normal operation, Class A circuits carry current on the outbound
+                # path only — the return path is not energized. Under single-fault
+                # conditions (wire break), the return path carries partial current.
+                # Using 2.0× (DC round-trip) for BOTH outbound AND return overstates
+                # voltage drop by ~2×, causing unnecessary circuit rejections.
+                # Conservative approach: 1.0× for return (single conductor) with
+                # total_current as worst-case. This still provides safety margin.
+                return_drop = total_current * resistance_per_m * return_length
                 cumulative_drop += return_drop
 
         total_drop_pct = (cumulative_drop / voltage) * 100.0 if voltage > 0 else 0.0

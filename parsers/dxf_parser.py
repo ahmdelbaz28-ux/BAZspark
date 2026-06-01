@@ -4,6 +4,8 @@ CRITICAL SAFETY: Reads real DXF and produces valid Polygons only.
 Any invalid geometry is rejected, never guessed.
 """
 
+import math
+
 import ezdxf
 from ezdxf import recover
 from shapely.geometry import Polygon, Point, MultiPolygon
@@ -240,13 +242,21 @@ class DXFParser:
         lines = []
         for ent in msp:
             if ent.dxftype() == "LINE":
-                s = (ent.dxf.start.x * scale, ent.dxf.start.y * scale)
-                e = (ent.dxf.end.x * scale, ent.dxf.end.y * scale)
+                sx, sy = ent.dxf.start.x * scale, ent.dxf.start.y * scale
+                ex, ey = ent.dxf.end.x * scale, ent.dxf.end.y * scale
+                # V76 HIGH-08 FIX: NaN/Inf coordinates from corrupt DXF files
+                # produce invalid Shapely geometries that crash downstream analysis.
+                if not (math.isfinite(sx) and math.isfinite(sy) and math.isfinite(ex) and math.isfinite(ey)):
+                    logger.warning(f"Skipping LINE with non-finite coordinates: start=({sx},{sy}) end=({ex},{ey})")
+                    continue
+                s, e = (sx, sy), (ex, ey)
                 if s != e:
                     lines.append(LineString([s, e]))
             elif ent.dxftype() in ("LWPOLYLINE", "POLYLINE"):
                 try:
                     pts = [(p[0] * scale, p[1] * scale) for p in ent.get_points()]
+                    # V76 HIGH-08 FIX: Filter out non-finite points
+                    pts = [(x, y) for x, y in pts if math.isfinite(x) and math.isfinite(y)]
                     if len(pts) >= 3 and ent.closed:
                         lines.append(LineString(pts))
                 except Exception as e:

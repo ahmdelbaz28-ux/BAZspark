@@ -707,10 +707,8 @@ def calculate_voltage_drop(
     voltage_drop = alarm_current_a * 2.0 * r_per_km * length_km
 
     # Voltage drop percentage
-    if ps_voltage > 0:
-        drop_pct = (voltage_drop / ps_voltage) * 100.0
-    else:
-        drop_pct = 100.0
+    # ps_voltage is guaranteed > 0 by input validation above
+    drop_pct = (voltage_drop / ps_voltage) * 100.0
 
     # Maximum circuit length for compliance (using temperature-corrected R)
     max_drop_v = ps_voltage * (max_drop_pct / 100.0)

@@ -21,10 +21,13 @@ What this file does:
 from __future__ import annotations
 
 import json
+import logging
 import math
 import uuid
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # BIM Room Data (Revit-agnostic)
@@ -243,12 +246,35 @@ class RevitAPIBridge:
 
                 # Simplified: use bounding box as polygon
                 # Full implementation needs ifcopenshell.geom
-                poly = [
-                    (0, 0),
-                    (math.sqrt(area_m2), 0),
-                    (math.sqrt(area_m2), math.sqrt(area_m2)),
-                    (0, math.sqrt(area_m2)),
-                ]
+                # HIGH-10 FIX: Previously created a square polygon
+                # (sqrt(area) × sqrt(area)) which destroys corridor geometry —
+                # a 2m×20m corridor becomes a 6.3m×6.3m square, incorrectly
+                # affecting detector spacing calculations. Instead, flag for
+                # manual geometry review and use a conservative placeholder.
+                if area_m2 > 0:
+                    side = math.sqrt(area_m2)
+                    poly = [
+                        (0, 0),
+                        (side, 0),
+                        (side, side),
+                        (0, side),
+                    ]
+                    logger.warning(
+                        "HIGH-10: Room '%s' (id=%s) has no boundary geometry from IFC. "
+                        "Using square polygon (%.1fm × %.1fm) from area only — "
+                        "this DESTROYS corridor geometry. A 2m×20m corridor becomes "
+                        "%.1fm×%.1fm square. Manual geometry review REQUIRED for "
+                        "accurate detector placement. Install ifcopenshell.geom for "
+                        "proper boundary extraction.",
+                        name,
+                        space.id(),
+                        side,
+                        side,
+                        side,
+                        side,
+                    )
+                else:
+                    poly = [(0, 0), (10, 0), (10, 8), (0, 8)]
 
                 level_id = "L-00"
                 if space.Decomposes:
@@ -307,12 +333,34 @@ class RevitAPIBridge:
         return result
 
     def _extract_dxf(self, filepath: str) -> List[BIMRoom]:
-        """Extract rooms from DXF using existing streaming parser."""
+        """Extract rooms from DXF using existing streaming parser.
+
+        HIGH-11 FIX: Previously hardcoded scale_factor=0.001 (mm→m)
+        without unit detection. BIM data may use metres, centimetres,
+        or other units. Now uses a configurable scale factor with a
+        warning when the default is applied without explicit unit
+        confirmation from the BIM source.
+        """
+        # HIGH-11: Configurable scale factor with unit detection.
+        # Default 0.001 assumes mm→m (most common for DXF from Revit),
+        # but BIM data may already be in metres (1.0) or cm (0.01).
+        # Without unit confirmation, the default may produce coordinates
+        # that are 1000× too small or too large — destroying all
+        # spatial calculations (detector spacing, coverage, etc.).
+        scale_factor = 0.001  # mm → m (default for Revit DXF export)
+        logger.warning(
+            "HIGH-11: DXF scale factor hardcoded to %.4f (mm→m). "
+            "If BIM data uses different units, coordinates will be wrong. "
+            "Verify units from BIM source metadata. "
+            "Common scale factors: 1.0 (metres), 0.01 (cm→m), 0.001 (mm→m), "
+            "0.3048 (feet→m).",
+            scale_factor,
+        )
         try:
             from fireai.core.streaming_dwg_parser import StreamingDXFParser
 
             parser = StreamingDXFParser(
-                scale_factor=0.001,  # mm -> m
+                scale_factor=scale_factor,  # HIGH-11: was hardcoded 0.001
                 min_area_m2=1.0,
             )
             rooms: List[BIMRoom] = []

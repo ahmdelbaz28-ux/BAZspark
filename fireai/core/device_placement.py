@@ -490,6 +490,12 @@ class DetectorPlacementEngine:
         """
         stations: List[PlacedPullStation] = []
         for i, exit_door in enumerate(room.exit_doors):
+            # V76 HIGH-05: Pull station placement uses x + offset (right side).
+            # Per ADA and IBC, pull stations should be on the LATCH SIDE of the
+            # door (handle side), which depends on door swing direction. Since
+            # door swing data is not available in the current data model, this
+            # placement must be verified by the fire protection engineer.
+            # SAFETY: Place on available side, flag for verification.
             x = min(exit_door.x_m + NFPA72_PULL_STATION_FROM_EXIT_M, room.width_m - 0.1)
             stations.append(
                 PlacedPullStation(
@@ -500,6 +506,17 @@ class DetectorPlacementEngine:
                     near_exit_id=f"EXIT-{i + 1}",
                     nfpa_section="NFPA 72-2022 §17.15",
                 )
+            )
+        # NOTE: Pull station placement assumes right-side-of-door position.
+        # ADA/IBC require latch-side placement. Verify door swing direction
+        # with architectural plans. This is flagged for manual FPE review.
+        if stations:
+            import logging
+            _pull_logger = logging.getLogger(__name__)
+            _pull_logger.warning(
+                f"Room {room.room_id}: Pull stations placed on right side of "
+                f"exit doors. Verify latch-side placement per ADA/IBC — door "
+                f"swing direction not available in data model."
             )
         return stations
 
