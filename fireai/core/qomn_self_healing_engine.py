@@ -40,6 +40,21 @@ V2.0 MERGED FEATURES (from consultant — good ideas only):
 - ErrorSeverity enum: classification for weighted circuit breaker scoring
 - SafetyCriticalFailure exception: dedicated safety-critical failure type
 - audit_ref field: HMAC traceability reference in SafetyResult
+
+V76 BUG FIXES:
+- FIX 1 (CRITICAL): Nominal path physics validation — functions returning
+  physically invalid values (NaN, negative pressure, etc.) were reported as
+  NOMINAL. Now validated before caching/returning. Three improvements over
+  the original proposal: (a) validate BEFORE LRU cache update, (b) register
+  with circuit breaker for threshold accumulation, (c) prefer default_value
+  over safe_minimum as replacement.
+- FIX 2 (CRITICAL): Config._safe_float() NaN/Inf bypass — NaN from env
+  vars passed min_val check (NaN < 1.0 is False in IEEE-754), making
+  circuit breaker threshold=NaN so it NEVER trips. Added math.isfinite().
+- FIX 3 (HIGH): Audit hash chain — each entry includes previous entry's
+  SHA-256 hash, creating a tamper-evident chain that detects deletion of
+  audit entries. Chain survives file rotation. Added verify_chain() for
+  forensic analysis.
 """
 
 import copy
@@ -200,6 +215,18 @@ class Config:
         """V71 FIX: Parse float from env var with validation. Falls back to
         default on invalid values instead of crashing the module import.
 
+        V76 FIX (CRITICAL): Reject NaN/Inf from environment variables.
+        Without this guard, QOMN_CB_THRESHOLD=nan passes because NaN < 1.0
+        is False in IEEE-754, so the min_val check is bypassed. With
+        threshold=NaN, the circuit breaker NEVER trips (current_weight > NaN
+        is always False) — the safety system has no protection. Similarly,
+        QOMN_CB_THRESHOLD=inf makes the threshold unreachable. In a fire
+        protection system, a circuit breaker that never trips means the
+        system continues operating with accumulating faults — potentially
+        returning wrong sprinkler pressures or coverage calculations while
+        appearing functional. Per QOMN kernel safety principle: NaN/Inf
+        NEVER propagate. math.isfinite() rejects both NaN and Inf.
+
         In a safety-critical system, a typo in an environment variable
         (e.g., QOMN_CB_THRESHOLD=abc) must NOT crash the entire system.
         The safe default is always preferable to a crash.
@@ -209,6 +236,16 @@ class Config:
             return default
         try:
             val = float(raw)
+            # V76 FIX: Reject NaN and Inf BEFORE min_val check.
+            # NaN < min_val evaluates to False (IEEE-754), bypassing the
+            # guard. Inf passes the min_val check but makes the threshold
+            # unreachable. Both must be rejected explicitly.
+            if not math.isfinite(val):
+                logging.warning(
+                    f"[CONFIG] {env_var}={raw} is not finite (NaN/Inf rejected). "
+                    f"Using default: {default}."
+                )
+                return default
             if val < min_val:
                 logging.warning(
                     f"[CONFIG] {env_var}={val} is below minimum {min_val}. "
@@ -284,6 +321,10 @@ ERROR_WEIGHTS: Dict[str, ErrorSeverity] = {
     "TimeoutError": ErrorSeverity.TRANSIENT,
     "OSError": ErrorSeverity.CRITICAL,
     "LLMUnavailableError": ErrorSeverity.DEGRADED,
+    # V76 FIX: New error types for nominal path physics validation
+    "NominalPhysicsViolation": ErrorSeverity.CRITICAL,
+    "PhysicsValidatorCrash": ErrorSeverity.CRITICAL,
+    "NominalNaNInf": ErrorSeverity.CATASTROPHIC,
     "default": ErrorSeverity.DEGRADED,
 }
 
@@ -313,6 +354,7 @@ class AsyncAuditLogger:
     V53 FIX (BUG 4): Secret key loaded from environment variable with fallback.
     V53 FIX (BUG 7): File I/O errors caught and logged, not propagated.
     V2.0 FEATURE (from consultant): File rotation + batch statistics.
+    V76 FIX (HIGH): Hash chain for tamper detection (deletion detection).
     """
     def __init__(
         self,
@@ -324,6 +366,14 @@ class AsyncAuditLogger:
         self.filepath = filepath
         self.max_bytes = max_bytes
         self.backup_count = backup_count
+
+        # V76 FIX (HIGH): Hash chain — each entry includes the hash of the
+        # previous entry, creating a tamper-evident chain. If any entry is
+        # deleted, the chain breaks at the next entry (previous_hash mismatch).
+        # This detects the "missing audit entries" attack where an attacker
+        # removes evidence of a healing action from the middle of the log.
+        # Genesis hash: 64 zeros (standard blockchain convention).
+        self._last_chain_hash: str = "0" * 64
 
         # V53 FIX (BUG 4): Load secret from environment with secure fallback
         # H-2 FIX: Removed hardcoded default secret key b"QOMN_SECRET_KEY".
@@ -411,16 +461,29 @@ class AsyncAuditLogger:
 
         V53 FIX (BUG 7): Catches OSError to prevent crash on I/O failure.
         V2.0 FEATURE: Rotation + batch statistics.
+        V76 FIX (HIGH): Hash chain — each entry links to the previous entry
+        via previous_hash, creating a tamper-evident chain. This detects
+        deletion of audit entries (e.g., removing evidence of a healing
+        action). The chain is persisted within each file; on rotation,
+        the last hash from the old file is carried forward as the genesis
+        for the new file, maintaining cross-file chain integrity.
         """
         with self.lock:
             try:
                 # Rotate if needed before writing
+                # V76 FIX: Save chain hash BEFORE rotation so it carries
+                # forward to the new file. Without this, rotation breaks
+                # the chain — the new file starts with genesis hash "0"*64,
+                # making it impossible to detect deletion of the rotated file.
                 self._rotate_if_needed()
 
                 # Copy event_data to avoid mutating the caller's dictionary
                 event_data = dict(event_data)
                 # Enforce clean UTC timestamp (V59 AUDIT-012 timezone fix)
                 event_data["timestamp_utc"] = datetime.now(timezone.utc).isoformat()
+
+                # V76 FIX: Include previous hash for chain integrity
+                event_data["previous_hash"] = self._last_chain_hash
 
                 # Serialize deterministically for consistent hashing
                 serialized_payload = json.dumps(event_data, sort_keys=True, default=str)
@@ -441,6 +504,17 @@ class AsyncAuditLogger:
                 entry_str = json.dumps(entry) + "\n"
                 with open(self.filepath, "a", encoding="utf-8") as f:
                     f.write(entry_str)
+
+                # V76 FIX: Update chain hash — hash of the entry content
+                # (the JSON line WITHOUT trailing newline) becomes the next
+                # entry's previous_hash. This makes the chain tamper-evident:
+                # changing any entry changes its hash, which breaks the
+                # chain at the NEXT entry. Note: we hash the content without
+                # the newline because file-reading tools typically strip
+                # trailing newlines, and the hash must match across read/write.
+                self._last_chain_hash = hashlib.sha256(
+                    entry_str.rstrip("\n").encode("utf-8")
+                ).hexdigest()
 
                 # Update statistics
                 self._total_events += 1
@@ -473,7 +547,67 @@ class AsyncAuditLogger:
                 "failed_writes": self._failed_writes,
                 "bytes_written": self._bytes_written,
                 "filepath": self.filepath,
+                "chain_hash": self._last_chain_hash,  # V76: Current chain tip
             }
+
+    def verify_chain(self, filepath: Optional[str] = None) -> Dict[str, Any]:
+        """V76 FIX: Verify the hash chain integrity of an audit log file.
+
+        Reads the entire file and checks that each entry's previous_hash
+        matches the SHA-256 hash of the previous entry. Returns a report
+        with chain_valid (bool), break_points (list of line numbers where
+        chain breaks), and total_entries checked.
+
+        This enables post-incident forensic analysis: if anyone deleted
+        audit entries to hide a healing action, the chain will be broken.
+        """
+        target = filepath or self.filepath
+        break_points: List[int] = []
+        total_entries = 0
+        expected_hash = "0" * 64  # Genesis
+
+        try:
+            with open(target, "r", encoding="utf-8") as f:
+                for line_num, line in enumerate(f, 1):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        entry = json.loads(line)
+                        payload = entry.get("payload", {})
+                        actual_prev = payload.get("previous_hash", "")
+
+                        if actual_prev != expected_hash:
+                            break_points.append(line_num)
+
+                        # Compute hash of this entry for next comparison
+                        expected_hash = hashlib.sha256(
+                            line.encode("utf-8")
+                        ).hexdigest()
+                        total_entries += 1
+                    except json.JSONDecodeError:
+                        break_points.append(line_num)
+        except FileNotFoundError:
+            return {
+                "chain_valid": False,
+                "error": f"File not found: {target}",
+                "total_entries": 0,
+                "break_points": [],
+            }
+        except OSError as e:
+            return {
+                "chain_valid": False,
+                "error": str(e),
+                "total_entries": total_entries,
+                "break_points": break_points,
+            }
+
+        return {
+            "chain_valid": len(break_points) == 0,
+            "total_entries": total_entries,
+            "break_points": break_points,
+            "chain_tip": expected_hash,
+        }
 
     def flush(self) -> bool:
         """Explicit flush -- with immediate write mode, this is a no-op.
@@ -1048,7 +1182,142 @@ def self_healing(
             # ---------------------------------------------------------
             try:
                 nominal_value = func(*args, **kwargs)
-                # Success path: update LRU cache with the Last Known Good (LKG) result
+
+                # V76 FIX (CRITICAL): Validate nominal value against physics
+                # constraints BEFORE declaring NOMINAL status. Without this
+                # guard, a function that returns float('nan') or a physically
+                # impossible value (e.g., negative pressure) is reported as
+                # NOMINAL — the operator believes the system is working when
+                # it has produced a dangerous result.
+                #
+                # Three specific problems fixed vs the original proposal:
+                # 1. LRU cache was updated BEFORE validation — wrong values
+                #    stored as "Last Known Good" and recovered on MemoryError.
+                #    Fix: validate BEFORE caching.
+                # 2. Circuit breaker was not notified — repeated bad nominal
+                #    values don't accumulate toward breaker threshold.
+                #    Fix: register NominalPhysicsViolation with CB.
+                # 3. safe_minimum was the only fallback — inappropriate for
+                #    non-pressure functions (e.g., safe_minimum=0.0 for audio
+                #    means "no alarm sound"). Fix: try default_value first.
+                if physics_validator:
+                    try:
+                        if not physics_validator(nominal_value):
+                            # Nominal value is physically invalid!
+                            # Determine best replacement: prefer default_value
+                            # (function-specific) over safe_minimum (generic).
+                            replacement = safe_minimum
+                            if default_value is not None:
+                                try:
+                                    if physics_validator(default_value):
+                                        replacement = default_value
+                                except Exception:
+                                    pass  # validator crash on default_value
+
+                            # Register with circuit breaker so repeated
+                            # physics violations accumulate toward threshold
+                            cb.register_healing_event(
+                                error_type="NominalPhysicsViolation"
+                            )
+
+                            after_hash = compute_hash(replacement)
+                            audit_ref = global_audit_logger.log_event({
+                                "function_name": func_name,
+                                "error_type": "NominalPhysicsViolation",
+                                "error_message": (
+                                    f"Nominal value {nominal_value} failed "
+                                    f"physics validation"
+                                ),
+                                "tier_used": 1,
+                                "fix_applied": replacement,
+                                "verification_result": "PASSED_PHYSICS_GUARD",
+                                "before_hash": before_hash,
+                                "after_hash": after_hash,
+                                "user_notification_status": "ALERTED"
+                            })
+
+                            return SafetyResult(
+                                value=replacement,
+                                status=SystemStatus.DEGRADED,
+                                metadata={
+                                    "warning": "Nominal value invalid",
+                                    "original": nominal_value,
+                                    "replacement_reason": "physics_validator_rejected",
+                                },
+                                audit_ref=f"SH-{before_hash[:8]}-{after_hash[:8]}",
+                            )
+                    except Exception as validator_err:
+                        # The validator ITSELF crashed — treat as DEGRADED
+                        # with safe_minimum, because we cannot trust any
+                        # value that a crashing validator might have passed.
+                        cb.register_healing_event(
+                            error_type="PhysicsValidatorCrash"
+                        )
+
+                        after_hash = compute_hash(safe_minimum)
+                        audit_ref = global_audit_logger.log_event({
+                            "function_name": func_name,
+                            "error_type": "PhysicsValidatorCrash",
+                            "error_message": str(validator_err),
+                            "tier_used": 1,
+                            "fix_applied": safe_minimum,
+                            "verification_result": "VALIDATOR_CRASH_FALLBACK",
+                            "before_hash": before_hash,
+                            "after_hash": after_hash,
+                            "user_notification_status": "ALERTED"
+                        })
+
+                        return SafetyResult(
+                            value=safe_minimum,
+                            status=SystemStatus.DEGRADED,
+                            metadata={
+                                "warning": "Physics validator crashed",
+                                "validator_error": str(validator_err),
+                            },
+                            audit_ref=f"SH-{before_hash[:8]}-{after_hash[:8]}",
+                        )
+
+                # Also catch NaN/Inf that slipped through without a validator
+                if isinstance(nominal_value, float) and (
+                    math.isnan(nominal_value) or math.isinf(nominal_value)
+                ):
+                    cb.register_healing_event(
+                        error_type="NominalNaNInf"
+                    )
+                    replacement = default_value if default_value is not None else safe_minimum
+                    # V67 FIX: NaN/Inf guard on replacement too
+                    if isinstance(replacement, float) and (
+                        math.isnan(replacement) or math.isinf(replacement)
+                    ):
+                        replacement = safe_minimum
+
+                    after_hash = compute_hash(replacement)
+                    global_audit_logger.log_event({
+                        "function_name": func_name,
+                        "error_type": "NominalNaNInf",
+                        "error_message": (
+                            f"Nominal value is {nominal_value} — "
+                            f"NaN/Inf never propagate (QOMN kernel principle)"
+                        ),
+                        "tier_used": 1,
+                        "fix_applied": replacement,
+                        "verification_result": "PASSED_NAN_INF_GUARD",
+                        "before_hash": before_hash,
+                        "after_hash": after_hash,
+                        "user_notification_status": "ALERTED"
+                    })
+
+                    return SafetyResult(
+                        value=replacement,
+                        status=SystemStatus.DEGRADED,
+                        metadata={
+                            "warning": "Nominal value was NaN/Inf",
+                            "original": str(nominal_value),
+                        },
+                        audit_ref=f"SH-{before_hash[:8]}-{after_hash[:8]}",
+                    )
+
+                # All validations passed: update LRU cache with verified LKG
                 global_lru_cache.update(func_name, nominal_value)
 
                 # V2.0: Record success for half-open recovery
