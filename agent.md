@@ -11225,7 +11225,7 @@ tests/test_acoustic_calculator.py:22
 5. **Bug 30 is the same NaN short-circuit pattern** as found in other modules — suggests a systematic audit of all `math.isfinite() and` patterns is needed.
 
 ### Commit Information
-- **Commit:** Pending push
+- **Commit:** `4f0f306`
 
 ### V65 Batch 3 — Backend Security Audit: 7 Safety/Security Bugs Fixed (3 CRITICAL + 2 HIGH + 2 MEDIUM)
 
@@ -11280,7 +11280,7 @@ tests/test_acoustic_calculator.py:22
 4. **These three bugs form an attack chain** — path traversal to read API key → use API key for authenticated access → modify fire alarm data. Fixed the entire chain.
 
 ### Commit Information
-- **Commit:** Pending push
+- **Commit:** `4f0f306`
 
 ### V65 Batch 4 — Critical Voltage Drop Fix: Routing Factor Applied
 
@@ -11306,7 +11306,7 @@ The 1.5× factor is conservative for most installations and dramatically safer t
 3. **This fix may cause existing "PASS" circuits to now "FAIL"** — which is CORRECT. Those circuits were falsely passing due to underestimated voltage drop. The new failures are real safety issues that were previously hidden.
 
 ### Commit Information
-- **Commit:** Pending push
+- **Commit:** `4f0f306`
 
 ### V65 Batch 5 — Placement & Orchestrator Audit: 3 CRITICAL Bugs Fixed
 
@@ -11337,7 +11337,7 @@ The 1.5× factor is conservative for most installations and dramatically safer t
 3. **Bug 39 (NaN bypass) is the same pattern** found across the codebase — NaN comparisons returning False. This suggests a systematic codebase-wide audit of ALL `<=0` and `>=0` checks is needed.
 
 ### Commit Information
-- **Commit:** Pending push
+- **Commit:** `4f0f306`
 
 ---
 
@@ -12256,4 +12256,4 @@ half_width and math.sqrt, producing NaN spacing → NaN detector positions.
 - Full test suite runtime: ~72 seconds
 
 ### Commit Information
-- **Commit:** Pending push
+- **Commit:** `4f0f306`
