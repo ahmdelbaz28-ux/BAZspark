@@ -197,9 +197,21 @@ class IfcFirePipeline:
         if total_area > 0:
             global_cov = sum(c * a for c, a in zip(cov_pcts, areas)) / total_area
             global_bs = sum(b * a for b, a in zip(blind_pcts, areas)) / total_area
+        elif all_results:
+            # V79 FIX: All spaces have zero area — geometry extraction may have failed.
+            # Arithmetic mean of unreliable coverage values is still unreliable.
+            # Set to worst-case instead of reporting misleading numbers.
+            global_cov = 0.0
+            global_bs = 100.0
+            self._warnings.append(
+                "CRITICAL: All spaces have zero area — area-weighted coverage "
+                "impossible. Global coverage set to 0% and blind spot to 100%. "
+                "Geometry extraction likely failed for all spaces. "
+                "Manual fire protection engineering review REQUIRED."
+            )
         else:
-            global_cov = sum(cov_pcts) / len(cov_pcts)
-            global_bs = sum(blind_pcts) / len(blind_pcts)
+            global_cov = 0.0
+            global_bs = 100.0
         elapsed = time.perf_counter() - t0
 
         return PipelineReport(
@@ -673,31 +685,53 @@ class IfcFirePipeline:
     # ── Substance lookup ─────────────────────────────────────────
 
     def _get_substance(self) -> Any:
-        """Return SubstanceProperties for the configured CAS number."""
+        """Return SubstanceProperties for the configured CAS number.
+
+        V79 FIX: Previously, all physical properties were hardcoded to propane
+        regardless of CAS number. Only the substance name was updated from the
+        registry. This meant hydrogen (UFL 75%) or methane (UFL 15%) would get
+        propane's flammability limits (UFL 9.5%), causing underestimated HAC
+        zone extents — potentially placing non-ATEX equipment inside explosive
+        atmospheres. Now returns full SubstanceProperties from registry when
+        available, with propane as fallback only when registry is unavailable.
+        """
         from fireai.core.models_v21 import HazardType, SubstanceProperties
 
-        # Try spectral registry for the CAS number
+        # Try spectral registry for the CAS number — get FULL properties
         try:
             from fireai.core.models_v21 import SpectralSignatureRegistry
 
             registry = SpectralSignatureRegistry()
             sig = registry.get(self.cfg.substance_cas)
-            if sig:
-                name = sig.substance_name
-            else:
-                name = "Propane"
+            if sig and hasattr(sig, 'substance_properties') and sig.substance_properties:
+                return sig.substance_properties
+            # Try SubstanceRegistry for full property data
+            try:
+                from fireai.core.substance_registry import SubstanceRegistry
+                sub_reg = SubstanceRegistry()
+                substance = sub_reg.get_by_cas(self.cfg.substance_cas)
+                if substance is not None:
+                    return substance
+            except Exception:
+                pass
         except Exception:
-            name = "Propane"
+            pass
 
-        # Default propane properties (most common in petrochemical)
-        # Engineers should override with project-specific values
+        # Fallback: propane — ONLY when registry is unavailable, with CRITICAL warning
+        logger.critical(
+            "%s: Substance registry unavailable for CAS %s. "
+            "Defaulting to propane properties — THIS MAY BE WRONG FOR YOUR SUBSTANCE. "
+            "Manual HAC classification REQUIRED per IEC 60079-10-1.",
+            self.__class__.__name__,
+            self.cfg.substance_cas,
+        )
         return SubstanceProperties(
-            name=name,
+            name="Propane (DEFAULT — VERIFY)",
             hazard_type=HazardType.GAS,
             lfl_vol_pct=2.1,
             ufl_vol_pct=9.5,
             flash_point_c=-104.0,
-            autoignition_c=450.0,  # NFPA 497-2024 Table 4.4.2: propane AIT = 450°C (842°F)
+            autoignition_c=450.0,  # NFPA 497-2024 Table 4.4.2
             molecular_weight=44.1,
             density_kg_m3=1.882,
         )

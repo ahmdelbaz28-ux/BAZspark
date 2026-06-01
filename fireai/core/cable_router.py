@@ -498,9 +498,10 @@ class CableRouter:
                     field=label,
                     value=value,
                 )
-        if ps_voltage < 0:
+        if ps_voltage <= 0:
             raise ContractViolation(
-                f"ps_voltage = {ps_voltage!r} is negative — QOMN-FIRE Layer 0 rejects negative voltage.",
+                f"ps_voltage = {ps_voltage!r} is non-positive — QOMN-FIRE Layer 0 rejects "
+                f"zero/negative voltage. A 0V supply produces false 0% voltage drop compliance.",
                 field="ps_voltage",
                 value=ps_voltage,
             )
@@ -570,16 +571,23 @@ class CableRouter:
         # V109 FIX: wire_gauge param is a string key (e.g. "14"), not a
         # _WireGaugeInstance. Must resolve to instance for resistance lookup.
         if isinstance(wire_gauge, str):
-            wg_instance = WireGauge.get_resistance_per_m(wire_gauge)
-            # Convert Ω/m to Ω/km for the temperature correction formula
-            # V FIX: get_resistance_per_m returns 75°C value (Ω/m),
-            # but we need 20°C base for temperature correction formula.
-            # Use WireGauge object's resistance_ohm_per_km_at_20c instead.
-            # Fallback: estimate 20°C from 75°C published value using
-            # reverse correction (less accurate but safe).
-            r_at_20c = wg_instance * 1000.0  # This is 75°C value, not 20°C
-            # Estimate 20°C from 75°C: R_20 = R_75 / (1 + α * 55)
-            r_at_20c = r_at_20c / (1.0 + 0.00393 * 55.0)
+            # V79 FIX: Use exact NEC 20°C value from _WireGaugeInstance instead of
+            # approximating from 75°C via reverse temperature correction (~2% error).
+            # The approximation gave e.g. 8.278 Ω/km for AWG 14 vs NEC published 8.450.
+            wg_found = None
+            for wg in WireGauge._ALL_GAUGES:
+                if wg.awg_value == str(wire_gauge).strip():
+                    wg_found = wg
+                    break
+            if wg_found is not None:
+                r_at_20c = wg_found.resistance_ohm_per_km_at_20c
+            else:
+                raise ContractViolation(
+                    f"Unknown wire gauge: {wire_gauge!r}. "
+                    f"Supported: {WireGauge.VALID_GAUGES}.",
+                    field="wire_gauge",
+                    value=wire_gauge,
+                )
         else:
             # V FIX: Use resistance_ohm_per_km_at_20c for temperature correction
             # (not resistance_ohm_per_km which is now the 75°C published value).

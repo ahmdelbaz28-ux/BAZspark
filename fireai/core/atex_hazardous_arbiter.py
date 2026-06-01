@@ -539,7 +539,7 @@ class ATEXHazardousArbiter:
                     epl_required=epl_str,
                     atex_category=cat_str,
                     temp_class=temp_class,
-                    protection_modes=["n"],
+                    protection_modes=["ic"],  # V79 FIX: was "n" — invalid enum value
                 )
             except Exception:
                 # V43 FIX: Ultimate fallback must NOT downgrade Zone 0 to Zone 2.
@@ -617,8 +617,12 @@ class ATEXHazardousArbiter:
         if zone == ATEXZone.SAFE:
             return self._safe_result_legacy(hac_result, hazard_system)
 
-        required_epl = _ZONE_TO_EPL.get(zone, EquipmentProtectionLevel.Gb)
-        atex_category = _ZONE_TO_CATEGORY.get(zone, ATEXCategory.CAT_2G)
+        # V79 FIX: Default to most protective (Ga/CAT_1G) for unknown zones.
+        # Previously defaulted to Gb/CAT_2G (Zone 1 level) — if the unknown zone
+        # is actually Zone 0 (continuous explosive atmosphere), Gb equipment
+        # creates an ignition source. IEC 60079-0 §5: on failure, assume worst case.
+        required_epl = _ZONE_TO_EPL.get(zone, EquipmentProtectionLevel.Ga)
+        atex_category = _ZONE_TO_CATEGORY.get(zone, ATEXCategory.CAT_1G)
         permitted = _ZONE_PERMITTED_PROTECTIONS.get(zone, set())
         notified_body = atex_category in (
             ATEXCategory.CAT_1G,
@@ -703,7 +707,7 @@ class ATEXHazardousArbiter:
                 atex_category=atex_category.value,
                 temp_class=TemperatureClass(temp_class)
                 if temp_class in [t.value for t in TemperatureClass]
-                else TemperatureClass.T4,
+                else TemperatureClass.T6,  # V79 FIX: was T4 (135°C), now T6 (85°C) — most conservative per IEC 60079-0 §7.3
                 protection_modes=sorted([p.value for p in permitted]),
                 hac_warnings=list(hac_result.warnings),
             )
@@ -717,8 +721,8 @@ class ATEXHazardousArbiter:
                     zone=v21_zone if v21_zone != V21ZoneType.UNCLASSIFIED else V21ZoneType.ZONE_2,
                     epl_required=required_epl.value,
                     atex_category=atex_category.value,
-                    temp_class=TemperatureClass.T4,
-                    protection_modes=["n"],
+                    temp_class=TemperatureClass.T6,  # V79 FIX: was T4
+                    protection_modes=["ic"],  # V79 FIX: was "n" — invalid enum
                 )
             except Exception:
                 # Fallback 2: Use "ia" (always valid for any gas zone per IEC 60079-0)
@@ -869,8 +873,8 @@ class ATEXHazardousArbiter:
             zone=ZoneType.UNCLASSIFIED,
             epl_required="Gc",
             atex_category="3G",
-            temp_class=TemperatureClass.T4,
-            protection_modes=["n"],
+            temp_class=TemperatureClass.T6,  # V79 FIX: was T4 — T6 is most conservative
+            protection_modes=["ic"],  # V79 FIX: was "n" — invalid ProtectionType enum. "ic" (EPL Gc) valid for safe areas
             hac_warnings=hac_warnings,
         )
         return ATEXArbitrationResult(
@@ -889,8 +893,8 @@ class ATEXHazardousArbiter:
             zone=ZoneType.UNCLASSIFIED,
             epl_required="Gc",
             atex_category="3G",
-            temp_class=TemperatureClass.T4,
-            protection_modes=["n"],
+            temp_class=TemperatureClass.T6,  # V79 FIX: was T4 — T6 is most conservative
+            protection_modes=["ic"],  # V79 FIX: was "n" — invalid ProtectionType enum. "ic" (EPL Gc) valid for safe areas
             hac_warnings=list(hac_result.warnings),
         )
         return ATEXArbitrationResult(

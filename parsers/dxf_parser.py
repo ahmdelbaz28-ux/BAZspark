@@ -106,10 +106,20 @@ class DXFParser:
         for i, poly in enumerate(polys):
             rid = f"ROOM_{i + 1:03d}"
 
-            if poly.area < self.min_area:
+            # V79 FIX: Check for NaN/Inf area BEFORE min/max comparisons.
+            # NaN < 2.0 → False and NaN > 50000.0 → False in IEEE-754, so NaN
+            # area passes both checks and enters the pipeline, corrupting area-weighted
+            # calculations (NaN * anything = NaN → global coverage = NaN).
+            area = poly.area
+            if not math.isfinite(area):
+                logger.warning(f"{rid}: area is {area} (NaN/Inf) — SKIPPED")
                 skipped += 1
                 continue
-            if poly.area > self.max_area:
+
+            if area < self.min_area:
+                skipped += 1
+                continue
+            if area > self.max_area:
                 # V78 FIX: Skip oversized rooms instead of just warning.
                 # A room with area 500,000 m² is likely a unit conversion error
                 # (DXF in mm parsed as meters). Accepting it produces catastrophically
@@ -260,9 +270,20 @@ class DXFParser:
                     lines.append(LineString([s, e]))
             elif ent.dxftype() in ("LWPOLYLINE", "POLYLINE"):
                 try:
-                    pts = [(p[0] * scale, p[1] * scale) for p in ent.get_points()]
-                    # V76 HIGH-08 FIX: Filter out non-finite points
-                    pts = [(x, y) for x, y in pts if math.isfinite(x) and math.isfinite(y)]
+                    raw_pts = [(p[0] * scale, p[1] * scale) for p in ent.get_points()]
+                    # V79 FIX: If ANY point is non-finite, the polyline geometry is
+                    # corrupted. Removing middle points creates shortcuts across the
+                    # removed vertex, producing self-intersecting or significantly
+                    # different room boundaries. Skip the entire entity instead.
+                    if not all(math.isfinite(x) and math.isfinite(y) for x, y in raw_pts):
+                        bad_count = sum(1 for x, y in raw_pts if not (math.isfinite(x) and math.isfinite(y)))
+                        logger.warning(
+                            "Polyline had %d non-finite vertices out of %d total. "
+                            "Geometry would be corrupted by filtering — skipping this entity.",
+                            bad_count, len(raw_pts),
+                        )
+                        continue
+                    pts = raw_pts
                     if len(pts) >= 3 and ent.closed:
                         lines.append(LineString(pts))
                 except Exception as e:

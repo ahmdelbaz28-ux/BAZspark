@@ -338,20 +338,14 @@ class VoltageDropInput(BaseModel):
         # Ambient temperature correction (NEC Table 310.15(B)(2)(a))
         # Copper resistance increases with temperature (positive temperature coefficient).
         # At higher temperatures, conductor resistance increases → more voltage drop.
-        # Per NEC Table 310.15(B)(2)(a), ampacity is derated above 30°C.
-        # For voltage drop: R_T = R_75C × (1 + 0.00393 × (T - 75)) for copper.
-        # Simplified model: temp_correction factor > 1.0 at higher temperatures.
-        temp_correction = 1.0
-        if self.ambient_temp_c > 30.0:
-            # V78 FIX: cable_resistance_ohm_per_m is specified at 75°C (NEC Table 8).
-            # The temperature coefficient 0.00393 per °C is relative to the BASE temperature
-            # of the resistance value. Since our resistance is at 75°C, the correction
-            # must be from 75°C, NOT from 30°C. Previous formula used (T - 30) which
-            # over-corrected by 17.7% at 75°C ambient (1.177 vs correct 1.0).
-            # R_T = R_75C × (1 + 0.00393 × (T_ambient - 75))
-            temp_correction = 1.0 + 0.00393 * (self.ambient_temp_c - 75.0)
-            if temp_correction < 1.0:
-                temp_correction = 1.0  # Don't derate below reference temperature
+        # V79 FIX: Separated ampacity derating (NEC 310.15, 30°C threshold) from
+        # resistance correction (applies at all temperatures). The 30°C threshold
+        # is for ampacity only — conductor resistance changes with temperature
+        # regardless of ambient. Also corrected temperature coefficient from
+        # α₂₀=0.00393 to α₇₅=0.00323 (copper at 75°C reference per NEC Ch.9 Table 8).
+        # Using α₂₀ with a 75°C base overestimates by ~1% at 90°C and ~3% at 125°C.
+        # Conservative: never reduce resistance below 75°C reference value (1.0).
+        temp_correction = max(1.0, 1.0 + 0.00323 * (self.ambient_temp_c - 75.0))
 
         # Conductor bundling derating (NEC Table 310.15(B)(3)(a))
         bundling_factor = 1.0
