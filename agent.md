@@ -11011,3 +11011,79 @@ The user's `qomn_parser_workspace.py` contains an OLDER version of the parser co
 - 12 warnings (FutureWarning from deprecated battery function)
 - Full test suite runtime: 69.96s
 - No regression detected
+
+---
+
+## V64 Fix (2026-06-01) — CI Pipeline Dependency Installation Fix (CRITICAL)
+
+### Context
+GitHub Actions CI pipeline was failing on Gate 2 (Test Suite) with `ModuleNotFoundError: No module named 'pydantic'`. The operator provided a screenshot of the failed CI run (GitHub Actions Run 26736579103, Job 78791042390).
+
+### Root Cause Analysis
+**File:** `requirements.txt` and `.github/workflows/ci.yml`
+**Discovery:** `requirements.txt` contained ONLY `ezdxf>=1.1.0` — a single line — while `pyproject.toml` lists 25+ runtime dependencies including `pydantic>=2.5.0`, `shapely>=2.0.0`, `fastapi>=0.110.0`, etc. The CI workflow ran `pip install -r requirements.txt` which installed NONE of the runtime dependencies needed by the fireai package.
+**Impact:** ALL 5 CI gates were broken:
+- Gate 1 (Static Analysis): Passed only because ruff/bandit/mypy were installed separately
+- Gate 2 (Test Suite): FAILED — `ModuleNotFoundError: No module named 'pydantic'`
+- Gate 3 (Property Tests): Would also FAIL for same reason
+- Gate 4 (Regression Check): Would also FAIL for same reason
+- Gate 5 (Dependency Audit): Only audited `ezdxf`, missing ALL other dependencies
+
+**Error Chain:**
+```
+tests/test_acoustic_calculator.py:22
+→ fireai/core/acoustic_calculator.py
+→ fireai/core/acoustics_engine.py:103
+→ fireai/core/ugld_acoustics.py:88
+→ from pydantic import BaseModel, ConfigDict, Field, model_validator
+→ ModuleNotFoundError: No module named 'pydantic'
+```
+
+**Secondary Issue:** `asyncio_mode = "auto"` in `pyproject.toml` requires `pytest-asyncio`, which was not installed in CI.
+
+### Fix Applied
+
+1. **requirements.txt** — Synced with `pyproject.toml` [project] dependencies. Added all 25 runtime packages:
+   - Core Web Framework: fastapi, uvicorn, starlette, pydantic, python-dotenv, python-multipart, websockets
+   - Data & Geometry: shapely, numpy, matplotlib
+   - CAD/BIM Parsing: ezdxf, openpyxl
+   - AI/LLM Integration: httpx, aiohttp, google-generativeai
+   - Security: cryptography
+   - Logging: loguru
+   - Reporting: reportlab, Pillow
+   - Utilities: packaging
+   - Added header comment: "This file MUST be kept in sync with pyproject.toml [project] dependencies."
+
+2. **ci.yml Gate 1 (Static Analysis)** — Added `pip install -e .` after `pip install -r requirements.txt` to install the fireai package itself for module discovery.
+
+3. **ci.yml Gate 2 (Test Suite)** — Added `pip install -e .` and `pytest-asyncio` to test dependencies.
+
+4. **ci.yml Gate 3 (Property Tests)** — Added `pip install -e .` and `pytest-asyncio` to test dependencies.
+
+5. **ci.yml Gate 4 (Regression Check)** — Added `pip install -e .` and `pytest-asyncio` to test dependencies.
+
+6. **ci.yml Gate 5 (Dependency Audit)** — Added `pip install -r requirements.txt` and `pip install -e .` before pip-audit. Changed strict audit from `pip-audit -r requirements.txt --desc` to `pip-audit --desc` to audit ALL installed packages including transitive dependencies.
+
+### Self-Criticism Notes (V64)
+
+1. **This was an infrastructure-level bug that was present for MANY versions** — the CI was never properly configured to install the project. Previous CI "passes" on Gate 1 and Gate 5 were misleading because they don't import the fireai package. This is a silent failure mode in CI configuration: gates that don't exercise the actual code path can appear to pass while the code is broken.
+
+2. **requirements.txt was a ticking time bomb** — having only `ezdxf>=1.1.0` meant that any CI gate that tried to import `fireai` (which requires pydantic, shapely, etc.) would immediately fail. The fact that Gate 1 (lint) and Gate 5 (audit) passed gave false confidence that the CI was working.
+
+3. **The `pip install -e .` step was missing from ALL gates** — without installing the fireai package in editable mode, Python cannot resolve `from fireai.core.xxx import yyy`. The package must be installed for its modules to be importable.
+
+4. **pytest-asyncio was missing** — `pyproject.toml` sets `asyncio_mode = "auto"` which requires the `pytest-asyncio` plugin. Without it, pytest emits `PytestConfigWarning: Unknown config option: asyncio_mode` and async tests may not be collected properly.
+
+5. **The dependency audit was superficial** — auditing only `requirements.txt` (which had 1 package) missed vulnerabilities in ALL transitive dependencies. The fix to use `pip-audit --desc` on installed packages catches real-world supply chain risks.
+
+6. **This fix is non-code but HIGH safety impact** — a broken CI pipeline means code can be merged without any automated verification. In a safety-critical fire protection system, every merged code change must pass all verification gates. A disabled CI is equivalent to no safety net.
+
+### Commit Information
+- **Commit:** `5d02e77`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/5d02e77
+
+### Verification Evidence
+- 4833 tests pass locally, 0 failures, 1 skipped
+- pydantic import verified: `from pydantic import BaseModel, ConfigDict, Field, model_validator` ✅
+- fireai.core.acoustic_calculator import verified ✅
+- CI push successful: `5f55f30..5d02e77  main -> main`
