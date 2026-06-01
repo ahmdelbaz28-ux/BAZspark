@@ -986,7 +986,10 @@ class RoutingEngineV10:
             if obs.passable:
                 continue
             for i in range(len(result.waypoints) - 1):
-                aabb = obs.expanded_bounds(clearance_m * 0.5)
+                # V65 FIX: Use full clearance_m (not 0.5×). Old code validated at 50% of
+                # required clearance, producing FALSE PASS on routes that violate the actual
+                # NEC 760.24 clearance requirement.
+                aabb = obs.expanded_bounds(clearance_m)
                 if _ObstacleIndex._line_intersects_aabb(result.waypoints[i], result.waypoints[i + 1], aabb):
                     violations.append(
                         f"Route segment {i} too close to {obs.obstacle_type} "

@@ -477,6 +477,16 @@ class CableRoutingEngine:
         """
         voltage = ps_voltage if ps_voltage is not None else self._ps_voltage
 
+        # V65 FIX: Validate per-circuit ps_voltage override for NaN/Inf.
+        # The constructor validates self._ps_voltage, but per-circuit overrides
+        # were not validated. NaN voltage → NaN drop percentage → fail-safe
+        # but NaN propagates through result fields, breaking downstream code.
+        if not math.isfinite(voltage) or voltage <= 0:
+            raise ValueError(
+                f"ps_voltage={voltage} must be finite and positive. "
+                f"NaN/Inf/negative voltage cannot produce valid voltage drop calculations."
+            )
+
         # Validate circuit data
         if not math.isfinite(circuit.cable_length_m) or circuit.cable_length_m < 0:
             raise ValueError(f"cable_length_m={circuit.cable_length_m} must be non-negative finite")
@@ -487,9 +497,17 @@ class CableRoutingEngine:
                 val = getattr(dev, attr_name, 0.0)
                 if not math.isfinite(val):
                     raise ValueError(f"Device '{dev.device_id}' has non-finite {attr_name}={val}")
-            # Check for negative current
-            if hasattr(dev, "current_a") and math.isfinite(dev.current_a) and dev.current_a < 0:
-                raise ValueError(f"Device '{dev.device_id}' has invalid current current_a={dev.current_a}")
+            # V65 FIX: Check for NaN current first, then negative.
+            # Old code: math.isfinite(dev.current_a) short-circuited on NaN,
+            # silently accepting NaN → NaN downstream current → NaN voltage drop.
+            if hasattr(dev, "current_a"):
+                if not math.isfinite(dev.current_a):
+                    raise ValueError(
+                        f"Device '{dev.device_id}' has non-finite current_a={dev.current_a}. "
+                        f"NaN/Inf current produces NaN voltage drop."
+                    )
+                if dev.current_a < 0:
+                    raise ValueError(f"Device '{dev.device_id}' has invalid current current_a={dev.current_a}")
 
         # Class A must have return path
         from fireai.core.circuit_topology import CircuitClass
@@ -678,7 +696,16 @@ class CableRoutingEngine:
         result.is_compliant = is_compliant
         result.total_voltage_drop_v = cumulative_drop
         result.total_voltage_drop_pct = total_drop_pct
-        result.end_of_line_voltage_v = voltage - cumulative_drop
+        # V65 FIX: Clamp end-of-line voltage to 0.0 (physically impossible to be negative).
+        # Old code: voltage - cumulative_drop could be negative when drop exceeds supply.
+        # A negative voltage is physically impossible and could confuse downstream code.
+        eol_voltage_raw = voltage - cumulative_drop
+        if eol_voltage_raw < 0:
+            violations_list.append(
+                "CRITICAL: Cumulative voltage drop exceeds power supply voltage — "
+                "circuit is non-functional. Devices will not operate during alarm."
+            )
+        result.end_of_line_voltage_v = max(0.0, eol_voltage_raw)
         result.segments = segments
         result.warnings = warnings_list
         result.violations = violations_list

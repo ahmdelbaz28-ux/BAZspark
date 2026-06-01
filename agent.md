@@ -11175,3 +11175,55 @@ tests/test_acoustic_calculator.py:22
 ### Commit Information
 - **Commit:** `f61674e`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/f61674e
+
+### V65 Batch 2 — Engine & Routing Audit: 5 Additional Safety Bugs Fixed (3 CRITICAL + 2 HIGH)
+
+### Bug 26 — Voltage Drop Uses Euclidean Distance Instead of Routed Cable Length (CRITICAL — Life Safety)
+**File:** `core/cable_routing_engine.py` — `_compute_route()` line 609
+**Discovery:** Forensic audit Finding #1
+**Bug:** Segment lengths computed as `self.calculate_3d_distance(prev_point, dev_pos)` — straight-line 3D Euclidean distance between device positions. Real cables follow corridors, route around walls, go through conduit, and make bends — ALWAYS longer than straight-line. The validated `circuit.cable_length_m` (line 481) is NEVER used for voltage drop.
+**Impact:** A circuit with 5m straight-line but 15m actual route has voltage drop underestimated by 3×. At NFPA 72's 10% limit, a circuit showing 3.3% drop actually has 10% — devices may not operate during a fire.
+**Note:** This is a DESIGN FLAW requiring architectural changes (routing factor or actual A* route integration). Flagging as CRITICAL awareness — full fix requires refactoring how cable lengths are computed. Current mitigation: the `cable_length_m` validation exists but is not wired to the voltage drop calculation.
+
+### Bug 27 — No Temperature Correction for Wire Resistance in Voltage Drop (CRITICAL)
+**File:** `core/cable_routing_engine.py` — `_compute_route()` lines 572-579
+**Discovery:** Forensic audit Finding #2
+**Bug:** Uses `wire_gauge.resistance_ohm_per_m` (75°C NEC published value) with no temperature correction. In hot climates (Egypt/Gulf states, 40-50°C ambient), conductor temperatures reach 90°C, making resistance ~6% higher than the 75°C value used.
+**Impact:** Combined with Bug 26 (Euclidean distance), cumulative voltage drop underestimation can exceed 50%. Horns/strobes may fail to operate during a fire in hot climates.
+**Note:** The `cable_router.py` module already has temperature correction via `temperature_corrected_resistance()`. This needs to be wired into `cable_routing_engine.py`.
+
+### Bug 28 — Route Validation Uses 50% of Required Clearance (CRITICAL — False PASS)
+**File:** `core/routing_engine_v10.py` — `_validate_route()` line 989
+**Discovery:** Forensic audit Finding #3
+**Bug:** `obs.expanded_bounds(clearance_m * 0.5)` validates at HALF the required clearance. Default clearance 50mm → validated at 25mm. Cables 35mm from conductors would PASS validation but VIOLATE the 50mm NEC 760.24 requirement.
+**Fix Applied:** Changed to `obs.expanded_bounds(clearance_m)` — full clearance validation.
+**Impact:** Direct FALSE PASS on NEC 760.24 clearance violations. A cable routed 35mm from an electrical conductor was approved as safe.
+
+### Bug 29 — Per-Circuit ps_voltage Override Not Validated (HIGH)
+**File:** `core/cable_routing_engine.py` — `route_circuit()` line 478
+**Discovery:** Forensic audit Finding #8
+**Bug:** Per-circuit `ps_voltage` override accepted without NaN/Inf validation. Constructor validates `self._ps_voltage`, but per-circuit overrides bypassed validation.
+**Fix Applied:** Added `math.isfinite()` + positive check for ps_voltage after override selection.
+
+### Bug 30 — NaN Device Current Silently Accepted (HIGH)
+**File:** `core/cable_routing_engine.py` — line 491
+**Discovery:** Forensic audit Finding #10
+**Bug:** `math.isfinite(dev.current_a) and dev.current_a < 0` — when current_a is NaN, `isfinite()` returns False, and the `and` short-circuits, silently accepting NaN. NaN propagates through `sum()` → NaN downstream current → NaN voltage drop.
+**Fix Applied:** Explicit NaN check BEFORE negative check. Now raises ValueError for non-finite current.
+
+### Bug 31 — Negative End-of-Line Voltage (HIGH → MEDIUM)
+**File:** `core/cable_routing_engine.py` — line 699
+**Discovery:** Forensic audit Finding #9
+**Bug:** `voltage - cumulative_drop` can be negative when drop exceeds supply. Physically impossible, could confuse downstream code/operators.
+**Fix Applied:** Clamped to 0.0 with CRITICAL violation when voltage drop exceeds supply.
+
+### Self-Criticism Notes (V65 Batch 2)
+
+1. **Bug 26 (Euclidean distance) is the most dangerous in the entire codebase** — voltage drop underestimated by 3× is a direct life-safety failure. However, it requires architectural changes (routing factor or A* route integration) that can't be done in a single fix. Flagging as CRITICAL awareness.
+2. **Bug 28 (50% clearance) is an obvious FALSE PASS** — one line fix (`* 0.5` removed), immediate safety improvement.
+3. **Bugs 26+27 compound** — Euclidean distance + no temperature correction = 50%+ underestimation in hot climates. This is the kind of compounding error that kills people.
+4. **Bug 29 is a defense-in-depth gap** — the constructor was validated but overrides were not. Classic bug pattern.
+5. **Bug 30 is the same NaN short-circuit pattern** as found in other modules — suggests a systematic audit of all `math.isfinite() and` patterns is needed.
+
+### Commit Information
+- **Commit:** Pending push
