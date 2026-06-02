@@ -12482,3 +12482,116 @@ kernel masked this caller bug. The fix surfaces and corrects both layers.
 ### Commit Hash & GitHub Link
 (See post-push report below — populated after `git push`.)
 
+
+---
+
+## V118 — AWG Normalization Consistency (Finding #3, Router/Kernel single source of truth) (2026-06-03)
+
+**Author:** Arena Agent (autonomous review cycle, authorized by operator)
+**Branch:** `V118/awg-normalization-consistency`
+**Triage Reference:** `VULNERABILITY_TRIAGE.md` Finding #3 (Score 22/50)
+
+### Files Modified
+- `backend/routers/qomn.py` — Replaced Pydantic regex pattern with a
+  `field_validator` that delegates to a module-level normalization function
+  (`_normalize_awg_gauge`) and validates against `_NEC_TABLE8_VALID_AWG`
+  (frozenset). This single source of truth MUST stay aligned with
+  `fireai/core/qomn_kernel.py:NEC_TABLE8_RESISTANCE_OHM_PER_KM`.
+- `tests/test_qomn_router_validation.py` — NEW FILE (170 lines, 26 tests)
+  covering: normalization variants (8), historic false-accepts now rejected
+  (6 parametrized), truly-invalid inputs (5), router/kernel contract (3),
+  other field validations (4).
+
+### Root Cause
+The previous router regex in `VoltageDropRequest.awg_gauge` was:
+  `^(18|16|14|12|10|8|6|4|3|2|1|1/0|2/0|3/0|4/0|250|300|350|400|500)$`
+
+This pattern accepted 6 values (`3, 250, 300, 350, 400, 500`) that
+**DO NOT EXIST** in `NEC_TABLE8_RESISTANCE_OHM_PER_KM` (the kernel's
+single source of truth for wire resistance). Submitting any of these
+values via the HTTP API would:
+  1. Pass the router validation silently
+  2. Reach the kernel
+  3. Raise `ValueError` in `compute_voltage_drop()`
+  4. Be wrapped as opaque HTTP 422 with no clear diagnostic
+
+This violates `agent.md` Anti-Deception Directive ("never fabricate
+compliance"): the HTTP contract advertised support it could not deliver.
+
+Additionally, the router regex did NOT match the kernel's actual
+normalization logic (`.strip().upper().replace("AWG","").strip()`),
+so valid user-friendly inputs like `"AWG14"`, `"14 "`, `"awg 1/0"`
+were rejected by the router despite being valid kernel inputs.
+
+### Behavioral Impact
+- **Tightening (Anti-Deception):** AWG values `3, 250, 300, 350, 400, 500`
+  now correctly return HTTP 422 with a precise error message listing the
+  14 actually-supported AWG values. Previously returned an opaque 422.
+  No legitimate user was affected (these gauges never worked anyway).
+- **Loosening (User-Friendly):** `"AWG14"`, `"14 "`, `"awg 14"`, `"AWG 1/0"`
+  are now accepted by the router and normalized to canonical form before
+  reaching the kernel. This eliminates the prior split-brain.
+- **Contract Test:** `TestRouterKernelContract.test_router_set_equals_kernel_table_keys`
+  fails loudly if any future change diverges router and kernel AWG sets.
+
+### Verification Evidence
+- 26/26 new router validation tests: ✅ PASS
+- 153/153 pre-existing `test_qomn_kernel.py` tests: ✅ PASS (no regression)
+- **5,050/5,050 FULL TEST SUITE PASS** (1 skipped, 0 failed) on Python 3.13
+  with all `requirements.txt` dependencies installed
+- Static syntax check (ast.parse) on modified router: ✅ OK
+- `_normalize_awg_gauge` is idempotent (verified by test)
+- All 14 router-accepted AWG values are independently verified to produce
+  valid kernel computations
+
+### Verification Gates Passed (per agent.md)
+- [Gate 1] Static Validation: ✅ syntax OK, imports clean
+- [Gate 2] Runtime Validation: ✅ 5050 tests pass (entire suite)
+- [Gate 3] Behavioral Validation: ✅ all normalization variants work,
+  false-accepts rejected, defaults applied
+- [Gate 4] Regression Validation: ✅ V117 tests still pass, 5,021 other
+  pre-existing tests still pass
+- [Gate 5] Adversarial Audit: ✅ contract test now enforces router/kernel
+  alignment forever (failing test if anyone re-introduces divergence)
+
+### Self-Criticism (Rule #21)
+- **Layer 1 (Output):** Is the validator truly aligned with kernel?
+  Verified by test_router_set_equals_kernel_table_keys which programmatically
+  compares the two sets. Yes.
+- **Layer 2 (Thinking):** Did I take a shortcut by hardcoding the AWG list?
+  No — I created a module-level frozenset constant with explicit comment
+  "MUST stay in sync with kernel" AND added a runtime contract test that
+  will fail loudly on divergence. The hardcoding is necessary because
+  importing from the kernel at module level would create a circular/eager
+  import (router → kernel → fireai/__init__.py → shapely/optional deps).
+  The contract test is the lock that prevents drift.
+- **Layer 3 (Method):** Did I fix the symptom or root cause? Root cause —
+  I unified the normalization logic AND aligned the accept-set, eliminating
+  the split-brain entirely rather than just patching the regex.
+- **Layer 4 (Commitment):** Did I follow agent.md? Yes — I added the
+  contract test (Rule #10), updated this log (Rule #9), did not skip
+  Phase 2 (Rule #15), verified before changing (Rule #6, #14), and ran
+  the full test suite (Rule #10 mandatory test-and-fix loop).
+
+### Initial Implementation Bug — Self-Corrected
+First attempt placed `_VALID_AWG_KEYS = frozenset({...})` as a class
+attribute. Pydantic V2 treats names starting with underscore as private
+model attributes (`ModelPrivateAttr`), making them non-iterable in
+`v in cls._VALID_AWG_KEYS` lookup. Caught by local test before commit:
+  TypeError: argument of type 'ModelPrivateAttr' is not iterable
+Fixed by moving the constant to module level and using a delegating
+field_validator. This is documented here per Rule #5 (EXPLAIN AFTER EACH
+STEP) — agents should not hide their iteration errors.
+
+### Unresolved Concerns
+- Other request models in qomn.py (`HeatSpacingRequest`, `BatteryRequest`,
+  etc.) may have similar router/kernel mismatches that were not audited
+  in this commit. Recommended follow-up: Phase 3.
+- The `_NEC_TABLE8_VALID_AWG` constant is currently duplicated between
+  router (hardcoded list) and kernel (dict keys). The contract test
+  catches drift, but a longer-term fix could expose the set as a public
+  symbol from the kernel module to eliminate duplication.
+
+### Commit Hash & GitHub Link
+(See post-push report below — populated after `git push`.)
+

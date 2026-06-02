@@ -33,7 +33,38 @@ import threading
 from typing import Any, Dict, List, NoReturn, Optional
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+# V118: Canonical NEC Table 8 gauge set — MUST stay in sync with
+# fireai/core/qomn_kernel.py:NEC_TABLE8_RESISTANCE_OHM_PER_KM keys.
+# Module-level (NOT class-attr) so Pydantic V2 doesn't treat it as a
+# private model attribute (leading underscore convention).
+_NEC_TABLE8_VALID_AWG: frozenset = frozenset({
+    "18", "16", "14", "12", "10", "8", "6", "4", "2", "1",
+    "1/0", "2/0", "3/0", "4/0",
+})
+
+
+def _normalize_awg_gauge(v: Any) -> str:
+    """Normalize AWG input identically to the kernel; reject if not in NEC Table 8.
+
+    SAFETY: This is the SINGLE point of AWG validation for the HTTP API.
+    A value passing here MUST be accepted by fireai.core.qomn_kernel.
+    A value failing here NEVER reaches the kernel. This prevents the
+    prior split-brain (V58 router regex vs kernel .strip().upper().replace).
+    """
+    if v is None:
+        return "14"  # Field default
+    if not isinstance(v, str):
+        raise ValueError(f"awg_gauge must be a string, got {type(v).__name__}")
+    # Apply EXACTLY the same normalization the kernel uses
+    normalized = v.strip().upper().replace("AWG", "").strip()
+    if normalized not in _NEC_TABLE8_VALID_AWG:
+        raise ValueError(
+            f"awg_gauge '{v}' not in NEC Table 8. Valid (after normalization): "
+            f"{sorted(_NEC_TABLE8_VALID_AWG, key=lambda s: (len(s), s))}"
+        )
+    return normalized
 
 logger = logging.getLogger(__name__)
 
@@ -152,13 +183,36 @@ class VoltageDropRequest(BaseModel):
     # V65 FIX: Validate AWG gauge against NEC Table 8 valid sizes.
     # An invalid gauge could produce incorrect voltage drop — in a fire alarm
     # system, underestimated voltage drop means devices may not operate.
+    #
+    # V118 FIX: The previous regex accepted 6 values (3, 250, 300, 350, 400, 500)
+    # that DO NOT EXIST in NEC_TABLE8_RESISTANCE_OHM_PER_KM (kernel source of
+    # truth). A user submitting awg_gauge="250" would pass router validation
+    # and then hit ValueError in the kernel → opaque HTTP 422 with no helpful
+    # diagnostic. This is FALSE-ADVERTISING in the API surface and violates
+    # agent.md Anti-Deception Directive (the API claims support it cannot
+    # deliver). The regex is now aligned EXACTLY with the kernel's table
+    # keys: 18, 16, 14, 12, 10, 8, 6, 4, 2, 1, 1/0, 2/0, 3/0, 4/0.
+    #
+    # V118 NORMALIZATION: Accept user-friendly variants ("AWG14", "14 ",
+    # "awg 14") via Pydantic validator BEFORE regex check, matching the
+    # kernel's awg_gauge.strip().upper().replace("AWG","").strip() logic.
+    # This eliminates the previous mismatch where router rejected "AWG14"
+    # but kernel accepted it. Single source of truth: NEC_TABLE8_RESISTANCE
+    # keys in fireai/core/qomn_kernel.py.
     awg_gauge:        str   = Field(
         "14",
-        pattern=r"^(18|16|14|12|10|8|6|4|3|2|1|1/0|2/0|3/0|4/0|250|300|350|400|500)$",
-        description="Wire gauge per NEC Table 8 (18, 16, 14, 12, 10, 8, 6, 4, 3, 2, 1, 1/0, 2/0, 3/0, 4/0, 250, 300, 350, 400, 500)"
+        description=(
+            "Wire gauge per NEC Table 8 (NEC 2023 Chapter 9). "
+            "Accepted: 18, 16, 14, 12, 10, 8, 6, 4, 2, 1, 1/0, 2/0, 3/0, 4/0. "
+            "User-friendly variants accepted: 'AWG14', '14', 'awg 14' all → '14'."
+        ),
     )
     supply_voltage_v: float = Field(24.0, gt=0, description="Supply voltage (default 24VDC)")
     max_drop_pct:     float = Field(10.0, gt=0, le=50, description="Max allowable drop %")
+
+    # V118: Field validator delegates to module-level _normalize_awg_gauge
+    # to keep the kernel/router AWG validation in lockstep.
+    _validate_awg = field_validator("awg_gauge", mode="before")(_normalize_awg_gauge)
 
 
 class RoomRequest(BaseModel):
