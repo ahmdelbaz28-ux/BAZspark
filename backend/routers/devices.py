@@ -121,6 +121,11 @@ async def create_device(project_id: str, input_data: CreateDeviceInput):
     }
     device = db.create_device(project_id, device_data)
     validate_device(device)
+
+    # Sync device to UDM for conflict detection
+    from backend.project_bridge import sync_device_to_udm
+    sync_device_to_udm(project_id, device_data)
+
     return {"data": device, "success": True}
 
 
@@ -190,6 +195,11 @@ async def update_device(
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
     validate_device(device)
+
+    # Sync device update to UDM for conflict detection
+    from backend.project_bridge import sync_device_update_to_udm
+    sync_device_update_to_udm(project_id, device_id, updates)
+
     return {"data": device, "success": True}
 
 
@@ -216,4 +226,9 @@ async def delete_device(project_id: str, device_id: str):
         device.get("name", "unknown"),
     )
     deleted = db.delete_device(project_id, device_id)
+
+    # Sync device deletion to UDM (soft-delete for audit trail)
+    from backend.project_bridge import sync_device_delete_to_udm
+    sync_device_delete_to_udm(project_id, device_id)
+
     return {"data": None, "success": True, "message": "Device deleted"}

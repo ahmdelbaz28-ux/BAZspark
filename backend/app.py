@@ -285,6 +285,7 @@ _PER_PATH_LIMITS = [
     ("/api/projects", 30, 60),  # Project listing only (shorter prefix)
     ("/api/analyze", 10, 60),
     ("/api/qomn", 10, 60),
+    ("/api/facp", 15, 60),  # FACP selection/compliance (less compute-intensive than QOMN)
 ]
 
 _DEFAULT_RATE_LIMIT = (120, 60)
@@ -744,6 +745,7 @@ from backend.routers import (
     environment,
     workflow,
     memory,
+    facp,
 )
 
 # Health check at /api/health
@@ -784,6 +786,9 @@ app.include_router(workflow.router, prefix="/api")
 
 # Memory layer at /api/memory (Mem0-based long-term memory)
 app.include_router(memory.router, prefix="/api")
+
+# FACP selection & compliance at /api/facp (NFPA 72 SS10.6.10, UL 864)
+app.include_router(facp.router, prefix="/api")
 
 # WebSocket at /ws
 app.include_router(sync.ws_router)

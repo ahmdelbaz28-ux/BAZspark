@@ -50,13 +50,43 @@ def _get_kernel():
     V58 FIX (BUG #7): Added threading.Lock for thread safety. Previously,
     two concurrent requests could both see _kernel is None and create
     separate instances, splitting the audit trail.
+
+    SAFETY FIX: If QOMNKernel cannot be imported, raise HTTPException 503
+    instead of allowing ImportError to propagate as HTTP 500.
+    In a safety-critical system, 503 (Service Unavailable) clearly indicates
+    a missing dependency, while 500 (Internal Server Error) could be
+    misinterpreted as a computation error — which would be deceptive per
+    agent.md Anti-Deception Directive.
     """
     global _kernel
     if _kernel is None:
         with _kernel_lock:
             if _kernel is None:  # double-checked locking
-                from fireai.core.qomn_kernel import QOMNKernel
-                _kernel = QOMNKernel()
+                try:
+                    from fireai.core.qomn_kernel import QOMNKernel
+                    _kernel = QOMNKernel()
+                except ImportError as e:
+                    logger.error(
+                        "QOMNKernel import failed: %s. "
+                        "All /api/qomn endpoints will return 503. "
+                        "Ensure fireai.core.qomn_kernel is available in the Python path.",
+                        e,
+                    )
+                    raise HTTPException(
+                        status_code=503,
+                        detail={
+                            "error": "QOMN_SERVICE_UNAVAILABLE",
+                            "detail": (
+                                "The QOMN-FIRE engineering kernel is not available. "
+                                "The fireai.core.qomn_kernel module could not be imported."
+                            ),
+                            "missing_module": "fireai.core.qomn_kernel",
+                            "action": (
+                                "Install the fireai package with the QOMN kernel. "
+                                "Check server logs for detailed import error."
+                            ),
+                        },
+                    )
     return _kernel
 
 
@@ -231,10 +261,24 @@ async def place_detectors(req: RoomRequest):
     Returns placed devices, coverage %, NFPA violations, and audit hash.
     """
     try:
-        from fireai.core.device_placement import (
-            DetectorPlacementEngine, RoomSpec, CeilingType,
-            DetectorType, OccupancyType, ExitDoor
-        )
+        try:
+            from fireai.core.device_placement import (
+                DetectorPlacementEngine, RoomSpec, CeilingType,
+                DetectorType, OccupancyType, ExitDoor
+            )
+        except ImportError as e:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "QOMN_SERVICE_UNAVAILABLE",
+                    "detail": (
+                        "The device placement engine is not available. "
+                        "The fireai.core.device_placement module could not be imported."
+                    ),
+                    "missing_module": "fireai.core.device_placement",
+                    "action": "Install the fireai package. Check server logs for details.",
+                },
+            )
 
         # Map string enums to Python enums
         ceiling_map = {
@@ -338,7 +382,21 @@ async def place_duct_detector(req: DuctDetectorRequest):
     Number of detectors depends on duct width.
     """
     try:
-        from fireai.core.device_placement import place_duct_detector, DuctDetectorSpec
+        try:
+            from fireai.core.device_placement import place_duct_detector, DuctDetectorSpec
+        except ImportError as e:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "QOMN_SERVICE_UNAVAILABLE",
+                    "detail": (
+                        "The duct detector placement module is not available. "
+                        "The fireai.core.device_placement module could not be imported."
+                    ),
+                    "missing_module": "fireai.core.device_placement",
+                    "action": "Install the fireai package. Check server logs for details.",
+                },
+            )
         spec = DuctDetectorSpec(
             duct_id      = req.duct_id,
             width_m      = req.width_m,
@@ -378,10 +436,21 @@ async def get_physics_guards():
 
     Per QOMN Specification §3 Layer 0.
     """
-    from fireai.core.qomn_kernel import (
-        NFPA72_SMOKE_MAX_SPACING_M, NFPA72_HEAT_MAX_SPACING_M,
-        NFPA72_PULL_STATION_HEIGHT_M, NFPA72_NAC_MIN_CD, NFPA72_NAC_SLEEPING_MIN_CD,
-    )
+    try:
+        from fireai.core.qomn_kernel import (
+            NFPA72_SMOKE_MAX_SPACING_M, NFPA72_HEAT_MAX_SPACING_M,
+            NFPA72_PULL_STATION_HEIGHT_M, NFPA72_NAC_MIN_CD, NFPA72_NAC_SLEEPING_MIN_CD,
+        )
+    except ImportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "QOMN_SERVICE_UNAVAILABLE",
+                "detail": "The QOMN-FIRE engineering kernel constants are not available.",
+                "missing_module": "fireai.core.qomn_kernel",
+                "action": "Install the fireai package. Check server logs for details.",
+            },
+        )
     return {
         "success": True,
         "data": {
@@ -438,10 +507,21 @@ async def run_golden_tests():
 
     Returns pass/fail for each golden test case.
     """
-    from fireai.core.qomn_kernel import (
-        compute_smoke_detector_spacing, compute_heat_detector_spacing,
-        compute_battery_capacity_ah, compute_voltage_drop
-    )
+    try:
+        from fireai.core.qomn_kernel import (
+            compute_smoke_detector_spacing, compute_heat_detector_spacing,
+            compute_battery_capacity_ah, compute_voltage_drop
+        )
+    except ImportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "QOMN_SERVICE_UNAVAILABLE",
+                "detail": "The QOMN-FIRE engineering kernel functions are not available.",
+                "missing_module": "fireai.core.qomn_kernel",
+                "action": "Install the fireai package. Check server logs for details.",
+            },
+        )
 
     results = []
     all_pass = True

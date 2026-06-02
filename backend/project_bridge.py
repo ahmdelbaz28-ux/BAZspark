@@ -1,12 +1,18 @@
 """
-backend/project_bridge.py — Cross-database project synchronization bridge.
+backend/project_bridge.py — Cross-database project & device synchronization bridge.
 
 Ensures that project creation, update, and deletion in System A
 (digital_twin.db) is reflected in System B (udm_elements.db).
 
+Also synchronizes devices (fire alarm components) so that the conflict
+detection system running on udm_elements.db can detect spatial conflicts
+between devices from different projects.
+
 This is a SAFETY-CRITICAL bridge — orphaned project references in
 either database can lead to data corruption and incorrect engineering
-calculations.
+calculations. Devices that are not synced to UDM will not participate
+in conflict detection, potentially allowing spatial overlaps between
+fire alarm components from different projects.
 
 Field mapping between System A and System B:
     System A `id`           → System B `project_id`
@@ -14,6 +20,13 @@ Field mapping between System A and System B:
     System A `updatedAt`    → System B `last_modified_timestamp`
     System A `deviceCount`  → (not in System B — computed field)
     System A `author`       → System B `metadata.author`
+
+Device mapping between System A and System B:
+    System A device `id`         → System B element `element_id`
+    System A device `type`       → System B element `element_type`
+    System A device `project_id` → System B element `project_id` (via element_projects)
+    System A device `x,y,z`      → System B element `position` (JSON {x,y,z})
+    System A device `properties` → System B element `properties`
 """
 
 from __future__ import annotations
@@ -246,4 +259,254 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
 
     except Exception as e:
         logger.critical("UDM bridge unavailable during project deletion: %s", e)
+        return False
+
+
+# ── Device Synchronization ─────────────────────────────────────────────────
+# Devices (smoke detectors, pull stations, NACs, etc.) are created in
+# System A (digital_twin.db) but must be synced to System B (udm_elements.db)
+# for the conflict detection system to detect spatial overlaps.
+#
+# SAFETY: Without device sync, two devices from different projects could
+# occupy the same physical location without triggering a conflict alert.
+# In a fire alarm system, this could mean:
+#   - Overlapping coverage zones not detected
+#   - Devices blocking each other's detection radius
+#   - Redundant devices that waste budget without adding coverage
+
+
+def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
+    """Sync a device from System A to System B after creation.
+
+    Maps System A device fields to System B element fields so that
+    the conflict detection system can detect spatial overlaps.
+
+    Returns True if sync succeeded, False if it failed (but does NOT block).
+    """
+    try:
+        from backend.db_service import DatabaseService
+
+        udm = DatabaseService()
+
+        device_id = device_data.get("id", "")
+
+        # Build position JSON from x, y, z coordinates
+        position = {
+            "x": device_data.get("x", 0.0),
+            "y": device_data.get("y", 0.0),
+            "z": device_data.get("z", 0.0),
+        }
+
+        # Build properties with device metadata
+        properties = device_data.get("properties", {}) or {}
+        properties.update({
+            "source": "digital_twin_device",
+            "device_type": device_data.get("type", ""),
+            "device_name": device_data.get("name", ""),
+            "device_category": device_data.get("category", ""),
+            "voltage": device_data.get("voltage", 0.0),
+            "current": device_data.get("current", 0.0),
+            "load_amperes": device_data.get("load", 0.0),
+            "rotation": device_data.get("rotation", 0.0),
+            "original_id": device_id,
+        })
+
+        try:
+            with udm._service_lock:
+                conn = udm._data_model._conn
+                cursor = conn.cursor()
+
+                # Ensure elements table exists
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS elements (
+                        element_id TEXT PRIMARY KEY,
+                        element_type TEXT NOT NULL,
+                        name TEXT,
+                        position TEXT,
+                        properties TEXT,
+                        created_timestamp TEXT,
+                        last_modified_timestamp TEXT,
+                        is_deleted INTEGER DEFAULT 0
+                    )
+                """)
+
+                # Ensure element_projects table exists
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS element_projects (
+                        element_id TEXT,
+                        project_id TEXT,
+                        PRIMARY KEY (element_id, project_id)
+                    )
+                """)
+
+                # Insert or replace element
+                now = datetime.now(timezone.utc).isoformat()
+                cursor.execute(
+                    "INSERT OR REPLACE INTO elements "
+                    "(element_id, element_type, name, position, properties, "
+                    "created_timestamp, last_modified_timestamp, is_deleted) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
+                    (
+                        device_id,
+                        device_data.get("type", "device"),
+                        device_data.get("name", ""),
+                        json.dumps(position),
+                        json.dumps(properties),
+                        now,
+                        now,
+                    ),
+                )
+
+                # Link element to project
+                cursor.execute(
+                    "INSERT OR IGNORE INTO element_projects (element_id, project_id) "
+                    "VALUES (?, ?)",
+                    (device_id, project_id),
+                )
+
+                conn.commit()
+
+            logger.info("Device %s synced to UDM for project %s", device_id, project_id)
+            return True
+        except Exception as e:
+            logger.error("Failed to sync device %s to UDM: %s", device_id, e)
+            return False
+
+    except Exception as e:
+        logger.critical("UDM bridge unavailable during device sync: %s", e)
+        return False
+
+
+def sync_device_update_to_udm(project_id: str, device_id: str, updates: Dict[str, Any]) -> bool:
+    """Sync a device update from System A to System B.
+
+    Returns True if sync succeeded, False if it failed (but does NOT block).
+    """
+    try:
+        from backend.db_service import DatabaseService
+
+        udm = DatabaseService()
+
+        try:
+            with udm._service_lock:
+                conn = udm._data_model._conn
+                cursor = conn.cursor()
+
+                set_clauses = []
+                values = []
+
+                # Map device fields to element fields
+                if "type" in updates and updates["type"] is not None:
+                    set_clauses.append("element_type = ?")
+                    values.append(updates["type"])
+
+                if "name" in updates and updates["name"] is not None:
+                    set_clauses.append("name = ?")
+                    values.append(updates["name"])
+
+                # Update position if x, y, or z changed
+                position_fields = {"x", "y", "z"}
+                if position_fields.intersection(updates.keys()):
+                    # Read current position and merge
+                    cursor.execute(
+                        "SELECT position FROM elements WHERE element_id = ?",
+                        (device_id,),
+                    )
+                    row = cursor.fetchone()
+                    current_pos = json.loads(row[0]) if row and row[0] else {}
+                    for axis in ("x", "y", "z"):
+                        if axis in updates and updates[axis] is not None:
+                            current_pos[axis] = updates[axis]
+                    set_clauses.append("position = ?")
+                    values.append(json.dumps(current_pos))
+
+                # Update properties with device metadata
+                property_fields = {"voltage", "current", "load", "rotation", "category", "properties"}
+                if property_fields.intersection(updates.keys()):
+                    cursor.execute(
+                        "SELECT properties FROM elements WHERE element_id = ?",
+                        (device_id,),
+                    )
+                    row = cursor.fetchone()
+                    current_props = json.loads(row[0]) if row and row[0] else {}
+                    if "voltage" in updates:
+                        current_props["voltage"] = updates["voltage"]
+                    if "current" in updates:
+                        current_props["current"] = updates["current"]
+                    if "load" in updates:
+                        current_props["load_amperes"] = updates["load"]
+                    if "rotation" in updates:
+                        current_props["rotation"] = updates["rotation"]
+                    if "category" in updates:
+                        current_props["device_category"] = updates["category"]
+                    if "properties" in updates and updates["properties"]:
+                        current_props.update(updates["properties"])
+                    set_clauses.append("properties = ?")
+                    values.append(json.dumps(current_props))
+
+                if set_clauses:
+                    now = datetime.now(timezone.utc).isoformat()
+                    set_clauses.append("last_modified_timestamp = ?")
+                    values.append(now)
+
+                    values.append(device_id)
+                    cursor.execute(
+                        f"UPDATE elements SET {', '.join(set_clauses)} "  # noqa: S608 — set_clauses built from whitelisted column names
+                        f"WHERE element_id = ?",
+                        values,
+                    )
+                    conn.commit()
+
+            logger.info("Device %s update synced to UDM for project %s", device_id, project_id)
+            return True
+        except Exception as e:
+            logger.error("Failed to sync device %s update to UDM: %s", device_id, e)
+            return False
+
+    except Exception as e:
+        logger.critical("UDM bridge unavailable during device update: %s", e)
+        return False
+
+
+def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
+    """Sync a device deletion from System A to System B.
+
+    Soft-deletes the element and removes its project association.
+    Soft delete preserves the audit trail for NFPA 72 traceability.
+
+    Returns True if sync succeeded, False if it failed (but does NOT block).
+    """
+    try:
+        from backend.db_service import DatabaseService
+
+        udm = DatabaseService()
+
+        try:
+            with udm._service_lock:
+                conn = udm._data_model._conn
+                cursor = conn.cursor()
+
+                # Soft-delete the element (preserve audit trail)
+                now = datetime.now(timezone.utc).isoformat()
+                cursor.execute(
+                    "UPDATE elements SET is_deleted = 1, last_modified_timestamp = ? "
+                    "WHERE element_id = ?",
+                    (now, device_id),
+                )
+
+                # Remove project association
+                cursor.execute(
+                    "DELETE FROM element_projects WHERE element_id = ? AND project_id = ?",
+                    (device_id, project_id),
+                )
+                conn.commit()
+
+            logger.info("Device %s deletion synced to UDM for project %s", device_id, project_id)
+            return True
+        except Exception as e:
+            logger.error("Failed to sync device %s deletion to UDM: %s", device_id, e)
+            return False
+
+    except Exception as e:
+        logger.critical("UDM bridge unavailable during device deletion: %s", e)
         return False
