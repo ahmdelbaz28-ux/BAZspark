@@ -458,6 +458,78 @@ _reg(FittingType.COUPLING, ConduitType.RGD, TradeSize.HALF_INCH,
 _reg(FittingType.COUPLING, ConduitType.RGD, TradeSize.THREE_QUARTER,
      1.050, 0.0, 2.0, 0.0, "RC-075", 0.113, "NEC 344.42")
 
+# RGD couplings — larger sizes (NEC 344.42)
+_reg(FittingType.COUPLING, ConduitType.RGD, TradeSize.ONE_INCH,
+     1.315, 0.0, 2.25, 0.0, "RC-100", 0.181, "NEC 344.42")
+
+_reg(FittingType.COUPLING, ConduitType.RGD, TradeSize.ONE_QUARTER,
+     1.660, 0.0, 2.5, 0.0, "RC-125", 0.272, "NEC 344.42")
+
+_reg(FittingType.COUPLING, ConduitType.RGD, TradeSize.ONE_HALF,
+     1.900, 0.0, 2.75, 0.0, "RC-150", 0.363, "NEC 344.42")
+
+_reg(FittingType.COUPLING, ConduitType.RGD, TradeSize.TWO_INCH,
+     2.375, 0.0, 3.0, 0.0, "RC-200", 0.567, "NEC 344.42")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EMT COUPLINGS — Larger sizes (NEC 358.42)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.ONE_INCH,
+     1.163, 0.0, 2.0, 0.0, "EC-100", 0.057, "NEC 358.42")
+
+_reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.ONE_QUARTER,
+     1.510, 0.0, 2.25, 0.0, "EC-125", 0.091, "NEC 358.42")
+
+_reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.ONE_HALF,
+     1.740, 0.0, 2.5, 0.0, "EC-150", 0.125, "NEC 358.42")
+
+_reg(FittingType.COUPLING, ConduitType.EMT, TradeSize.TWO_INCH,
+     2.197, 0.0, 2.75, 0.0, "EC-200", 0.204, "NEC 358.42")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UPVC SCH40 COUPLINGS — Larger sizes (NEC 352.42)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_reg(FittingType.COUPLING, ConduitType.UPVC_SCH40, TradeSize.ONE_INCH,
+     1.315, 0.0, 2.5, 0.0, "PC-100", 0.046, "NEC 352.42")
+
+_reg(FittingType.COUPLING, ConduitType.UPVC_SCH40, TradeSize.ONE_QUARTER,
+     1.660, 0.0, 2.75, 0.0, "PC-125", 0.073, "NEC 352.42")
+
+_reg(FittingType.COUPLING, ConduitType.UPVC_SCH40, TradeSize.ONE_HALF,
+     1.900, 0.0, 3.0, 0.0, "PC-150", 0.096, "NEC 352.42")
+
+_reg(FittingType.COUPLING, ConduitType.UPVC_SCH40, TradeSize.TWO_INCH,
+     2.375, 0.0, 3.25, 0.0, "PC-200", 0.160, "NEC 352.42")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UPVC SCH80 COUPLINGS (NEC 352.42)
+# ─────────────────────────────────────────────────────────────────────────────
+# Same OD as Sch40 but catalogued separately under UPVC_SCH80.
+# Schedule 80 couplings use the same body dimensions.
+
+_reg(FittingType.COUPLING, ConduitType.UPVC_SCH80, TradeSize.HALF_INCH,
+     0.840, 0.0, 2.0, 0.0, "SC-050", 0.022, "NEC 352.42")
+
+_reg(FittingType.COUPLING, ConduitType.UPVC_SCH80, TradeSize.THREE_QUARTER,
+     1.050, 0.0, 2.25, 0.0, "SC-075", 0.034, "NEC 352.42")
+
+_reg(FittingType.COUPLING, ConduitType.UPVC_SCH80, TradeSize.ONE_INCH,
+     1.315, 0.0, 2.5, 0.0, "SC-100", 0.055, "NEC 352.42")
+
+_reg(FittingType.COUPLING, ConduitType.UPVC_SCH80, TradeSize.ONE_QUARTER,
+     1.660, 0.0, 2.75, 0.0, "SC-125", 0.088, "NEC 352.42")
+
+_reg(FittingType.COUPLING, ConduitType.UPVC_SCH80, TradeSize.ONE_HALF,
+     1.900, 0.0, 3.0, 0.0, "SC-150", 0.115, "NEC 352.42")
+
+_reg(FittingType.COUPLING, ConduitType.UPVC_SCH80, TradeSize.TWO_INCH,
+     2.375, 0.0, 3.25, 0.0, "SC-200", 0.193, "NEC 352.42")
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Public API

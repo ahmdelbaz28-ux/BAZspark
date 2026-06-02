@@ -272,21 +272,4 @@ def calculate_fill(
         nec_reference=nec_ref,
     )
 
-    if not is_compliant:
-        return Result.err(CodeViolationError(
-            message=(
-                f"Conduit fill {fill_pct:.2f}% exceeds NEC Table 1 limit "
-                f"of {max_pct:.0f}% for {n} conductor(s) in "
-                f"{conduit_type.value} {trade_size.value}. "
-                + (f"Recommended: {recommended.value}." if recommended else
-                   "No standard size in catalog can accommodate these conductors.")
-            ),
-            code_reference=nec_ref,
-            remediation=(
-                f"Increase conduit to {recommended.value if recommended else 'larger than 2\"'}, "
-                "reduce conductor count, or split conductors into two conduits."
-            ),
-            severity=Severity.FATAL,
-        ))
-
     return Result.ok(result)

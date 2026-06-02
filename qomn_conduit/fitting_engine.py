@@ -21,8 +21,8 @@ Reference: NEC 358.26 / 352.26 / 344.26 (bend limit); NEC 358.120 (EMT
 
 from __future__ import annotations
 
+import hashlib
 import math
-import uuid
 from typing import List, Optional, Tuple
 
 from qomn_conduit.bend import (
@@ -52,6 +52,30 @@ _PULL_BOX_CATALOG: str = "PB-GEN"
 
 # Angle of each standard elbow (90°)
 _ELBOW_ANGLE_DEG: float = 90.0
+
+
+def _deterministic_run_id(
+    path: RoutePath,
+    conduit_type: ConduitType,
+    trade_size: TradeSize,
+) -> str:
+    """Generate a deterministic run ID from path and conduit parameters.
+
+    Uses SHA-256 of the path waypoints and conduit type/size to produce
+    a unique but fully deterministic identifier. No randomness — same
+    input always produces the same run ID.
+
+    Format: RUN-XXXXXXXX (8 hex chars from SHA-256).
+    """
+    parts: list[str] = [
+        conduit_type.value,
+        trade_size.value,
+    ]
+    for wp in path.waypoints:
+        parts.append(f"{wp.x:.6f},{wp.y:.6f},{wp.z:.6f}")
+    canonical = "|".join(parts)
+    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:8].upper()
+    return f"RUN-{digest}"
 
 
 def _stick_length(conduit_type: ConduitType) -> float:
@@ -136,7 +160,7 @@ def place_fittings(
                     remediation="All waypoint coordinates must be finite numbers.",
                 ))
 
-    rid = run_id or f"RUN-{uuid.uuid4().hex[:8].upper()}"
+    rid = run_id or _deterministic_run_id(path, conduit_type, trade_size)
     run = ConduitRun(
         run_id=rid,
         conduit_type=conduit_type,
@@ -328,8 +352,25 @@ def _place_segment_with_couplings(
 
     # Multiple sticks — place couplings at joints
     cat_result = get_fitting(conduit_type, trade_size, FittingType.COUPLING)
-    coupling_cat = cat_result.value.catalog_number if cat_result.is_ok() else "EC-000"
-    coupling_wt  = cat_result.value.weight_kg       if cat_result.is_ok() else 0.0
+    if cat_result.is_err():
+        # SAFETY: No coupling in catalog for this (conduit_type, trade_size).
+        # Record violation and place segment without couplings.
+        run.violations.append(
+            f"COUPLING not in catalog for {conduit_type.value} {trade_size.value}: "
+            + cat_result.error.message
+        )
+        # Still add the segment as a single stick
+        run.segments.append(ConduitSegment(
+            start=seg_start,
+            end=seg_end,
+            conduit_type=conduit_type,
+            trade_size=trade_size,
+        ))
+        return
+
+    fitting = cat_result.value
+    coupling_cat = fitting.catalog_number
+    coupling_wt = fitting.weight_kg
 
     prev_pt = seg_start
     for i in range(1, n_sticks + 1):
