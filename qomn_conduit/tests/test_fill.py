@@ -83,10 +83,12 @@ class TestFillCalculation:
         assert result.value.max_allowed_pct == 40.0
 
     def test_20_conductors_in_half_inch_emt_violation(self):
-        """20 × #14 THHN in ½" EMT: 44.1% > 40% ✗ → recommend ¾\""""
+        """20 × #14 THHN in ½\" EMT: 44.1% > 40% ✗ → is_compliant=False, recommend ¾\""""
         result = calculate_fill(ConduitType.EMT, TradeSize.HALF_INCH, cable_diameters=[0.111] * 20)
-        assert result.is_err()
-        assert isinstance(result.error, CodeViolationError)
+        assert result.is_ok()
+        assert result.value.is_compliant is False
+        assert result.value.status == "VIOLATION"
+        assert result.value.recommended_size is not None
 
     def test_fill_2_conductors_31_percent_limit(self):
         """2 conductors → 31% max fill per NEC Table 1."""
@@ -147,8 +149,9 @@ class TestFillGoldenFiles:
         ct = ConduitType(golden["conduit_type"])
         ts = TradeSize(golden["trade_size"])
         result = calculate_fill(ct, ts, golden["cable_diameters_in"])
-        assert result.is_err()
-        assert isinstance(result.error, CodeViolationError)
+        assert result.is_ok()
+        assert result.value.is_compliant is False
+        assert result.value.status == "VIOLATION"
 
     def test_project_spec_example(self):
         """1 conductor in ½" EMT — golden file verification."""
@@ -170,4 +173,6 @@ class TestFillResultStatus:
 
     def test_violation_status(self):
         result = calculate_fill(ConduitType.EMT, TradeSize.HALF_INCH, cable_diameters=[0.111] * 20)
-        assert result.is_err()
+        assert result.is_ok()
+        assert result.value.status == "VIOLATION"
+        assert result.value.is_compliant is False

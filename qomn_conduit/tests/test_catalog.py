@@ -143,7 +143,7 @@ class TestCatalogNumberPattern:
         """Coupling catalog numbers must follow EC-/ES-/PC-/RC- pattern."""
         for key, fitting in all_fittings().items():
             if fitting.fitting_type == FittingType.COUPLING:
-                assert fitting.catalog_number[:2] in ("EC", "ES", "PC", "RC"), (
+                assert fitting.catalog_number[:2] in ("EC", "ES", "PC", "SC", "RC"), (
                     f"Coupling {fitting.catalog_number} has unexpected prefix"
                 )
 
@@ -177,10 +177,14 @@ class TestGoldenCatalogData:
         assert f.developed_length_in == pytest.approx(math.pi * 9.5 / 2, abs=0.01)
 
     def test_catalog_size(self):
-        """Catalog must have exactly 32 entries."""
-        # 6 EMT elbows + 6 UPVC40 elbows + 6 UPVC80 elbows + 6 RGD elbows
-        # + 2 EMT-C couplings + 2 EMT-S couplings + 2 UPVC couplings + 2 RGD couplings
-        assert catalog_size() == 32
+        """Catalog must have exactly 50 entries."""
+        # Elbows: 4 types (EMT, UPVC_SCH40, UPVC_SCH80, RGD) × 6 sizes = 24
+        # EMT couplings: 6 (½"-2", EC- prefix) + 2 (½", ¾", ES- prefix) = 8
+        # UPVC_SCH40 couplings: 6 (½"-2", PC- prefix)
+        # UPVC_SCH80 couplings: 6 (½"-2", SC- prefix)
+        # RGD couplings: 6 (½"-2", RC- prefix)
+        # Total: 24 + 8 + 6 + 6 + 6 = 50
+        assert catalog_size() == 50
 
 
 # ─────────────────────────────────────────────────────────────────────────────

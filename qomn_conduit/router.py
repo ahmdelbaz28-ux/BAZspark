@@ -364,10 +364,10 @@ class ConduitRouter:
         # ── Reconstruct path ─────────────────────────────────────────────────
 
         waypoints: List[Point3D] = []
-        node: Optional[_AStarNode] = found
-        while node is not None:
-            waypoints.append(node.point)
-            node = node.parent
+        cur: Optional[_AStarNode] = found
+        while cur is not None:
+            waypoints.append(cur.point)
+            cur = cur.parent
         waypoints.reverse()
 
         # Simplify: merge collinear segments (same direction consecutive)
