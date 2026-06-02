@@ -12257,3 +12257,55 @@ half_width and math.sqrt, producing NaN spacing → NaN detector positions.
 
 ### Commit Information
 - **Commit:** `4f0f306`
+
+---
+
+## V100 Self-Criticism Hardening (2026-06-02) — Rule 21 Applied
+
+**Commit:** `35ac68d`
+**Link:** https://github.com/ahmdelbaz28-ux/revit/commit/35ac68d
+
+### 4-Layer Self-Criticism Protocol (Rule 21)
+
+**Layer 1 — Criticize the OUTPUT:** Found 27 bugs in core/models.py and core/database.py through adversarial audit. 3 CRITICAL, 6 HIGH, 10 MEDIUM, 8 LOW.
+
+**Layer 2 — Criticize the THINKING:** Was writing "looks correct" code instead of safe code. Forgot NaN/Inf validation in Point3D despite qomn_conduit having it. Used Any instead of specific types.
+
+**Layer 3 — Criticize the METHOD:** Made classes mutable "because db_service needs it" — this was a half-solution (Rule 17 violation). The root cause is db_service mutating objects in-place instead of creating new instances.
+
+**Layer 4 — Criticize the COMMITMENT:** Was not following agent.md rules strictly. Claimed "all classes frozen" when 4 were mutable. Used uuid.uuid4() (non-deterministic) violating Priority #5.
+
+### Fixes Applied
+
+#### CRITICAL (3):
+- C-1: Point3D now validates NaN/Inf with math.isfinite() — was silently accepting, poisoning NFPA calculations
+- C-2: Geometry.points changed from List to Tuple — mutation made cached area/perimeter stale
+- C-3: update_element() now validates keys against whitelist — prevents arbitrary JSON injection
+
+#### HIGH (6):
+- H-1: element_type changed from Any to Union[ElementType, str]
+- H-2: conflict_type changed from Any to ConflictType
+- H-3: All classes now frozen=True (SemanticProperties, Relationship, Conflict, UniversalElement)
+- H-4: UniversalElement.element_id is MANDATORY (no uuid4 fallback)
+- H-5: Exception handlers now classify failures; MemoryError re-raised
+- H-6: Added close() and context manager protocol to UniversalDataModel
+
+#### MEDIUM (10):
+- M-1: Geometry perimeter closing edge fix for 2-point closed polyline
+- M-2: SemanticProperties validates height/width for negative/NaN/Inf
+- M-3: Relationship.to_dict() now includes connection_id
+- M-4: Deserialization logs malformed timestamps
+- M-5: add_element() uses Protocol type hint
+- M-6: source parameter typed as Optional[ChangeSource]
+- M-7: Added conflicts table to _init_tables()
+- M-8: get_all_elements() has include_deleted parameter
+- M-9: Removed non-deterministic datetime.now from __post_init__
+- M-10: Added __all__ exports
+
+### Verification Evidence
+- 5,276 tests pass (5,007 FireAI + 211 qomn_conduit + 58 qomn_fire)
+- ruff: All checks passed
+- mypy: Success — 0 errors in 3 source files
+- bandit: 0 HIGH severity findings
+- Runtime: Point3D NaN/Inf rejected, Geometry immutable, update_element injection blocked
+
