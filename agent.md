@@ -352,6 +352,33 @@ Behave like a world-class engineering and safety review organization operating u
 
    **Zero tolerance for half-solutions.** If the criticism reveals that a fix was superficial, the agent MUST rip it out and redo it from the root cause. If the criticism reveals that verification was skipped, the agent MUST go back and verify. If the criticism reveals that the agent was lazy, the agent MUST confess to the operator immediately and redo the work with full rigor. The meta-criticism protocol is not a checkbox — it is a weapon against complacency, and it MUST be used with devastating honesty every single time.
 
+22. **PROFESSIONAL ENGINEER SIGN-OFF FOR REGULATORY DATA**: Any change to data tables, formulas, or constants that implement a regulated standard (NFPA, NEC, IEC, ISO, BS, ASHRAE, local fire/building/electrical code) MUST be accompanied by either:
+    (a) a `Signed-off-by:` trailer in the commit message citing a licensed Professional Engineer with discipline (e.g., FPE, PE-Electrical), jurisdiction (state/country), and license number; OR
+    (b) a verbatim quotation from the published standard with section number, edition year, and a publicly-verifiable URL or document hash that the agent (or any reviewer) can independently confirm.
+
+    Agent-only justification based on tertiary sources (web articles, magazine commentaries, forum posts, blog summaries, AI-generated content) is **INSUFFICIENT** for merge of regulatory-data changes. The agent MAY produce an **AUDIT REPORT** documenting suspected defects with full evidence chain (per the V120 Phase A pattern), and MAY ship **non-functional safety nets** such as runtime WARNING logs or additive notice fields — but MUST NOT modify the regulatory data values themselves without satisfying (a) or (b) above.
+
+    Scope: this rule applies to all code paths that return numerical engineering results to the user, including `fireai/core/`, `qomn_fire/`, `qomn_conduit/`, `facp_system/`, `fireai/constants/`, and any constants module. CI MUST enforce this rule via a check on diffs that touch known regulatory-data files.
+
+    Rationale: this rule exists because agent.md V17 self-criticism (line 711) already documented one historical failure of this principle ("Temperature-only checking was engineering negligence... I will never again accept a simplified model without checking the underlying physics"). Rule 22 codifies the lesson so it cannot be relearned the hard way a second time. **A wrong regulatory value passed off as authoritative is more dangerous than an obvious bug, because downstream engineers will trust it.**
+
+23. **NO PARALLEL IMPLEMENTATIONS OF REGULATORY DATA — SINGLE SOURCE OF TRUTH**: There MUST be exactly ONE source of truth in the repository for any given regulatory table, constant, or formula. If the agent discovers parallel implementations (two or more places encoding the same regulatory rule with potentially different values), the agent MUST:
+    (1) Raise it as an **architectural finding** in the audit report, with a table listing every implementation, the file path, the encoded values, and the divergence;
+    (2) **NOT** unilaterally "fix" any single implementation in isolation — making one copy "more correct" while leaving the others creates a worse situation than uniform-but-wrong;
+    (3) Treat any unification of parallel implementations as itself a regulatory-data change requiring Rule 22 sign-off — because the act of choosing the canonical values is itself an engineering decision.
+
+    Examples of regulated data that MUST live in exactly one place:
+      - NFPA 72 spacing tables (smoke, heat, beam, ASD)
+      - NEC Chapter 9 wire resistance / ampacity tables
+      - NEC conduit fill percentages
+      - NFPA battery safety factors
+      - IEC ATEX/IECEx classifications
+      - Coverage-radius factors (0.7 × S)
+
+    Mechanism: each canonical constant SHOULD live in `fireai/constants/` (or a `constants/` submodule of the relevant package). All consumers SHOULD import from that single location. A CI check SHOULD detect duplicate definitions of named constants matching regulatory patterns (e.g., `NFPA72_*`, `NEC_*`, `IEC_*`) across multiple files.
+
+    Rationale: V120 Phase A discovered three parallel implementations of the smoke detector spacing table in this codebase (`fireai/core/qomn_kernel.py`, `fireai/core/nfpa72_technology_dispatcher.py`, `fireai/core/nfpa72_calculations.py`), each with different values. This is the kind of architectural debt that silently corrupts engineering output and is fundamentally incompatible with the agent.md Priority #7 (Traceability).
+
 ---
 
 ## V12 Fixes Applied (2026-05-20)
@@ -12814,4 +12841,49 @@ safe-and-honest action available to a non-FPE actor.
 
 ### Commit Hash & GitHub Link
 (See post-push report below)
+
+
+---
+
+## V121 — Rules 22 & 23 Added (Regulatory Data Governance) (2026-06-03)
+
+**Author:** Arena Agent (autonomous, authorized by operator)
+**Branch:** `V121/agent-md-rules-22-23`
+**Type:** Process/governance rule addition (NO code, NO data changes)
+
+### What Was Added
+
+**Rule 22 — Professional Engineer Sign-Off for Regulatory Data:**
+Codifies that NFPA/NEC/IEC/ISO data table changes require either a
+PE sign-off in the commit message OR a verbatim published-standard
+citation with verifiable URL/hash. Tertiary sources (web articles,
+forums, AI content) are insufficient on their own.
+
+**Rule 23 — No Parallel Implementations of Regulatory Data:**
+Mandates a single source of truth for each regulatory table or
+constant. Parallel implementations must be raised as architectural
+findings, not silently "fixed" in one location at a time. Existing
+duplications (e.g., the three smoke spacing tables in
+qomn_kernel.py / nfpa72_technology_dispatcher.py / nfpa72_calculations.py)
+must be unified under Rule 22 sign-off, not by agent decision alone.
+
+### Why Now (Origin Story)
+
+V120 Phase A self-critique identified that the agent had:
+1. Initially attempted to replace a regulatory data table based on
+   web search alone — a Rule #17 violation
+2. Discovered THREE parallel implementations of the same NFPA table
+   in the codebase, none of which agreed
+3. Correctly pulled back to a Phase A audit-only posture
+
+Rules 22 and 23 codify these lessons so the next agent (or the same
+agent in a future session) cannot make the same mistake. The cost of
+NOT having these rules is well-documented: V120 Phase A audit
+(see SMOKE_SPACING_AUDIT_FINDING_1.md).
+
+### Verification (Process Change Only)
+- agent.md syntactic structure intact (Rule 22 and 23 follow the
+  same numbered-bold-paragraph pattern as Rules 1–21)
+- No code touched, no test impact, no behavioral change
+- Test suite: 5,101/5,101 PASS (unchanged from V120)
 
