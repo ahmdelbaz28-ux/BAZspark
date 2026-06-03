@@ -434,7 +434,8 @@ class PDFInputLayer:
         # Known room names to look for
         KNOWN_ROOM_NAMES = [
             'corridor', 'lobby', 'office', 'kitchen', 'meeting',
-            'bathroom', 'bedroom', 'warehouse', 'storage', 'server'
+            'bathroom', 'bedroom', 'warehouse', 'storage', 'server',
+            'atrium'
         ]
         
         # First: try explicit "Room X" patterns
