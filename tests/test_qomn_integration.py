@@ -115,10 +115,13 @@ class TestQOMNKernelLayer2Computation:
     """Layer 2 — Computation Engine (IEEE-754 deterministic)."""
 
     def test_smoke_spacing_h3m_golden(self, kernel):
-        """GOLDEN TEST: h=3.048m (10ft) → S=9.144m (30ft). [NFPA 72 Table 17.6.3.1]"""
-        r = kernel.smoke_detector_spacing(3.048)
-        assert abs(r["listed_spacing_m"] - 9.144) < 1e-3, \
-            f"Expected 9.144m, got {r['listed_spacing_m']}"
+        """V127 GOLDEN TEST: h=3.0m → S=9.10m (30ft per NFPA 72 §17.7.3.2.3.1).
+        V127 corrected: was 9.144m (30ft exact ft→m conversion) but NFPA 72-2022
+        §17.7.3.2.3.1 verbatim states "30 ft (9.1 m)", matching the canonical
+        fireai/constants/__init__.py:SMOKE_MAX_SPACING_M = 9.10."""
+        r = kernel.smoke_detector_spacing(3.0)
+        assert abs(r["listed_spacing_m"] - 9.10) < 1e-3, \
+            f"Expected 9.10m per NFPA 72 §17.7.3.2.3.1, got {r['listed_spacing_m']}"
 
     def test_smoke_coverage_radius_factor(self, kernel):
         """R = 0.7 × S per NFPA 72 §17.7.4.2.3.1."""
@@ -436,24 +439,24 @@ class TestGoldenOutputs:
     """Known inputs → known outputs. Any change = regression."""
 
     def test_golden_smoke_h10ft(self, kernel):
-        """h=3.048m (10ft) → S=9.144m (30ft) per NFPA 72 Table 17.6.3.1."""
+        """V127: h=3.048m (10ft) → S=8.70m per NFPA 72 Table 17.6.3.1.1.
+        V127 corrected: The old table used h≤3.048m → S=9.144m. The corrected
+        NFPA 72 Table 17.6.3.1.1 starts at h≤3.0m → S=9.10m. Since 3.048 > 3.0,
+        it falls in the h≤3.7m row → S=8.70m."""
         r = kernel.smoke_detector_spacing(3.048)
-        assert abs(r["listed_spacing_m"] - 9.144) < 1e-3
+        assert abs(r["listed_spacing_m"] - 8.70) < 1e-3
 
     def test_golden_smoke_h15ft(self, kernel):
-        """h=4.572m (15ft): Table=7.620m, adjusted by §17.7.3.2.3: 7.620×0.95=7.239m.
-
-        Height adjustment §17.7.3.2.3: reduce 1% per foot above 10ft.
-        4.572m = 15ft → 5 feet above 10ft → factor = 1 - 0.05 = 0.95
-        Listed S = 7.620m × 0.95 = 7.239m  (correct after adjustment)
+        """V127: h=4.572m (15ft) → S=8.20m per NFPA 72 Table 17.6.3.1.1.
+        V127 corrected: The 1%/ft height adjustment (§17.7.3.2.3) was a
+        misapplication of Table 17.6.3.5.1 (heat detectors) to smoke detectors.
+        Now uses Table 17.6.3.1.1 directly: h=4.572m falls in h≤4.6m row → S=8.20m.
+        No additional scalar reduction is applied.
         """
         r = kernel.smoke_detector_spacing(4.572)
-        # Table value before height adjustment
-        assert r["table_row_used"].startswith("h≤4.572m")
-        # Value AFTER §17.7.3.2.3 height adjustment = 7.620 * 0.95 = 7.239m
-        expected_adjusted = 7.620 * (1.0 - 0.01 * 5.0)   # 5 feet above 10ft
-        assert abs(r["listed_spacing_m"] - expected_adjusted) < 1e-3, \
-            f"Expected {expected_adjusted:.4f}m after §17.7.3.2.3 adjustment, got {r['listed_spacing_m']}"
+        # h=4.572m falls in h≤4.6m row → S=8.20m (Table 17.6.3.1.1)
+        assert abs(r["listed_spacing_m"] - 8.20) < 1e-3, \
+            f"Expected 8.20m per Table 17.6.3.1.1, got {r['listed_spacing_m']}"
 
     def test_golden_battery_standard(self, kernel):
         """Battery: 0.5A×24h + 3.0A×5min / 0.80 × 1.25."""

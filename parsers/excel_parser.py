@@ -136,43 +136,14 @@ class ExcelParser:
                 max_size_bytes=_MAX_FILE_SIZE_BYTES,
                 parser_name="ExcelParser",
             )
-        except UnsafePathError as e:
-            raise ValueError(str(e)) from e
-
-        result = ExcelParseResult(source_file=file_path, success=False)
-
-        # V125 SECURITY (Rule #23): delegate to shared path-security helper.
-        # Closes path traversal, null bytes, argument injection, oversized
-        # file DoS. Excel "zip bomb" attacks (malicious xlsx with embedded
-        # huge sharedStrings.xml) are a known vector — the size cap below
-        # is the first defense; openpyxl read errors are the second.
-        from parsers._path_security import (
-            UnsafePathError,
-            validate_input_path,
-            validate_file_size,
-        )
-        import os as _os
-
-        _XLSX_MAX_BYTES = int(_os.getenv("FIREAI_EXCEL_MAX_FILE_SIZE_BYTES",
-                                         str(25 * 1024 * 1024)))  # 25 MB
-
-        try:
-            safe_path = validate_input_path(
-                file_path,
-                allowed_extensions=frozenset({".xlsx", ".xls"}),
-                parser_name="ExcelParser",
-            )
-            validate_file_size(safe_path, max_size_bytes=_XLSX_MAX_BYTES,
-                               parser_name="ExcelParser")
         except FileNotFoundError as e:
-            result.errors.append(str(e))
-            return result
+            return ExcelParseResult(source_file=file_path, success=False, errors=[str(e)])
         except UnsafePathError as e:
-            result.errors.append(f"SECURITY: {e}")
-            return result
+            return ExcelParseResult(source_file=file_path, success=False, errors=[f"SECURITY: {e}"])
 
         file_path = str(safe_path)
-            
+        result = ExcelParseResult(source_file=file_path, success=False)
+
         try:
             # Read Excel
             df = pd.read_excel(str(safe_path), engine='openpyxl')

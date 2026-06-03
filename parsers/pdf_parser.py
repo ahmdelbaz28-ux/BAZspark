@@ -164,7 +164,13 @@ class PDFParser:
                 parser_name="PDFParser",
             )
         except UnsafePathError as e:
-            raise ValueError(str(e)) from e
+            # V127 FIX: Return error result instead of raising ValueError.
+            # The test contract expects parse() to return a result object
+            # with success=False and SECURITY errors, not to raise.
+            return PDFParseResult(source_file=pdf_path, success=False, errors=[f"SECURITY: {e}"])
+        except FileNotFoundError as e:
+            # V127 FIX: Return error result for missing files.
+            return PDFParseResult(source_file=pdf_path, success=False, errors=[str(e)])
 
         result = PDFParseResult(source_file=pdf_path, success=False)
 

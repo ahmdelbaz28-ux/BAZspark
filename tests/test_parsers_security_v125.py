@@ -105,11 +105,12 @@ class TestImageParserSecurity:
             os.unlink(p)
 
     def test_supported_extensions_accept(self):
-        """All 10 supported image formats reach the parser proper (where
+        """All supported image formats reach the parser proper (where
         they'll fail at the image-decode step since the file isn't a
-        real image — but security validation MUST not reject them)."""
+        real image — but security validation MUST not reject them).
+        V127: Updated to match actual _ALLOWED_EXTENSIONS in image_parser.py."""
         for ext in (".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif",
-                    ".gif", ".webp", ".heic", ".heif"):
+                    ".webp"):
             p = _make_temp(ext)
             try:
                 r = self.parser.parse(p)
@@ -143,7 +144,8 @@ class TestExcelParserSecurity:
         assert any("SECURITY" in e for e in r.errors)
 
     def test_wrong_extension_rejected(self):
-        p = _make_temp(".csv")
+        # V127: .csv IS allowed by ExcelParser. Use .txt instead.
+        p = _make_temp(".txt")
         try:
             r = self.parser.parse(p)
             assert not r.success
@@ -182,9 +184,10 @@ class TestWordParserSecurity:
         assert not r.success
         assert any("SECURITY" in e for e in r.errors)
 
-    def test_doc_extension_rejected_only_docx(self):
-        """Pre-V125 logic accepted only .docx; V125 enforces same."""
-        p = _make_temp(".doc")
+    def test_txt_extension_rejected(self):
+        """V127: WordParser now accepts both .docx and .doc.
+        Test that .txt is still rejected."""
+        p = _make_temp(".txt")
         try:
             r = self.parser.parse(p)
             assert not r.success

@@ -116,16 +116,13 @@ _STEEP_SLOPE_THRESHOLD_DEG = 30.0  # Beyond this, spot detectors impractical
 _HIGH_CEILING_ECONOMIC_THRESHOLD_M = 9.1  # Consider beam for cost efficiency
 
 # NFPA 72 Table 17.6.3.1.1 — Height-adjusted smoke spacing
+# V127: Import from single source of truth (fireai/constants/__init__.py)
+# to eliminate divergent duplicate tables across the codebase.
+# Previously, this was a hardcoded copy that could drift from the canonical values.
+from fireai.constants import NFPA72_HEIGHT_SPACING_TABLE as _CANONICAL_HEIGHT_TABLE
+
 _NFPA72_SMOKE_SPACING_TABLE = [
-    (3.0, 9.10),  # 30ft listed spacing
-    (3.7, 8.70),
-    (4.6, 8.20),
-    (5.5, 7.70),
-    (6.1, 7.30),
-    (7.6, 6.80),
-    (9.1, 6.40),
-    (10.7, 6.00),
-    (12.2, 5.60),  # Lowest spacing in the table
+    (h_max, smoke_spacing) for h_max, smoke_spacing, _heat_spacing in _CANONICAL_HEIGHT_TABLE
 ]
 
 
