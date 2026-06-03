@@ -536,6 +536,10 @@ DetectorTypeSimple = Literal["smoke", "heat"]
 
 # NFPA 72-2022 Table 17.6.3.1.1 — Height-Adjusted Detector Spacing
 # =====================================================================
+# V127: Import from single source of truth (fireai/constants/__init__.py)
+# to eliminate divergent duplicate tables across the codebase.
+# Previously, this was a hardcoded copy that could drift from the canonical values.
+#
 # IMPORTANT: This table stores ADJUSTED SPACING (S), NOT S/2 and NOT radius.
 #
 # NFPA 72 §17.6.3.1.1 defines the maximum detector spacing for each
@@ -554,17 +558,9 @@ DetectorTypeSimple = Literal["smoke", "heat"]
 # resulting in over-conservative placement (too many detectors).
 #
 # (ceiling_height_max_meters, smoke_adjusted_spacing_m, heat_adjusted_spacing_m)
-_NFPA72_TABLE_17_6_3_1_1 = [
-    (3.0,   9.10,  6.10),   # Smoke: 30ft listed; Heat: 20ft listed
-    (3.7,   8.70,  5.80),
-    (4.6,   8.20,  5.50),
-    (5.5,   7.70,  5.20),
-    (6.1,   7.30,  4.90),
-    (7.6,   6.80,  4.60),
-    (9.1,   6.40,  4.30),
-    (10.7,  6.00,  4.00),
-    (12.2,  5.60,  3.70),
-]
+from fireai.constants import NFPA72_HEIGHT_SPACING_TABLE as _CANONICAL_HEIGHT_TABLE
+
+_NFPA72_TABLE_17_6_3_1_1 = list(_CANONICAL_HEIGHT_TABLE)
 
 _NFPA72_ABSOLUTE_MAX_HEIGHT = 12.2
 

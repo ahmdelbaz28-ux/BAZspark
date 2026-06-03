@@ -153,43 +153,15 @@ class ImageParser:
                 max_size_bytes=_MAX_FILE_SIZE_BYTES,
                 parser_name="ImageParser",
             )
-        except UnsafePathError as e:
-            raise ValueError(str(e)) from e
-
-        result = ImageParseResult(source_file=image_path, success=False)
-
-        # V125 SECURITY (Rule #23): delegate to shared path-security helper.
-        # Closes path traversal, null bytes, argument injection, oversized
-        # file DoS. Image-parser DoS is a real concern — decompression
-        # bombs in PNG/JPEG can balloon to many GB of RAM.
-        from parsers._path_security import (
-            UnsafePathError,
-            validate_input_path,
-            validate_file_size,
-        )
-        import os as _os
-
-        _IMG_MAX_BYTES = int(_os.getenv("FIREAI_IMAGE_MAX_FILE_SIZE_BYTES",
-                                        str(50 * 1024 * 1024)))  # 50 MB
-
-        try:
-            safe_path = validate_input_path(
-                image_path,
-                allowed_extensions=frozenset(self.SUPPORTED_FORMATS),
-                parser_name="ImageParser",
-            )
-            validate_file_size(safe_path, max_size_bytes=_IMG_MAX_BYTES,
-                               parser_name="ImageParser")
         except FileNotFoundError as e:
-            result.errors.append(str(e))
-            return result
+            return ImageParseResult(source_file=image_path, success=False, errors=[str(e)])
         except UnsafePathError as e:
-            result.errors.append(f"SECURITY: {e}")
-            return result
+            return ImageParseResult(source_file=image_path, success=False, errors=[f"SECURITY: {e}"])
 
         image_path = str(safe_path)
         ext = safe_path.suffix.lower()
-            
+        result = ImageParseResult(source_file=image_path, success=False)
+
         try:
             # Load image
             img = self._load_image(str(safe_path))

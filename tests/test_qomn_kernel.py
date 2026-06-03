@@ -312,15 +312,17 @@ class TestNFPA72Constants:
     """Verify NFPA 72 reference constants match published standard."""
 
     def test_smoke_spacing_table_entries(self):
-        assert len(NFPA72_SMOKE_SPACING_TABLE) == 10
+        # V127: Table now has 9 rows (from NFPA 72 Table 17.6.3.1.1)
+        # instead of 10 rows (old table with 1%/ft reduction entries)
+        assert len(NFPA72_SMOKE_SPACING_TABLE) == 9
 
     def test_smoke_spacing_first_row(self):
-        """≤10 ft → 30 ft (9.144m)."""
-        assert NFPA72_SMOKE_SPACING_TABLE[0] == (3.048, 9.144)
+        """V127: ≤3.0m → 9.10m (30ft) per NFPA 72 Table 17.6.3.1.1."""
+        assert NFPA72_SMOKE_SPACING_TABLE[0] == (3.0, 9.10)
 
     def test_smoke_spacing_last_row(self):
-        """≤60 ft → 6 ft (1.829m) — special use."""
-        assert NFPA72_SMOKE_SPACING_TABLE[-1] == (18.288, 1.829)
+        """V127: ≤12.2m → 5.60m per NFPA 72 Table 17.6.3.1.1."""
+        assert NFPA72_SMOKE_SPACING_TABLE[-1] == (12.2, 5.60)
 
     def test_spacing_decreases_with_height(self):
         """Higher ceiling → smaller spacing."""
@@ -333,8 +335,8 @@ class TestNFPA72Constants:
         assert NFPA72_COVERAGE_RADIUS_FACTOR == 0.7
 
     def test_smoke_max_spacing(self):
-        """NFPA 72 §17.7.3.2.1: max 9.144m (30ft)."""
-        assert NFPA72_SMOKE_MAX_SPACING_M == pytest.approx(9.144)
+        """V127: NFPA 72 §17.7.3.2.3.1: max 9.10m (30ft per verbatim text)."""
+        assert NFPA72_SMOKE_MAX_SPACING_M == pytest.approx(9.10)
 
     def test_heat_max_spacing(self):
         """NFPA 72 §17.6.3.1: max 15.240m (50ft)."""

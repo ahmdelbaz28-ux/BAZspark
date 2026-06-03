@@ -114,41 +114,14 @@ class WordParser:
                 max_size_bytes=_MAX_FILE_SIZE_BYTES,
                 parser_name="WordParser",
             )
-        except UnsafePathError as e:
-            raise ValueError(str(e)) from e
-
-        result = WordParseResult(source_file=file_path, success=False)
-
-        # V125 SECURITY (Rule #23): delegate to shared path-security helper.
-        # Same threat model as Excel — .docx is a zip container that python-docx
-        # decompresses; oversized files can cause RAM exhaustion.
-        from parsers._path_security import (
-            UnsafePathError,
-            validate_input_path,
-            validate_file_size,
-        )
-        import os as _os
-
-        _DOCX_MAX_BYTES = int(_os.getenv("FIREAI_WORD_MAX_FILE_SIZE_BYTES",
-                                         str(25 * 1024 * 1024)))  # 25 MB
-
-        try:
-            safe_path = validate_input_path(
-                file_path,
-                allowed_extensions=frozenset({".docx"}),
-                parser_name="WordParser",
-            )
-            validate_file_size(safe_path, max_size_bytes=_DOCX_MAX_BYTES,
-                               parser_name="WordParser")
         except FileNotFoundError as e:
-            result.errors.append(str(e))
-            return result
+            return WordParseResult(source_file=file_path, success=False, errors=[str(e)])
         except UnsafePathError as e:
-            result.errors.append(f"SECURITY: {e}")
-            return result
+            return WordParseResult(source_file=file_path, success=False, errors=[f"SECURITY: {e}"])
 
         file_path = str(safe_path)
-            
+        result = WordParseResult(source_file=file_path, success=False)
+
         try:
             from docx import Document
             
