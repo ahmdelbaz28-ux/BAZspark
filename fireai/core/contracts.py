@@ -11,6 +11,7 @@ useful even in monolithic mode for type safety and documentation.
 """
 
 from __future__ import annotations
+import math
 
 from dataclasses import asdict, dataclass, field
 from enum import Enum
@@ -428,9 +429,15 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
         if field_name not in payload:
             raise ContractViolation(f"Missing required field: '{field_name}'")
 
-    # 3. Validate room_id is non-empty
-    if not payload.get("room_id"):
+    # 3. Validate room_id: non-empty, string, max 256 chars (DoS guard)
+    room_id_val = payload.get("room_id")
+    if not room_id_val or not isinstance(room_id_val, str):
         raise ContractViolation("room_id must be a non-empty string")
+    if len(room_id_val) > 256:
+        raise ContractViolation(
+            f"room_id length {len(room_id_val)} exceeds 256-character limit. "
+            "Oversized IDs can cause memory exhaustion in downstream indexing."
+        )
 
     # 4. Validate polygon is a list of at least 3 points
     polygon = payload.get("polygon")
@@ -450,6 +457,17 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
                 y_val = float(pt[1])
             except (TypeError, ValueError):
                 raise ContractViolation(f"polygon point {i} coordinates must be numeric, got {pt!r}")
+            if not (math.isfinite(x_val) and math.isfinite(y_val)):
+                raise ContractViolation(
+                    f"polygon point {i} contains non-finite coordinate: ({x_val}, {y_val}). "
+                    "NaN/Inf coordinates corrupt geometry calculations."
+                )
+            _MAX_COORD = 1_000_000.0  # 1000 km — physically impossible building
+            if abs(x_val) > _MAX_COORD or abs(y_val) > _MAX_COORD:
+                raise ContractViolation(
+                    f"polygon point {i} coordinate ({x_val}, {y_val}) exceeds 1,000,000m limit. "
+                    "Implausible coordinates indicate data corruption."
+                )
             coords.append((x_val, y_val))
         elif isinstance(pt, dict):
             x_val = pt.get("x", pt.get("X"))
@@ -461,6 +479,15 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
                 y_val = float(y_val)
             except (TypeError, ValueError):
                 raise ContractViolation(f"polygon point {i} coordinates must be numeric, got x={x_val!r} y={y_val!r}")
+            if not (math.isfinite(x_val) and math.isfinite(y_val)):
+                raise ContractViolation(
+                    f"polygon point {i} dict contains non-finite coordinate: ({x_val}, {y_val})."
+                )
+            _MAX_COORD = 1_000_000.0
+            if abs(x_val) > _MAX_COORD or abs(y_val) > _MAX_COORD:
+                raise ContractViolation(
+                    f"polygon point {i} dict coordinate ({x_val}, {y_val}) exceeds 1,000,000m limit."
+                )
             coords.append((x_val, y_val))
         else:
             raise ContractViolation(f"polygon point {i} must be a tuple/list or dict, got {type(pt).__name__}")
