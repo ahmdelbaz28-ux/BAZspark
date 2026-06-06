@@ -52,6 +52,7 @@ import json
 import logging
 import os
 import sqlite3
+import threading
 from typing import Any, Dict, List, Optional
 
 # Optional ECDSA support - graceful degradation if not installed
@@ -161,13 +162,25 @@ _db_initialized = False
 # Persistent connection for :memory: databases (each sqlite3.connect(":memory:")
 # creates a NEW empty database, so we must reuse the same connection)
 _memory_conn: sqlite3.Connection | None = None
+_init_lock: threading.Lock = threading.Lock()  # Guards _db_initialized singleton
 
 
 def _init_database() -> None:
-    """Initialize database with V11 schema (ECDSA signature column)."""
+    """Initialize database with V11 schema (ECDSA signature column).
+
+    Thread-safe: uses _init_lock to prevent double-initialisation under
+    concurrent requests. Without this lock two threads can both see
+    _db_initialized=False and both execute CREATE TABLE, creating a race
+    that corrupts the audit chain on startup.
+    """
     global _db_initialized, _memory_conn
+    # Fast path: already done (no lock needed for reads of a bool)
     if _db_initialized:
         return
+    with _init_lock:
+        # Double-checked locking pattern: re-check inside the lock
+        if _db_initialized:
+            return
     # Ensure parent directory exists (skip for :memory:)
     if DATABASE_PATH != ":memory:":
         db_dir = os.path.dirname(DATABASE_PATH)
