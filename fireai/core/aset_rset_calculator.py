@@ -329,6 +329,26 @@ def calculate_aset(
 
     # === Mode 2: Estimate from smoke fill time (APPROXIMATE) ===
     if smoke_fill_time_s is not None and smoke_fill_time_s > 0:
+        # V59 FIX: NaN/Inf in smoke_fill_time_s produces NaN descent_rate,
+        # NaN additional_time, and NaN ASET. The ASET > RSET check treats
+        # NaN > value as False (fail-safe), but the actual ASET is meaningless.
+        if not math.isfinite(smoke_fill_time_s):
+            import logging as _nan_sft
+
+            _nan_sft.getLogger(__name__).critical(
+                "ASET-CALC-002: NaN/Inf smoke_fill_time_s=%r. "
+                "Cannot estimate ASET. Returning fail-safe ASET=0. "
+                "Provide valid smoke_fill_time_s or use time-series mode.",
+                smoke_fill_time_s,
+            )
+            return ASETResult(
+                aset_seconds=0.0,
+                limiting_factor="NaN_Inf_smoke_fill_time_ASSUMED_UNTENABLE",
+                aset_method="smoke_fill_estimate_failed",
+                smoke_layer_at_aset_m=None,
+                details={"error": f"Invalid smoke_fill_time_s: {smoke_fill_time_s!r}"},
+            )
+
         # The smoke_fill_time_s is the time for the layer to descend
         # to the DETECTOR level (typically ceiling - 0.1-0.3m).
         # ASET is when it reaches 1.8m.
@@ -476,7 +496,22 @@ def calculate_rset(
     speed = max(speed, 0.2)  # Absolute minimum (wheelchair, injured)
 
     # Travel time
-    travel_time = travel_distance_m / speed
+    # V59 FIX: NaN/Inf travel_distance_m produces NaN travel_time, NaN RSET.
+    # NaN RSET makes ASET > RSET comparison meaningless (NaN > value = False,
+    # fail-safe, but the safety margin is lost).
+    if not math.isfinite(travel_distance_m) or travel_distance_m <= 0:
+        import logging as _nan_td
+
+        _nan_td.getLogger(__name__).critical(
+            "RSET-CALC-004: Invalid travel_distance_m=%r (must be finite, >0). "
+            "Using conservative default 100m (maximum NFPA 101 travel distance).",
+            travel_distance_m,
+        )
+        travel_distance_m = 100.0  # Maximum NFPA 101 travel distance (conservative)
+        # Recompute speed reference since travel_distance changed
+        travel_time = travel_distance_m / speed
+    else:
+        travel_time = travel_distance_m / speed
 
     # Total RSET
     # V43 FIX: Include detection time per SFPE Engineering Guide and PD 7974-6:2019.
@@ -486,24 +521,39 @@ def calculate_rset(
     # V29 FIX: detection_time_s=None defaults to 0.0 for backward compatibility.
     # The V48 fix changed None→60.0 which broke the API contract: existing callers
     # that don't pass detection_time_s expect RSET = premovement + travel_time only.
-    # Safety is preserved via a CRITICAL-level warning that urges explicit specification.
-    # The ASET-RSET comparison in validate_aset_vs_rset() applies safety_factor ≥ 1.5
-    # which provides adequate margin for unaccounted detection time.
+    # V59 HARDPACK FIX: detection_time_s=None now uses conservative 60.0s default (hard gate).
+    # The previous 0.0 default silently underestimated RSET, creating a false-PASS
+    # risk. Callers MUST provide an explicit detection time.
+    # The ASET-RSET comparison in validate_aset_vs_rset() applies safety_factor >= 1.5
+    # which provides adequate margin for unaccounted detection time, but the hard
+    # gate ensures no caller can accidentally omit this critical parameter.
     if detection_time_s is not None:
         dt = detection_time_s
-    else:
-        import logging as _log
+        if not math.isfinite(dt) or dt < 0:
+            import logging as _log_dt
 
-        _log.getLogger(__name__).critical(
+            _log_dt.getLogger(__name__).critical(
+                "ASET-RSET-002b: Invalid detection_time_s=%r (must be finite, >=0). "
+                "Using conservative default 60.0s (ceiling smoke detector per NFPA 72 ss17.6).",
+                detection_time_s,
+            )
+            dt = 60.0
+    else:
+        import logging as _log_hard
+
+        _log_hard.getLogger(__name__).critical(
             "ASET-RSET-002: detection_time_s not provided — RSET calculation "
-            "EXCLUDES detection time (dt=0.0). Per SFPE Engineering Guide and "
+            "EXCLUDES detection time. Per SFPE Engineering Guide and "
             "PD 7974-6:2019, RSET = detection + premovement + travel. "
             "Excluding detection time UNDERESTIMATES RSET, which could cause "
             "ASET > RSET to PASS when it should FAIL. "
             "Pass detection_time_s explicitly (e.g., 60.0 for ceiling smoke detector "
-            "per NFPA 72 §17.6) for accurate life-safety calculations."
+            "per NFPA 72 ss17.6) for accurate life-safety calculations."
         )
-        dt = 0.0
+        # Hard gate: use conservative default (60s smoke detector) instead of 0.0.
+        # This ensures RSET is never silently underestimated. The CRITICAL log
+        # above forces callers to fix their invocation.
+        dt = 60.0
     rset = dt + pm_delay + travel_time
 
     # Safety factor

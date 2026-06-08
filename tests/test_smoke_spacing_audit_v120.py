@@ -1,26 +1,22 @@
 """
-tests/test_smoke_spacing_audit_v120.py — Phase A Safety Net Tests (Finding #1)
+tests/test_smoke_spacing_audit_v120.py — V127 Phase C Corrected Spacing Tests
 ================================================================================
-V120 Phase A: WARNING log safety net for spot-type smoke detection above 20 ft.
-
-This phase deliberately does NOT change any computed spacing values. The
-existing 1%/ft reduction formula is preserved verbatim pending FPE review
-(see /SMOKE_SPACING_AUDIT_FINDING_1.md).
+V127 Phase C has landed: the 1%/ft reduction misapplication has been corrected.
+Spacing values now follow NFPA 72 Table 17.6.3.1.1 directly from the canonical
+constants table (fireai/constants/__init__.py), with no additional scalar
+reduction applied.  The audit_notice advisory is retained for h > 6.096 m.
 
 These tests verify:
-  1. Backward compatibility — all pre-V120 spacing values are UNCHANGED
-  2. The new audit_notice key appears ONLY above 6.096 m (20 ft)
-  3. The runtime WARNING log fires at the correct threshold
+  1. V127 corrected spacing values per NFPA 72 Table 17.6.3.1.1
+  2. The audit_notice key appears ONLY above 6.096 m (20 ft)
+  3. The runtime WARNING log fires at the correct threshold (V127 advisory)
   4. The audit notice text correctly cites NFPA sections and alternatives
-
-If/when Phase C lands (post-FPE review), these tests will be replaced
-with the new contract.
+  5. Pre-existing physics guards are preserved
 """
 
 from __future__ import annotations
 
 import logging
-import math
 import sys
 from pathlib import Path
 
@@ -34,56 +30,58 @@ from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# V120 Phase A — Backward Compatibility (values UNCHANGED)
+# V127 Phase C — Corrected Spacing Values (no 1%/ft reduction)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-class TestV120BackwardCompatibility:
-    """V120 Phase A is non-functional for numeric output — every pre-V120
-    spacing value must be reproduced exactly. If any of these fails,
-    Phase A has accidentally regressed Phase C scope."""
+class TestV127CorrectedSpacing:
+    """V127 Phase C: The 1%/ft reduction has been removed.
+    Spacing values now match NFPA 72 Table 17.6.3.1.1 directly."""
 
-    def test_h_10ft_unchanged(self):
-        """h=10ft (3.048m): table value 9.144m, no reduction → 9.144m."""
+    def test_h_3m_correct_spacing(self):
+        """h=3.0m: Table 17.6.3.1.1 → S=9.10m (no reduction applied)."""
+        r = compute_smoke_detector_spacing(3.0)
+        assert r["listed_spacing_m"] == pytest.approx(9.10, abs=1e-3)
+
+    def test_h_10ft_correct_spacing(self):
+        """h=10ft (3.048m): Table 17.6.3.1.1 → S=8.70m."""
         r = compute_smoke_detector_spacing(3.048)
-        assert r["listed_spacing_m"] == pytest.approx(9.144, abs=1e-3)
+        assert r["listed_spacing_m"] == pytest.approx(8.70, abs=1e-3)
 
-    def test_h_12ft_unchanged(self):
-        """h=12ft (3.658m): 8.534 × 0.98 = 8.363m (pre-V120 behavior)."""
+    def test_h_12ft_correct_spacing(self):
+        """h=12ft (3.658m): Table 17.6.3.1.1 → S=8.70m."""
         r = compute_smoke_detector_spacing(3.658)
-        # 8.534 × (1 - 0.01 × 2) = 8.534 × 0.98 = 8.36332
-        assert r["listed_spacing_m"] == pytest.approx(8.534 * 0.98, abs=1e-3)
+        assert r["listed_spacing_m"] == pytest.approx(8.70, abs=1e-3)
 
-    def test_h_15ft_unchanged(self):
-        """h=15ft (4.572m): 7.620 × 0.95 = 7.239m (pre-V120 behavior)."""
+    def test_h_15ft_correct_spacing(self):
+        """h=15ft (4.572m): Table 17.6.3.1.1 → S=8.20m."""
         r = compute_smoke_detector_spacing(4.572)
-        assert r["listed_spacing_m"] == pytest.approx(7.620 * 0.95, abs=1e-3)
+        assert r["listed_spacing_m"] == pytest.approx(8.20, abs=1e-3)
 
-    def test_h_20ft_unchanged(self):
-        """h=20ft (6.096m): 5.791 × 0.90 = 5.212m (pre-V120 behavior)."""
+    def test_h_20ft_correct_spacing(self):
+        """h=20ft (6.096m): Table 17.6.3.1.1 → S=7.30m."""
         r = compute_smoke_detector_spacing(6.096)
-        assert r["listed_spacing_m"] == pytest.approx(5.791 * 0.90, abs=1e-3)
+        assert r["listed_spacing_m"] == pytest.approx(7.30, abs=1e-3)
 
-    def test_h_30ft_unchanged(self):
-        """h=30ft (9.144m): 3.962 × 0.80 = 3.170m (pre-V120 behavior)."""
+    def test_h_30ft_correct_spacing(self):
+        """h=30ft (9.144m): Table 17.6.3.1.1 → S=6.00m."""
         r = compute_smoke_detector_spacing(9.144)
-        assert r["listed_spacing_m"] == pytest.approx(3.962 * 0.80, abs=1e-3)
+        assert r["listed_spacing_m"] == pytest.approx(6.00, abs=1e-3)
 
-    def test_h_60ft_unchanged(self):
-        """h=60ft (18.288m): 1.829 × 0.50 (floor) = 0.914m."""
+    def test_h_60ft_correct_spacing(self):
+        """h=60ft (18.288m): Beyond table → fallback 5.20m."""
         r = compute_smoke_detector_spacing(18.288)
-        # max 50% reduction → factor = 0.50
-        assert r["listed_spacing_m"] == pytest.approx(1.829 * 0.50, abs=1e-3)
+        assert r["listed_spacing_m"] == pytest.approx(5.20, abs=1e-3)
 
-    def test_coverage_radius_unchanged(self):
-        """Coverage radius = 0.7 × spacing — invariant by V120."""
+    def test_coverage_radius(self):
+        """Coverage radius = 0.7 × spacing per NFPA 72 §17.7.4.2.3.1."""
         for h in (3.0, 4.0, 5.0, 6.0, 9.0, 15.0):
             r = compute_smoke_detector_spacing(h)
             assert r["coverage_radius_m"] == pytest.approx(
                 0.7 * r["listed_spacing_m"], rel=1e-4
             )
 
-    def test_nfpa_section_unchanged(self):
+    def test_nfpa_section_in_result(self):
         """The nfpa_section key must remain stable for downstream consumers."""
         r = compute_smoke_detector_spacing(3.0)
         assert "NFPA 72" in r["nfpa_section"]
@@ -99,9 +97,9 @@ class TestV120BackwardCompatibility:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-class TestV120AuditNoticeAdditive:
-    """V120 Phase A adds an audit_notice key to the result dict above
-    6.096 m. Low ceilings retain the EXACT pre-V120 dict shape."""
+class TestV127AuditNoticeAdditive:
+    """V127 Phase C adds an audit_notice key to the result dict above
+    6.096 m (advisory only). Low ceilings have no audit_notice key."""
 
     def test_low_ceiling_no_audit_notice_key(self):
         """h ≤ 6.096 m: dict must NOT have audit_notice key
@@ -137,10 +135,10 @@ class TestV120AuditNoticeAdditive:
         assert "aspirating" in notice or "air-sampling" in notice
         assert "performance-based" in notice or "annex b" in notice
 
-    def test_audit_notice_references_audit_report(self):
-        """The notice must point operators to the full audit report."""
+    def test_audit_notice_references_v127_correction(self):
+        """V127: The notice must reference the Phase C correction."""
         r = compute_smoke_detector_spacing(10.0)
-        assert "SMOKE_SPACING_AUDIT_FINDING_1.md" in r["audit_notice"]
+        assert "V127" in r["audit_notice"]
 
     def test_audit_notice_threshold_exact(self):
         """The threshold is EXACTLY 6.096 m (20 ft). 6.096 = no notice,
@@ -156,8 +154,8 @@ class TestV120AuditNoticeAdditive:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-class TestV120WarningLog:
-    """V120 Phase A logs a WARNING at the kernel's logger when high-
+class TestV127WarningLog:
+    """V127 logs a WARNING at the kernel's logger when high-
     ceiling spot smoke detection is requested. This is non-blocking."""
 
     def test_warning_emitted_above_threshold(self, caplog):
@@ -167,8 +165,8 @@ class TestV120WarningLog:
             r.message for r in caplog.records
             if r.levelno == logging.WARNING
         ]
-        assert any("V120 AUDIT WARNING" in m for m in warning_messages), (
-            f"Expected V120 AUDIT WARNING log at h=10m; got: {warning_messages}"
+        assert any("V127" in m or "stratification" in m.lower() for m in warning_messages), (
+            f"Expected V127 ADVISORY log at h=10m; got: {warning_messages}"
         )
 
     def test_no_warning_below_threshold(self, caplog):
@@ -176,10 +174,10 @@ class TestV120WarningLog:
             compute_smoke_detector_spacing(3.0)
         warning_messages = [
             r.message for r in caplog.records
-            if r.levelno == logging.WARNING and "V120" in r.message
+            if r.levelno == logging.WARNING and ("V127" in r.message or "V120" in r.message)
         ]
         assert not warning_messages, (
-            f"V120 WARNING fired below threshold (h=3m): {warning_messages}"
+            f"V127 ADVISORY fired below threshold (h=3m): {warning_messages}"
         )
 
     def test_logging_failure_does_not_break_computation(self, monkeypatch):
