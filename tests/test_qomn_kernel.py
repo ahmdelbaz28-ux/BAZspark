@@ -472,22 +472,19 @@ class TestComputeSmokeDetectorSpacing:
         assert result["listed_spacing_m"] == pytest.approx(9.1, rel=0.01)
         assert result["coverage_radius_m"] == pytest.approx(0.7 * 9.1, rel=0.01)
 
-    # V121 FIX: Smoke detector spacing is now FLAT 9.1m per §17.7.3.2.3.
-    # The 1%/ft height reduction has been removed — it was a misapplication
-    # of the heat detector table (Table 17.6.3.5.1) to smoke detectors.
+    # V127 PHASE C: Height-adjusted spacing per Table 17.6.3.1.1 restored.
+    # The V121 flat-only override was removed in favor of the canonical
+    # height-adjusted spacing table from fireai/constants/__init__.py.
     def test_medium_ceiling(self):
-        """h = 4.0m → flat spacing 9.1m per §17.7.3.2.3 (no reduction)."""
+        """h = 4.0m → Table 17.6.3.1.1 spacing 8.20m."""
         result = compute_smoke_detector_spacing(4.0)
-        # V121: No height adjustment for smoke detectors — flat 9.1m
-        assert result["listed_spacing_m"] == pytest.approx(9.1)
+        assert result["listed_spacing_m"] == pytest.approx(8.20, abs=1e-3)
 
-    # V121 FIX: Removed test that height reduces smoke spacing.
-    # Per NFPA 72-2022 §17.7.3.2.3, smoke detector spacing is flat.
-    def test_high_ceiling_does_not_reduce_spacing(self):
-        """V121: Flat spacing means high ceiling = same spacing."""
+    def test_high_ceiling_reduces_spacing(self):
+        """V127: Height-adjusted spacing reduces at higher ceilings."""
         r_low = compute_smoke_detector_spacing(3.0)
         r_high = compute_smoke_detector_spacing(6.0)
-        assert r_high["listed_spacing_m"] == r_low["listed_spacing_m"]
+        assert r_high["listed_spacing_m"] < r_low["listed_spacing_m"]
 
     def test_coverage_radius_is_07_times_spacing(self):
         """NFPA 72 §17.7.4.2.3.1: R = 0.7 × S."""

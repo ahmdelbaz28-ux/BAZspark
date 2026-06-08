@@ -1234,7 +1234,22 @@ class NACBoosterAllocator:
         last_pt: Optional[Tuple[float, float]] = source_location
 
         for i, dev in enumerate(devices_line):
-            curr_pt = (float(dev.get("x", 0.0)), float(dev.get("y", 0.0)))
+            # V59 FIX: Guard device coordinates against NaN/Inf. Non-finite
+            # coordinates produce NaN distances and silently disable voltage
+            # drop checks (NaN < min_eol = False). Per IEEE-754-2008 §7.
+            _dev_x = dev.get("x", 0.0)
+            _dev_y = dev.get("y", 0.0)
+            try:
+                _dev_x_f = _guard_finite(float(_dev_x), f"devices_line[{i}].x")
+            except ValueError:
+                logger.critical("BPS-003: Device '%s' has non-finite x=%r. Skipping.", dev.get('id', f'DEV-{i}'), _dev_x)
+                _dev_x_f = 0.0
+            try:
+                _dev_y_f = _guard_finite(float(_dev_y), f"devices_line[{i}].y")
+            except ValueError:
+                logger.critical("BPS-003: Device '%s' has non-finite y=%r. Skipping.", dev.get('id', f'DEV-{i}'), _dev_y)
+                _dev_y_f = 0.0
+            curr_pt = (_dev_x_f, _dev_y_f)
 
             if last_pt is not None:
                 dist = math.hypot(
@@ -1247,12 +1262,27 @@ class NACBoosterAllocator:
             running_length += dist
 
             # V_drop = 2 × I × R_per_ft × L  (NEC 760 DC return path)
+            # V59 FIX: Guard running_current_tail against NaN before multiplication
+            if not math.isfinite(running_current_tail):
+                logger.critical("BPS-004: running_current_tail=%r is NaN/Inf. Resetting to 0.", running_current_tail)
+                running_current_tail = 0.0
             if dist > 0 and running_current_tail > 0:
                 segment_drop = 2.0 * dist * ohm_per_ft * running_current_tail
+                if not math.isfinite(segment_drop):
+                    logger.critical("BPS-005: segment_drop=%r is NaN/Inf (dist=%r, ohm_per_ft=%r, current=%r). Skipping.",
+                                    segment_drop, dist, ohm_per_ft, running_current_tail)
+                    segment_drop = 0.0
                 running_voltage -= segment_drop
 
             # Subtract this device's current from downstream tail
-            dev_current = float(dev.get("inrush_a", 0.2))
+            # V59 FIX: Guard device current against NaN/Inf
+            _raw_current = dev.get("inrush_a", 0.2)
+            try:
+                dev_current = _guard_finite(float(_raw_current), f"devices_line[{i}].inrush_a")
+            except ValueError:
+                logger.critical("BPS-006: Device '%s' has non-finite inrush_a=%r. Using 0.2A default.",
+                                dev.get('id', f'DEV-{i}'), _raw_current)
+                dev_current = 0.2
             running_current_tail = max(0.0, running_current_tail - dev_current)
             last_pt = curr_pt
 

@@ -49,7 +49,7 @@ from __future__ import annotations
 
 import logging
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 # ---------------------------------------------------------------------------
@@ -146,6 +146,7 @@ class ShuntTripResult:
     temp_violation: bool = False
     compliant: bool = False
     violation_description: Optional[str] = None
+    warnings: List[str] = field(default_factory=list)
 
 
 class ElevatorShuntTripAuditor:
@@ -328,11 +329,14 @@ class ElevatorShuntTripAuditor:
             if best_hd is not None and best_dist <= MAX_HD_SPRINKLER_DISTANCE_M:
                 hd_id = best_hd.get("device_id", "UNKNOWN-HD")
                 # V FIX: Wrap float() in try/except
+                _hd_warnings = []  # Collect warnings for this result
                 try:
                     hd_temp = float(best_hd.get("temp_rating_C", 57.2))
                     hd_rti = float(best_hd.get("rti", DEFAULT_HD_RTI))
                 except (ValueError, TypeError) as e:
-                    logger.warning(f"Non-numeric data in heat detector '{hd_id}': {e}. Using defaults.")
+                    _warn_msg = f"Non-numeric data in heat detector '{hd_id}': {e}. Using defaults (temp=57.2C, rti={DEFAULT_HD_RTI})."
+                    logger.warning(_warn_msg)
+                    _hd_warnings.append(_warn_msg)
                     hd_temp = 57.2
                     hd_rti = DEFAULT_HD_RTI
 
@@ -412,6 +416,7 @@ class ElevatorShuntTripAuditor:
                             temp_violation=temp_violation,
                             compliant=False,
                             violation_description=desc,
+                            warnings=_hd_warnings,
                         )
                     )
                 else:
@@ -438,6 +443,7 @@ class ElevatorShuntTripAuditor:
                             rti_violation=False,
                             temp_violation=False,
                             compliant=True,
+                            warnings=_hd_warnings,
                         )
                     )
             else:
