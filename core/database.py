@@ -241,6 +241,39 @@ class UniversalDataModel:
                 logger.error("MEDIUM: Error adding element %s: %s", element_id if 'element_id' in dir() else '?', e)
                 return False
 
+    def add_elements_batch(self, elements: List[_ElementLike]) -> int:
+        """Add multiple elements in a single transaction.
+
+        Args:
+            elements: Iterable of elements with ``element_id`` and ``to_dict()``.
+
+        Returns:
+            Number of elements successfully added.
+
+        Raises:
+            MemoryError: If the system runs out of memory (not swallowed).
+        """
+        count = 0
+        with self._lock:
+            try:
+                now = datetime.now(timezone.utc).isoformat()
+                cursor = self._conn.cursor()
+                for element in elements:
+                    element_id = element.element_id
+                    data = element.to_dict()
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO elements (element_id, data, created_timestamp, last_modified_timestamp) VALUES (?, ?, ?, ?)",
+                        (element_id, json.dumps(data), now, now),
+                    )
+                    count += cursor.rowcount
+                self._conn.commit()
+                return count
+            except MemoryError:
+                raise
+            except (sqlite3.Error, json.JSONDecodeError) as e:
+                logger.error("MEDIUM: Error in batch add: %s", e)
+                return count
+
     def get_element(self, element_id: str) -> Optional[UniversalElement]:
         """Retrieve an element by ID.
 
