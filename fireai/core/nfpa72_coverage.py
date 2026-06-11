@@ -113,10 +113,12 @@ def validate_wall_distances(
     """
     violations = []
 
-    if room_polygon is not None and room_polygon.is_valid:
-        # V49: Use actual polygon boundary for L-shaped/irregular rooms
-        room_boundary = room_polygon.boundary
-        for idx, (x, y) in enumerate(detector_positions):
+    for idx, (x, y) in enumerate(detector_positions):
+        if not math.isfinite(x) or not math.isfinite(y):
+            continue
+
+        if room_polygon is not None and room_polygon.is_valid:
+            room_boundary = room_polygon.boundary
             pt = Point(x, y)
             dist_to_wall = room_boundary.distance(pt)
             if dist_to_wall < min_distance_m:
@@ -135,10 +137,7 @@ def validate_wall_distances(
                         "nfpa_reference": "NFPA 72-2022 §17.6.3.1.1",
                     }
                 )
-    else:
-        # Original rectangular wall check (backward compatible)
-        for idx, (x, y) in enumerate(detector_positions):
-            # Check all 4 walls
+        else:
             dist_left = x
             dist_right = room_spec.width_m - x
             dist_bottom = y
@@ -641,7 +640,7 @@ def check_ridge_zone_compliance(
         result.add_violation(
             f"Sloped ceiling (slope={ceiling_spec.slope_degrees}°) requires "
             f"detectors in the ridge zone (within 0.9m of ridge). "
-            f"None found."
+            f"None found. (NFPA 72 §17.6.3.4)"
         )
         return result
 
@@ -1113,10 +1112,12 @@ def adjust_coverage_for_beams(
     Raises:
         ValueError: If ceiling_height_m <= 0 or beam_depth_m < 0
     """
-    if ceiling_height_m <= 0:
+    if not math.isfinite(ceiling_height_m) or ceiling_height_m <= 1e-6:
         raise ValueError(f"ceiling_height_m must be positive, got {ceiling_height_m}")
-    if beam_depth_m < 0:
+    if not math.isfinite(beam_depth_m) or beam_depth_m < 0:
         raise ValueError(f"beam_depth_m cannot be negative, got {beam_depth_m}")
+    if math.isnan(nominal_radius_m):
+        raise ValueError(f"nominal_radius_m must be a finite number, got {nominal_radius_m}")
 
     beam_ratio = beam_depth_m / ceiling_height_m
 

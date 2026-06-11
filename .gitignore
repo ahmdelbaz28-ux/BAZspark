@@ -162,4 +162,4 @@ config/secrets.json
 
 # Reports
 reports/
-coverage.json
+coverage.jsonaudit/
