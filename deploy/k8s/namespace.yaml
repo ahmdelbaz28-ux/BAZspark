@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fireai
+  labels:
+    name: fireai
+    environment: production
+    security-tier: critical
+    compliance: nfpa72-2022
+  annotations:
+    description: "FireAI Safety-Critical Fire Protection Platform"
+    security.fireai.com/zero-trust: "enforced"

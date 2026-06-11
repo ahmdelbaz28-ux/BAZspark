@@ -1,0 +1,41 @@
+"""
+fireai/analytics — Predictive Analytics and Machine Learning Pipeline
+"""
+
+from fireai.analytics.predictive_analytics import (
+    BuildingData,
+    CapacityPrediction,
+    CoverageForecast,
+    DeviceEvent,
+    FailurePrediction,
+    LoadProfile,
+    PredictiveAnalyticsEngine,
+    RiskScore,
+)
+from fireai.analytics.ml_pipeline import (
+    DesignData,
+    EvaluationReport,
+    FeatureSet,
+    MLPipeline,
+    ModelArtifact,
+    ModelMetadata,
+    RoomDesignData,
+)
+
+__all__ = [
+    "PredictiveAnalyticsEngine",
+    "DeviceEvent",
+    "FailurePrediction",
+    "CoverageForecast",
+    "LoadProfile",
+    "CapacityPrediction",
+    "BuildingData",
+    "RiskScore",
+    "MLPipeline",
+    "DesignData",
+    "RoomDesignData",
+    "FeatureSet",
+    "ModelMetadata",
+    "ModelArtifact",
+    "EvaluationReport",
+]

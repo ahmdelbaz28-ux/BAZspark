@@ -1,0 +1,377 @@
+---
+global:
+  environment: production
+  imagePullPolicy: Always
+  imagePullSecrets: []
+  dnsDomain: cluster.local
+  tlsEnabled: true
+
+# ── Image Configuration ──────────────────────────────────────────────────────
+images:
+  api:
+    repository: ghcr.io/fireai/api
+    tag: "1.0.0"
+    pullPolicy: Always
+  worker:
+    repository: ghcr.io/fireai/worker
+    tag: "1.0.0"
+    pullPolicy: Always
+  nginx:
+    repository: ghcr.io/fireai/nginx
+    tag: "1.0.0"
+    pullPolicy: Always
+
+# ── Namespace ────────────────────────────────────────────────────────────────
+namespace:
+  name: fireai
+  labels: {}
+  annotations: {}
+
+# ── Replica Counts ───────────────────────────────────────────────────────────
+replicas:
+  api: 3
+  worker: 1
+
+# ── Rolling Update ───────────────────────────────────────────────────────────
+rollingUpdate:
+  maxSurge: 1
+  maxUnavailable: 0
+
+# ── Service Accounts ─────────────────────────────────────────────────────────
+serviceAccount:
+  name: fireai-sa
+  annotations: {}
+  automountServiceAccountToken: true
+
+# ── API Configuration ────────────────────────────────────────────────────────
+api:
+  enabled: true
+  image:
+    repository: ghcr.io/fireai/api
+    tag: "1.0.0"
+    pullPolicy: Always
+  replicaCount: 3
+  containerPort: 8000
+  host: "0.0.0.0"
+  workers: 4
+  environment:
+    FIREAI_ENV: production
+    LOG_LEVEL: WARNING
+    API_WORKERS: "4"
+  envFrom: []
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  probes:
+    liveness:
+      path: /api/health
+      initialDelaySeconds: 40
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 3
+    readiness:
+      path: /api/health
+      initialDelaySeconds: 20
+      periodSeconds: 15
+      timeoutSeconds: 5
+      failureThreshold: 3
+    startup:
+      path: /api/health
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      failureThreshold: 30
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  terminationGracePeriodSeconds: 60
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            topologyKey: kubernetes.io/hostname
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+  nodeSelector: {}
+  tolerations: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+    prometheus.io/path: "/metrics"
+
+# ── Worker Configuration ─────────────────────────────────────────────────────
+worker:
+  enabled: true
+  image:
+    repository: ghcr.io/fireai/worker
+    tag: "1.0.0"
+    pullPolicy: Always
+  replicaCount: 1
+  mode: default
+  environment: {}
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  probes:
+    liveness:
+      initialDelaySeconds: 40
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 3
+    readiness:
+      initialDelaySeconds: 30
+      periodSeconds: 20
+      timeoutSeconds: 5
+      failureThreshold: 3
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  terminationGracePeriodSeconds: 120
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+
+# ── Nginx Configuration ──────────────────────────────────────────────────────
+nginx:
+  enabled: true
+  image:
+    repository: ghcr.io/fireai/nginx
+    tag: "1.0.0"
+    pullPolicy: Always
+  replicaCount: 2
+  containerPort: 8080
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 128Mi
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 101
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 101
+    runAsGroup: 101
+    fsGroup: 101
+    seccompProfile:
+      type: RuntimeDefault
+
+# ── Ingress Configuration ────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "90"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "90"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()";
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  tls:
+    - hosts:
+        - fireai.example.com
+      secretName: fireai-tls
+  hosts:
+    - host: fireai.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          serviceName: fireai-api
+          servicePort: http
+        - path: /ws
+          pathType: Prefix
+          serviceName: fireai-api
+          servicePort: http
+        - path: /
+          pathType: Prefix
+          serviceName: fireai-api
+          servicePort: http
+
+# ── Service Configuration ────────────────────────────────────────────────────
+services:
+  api:
+    name: fireai-api
+    type: ClusterIP
+    ports:
+      - name: http
+        port: 80
+        targetPort: 8000
+        protocol: TCP
+  db:
+    name: fireai-db
+    type: ClusterIP
+    ports:
+      - name: postgres
+        port: 5432
+        targetPort: 5432
+        protocol: TCP
+  redis:
+    name: fireai-redis
+    type: ClusterIP
+    ports:
+      - name: redis
+        port: 6379
+        targetPort: 6379
+        protocol: TCP
+
+# ── Secrets ──────────────────────────────────────────────────────────────────
+secrets:
+  fireai-secrets:
+    stringData:
+      FIREAI_API_KEY: ""
+      FIREAI_EVIDENCE_HMAC_KEY: ""
+      DB_PASSWORD: ""
+      REDIS_PASSWORD: ""
+      GEMINI_API_KEY: ""
+      ENCRYPTION_KEY: ""
+      JWT_SECRET: ""
+  fireai-tls:
+    type: kubernetes.io/tls
+    stringData:
+      tls.crt: ""
+      tls.key: ""
+
+# ── ConfigMap ────────────────────────────────────────────────────────────────
+configMap:
+  name: fireai-config
+  data:
+    FIREAI_ENV: production
+    LOG_LEVEL: WARNING
+    FIREAI_MEMORY_LLM_PROVIDER: gemini
+    FIREAI_MEMORY_LLM_MODEL: gemini-2.0-flash
+    API_HOST: "0.0.0.0"
+    API_PORT: "8000"
+    API_WORKERS: "4"
+    CORS_ORIGINS: "https://fireai.example.com"
+    DB_HOST: "fireai-db"
+    DB_PORT: "5432"
+    DB_NAME: "fireai"
+    DB_USER: "fireai"
+    REDIS_HOST: "fireai-redis"
+    REDIS_PORT: "6379"
+    TZ: "UTC"
+
+# ── Network Policies ─────────────────────────────────────────────────────────
+networkPolicies:
+  enabled: true
+  denyAll: true
+  ingressNamespace: ingress-nginx
+  dnsNamespace: kube-system
+  dnsSelector:
+    k8s-app: kube-dns
+
+# ── Pod Disruption Budgets ───────────────────────────────────────────────────
+podDisruptionBudgets:
+  api:
+    enabled: true
+    minAvailable: 2
+  worker:
+    enabled: true
+    minAvailable: 1
+
+# ── Persistent Volumes ───────────────────────────────────────────────────────
+persistence:
+  data:
+    enabled: true
+    size: 10Gi
+    storageClass: standard
+    accessModes:
+      - ReadWriteOnce
+  logs:
+    enabled: true
+    size: 1Gi
+    storageClass: standard
+
+# ── External Dependencies ────────────────────────────────────────────────────
+external:
+  postgresql:
+    enabled: true
+    host: fireai-db
+    port: 5432
+    database: fireai
+    user: fireai
+  redis:
+    enabled: true
+    host: fireai-redis
+    port: 6379
+    db: 0
+
+# ── Monitoring ───────────────────────────────────────────────────────────────
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    scrapeInterval: 30s
+
+# ── Logging ──────────────────────────────────────────────────────────────────
+logging:
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# ── Autoscaling (optional) ───────────────────────────────────────────────────
+autoscaling:
+  api:
+    enabled: false
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
