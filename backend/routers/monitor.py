@@ -22,7 +22,7 @@ import time
 import threading
 from collections import defaultdict, deque
 from datetime import datetime, timezone
-from typing import Any, DefaultDict, Deque, Dict, List, Optional, Tuple
+from typing import Any, DefaultDict, Deque, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse

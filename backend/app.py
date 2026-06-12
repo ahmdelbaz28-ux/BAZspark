@@ -44,7 +44,7 @@ import hmac
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 # C-1 FIX: Removed BaseHTTPMiddleware import — all custom middleware converted
 # to pure ASGI to fix StreamingResponse buffering issue. BaseHTTPMiddleware's
@@ -78,16 +78,13 @@ if _ENV == "production":
 # hashing, sensitive data masking, and size-based log rotation.
 try:
     from fireai.core.security_logging import (
-        SecurityEventType,
         configure_log_rotation,
         security_audit,
     )
 
     configure_log_rotation(logger, "fireai.log")
-    _SECURITY_AUDIT_AVAILABLE = True
 except ImportError:
     logger.warning("security_logging module not available — security audit disabled")
-    _SECURITY_AUDIT_AVAILABLE = False
 
 # ── Optional router availability flags (set BEFORE lifespan) ──────────────
 
@@ -105,11 +102,6 @@ try:
     MEMORY_ROUTER_AVAILABLE = True
 except ImportError:
     pass
-
-
-# ── Unified API response helpers ──────────────────────────────────────────
-
-from backend.response import success as api_success, error as api_error
 
 
 # ── Application lifecycle ──────────────────────────────────────────────────

@@ -36,7 +36,6 @@ References:
 from __future__ import annotations
 
 import logging
-import re
 import time
 try:
     import defusedxml.ElementTree as ET  # nosec B314 — safe XML parser

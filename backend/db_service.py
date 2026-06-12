@@ -21,8 +21,6 @@ from typing import Any, Dict, List, Optional, Tuple
 from core.database import UniversalDataModel
 from core.models import (
     ChangeSource,
-    Conflict,
-    ConflictType,
     Geometry,
     Point3D,
     Relationship,
