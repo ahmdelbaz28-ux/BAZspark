@@ -122,6 +122,40 @@ def _validate_file_path(file_path: str) -> str:
 router = APIRouter(prefix="/workflow", tags=["workflow"])
 
 
+@router.get("/status")
+async def get_workflow_engine_status():
+    """
+    Get overall workflow engine status.
+
+    Returns summary counts of workflows by status, plus service health.
+    Does not require authentication (read-only monitoring endpoint).
+    """
+    svc = get_workflow_service()
+
+    # Count workflows by status from the in-memory store
+    status_counts = {}
+    for wf_id, wf_data in svc._workflows.items():
+        state = wf_data.get("state", {})
+        wf_status = state.get("status", "UNKNOWN")
+        status_counts[wf_status] = status_counts.get(wf_status, 0) + 1
+
+    langgraph_available = getattr(svc, "_langgraph_available", False)
+    initialized = getattr(svc, "is_initialized", False)
+
+    from backend.response import success
+    return success({
+        "engine": {
+            "initialized": initialized,
+            "langgraph_available": langgraph_available,
+            "status": "operational" if initialized and langgraph_available else "degraded",
+        },
+        "workflows": {
+            "total": len(svc._workflows),
+            "by_status": status_counts,
+        },
+    })
+
+
 @router.post("/start", dependencies=[Depends(verify_api_key_dep)])
 async def start_workflow(
     file_path: str = Query(

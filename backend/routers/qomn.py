@@ -577,6 +577,59 @@ async def get_physics_guards():
     }
 
 
+@router.get("/qomn/constants")
+async def get_qomn_constants():
+    """Return all QOMN-FIRE engineering constants with code references.
+
+    Provides the full set of NFPA 72, NEC, and QOMN specification constants
+    used by the deterministic engineering kernel. Useful for client-side
+    validation and display of engineering parameters.
+    """
+    try:
+        from fireai.core.qomn_kernel import (
+            NFPA72_SMOKE_MAX_SPACING_M, NFPA72_HEAT_MAX_SPACING_M,
+            NFPA72_COVERAGE_RADIUS_FACTOR, NFPA72_PULL_STATION_HEIGHT_M,
+            NFPA72_PULL_STATION_FROM_EXIT_M, NFPA72_WALL_MIN_DISTANCE_M,
+            NFPA72_STANDBY_HOURS, NFPA72_ALARM_MINUTES,
+            NFPA72_BATTERY_SAFETY_FACTOR, NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
+            NFPA72_NAC_MIN_CD, NFPA72_NAC_SLEEPING_MIN_CD,
+            NEC_TABLE8_RESISTANCE_OHM_PER_KM, NEC_AMPACITY_60C,
+        )
+    except ImportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "QOMN_SERVICE_UNAVAILABLE",
+                "detail": "The QOMN-FIRE engineering kernel constants are not available.",
+                "missing_module": "fireai.core.qomn_kernel",
+                "action": "Install the fireai package. Check server logs for details.",
+            },
+        )
+    return {
+        "success": True,
+        "data": {
+            "nfpa72": {
+                "smoke_max_spacing_m": NFPA72_SMOKE_MAX_SPACING_M,
+                "heat_max_spacing_m": NFPA72_HEAT_MAX_SPACING_M,
+                "coverage_radius_factor": NFPA72_COVERAGE_RADIUS_FACTOR,
+                "pull_station_height_m": NFPA72_PULL_STATION_HEIGHT_M,
+                "pull_station_from_exit_m": NFPA72_PULL_STATION_FROM_EXIT_M,
+                "wall_min_distance_m": NFPA72_WALL_MIN_DISTANCE_M,
+                "standby_hours": NFPA72_STANDBY_HOURS,
+                "alarm_minutes": NFPA72_ALARM_MINUTES,
+                "battery_safety_factor": NFPA72_BATTERY_SAFETY_FACTOR,
+                "battery_discharge_efficiency": NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
+                "nac_min_cd": NFPA72_NAC_MIN_CD,
+                "nac_sleeping_min_cd": NFPA72_NAC_SLEEPING_MIN_CD,
+            },
+            "nec": {
+                "table8_resistance_ohm_per_km": NEC_TABLE8_RESISTANCE_OHM_PER_KM,
+                "ampacity_60c": NEC_AMPACITY_60C,
+            },
+        },
+    }
+
+
 @router.post("/qomn/golden-tests")
 async def run_golden_tests():
     """Run QOMN golden test suite per QOMN Specification §9.

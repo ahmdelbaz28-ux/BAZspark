@@ -55,6 +55,35 @@ router = APIRouter(prefix="/environment", tags=["environment"])
 
 # ── Phase 1 Endpoints ───────────────────────────────────────────────────────
 
+@router.get("/countries")
+async def get_countries():
+    """
+    List supported countries and their regulatory frameworks.
+
+    Returns the full country → regulatory framework mapping used by FireAI
+    to determine applicable fire/electrical codes for each jurisdiction.
+    """
+    from backend.services.region_service import (
+        _COUNTRY_FRAMEWORK_MAP,
+        RegulatoryFramework,
+        ElectricalCode,
+    )
+    countries = []
+    for code, (framework, electrical) in sorted(_COUNTRY_FRAMEWORK_MAP.items()):
+        countries.append({
+            "country_code": code,
+            "regulatory_framework": framework.value,
+            "electrical_code": electrical.value,
+        })
+    return {
+        "success": True,
+        "data": {
+            "total": len(countries),
+            "countries": countries,
+        },
+    }
+
+
 @router.get("/weather")
 async def get_weather(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),

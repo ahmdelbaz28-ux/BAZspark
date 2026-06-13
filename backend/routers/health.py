@@ -13,12 +13,15 @@ health endpoint misleads deployment probes and operators.
 
 from __future__ import annotations
 
+import logging
 import time
 
 from fastapi import APIRouter
 
 from backend.database import get_db
 from backend.contract import validate_health
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["health"])
 
@@ -73,10 +76,10 @@ async def health_check():
     return success(validated)
 
 
-@router.get("/reports/statistics")
-async def get_statistics():
+@router.get("/health/statistics")
+async def get_health_statistics():
     """
-    Database statistics endpoint.
+    Health statistics endpoint.
 
     Provides counts of projects, devices, and connections across all projects.
     Also includes UDM element counts when core modules are available.
@@ -148,3 +151,10 @@ async def get_statistics():
             "database_version": 0,
             "last_sync": None,
         })
+
+
+# Keep legacy /reports/statistics path working (frontwards-compat)
+@router.get("/reports/statistics")
+async def get_statistics():
+    """Legacy alias for /health/statistics."""
+    return await get_health_statistics()
