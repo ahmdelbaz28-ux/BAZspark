@@ -12,18 +12,18 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Query
 
+from backend.contract import validate_paginated, validate_project
 from backend.database import get_db
 from backend.models import (
     CreateProjectInput,
     UpdateProjectInput,
 )
-from backend.contract import validate_project, validate_paginated
 from backend.project_bridge import (
+    sync_project_delete_to_udm,
     sync_project_to_udm,
     sync_project_update_to_udm,
-    sync_project_delete_to_udm,
 )
-from backend.response import success, error
+from backend.response import success
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 

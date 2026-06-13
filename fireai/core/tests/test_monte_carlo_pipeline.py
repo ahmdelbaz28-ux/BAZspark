@@ -10,7 +10,6 @@ Target: raise coverage from 23% to 80%+.
 """
 
 import math
-import statistics
 from dataclasses import fields
 from unittest.mock import MagicMock, PropertyMock, patch
 
@@ -21,7 +20,6 @@ from fireai.core.monte_carlo_pipeline import (
     DetectorReliabilitySimulator,
     MCPipelineAdapter,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures
@@ -784,7 +782,7 @@ class TestEnrichLayout:
         layout.proof_valid = True
 
         # Force unreliability by using high failure model
-        fm = DetectorFailureModel(
+        DetectorFailureModel(
             detector_id="high", annual_failure_rate=0.99,
             common_cause_beta=0.5, p_blind=0.99,
         )
@@ -806,7 +804,7 @@ class TestEnrichLayout:
                 "detector_count": 1,
             },
         ):
-            result = adapter_fast.enrich_layout(layout, MagicMock())
+            adapter_fast.enrich_layout(layout, MagicMock())
 
         # Warnings list on the layout should have been updated
         warning_texts = layout.warnings
@@ -838,7 +836,7 @@ class TestEnrichLayout:
                 "detector_count": 1,
             },
         ):
-            result = adapter_fast.enrich_layout(layout, MagicMock())
+            adapter_fast.enrich_layout(layout, MagicMock())
 
         assert layout.proof_valid is False
         assert any("MC PROOF INVALIDATED" in w for w in layout.warnings)
@@ -869,7 +867,7 @@ class TestEnrichLayout:
                 "detector_count": 1,
             },
         ):
-            result = adapter_fast.enrich_layout(layout, MagicMock())
+            adapter_fast.enrich_layout(layout, MagicMock())
 
         assert layout.proof_valid is True
 
@@ -901,7 +899,7 @@ class TestEnrichLayout:
             },
         ):
             # Should NOT raise
-            result = adapter_fast.enrich_layout(layout, MagicMock())
+            adapter_fast.enrich_layout(layout, MagicMock())
 
         # Clean up the PropertyMock to avoid affecting other tests
         del type(layout).proof_valid
@@ -933,7 +931,7 @@ class TestEnrichLayout:
             },
         ):
             # Should NOT raise
-            result = adapter_fast.enrich_layout(layout, MagicMock())
+            adapter_fast.enrich_layout(layout, MagicMock())
 
         del type(layout).warnings
 
@@ -1159,7 +1157,7 @@ class TestAnalyseFloor:
     def test_room_results_are_mc_dicts(self, adapter_fast, mock_floor_report):
         """Each room result should be a MC simulation result dict."""
         result = adapter_fast.analyse_floor(mock_floor_report)
-        for room_id, mc in result["room_results"].items():
+        for _room_id, mc in result["room_results"].items():
             assert "mean_coverage_pct" in mc
             assert "p_full_coverage" in mc
 
@@ -1187,7 +1185,7 @@ class TestAnalyseFloor:
         rs.length = 8.0
         rs.coverage_radius = 6.37
 
-        fm = DetectorFailureModel(
+        DetectorFailureModel(
             detector_id="zero", annual_failure_rate=0.0,
             common_cause_beta=0.0, p_blind=0.0,
         )
@@ -1346,7 +1344,7 @@ class TestIntegration:
 
     def test_full_pipeline_reliable_scenario(self):
         """Full pipeline with zero-failure model and good detector placement."""
-        adapter = MCPipelineAdapter(n_trials=300, seed=42)
+        MCPipelineAdapter(n_trials=300, seed=42)
         layout = MagicMock()
         layout.detectors = [(2.5, 2.0), (7.5, 6.0)]
         layout.coverage_radius = 6.37
@@ -1379,7 +1377,7 @@ class TestIntegration:
 
     def test_full_pipeline_unreliable_scenario(self):
         """Full pipeline with high-failure model shows unreliable results."""
-        adapter = MCPipelineAdapter(n_trials=300, seed=42)
+        MCPipelineAdapter(n_trials=300, seed=42)
         layout = MagicMock()
         layout.detectors = [(5.0, 4.0)]
         layout.coverage_radius = 6.37
@@ -1445,8 +1443,7 @@ class TestIntegration:
 
     def test_failure_model_probabilities_are_exponential(self):
         """Verify p_fail = 1 - exp(-rate * horizon) matches code logic."""
-        fm = DetectorFailureModel(detector_id="test", annual_failure_rate=0.01)
-        horizon = 1.0
+        DetectorFailureModel(detector_id="test", annual_failure_rate=0.01)
         expected_p_fail = 1.0 - math.exp(-0.01 * 1.0)
         expected_p_blind = 1.0 - math.exp(-0.003 * 1.0)
 

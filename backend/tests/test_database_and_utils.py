@@ -21,7 +21,6 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module", autouse=True)
@@ -266,7 +265,7 @@ class TestContractValidators:
 
     def test_validate_health_raises_on_missing_status(self):
         """validate_health must raise ContractViolation if status is missing."""
-        from backend.contract import validate_health, ContractViolation
+        from backend.contract import ContractViolation, validate_health
         with pytest.raises(ContractViolation):
             validate_health({"version": "1.0.0"})  # Missing 'status'
 

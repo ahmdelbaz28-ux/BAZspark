@@ -352,7 +352,7 @@ async def export_report(
             from reportlab.lib.pagesizes import A4
             from reportlab.lib.styles import getSampleStyleSheet
             from reportlab.lib.units import mm
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+            from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
             pdf_buffer = io.BytesIO()
             doc = SimpleDocTemplate(pdf_buffer, pagesize=A4,
@@ -373,7 +373,7 @@ async def export_report(
 
             def _add_data(data, prefix="", depth=0):
                 """Recursively add data to PDF, limiting depth.
-                
+
                 BUG-M1 FIX: Escape XML entities in values to prevent
                 ReportLab Paragraph markup injection. User-controlled data
                 (device names, types) could contain <, >, & that would be

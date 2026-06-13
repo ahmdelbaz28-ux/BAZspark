@@ -14,7 +14,6 @@ Tests cover:
   - Digital twin sync stage
 """
 import json
-import math
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -44,7 +43,6 @@ from fireai.core.spatial_engine.proof_certificate import (
     ProofCertificate,
     ProofCertificateGenerator,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures
@@ -602,9 +600,7 @@ class TestAnalyzeRoomStages:
 
     def test_signing_failure_continues_pipeline(self, pipeline, simple_room):
         """Signing failure is not fatal — pipeline continues."""
-        result_holder = []
 
-        original_analyze = pipeline.analyze_room
 
         # We'll mock certificate.seal to fail, but we need to capture the cert first
         class FailSeal:
@@ -1074,7 +1070,7 @@ class TestEventPublishing:
         """
         events = []
         fresh_bus.subscribe(Events.DETECTOR_PLACED, events.append)
-        result = pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
+        pipeline.analyze_room(room=simple_room, room_id="R1", ceiling_height=3.0)
         # At minimum, the pipeline publishes one detector.placed event
         pipeline_events = [e for e in events if e.source == "AnalysisPipeline"]
         assert len(pipeline_events) == 1

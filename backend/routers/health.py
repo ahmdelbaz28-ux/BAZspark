@@ -18,8 +18,8 @@ import time
 
 from fastapi import APIRouter
 
-from backend.database import get_db
 from backend.contract import validate_health
+from backend.database import get_db
 
 logger = logging.getLogger(__name__)
 

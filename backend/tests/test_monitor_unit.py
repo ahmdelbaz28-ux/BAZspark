@@ -10,10 +10,8 @@ from __future__ import annotations
 
 import os
 import time
-import threading
 
 import pytest
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MONITOR STATE UNIT TESTS
@@ -321,7 +319,6 @@ class TestWorkflowPathValidation:
         """Test all allowed file extensions pass validation."""
         if not self.available:
             pytest.skip("workflow module not available")
-        from fastapi import HTTPException
         for ext in [".dxf", ".dwg", ".pdf", ".ifc", ".rvt"]:
             test_path = os.path.join(self.workflow_mod.ALLOWED_DATA_DIRS[0], f"test{ext}")
             result = self.workflow_mod._validate_file_path(test_path)

@@ -229,7 +229,7 @@ class AirQualityService:
         # Extract AQI — WAQI provides this directly
         aqi_raw = data.get("aqi")
         if aqi_raw is None or not isinstance(aqi_raw, (int, float)):
-            raise ValueError(f"WAQI returned no valid AQI value")
+            raise ValueError("WAQI returned no valid AQI value")
 
         aqi = int(aqi_raw)
         # Validate AQI range

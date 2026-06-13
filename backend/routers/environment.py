@@ -33,20 +33,22 @@ import logging
 import time
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Query
 
-from backend.services.weather_service import get_weather_service, WeatherData
-from backend.services.geocoding_service import get_geocoding_service, GeocodingResult
+from backend.services.air_quality_service import get_air_quality_service
+from backend.services.elevation_service import get_elevation_service
+from backend.services.geocoding_service import GeocodingResult, get_geocoding_service
+from backend.services.hazmat_service import get_hazmat_service
 from backend.services.region_service import (
-    get_region_service, RegionContext, RegulatoryFramework, ElectricalCode,
+    ElectricalCode,
+    RegionContext,
+    RegulatoryFramework,
+    get_region_service,
 )
-from backend.services.elevation_service import get_elevation_service, ElevationData
-from backend.services.air_quality_service import get_air_quality_service, AirQualityData
 from backend.services.severe_weather_service import (
-    get_severe_weather_service, SevereWeatherData,
+    get_severe_weather_service,
 )
-from backend.services.hazmat_service import get_hazmat_service, HazardousMaterialData
-from backend.response import success, error
+from backend.services.weather_service import get_weather_service
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +67,6 @@ async def get_countries():
     """
     from backend.services.region_service import (
         _COUNTRY_FRAMEWORK_MAP,
-        RegulatoryFramework,
-        ElectricalCode,
     )
     countries = []
     for code, (framework, electrical) in sorted(_COUNTRY_FRAMEWORK_MAP.items()):

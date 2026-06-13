@@ -47,19 +47,19 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, TypedDict
 
-from langgraph.graph import END, START, StateGraph
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from langgraph.graph import END, StateGraph
 
 logger = logging.getLogger(__name__)
 
 try:
-    from fireai.infrastructure.stuck_detector import (
-        StuckDetector,
-        EscalationLevel,
+    from fireai.infrastructure.stuck_detector import (  # noqa: F401
+        EscalationLevel,  # noqa: F401
+        NodeTimeoutConfig,  # noqa: F401
+        StuckDetector,  # noqa: F401
         get_stuck_detector,
-        reset_stuck_detector,
+        reset_stuck_detector,  # noqa: F401
         with_stuck_detection,
-        NodeTimeoutConfig,
     )
     STUCK_DETECTION_AVAILABLE = True
 except ImportError:
@@ -70,10 +70,10 @@ except ImportError:
 
 try:
     from fireai.infrastructure.langfuse_setup import (
-        get_langfuse_callback_handler,
-        log_workflow_scores,
         flush_langfuse,
-        langfuse_health_check,
+        get_langfuse_callback_handler,
+        langfuse_health_check,  # noqa: F401
+        log_workflow_scores,
     )
     LANGFUSE_AVAILABLE = True
 except ImportError:
@@ -302,8 +302,8 @@ def node_parse(state: PipelineState) -> PipelineState:
 
     try:
         if file_type == "pdf":
-            from parsers.geometry_extractor import GeometryExtractor
             from adapters.pdf_to_rooms_adapter import extract_rooms_from_walls
+            from parsers.geometry_extractor import GeometryExtractor
 
             extractor = GeometryExtractor(file_path)
             walls = extractor.extract_walls()
@@ -541,7 +541,9 @@ def node_memory_enrich(state: PipelineState) -> PipelineState:
     enrichment_time_ms = 0.0
 
     try:
-        from fireai.infrastructure.mem0_workflow_bridge import enrich_with_memory_context
+        from fireai.infrastructure.mem0_workflow_bridge import (
+            enrich_with_memory_context,
+        )
 
         # V75: Now passes env_context for regional standards search
         result = enrich_with_memory_context(
@@ -609,12 +611,12 @@ async def _fetch_environmental_data(lat: float, lon: float) -> Dict[str, Any]:
     solving the sync-in-async problem that caused silent data loss
     in FastAPI production deployments.
     """
-    from backend.services.weather_service import get_weather_service
+    from backend.services.air_quality_service import get_air_quality_service
+    from backend.services.elevation_service import get_elevation_service
     from backend.services.geocoding_service import get_geocoding_service
     from backend.services.region_service import get_region_service
-    from backend.services.elevation_service import get_elevation_service
-    from backend.services.air_quality_service import get_air_quality_service
     from backend.services.severe_weather_service import get_severe_weather_service
+    from backend.services.weather_service import get_weather_service
 
     weather_svc = get_weather_service()
     geo_svc = get_geocoding_service()
@@ -683,13 +685,6 @@ def node_environmental_context(state: PipelineState) -> PipelineState:
     LIFE-SAFETY: Falls back to conservative defaults on API failure.
     Engineering calculations MUST NEVER be blocked by API failures.
     """
-    import asyncio
-    from backend.services.weather_service import get_weather_service
-    from backend.services.geocoding_service import get_geocoding_service
-    from backend.services.region_service import get_region_service
-    from backend.services.elevation_service import get_elevation_service
-    from backend.services.air_quality_service import get_air_quality_service
-    from backend.services.severe_weather_service import get_severe_weather_service
 
     lat = state.get("latitude")
     lon = state.get("longitude")
@@ -780,7 +775,7 @@ def node_nfpa_analysis(state: PipelineState) -> PipelineState:
 
     rooms = state.get("rooms", [])
     memory_context = state.get("memory_context", {})
-    workflow_id = state.get("workflow_id", "")
+    state.get("workflow_id", "")
     nfpa_results = []
     total_detectors = 0
     rooms_failing = 0
@@ -927,7 +922,7 @@ def node_conflict_detection(state: PipelineState) -> PipelineState:
     Per agent.md Priority 1 (Safety): Memory suggestions are ADVISORY.
     They do NOT create CRITICAL conflicts — only MEDIUM/HIGH advisory notes.
     """
-    rooms = state.get("rooms", [])
+    state.get("rooms", [])
     nfpa_results = state.get("nfpa_results", [])
     memory_context = state.get("memory_context", {})
     conflicts = []
@@ -1300,7 +1295,7 @@ def should_proceed_after_parse(state: PipelineState) -> str:
 
 def should_proceed_after_validation(state: PipelineState) -> str:
     """Route after validation: pass → environmental context, fail → END.
-    
+
     V83 FIX: Changed from "memory_enrich" to "environmental_context" because
     environmental_context must run first to populate state["environmental_context"]
     before memory_enrich reads it for regional standards search.
@@ -2027,7 +2022,7 @@ class WorkflowService:
         config = {"configurable": {"thread_id": workflow_id}}
 
         try:
-            compiled = await self._ensure_compiled()
+            await self._ensure_compiled()
 
             # Try to read the checkpoint from AsyncSqliteSaver
             checkpoint_state = None

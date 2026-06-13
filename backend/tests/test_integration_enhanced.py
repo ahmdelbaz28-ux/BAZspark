@@ -9,13 +9,10 @@ dwg, memory, facp, health endpoints.
 from __future__ import annotations
 
 import io
-import json
 import os
-import time
 
 import pytest
 from fastapi.testclient import TestClient
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 

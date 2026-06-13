@@ -34,23 +34,31 @@ Phase 4 — Memory Layer (this release):
     CRITICAL: Memory is ADVISORY CONTEXT only — never overrides calculations.
 """
 
-from backend.services.weather_service import WeatherService, WeatherData
-from backend.services.geocoding_service import GeocodingService, GeocodingResult
-from backend.services.region_service import RegionService, RegionContext
-from backend.services.elevation_service import ElevationService, ElevationData
-from backend.services.air_quality_service import AirQualityService, AirQualityData
-from backend.services.severe_weather_service import (
-    SevereWeatherService, SevereWeatherData, WeatherAlert,
-)
+from backend.services.air_quality_service import AirQualityData, AirQualityService
+from backend.services.elevation_service import ElevationData, ElevationService
+from backend.services.geocoding_service import GeocodingResult, GeocodingService
 from backend.services.hazmat_service import (
-    HazmatService, HazardousMaterialData, MaterialGroup, TemperatureClass,
+    HazardousMaterialData,
+    HazmatService,
+    MaterialGroup,
+    TemperatureClass,
 )
+from backend.services.region_service import RegionContext, RegionService
+from backend.services.severe_weather_service import (
+    SevereWeatherData,
+    SevereWeatherService,
+    WeatherAlert,
+)
+from backend.services.weather_service import WeatherData, WeatherService
 
 # Optional: Workflow Engine — requires langgraph (pip install fireai[workflow])
 try:
     from backend.services.workflow_service import (
-        WorkflowService, PipelineState, WorkflowStatus,
-        get_workflow_service, close_workflow_service,
+        PipelineState,
+        WorkflowService,
+        WorkflowStatus,
+        close_workflow_service,
+        get_workflow_service,
     )
     WORKFLOW_AVAILABLE = True
 except ImportError:
@@ -64,10 +72,16 @@ except ImportError:
 # Optional: Memory Layer — requires mem0 + qdrant-client (pip install fireai[memory])
 try:
     from backend.services.memory_service import (
-        MemoryService, MemoryAddRequest, MemorySearchRequest,
-        MemorySearchResponse, MemoryResult, MemoryServiceStatus,
-        MemoryScope, MemoryCategory,
-        get_memory_service, close_memory_service,
+        MemoryAddRequest,
+        MemoryCategory,
+        MemoryResult,
+        MemoryScope,
+        MemorySearchRequest,
+        MemorySearchResponse,
+        MemoryService,
+        MemoryServiceStatus,
+        close_memory_service,
+        get_memory_service,
     )
     MEMORY_AVAILABLE = True
 except ImportError:

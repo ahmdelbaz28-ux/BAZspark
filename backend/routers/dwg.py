@@ -10,11 +10,11 @@ via DWGParser.parse(). The temp file is cleaned up after every request.
 
 from __future__ import annotations
 
+import logging
 import os
 import tempfile
-import logging
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ _DWG_ALLOWED_EXTENSIONS = frozenset({".dwg", ".dxf"})
 
 
 @router.post("")
-async def parse_dwg(file: UploadFile = File(...)):
+async def parse_dwg(file: UploadFile = File(...)):  # noqa: B008
     """
     Upload a DWG or DXF file for parsing.
 

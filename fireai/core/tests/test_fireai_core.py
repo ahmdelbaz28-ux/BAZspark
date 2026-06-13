@@ -22,14 +22,11 @@ Tests cover:
 """
 
 import os
-import tempfile
-from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from fireai.core import audit_store as audit_mod
 from fireai.core.fireai_core import (
     ConfidenceLevel,
     EnhancedRoomResult,
@@ -45,8 +42,6 @@ from fireai.core.nfpa72_models import (
     DetectorType,
     RoomSpec,
 )
-from fireai.core import audit_store as audit_mod
-
 
 # ============================================================================
 # FIXTURES
@@ -1379,7 +1374,7 @@ class TestHashChainAudit:
         mock_hash_chain = MagicMock()
         fireai_system._hash_chain = mock_hash_chain
 
-        result = fireai_system.analyse_room(sample_room_spec, run_resilience=False)
+        fireai_system.analyse_room(sample_room_spec, run_resilience=False)
 
         # Hash chain log should have been called
         mock_hash_chain.log.assert_called_once()
@@ -1393,7 +1388,7 @@ class TestHashChainAudit:
         if hasattr(fireai_system, "_hash_chain"):
             delattr(fireai_system, "_hash_chain")
 
-        result = fireai_system.analyse_room(sample_room_spec, run_resilience=False)
+        fireai_system.analyse_room(sample_room_spec, run_resilience=False)
         # Should not crash regardless of whether hash chain was created
 
     def test_hash_chain_audit_failure_non_blocking(self, fireai_system, sample_room_spec):

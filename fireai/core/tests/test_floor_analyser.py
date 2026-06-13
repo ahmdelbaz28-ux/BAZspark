@@ -8,7 +8,6 @@ import pytest
 from fireai.core.floor_analyser import FloorAnalyser, FloorReport, RoomSummary
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
 
-
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 
 @pytest.fixture

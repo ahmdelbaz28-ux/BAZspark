@@ -20,21 +20,18 @@ import math
 import os
 import tempfile
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional
 
 import pytest
 
 from core.database import UniversalDataModel
 from core.models import (
+    ElementType,
     Geometry,
     Point3D,
-    Relationship,
     SemanticProperties,
     UniversalElement,
-    ElementType,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Geometry Helpers

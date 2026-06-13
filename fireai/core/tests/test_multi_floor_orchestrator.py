@@ -20,39 +20,37 @@ Covers:
 
 from __future__ import annotations
 
-import pytest
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+from fireai.core.floor_orchestrator import FloorOrchestrator, FloorResult, RoomResult
 from fireai.core.multi_floor_orchestrator import (
-    # Main class
-    MultiFloorOrchestrator,
-    # Dataclasses
-    BuildingAnalysis,
-    ElevatorRecallResult,
-    FloorAssignment,
-    RiserRoutingResult,
-    SLCLoop,
-    SmokeSpreadResult,
-    VerticalZone,
-    # Enums
-    ElevatorRecallPhase,
-    OccupancyType,
-    SLCLoopClass,
-    SmokeSpreadPathway,
     # Constants
     DEFAULT_RECALL_FLOOR,
     MAX_SLC_DEVICES_PER_LOOP,
-    MAX_ZONE_AREA_SQM,
     MAX_ZONE_AREA_SQFT,
+    MAX_ZONE_AREA_SQM,
     MIN_SMOKE_BARRIER_RATING_H,
     OTHER_FLOORS_PER_ZONE,
     RESIDENTIAL_FLOORS_PER_ZONE,
     STACK_EFFECT_VELOCITY_MPS,
+    # Dataclasses
+    BuildingAnalysis,
+    # Enums
+    ElevatorRecallPhase,
+    ElevatorRecallResult,
+    FloorAssignment,
+    # Main class
+    MultiFloorOrchestrator,
+    OccupancyType,
+    RiserRoutingResult,
+    SLCLoop,
+    SLCLoopClass,
+    SmokeSpreadPathway,
+    SmokeSpreadResult,
+    VerticalZone,
 )
-from fireai.core.floor_orchestrator import FloorOrchestrator, FloorResult, RoomResult
-
 
 # ============================================================================
 # Fixtures
@@ -208,7 +206,7 @@ def tall_building_spec():
             "GF": 0.0, "F1": 4.0, "F2": 8.0,
             "F3": 12.0, "F4": 16.0, "F5": 20.0,
         },
-        "floor_areas": {fid: 600.0 for fid in ["GF", "F1", "F2", "F3", "F4", "F5"]},
+        "floor_areas": dict.fromkeys(["GF", "F1", "F2", "F3", "F4", "F5"], 600.0),
         "stairwells": [
             {
                 "zone_id": "STAIR-1",
@@ -1018,7 +1016,7 @@ class TestSLCLoopAssignment:
 
     def test_cable_length_class_a_doubled(self, orchestrator_class_a):
         """Class A loops should have approximately double the cable length of Class B."""
-        fa = FloorAssignment(
+        FloorAssignment(
             floor_id="GF", floor_index=0, total_devices=10,
             area_sqm=500.0, elevation_m=0.0,
         )
