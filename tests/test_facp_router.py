@@ -38,11 +38,15 @@ app = FastAPI()
 
 
 @app.middleware("http")
-async def set_test_role(request, call_next):
-    """Set admin role on every request so require_permission passes."""
-    request.state.fireai_role = Role.ADMIN
-    response = await call_next(request)
-    return response
+async def mock_auth_middleware(request, call_next):
+    """Set ENGINEER role on all test requests so FACP_MANAGE permission is granted.
+
+    Without this, get_current_role() defaults to VIEWER which lacks FACP_MANAGE,
+    causing all POST endpoints to return 403 Forbidden.
+    """
+    request.state.fireai_role = Role.ENGINEER
+    return await call_next(request)
+>>>>>>> c12ab938 (fix: Resolve all test failures — 19 fixed, 0 remaining (5854 passed))
 
 
 app.include_router(router, prefix="/api")

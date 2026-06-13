@@ -5,7 +5,7 @@ Validates the Pydantic request models in backend/routers/qomn.py for the
 QOMN-FIRE engineering kernel HTTP API.
 
 V118 FIX (Finding #3): Previously, the router's `awg_gauge` regex accepted
-6 AWG values (3, 250, 300, 350, 400, 500) that DO NOT EXIST in the kernel's
+5 AWG values (250, 300, 350, 400, 500) that DO NOT EXIST in the kernel's
 NEC_TABLE8_RESISTANCE_OHM_PER_KM table — a false-advertising bug per
 agent.md Anti-Deception Directive. This file enforces that:
 
