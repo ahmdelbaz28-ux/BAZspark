@@ -13,6 +13,7 @@ Pure ASGI middleware can add headers without consuming the body.
 import logging
 import time
 import uuid
+
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 logger = logging.getLogger(__name__)

@@ -28,8 +28,8 @@ from unittest.mock import patch
 
 import pytest
 
+from fireai.core import audit_store as audit_mod
 from fireai.core.audit_store import (
-    DATABASE_PATH,
     NFPA_VERSION,
     AuditStore,
     SecurityError,
@@ -39,14 +39,11 @@ from fireai.core.audit_store import (
     _get_ecdsa_signer,
     _get_hmac_key,
     _get_last_hash,
-    _init_database,
     add_event,
     get_events,
     verify_chain,
     verify_ecdsa_signature,
 )
-from fireai.core import audit_store as audit_mod
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -768,7 +765,7 @@ class TestECDSA:
     @pytest.mark.skipif(not audit_mod.HAS_ECDSA, reason="ecdsa not installed")
     def test_verify_ecdsa_missing_signature(self):
         """verify_ecdsa_signature returns False when record has no ecdsa_signature."""
-        from ecdsa import SigningKey, NIST256p
+        from ecdsa import NIST256p, SigningKey
         sk = SigningKey.generate(curve=NIST256p)
         vk_pem = sk.verifying_key.to_pem().decode()
         result = verify_ecdsa_signature(
@@ -781,7 +778,7 @@ class TestECDSA:
     @pytest.mark.skipif(not audit_mod.HAS_ECDSA, reason="ecdsa not installed")
     def test_verify_ecdsa_hash_mismatch(self):
         """verify_ecdsa_signature returns False when hash doesn't match."""
-        from ecdsa import SigningKey, NIST256p
+        from ecdsa import NIST256p, SigningKey
         sk = SigningKey.generate(curve=NIST256p)
         vk_pem = sk.verifying_key.to_pem().decode()
         # Sign a hash, but pass a different current_hash in the record
@@ -798,7 +795,7 @@ class TestECDSA:
     @pytest.mark.skipif(not audit_mod.HAS_ECDSA, reason="ecdsa not installed")
     def test_verify_ecdsa_valid_signature(self):
         """verify_ecdsa_signature returns True for a properly signed record."""
-        from ecdsa import SigningKey, NIST256p
+        from ecdsa import NIST256p, SigningKey
         sk = SigningKey.generate(curve=NIST256p)
         vk_pem = sk.verifying_key.to_pem().decode()
 
@@ -824,7 +821,7 @@ class TestECDSA:
     @pytest.mark.skipif(not audit_mod.HAS_ECDSA, reason="ecdsa not installed")
     def test_verify_ecdsa_tampered_signature(self):
         """verify_ecdsa_signature returns False for a forged signature."""
-        from ecdsa import SigningKey, NIST256p
+        from ecdsa import NIST256p, SigningKey
         sk = SigningKey.generate(curve=NIST256p)
         vk_pem = sk.verifying_key.to_pem().decode()
 
@@ -865,7 +862,7 @@ class TestECDSA:
     @pytest.mark.skipif(not audit_mod.HAS_ECDSA, reason="ecdsa not installed")
     def test_ecdsa_signer_with_valid_pem(self):
         """_get_ecdsa_signer returns a SigningKey for valid PEM."""
-        from ecdsa import SigningKey, NIST256p
+        from ecdsa import NIST256p, SigningKey
         sk = SigningKey.generate(curve=NIST256p)
         pem = sk.to_pem().decode()
         audit_mod._ecdsa_initialized = False
@@ -884,7 +881,7 @@ class TestECDSA:
     @pytest.mark.skipif(not audit_mod.HAS_ECDSA, reason="ecdsa not installed")
     def test_compute_ecdsa_signature_with_signer(self):
         """_compute_ecdsa_signature returns hex string when ECDSA is configured."""
-        from ecdsa import SigningKey, NIST256p
+        from ecdsa import NIST256p, SigningKey
         sk = SigningKey.generate(curve=NIST256p)
         pem = sk.to_pem().decode()
         audit_mod._ecdsa_initialized = False
@@ -972,7 +969,7 @@ class TestVerifyEcdsaEdgeCases:
     @pytest.mark.skipif(not audit_mod.HAS_ECDSA, reason="ecdsa not installed")
     def test_details_as_string_uses_as_is(self):
         """When details is a string (not dict), it's used directly for hash."""
-        from ecdsa import SigningKey, NIST256p
+        from ecdsa import NIST256p, SigningKey
         sk = SigningKey.generate(curve=NIST256p)
         vk_pem = sk.verifying_key.to_pem().decode()
 
@@ -1049,7 +1046,7 @@ class TestFileDatabase:
             conn = audit_mod._get_connection()
             audit_mod._release_connection(conn)
             # Connection should be closed now; using it should raise
-            with pytest.raises(Exception):
+            with pytest.raises((RuntimeError, ValueError, Exception)):  # noqa: B017
                 conn.execute("SELECT 1")
             audit_mod._db_initialized = False
 

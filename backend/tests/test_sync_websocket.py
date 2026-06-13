@@ -10,12 +10,10 @@ Covers the WebSocket /ws endpoint that existing tests don't exercise:
 
 from __future__ import annotations
 
-import json
 import os
 
 import pytest
 from fastapi.testclient import TestClient
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -94,7 +92,7 @@ class TestWebSocket:
 
     def test_websocket_connect(self, client):
         """WebSocket connection must be accepted."""
-        with client.websocket_connect("/ws") as ws:
+        with client.websocket_connect("/ws"):
             # Connection should succeed
             pass  # Just connecting and disconnecting is a valid test
 

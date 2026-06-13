@@ -22,7 +22,6 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module", autouse=True)
@@ -233,7 +232,7 @@ class TestMonitorStatePropagation:
         """Setting an engine to error should be reflected in health endpoint."""
         from backend.routers.monitor import MonitorState
         monitor = MonitorState()
-        original_status = monitor.get_engine("facp-engine")
+        monitor.get_engine("facp-engine")
         # Set to error
         monitor.set_engine_status("facp-engine", "error")
         response = client.get("/api/monitor/health")

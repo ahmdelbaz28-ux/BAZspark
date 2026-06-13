@@ -16,7 +16,6 @@ the fix continues to work correctly.
 from __future__ import annotations
 
 import math
-import os
 import sys
 from pathlib import Path
 
@@ -28,11 +27,11 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 from core.database import UniversalDataModel
 from core.models import (
+    ElementType,
     Geometry,
     Point3D,
     SemanticProperties,
     UniversalElement,
-    ElementType,
 )
 from fireai.core.nfpa72_engine import (
     calculate_battery,
@@ -41,7 +40,6 @@ from fireai.core.nfpa72_engine import (
     get_detector_spacing,
     temperature_corrected_resistance,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures
@@ -398,7 +396,7 @@ class TestV130SmokeFlatSpacing:
     def test_constants_combined_table_smoke_column_flat(self):
         """Smoke column in COMBINED_HEIGHT_SPACING_TABLE must be 9.1m."""
         from fireai.constants.nfpa72 import COMBINED_HEIGHT_SPACING_TABLE
-        for h_max, smoke_spacing, heat_spacing in COMBINED_HEIGHT_SPACING_TABLE:
+        for h_max, smoke_spacing, _heat_spacing in COMBINED_HEIGHT_SPACING_TABLE:
             assert smoke_spacing == 9.1, (
                 f"At h<={h_max}m, combined table smoke = {smoke_spacing}m, expected 9.1m"
             )

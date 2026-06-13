@@ -37,11 +37,12 @@ from __future__ import annotations
 
 import logging
 import time
+
 try:
     import defusedxml.ElementTree as ET  # nosec B314 — safe XML parser
 except ImportError:
     import xml.etree.ElementTree as ET  # fallback when defusedxml unavailable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 import httpx

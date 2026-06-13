@@ -18,20 +18,10 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from core.database import UniversalDataModel
-from core.models import (
-    ChangeSource,
-    Geometry,
-    Point3D,
-    Relationship,
-    SemanticProperties,
-    UniversalElement,
-)
-
 from backend.schemas import (
+    ConflictResponse,
     ConnectionCreate,
     ConnectionResponse,
-    ConflictResponse,
     ElementCreate,
     ElementResponse,
     ElementUpdate,
@@ -42,6 +32,15 @@ from backend.schemas import (
     ProjectUpdate,
     SemanticPropertiesResponse,
     StatisticsResponse,
+)
+from core.database import UniversalDataModel
+from core.models import (
+    ChangeSource,
+    Geometry,
+    Point3D,
+    Relationship,
+    SemanticProperties,
+    UniversalElement,
 )
 
 logger = logging.getLogger(__name__)
@@ -213,7 +212,7 @@ class DatabaseService:
         """Create projects table in the existing SQLite database."""
         with self._service_lock:
             try:
-                cursor = self._safe_db_execute('''
+                self._safe_db_execute('''
                     CREATE TABLE IF NOT EXISTS projects (
                         project_id TEXT PRIMARY KEY,
                         name TEXT NOT NULL,

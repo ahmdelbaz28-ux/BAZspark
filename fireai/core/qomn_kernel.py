@@ -220,7 +220,7 @@ from fireai.constants.nfpa72 import (  # noqa: E402,I001
     CEILING_HEIGHT_HARD_LIMIT_M as _CEILING_HEIGHT_HARD_LIMIT_M,
     COVERAGE_RADIUS_FACTOR as NFPA72_COVERAGE_RADIUS_FACTOR,
     HEAT_ABSOLUTE_MAX_SPACING_M as _HEAT_ABSOLUTE_MAX_SPACING_M,
-    HEAT_MAX_SPACING_M as NFPA72_HEAT_MAX_SPACING_M,
+    HEAT_MAX_SPACING_M as NFPA72_HEAT_MAX_SPACING_M,  # noqa: F401
     PULL_STATION_FROM_EXIT_M as NFPA72_PULL_STATION_FROM_EXIT_M,  # noqa: F401
     PULL_STATION_HEIGHT_M as NFPA72_PULL_STATION_HEIGHT_M,  # noqa: F401
     SMOKE_HEIGHT_SPACING_TABLE as NFPA72_SMOKE_SPACING_TABLE,  # noqa: F401
@@ -233,9 +233,11 @@ from fireai.constants.nfpa72 import (  # noqa: E402,I001
 # Source: NFPA 72-2022 §17.7.4.2.3.1
 # IMPORTANT: This is the COVERAGE RADIUS for verifying every point on the
 # ceiling is within R of a detector on a square grid at spacing S.
+# Coverage radius factor R = 0.7 × S — NFPA 72 §17.7.4.2.3.1
 # This is NOT the wall distance — wall max distance is S/2 per §17.6.3.1.1.
 # For smoke at h<=3m: R = 0.7×9.1 = 6.37m, wall_max = 9.1/2 = 4.55m.
-NFPA72_COVERAGE_RADIUS_FACTOR = 0.7
+# NOTE: NFPA72_COVERAGE_RADIUS_FACTOR is imported from fireai.constants.nfpa72 at line 221.
+# Do NOT redefine with a literal value here.
 
 # Maximum smoke detector spacing (absolute) — NFPA 72 §17.7.3.2.3
 # V130 FIX: Flat 9.1m per §17.7.3.2.3 (NO height reduction) — imported from fireai.constants.nfpa72
@@ -248,20 +250,27 @@ NFPA72_COVERAGE_RADIUS_FACTOR = 0.7
 # NOTE: NFPA72_HEAT_MAX_SPACING_M is imported at line 223 — do NOT redefine with a literal.
 
 # Minimum distance from wall — NFPA 72 §17.7.4.2.3.1
-NFPA72_WALL_MIN_DISTANCE_M = 0.1016  # 4 inches per NFPA 72 §17.6.3.1.1 (dead air space)
+# 4 inches per NFPA 72 §17.6.3.1.1 (dead air space)
 # CRITICAL FIX: Was 0.305m (1ft) which conflated with wall MAX distance S/2.
 # The MINIMUM distance is 4 inches (0.1016m) — detectors must not be closer to wall than this.
 # The MAXIMUM distance from wall is S/2 (4.55m for smoke, 3.05m for heat) per §17.6.3.1.1.
+# NOTE: NFPA72_WALL_MIN_DISTANCE_M is imported from fireai.constants.nfpa72 at line 228.
+# Do NOT redefine with a literal value here.
+
 NFPA72_WALL_MAX_DISTANCE_FACTOR = 0.5  # S/2 per NFPA 72 §17.6.3.1.1
 
 # Pull station height — NFPA 72 §17.15.7
-NFPA72_PULL_STATION_HEIGHT_M = 1.219  # 48 inches = 1.219 m AFF
+# 48 inches = 1.219 m AFF
+# NOTE: NFPA72_PULL_STATION_HEIGHT_M is imported from fireai.constants.nfpa72 at line 224.
+# Do NOT redefine with a literal value here.
 
 # Pull station max spacing in corridor — NFPA 72 §17.15.5
 NFPA72_PULL_STATION_MAX_CORRIDOR_SPACING_M = 61.0  # 200 ft
 
 # Pull station from exit door — NFPA 72 §17.15.3
-NFPA72_PULL_STATION_FROM_EXIT_M = 1.524  # 5 ft
+# 5 ft = 1.524m
+# NOTE: NFPA72_PULL_STATION_FROM_EXIT_M is imported from fireai.constants.nfpa72 at line 223.
+# Do NOT redefine with a literal value here.
 
 # Notification appliance: wall mount height — NFPA 72 §18.5.5.1
 NFPA72_NAC_WALL_HEIGHT_M = 2.032  # 80 inches AFF to bottom

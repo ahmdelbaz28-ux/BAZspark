@@ -191,7 +191,7 @@ class ElevationService:
 
         elevation = results[0].get("elevation")
         if elevation is None:
-            raise ValueError(f"Open Topo Data returned null elevation")
+            raise ValueError("Open Topo Data returned null elevation")
 
         elevation_m = float(elevation)
         atmo_pressure = calculate_atmospheric_pressure(elevation_m)

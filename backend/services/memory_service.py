@@ -282,9 +282,9 @@ class MemoryService:
                     )
 
                     logger.info(
-                        f"MemoryService initialized: provider=mem0, "
-                        f"llm=openai/gpt-4o, "
-                        f"embedder=openai/text-embedding-3-small, dims=1536"
+                        "MemoryService initialized: provider=mem0, "
+                        "llm=openai/gpt-4o, "
+                        "embedder=openai/text-embedding-3-small, dims=1536"
                     )
                     return  # Success — exit early
                 except Exception as e:
@@ -344,9 +344,9 @@ class MemoryService:
                     )
 
                     logger.info(
-                        f"MemoryService initialized (fallback): provider=mem0, "
-                        f"llm=gemini/gemini-2.0-flash, "
-                        f"embedder=huggingface/all-MiniLM-L6-v2, dims=384"
+                        "MemoryService initialized (fallback): provider=mem0, "
+                        "llm=gemini/gemini-2.0-flash, "
+                        "embedder=huggingface/all-MiniLM-L6-v2, dims=384"
                     )
                     return  # Success — exit early
                 except Exception as e:

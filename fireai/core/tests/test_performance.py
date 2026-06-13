@@ -21,7 +21,6 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List
 
 import pytest
 
@@ -32,14 +31,12 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 from core.database import UniversalDataModel
 from core.models import (
+    ElementType,
     Geometry,
     Point3D,
-    Relationship,
     SemanticProperties,
     UniversalElement,
-    ElementType,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures
@@ -198,7 +195,7 @@ class TestModelCreationPerformance:
         """Creating 1,000 Geometry objects with 4 points completes in < 2 seconds."""
         t0 = time.perf_counter()
         geoms = []
-        for i in range(1000):
+        for _i in range(1000):
             pts = (
                 Point3D(x=0.0, y=0.0),
                 Point3D(x=10.0, y=0.0),

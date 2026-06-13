@@ -1,23 +1,28 @@
-مname: Repository Modernization Showcase
+name: Repository Modernization Showcase
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main]
   pull_request:
-    branches: [ main, master ]
+    branches: [main]
+
+concurrency:
+  group: modernization-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   showcase-modernization:
+    name: "Modernization Check"
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8, 3.9, "3.10"]
+        python-version: ["3.12"]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -31,79 +36,29 @@ jobs:
     - name: Check documentation completeness
       run: |
         echo "=== Checking Documentation Completeness ==="
-        ls -la README.md || echo "README.md missing"
-        ls -la CONTRIBUTING.md || echo "CONTRIBUTING.md missing"
-        ls -la SECURITY.md || echo "SECURITY.md missing"
-        ls -la CHANGELOG.md || echo "CHANGELOG.md missing"
-        ls -la CODE_OF_CONDUCT.md || echo "CODE_OF_CONDUCT.md missing"
-        ls -la ARCHITECTURE.md || echo "ARCHITECTURE.md missing"
-        ls -la ROADMAP.md || echo "ROADMAP.md missing"
-        ls -la LICENSE || echo "LICENSE missing"
-        ls -la QUICKSTART.md || echo "QUICKSTART.md missing"
-        ls -la INSTALLATION.md || echo "INSTALLATION.md missing"
-        ls -la DEVELOPMENT.md || echo "DEVELOPMENT.md missing"
-        ls -la TROUBLESHOOTING.md || echo "TROUBLESHOOTING.md missing"
-        ls -la SYSTEM_DESIGN.md || echo "SYSTEM_DESIGN.md missing"
-        ls -la DATA_FLOW.md || echo "DATA_FLOW.md missing"
-        ls -la COMPONENTS.md || echo "COMPONENTS.md missing"
+        for doc in README.md CONTRIBUTING.md SECURITY.md CHANGELOG.md CODE_OF_CONDUCT.md ARCHITECTURE.md ROADMAP.md LICENSE; do
+          if [ -f "$doc" ] || [ -f ".github/$doc" ]; then
+            echo "  OK: $doc"
+          else
+            echo "  MISSING: $doc"
+          fi
+        done
 
     - name: Validate configuration files
       run: |
         echo "=== Validating Configuration Files ==="
-        if [ -f "pyproject.toml" ]; then
-          echo "✓ pyproject.toml exists"
-          cat pyproject.toml | head -20
-        else
-          echo "✗ pyproject.toml missing"
-        fi
-        
-        if [ -f ".gitignore" ]; then
-          echo "✓ .gitignore exists"
-          cat .gitignore | head -20
-        else
-          echo "✗ .gitignore missing"
-        fi
+        test -f pyproject.toml && echo "  OK: pyproject.toml" || echo "  MISSING: pyproject.toml"
+        test -f .gitignore && echo "  OK: .gitignore" || echo "  MISSING: .gitignore"
+        test -f requirements.txt && echo "  OK: requirements.txt" || echo "  MISSING: requirements.txt"
 
     - name: Check GitHub templates
       run: |
         echo "=== Checking GitHub Templates ==="
-        if [ -d ".github/ISSUE_TEMPLATE" ]; then
-          echo "✓ Issue templates exist"
-          ls -la .github/ISSUE_TEMPLATE/
-        else
-          echo "✗ Issue templates missing"
-        fi
-        
-        if [ -f ".github/PULL_REQUEST_TEMPLATE.md" ]; then
-          echo "✓ Pull request template exists"
-        else
-          echo "✗ Pull request template missing"
-        fi
+        test -d .github/ISSUE_TEMPLATE && echo "  OK: Issue templates" || echo "  MISSING: Issue templates"
+        test -f .github/PULL_REQUEST_TEMPLATE.md && echo "  OK: PR template" || echo "  MISSING: PR template"
+        test -f .github/CODEOWNERS && echo "  OK: CODEOWNERS" || echo "  MISSING: CODEOWNERS"
 
-    - name: Run basic validation
+    - name: Run basic Python validation
       run: |
-        echo "=== Running Basic Validation ==="
         python -c "print('Python interpreter working correctly')"
-        
-        # Check if requirements file exists and try to install
-        if [ -f "requirements.txt" ]; then
-          echo "✓ Requirements file exists"
-          head -20 requirements.txt
-        else
-          echo "✗ Requirements file missing"
-        fi
-
-    - name: Display modernization report
-      run: |
-        echo "=== FireAI Repository Modernization Report ==="
-        echo "This repository has been transformed into a world-class, enterprise-grade platform."
-        echo ""
-        echo "Key Improvements:"
-        echo "- Professional documentation suite (19+ comprehensive files)"
-        echo "- Three-layer architecture (L1 Interface, L2 Orchestration, L3 Engine)"
-        echo "- Multi-layer security with safety validation"
-        echo "- GitHub professionalization (templates, labels, workflows)"
-        echo "- Developer experience enhancements"
-        echo "- Enterprise-grade configuration and packaging"
-        echo ""
-        echo "Repository is now production-ready for public release."
+        python -c "import sys; assert sys.version_info >= (3, 12), f'Python 3.12+ required, got {sys.version}'"

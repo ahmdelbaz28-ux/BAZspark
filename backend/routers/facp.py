@@ -32,7 +32,7 @@ SAFETY NOTE:
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -169,10 +169,10 @@ def _check_facp_available() -> bool:
     global _facp_available
     if _facp_available is None:
         try:
+            from facp_system.panel_database import MASTER_PANEL_DATABASE  # noqa: F401
+            from facp_system.panel_output import OutputGenerator  # noqa: F401
             from facp_system.panel_selector import SelectionEngine  # noqa: F401
             from facp_system.panel_verifier import ComplianceVerifier  # noqa: F401
-            from facp_system.panel_output import OutputGenerator  # noqa: F401
-            from facp_system.panel_database import MASTER_PANEL_DATABASE  # noqa: F401
             _facp_available = True
             logger.info("FACP system modules loaded successfully")
         except ImportError as e:
@@ -224,7 +224,7 @@ async def select_facp(req: FACPSelectionRequest):
     _require_facp()
 
     try:
-        from facp_system.panel_selector import SelectionEngine, ProjectRequirements
+        from facp_system.panel_selector import ProjectRequirements, SelectionEngine
 
         project_req = ProjectRequirements(
             device_count=req.device_count,
@@ -303,7 +303,7 @@ async def verify_facp(req: FACPVerificationRequest):
     _require_facp()
 
     try:
-        from facp_system.panel_selector import ProjectRequirements, PanelRecommendation
+        from facp_system.panel_selector import PanelRecommendation, ProjectRequirements
         from facp_system.panel_verifier import ComplianceVerifier
 
         project_req = ProjectRequirements(
@@ -379,8 +379,8 @@ async def generate_facp_schedule(req: FACPScheduleRequest):
     _require_facp()
 
     try:
-        from facp_system.panel_selector import PanelRecommendation
         from facp_system.panel_output import OutputGenerator
+        from facp_system.panel_selector import PanelRecommendation
 
         recommendation = PanelRecommendation(
             recommended_model=req.recommended_model,
@@ -437,8 +437,8 @@ async def generate_facp_spec(req: FACPSpecRequest):
     _require_facp()
 
     try:
-        from facp_system.panel_selector import ProjectRequirements, PanelRecommendation
         from facp_system.panel_output import OutputGenerator
+        from facp_system.panel_selector import PanelRecommendation, ProjectRequirements
 
         project_req = ProjectRequirements(
             device_count=req.device_count,
@@ -536,7 +536,7 @@ async def list_available_panels():
             "data": {
                 "panels": panels,
                 "total_count": len(panels),
-                "manufacturers": list(set(p.manufacturer for p in MASTER_PANEL_DATABASE)),
+                "manufacturers": list({p.manufacturer for p in MASTER_PANEL_DATABASE}),
                 "standards": [
                     "NFPA 72-2022 SS10.6.10",
                     "UL 864 10th Edition",

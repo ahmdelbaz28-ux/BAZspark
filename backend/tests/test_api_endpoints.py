@@ -13,12 +13,10 @@ Tests focus on:
 
 from __future__ import annotations
 
-import io
 import os
 
 import pytest
 from fastapi.testclient import TestClient
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 

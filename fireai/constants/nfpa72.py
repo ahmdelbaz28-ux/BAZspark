@@ -265,10 +265,10 @@ engineering design per NFPA 72 Annex B."""
 # ============================================================================
 
 # Minimum distance from wall — dead air space
-# NFPA 72-2022 §17.6.3.1.1
-WALL_MIN_DISTANCE_M: float = 0.10
+# NFPA 72-2022 §17.6.3.1.1: 4 inches = 0.1016m
+WALL_MIN_DISTANCE_M: float = 0.1016
 """Minimum distance of detector from wall. Per NFPA 72 §17.6.3.1.1,
-detectors must be >= 0.1m from any wall to avoid dead air space."""
+detectors must be >= 4 inches (0.1016m) from any wall to avoid dead air space."""
 
 # Maximum wall distance = S/2
 SMOKE_MAX_WALL_DISTANCE_M: float = SMOKE_MAX_SPACING_M / 2.0  # 4.55

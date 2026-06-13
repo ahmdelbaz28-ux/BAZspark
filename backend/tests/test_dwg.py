@@ -99,7 +99,7 @@ class TestDWGPathSecurity:
 
     def test_path_traversal_blocked(self):
         """Path traversal attempts must be blocked by _path_security."""
-        from parsers._path_security import validate_input_path, UnsafePathError
+        from parsers._path_security import UnsafePathError, validate_input_path
 
         # Path traversal with non-existent file should raise UnsafePathError or FileNotFoundError
         with pytest.raises((UnsafePathError, FileNotFoundError)):
@@ -107,7 +107,7 @@ class TestDWGPathSecurity:
 
     def test_absolute_path_blocked(self):
         """Absolute paths outside allowed dirs must be blocked."""
-        from parsers._path_security import validate_input_path, UnsafePathError
+        from parsers._path_security import UnsafePathError, validate_input_path
 
         with pytest.raises((UnsafePathError, FileNotFoundError)):
             validate_input_path("/etc/passwd")
@@ -115,6 +115,7 @@ class TestDWGPathSecurity:
     def test_normal_relative_path_accepted(self):
         """Normal relative paths within allowed directories should be accepted."""
         import tempfile
+
         from parsers._path_security import validate_input_path
 
         # Create a real temp file — validate_input_path checks existence

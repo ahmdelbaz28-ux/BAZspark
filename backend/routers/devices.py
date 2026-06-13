@@ -14,12 +14,12 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Query
 
+from backend.contract import validate_device, validate_paginated
 from backend.database import get_db
 from backend.models import (
     CreateDeviceInput,
     UpdateDeviceInput,
 )
-from backend.contract import validate_device, validate_paginated
 
 router = APIRouter(prefix="/projects/{project_id}/devices", tags=["devices"])
 
@@ -225,7 +225,7 @@ async def delete_device(project_id: str, device_id: str):
         device.get("type", "unknown"),
         device.get("name", "unknown"),
     )
-    deleted = db.delete_device(project_id, device_id)
+    db.delete_device(project_id, device_id)
 
     # Sync device deletion to UDM (soft-delete for audit trail)
     from backend.project_bridge import sync_device_delete_to_udm

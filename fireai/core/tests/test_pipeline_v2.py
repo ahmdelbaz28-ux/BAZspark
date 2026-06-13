@@ -27,12 +27,11 @@ those optional modules to be installed.
 from __future__ import annotations
 
 import json
-import math
-from dataclasses import dataclass
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from fireai.core.contracts_validation import ContractViolation
 from fireai.core.pipeline import (
     PipelineResult,
     StageResult,
@@ -54,8 +53,6 @@ from fireai.core.pipeline import (
     analyze_building,
     analyze_room,
 )
-from fireai.core.contracts_validation import ContractViolation
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Shared Fixtures

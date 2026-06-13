@@ -11,12 +11,10 @@ These tests aim to cover:
 
 from __future__ import annotations
 
-import json
 import os
 
 import pytest
 from fastapi.testclient import TestClient
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 

@@ -5,49 +5,46 @@ NFPA 72 (2022 Edition) requirements.  Every calculation must be traceable
 to a specific NFPA 72 section.
 """
 import math
+
 import pytest
 
 from fireai.core.nfpa72_calculations import (
+    AWG_RESISTANCE_TABLE,
     CoverageSpec,
-    calculate_smoke_detector_radius,
-    calculate_smoke_detector_spacing,
-    calculate_heat_detector_coverage_chebyshev,
-    calculate_heat_detector_spacing_rectangular,
-    generate_heat_detector_positions,
-    is_point_covered_by_heat_detectors,
-    calculate_ridge_zone_boundary,
-    is_in_ridge_zone,
-    requires_ridge_zone_detector,
-    calculate_detector_requirements,
-    calculate_max_spacing,
-    calculate_coverage_radius,
-    calculate_max_wall_distance,
-    estimate_detector_count_polygon,
-    minimum_detector_count_rectangular,
-    calculate_coverage_radius_from_height,
-    get_ceiling_height_warnings,
+    auto_select_awg,
     beam_pocket_correction_factor,
     calculate_corridor_spacing,
+    calculate_coverage_radius,
+    calculate_coverage_radius_from_height,
+    calculate_detector_requirements,
     calculate_duct_detector_positions,
-    check_voltage_drop,
-    required_battery_capacity_ah,
+    calculate_heat_detector_coverage_chebyshev,
+    calculate_heat_detector_spacing_rectangular,
     calculate_inrush_current,
+    calculate_max_spacing,
+    calculate_max_wall_distance,
     calculate_nac_loading,
-    auto_select_awg,
+    calculate_ridge_zone_boundary,
+    calculate_smoke_detector_radius,
+    calculate_smoke_detector_spacing,
+    check_voltage_drop,
+    estimate_detector_count_polygon,
+    generate_heat_detector_positions,
+    get_ceiling_height_warnings,
     get_heat_detector_placement_params,
-    AWG_RESISTANCE_TABLE,
-    DEVICE_CURRENT_DRAW,
-    _NFPA72_TABLE_17_6_3_1_1,
+    is_in_ridge_zone,
+    is_point_covered_by_heat_detectors,
+    minimum_detector_count_rectangular,
+    required_battery_capacity_ah,
+    requires_ridge_zone_detector,
 )
 from fireai.core.nfpa72_models import (
     CeilingSpec,
     DetectorType,
     HeatDetectorSpec,
-    RoomSpec,
     HVACDuct,
-    HeatDetectionMode,
+    RoomSpec,
 )
-
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -117,7 +114,7 @@ class TestCalculateSmokeDetectorRadius:
         assert radius > 0
 
     def test_high_ceiling_smaller_radius(self):
-        r_low = calculate_smoke_detector_radius(3.0)
+        calculate_smoke_detector_radius(3.0)
         r_high = calculate_smoke_detector_radius(9.0)
         # Per NFPA 72 §17.7.3.2.3 flat spacing, smoke radius stays constant
         # but for heat, it reduces. Smoke radius should be stable.
@@ -340,7 +337,7 @@ class TestRequiresRidgeZoneDetector:
     def test_gentle_slope_no(self):
         # Slope < 14 degrees — no ridge zone required
         # CeilingSpec computes slope from height diff; provide low diff
-        cs = CeilingSpec(
+        CeilingSpec(
             height_at_low_point_m=3.0,
             height_at_high_point_m=3.5,  # Very gentle slope
             slope_degrees=5.0,

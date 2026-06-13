@@ -18,13 +18,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import time
 import threading
+import time
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 from typing import Any, DefaultDict, Deque, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 
 logger = logging.getLogger(__name__)
@@ -176,7 +176,7 @@ class MonitorState:
     def get_engines(self) -> List[Dict[str, Any]]:
         with self._lock:
             return [
-                {k: v for k, v in e.items()}
+                dict(e.items())
                 for e in self._engines.values()
             ]
 
@@ -649,7 +649,7 @@ async def get_security_alerts(
 
     # Try to load from security logging system
     try:
-        from fireai.core.security_logging import security_audit, SecurityEventType
+        from fireai.core.security_logging import security_audit
         events = security_audit.get_events(limit=limit)
         alerts = []
         for event in events:

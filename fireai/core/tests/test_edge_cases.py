@@ -17,20 +17,17 @@ Tests cover:
 
 from __future__ import annotations
 
-import math
-from datetime import datetime, timezone
-
 import pytest
 
 from core.models import (
+    Conflict,
+    ConflictType,
+    ElementType,
     Geometry,
     Point3D,
     Relationship,
     SemanticProperties,
     UniversalElement,
-    ElementType,
-    ConflictType,
-    Conflict,
 )
 from fireai.core.nfpa72_engine import (
     calculate_battery,
@@ -39,7 +36,6 @@ from fireai.core.nfpa72_engine import (
     get_detector_spacing,
     temperature_corrected_resistance,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures

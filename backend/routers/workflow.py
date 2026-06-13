@@ -22,14 +22,12 @@ import logging
 import os
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Depends, Header
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
+from backend.database import _FIREAI_API_KEY
 from backend.services.workflow_service import (
     get_workflow_service,
-    close_workflow_service,
-    WorkflowService,
 )
-from backend.database import _FIREAI_API_KEY
 
 
 def verify_api_key_dep(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
@@ -134,7 +132,7 @@ async def get_workflow_engine_status():
 
     # Count workflows by status from the in-memory store
     status_counts = {}
-    for wf_id, wf_data in svc._workflows.items():
+    for _wf_id, wf_data in svc._workflows.items():
         state = wf_data.get("state", {})
         wf_status = state.get("status", "UNKNOWN")
         status_counts[wf_status] = status_counts.get(wf_status, 0) + 1

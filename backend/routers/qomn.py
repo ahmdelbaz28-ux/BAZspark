@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Any, Dict, List, NoReturn, Optional
+from typing import Any, Dict, List, NoReturn
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, field_validator
@@ -88,8 +88,8 @@ _ComputationError = None
 _ValidationError = None
 
 try:
-    from fireai.core.qomn_kernel import PhysicsGuardError as _PGE
     from fireai.core.qomn_kernel import ComputationError as _CE
+    from fireai.core.qomn_kernel import PhysicsGuardError as _PGE
     from fireai.core.qomn_kernel import ValidationError as _VE
     _PhysicsGuardError = _PGE
     _ComputationError = _CE
@@ -342,10 +342,14 @@ async def place_detectors(req: RoomRequest):
     try:
         try:
             from fireai.core.device_placement import (
-                DetectorPlacementEngine, RoomSpec, CeilingType,
-                DetectorType, OccupancyType, ExitDoor
+                CeilingType,
+                DetectorPlacementEngine,
+                DetectorType,
+                ExitDoor,
+                OccupancyType,
+                RoomSpec,
             )
-        except ImportError as e:
+        except ImportError:
             raise HTTPException(
                 status_code=503,
                 detail={
@@ -462,8 +466,11 @@ async def place_duct_detector(req: DuctDetectorRequest):
     """
     try:
         try:
-            from fireai.core.device_placement import place_duct_detector, DuctDetectorSpec
-        except ImportError as e:
+            from fireai.core.device_placement import (
+                DuctDetectorSpec,
+                place_duct_detector,
+            )
+        except ImportError:
             raise HTTPException(
                 status_code=503,
                 detail={
@@ -517,10 +524,13 @@ async def get_physics_guards():
     """
     try:
         from fireai.core.qomn_kernel import (
-            NFPA72_SMOKE_MAX_SPACING_M, NFPA72_HEAT_MAX_SPACING_M,
-            NFPA72_PULL_STATION_HEIGHT_M, NFPA72_NAC_MIN_CD, NFPA72_NAC_SLEEPING_MIN_CD,
+            NFPA72_HEAT_MAX_SPACING_M,
+            NFPA72_NAC_MIN_CD,
+            NFPA72_NAC_SLEEPING_MIN_CD,
+            NFPA72_PULL_STATION_HEIGHT_M,
+            NFPA72_SMOKE_MAX_SPACING_M,
         )
-    except ImportError as e:
+    except ImportError:
         raise HTTPException(
             status_code=503,
             detail={
@@ -587,15 +597,22 @@ async def get_qomn_constants():
     """
     try:
         from fireai.core.qomn_kernel import (
-            NFPA72_SMOKE_MAX_SPACING_M, NFPA72_HEAT_MAX_SPACING_M,
-            NFPA72_COVERAGE_RADIUS_FACTOR, NFPA72_PULL_STATION_HEIGHT_M,
-            NFPA72_PULL_STATION_FROM_EXIT_M, NFPA72_WALL_MIN_DISTANCE_M,
-            NFPA72_STANDBY_HOURS, NFPA72_ALARM_MINUTES,
-            NFPA72_BATTERY_SAFETY_FACTOR, NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
-            NFPA72_NAC_MIN_CD, NFPA72_NAC_SLEEPING_MIN_CD,
-            NEC_TABLE8_RESISTANCE_OHM_PER_KM, NEC_AMPACITY_60C,
+            NEC_AMPACITY_60C,
+            NEC_TABLE8_RESISTANCE_OHM_PER_KM,
+            NFPA72_ALARM_MINUTES,
+            NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
+            NFPA72_BATTERY_SAFETY_FACTOR,
+            NFPA72_COVERAGE_RADIUS_FACTOR,
+            NFPA72_HEAT_MAX_SPACING_M,
+            NFPA72_NAC_MIN_CD,
+            NFPA72_NAC_SLEEPING_MIN_CD,
+            NFPA72_PULL_STATION_FROM_EXIT_M,
+            NFPA72_PULL_STATION_HEIGHT_M,
+            NFPA72_SMOKE_MAX_SPACING_M,
+            NFPA72_STANDBY_HOURS,
+            NFPA72_WALL_MIN_DISTANCE_M,
         )
-    except ImportError as e:
+    except ImportError:
         raise HTTPException(
             status_code=503,
             detail={
@@ -641,10 +658,12 @@ async def run_golden_tests():
     """
     try:
         from fireai.core.qomn_kernel import (
-            compute_smoke_detector_spacing, compute_heat_detector_spacing,
-            compute_battery_capacity_ah, compute_voltage_drop
+            compute_battery_capacity_ah,
+            compute_heat_detector_spacing,
+            compute_smoke_detector_spacing,
+            compute_voltage_drop,
         )
-    except ImportError as e:
+    except ImportError:
         raise HTTPException(
             status_code=503,
             detail={

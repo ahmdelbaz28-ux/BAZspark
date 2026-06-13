@@ -375,12 +375,12 @@ class TestCrossModuleConsistency:
         assert init_val == 15.24
 
     def test_wall_min_distance_consistent(self):
-        """WALL_MIN_DISTANCE_M must be 0.10m everywhere."""
+        """WALL_MIN_DISTANCE_M must be 0.1016m (4 inches) everywhere."""
         from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M as canonical
         from fireai.constants import WALL_MIN_DISTANCE_M as init_val
 
-        assert canonical == 0.10
-        assert init_val == 0.10
+        assert canonical == 0.1016
+        assert init_val == 0.1016
 
 
 # ============================================================================

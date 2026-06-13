@@ -21,25 +21,22 @@ from __future__ import annotations
 import json
 import logging
 import os
-import tempfile
 import threading
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from fireai.core.security_logging import (
+    _SECURITY_GENESIS,
     SecurityAuditLogger,
     SecurityEventType,
     SensitiveDataFilter,
-    _SECURITY_GENESIS,
     _compute_chain_hash,
     _force_refresh_env_cache,
     configure_log_rotation,
     configure_timed_rotation,
     mask_sensitive,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures

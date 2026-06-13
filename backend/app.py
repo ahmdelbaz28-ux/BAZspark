@@ -46,11 +46,11 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
+
 # C-1 FIX: Removed BaseHTTPMiddleware import — all custom middleware converted
 # to pure ASGI to fix StreamingResponse buffering issue. BaseHTTPMiddleware's
 # await call_next() reads the ENTIRE response body into memory, breaking
 # StreamingResponse for large DXF/IFC/PDF exports (OOM + timeout).
-
 from backend.request_context import CorrelationIdMiddleware
 
 # Configure logging
@@ -79,7 +79,6 @@ if _ENV == "production":
 try:
     from fireai.core.security_logging import (
         configure_log_rotation,
-        security_audit,
     )
 
     configure_log_rotation(logger, "fireai.log")
@@ -129,13 +128,13 @@ async def lifespan(app: FastAPI):
     logger.info("Database initialized")
 
     # Initialize external API services (Phase 1 + Phase 2)
-    from backend.services.weather_service import get_weather_service
-    from backend.services.geocoding_service import get_geocoding_service
-    from backend.services.region_service import get_region_service
-    from backend.services.elevation_service import get_elevation_service
     from backend.services.air_quality_service import get_air_quality_service
-    from backend.services.severe_weather_service import get_severe_weather_service
+    from backend.services.elevation_service import get_elevation_service
+    from backend.services.geocoding_service import get_geocoding_service
     from backend.services.hazmat_service import get_hazmat_service
+    from backend.services.region_service import get_region_service
+    from backend.services.severe_weather_service import get_severe_weather_service
+    from backend.services.weather_service import get_weather_service
 
     get_weather_service()
     get_geocoding_service()
@@ -182,13 +181,13 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown — close external API services (Phase 1 + Phase 2)
-    from backend.services.weather_service import close_weather_service
-    from backend.services.geocoding_service import close_geocoding_service
-    from backend.services.region_service import close_region_service
-    from backend.services.elevation_service import close_elevation_service
     from backend.services.air_quality_service import close_air_quality_service
-    from backend.services.severe_weather_service import close_severe_weather_service
+    from backend.services.elevation_service import close_elevation_service
+    from backend.services.geocoding_service import close_geocoding_service
     from backend.services.hazmat_service import close_hazmat_service
+    from backend.services.region_service import close_region_service
+    from backend.services.severe_weather_service import close_severe_weather_service
+    from backend.services.weather_service import close_weather_service
 
     await close_weather_service()
     await close_geocoding_service()
@@ -802,21 +801,21 @@ async def generic_exception_handler(request: Request, exc: Exception):
 # ── Import and mount routers ───────────────────────────────────────────────
 
 from backend.routers import (
-    projects,
-    devices,
-    connections,
-    dwg,
-    reports,
-    exports,
-    sync,
-    health,
-    elements,
     conflicts,
+    connections,
     connections_v2,
+    devices,
+    dwg,
+    elements,
     environment,
+    exports,
     facp,
-    qomn,
+    health,
     monitor,
+    projects,
+    qomn,
+    reports,
+    sync,
 )
 
 # Optional routers: already imported before lifespan() above

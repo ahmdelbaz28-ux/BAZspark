@@ -24,7 +24,7 @@ import logging
 import os
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
 from backend.database import get_db
 
@@ -255,14 +255,12 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
     # If auth is required, wait for auth message
-    authenticated = not needs_auth
     if needs_auth:
         try:
             # Wait up to 5 seconds for auth message
             raw = await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
             message = json.loads(raw)
             if message.get("action") == "auth" and _hmac.compare_digest(message.get("apiKey", ""), _FIREAI_API_KEY):
-                authenticated = True
                 await websocket.send_json({
                     "channel": "system",
                     "type": "auth_success",

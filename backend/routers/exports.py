@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 from datetime import datetime, timezone
 from urllib.parse import quote
 
@@ -21,8 +22,6 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
 from backend.database import get_db
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -279,7 +278,6 @@ async def export_ifc(
 
     # ── Full IFC export using ifcopenshell ──────────────────────────────
     try:
-        schema = "IFC4" if version == "IFC4" else "IFC2X3"
         ifc_file = ifcopenshell.api.run("project.create_file")
 
         project_ifc = ifcopenshell.api.run(

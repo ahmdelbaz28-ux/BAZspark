@@ -8,7 +8,7 @@ The frontend expects: {success, data?, error?, message?, timestamp}
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 
 def success(data: Any = None, message: str = "") -> Dict[str, Any]:
