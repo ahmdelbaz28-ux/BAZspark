@@ -229,3 +229,61 @@ def validate_file_size(
             "Reject as potential DoS vector."
         )
     return size
+
+
+def validate_fire_protection_file(
+    path: str,
+    allowed_extensions: Optional[FrozenSet[str]] = None,
+    parser_name: str = "fire_protection_parser",
+) -> Path:
+    """Validate file path for fire protection system imports.
+
+    NFPA 72 Section 14.4.3.2: All imported files must be validated
+    NEC Section 90.3: Equipment must be suitable for environment
+
+    This is a specialized validator for fire protection system design files
+    (DWG, DXF, IFC) that enforces both security (path traversal, injection)
+    and domain-specific constraints (allowed file types for fire alarm
+    system design). It composes the existing validate_input_path() checks
+    with an explicit extension whitelist for fire protection workflows.
+
+    Args:
+        path: File path to validate.
+        allowed_extensions: Set of allowed file extensions (with leading
+            dot, lowercase). Default: {'.dwg', '.dxf', '.ifc'}. These are
+            the standard CAD/BIM formats accepted for fire protection system
+            design per NFPA 72 and ISO 16739 (IFC).
+        parser_name: Used in error messages / logs for traceability.
+
+    Returns:
+        Validated, sanitized Path (safe to pass to subprocess after this call).
+
+    Raises:
+        UnsafePathError: If path fails security checks (traversal, injection).
+        FileNotFoundError: If path does not exist.
+        ValueError: If extension is not in the allowed set.
+    """
+    if allowed_extensions is None:
+        allowed_extensions = frozenset({'.dwg', '.dxf', '.ifc'})
+
+    # Use existing validate_input_path for security checks (null bytes,
+    # argument injection, path traversal, symlink resolution)
+    safe_path = validate_input_path(
+        path,
+        allowed_extensions=allowed_extensions,
+        parser_name=parser_name,
+    )
+
+    # Additional domain-specific validation: fire protection files must
+    # have recognized CAD/BIM extensions. This double-check ensures that
+    # even if validate_input_path is called with different extensions
+    # elsewhere, the fire protection pipeline enforces its own whitelist.
+    ext = safe_path.suffix.lower()
+    if ext not in allowed_extensions:
+        raise ValueError(
+            f"{parser_name}: Extension '{ext}' not allowed for fire protection "
+            f"system imports. Allowed: {sorted(allowed_extensions)}. "
+            f"Per NFPA 72 Section 14.4.3.2, all imported files must be validated."
+        )
+
+    return safe_path
