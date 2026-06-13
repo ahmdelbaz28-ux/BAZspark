@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FireAI V131 — Phase 1, Task 1.1: Coverage Report</title>
+<style>
+  :root {
+    --bg: #0D1117;
+    --card: #161B22;
+    --border: #30363D;
+    --text: #C9D1D9;
+    --text-dim: #8B949E;
+    --accent: #FF6B35;
+    --green: #4CAF50;
+    --yellow: #F59E0B;
+    --red: #F44336;
+    --blue: #2196F3;
+    --purple: #9C27B0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; line-height: 1.6; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+  /* Header */
+  .header { text-align: center; padding: 30px 0; border-bottom: 1px solid var(--border); margin-bottom: 30px; }
+  .header h1 { font-size: 28px; color: var(--accent); margin-bottom: 8px; }
+  .header .subtitle { color: var(--text-dim); font-size: 14px; font-family: monospace; }
+  .header .meta { display: flex; justify-content: center; gap: 30px; margin-top: 15px; }
+  .header .meta span { color: var(--text-dim); font-size: 13px; }
+
+  /* Stats Cards */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; text-align: center; }
+  .stat-card .value { font-size: 32px; font-weight: 700; font-family: monospace; }
+  .stat-card .label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .stat-card.green .value { color: var(--green); }
+  .stat-card.yellow .value { color: var(--yellow); }
+  .stat-card.red .value { color: var(--red); }
+  .stat-card.blue .value { color: var(--blue); }
+
+  /* Section */
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .section-header h2 { font-size: 16px; color: var(--accent); }
+  .section-header .badge { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; font-family: monospace; }
+  .badge.pass { background: rgba(76, 175, 80, 0.15); color: var(--green); border: 1px solid var(--green); }
+  .badge.fail { background: rgba(244, 67, 54, 0.15); color: var(--red); border: 1px solid var(--red); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 10px 16px; text-align: left; font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; background: rgba(0,0,0,0.2); }
+  td { padding: 10px 16px; font-size: 13px; border-top: 1px solid var(--border); }
+  tr:hover td { background: rgba(255, 107, 53, 0.03); }
+  .module-name { font-family: monospace; color: var(--text); }
+  .coverage-bar { width: 120px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; }
+  .coverage-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  .pct { font-family: monospace; font-weight: 600; margin-left: 8px; }
+  .pct.pass { color: var(--green); }
+  .pct.warn { color: var(--yellow); }
+  .pct.fail { color: var(--red); }
+  .status-icon { font-weight: 700; }
+  .status-icon.pass { color: var(--green); }
+  .status-icon.fail { color: var(--red); }
+
+  /* Priority List */
+  .priority-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px; }
+  .priority-box { padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
+  .priority-box.p1 { border-color: var(--red); background: rgba(244, 67, 54, 0.05); }
+  .priority-box.p2 { border-color: var(--yellow); background: rgba(245, 158, 11, 0.05); }
+  .priority-box.p3 { border-color: var(--blue); background: rgba(33, 150, 243, 0.05); }
+  .priority-box.p4 { border-color: var(--text-dim); background: rgba(139, 148, 158, 0.05); }
+  .priority-box h3 { font-size: 13px; margin-bottom: 10px; }
+  .priority-box ul { list-style: none; }
+  .priority-box li { font-size: 12px; padding: 4px 0; font-family: monospace; color: var(--text-dim); }
+
+  /* Footer */
+  .footer { text-align: center; padding: 20px; color: var(--text-dim); font-size: 12px; font-family: monospace; border-top: 1px solid var(--border); margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>FireAI V131 — Coverage Analysis Report</h1>
+    <div class="subtitle">Phase 1, Task 1.1: Identify Untested Modules</div>
+    <div class="meta">
+      <span>Date: 2026-06-13</span>
+      <span>Tool: pytest-cov 5.0.0</span>
+      <span>Tests: 5,886 passed | 0 failed</span>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-row">
+    <div class="stat-card yellow">
+      <div class="value">39%</div>
+      <div class="label">Overall Coverage</div>
+    </div>
+    <div class="stat-card green">
+      <div class="value">91%</div>
+      <div class="label">Security Modules</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="value">62%</div>
+      <div class="label">Kernel Avg</div>
+    </div>
+    <div class="stat-card red">
+      <div class="value">9</div>
+      <div class="label">Modules Below Target</div>
+    </div>
+  </div>
+
+  <!-- Engineering Kernel -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Engineering Kernel Coverage</h2>
+      <span class="badge fail">Target: ≥ 80% | Actual: 62%</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Module</th><th>Stmts</th><th>Miss</th><th>Coverage</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="module-name">unit_converter</td><td>92</td><td>0</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:100%;background:var(--green)"></span></span><span class="pct pass">100%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">notification_appliance</td><td>210</td><td>2</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:99%;background:var(--green)"></span></span><span class="pct pass">99%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">constraint_engine</td><td>198</td><td>0</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:99%;background:var(--green)"></span></span><span class="pct pass">99%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">device_placement</td><td>243</td><td>3</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:97%;background:var(--green)"></span></span><span class="pct pass">97%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">duct_detector</td><td>121</td><td>1</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:98%;background:var(--green)"></span></span><span class="pct pass">98%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">egress_calculator</td><td>60</td><td>1</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:97%;background:var(--green)"></span></span><span class="pct pass">97%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">fire_zone_engine</td><td>148</td><td>3</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:96%;background:var(--green)"></span></span><span class="pct pass">96%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">detector_response</td><td>79</td><td>2</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:96%;background:var(--green)"></span></span><span class="pct pass">96%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">qomn_kernel</td><td>283</td><td>3</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:98%;background:var(--green)"></span></span><span class="pct pass">98%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">acoustic_calculator</td><td>224</td><td>9</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:93%;background:var(--green)"></span></span><span class="pct pass">93%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">nfpa72_models</td><td>411</td><td>24</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:93%;background:var(--green)"></span></span><span class="pct pass">93%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">nfpa72_coverage</td><td>395</td><td>50</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:87%;background:var(--green)"></span></span><span class="pct pass">87%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">battery_aging_derating</td><td>175</td><td>19</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:87%;background:var(--green)"></span></span><span class="pct pass">87%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">building_engine</td><td>102</td><td>8</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:88%;background:var(--green)"></span></span><span class="pct pass">88%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">voltage_drop</td><td>87</td><td>9</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:86%;background:var(--green)"></span></span><span class="pct pass">86%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">acoustics_engine</td><td>247</td><td>30</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:84%;background:var(--green)"></span></span><span class="pct pass">84%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">nfpa72_engine</td><td>231</td><td>33</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:82%;background:var(--green)"></span></span><span class="pct pass">82%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">slc_capacitance</td><td>98</td><td>18</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:81%;background:var(--green)"></span></span><span class="pct pass">81%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr style="background:rgba(244,67,54,0.05)"><td class="module-name">floor_analyser</td><td>371</td><td>196</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:43%;background:var(--yellow)"></span></span><span class="pct warn">43%</span></td><td class="status-icon fail">FAIL</td></tr>
+        <tr style="background:rgba(244,67,54,0.05)"><td class="module-name">nfpa72_calculations</td><td>331</td><td>240</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:24%;background:var(--red)"></span></span><span class="pct fail">24%</span></td><td class="status-icon fail">FAIL</td></tr>
+        <tr style="background:rgba(244,67,54,0.05)"><td class="module-name">analysis_pipeline</td><td>283</td><td>240</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:13%;background:var(--red)"></span></span><span class="pct fail">13%</span></td><td class="status-icon fail">FAIL</td></tr>
+        <tr style="background:rgba(244,67,54,0.05)"><td class="module-name">routing_engine_v10</td><td>681</td><td>559</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:13%;background:var(--red)"></span></span><span class="pct fail">13%</span></td><td class="status-icon fail">FAIL</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Security Modules -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Security Modules Coverage</h2>
+      <span class="badge pass">Target: ≥ 80% | Actual: 91%</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Module</th><th>Stmts</th><th>Miss</th><th>Coverage</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="module-name">audit_blockchain_bridge</td><td>152</td><td>0</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:99%;background:var(--green)"></span></span><span class="pct pass">99%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">secret_rotation</td><td>75</td><td>1</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:99%;background:var(--green)"></span></span><span class="pct pass">99%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">blockchain_readiness_gate</td><td>110</td><td>1</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:98%;background:var(--green)"></span></span><span class="pct pass">98%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">audit_trail</td><td>70</td><td>1</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:97%;background:var(--green)"></span></span><span class="pct pass">97%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">bim_input_sanitizer</td><td>61</td><td>3</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:96%;background:var(--green)"></span></span><span class="pct pass">96%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">audit_log</td><td>186</td><td>13</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:90%;background:var(--green)"></span></span><span class="pct pass">90%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">evidence_chain</td><td>90</td><td>7</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:89%;background:var(--green)"></span></span><span class="pct pass">89%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">submittal_integrity_gate</td><td>77</td><td>11</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:85%;background:var(--green)"></span></span><span class="pct pass">85%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">security_logging</td><td>208</td><td>31</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:84%;background:var(--green)"></span></span><span class="pct pass">84%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr style="background:rgba(244,67,54,0.05)"><td class="module-name">audit_store</td><td>212</td><td>62</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:69%;background:var(--yellow)"></span></span><span class="pct warn">69%</span></td><td class="status-icon fail">FAIL</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Core Orchestration -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Core Orchestration Coverage</h2>
+      <span class="badge fail">Target: ≥ 75% | Actual: 55%</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Module</th><th>Stmts</th><th>Miss</th><th>Coverage</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="module-name">release_gates</td><td>132</td><td>1</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:99%;background:var(--green)"></span></span><span class="pct pass">99%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">floor_orchestrator</td><td>160</td><td>9</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:94%;background:var(--green)"></span></span><span class="pct pass">94%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr><td class="module-name">safe_building_engine</td><td>52</td><td>6</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:90%;background:var(--green)"></span></span><span class="pct pass">90%</span></td><td class="status-icon pass">PASS</td></tr>
+        <tr style="background:rgba(245,158,11,0.05)"><td class="module-name">pipeline</td><td>602</td><td>167</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:71%;background:var(--yellow)"></span></span><span class="pct warn">71%</span></td><td class="status-icon fail">FAIL</td></tr>
+        <tr style="background:rgba(244,67,54,0.05)"><td class="module-name">fireai_core</td><td>294</td><td>127</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:52%;background:var(--yellow)"></span></span><span class="pct warn">52%</span></td><td class="status-icon fail">FAIL</td></tr>
+        <tr style="background:rgba(244,67,54,0.05)"><td class="module-name">monte_carlo_pipeline</td><td>96</td><td>69</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:23%;background:var(--red)"></span></span><span class="pct fail">23%</span></td><td class="status-icon fail">FAIL</td></tr>
+        <tr style="background:rgba(244,67,54,0.05)"><td class="module-name">multi_floor_orchestrator</td><td>591</td><td>416</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:22%;background:var(--red)"></span></span><span class="pct fail">22%</span></td><td class="status-icon fail">FAIL</td></tr>
+        <tr style="background:rgba(244,67,54,0.05)"><td class="module-name">analysis_pipeline</td><td>283</td><td>240</td><td><span class="coverage-bar"><span class="coverage-fill" style="width:13%;background:var(--red)"></span></span><span class="pct fail">13%</span></td><td class="status-icon fail">FAIL</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Priority Action Plan -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Priority Action Plan</h2>
+      <span class="badge fail">9 Modules Need Attention</span>
+    </div>
+    <div class="priority-grid">
+      <div class="priority-box p1">
+        <h3 style="color:var(--red)">Priority 1 — Safety-Critical (MUST FIX)</h3>
+        <ul>
+          <li>nfpa72_calculations (24%) — NFPA 72 calculations backbone</li>
+          <li>audit_store (69%) — Audit trail integrity</li>
+        </ul>
+      </div>
+      <div class="priority-box p2">
+        <h3 style="color:var(--yellow)">Priority 2 — High Impact</h3>
+        <ul>
+          <li>floor_analyser (43%) — Floor analysis drives placement</li>
+          <li>routing_engine_v10 (13%) — Cable routing correctness</li>
+          <li>multi_floor_orchestrator (22%) — Cross-floor coordination</li>
+        </ul>
+      </div>
+      <div class="priority-box p3">
+        <h3 style="color:var(--blue)">Priority 3 — Medium Impact</h3>
+        <ul>
+          <li>analysis_pipeline (13%) — Pipeline error recovery</li>
+          <li>fireai_core (52%) — Core initialization</li>
+          <li>pipeline (71%) — Close to threshold</li>
+        </ul>
+      </div>
+      <div class="priority-box p4">
+        <h3 style="color:var(--text-dim)">Priority 4 — Low Impact</h3>
+        <ul>
+          <li>monte_carlo_pipeline (23%) — Statistical validation only</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  FireAI V131 SSoT Unification | Phase 1, Task 1.1 | Generated 2026-06-13 | Safety > Correctness > Verification > Reliability
+</div>
+
+</body>
+</html>
