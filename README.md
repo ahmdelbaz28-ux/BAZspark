@@ -6,7 +6,7 @@
 
 [![Status](https://img.shields.io/badge/status-release_candidate-ff6b35?style=for-the-badge&logo=fire&logoColor=white)](https://github.com/ahmdelbaz28-ux/revit)
 [![Version](https://img.shields.io/badge/version-1.0.0-3b82f6?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/ahmdelbaz28-ux/revit/releases)
-[![Tests](https://img.shields.io/badge/tests-5907_passed-22c55e?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/ahmdelbaz28-ux/revit/actions)
+[![Tests](https://img.shields.io/badge/tests-5886_passed-22c55e?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/ahmdelbaz28-ux/revit/actions)
 [![License](https://img.shields.io/badge/License-MIT-f59e0b?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
@@ -38,47 +38,72 @@
 
 ---
 
-## 📸 Screenshots & Evidence
+## 📸 Screenshots & Live Documentation
+
+### CI/CD Pipeline — All Gates GREEN
+
+<div align="center">
+  <img src="docs/assets/screenshots/all-gates-green.png" alt="All 7 CI/CD Gates PASSED" width="95%">
+  <br>
+  <em><b>7/7 CI/CD Gates PASSED</b> — Deployment Authorized | Static Analysis → Type Safety → Security → API Contract → Build → Runtime → Compliance</em>
+</div>
+
+### Test Results — 5,886 Tests, 0 Failures
 
 <div align="center">
   <table>
     <tr>
-      <td colspan="2"><img src="docs/assets/screenshots/all-gates-green.png" alt="All Gates GREEN" width="900"></td>
+      <td width="50%"><img src="docs/assets/screenshots/gate1-static-analysis.png" alt="Gate 1 Static Analysis" width="100%"></td>
+      <td width="50%"><img src="docs/assets/screenshots/test-results.png" alt="5,886 Test Results" width="100%"></td>
     </tr>
     <tr>
-      <td colspan="2" align="center"><b>🟢 7/7 CI/CD Gates PASSED — Deployment Authorized</b></td>
+      <td align="center"><b>Gate 1 — Static Analysis & Unit Tests</b></td>
+      <td align="center"><b>5,886 Tests | 100% Pass | 83.72s</b></td>
+    </tr>
+  </table>
+</div>
+
+### API Endpoints — 17/17 Verified Live
+
+<div align="center">
+  <img src="docs/assets/screenshots/api-endpoints.png" alt="API Endpoints Live Test" width="95%">
+  <br>
+  <em><b>17/17 API Endpoints Verified</b> via FastAPI TestClient | Health → Projects → Elements → QOMN → FACP → Workflow → Memory</em>
+</div>
+
+### Platform Interfaces
+
+<div align="center">
+  <table>
+    <tr>
+      <td width="50%"><img src="docs/assets/screenshots/dashboard.png" alt="Dashboard" width="100%"></td>
+      <td width="50%"><img src="docs/assets/screenshots/engineering-workspace.png" alt="Engineering Workspace" width="100%"></td>
     </tr>
     <tr>
-      <td><img src="docs/assets/screenshots/gate1-static-analysis.png" alt="Gate 1 Static Analysis" width="450"></td>
-      <td><img src="docs/assets/screenshots/test-results.png" alt="Test Results" width="450"></td>
+      <td align="center"><b>Dashboard — Project Overview & Quick Actions</b></td>
+      <td align="center"><b>Engineering Workspace — CAD/BIM + Compliance</b></td>
     </tr>
     <tr>
-      <td align="center"><b>🔍 Gate 1 — Static Analysis: PASS</b></td>
-      <td align="center"><b>🧪 5,907 Tests — 100% Pass</b></td>
+      <td width="50%"><img src="docs/assets/screenshots/fire-alarm-designer.png" alt="Fire Alarm Designer" width="100%"></td>
+      <td width="50%"><img src="docs/assets/screenshots/compliance-center.png" alt="Compliance Center" width="100%"></td>
     </tr>
     <tr>
-      <td><img src="docs/assets/screenshots/api-endpoints.png" alt="API Endpoints" width="450"></td>
-      <td><img src="docs/assets/screenshots/dashboard.png" alt="Dashboard" width="450"></td>
+      <td align="center"><b>Fire Alarm Designer — NFPA 72-2022 Device Placement</b></td>
+      <td align="center"><b>Compliance Center — 7 Standards Validated</b></td>
     </tr>
     <tr>
-      <td align="center"><b>🔗 72+ API Endpoints Verified</b></td>
-      <td align="center"><b>📊 Dashboard</b></td>
+      <td width="50%"><img src="docs/assets/screenshots/project-management.png" alt="Project Management" width="100%"></td>
+      <td width="50%"><img src="docs/assets/screenshots/connections.png" alt="Circuit Connections" width="100%"></td>
     </tr>
     <tr>
-      <td><img src="docs/assets/screenshots/engineering-workspace.png" alt="Engineering Workspace" width="450"></td>
-      <td><img src="docs/assets/screenshots/fire-alarm-designer.png" alt="Fire Alarm Designer" width="450"></td>
+      <td align="center"><b>Project Management — 183 Projects</b></td>
+      <td align="center"><b>Circuit Topology — SLC/NAC Connections</b></td>
     </tr>
     <tr>
-      <td align="center"><b>📐 Engineering Workspace</b></td>
-      <td align="center"><b>🔥 Fire Alarm Designer</b></td>
+      <td colspan="2" align="center"><img src="docs/assets/screenshots/elements.png" alt="UDM Elements" width="95%"></td>
     </tr>
     <tr>
-      <td><img src="docs/assets/screenshots/compliance-center.png" alt="Compliance Center" width="450"></td>
-      <td><img src="docs/assets/screenshots/project-management.png" alt="Project Management" width="450"></td>
-    </tr>
-    <tr>
-      <td align="center"><b>✅ Compliance Center</b></td>
-      <td align="center"><b>📁 Project Management</b></td>
+      <td colspan="2" align="center"><b>UDM Elements — Universal Data Model with 12+ Element Types</b></td>
     </tr>
   </table>
 </div>
@@ -205,7 +230,7 @@ python -m backend.app
 | Device Placement | 267 | ✅ 100% pass |
 | Workflow (LangGraph) | 68 | ✅ 100% pass |
 | API Endpoints | 33 | ✅ 100% pass |
-| **Total** | **5,907** | **✅ 100% pass** |
+| **Total** | **5,886** | **✅ 100% pass** |
 
 ```bash
 # Run all tests
@@ -220,8 +245,34 @@ python -m pytest tests/ --cov=fireai --cov=backend --cov-report=term-missing
 ## 🔌 API Endpoints
 
 <div align="center">
-  <img src="docs/assets/screenshots/api-endpoints.png" alt="API Endpoints" width="80%">
+  <img src="docs/assets/screenshots/api-endpoints.png" alt="API Endpoints Live Test" width="80%">
 </div>
+
+### Live Verification Results (FastAPI TestClient — 2026-06-13)
+
+| Method | Endpoint | Status | Category |
+|:-------|:---------|:-------|:---------|
+| GET | `/api/health` | ✅ 200 | Health Check |
+| GET | `/api/health/statistics` | ✅ 200 | System Stats |
+| GET | `/api/projects` | ✅ 200 | Projects List |
+| POST | `/api/projects` | ✅ 201 | Create Project |
+| GET | `/api/elements` | ✅ 200 | UDM Elements |
+| GET | `/api/conflicts` | ✅ 200 | Conflicts |
+| GET | `/api/connections` | ✅ 200 | Connections V2 |
+| GET | `/api/environment/countries` | ✅ 200 | Countries |
+| GET | `/api/environment/hazmat` | ✅ 200 | Hazmat DB |
+| GET | `/api/qomn/constants` | ✅ 200 | QOMN Physics |
+| GET | `/api/facp/panels` | ✅ 200 | FACP Panels |
+| GET | `/api/memory/status` | ✅ 200 | Memory Status |
+| GET | `/api/workflow/status` | ✅ 200 | Workflow Status |
+| POST | `/api/parse-dwg` | ✅ 401 | DWG Parse (Auth) |
+| GET | `/api/projects/{id}/devices` | ✅ 200 | Project Devices |
+| GET | `/api/projects/{id}/reports` | ✅ 200 | Project Reports |
+| GET | `/api/projects/{id}/export/dxf` | ✅ 200 | DXF Export |
+
+> **Result: 17/17 endpoints verified — 100% pass rate**
+
+### API Router Map
 
 | Category | Endpoints | Router |
 |:---------|:----------|:-------|
@@ -230,7 +281,7 @@ python -m pytest tests/ --cov=fireai --cov=backend --cov-report=term-missing
 | **Devices** | `/api/projects/{id}/devices` | `devices.py` |
 | **Connections** | `/api/projects/{id}/connections` | `connections.py` |
 | **Reports** | `/api/projects/{id}/reports` | `reports.py` |
-| **Export** | `/api/projects/{id}/export/dxf|revit|ifc` | `exports.py` |
+| **Export** | `/api/projects/{id}/export/dxf\|revit\|ifc` | `exports.py` |
 | **Sync** | `/api/projects/{id}/sync` | `sync.py` |
 | **Elements** | `/api/elements` (UDM) | `elements.py` |
 | **Conflicts** | `/api/conflicts` | `conflicts.py` |
@@ -424,7 +475,7 @@ See [SECURITY.md](SECURITY.md) and [ELECTRON_SECURITY_REPORT.md](ELECTRON_SECURI
 | **Build** | ✅ PASS | Docker multi-stage + ARM64 AppImage |
 | **Runtime** | ✅ PASS | 72+ routes, health check OK |
 | **Security** | ✅ PASS | 0 critical, 0 exploitable high vulns |
-| **Tests** | ✅ PASS | 5,907 Python + 33 API, 0 failures |
+| **Tests** | ✅ PASS | 5,886 Python + 33 API, 0 failures |
 | **Coverage** | ⚠️ 39% | Security modules 91%, kernel 62% avg |
 | **Linux ARM64** | ✅ PASS | 157 MB AppImage, production-ready |
 | **Windows x64** | 🔵 Planned | Requires Windows CI runner |
