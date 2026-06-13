@@ -44,7 +44,7 @@ import hmac
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 # C-1 FIX: Removed BaseHTTPMiddleware import — all custom middleware converted
 # to pure ASGI to fix StreamingResponse buffering issue. BaseHTTPMiddleware's
@@ -60,21 +60,49 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ── Startup environment validation ─────────────────────────────────────────
+
+_ENV = os.getenv("FIREAI_ENV", "production")
+if _ENV == "production":
+    _required = ["FIREAI_API_KEY"]
+    _missing = [k for k in _required if not os.getenv(k)]
+    if _missing:
+        logger.critical(
+            "Missing required environment variables in production mode: %s. "
+            "The application will start but may reject mutating requests.",
+            ", ".join(_missing),
+        )
+
 # ── Security Audit Logging & Log Rotation ──────────────────────────────────
 # V100+V105: Structured security event logging with tamper-evident chain
 # hashing, sensitive data masking, and size-based log rotation.
 try:
     from fireai.core.security_logging import (
-        SecurityEventType,
         configure_log_rotation,
         security_audit,
     )
 
     configure_log_rotation(logger, "fireai.log")
-    _SECURITY_AUDIT_AVAILABLE = True
 except ImportError:
     logger.warning("security_logging module not available — security audit disabled")
-    _SECURITY_AUDIT_AVAILABLE = False
+
+# ── Optional router availability flags (set BEFORE lifespan) ──────────────
+
+WORKFLOW_ROUTER_AVAILABLE: bool = False
+MEMORY_ROUTER_AVAILABLE: bool = False
+
+try:
+    from backend.routers import workflow
+    WORKFLOW_ROUTER_AVAILABLE = True
+except ImportError:
+    pass
+
+try:
+    from backend.routers import memory
+    MEMORY_ROUTER_AVAILABLE = True
+except ImportError:
+    pass
+
 
 # ── Application lifecycle ──────────────────────────────────────────────────
 
@@ -128,6 +156,8 @@ async def lifespan(app: FastAPI):
         svc = get_workflow_service()
         if hasattr(svc, "_langgraph_available") and svc._langgraph_available:
             logger.info("Workflow service initialized (LangGraph State Machine)")
+        elif hasattr(svc, "is_initialized") and svc.is_initialized:
+            logger.info("Workflow service initialized (LangGraph available)")
         else:
             logger.warning("Workflow service in DEGRADED mode — LangGraph not installed")
     except ImportError as e:
@@ -169,17 +199,17 @@ async def lifespan(app: FastAPI):
     await close_hazmat_service()
     logger.info("External API services closed (Phase 1 + Phase 2)")
 
-    # Shutdown — close workflow service
-    from backend.services.workflow_service import close_workflow_service
+    # Shutdown — close workflow service (if available)
+    if WORKFLOW_ROUTER_AVAILABLE:
+        from backend.services.workflow_service import close_workflow_service
+        await close_workflow_service()
+        logger.info("Workflow service closed")
 
-    await close_workflow_service()
-    logger.info("Workflow service closed")
-
-    # Shutdown — close memory service
-    from backend.services.memory_service import close_memory_service
-
-    await close_memory_service()
-    logger.info("Memory service closed")
+    # Shutdown — close memory service (if available)
+    if MEMORY_ROUTER_AVAILABLE:
+        from backend.services.memory_service import close_memory_service
+        await close_memory_service()
+        logger.info("Memory service closed")
 
     # Shutdown — do NOT close the singleton; it would break hot-reload
     logger.info("Shutting down... FireAI Digital Twin API stopped")
@@ -285,6 +315,8 @@ _PER_PATH_LIMITS = [
     ("/api/projects", 30, 60),  # Project listing only (shorter prefix)
     ("/api/analyze", 10, 60),
     ("/api/qomn", 10, 60),
+    ("/api/parse-dwg", 5, 60),  # DWG parsing is CPU+subprocess intensive
+    ("/api/facp", 15, 60),  # FACP selection/compliance (less compute-intensive than QOMN)
 ]
 
 _DEFAULT_RATE_LIMIT = (120, 60)
@@ -410,21 +442,57 @@ def _build_csp() -> str:
     connections (APIs, WebSockets). Without it, only 'self' is allowed.
     In development, localhost defaults are provided.
 
-    M-1 FIX: 'unsafe-eval' is only included when CSP_UNSAFE_EVAL=true
-    (default: true for backward compatibility with three.js/recharts).
-    In production, CSP_UNSAFE_EVAL should be set to 'false' and the
-    frontend should use nonce-based CSP instead.
+    M-1 FIX (original): 'unsafe-eval' is only included when CSP_UNSAFE_EVAL=true.
+    Original default was "true" (always include) for backward compatibility
+    with three.js / recharts which historically required runtime code generation.
+
+    V119 FIX (Finding #4): The CSP_UNSAFE_EVAL default is now ENVIRONMENT-AWARE
+    rather than blanket-"true". Rationale per agent.md Priority #1 (Safety) +
+    Anti-Deception Directive:
+      - Production environments default to "false" (secure-by-default).
+        Operators who genuinely need it (legacy frontend builds, three.js
+        without WASM, etc.) must explicitly opt-in via CSP_UNSAFE_EVAL=true
+        and accept the documented XSS amplification risk.
+      - Development environments default to "true" preserving DX (hot-reload,
+        Vite/HMR which uses eval in dev builds), without operator action.
+
+    Modern recharts (>=2.x) and three.js (>=0.150) work WITHOUT 'unsafe-eval'
+    in production builds. Verified for this codebase:
+      - frontend/package.json declares recharts ^2.15.4 and three ^0.160.0
+        — both versions support no-unsafe-eval production builds.
+      - No `new Function(...)` or `eval(...)` calls exist in frontend/src/.
+
+    When unsafe-eval IS enabled in production, this function logs at ERROR
+    level (escalated from WARNING) so the misconfiguration cannot be hidden
+    in log noise — surfacing the engineering risk per Anti-Deception
+    Directive ("hidden failure modes must be surfaced").
     """
     env = os.getenv("FIREAI_ENV", "production")
 
-    # M-1 FIX: 'unsafe-eval' is configurable and logged as security risk
-    allow_unsafe_eval = os.getenv("CSP_UNSAFE_EVAL", "true").lower() in ("true", "1", "yes")
+    # V119 FIX: Environment-aware default. Production = secure-by-default
+    # (no unsafe-eval); development = developer-convenience (eval allowed
+    # for Vite/HMR). Operators may override either default explicitly.
+    _csp_unsafe_eval_env = os.getenv("CSP_UNSAFE_EVAL")
+    if _csp_unsafe_eval_env is None:
+        # No explicit setting — pick safe default per environment
+        allow_unsafe_eval = (env == "development")
+    else:
+        allow_unsafe_eval = _csp_unsafe_eval_env.lower() in ("true", "1", "yes")
+
     if allow_unsafe_eval:
         script_src = "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
         if env != "development":
-            logger.warning(
-                "CSP includes 'unsafe-eval' in production — this weakens XSS protection. "
-                "Set CSP_UNSAFE_EVAL=false and implement nonce-based CSP for production."
+            # V119: Escalated from WARNING → ERROR. A misconfigured production
+            # CSP weakens XSS protection on a safety-critical UI; this must
+            # be visible in any reasonable log aggregation/alerting setup.
+            logger.error(
+                "SECURITY: CSP includes 'unsafe-eval' in production "
+                "(CSP_UNSAFE_EVAL=%s). This weakens XSS protection on a "
+                "safety-critical fire alarm UI. Recommended: unset "
+                "CSP_UNSAFE_EVAL (secure default applies) or set to 'false', "
+                "and migrate to nonce-based CSP for any frontend code that "
+                "genuinely requires runtime code generation.",
+                _csp_unsafe_eval_env,
             )
     else:
         script_src = "script-src 'self' 'unsafe-inline'; "
@@ -498,6 +566,12 @@ class SecurityHeadersMiddleware:
                 headers.append([b"permissions-policy", b"camera=(), microphone=(), geolocation=()"])
                 # Content Security Policy — restricts resource loading
                 headers.append([b"content-security-policy", csp.encode("utf-8")])
+                # V129 FIX: HSTS header — enforce HTTPS in all environments.
+                # Even in development, including HSTS prevents accidental HTTP
+                # usage. Max-age=31536000 = 1 year. includeSubDomains prevents
+                # HTTP on any subdomain. The browser will internally redirect
+                # HTTP to HTTPS after seeing this header once.
+                headers.append([b"strict-transport-security", b"max-age=31536000; includeSubDomains"])
                 message = {**message, "headers": headers}
             await send(message)
 
@@ -715,14 +789,11 @@ async def generic_exception_handler(request: Request, exc: Exception):
     )
     is_dev = os.getenv("FIREAI_ENV") == "development"
     error_detail = f"{type(exc).__name__}: {exc}" if is_dev else "Internal server error"
+    from backend.response import error as api_error_response
+    resp = api_error_response(error_detail)
+    resp["status_code"] = 500
     return Response(
-        content=json.dumps(
-            {
-                "success": False,
-                "error": error_detail,
-                "status_code": 500,
-            }
-        ),
+        content=json.dumps(resp),
         status_code=500,
         media_type="application/json",
     )
@@ -734,6 +805,7 @@ from backend.routers import (
     projects,
     devices,
     connections,
+    dwg,
     reports,
     exports,
     sync,
@@ -742,9 +814,12 @@ from backend.routers import (
     conflicts,
     connections_v2,
     environment,
-    workflow,
-    memory,
+    facp,
+    qomn,
+    monitor,
 )
+
+# Optional routers: already imported before lifespan() above
 
 # Health check at /api/health
 app.include_router(health.router, prefix="/api")
@@ -779,11 +854,25 @@ app.include_router(connections_v2.router)
 # Environmental data at /api/environment (weather, geocoding, regulatory)
 app.include_router(environment.router, prefix="/api")
 
-# Workflow engine at /api/workflow (LangGraph State Machine)
-app.include_router(workflow.router, prefix="/api")
+# Workflow engine at /api/workflow (optional — requires langgraph)
+if WORKFLOW_ROUTER_AVAILABLE:
+    app.include_router(workflow.router, prefix="/api")
 
-# Memory layer at /api/memory (Mem0-based long-term memory)
-app.include_router(memory.router, prefix="/api")
+# Memory layer at /api/memory (optional — requires mem0 + qdrant-client)
+if MEMORY_ROUTER_AVAILABLE:
+    app.include_router(memory.router, prefix="/api")
+
+# FACP selection & compliance at /api/facp (NFPA 72 SS10.6.10, UL 864)
+app.include_router(facp.router, prefix="/api")
+
+# QOMN engineering kernel at /api/qomn (NFPA 72, NEC 2023)
+app.include_router(qomn.router, prefix="/api")
+
+# DWG/DXF parsing at /api/parse-dwg
+app.include_router(dwg.router, prefix="/api")
+
+# Monitor dashboard at /api/monitor
+app.include_router(monitor.router)
 
 # WebSocket at /ws
 app.include_router(sync.ws_router)

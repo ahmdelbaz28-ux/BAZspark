@@ -58,7 +58,6 @@ Reference: agent.md Rules 1-21, Priority Hierarchy, VERIFICATION GATES
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 from datetime import datetime, timezone

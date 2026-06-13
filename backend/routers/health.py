@@ -13,12 +13,15 @@ health endpoint misleads deployment probes and operators.
 
 from __future__ import annotations
 
+import logging
 import time
 
 from fastapi import APIRouter
 
 from backend.database import get_db
 from backend.contract import validate_health
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["health"])
 
@@ -69,16 +72,14 @@ async def health_check():
     # Validate contract — logs CRITICAL on violation but does not block response.
     # A failing health endpoint must still return data so operators can diagnose.
     validated = validate_health(health_data)
-    return {
-        "success": True,
-        "data": validated,
-    }
+    from backend.response import success
+    return success(validated)
 
 
-@router.get("/reports/statistics")
-async def get_statistics():
+@router.get("/health/statistics")
+async def get_health_statistics():
     """
-    Database statistics endpoint.
+    Health statistics endpoint.
 
     Provides counts of projects, devices, and connections across all projects.
     Also includes UDM element counts when core modules are available.
@@ -115,40 +116,45 @@ async def get_statistics():
         except Exception:
             pass  # UDM not available — counts remain 0
 
-        return {
-            "success": True,
-            "data": {
-                # Combined: System A (devices) + System B (UDM elements)
-                "total_elements": total_devices + udm_total_elements,
-                "deleted_elements": udm_deleted_elements,
-                "active_elements": total_devices + udm_active_elements,
-                "total_projects": total_projects,
-                "active_projects": active_projects,
-                "total_connections": total_connections + udm_total_connections_udm,
-                "total_conflicts": udm_total_conflicts,
-                "unresolved_conflicts": udm_unresolved_conflicts,
-                "pending_autocad_to_revit": 0,
-                "pending_revit_to_autocad": 0,
-                "database_version": 1,
-                "last_sync": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            },
-        }
+        from backend.response import success
+        return success({
+            "total_elements": total_devices + udm_total_elements,
+            "deleted_elements": udm_deleted_elements,
+            "active_elements": total_devices + udm_active_elements,
+            "total_projects": total_projects,
+            "active_projects": active_projects,
+            "total_connections": total_connections + udm_total_connections_udm,
+            "total_conflicts": udm_total_conflicts,
+            "unresolved_conflicts": udm_unresolved_conflicts,
+            "pending_autocad_to_revit": 0,
+            "pending_revit_to_autocad": 0,
+            "database_version": 1,
+            "last_sync": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        })
     except Exception as e:
-        return {
-            "success": False,
-            "message": str(e),
-            "data": {
-                "total_elements": 0,
-                "deleted_elements": 0,
-                "active_elements": 0,
-                "total_projects": 0,
-                "active_projects": 0,
-                "total_connections": 0,
-                "total_conflicts": 0,
-                "unresolved_conflicts": 0,
-                "pending_autocad_to_revit": 0,
-                "pending_revit_to_autocad": 0,
-                "database_version": 0,
-                "last_sync": None,
-            },
-        }
+        # H-3 FIX: Never expose str(e) to the client — Python exceptions can
+        # include file paths, DB connection strings, and internal variable names.
+        # In a fire protection system, this information could help attackers.
+        logger.error("Statistics endpoint error: %s", e, exc_info=True)
+        from backend.response import error
+        return error("Statistics unavailable — check server logs", {
+            "total_elements": 0,
+            "deleted_elements": 0,
+            "active_elements": 0,
+            "total_projects": 0,
+            "active_projects": 0,
+            "total_connections": 0,
+            "total_conflicts": 0,
+            "unresolved_conflicts": 0,
+            "pending_autocad_to_revit": 0,
+            "pending_revit_to_autocad": 0,
+            "database_version": 0,
+            "last_sync": None,
+        })
+
+
+# Keep legacy /reports/statistics path working (frontwards-compat)
+@router.get("/reports/statistics")
+async def get_statistics():
+    """Legacy alias for /health/statistics."""
+    return await get_health_statistics()

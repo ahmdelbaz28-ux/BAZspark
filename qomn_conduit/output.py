@@ -22,7 +22,10 @@ import math
 from typing import Any, Dict, List
 
 from qomn_conduit.types import (
-    Point3D, ConduitRun, ConduitSegment, ConduitType, FittingType, PlacedFitting,
+    ConduitRun,
+    ConduitType,
+    FittingType,
+    Point3D,
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -253,7 +256,7 @@ def generate_schedules(run: ConduitRun) -> Dict[str, Any]:
 
 def _build_summary(run: ConduitRun) -> Dict[str, Any]:
     """Build summary statistics for a ConduitRun."""
-    elbow_count   = sum(1 for f in run.fittings if f.fitting_type == FittingType.ELBOW_90)
+    elbow_count   = sum(1 for f in run.fittings if f.fitting_type in (FittingType.ELBOW_90, FittingType.ELBOW_45))
     coupling_count = sum(1 for f in run.fittings if f.fitting_type == FittingType.COUPLING)
     pullbox_count  = sum(1 for f in run.fittings if f.fitting_type == FittingType.PULL_BOX)
     total_weight   = sum(f.weight_kg for f in run.fittings)

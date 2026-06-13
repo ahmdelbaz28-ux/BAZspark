@@ -11,6 +11,7 @@ Features:
 Supported formats: JPEG, PNG, BMP, TIFF, GIF, WebP, HEIC
 """
 
+import os
 import cv2
 import numpy as np
 import logging
@@ -124,28 +125,46 @@ class ImageParser:
     def parse(self, image_path: str) -> ImageParseResult:
         """
         Parse image to rooms.
-        
+
         Args:
-            image_path: Path to image file
-            
+            image_path: Path to image file. MUST be under
+                FIREAI_ALLOWED_UPLOAD_DIRS and have a supported extension
+                (V124 security hardening).
+
         Returns:
             ImageParseResult with detected rooms
         """
+        # V126: Path security + file-size cap
+        from parsers._path_security import (
+            UnsafePathError,
+            validate_input_path,
+            validate_file_size,
+        )
+        _ALLOWED_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif", ".webp"})
+        _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_IMAGE_MAX_FILE_SIZE_BYTES", 50 * 1024 * 1024))  # 50 MB default
+        try:
+            safe_path = validate_input_path(
+                image_path,
+                allowed_extensions=_ALLOWED_EXTENSIONS,
+                parser_name="ImageParser",
+            )
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_MAX_FILE_SIZE_BYTES,
+                parser_name="ImageParser",
+            )
+        except FileNotFoundError as e:
+            return ImageParseResult(source_file=image_path, success=False, errors=[str(e)])
+        except UnsafePathError as e:
+            return ImageParseResult(source_file=image_path, success=False, errors=[f"SECURITY: {e}"])
+
+        image_path = str(safe_path)
+        ext = safe_path.suffix.lower()
         result = ImageParseResult(source_file=image_path, success=False)
-        
-        # Verify file
-        if not Path(image_path).exists():
-            result.errors.append(f"File not found: {image_path}")
-            return result
-            
-        ext = Path(image_path).suffix.lower()
-        if ext not in self.SUPPORTED_FORMATS:
-            result.errors.append(f"Unsupported format: {ext}")
-            return result
-            
+
         try:
             # Load image
-            img = self._load_image(image_path)
+            img = self._load_image(str(safe_path))
             if img is None:
                 result.errors.append("Failed to load image")
                 return result

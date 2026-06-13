@@ -558,7 +558,7 @@ class DeltaCache:
             "cache_entries": self._cache.size,
         }
 
-        return results, stats
+        return results, stats  # type: ignore[return-value]
 
     def persist(self) -> None:
         """Persist cache to SQLite database (legacy feature).
@@ -568,6 +568,7 @@ class DeltaCache:
         if not self._db_path:
             return
 
+        conn = None
         try:
             conn = sqlite3.connect(self._db_path)
             cursor = conn.cursor()
@@ -620,16 +621,13 @@ class DeltaCache:
                     )
 
             conn.commit()
-            conn.close()
             logger.info("DeltaCache: Persisted to %s", self._db_path)
 
         except Exception as e:
             logger.warning("DeltaCache: Failed to persist to %s: %s", self._db_path, e)
-
-    @property
-    def stats(self) -> Dict[str, int]:
-        """Cache statistics (legacy property)."""
-        return dict(self._legacy_stats)
+        finally:
+            if conn is not None:
+                conn.close()
 
     @property
     def size(self) -> int:
@@ -696,6 +694,7 @@ class DeltaCache:
         if not self._db_path or not os.path.exists(self._db_path):
             return
 
+        conn = None
         try:
             conn = sqlite3.connect(self._db_path)
             cursor = conn.cursor()
@@ -711,7 +710,6 @@ class DeltaCache:
             )
 
             rows = cursor.fetchall()
-            conn.close()
 
             for row in rows:
                 (room_id, geo_hash, algo_ver, ceiling_h, det_type, result_json, ts, hit_count) = row
@@ -740,3 +738,6 @@ class DeltaCache:
 
         except Exception as e:
             logger.warning("DeltaCache: Failed to load from %s: %s", self._db_path, e)
+        finally:
+            if conn is not None:
+                conn.close()

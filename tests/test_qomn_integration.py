@@ -115,10 +115,13 @@ class TestQOMNKernelLayer2Computation:
     """Layer 2 — Computation Engine (IEEE-754 deterministic)."""
 
     def test_smoke_spacing_h3m_golden(self, kernel):
-        """GOLDEN TEST: h=3.048m (10ft) → S=9.144m (30ft). [NFPA 72 Table 17.6.3.1]"""
-        r = kernel.smoke_detector_spacing(3.048)
-        assert abs(r["listed_spacing_m"] - 9.144) < 1e-3, \
-            f"Expected 9.144m, got {r['listed_spacing_m']}"
+        """V127 GOLDEN TEST: h=3.0m → S=9.10m (30ft per NFPA 72 §17.7.3.2.3.1).
+        V127 corrected: was 9.144m (30ft exact ft→m conversion) but NFPA 72-2022
+        §17.7.3.2.3.1 verbatim states "30 ft (9.1 m)", matching the canonical
+        fireai/constants/__init__.py:SMOKE_MAX_SPACING_M = 9.10."""
+        r = kernel.smoke_detector_spacing(3.0)
+        assert abs(r["listed_spacing_m"] - 9.10) < 1e-3, \
+            f"Expected 9.10m per NFPA 72 §17.7.3.2.3.1, got {r['listed_spacing_m']}"
 
     def test_smoke_coverage_radius_factor(self, kernel):
         """R = 0.7 × S per NFPA 72 §17.7.4.2.3.1."""
@@ -127,12 +130,12 @@ class TestQOMNKernelLayer2Computation:
         R = r["coverage_radius_m"]
         assert abs(R - 0.7 * S) < 1e-4, f"R={R} ≠ 0.7×S={0.7*S}"
 
-    def test_smoke_spacing_decreases_with_height(self, kernel):
-        """Higher ceilings require tighter detector spacing (more detectors)."""
+    def test_smoke_spacing_flat_at_all_heights(self, kernel):
+        """V130 FIX: Spacing is FLAT 9.1m at ALL heights per §17.7.3.2.3."""
         r_low  = kernel.smoke_detector_spacing(3.0)
         r_high = kernel.smoke_detector_spacing(9.0)
-        assert r_low["listed_spacing_m"] > r_high["listed_spacing_m"], \
-            "Spacing must decrease as ceiling increases"
+        assert r_low["listed_spacing_m"] == r_high["listed_spacing_m"], \
+            "V130: Spacing must be flat 9.1m at ALL heights per §17.7.3.2.3"
 
     def test_battery_golden(self, kernel):
         """GOLDEN TEST: Battery formula per NFPA 72 §10.6.7.2.1."""
@@ -436,24 +439,21 @@ class TestGoldenOutputs:
     """Known inputs → known outputs. Any change = regression."""
 
     def test_golden_smoke_h10ft(self, kernel):
-        """h=3.048m (10ft) → S=9.144m (30ft) per NFPA 72 Table 17.6.3.1."""
+        """V130 FIX: h=3.048m (10ft) → S=9.10m FLAT per §17.7.3.2.3.
+        Previous versions used height-reduced spacing (8.70m), but NFPA 72
+        §17.7.3.2.3 requires FLAT 30ft (9.1m) spacing for smoke detectors
+        at ALL ceiling heights."""
         r = kernel.smoke_detector_spacing(3.048)
-        assert abs(r["listed_spacing_m"] - 9.144) < 1e-3
+        assert abs(r["listed_spacing_m"] - 9.10) < 1e-3
 
     def test_golden_smoke_h15ft(self, kernel):
-        """h=4.572m (15ft): Table=7.620m, adjusted by §17.7.3.2.3: 7.620×0.95=7.239m.
-
-        Height adjustment §17.7.3.2.3: reduce 1% per foot above 10ft.
-        4.572m = 15ft → 5 feet above 10ft → factor = 1 - 0.05 = 0.95
-        Listed S = 7.620m × 0.95 = 7.239m  (correct after adjustment)
-        """
+        """V130 FIX: h=4.572m (15ft) → S=9.10m FLAT per §17.7.3.2.3.
+        Previous versions used height-reduced spacing (8.20m), but NFPA 72
+        §17.7.3.2.3 requires FLAT 30ft (9.1m) spacing for smoke detectors
+        at ALL ceiling heights."""
         r = kernel.smoke_detector_spacing(4.572)
-        # Table value before height adjustment
-        assert r["table_row_used"].startswith("h≤4.572m")
-        # Value AFTER §17.7.3.2.3 height adjustment = 7.620 * 0.95 = 7.239m
-        expected_adjusted = 7.620 * (1.0 - 0.01 * 5.0)   # 5 feet above 10ft
-        assert abs(r["listed_spacing_m"] - expected_adjusted) < 1e-3, \
-            f"Expected {expected_adjusted:.4f}m after §17.7.3.2.3 adjustment, got {r['listed_spacing_m']}"
+        assert abs(r["listed_spacing_m"] - 9.10) < 1e-3, \
+            f"Expected 9.10m flat per §17.7.3.2.3, got {r['listed_spacing_m']}"
 
     def test_golden_battery_standard(self, kernel):
         """Battery: 0.5A×24h + 3.0A×5min / 0.80 × 1.25."""

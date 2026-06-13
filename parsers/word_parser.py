@@ -9,6 +9,7 @@ Extracts:
     - Special requirements/notes
 """
 
+import os
 import re
 import logging
 from pathlib import Path
@@ -86,28 +87,45 @@ class WordParser:
     def parse(self, file_path: str) -> WordParseResult:
         """
         Parse Word document.
-        
+
         Args:
-            file_path: Path to .docx file
-            
+            file_path: Path to .docx file. MUST be under
+                FIREAI_ALLOWED_UPLOAD_DIRS (V124 security hardening).
+
         Returns:
             WordParseResult with extracted info
         """
+        # V126: Path security + file-size cap
+        from parsers._path_security import (
+            UnsafePathError,
+            validate_input_path,
+            validate_file_size,
+        )
+        _ALLOWED_EXTENSIONS = frozenset({".docx", ".doc"})
+        _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_WORD_MAX_FILE_SIZE_BYTES", 25 * 1024 * 1024))  # 25 MB default
+        try:
+            safe_path = validate_input_path(
+                file_path,
+                allowed_extensions=_ALLOWED_EXTENSIONS,
+                parser_name="WordParser",
+            )
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_MAX_FILE_SIZE_BYTES,
+                parser_name="WordParser",
+            )
+        except FileNotFoundError as e:
+            return WordParseResult(source_file=file_path, success=False, errors=[str(e)])
+        except UnsafePathError as e:
+            return WordParseResult(source_file=file_path, success=False, errors=[f"SECURITY: {e}"])
+
+        file_path = str(safe_path)
         result = WordParseResult(source_file=file_path, success=False)
-        
-        # Verify file
-        if not Path(file_path).exists():
-            result.errors.append(f"File not found: {file_path}")
-            return result
-            
-        if not file_path.lower().endswith('.docx'):
-            result.errors.append("Only .docx files supported")
-            return result
-            
+
         try:
             from docx import Document
             
-            doc = Document(file_path)
+            doc = Document(str(safe_path))
             
             # Extract from all paragraphs
             all_text = '\n'.join(p.text for p in doc.paragraphs)

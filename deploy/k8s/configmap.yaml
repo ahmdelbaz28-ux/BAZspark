@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fireai-config
+  namespace: fireai
+  labels:
+    app.kubernetes.io/name: fireai
+    app.kubernetes.io/part-of: fireai
+data:
+  FIREAI_ENV: "production"
+  LOG_LEVEL: "WARNING"
+  FIREAI_MEMORY_LLM_PROVIDER: "gemini"
+  FIREAI_MEMORY_LLM_MODEL: "gemini-2.0-flash"
+  DATABASE_URL: "postgresql+asyncpg://fireai:$(DB_PASSWORD)@fireai-db:5432/fireai"
+  REDIS_URL: "redis://:$(REDIS_PASSWORD)@fireai-redis:6379/0"
+  WORKER_MODE: "default"
+  API_HOST: "0.0.0.0"
+  API_PORT: "8000"
+  API_WORKERS: "4"
+  CORS_ORIGINS: "https://fireai.example.com"
+  DB_HOST: "fireai-db"
+  DB_PORT: "5432"
+  DB_NAME: "fireai"
+  DB_USER: "fireai"
+  REDIS_HOST: "fireai-redis"
+  REDIS_PORT: "6379"
+  TZ: "UTC"

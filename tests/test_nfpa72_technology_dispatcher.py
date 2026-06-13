@@ -63,18 +63,12 @@ class TestConstants:
         """NFPA 72 Table 17.6.3.1.1 has 9 height/spacing pairs."""
         assert len(_NFPA72_SMOKE_SPACING_TABLE) == 9
 
-    def test_smoke_spacing_table_decreasing(self):
-        """Spacing must decrease with increasing ceiling height."""
-        spacings = [s for _, s in _NFPA72_SMOKE_SPACING_TABLE]
-        for i in range(len(spacings) - 1):
-            assert spacings[i] >= spacings[i + 1], (
-                f"Spacing at index {i} ({spacings[i]}) should be >= "
-                f"spacing at index {i+1} ({spacings[i+1]})"
+    def test_smoke_spacing_table_flat_spacing(self):
+        """V130 FIX: Smoke spacing table has flat 9.1m at ALL heights per §17.7.3.2.3."""
+        for _, spacing in _NFPA72_SMOKE_SPACING_TABLE:
+            assert spacing == 9.10, (
+                f"Smoke spacing must be 9.1m (flat) per §17.7.3.2.3, got {spacing}m"
             )
-
-    def test_lowest_spacing_at_max_height(self):
-        """Lowest spacing must be at maximum ceiling height (12.2m)."""
-        assert _NFPA72_SMOKE_SPACING_TABLE[-1] == (12.2, 5.60)
 
     def test_standard_spacing_at_3m(self):
         """Standard 30ft (9.1m) spacing at h ≤ 3.0m."""
@@ -150,25 +144,25 @@ class TestSelectTechnology:
         assert d.spacing_m == pytest.approx(9.10, abs=0.01)
         assert d.ridge_zone_required is False
 
-    def test_medium_ceiling_point_smoke_reduced_spacing(self):
-        """h=6.1m → POINT_SMOKE with reduced spacing (7.3m)."""
+    def test_medium_ceiling_point_smoke_flat_spacing(self):
+        """V130 FIX: h=6.1m → POINT_SMOKE with FLAT 9.1m spacing per §17.7.3.2.3."""
         d = EliteTechnologyDispatcher.select_technology(6.1)
         assert d.technology == DetectorTechnology.POINT_SMOKE
-        assert d.spacing_m == pytest.approx(7.30, abs=0.01)
+        assert d.spacing_m == pytest.approx(9.10, abs=0.01)
 
     def test_high_ceiling_within_table_point_smoke(self):
-        """h=9.2m → POINT_SMOKE with reduced spacing + economic warning."""
+        """V130 FIX: h=9.2m → POINT_SMOKE with FLAT 9.1m spacing + stratification advisory."""
         d = EliteTechnologyDispatcher.select_technology(9.2)
         assert d.technology == DetectorTechnology.POINT_SMOKE
-        # Spacing at 9.2m from table: 6.4m
         assert d.spacing_m > 0
-        assert any("ECONOMIC" in w for w in d.warnings)
+        # V130: Changed from ECONOMIC_WARNING to STRATIFICATION_ADVISORY
+        assert any("STRATIFICATION" in w or "ECONOMIC" in w for w in d.warnings)
 
     def test_max_point_height_point_smoke(self):
-        """h=12.2m (max) → POINT_SMOKE with 5.6m spacing."""
+        """V130 FIX: h=12.2m (max) → POINT_SMOKE with FLAT 9.1m spacing."""
         d = EliteTechnologyDispatcher.select_technology(12.2)
         assert d.technology == DetectorTechnology.POINT_SMOKE
-        assert d.spacing_m == pytest.approx(5.60, abs=0.01)
+        assert d.spacing_m == pytest.approx(9.10, abs=0.01)
 
     def test_just_above_point_max_beam_smoke(self):
         """h=12.3m (>12.2m) → BEAM_SMOKE."""
@@ -227,7 +221,8 @@ class TestSelectTechnology:
     def test_nfpa_references_in_result(self):
         d = EliteTechnologyDispatcher.select_technology(3.0)
         assert len(d.nfpa_references) >= 1
-        assert any("Table 17.6.3.1.1" in ref for ref in d.nfpa_references)
+        # V130: Now cites §17.7.3.2.3 (flat spacing) instead of Table 17.6.3.1.1
+        assert any("17.7.3.2.3" in ref or "Table 17.6.3.1.1" in ref for ref in d.nfpa_references)
 
     def test_beam_nfpa_references(self):
         d = EliteTechnologyDispatcher.select_technology(15.0)
@@ -249,19 +244,19 @@ class TestGetSmokeSpacing:
         assert spacing == pytest.approx(9.10, abs=0.01)
 
     def test_mid_range(self):
+        """V130 FIX: Flat 9.1m spacing at all heights per §17.7.3.2.3."""
         spacing = EliteTechnologyDispatcher._get_smoke_spacing(5.0)
-        # 5.0 falls between 4.6m (8.2m spacing) and 5.5m (7.7m spacing)
-        # First table entry where height <= value: 5.5 → 7.7
-        assert spacing == pytest.approx(7.70, abs=0.01)
+        assert spacing == pytest.approx(9.10, abs=0.01)
 
     def test_max_table_height(self):
+        """V130 FIX: Flat 9.1m spacing at max table height per §17.7.3.2.3."""
         spacing = EliteTechnologyDispatcher._get_smoke_spacing(12.2)
-        assert spacing == pytest.approx(5.60, abs=0.01)
+        assert spacing == pytest.approx(9.10, abs=0.01)
 
     def test_beyond_table_returns_last(self):
-        """Beyond NFPA table → most conservative value."""
+        """V130 FIX: Beyond NFPA table → still 9.1m (flat per §17.7.3.2.3)."""
         spacing = EliteTechnologyDispatcher._get_smoke_spacing(15.0)
-        assert spacing == pytest.approx(5.60, abs=0.01)
+        assert spacing == pytest.approx(9.10, abs=0.01)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -350,14 +345,14 @@ class TestEdgeCases:
         assert d.technology == DetectorTechnology.BEAM_SMOKE
 
     def test_economic_warning_high_ceiling(self):
-        """Economic warning for h > 9.1m with point detectors."""
+        """V130: Stratification advisory for h > 9.1m with point detectors."""
         d = EliteTechnologyDispatcher.select_technology(10.0)
-        assert any("ECONOMIC" in w for w in d.warnings)
+        assert any("STRATIFICATION" in w or "ECONOMIC" in w for w in d.warnings)
 
-    def test_no_economic_warning_low_ceiling(self):
-        """No economic warning for h ≤ 9.1m."""
+    def test_no_stratification_warning_low_ceiling(self):
+        """No stratification advisory for h ≤ 9.1m."""
         d = EliteTechnologyDispatcher.select_technology(9.0)
-        assert not any("ECONOMIC" in w for w in d.warnings)
+        assert not any("STRATIFICATION" in w or "ECONOMIC" in w for w in d.warnings)
 
 
 if __name__ == "__main__":

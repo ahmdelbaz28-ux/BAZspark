@@ -1,0 +1,246 @@
+name: FireAI Deploy Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+env:
+  REGISTRY: ghcr.io
+  REGISTRY_USERNAME: ${{ github.actor }}
+  REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+  API_IMAGE: ghcr.io/${{ github.repository }}/api
+  WORKER_IMAGE: ghcr.io/${{ github.repository }}/worker
+  NGINX_IMAGE: ghcr.io/${{ github.repository }}/nginx
+  VERSION: ${{ github.sha }}
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test & Validate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          pip install ruff bandit mypy pytest pytest-cov pytest-asyncio hypothesis
+
+      - name: Lint
+        run: ruff check fireai/ backend/ --exit-non-zero-on-fix
+
+      - name: Type check
+        run: mypy fireai/ backend/ --ignore-missing-imports --no-strict-optional
+
+      - name: Security scan
+        run: bandit -r fireai/ backend/ -f json -o reports/bandit.json || true
+
+      - name: Unit tests
+        run: |
+          pytest tests/ -v \
+            --tb=short \
+            --cov=fireai --cov=backend \
+            --cov-report=term-missing \
+            --cov-fail-under=50 \
+            -x
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+  build:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/v'))
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        image:
+          - dockerfile: deploy/docker/Dockerfile.api
+            target: api
+          - dockerfile: deploy/docker/Dockerfile.worker
+            target: worker
+          - dockerfile: deploy/docker/Dockerfile.nginx
+            target: nginx
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image.target }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix={{branch}}-,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.image.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://staging.fireai.example.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Deploy Helm chart
+        run: |
+          helm upgrade --install fireai deploy/helm/fireai \
+            --namespace fireai \
+            --create-namespace \
+            --set images.api.tag=${{ env.VERSION }} \
+            --set images.worker.tag=${{ env.VERSION }} \
+            --set images.nginx.tag=${{ env.VERSION }} \
+            --set ingress.hosts[0].host=staging.fireai.example.com \
+            --set secrets.fireai-secrets.stringData.FIREAI_API_KEY=${{ secrets.FIREAI_API_KEY }} \
+            --set secrets.fireai-secrets.stringData.FIREAI_EVIDENCE_HMAC_KEY=${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }} \
+            --set secrets.fireai-secrets.stringData.DB_PASSWORD=${{ secrets.DB_PASSWORD_STAGING }} \
+            --set secrets.fireai-secrets.stringData.REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD_STAGING }} \
+            --set secrets.fireai-secrets.stringData.GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
+            --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }} \
+            --set secrets.fireai-secrets.stringData.JWT_SECRET=${{ secrets.JWT_SECRET }} \
+            --wait --timeout 300s
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/fireai-api -n fireai --timeout=180s
+          kubectl rollout status deployment/fireai-worker -n fireai --timeout=180s
+          echo "Staging deployment complete."
+
+      - name: Smoke test
+        run: |
+          echo "Waiting for service to be ready..."
+          sleep 30
+          kubectl run smoke-test --image=curlimages/curl:latest \
+            -n fireai --rm --restart=Never -- \
+            curl -sf http://fireai-api.fireai.svc.cluster.local/api/health
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://fireai.example.com
+    concurrency: production-deploy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Deploy Helm chart
+        run: |
+          helm upgrade --install fireai deploy/helm/fireai \
+            --namespace fireai \
+            --create-namespace \
+            --set images.api.tag=${{ env.VERSION }} \
+            --set images.worker.tag=${{ env.VERSION }} \
+            --set images.nginx.tag=${{ env.VERSION }} \
+            --set ingress.hosts[0].host=fireai.example.com \
+            --set replicas.api=3 \
+            --set secrets.fireai-secrets.stringData.FIREAI_API_KEY=${{ secrets.FIREAI_API_KEY }} \
+            --set secrets.fireai-secrets.stringData.FIREAI_EVIDENCE_HMAC_KEY=${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }} \
+            --set secrets.fireai-secrets.stringData.DB_PASSWORD=${{ secrets.DB_PASSWORD_PRODUCTION }} \
+            --set secrets.fireai-secrets.stringData.REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD_PRODUCTION }} \
+            --set secrets.fireai-secrets.stringData.GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
+            --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }} \
+            --set secrets.fireai-secrets.stringData.JWT_SECRET=${{ secrets.JWT_SECRET }} \
+            --wait --timeout=300s
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/fireai-api -n fireai --timeout=180s
+          kubectl rollout status deployment/fireai-worker -n fireai --timeout=180s
+          echo "Production deployment complete."
+
+      - name: Full smoke test
+        run: |
+          kubectl run smoke-test --image=curlimages/curl:latest \
+            -n fireai --rm --restart=Never -- \
+            curl -sf https://fireai.example.com/api/health
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            deploy/docker/Dockerfile.api
+            deploy/docker/Dockerfile.worker
+            deploy/docker/Dockerfile.nginx

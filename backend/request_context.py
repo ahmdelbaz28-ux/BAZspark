@@ -14,7 +14,6 @@ import logging
 import time
 import uuid
 from starlette.types import ASGIApp, Receive, Scope, Send
-from starlette.requests import Request
 
 logger = logging.getLogger(__name__)
 

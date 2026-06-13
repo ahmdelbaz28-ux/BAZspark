@@ -52,11 +52,12 @@ import json
 import logging
 import os
 import sqlite3
+import threading
 from typing import Any, Dict, List, Optional
 
 # Optional ECDSA support - graceful degradation if not installed
 try:
-    from ecdsa import BadSignatureError, NIST256p, SigningKey, VerifyingKey
+    from ecdsa import BadSignatureError, SigningKey, VerifyingKey
 
     HAS_ECDSA = True
 except ImportError:
@@ -123,24 +124,29 @@ def _get_hmac_key() -> str:
             )
         return key
 
+    # -- Production enforcement --------------------------------
+    is_production = (
+        os.environ.get("FIREAI_ENV", "").lower() == "production"
+        or os.environ.get("PRODUCTION", "") == "1"
+        or os.environ.get("ENV", "").lower() == "production"
+    )
+    if is_production:
+        raise SecurityError(
+            "AUDIT_HMAC_KEY is not set in production environment. "
+            "Audit chain HMAC cannot be verified without a stable key. "
+            'Set AUDIT_HMAC_KEY: python -c "import secrets; print(secrets.token_hex(32))"'
+        )
     # -- Development fallback --------------------------------
-    # No AUDIT_HMAC_KEY set. Generate a per-process random key.
-    # This is NOT for production - the warning makes that clear.
     if _DEV_HMAC_KEY is None:
         import secrets as _secrets
-
         _DEV_HMAC_KEY = _secrets.token_hex(32)
-
     if not _DEV_KEY_WARNED:
         _DEV_KEY_WARNED = True
         logger.warning(
-            "\n"
-            "AUDIT_HMAC_KEY not set - using auto-generated dev key.\n"
-            "This is INSECURE for production!\n"
-            "Set AUDIT_HMAC_KEY env var (32+ chars) for production.\n"
-            'Generate: python -c "import secrets; print(secrets.token_hex(32))"'
+            "\n[SECURITY] AUDIT_HMAC_KEY not set — auto-generated dev key in use.\n"
+            "[SECURITY] Set FIREAI_ENV=production to enforce key requirement in prod.\n"
+            '[SECURITY] Generate: python -c "import secrets; print(secrets.token_hex(32))"'
         )
-
     return _DEV_HMAC_KEY
 
 
@@ -161,13 +167,25 @@ _db_initialized = False
 # Persistent connection for :memory: databases (each sqlite3.connect(":memory:")
 # creates a NEW empty database, so we must reuse the same connection)
 _memory_conn: sqlite3.Connection | None = None
+_init_lock: threading.Lock = threading.Lock()  # Guards _db_initialized singleton
 
 
 def _init_database() -> None:
-    """Initialize database with V11 schema (ECDSA signature column)."""
+    """Initialize database with V11 schema (ECDSA signature column).
+
+    Thread-safe: uses _init_lock to prevent double-initialisation under
+    concurrent requests. Without this lock two threads can both see
+    _db_initialized=False and both execute CREATE TABLE, creating a race
+    that corrupts the audit chain on startup.
+    """
     global _db_initialized, _memory_conn
+    # Fast path: already done (no lock needed for reads of a bool)
     if _db_initialized:
         return
+    with _init_lock:
+        # Double-checked locking pattern: re-check inside the lock
+        if _db_initialized:
+            return
     # Ensure parent directory exists (skip for :memory:)
     if DATABASE_PATH != ":memory:":
         db_dir = os.path.dirname(DATABASE_PATH)
@@ -497,7 +515,7 @@ def verify_chain() -> tuple[bool, Optional[Dict[str, Any]]]:
     key = _get_hmac_key()
 
     # Check each event
-    for i, row in enumerate(rows):
+    for _i, row in enumerate(rows):
         # Handle both V10 (8 cols) and V11 (9 cols) rows
         if len(row) >= 9:
             event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature, _ = row[:9]

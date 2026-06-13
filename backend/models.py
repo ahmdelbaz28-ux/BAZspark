@@ -271,7 +271,3 @@ class HealthStatus(BaseModel):
 
 
 # ============================================================================
-# API Response — DELETED: Use backend.schemas.ApiResponse[T] instead.
-# This non-generic version was causing type conflicts with the generic
-# ApiResponse[T] in schemas.py. All routers must import from schemas.py.
-# ============================================================================

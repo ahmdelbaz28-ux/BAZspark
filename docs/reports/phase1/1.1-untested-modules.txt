@@ -1,0 +1,146 @@
+================================================================================
+  FireAI V131 — Phase 1, Task 1.1: Untested / Low-Coverage Modules
+================================================================================
+  Date:        2026-06-13
+  Source:      COVERAGE_REPORT.md (static analysis)
+  Test Suite:  5,886 passed, 0 failures
+================================================================================
+
+CRITICAL: 9 modules below coverage thresholds
+================================================================================
+
+These modules have coverage below their respective targets and require
+immediate attention before production deployment.
+
+
+--- ENGINEERING KERNEL (Target: ≥ 80%) ---
+================================================================================
+
+1. nfpa72_calculations          24%   (240/331 lines uncovered)
+   Path: fireai/core/nfpa72_calculations.py
+   Issue: Core NFPA 72 calculation routines lack unit tests.
+   Risk:  HIGH — Safety-critical calculations may produce incorrect results
+          without test verification. NFPA 72 compliance calculations are the
+          backbone of the platform.
+   Action: Write comprehensive unit tests covering all calculation functions.
+           Prioritize: voltage drop tables, battery sizing formulas, and
+           conductor ampacity derating.
+
+2. floor_analyser               43%   (196/371 lines uncovered)
+   Path: fireai/core/floor_analyser.py
+   Issue: Floor analysis and zone partitioning logic partially tested.
+   Risk:  MEDIUM — Floor analysis drives device placement and zone creation.
+          Untested paths may produce incorrect floor plans.
+   Action: Add tests for multi-floor scenarios, edge cases in room detection,
+           and zone boundary calculations.
+
+3. routing_engine_v10           13%   (559/681 lines uncovered)
+   Path: fireai/core/routing_engine_v10.py
+   Issue: Legacy routing engine largely untested at unit level.
+   Risk:  MEDIUM — Cable routing is critical for circuit design correctness.
+          Untested paths include conduit routing, bend calculations, and
+          fill ratio verification.
+   Action: Create test fixtures for common routing scenarios. Test Class A
+           and Class B routing, pathway survivability verification, and
+           conduit fill calculations per NEC Chapter 9.
+
+4. analysis_pipeline            13%   (240/283 lines uncovered)
+   Path: fireai/core/analysis_pipeline.py
+   Issue: Pipeline orchestration and stage transitions untested.
+   Risk:  MEDIUM — Pipeline coordinates all engineering analysis stages.
+          Untested error handling and stage transitions could cause silent
+          failures in production.
+   Action: Add integration tests for each pipeline stage. Test error
+           recovery, checkpoint/resume, and rollback mechanisms.
+
+
+--- SECURITY MODULES (Target: ≥ 80%) ---
+================================================================================
+
+5. audit_store                  69%   (62/212 lines uncovered)
+   Path: fireai/core/audit_store.py
+   Issue: Audit storage and retrieval paths partially tested.
+   Risk:  HIGH — Audit trail integrity is safety-critical. Untested paths
+          include bulk retrieval, pagination, and HMAC verification on read.
+   Action: Write tests for audit record CRUD, HMAC chain verification,
+           Merkle proof generation, and pagination logic.
+
+
+--- CORE ORCHESTRATION (Target: ≥ 75%) ---
+================================================================================
+
+6. fireai_core                  52%   (127/294 lines uncovered)
+   Path: fireai/core/fireai_core.py
+   Issue: Main core module with initialization and coordination logic.
+   Risk:  MEDIUM — Core initialization and service coordination partially
+          untested. Missing tests for error recovery and graceful degradation.
+   Action: Add tests for startup sequence, service initialization failure
+           modes, and configuration validation.
+
+7. pipeline                     71%   (167/602 lines uncovered)
+   Path: fireai/core/pipeline.py
+   Issue: Main pipeline 71% — close to threshold but still below 75%.
+   Risk:  LOW-MEDIUM — Most critical paths tested. Uncovered code includes
+          error recovery branches and edge case handling.
+   Action: Add 3-5 more test cases targeting error branches and edge cases
+          to push coverage above 75%.
+
+8. monte_carlo_pipeline          23%   (69/96 lines uncovered)
+   Path: fireai/core/monte_carlo_pipeline.py
+   Issue: Monte Carlo simulation pipeline largely untested.
+   Risk:  LOW — Monte Carlo is used for statistical validation, not
+          safety-critical calculations. Low coverage is acceptable if the
+          underlying calculation engines are well-tested.
+   Action: Add basic integration tests for simulation setup, execution,
+          and result aggregation.
+
+9. multi_floor_orchestrator      22%   (416/591 lines uncovered)
+   Path: fireai/core/multi_floor_orchestrator.py
+   Issue: Multi-floor building orchestration largely untested.
+   Risk:  MEDIUM — Multi-floor scenarios involve inter-floor coordination
+          for egress, zone management, and circuit routing. Untested paths
+          may produce incorrect cross-floor analyses.
+   Action: Create test fixtures for 2-3 floor buildings. Test floor
+          synchronization, cross-floor zone assignment, and inter-floor
+          circuit routing.
+
+
+PRIORITY ORDER FOR COVERAGE IMPROVEMENT
+================================================================================
+
+  Priority 1 (Safety-Critical — MUST FIX):
+    → #1  nfpa72_calculations (24%)   — NFPA 72 calculations backbone
+    → #5  audit_store (69%)           — Audit trail integrity
+
+  Priority 2 (High Impact):
+    → #2  floor_analyser (43%)        — Floor analysis drives placement
+    → #3  routing_engine_v10 (13%)    — Cable routing correctness
+    → #9  multi_floor_orchestrator (22%) — Cross-floor coordination
+
+  Priority 3 (Medium Impact):
+    → #4  analysis_pipeline (13%)     — Pipeline error recovery
+    → #6  fireai_core (52%)           — Core initialization
+    → #7  pipeline (71%)              — Close to threshold
+
+  Priority 4 (Low Impact):
+    → #8  monte_carlo_pipeline (23%)  — Statistical validation only
+
+
+SUMMARY
+================================================================================
+
+  Total untested/low-coverage modules:  9
+  Safety-critical (Priority 1):         2
+  High impact (Priority 2):             3
+  Medium impact (Priority 3):           3
+  Low impact (Priority 4):              1
+
+  Estimated effort to reach thresholds:
+    Priority 1: ~40 test functions (2-3 days)
+    Priority 2: ~60 test functions (3-4 days)
+    Priority 3: ~30 test functions (1-2 days)
+    Priority 4: ~10 test functions (0.5 days)
+
+================================================================================
+  End of Report
+================================================================================

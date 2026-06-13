@@ -1,105 +1,195 @@
-# ============================================================
-# FireAI NFPA 72 Rules Engine — .gitignore
-# Safety-critical system: never commit runtime/binary artifacts
-# ============================================================
-
-# Python bytecode — NEVER commit compiled files
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-.Python
+*$py.class
 *.so
-fireai.egg-info/
 
-# Virtual environments
-.venv/
-venv/
-ENV/
-env/
-.python-version
+# C extensions
+*.o
 
-# Test and coverage artifacts
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
 htmlcov/
+.tox/
+.nox/
 .coverage
+.coverage.*
+.cache
+nosetests.xml
 coverage.xml
 *.cover
+*.py,cover
 .hypothesis/
 
-# Build artifacts
-dist/
-build/
-*.egg-info/
-*.egg
-pip-wheel-metadata/
+# Translations
+*.mo
+*.pot
 
-# Node / frontend
-node_modules/
-frontend/dist/
-frontend/build/
-frontend/.cache/
-*.tsbuildinfo
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
 
-# Databases — NEVER commit SQLite or vector DB files
-# These contain runtime state and project data, not source code
-*.db
-*.db-wal
-*.db-shm
-*.sqlite
-*.sqlite3
-data/qdrant*/
-data/mem0*/
-data/checkpoints/
+# Flask stuff:
+instance/
+.webassets-cache
 
-# Environment & secrets — CRITICAL: NEVER commit API keys or credentials
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+.pyenv
+.pyenvrc
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
 .env
-.env.local
-.env.production
-.env.staging
-*.env
-!.env.example
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-# Editor / OS artifacts
-.DS_Store
-Thumbs.db
-.idea/
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre checker
+.pyre/
+
+# IDE
 .vscode/
+.idea/
 *.swp
 *.swo
-*~
-.project
-.classpath
 
-# Runtime data directories
-data/
-uploads/
-checkpoints/
-logs/
-*.log
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# Empty placeholder directories (artifact of git reset operations)
-# NOTE: core/ removed — fireai/core/ is source code, not an artifact
-# NOTE: backend/ REMOVED from gitignore — backend source code MUST be tracked
-repos/
-download/
-fireai/infrastructure/
-
-# Temporary files
-*.tmp
-*.temp
-tmp/
-temp/
-.env
-repos/
-qomn_fire_healing_audit.jsonl
-audit/
-qomn_fire_healing_audit.jsonl
-coverage.json
-reports/
+# Database
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
 fireai_learning.sqlite3
 
-# Local pip dependencies (never commit)
-.pip_deps/
+# Logs
+*.log
+
+# Coverage
+.coverage*
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Secrets
+secrets/
+secret.json
+config/secrets.json
+
+# Testing
+.pytest_cache/
+.hypothesis/
+
+# Reports (generated)
+reports/
+coverage.json
+audit/
+
+# But allow phase reports in docs
+!docs/reports/
+
+# Node.js
+node_modules/
+
+# Electron
+frontend/release/
+frontend/electron/backend/
+frontend/electron/core/
+frontend/electron/fireai/
+frontend/electron/parsers/
+frontend/electron/requirements.txt
+
+# Build artifacts
+frontend/dist/
+
+# Database files
+db/*.db
+db/*.db-shm
+db/*.db-wal
+
+# Audit logs
+*.jsonl
+skills/ppt/scripts/tectonic

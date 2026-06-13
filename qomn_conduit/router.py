@@ -21,12 +21,16 @@ from __future__ import annotations
 
 import heapq
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from qomn_conduit.errors import PhysicsError, RoutingError
 from qomn_conduit.types import (
-    ConduitType, FittingType, Point3D, Result, RoutePath, TradeSize,
+    ConduitType,
+    Point3D,
+    Result,
+    RoutePath,
+    TradeSize,
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -364,10 +368,10 @@ class ConduitRouter:
         # ── Reconstruct path ─────────────────────────────────────────────────
 
         waypoints: List[Point3D] = []
-        node: Optional[_AStarNode] = found
-        while node is not None:
-            waypoints.append(node.point)
-            node = node.parent
+        cur: Optional[_AStarNode] = found
+        while cur is not None:
+            waypoints.append(cur.point)
+            cur = cur.parent
         waypoints.reverse()
 
         # Simplify: merge collinear segments (same direction consecutive)

@@ -33,7 +33,38 @@ import threading
 from typing import Any, Dict, List, NoReturn, Optional
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+# V118: Canonical NEC Table 8 gauge set — MUST stay in sync with
+# fireai/core/qomn_kernel.py:NEC_TABLE8_RESISTANCE_OHM_PER_KM keys.
+# Module-level (NOT class-attr) so Pydantic V2 doesn't treat it as a
+# private model attribute (leading underscore convention).
+_NEC_TABLE8_VALID_AWG: frozenset = frozenset({
+    "18", "16", "14", "12", "10", "8", "6", "4", "2", "1",
+    "1/0", "2/0", "3/0", "4/0",
+})
+
+
+def _normalize_awg_gauge(v: Any) -> str:
+    """Normalize AWG input identically to the kernel; reject if not in NEC Table 8.
+
+    SAFETY: This is the SINGLE point of AWG validation for the HTTP API.
+    A value passing here MUST be accepted by fireai.core.qomn_kernel.
+    A value failing here NEVER reaches the kernel. This prevents the
+    prior split-brain (V58 router regex vs kernel .strip().upper().replace).
+    """
+    if v is None:
+        return "14"  # Field default
+    if not isinstance(v, str):
+        raise ValueError(f"awg_gauge must be a string, got {type(v).__name__}")
+    # Apply EXACTLY the same normalization the kernel uses
+    normalized = v.strip().upper().replace("AWG", "").strip()
+    if normalized not in _NEC_TABLE8_VALID_AWG:
+        raise ValueError(
+            f"awg_gauge '{v}' not in NEC Table 8. Valid (after normalization): "
+            f"{sorted(_NEC_TABLE8_VALID_AWG, key=lambda s: (len(s), s))}"
+        )
+    return normalized
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +74,32 @@ router = APIRouter(tags=["qomn"])
 _kernel = None
 _kernel_lock = threading.Lock()
 
+# ── Cached kernel exception classes ─────────────────────────────────────────
+# V116 FIX: Cache exception classes at module level instead of importing
+# inside _handle_error(). The old code did `from fireai.core.qomn_kernel
+# import PhysicsGuardError, ...` inside the function body. If that import
+# failed for ANY reason (module partially loaded, class renamed, corruption),
+# the ORIGINAL exception was silently replaced by an ImportError — which then
+# propagated as an unhandled HTTP 500 with no useful information.
+# In a fire protection system, masking a real computation error is a
+# SAFETY HAZARD per agent.md Anti-Deception Directive.
+_PhysicsGuardError = None
+_ComputationError = None
+_ValidationError = None
+
+try:
+    from fireai.core.qomn_kernel import PhysicsGuardError as _PGE
+    from fireai.core.qomn_kernel import ComputationError as _CE
+    from fireai.core.qomn_kernel import ValidationError as _VE
+    _PhysicsGuardError = _PGE
+    _ComputationError = _CE
+    _ValidationError = _VE
+except ImportError:
+    # Kernel not available — _get_kernel() will return 503 before any
+    # computation runs. These remain None and _handle_error falls through
+    # to generic error handling (safe degradation).
+    pass
+
 
 def _get_kernel():
     """Lazy-initialize QOMNKernel singleton with thread-safe double-checked locking.
@@ -50,13 +107,43 @@ def _get_kernel():
     V58 FIX (BUG #7): Added threading.Lock for thread safety. Previously,
     two concurrent requests could both see _kernel is None and create
     separate instances, splitting the audit trail.
+
+    SAFETY FIX: If QOMNKernel cannot be imported, raise HTTPException 503
+    instead of allowing ImportError to propagate as HTTP 500.
+    In a safety-critical system, 503 (Service Unavailable) clearly indicates
+    a missing dependency, while 500 (Internal Server Error) could be
+    misinterpreted as a computation error — which would be deceptive per
+    agent.md Anti-Deception Directive.
     """
     global _kernel
     if _kernel is None:
         with _kernel_lock:
             if _kernel is None:  # double-checked locking
-                from fireai.core.qomn_kernel import QOMNKernel
-                _kernel = QOMNKernel()
+                try:
+                    from fireai.core.qomn_kernel import QOMNKernel
+                    _kernel = QOMNKernel()
+                except ImportError as e:
+                    logger.error(
+                        "QOMNKernel import failed: %s. "
+                        "All /api/qomn endpoints will return 503. "
+                        "Ensure fireai.core.qomn_kernel is available in the Python path.",
+                        e,
+                    )
+                    raise HTTPException(
+                        status_code=503,
+                        detail={
+                            "error": "QOMN_SERVICE_UNAVAILABLE",
+                            "detail": (
+                                "The QOMN-FIRE engineering kernel is not available. "
+                                "The fireai.core.qomn_kernel module could not be imported."
+                            ),
+                            "missing_module": "fireai.core.qomn_kernel",
+                            "action": (
+                                "Install the fireai package with the QOMN kernel. "
+                                "Check server logs for detailed import error."
+                            ),
+                        },
+                    )
     return _kernel
 
 
@@ -96,13 +183,36 @@ class VoltageDropRequest(BaseModel):
     # V65 FIX: Validate AWG gauge against NEC Table 8 valid sizes.
     # An invalid gauge could produce incorrect voltage drop — in a fire alarm
     # system, underestimated voltage drop means devices may not operate.
+    #
+    # V118 FIX: The previous regex accepted 6 values (3, 250, 300, 350, 400, 500)
+    # that DO NOT EXIST in NEC_TABLE8_RESISTANCE_OHM_PER_KM (kernel source of
+    # truth). A user submitting awg_gauge="250" would pass router validation
+    # and then hit ValueError in the kernel → opaque HTTP 422 with no helpful
+    # diagnostic. This is FALSE-ADVERTISING in the API surface and violates
+    # agent.md Anti-Deception Directive (the API claims support it cannot
+    # deliver). The regex is now aligned EXACTLY with the kernel's table
+    # keys: 18, 16, 14, 12, 10, 8, 6, 4, 2, 1, 1/0, 2/0, 3/0, 4/0.
+    #
+    # V118 NORMALIZATION: Accept user-friendly variants ("AWG14", "14 ",
+    # "awg 14") via Pydantic validator BEFORE regex check, matching the
+    # kernel's awg_gauge.strip().upper().replace("AWG","").strip() logic.
+    # This eliminates the previous mismatch where router rejected "AWG14"
+    # but kernel accepted it. Single source of truth: NEC_TABLE8_RESISTANCE
+    # keys in fireai/core/qomn_kernel.py.
     awg_gauge:        str   = Field(
         "14",
-        pattern=r"^(18|16|14|12|10|8|6|4|3|2|1|1/0|2/0|3/0|4/0|250|300|350|400|500)$",
-        description="Wire gauge per NEC Table 8 (18, 16, 14, 12, 10, 8, 6, 4, 3, 2, 1, 1/0, 2/0, 3/0, 4/0, 250, 300, 350, 400, 500)"
+        description=(
+            "Wire gauge per NEC Table 8 (NEC 2023 Chapter 9). "
+            "Accepted: 18, 16, 14, 12, 10, 8, 6, 4, 2, 1, 1/0, 2/0, 3/0, 4/0. "
+            "User-friendly variants accepted: 'AWG14', '14', 'awg 14' all → '14'."
+        ),
     )
     supply_voltage_v: float = Field(24.0, gt=0, description="Supply voltage (default 24VDC)")
     max_drop_pct:     float = Field(10.0, gt=0, le=50, description="Max allowable drop %")
+
+    # V118: Field validator delegates to module-level _normalize_awg_gauge
+    # to keep the kernel/router AWG validation in lockstep.
+    _validate_awg = field_validator("awg_gauge", mode="before")(_normalize_awg_gauge)
 
 
 class RoomRequest(BaseModel):
@@ -150,7 +260,6 @@ async def compute_smoke_spacing(req: SmokeSpacingRequest):
     IEEE-754 computation hash for cross-platform verification.
     """
     try:
-        from fireai.core.qomn_kernel import PhysicsGuardError
         kernel = _get_kernel()
         result = kernel.smoke_detector_spacing(req.ceiling_height_m)
         return {"success": True, "data": result}
@@ -231,10 +340,24 @@ async def place_detectors(req: RoomRequest):
     Returns placed devices, coverage %, NFPA violations, and audit hash.
     """
     try:
-        from fireai.core.device_placement import (
-            DetectorPlacementEngine, RoomSpec, CeilingType,
-            DetectorType, OccupancyType, ExitDoor
-        )
+        try:
+            from fireai.core.device_placement import (
+                DetectorPlacementEngine, RoomSpec, CeilingType,
+                DetectorType, OccupancyType, ExitDoor
+            )
+        except ImportError as e:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "QOMN_SERVICE_UNAVAILABLE",
+                    "detail": (
+                        "The device placement engine is not available. "
+                        "The fireai.core.device_placement module could not be imported."
+                    ),
+                    "missing_module": "fireai.core.device_placement",
+                    "action": "Install the fireai package. Check server logs for details.",
+                },
+            )
 
         # Map string enums to Python enums
         ceiling_map = {
@@ -338,7 +461,21 @@ async def place_duct_detector(req: DuctDetectorRequest):
     Number of detectors depends on duct width.
     """
     try:
-        from fireai.core.device_placement import place_duct_detector, DuctDetectorSpec
+        try:
+            from fireai.core.device_placement import place_duct_detector, DuctDetectorSpec
+        except ImportError as e:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "QOMN_SERVICE_UNAVAILABLE",
+                    "detail": (
+                        "The duct detector placement module is not available. "
+                        "The fireai.core.device_placement module could not be imported."
+                    ),
+                    "missing_module": "fireai.core.device_placement",
+                    "action": "Install the fireai package. Check server logs for details.",
+                },
+            )
         spec = DuctDetectorSpec(
             duct_id      = req.duct_id,
             width_m      = req.width_m,
@@ -378,10 +515,21 @@ async def get_physics_guards():
 
     Per QOMN Specification §3 Layer 0.
     """
-    from fireai.core.qomn_kernel import (
-        NFPA72_SMOKE_MAX_SPACING_M, NFPA72_HEAT_MAX_SPACING_M,
-        NFPA72_PULL_STATION_HEIGHT_M, NFPA72_NAC_MIN_CD, NFPA72_NAC_SLEEPING_MIN_CD,
-    )
+    try:
+        from fireai.core.qomn_kernel import (
+            NFPA72_SMOKE_MAX_SPACING_M, NFPA72_HEAT_MAX_SPACING_M,
+            NFPA72_PULL_STATION_HEIGHT_M, NFPA72_NAC_MIN_CD, NFPA72_NAC_SLEEPING_MIN_CD,
+        )
+    except ImportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "QOMN_SERVICE_UNAVAILABLE",
+                "detail": "The QOMN-FIRE engineering kernel constants are not available.",
+                "missing_module": "fireai.core.qomn_kernel",
+                "action": "Install the fireai package. Check server logs for details.",
+            },
+        )
     return {
         "success": True,
         "data": {
@@ -429,6 +577,59 @@ async def get_physics_guards():
     }
 
 
+@router.get("/qomn/constants")
+async def get_qomn_constants():
+    """Return all QOMN-FIRE engineering constants with code references.
+
+    Provides the full set of NFPA 72, NEC, and QOMN specification constants
+    used by the deterministic engineering kernel. Useful for client-side
+    validation and display of engineering parameters.
+    """
+    try:
+        from fireai.core.qomn_kernel import (
+            NFPA72_SMOKE_MAX_SPACING_M, NFPA72_HEAT_MAX_SPACING_M,
+            NFPA72_COVERAGE_RADIUS_FACTOR, NFPA72_PULL_STATION_HEIGHT_M,
+            NFPA72_PULL_STATION_FROM_EXIT_M, NFPA72_WALL_MIN_DISTANCE_M,
+            NFPA72_STANDBY_HOURS, NFPA72_ALARM_MINUTES,
+            NFPA72_BATTERY_SAFETY_FACTOR, NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
+            NFPA72_NAC_MIN_CD, NFPA72_NAC_SLEEPING_MIN_CD,
+            NEC_TABLE8_RESISTANCE_OHM_PER_KM, NEC_AMPACITY_60C,
+        )
+    except ImportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "QOMN_SERVICE_UNAVAILABLE",
+                "detail": "The QOMN-FIRE engineering kernel constants are not available.",
+                "missing_module": "fireai.core.qomn_kernel",
+                "action": "Install the fireai package. Check server logs for details.",
+            },
+        )
+    return {
+        "success": True,
+        "data": {
+            "nfpa72": {
+                "smoke_max_spacing_m": NFPA72_SMOKE_MAX_SPACING_M,
+                "heat_max_spacing_m": NFPA72_HEAT_MAX_SPACING_M,
+                "coverage_radius_factor": NFPA72_COVERAGE_RADIUS_FACTOR,
+                "pull_station_height_m": NFPA72_PULL_STATION_HEIGHT_M,
+                "pull_station_from_exit_m": NFPA72_PULL_STATION_FROM_EXIT_M,
+                "wall_min_distance_m": NFPA72_WALL_MIN_DISTANCE_M,
+                "standby_hours": NFPA72_STANDBY_HOURS,
+                "alarm_minutes": NFPA72_ALARM_MINUTES,
+                "battery_safety_factor": NFPA72_BATTERY_SAFETY_FACTOR,
+                "battery_discharge_efficiency": NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
+                "nac_min_cd": NFPA72_NAC_MIN_CD,
+                "nac_sleeping_min_cd": NFPA72_NAC_SLEEPING_MIN_CD,
+            },
+            "nec": {
+                "table8_resistance_ohm_per_km": NEC_TABLE8_RESISTANCE_OHM_PER_KM,
+                "ampacity_60c": NEC_AMPACITY_60C,
+            },
+        },
+    }
+
+
 @router.post("/qomn/golden-tests")
 async def run_golden_tests():
     """Run QOMN golden test suite per QOMN Specification §9.
@@ -438,10 +639,21 @@ async def run_golden_tests():
 
     Returns pass/fail for each golden test case.
     """
-    from fireai.core.qomn_kernel import (
-        compute_smoke_detector_spacing, compute_heat_detector_spacing,
-        compute_battery_capacity_ah, compute_voltage_drop
-    )
+    try:
+        from fireai.core.qomn_kernel import (
+            compute_smoke_detector_spacing, compute_heat_detector_spacing,
+            compute_battery_capacity_ah, compute_voltage_drop
+        )
+    except ImportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "QOMN_SERVICE_UNAVAILABLE",
+                "detail": "The QOMN-FIRE engineering kernel functions are not available.",
+                "missing_module": "fireai.core.qomn_kernel",
+                "action": "Install the fireai package. Check server logs for details.",
+            },
+        )
 
     results = []
     all_pass = True
@@ -560,9 +772,16 @@ def _handle_error(exc: Exception) -> NoReturn:
     In a fire protection system, this information could help attackers
     understand the system internals and craft targeted exploits.
     Detailed errors are logged server-side; clients get generic messages.
+
+    V116 FIX: Use module-level cached exception classes instead of
+    importing inside this function. The old code did `from fireai.core.qomn_kernel
+    import PhysicsGuardError, ...` here — if that import failed, the ORIGINAL
+    exception was silently replaced by an ImportError, masking the real error.
+    In a safety-critical system, this is a SAFETY HAZARD per agent.md
+    Anti-Deception Directive. Now we use cached classes with safe fallback.
     """
-    from fireai.core.qomn_kernel import PhysicsGuardError, ComputationError, ValidationError
-    if isinstance(exc, PhysicsGuardError):
+    # V116: Use cached exception classes — safe even if kernel is unavailable
+    if _PhysicsGuardError is not None and isinstance(exc, _PhysicsGuardError):
         raise HTTPException(
             status_code=422,
             detail={
@@ -574,14 +793,25 @@ def _handle_error(exc: Exception) -> NoReturn:
                 "action":    "Review input values. Consult licensed FPE if limits are unclear.",
             }
         )
-    if isinstance(exc, (ComputationError, ValidationError)):
+    if _ComputationError is not None and isinstance(exc, _ComputationError):
         # H-3 FIX: Log the full error server-side, return generic message to client
-        logger.error("QOMN computation/validation error: %s", exc, exc_info=True)
+        logger.error("QOMN computation error: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail={
-                "error":  "COMPUTATION_VALIDATION_FAILURE",
+                "error":  "COMPUTATION_FAILURE",
                 "detail": "An internal computation error occurred. Check input values or contact the engineering team.",
+                "action": "Report this to the engineering team with input values.",
+            }
+        )
+    if _ValidationError is not None and isinstance(exc, _ValidationError):
+        # H-3 FIX: Log the full error server-side, return generic message to client
+        logger.error("QOMN validation error: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error":  "VALIDATION_FAILURE",
+                "detail": "An internal validation error occurred. Check input values or contact the engineering team.",
                 "action": "Report this to the engineering team with input values.",
             }
         )
@@ -596,6 +826,9 @@ def _handle_error(exc: Exception) -> NoReturn:
                 "detail": "Input values are invalid. Please check all parameters and try again.",
             }
         )
+    if isinstance(exc, HTTPException):
+        # Re-raise already-formed HTTP exceptions (e.g., from _get_kernel 503)
+        raise exc
     # H-3 FIX: Never expose str(exc) to client on unexpected errors
     logger.error("QOMN kernel unexpected error: %s", exc, exc_info=True)
     raise HTTPException(

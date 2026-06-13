@@ -72,12 +72,12 @@ def _convex_hull_2d(pts: List[Tuple[float, float, float]]) -> List[Tuple[float, 
     sorted_pts = sorted(set(pts))
     if len(sorted_pts) < 3:
         return list(sorted_pts)
-    lower = []
+    lower: list = []
     for p in sorted_pts:
         while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
             lower.pop()
         lower.append(p)
-    upper = []
+    upper: list = []
     for p in reversed(sorted_pts):
         while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
             upper.pop()
@@ -140,7 +140,7 @@ class HeadlessIFCBridge:
         except Exception as e:
             raise ValueError(f"Failed to open IFC model: {e}")
         # Geometry settings for tessellation (lazy-initialized)
-        self._geom_settings = None
+        self._geom_settings: object = None  # V131 FIX: Typed as object for mypy compatibility
 
     # ══════════════════════════════════════════════════════════════
     # ORIGINAL API (preserved for backward compatibility)
@@ -226,17 +226,16 @@ class HeadlessIFCBridge:
             # This affects maintenance scheduling and ATEX marking per NFPA 72 §14.3.
             type_upper = dev.get("type", "").upper()
             if "SMOKE" in type_upper:
-                fa_type = "SMOKESENSOR"
+                pass
             elif "FLAME" in type_upper:
-                fa_type = "FLAMESENSOR"
+                pass
             elif "UGLD" in type_upper or "ULTRASONIC" in type_upper:
-                fa_type = "GASSENSOR"
+                pass
             elif "HEAT" in type_upper:
-                fa_type = "HEATSENSOR"
+                pass
             elif "COMBO" in type_upper or "MULTI" in type_upper:
-                fa_type = "MULTISENSOR"
+                pass
             else:
-                fa_type = "HEATSENSOR"
                 logger.warning(f"Unknown device type '{type_upper}' mapped to HEATSENSOR for device {dev.get('device_id')}")
 
             # Match device z-coordinate to correct storey
@@ -518,7 +517,7 @@ class HeadlessIFCBridge:
         except Exception:
             return None, (0, 0, 0), 3.0, 0.0, 0.0
 
-        verts = shape.geometry.verts  # flat [x0,y0,z0, x1,y1,z1, ...]
+        verts = shape.geometry.verts  # type: ignore[union-attr] # flat [x0,y0,z0, x1,y1,z1, ...]
         if not verts:
             return None, (0, 0, 0), 3.0, 0.0, 0.0
 
@@ -549,7 +548,7 @@ class HeadlessIFCBridge:
         if settings is not None:
             try:
                 shape = ifcopenshell.geom.create_shape(settings, entity)
-                verts = shape.geometry.verts
+                verts = shape.geometry.verts  # type: ignore[union-attr]
                 if verts:
                     pts = [(verts[i], verts[i + 1], verts[i + 2]) for i in range(0, len(verts), 3)]
                     xs = [p[0] for p in pts]

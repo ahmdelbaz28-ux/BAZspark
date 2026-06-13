@@ -1,0 +1,33 @@
+{{- if .Values.podDisruptionBudgets.api.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "fireai.fullname" . }}-api-pdb
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  minAvailable: {{ .Values.podDisruptionBudgets.api.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "fireai.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+---
+{{- end }}
+{{- if .Values.podDisruptionBudgets.worker.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "fireai.fullname" . }}-worker-pdb
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  minAvailable: {{ .Values.podDisruptionBudgets.worker.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "fireai.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+{{- end }}

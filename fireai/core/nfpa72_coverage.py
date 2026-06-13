@@ -113,10 +113,12 @@ def validate_wall_distances(
     """
     violations = []
 
-    if room_polygon is not None and room_polygon.is_valid:
-        # V49: Use actual polygon boundary for L-shaped/irregular rooms
-        room_boundary = room_polygon.boundary
-        for idx, (x, y) in enumerate(detector_positions):
+    for idx, (x, y) in enumerate(detector_positions):
+        if not math.isfinite(x) or not math.isfinite(y):
+            continue
+
+        if room_polygon is not None and room_polygon.is_valid:
+            room_boundary = room_polygon.boundary
             pt = Point(x, y)
             dist_to_wall = room_boundary.distance(pt)
             if dist_to_wall < min_distance_m:
@@ -135,10 +137,7 @@ def validate_wall_distances(
                         "nfpa_reference": "NFPA 72-2022 §17.6.3.1.1",
                     }
                 )
-    else:
-        # Original rectangular wall check (backward compatible)
-        for idx, (x, y) in enumerate(detector_positions):
-            # Check all 4 walls
+        else:
             dist_left = x
             dist_right = room_spec.width_m - x
             dist_bottom = y
@@ -270,7 +269,7 @@ def compute_hvac_safe_zone(
 
 def suggest_duct_detectors(room: RoomSpec, detector_type: str = "smoke") -> List[DuctDevice]:
     """Suggest detector placements near HVAC ducts."""
-    devices = []
+    devices = []  # type: ignore[var-annotated]
     if not room.hvac_ducts:
         return devices
 
@@ -366,7 +365,6 @@ def check_coverage_polygon(
         # ✅ SMOKE: Use circular geometry (Euclidean distance)
         # ✅ Use safe fallback to prevent crashes at extreme heights
         radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
-        coverage_geometry = "circular"
     elif detector_type == DetectorType.HEAT:
         # ✅ HEAT: Use square geometry (Chebyshev distance)
         # Per NFPA 72, heat detectors use rectangular/square coverage areas
@@ -380,11 +378,9 @@ def check_coverage_polygon(
         # height-adjusted spacing for heat detectors.
         heat_spec = calculate_coverage_radius_from_height(ceiling_spec.height_m, detector_type="heat")
         radius = heat_spec.spacing_max / 2.0  # Half of height-adjusted spacing
-        coverage_geometry = "square"  # Chebyshev distance
     else:
         # Default fallback for other detector types
         radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
-        coverage_geometry = "circular"
     # V9: Adaptive sampling resolution based on room size
     # Minimum 0.25m grid resolution (NFPA detection hole < 25cm)
     # Maximum 50x50 grid to limit computation
@@ -482,9 +478,9 @@ def check_coverage_polygon(
 
         # Keep point-based result as secondary for backward compatibility
         if total_points > 0:
-            point_coverage_pct = (covered_count / total_points) * 100
+            (covered_count / total_points) * 100
         else:
-            point_coverage_pct = 0
+            pass
 
         # Primary coverage = area-based (NFPA compliant)
         # If area says covered but points don't, trust the area (points can miss corners)
@@ -584,9 +580,9 @@ def check_voronoi_coverage(
     """
     room_polygon = create_room_polygon(room_spec)
     # ✅ Use safe fallback for smoke radius (used by Voronoi visualization)
-    radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
+    get_smoke_detector_radius_safe(ceiling_spec.height_m)
     # Voronoi regions show theoretical coverage
-    regions = calculate_voronoi_coverage(detector_positions, room_polygon)
+    calculate_voronoi_coverage(detector_positions, room_polygon)
     # V49 FIX: Pass actual detector_type to check_coverage_polygon so heat
     # detectors use square (Chebyshev) geometry instead of always using
     # circular (smoke) geometry.
@@ -649,7 +645,7 @@ def check_ridge_zone_compliance(
         result.add_violation(
             f"Sloped ceiling (slope={ceiling_spec.slope_degrees}°) requires "
             f"detectors in the ridge zone (within 0.9m of ridge). "
-            f"None found."
+            f"None found. (NFPA 72 §17.6.3.4)"
         )
         return result
 
@@ -731,12 +727,10 @@ def check_l_shaped_coverage(
     if detector_type == DetectorType.HEAT:
         heat_spec = calculate_coverage_radius_from_height(ceiling_height_m, detector_type="heat")
         half_spacing = heat_spec.spacing_max / 2.0
-        coverage_geometry = "square"  # Chebyshev
         radius = half_spacing  # Used for area-based circle fallback
     else:
         radius = get_smoke_detector_radius_safe(ceiling_height_m)
         half_spacing = radius
-        coverage_geometry = "circular"
 
     # =====================================================================
     # PRIMARY: Area-based coverage (EXACT, no grid artifacts)
@@ -1121,10 +1115,12 @@ def adjust_coverage_for_beams(
     Raises:
         ValueError: If ceiling_height_m <= 0 or beam_depth_m < 0
     """
-    if ceiling_height_m <= 0:
+    if not math.isfinite(ceiling_height_m) or ceiling_height_m <= 1e-6:
         raise ValueError(f"ceiling_height_m must be positive, got {ceiling_height_m}")
-    if beam_depth_m < 0:
+    if not math.isfinite(beam_depth_m) or beam_depth_m < 0:
         raise ValueError(f"beam_depth_m cannot be negative, got {beam_depth_m}")
+    if math.isnan(nominal_radius_m):
+        raise ValueError(f"nominal_radius_m must be a finite number, got {nominal_radius_m}")
 
     beam_ratio = beam_depth_m / ceiling_height_m
 

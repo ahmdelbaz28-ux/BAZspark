@@ -32,6 +32,7 @@ from fireai.core.qomn_kernel import (
     NFPA72_WALL_MAX_DISTANCE_FACTOR,
     compute_smoke_detector_spacing,
     compute_heat_detector_spacing,
+    PhysicsGuardError,
 )
 from fireai.core.nfpa72_models import (
     RoomSpec,
@@ -91,9 +92,9 @@ class TestHeatDetectorSpacing:
         assert radius == pytest.approx(4.27, rel=0.01)
 
     def test_compute_heat_spacing_capped(self):
-        """compute_heat_detector_spacing caps at 6.1m for large areas."""
-        result = compute_heat_detector_spacing(3.0, 10000.0)
-        assert result["spacing_m"] <= 6.1
+        """compute_heat_detector_spacing rejects area > 232.26 m² per NFPA 72 §17.6.3.1."""
+        with pytest.raises(PhysicsGuardError, match="exceeds NFPA 72"):
+            compute_heat_detector_spacing(3.0, 10000.0)
 
     def test_coverage_spec_heat_spacing(self):
         """CoverageSpec for heat uses height-adjusted spacing from NFPA table."""
@@ -443,9 +444,9 @@ class TestNFPA72ConstantsConsistency:
         assert NFPA72_HEAT_MAX_SPACING_M == pytest.approx(6.1)
 
     def test_smoke_spacing_matches_table(self):
-        """Smoke max spacing matches NFPA 72 §17.7.3.2.1."""
-        # Smoke: 30ft = 9.144m (exact conversion)
-        assert NFPA72_SMOKE_MAX_SPACING_M == pytest.approx(9.144)
+        """Smoke max spacing matches NFPA 72 §17.7.3.2.3."""
+        # Smoke: flat 9.1m per V130 FIX per §17.7.3.2.3 (NO height reduction)
+        assert NFPA72_SMOKE_MAX_SPACING_M == pytest.approx(9.1)
 
     def test_heat_detector_spec_matches_constant(self):
         """HeatDetectorSpec.FIXED_SPACING_M matches the constant."""

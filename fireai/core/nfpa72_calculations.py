@@ -13,23 +13,25 @@ V9 CHANGES (2026-05-14):
 - Added lru_cache memoization to pure calculation functions
 - Added get_smoke_detector_coverage_max_safe import
 """
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple, Optional, Literal
 from functools import lru_cache
+from typing import Any, Dict, List, Literal, Optional, Tuple
+
 from .nfpa72_models import (
     CeilingSpec,
-    RoomSpec,
     DetectorType,
-    HeatDetectionMode,
-    CeilingType,
-    CeilingHeightError,
-    get_smoke_detector_radius,
-    get_smoke_detector_radius_safe,          # V9: safe fallback
-    get_smoke_detector_coverage_max,
-    get_smoke_detector_coverage_max_safe,    # V9: safe fallback
     HeatDetectorSpec,
+    HVACDuct,
+    RoomSpec,
+    get_smoke_detector_coverage_max,
+    get_smoke_detector_radius,
+    get_smoke_detector_radius_safe,  # V9: safe fallback
 )
+
+
 def get_heat_detector_placement_params(
     spec: HeatDetectorSpec,
     ceiling_height_m: float,
@@ -485,13 +487,14 @@ def calculate_max_wall_distance(ceiling: "CeilingSpec", detector_type: "Detector
 def estimate_detector_count_polygon(polygon, ceiling_height_m: float, detector_type: str) -> int:
     """Estimate detector count for a polygon based on coverage area."""
     import math
+
     from shapely.geometry import Polygon
     # CRITICAL: Use module-level import (already from .nfpa72_models) — bare import
     # would resolve to stale root copy with wrong values.
-    
+
     if not isinstance(polygon, Polygon):
         return 0
-    
+
     area = polygon.area
     radius = get_smoke_detector_coverage_max(ceiling_height_m)
     # Each detector covers π * r²
@@ -549,6 +552,10 @@ DetectorTypeSimple = Literal["smoke", "heat"]
 
 # NFPA 72-2022 Table 17.6.3.1.1 — Height-Adjusted Detector Spacing
 # =====================================================================
+# V127: Import from single source of truth (fireai/constants/__init__.py)
+# to eliminate divergent duplicate tables across the codebase.
+# Previously, this was a hardcoded copy that could drift from the canonical values.
+#
 # IMPORTANT: This table stores ADJUSTED SPACING (S), NOT S/2 and NOT radius.
 #
 # NFPA 72 §17.6.3.1.1 defines the maximum detector spacing for each
@@ -567,29 +574,28 @@ DetectorTypeSimple = Literal["smoke", "heat"]
 # resulting in over-conservative placement (too many detectors).
 #
 # (ceiling_height_max_meters, smoke_adjusted_spacing_m, heat_adjusted_spacing_m)
-_NFPA72_TABLE_17_6_3_1_1 = [
-    (3.0,   9.10,  6.10),   # Smoke: 30ft listed; Heat: 20ft listed
-    (3.7,   8.70,  5.80),
-    (4.6,   8.20,  5.50),
-    (5.5,   7.70,  5.20),
-    (6.1,   7.30,  4.90),
-    (7.6,   6.80,  4.60),
-    (9.1,   6.40,  4.30),
-    (10.7,  6.00,  4.00),
-    (12.2,  5.60,  3.70),
-]
+# V128: Import from CANONICAL single source of truth (fireai/constants/nfpa72.py)
+# to eliminate divergent duplicate tables across the codebase.
+# Previously, this was imported via fireai.constants (which had its own duplicates).
+# Now imports directly from the authoritative nfpa72.py module.
+from fireai.constants.nfpa72 import (
+    COMBINED_HEIGHT_SPACING_TABLE as _CANONICAL_HEIGHT_TABLE,
+)
+
+_NFPA72_TABLE_17_6_3_1_1 = list(_CANONICAL_HEIGHT_TABLE)
 
 _NFPA72_ABSOLUTE_MAX_HEIGHT = 12.2
 
 # Fallback ADJUSTED SPACING for heights above 12.2m (beyond NFPA table).
-# More conservative than the h=12.2m entry (5.60m / 3.70m).
+# V130 FIX: Smoke fallback = 9.10m (flat per §17.7.3.2.3, NO height reduction).
+# Heat fallback = 3.50m (conservative extrapolation from Table 17.6.3.5.1).
 # Coverage radius will be computed as R = 0.7 * spacing_fallback.
-_NFPA72_SMOKE_SPACING_FALLBACK = 5.20  # → R = 3.64m
+_NFPA72_SMOKE_SPACING_FALLBACK = 9.10  # → R = 6.37m (flat per §17.7.3.2.3)
 _NFPA72_HEAT_SPACING_FALLBACK  = 3.50  # → R = 2.45m
 
 # Legacy aliases (deprecated — use spacing fallback constants above)
 # These preserve backward compatibility for code that reads these constants.
-_NFPA72_SMOKE_FALLBACK = round(0.7 * _NFPA72_SMOKE_SPACING_FALLBACK, 2)  # 3.64m
+_NFPA72_SMOKE_FALLBACK = round(0.7 * _NFPA72_SMOKE_SPACING_FALLBACK, 2)  # 6.37m (V130: was 3.64m)
 _NFPA72_HEAT_FALLBACK  = round(0.7 * _NFPA72_HEAT_SPACING_FALLBACK, 2)   # 2.45m
 
 
@@ -708,6 +714,9 @@ def calculate_coverage_radius_from_height(
 
     for h_max, smoke_spacing, heat_spacing in _NFPA72_TABLE_17_6_3_1_1:
         if ceiling_height <= h_max:
+            # V130 FIX: Smoke detectors use FLAT 9.1m per NFPA 72 §17.7.3.2.3.
+            # NO height-based spacing reduction for smoke detectors.
+            # The 1%/ft reduction (Table 17.6.3.5.1) applies to HEAT detectors ONLY.
             spacing = smoke_spacing if detector_type.lower() == "smoke" else heat_spacing
             radius = round(0.7 * spacing, 2)          # R = 0.7 × S (coverage radius)
             wall_dist = round(spacing / 2.0, 2)        # S/2 (max wall distance)
@@ -724,7 +733,8 @@ def calculate_coverage_radius_from_height(
             )
 
     # exactly 12.2m — use last table entry
-    spacing = 5.60 if detector_type.lower() == "smoke" else 3.70
+    # V130 FIX: Smoke = flat 9.1m per §17.7.3.2.3; Heat = 3.70m per Table 17.6.3.5.1
+    spacing = _NFPA72_SMOKE_SPACING_FALLBACK if detector_type.lower() == "smoke" else 3.70
     radius = round(0.7 * spacing, 2)
     wall_dist = round(spacing / 2.0, 2)
     return CoverageSpec(
@@ -1154,21 +1164,21 @@ def calculate_inrush_current(
             f"manufacturer datasheet. Incorrect current assumptions can cause "
             f"devices to fail during alarm (NFPA 72 §10.14.1)."
         )
-        return {
+        return {  # type: ignore[dict-item]
             "steady_total_a": 0.25 * quantity,
             "inrush_total_a": 0.63 * quantity,
             "inrush_factor": 2.5,
-            "device_type": device_type,
+            "device_type": device_type,  # type: ignore[dict-item]
             "quantity": quantity,
         }
 
     steady = spec["steady_a"] * quantity
     inrush = spec["inrush_a"] * quantity
-    return {
+    return {  # type: ignore[dict-item]
         "steady_total_a": round(steady, 4),
         "inrush_total_a": round(inrush, 4),
         "inrush_factor": spec["inrush_factor"],
-        "device_type": device_type,
+        "device_type": device_type,  # type: ignore[dict-item]
         "quantity": quantity,
     }
 

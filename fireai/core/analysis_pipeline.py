@@ -55,6 +55,7 @@ import enum
 import hashlib
 import json
 import logging
+import math
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -63,7 +64,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .digital_twin import DigitalTwin
 from .event_bus import EventBus, Events
-from .spatial_engine.consensus_engine import ConfidenceLevel, ConsensusEngine, ConsensusResult
+from .spatial_engine.consensus_engine import (
+    ConfidenceLevel,
+    ConsensusEngine,
+    ConsensusResult,
+)
 from .spatial_engine.density_optimizer import (
     DETECTOR_RADIUS,
     MAX_SPACING_M,
@@ -73,7 +78,10 @@ from .spatial_engine.density_optimizer import (
     DetectorLayout,
     Room,
 )
-from .spatial_engine.proof_certificate import ProofCertificate, ProofCertificateGenerator
+from .spatial_engine.proof_certificate import (
+    ProofCertificate,
+    ProofCertificateGenerator,
+)
 
 logger = logging.getLogger("fireai.pipeline")
 
@@ -395,6 +403,26 @@ class AnalysisPipeline:
         )
 
         # ═══════════════════════════════════════════════════════════════
+        # ROOM GEOMETRY VALIDATION (NaN/Inf guard)
+        # ═══════════════════════════════════════════════════════════════
+        # V59 FIX: NaN/Inf in room dimensions silently propagates through the
+        # optimizer, producing invalid layouts that appear valid (proof_valid=True).
+        # Life-Safety Rule 5: reject non-finite geometry immediately.
+        _geom_valid = True
+        for _name, _val in [("room.width", room.width), ("room.length", room.length), ("ceiling_height", ceiling_height)]:
+            if not isinstance(_val, (int, float)) or not math.isfinite(float(_val)) or float(_val) <= 0:
+                result.errors.append(
+                    f"GEOMETRY INVALID: {_name}={_val!r} (must be finite positive number). "
+                    "Cannot run optimization with invalid room geometry."
+                )
+                logger.error(f"  GEOMETRY INVALID for {room_id}: {_name}={_val!r}")
+                _geom_valid = False
+                break
+        if not _geom_valid:
+            result.stage_reached = PipelineStage.OPTIMIZATION  # Mark where we stopped
+            return result
+
+        # ═══════════════════════════════════════════════════════════════
         # STAGE 1: OPTIMIZATION
         # ═══════════════════════════════════════════════════════════════
         t0 = time.monotonic()
@@ -554,7 +582,15 @@ class AnalysisPipeline:
         else:
             # Verification skipped — still emit coverage event from layout
             result.timing["verification"] = 0.0
-            logger.info("  VERIFICATION: Skipped (require_consensus=False)")
+            result.warnings.append(
+                f"Room {room_id}: VERIFICATION SKIPPED (require_consensus=False). "
+                "No triple consensus check performed. Coverage relies solely on "
+                "optimizer proof_valid flag without independent verification. "
+                "This is ACCEPTABLE only during pre-screening or when NFPA 72 "
+                "compliance is verified by other means. Set require_consensus=True "
+                "for production deployments."
+            )
+            logger.warning("  VERIFICATION: Skipped (require_consensus=False) — no independent verification performed")
 
             if layout.proof_valid:
                 self._bus.publish(
@@ -935,7 +971,7 @@ class AnalysisPipeline:
             source="AnalysisPipeline",
         )
 
-        for i, (room, room_id, ceiling_height) in enumerate(rooms):
+        for _i, (room, room_id, ceiling_height) in enumerate(rooms):
             try:
                 result = self.analyze_room(
                     room=room,

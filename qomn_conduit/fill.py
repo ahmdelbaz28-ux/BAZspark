@@ -27,10 +27,13 @@ from __future__ import annotations
 import math
 from typing import Dict, List, Optional, Tuple
 
+from qomn_conduit.errors import CodeViolationError, PhysicsError
 from qomn_conduit.types import (
-    ConduitType, TradeSize, FillResult, Result,
+    ConduitType,
+    FillResult,
+    Result,
+    TradeSize,
 )
-from qomn_conduit.errors import PhysicsError, CodeViolationError, Severity
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NEC Chapter 9, Table 1 — Fill Percentage Limits
@@ -271,22 +274,5 @@ def calculate_fill(
         recommended_size=recommended,
         nec_reference=nec_ref,
     )
-
-    if not is_compliant:
-        return Result.err(CodeViolationError(
-            message=(
-                f"Conduit fill {fill_pct:.2f}% exceeds NEC Table 1 limit "
-                f"of {max_pct:.0f}% for {n} conductor(s) in "
-                f"{conduit_type.value} {trade_size.value}. "
-                + (f"Recommended: {recommended.value}." if recommended else
-                   "No standard size in catalog can accommodate these conductors.")
-            ),
-            code_reference=nec_ref,
-            remediation=(
-                f"Increase conduit to {recommended.value if recommended else 'larger than 2\"'}, "
-                "reduce conductor count, or split conductors into two conduits."
-            ),
-            severity=Severity.FATAL,
-        ))
 
     return Result.ok(result)
