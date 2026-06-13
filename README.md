@@ -6,7 +6,7 @@
 
 [![Status](https://img.shields.io/badge/status-release_candidate-ff6b35?style=for-the-badge&logo=fire&logoColor=white)](https://github.com/ahmdelbaz28-ux/revit)
 [![Version](https://img.shields.io/badge/version-1.0.0-3b82f6?style=for-the-badge&logo=semver&logoColor=white)](https://github.com/ahmdelbaz28-ux/revit/releases)
-[![Tests](https://img.shields.io/badge/tests-5886_passed-22c55e?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/ahmdelbaz28-ux/revit/actions)
+[![Tests](https://img.shields.io/badge/tests-5194_passed-22c55e?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/ahmdelbaz28-ux/revit/actions)
 [![License](https://img.shields.io/badge/License-MIT-f59e0b?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
@@ -475,7 +475,7 @@ See [SECURITY.md](SECURITY.md) and [ELECTRON_SECURITY_REPORT.md](ELECTRON_SECURI
 | **Build** | ✅ PASS | Docker multi-stage + ARM64 AppImage |
 | **Runtime** | ✅ PASS | 72+ routes, health check OK |
 | **Security** | ✅ PASS | 0 critical, 0 exploitable high vulns |
-| **Tests** | ✅ PASS | 5,886 Python + 33 API, 0 failures |
+| **Tests** | ✅ PASS | 5,194 Python + 33 API, 0 failures |
 | **Coverage** | ⚠️ 39% | Security modules 91%, kernel 62% avg |
 | **Linux ARM64** | ✅ PASS | 157 MB AppImage, production-ready |
 | **Windows x64** | 🔵 Planned | Requires Windows CI runner |
