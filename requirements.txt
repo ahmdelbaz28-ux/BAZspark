@@ -39,6 +39,7 @@ asyncio-mqtt>=0.10.0
 
 # Workflow engine (V129 FIX: langgraph now required for workflow service)
 langgraph>=0.2.0
+langgraph-checkpoint-sqlite>=0.1.0
 
 # Testing (dev)
 pytest>=7.0.0

@@ -1078,80 +1078,75 @@ class DatabaseService:
         page: int = 1,
         page_size: int = 20,
     ) -> Tuple[List[ConflictResponse], int]:
-        """List conflicts with optional filtering and pagination."""
+        """List conflicts with optional filtering and pagination.
+
+        V129 FIX: Uses detect_conflicts() method instead of accessing
+        non-existent self._data_model.conflicts dict.
+        """
         with self._service_lock:
-            conflicts = list(self._data_model.conflicts.values())
-
-            # Also run detection to pick up new conflicts
-            new_conflicts = self._data_model.detect_conflicts()
-            for c in new_conflicts:
-                if c.conflict_id not in self._data_model.conflicts:
-                    self._data_model.conflicts[c.conflict_id] = c
-
-            all_conflicts = list(self._data_model.conflicts.values())
+            # V129 FIX: Get conflicts via detect_conflicts() which queries
+            # both the conflicts SQL table and detects new ones
+            all_conflicts = self._data_model.detect_conflicts()
 
             # Filter
             if resolved is not None:
                 all_conflicts = [c for c in all_conflicts if c.resolved == resolved]
             if conflict_type:
-                all_conflicts = [c for c in all_conflicts if c.conflict_type.value == conflict_type]
+                all_conflicts = [c for c in all_conflicts if (
+                    c.conflict_type.value if hasattr(c.conflict_type, 'value') else str(c.conflict_type)
+                ) == conflict_type]
 
             total = len(all_conflicts)
             start = (page - 1) * page_size
             end = start + page_size
             paginated = all_conflicts[start:end]
 
-            responses = [
-                ConflictResponse(
+            responses = []
+            for c in paginated:
+                ct = c.conflict_type.value if hasattr(c.conflict_type, 'value') else str(c.conflict_type)
+                sa = c.source_a if isinstance(c.source_a, str) else (c.source_a.value if hasattr(c.source_a, 'value') else str(c.source_a)) if c.source_a else None
+                sb = c.source_b if isinstance(c.source_b, str) else (c.source_b.value if hasattr(c.source_b, 'value') else str(c.source_b)) if c.source_b else None
+                responses.append(ConflictResponse(
                     conflict_id=c.conflict_id,
                     element_id=c.element_id,
-                    conflict_type=c.conflict_type.value,
-                    timestamp=c.timestamp.isoformat() if c.timestamp else None,
-                    source_a=c.source_a.value,
-                    source_b=c.source_b.value,
+                    conflict_type=ct,
+                    timestamp=c.timestamp.isoformat() if hasattr(c.timestamp, 'isoformat') and c.timestamp else (str(c.timestamp) if c.timestamp else None),
+                    source_a=sa,
+                    source_b=sb,
                     change_a=c.change_a,
                     change_b=c.change_b,
                     resolution=c.resolution,
                     resolved=c.resolved,
-                )
-                for c in paginated
-            ]
+                ))
 
             return responses, total
 
     def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> Optional[ConflictResponse]:
-        """Resolve a conflict by ID."""
+        """Resolve a conflict by ID.
+
+        V129 FIX: Uses resolve_conflict() on UniversalDataModel instead of
+        accessing non-existent self._data_model.conflicts dict.
+        """
         with self._service_lock:
-            conflict = self._data_model.conflicts.get(conflict_id)
-            if conflict is None:
+            result = self._data_model.resolve_conflict(conflict_id, strategy=strategy)
+            if result is None:
                 return None
 
-            success = self._data_model.resolve_conflict(conflict, strategy=strategy)
-            if not success:
-                raise RuntimeError(f"Failed to resolve conflict {conflict_id}")
-
-            # Apply resolution to element if possible
-            if conflict.resolution and conflict.element_id:
-                element = self._data_model.get_element(conflict.element_id)
-                if element:
-                    self._data_model.update_element(
-                        conflict.element_id,
-                        conflict.resolution,
-                        source=ChangeSource.MANUAL,
-                        reason=f"Conflict resolution: {conflict_id}",
-                    )
+            ct = result.conflict_type.value if hasattr(result.conflict_type, 'value') else str(result.conflict_type)
+            sa = result.source_a if isinstance(result.source_a, str) else (result.source_a.value if hasattr(result.source_a, 'value') else str(result.source_a)) if result.source_a else None
+            sb = result.source_b if isinstance(result.source_b, str) else (result.source_b.value if hasattr(result.source_b, 'value') else str(result.source_b)) if result.source_b else None
 
             return ConflictResponse(
-                conflict_id=conflict.conflict_id,
-                element_id=conflict.element_id,
-                conflict_type=conflict.conflict_type.value,
-                timestamp=conflict.timestamp.isoformat() if conflict.timestamp else None,
-                source_a=conflict.source_a.value,
-                source_b=conflict.source_b.value,
-                change_a=conflict.change_a,
-                change_b=conflict.change_b,
-                resolution=conflict.resolution,
-                resolved=conflict.resolved,
+                conflict_id=result.conflict_id,
+                element_id=result.element_id,
+                conflict_type=ct,
+                timestamp=result.timestamp.isoformat() if hasattr(result.timestamp, 'isoformat') and result.timestamp else (str(result.timestamp) if result.timestamp else None),
+                source_a=sa,
+                source_b=sb,
+                change_a=result.change_a,
+                change_b=result.change_b,
+                resolution=result.resolution,
+                resolved=result.resolved,
             )
 
     # ──────────────────────────────────────────────────────────────────────────

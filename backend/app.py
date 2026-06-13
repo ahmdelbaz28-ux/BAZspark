@@ -156,6 +156,8 @@ async def lifespan(app: FastAPI):
         svc = get_workflow_service()
         if hasattr(svc, "_langgraph_available") and svc._langgraph_available:
             logger.info("Workflow service initialized (LangGraph State Machine)")
+        elif hasattr(svc, "is_initialized") and svc.is_initialized:
+            logger.info("Workflow service initialized (LangGraph available)")
         else:
             logger.warning("Workflow service in DEGRADED mode — LangGraph not installed")
     except ImportError as e:
