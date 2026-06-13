@@ -235,6 +235,11 @@ NFPA72_SMOKE_MAX_SPACING_M = NFPA72_SMOKE_MAX_SPACING_M
 NFPA72_HEAT_MAX_SPACING_M = NFPA72_HEAT_MAX_SPACING_M
 NFPA72_COVERAGE_RADIUS_FACTOR = NFPA72_COVERAGE_RADIUS_FACTOR
 
+# V131 FIX: NAC (Notification Appliance Circuit) constants per NFPA 72-2022
+# §18.5.5.2 — Minimum candela ratings for visible notification appliances
+NFPA72_NAC_MIN_CD = 15          # §18.5.5.2 — Minimum candela (non-sleeping areas)
+NFPA72_NAC_SLEEPING_MIN_CD = 110  # §18.5.5.2 — Minimum candela (sleeping areas, UL 1971)
+
 # ── All NFPA 72 constants now imported from canonical source above ─────
 # V121 FIX: Duplicate constants removed. See fireai/constants/nfpa72.py.
 # Old values that CHANGED:
