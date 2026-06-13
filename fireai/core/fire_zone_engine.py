@@ -461,3 +461,66 @@ class FireZoneEngine:
             for room_id in zone.rooms:
                 zone_map[room_id] = zone.zone_id
         return zone_map
+
+    def calculate_zone_for_irregular_shape(self, vertices: list) -> dict:
+        """Calculate fire zone parameters for irregular polygonal shapes.
+
+        NFPA 72 Section 17.7.3.2: Irregular zones require special calculation
+        for detector count and area. This method computes the area using the
+        shoelace formula, determines the perimeter, and calculates the minimum
+        detector count based on NFPA 72 spacing requirements.
+
+        This is used for rooms or zones that are not simple rectangles, such
+        as L-shaped rooms, triangular spaces, or custom polygonal zones that
+        arise in real building layouts.
+
+        Args:
+            vertices: List of (x, y) tuples defining polygon vertices in meters.
+                Must have at least 3 vertices. The polygon is assumed to be
+                non-self-intersecting (simple polygon).
+
+        Returns:
+            Dictionary with:
+                area: Area in square meters, rounded to 2 decimals.
+                perimeter: Perimeter in meters, rounded to 2 decimals.
+                detector_count: Minimum number of detectors required per NFPA 72.
+                compliant: True if area ≤ 2500 sqm (NFPA 72 ordinary hazard
+                    limit for zone size).
+
+        Raises:
+            ValueError: If fewer than 3 vertices provided.
+        """
+        if len(vertices) < 3:
+            raise ValueError(
+                "Polygon must have at least 3 vertices for zone calculation. "
+                "NFPA 72 Section 17.7.3.2 requires a valid geometric shape."
+            )
+
+        # Calculate area using the shoelace formula
+        area = 0.5 * abs(sum(
+            vertices[i][0] * vertices[i - 1][1] - vertices[i - 1][0] * vertices[i][1]
+            for i in range(len(vertices))
+        ))
+
+        # Calculate perimeter
+        perimeter = sum(
+            ((vertices[i][0] - vertices[i - 1][0]) ** 2 +
+             (vertices[i][1] - vertices[i - 1][1]) ** 2) ** 0.5
+            for i in range(len(vertices))
+        )
+
+        # NFPA 72: Max 900 sq ft per detector for ordinary hazard
+        # 900 sq ft ≈ 83.61 sqm (rounded up for safety)
+        AREA_PER_DETECTOR_SQM = 83.61
+        detector_count = max(1, int(area / AREA_PER_DETECTOR_SQM) + 1)
+
+        # Check if zone is too large per NFPA 72 constraints
+        # 2500 sqm is approximately 26,910 sq ft — within NFPA 72 zone limits
+        compliant = area <= 2500
+
+        return {
+            "area": round(area, 2),
+            "perimeter": round(perimeter, 2),
+            "detector_count": detector_count,
+            "compliant": compliant,
+        }
