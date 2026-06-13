@@ -302,6 +302,21 @@ def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
                 )
             """)
 
+            # V129 FIX: Migrate existing elements table that was created by
+            # core/database.py (which doesn't have name/position/is_deleted
+            # columns). CREATE TABLE IF NOT EXISTS silently skips if the table
+            # already exists, so we need ALTER TABLE to add missing columns.
+            for migration in [
+                "ALTER TABLE elements ADD COLUMN name TEXT",
+                "ALTER TABLE elements ADD COLUMN position TEXT",
+                "ALTER TABLE elements ADD COLUMN properties TEXT",
+                "ALTER TABLE elements ADD COLUMN is_deleted INTEGER DEFAULT 0",
+            ]:
+                try:
+                    udm.bridge_sql(migration)
+                except Exception:
+                    pass  # Column already exists — expected
+
             udm.bridge_create_table("""
                 CREATE TABLE IF NOT EXISTS element_projects (
                     element_id TEXT,

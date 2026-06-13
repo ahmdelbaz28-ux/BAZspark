@@ -33,16 +33,17 @@ def project_with_device(client):
     proj_body = proj_data.get("data", proj_data)
     pid = proj_body.get("id") or proj_body.get("project_id")
 
-    # Create device
+    # Create device — matches CreateDeviceInput schema (backend/models.py)
+    # Required fields: type, name, category, x, y
     dev_resp = client.post(
         f"/api/projects/{pid}/devices",
         json={
             "name": "Smoke Detector SD-01",
             "type": "smoke_detector",
+            "category": "detection",
             "x": 10.0,
             "y": 20.0,
             "z": 2.4,
-            "floor": 1,
         },
     )
     return pid, dev_resp
@@ -61,7 +62,7 @@ class TestDevicesCreate:
         """Creating a device in a nonexistent project must return 404."""
         response = client.post(
             "/api/projects/nonexistent-id/devices",
-            json={"name": "Ghost Device", "type": "smoke_detector"},
+            json={"name": "Ghost Device", "type": "smoke_detector", "category": "detection", "x": 0.0, "y": 0.0},
         )
         assert response.status_code == 404
 
