@@ -526,7 +526,7 @@ def _check_rate_limit(request: Request) -> None:
 # ════════════════════════════════════════════════════════════════════════════
 
 @router.get("/api/monitor/health")
-async def get_health(request: Request = Depends()):
+async def get_health(request: Request):
     """GET /api/monitor/health — Aggregated system health status.
 
     Returns real health data from all monitored subsystems including
@@ -550,7 +550,7 @@ async def get_health(request: Request = Depends()):
 
 
 @router.get("/api/monitor/metrics")
-async def get_metrics(request: Request = Depends()):
+async def get_metrics(request: Request):
     """GET /api/monitor/metrics — Prometheus-format metrics.
 
     Returns engine metrics, security alert counts, and system
@@ -566,7 +566,7 @@ async def get_metrics(request: Request = Depends()):
 
 @router.get("/api/monitor/engine-status")
 async def get_engine_status(
-    request: Request = Depends(),
+    request: Request,
     engine_id: Optional[str] = Query(None, description="Filter by engine ID"),
 ):
     """GET /api/monitor/engine-status — Per-engine status and health.
@@ -605,7 +605,7 @@ async def get_engine_status(
 
 @router.get("/api/monitor/agent-activity")
 async def get_agent_activity(
-    request: Request = Depends(),
+    request: Request,
     limit: int = Query(50, ge=1, le=500, description="Max records to return"),
     agent_id: Optional[str] = Query(None, description="Filter by agent ID"),
     activity_type: Optional[str] = Query(None, description="Filter by activity type"),
@@ -635,9 +635,9 @@ async def get_agent_activity(
 
 @router.get("/api/monitor/security-alerts")
 async def get_security_alerts(
-    request: Request = Depends(),
+    request: Request,
     limit: int = Query(50, ge=1, le=500, description="Max alerts to return"),
-    severity: Optional[str] = Query(None, regex="^(low|medium|high|critical)$"),
+    severity: Optional[str] = Query(None, pattern="^(low|medium|high|critical)$"),
     resolved: Optional[bool] = Query(None, description="Filter by resolved state"),
 ):
     """GET /api/monitor/security-alerts — Active and historical security alerts.
@@ -688,7 +688,7 @@ async def get_security_alerts(
 
 
 @router.get("/api/monitor/alerts")
-async def get_alerts(request: Request = Depends()):
+async def get_alerts(request: Request):
     """GET /api/monitor/alerts — Current alert state.
 
     Evaluates all alert rules against current system state and

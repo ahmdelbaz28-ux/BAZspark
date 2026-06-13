@@ -816,6 +816,7 @@ from backend.routers import (
     environment,
     facp,
     qomn,
+    monitor,
 )
 
 # Optional routers: already imported before lifespan() above
@@ -869,6 +870,9 @@ app.include_router(qomn.router, prefix="/api")
 
 # DWG/DXF parsing at /api/parse-dwg
 app.include_router(dwg.router, prefix="/api")
+
+# Monitor dashboard at /api/monitor
+app.include_router(monitor.router)
 
 # WebSocket at /ws
 app.include_router(sync.ws_router)
