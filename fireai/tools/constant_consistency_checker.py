@@ -28,7 +28,7 @@ CANONICAL_CONSTANTS: Dict[str, Tuple[float, str, str]] = {
     # density_optimizer.py — NFPA 72 detector spacing
     "DETECTOR_RADIUS": (6.37, "density_optimizer", "NFPA 72 §17.7.4.2.3.1 — 0.7S Rule"),
     "MAX_SPACING_M": (9.1, "density_optimizer", "NFPA 72 §17.6.3.1.1"),
-    "WALL_MIN_M": (0.10, "density_optimizer", "NFPA 72 §17.6.3.1.1"),
+    "WALL_MIN_M": (0.1016, "density_optimizer", "NFPA 72 §17.6.3.1.1"),
     "VERIFY_STEP": (0.20, "density_optimizer", "internal — proof resolution"),
     "COARSE_STEP": (1.00, "density_optimizer", "internal — coarse grid step"),
     "PLACEMENT_MARGIN": (0.1414, "density_optimizer", "internal — δ-conservative"),

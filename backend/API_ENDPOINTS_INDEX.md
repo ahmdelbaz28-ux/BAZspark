@@ -1,7 +1,7 @@
 # FireAI — API Endpoints Index
 
 **Generated:** 2026-06-13  
-**Total Endpoints:** 66  
+**Total Endpoints:** 69  
 **Source:** `backend/routers/*.py`
 
 ---
@@ -10,15 +10,15 @@
 
 | Method | Endpoint | Handler | Description |
 |--------|----------|---------|-------------|
-| GET | `/api/monitor/health` | Health & Monitoring | ) |
-| GET | `/api/monitor/metrics` | Health & Monitoring | ) |
-| GET | `/api/monitor/engine-status` | Health & Monitoring | ) |
-| GET | `/api/monitor/agent-activity` | Health & Monitoring | ) |
-| GET | `/api/monitor/security-alerts` | Health & Monitoring | ) |
-| GET | `/api/monitor/alerts` | Health & Monitoring |  |
-| GET | `/health` | Health & Monitoring | ) |
-| GET | `/health/statistics` | Health & Monitoring | ) |
+| GET | `/health` | Health & Monitoring | , dependencies=[Depends(require_permission(Permission.HEALTH |
+| GET | `/health/statistics` | Health & Monitoring | , dependencies=[Depends(require_permission(Permission.HEALTH |
 | GET | `/reports/statistics` | Health & Monitoring |  |
+| GET | `/api/v1/monitor/health` | Health & Monitoring | , dependencies=[Depends(require_permission(Permission.MONITO |
+| GET | `/api/v1/monitor/metrics` | Health & Monitoring | , dependencies=[Depends(require_permission(Permission.MONITO |
+| GET | `/api/v1/monitor/engine-status` | Health & Monitoring | , dependencies=[Depends(require_permission(Permission.MONITO |
+| GET | `/api/v1/monitor/agent-activity` | Health & Monitoring | , dependencies=[Depends(require_permission(Permission.MONITO |
+| GET | `/api/v1/monitor/security-alerts` | Health & Monitoring | , dependencies=[Depends(require_permission(Permission.MONITO |
+| GET | `/api/v1/monitor/alerts` | Health & Monitoring |  |
 
 ## Projects
 
@@ -40,23 +40,23 @@
 
 | Method | Endpoint | Handler | Description |
 |--------|----------|---------|-------------|
-| PUT | `/{connection_id}` | Connections |  |
 | DELETE | `/{connection_id}` | Connections |  |
+| PUT | `/{connection_id}` | Connections |  |
 | DELETE | `/{connection_id}` | Connections |  |
 
 ## Reports
 
 | Method | Endpoint | Handler | Description |
 |--------|----------|---------|-------------|
-| GET | `/{report_id}` | Reports | ) |
+| GET | `/{report_id}` | Reports | , dependencies=[Depends(require_permission(Permission.REPORT |
 | GET | `/{report_id}/export` | Reports |  |
 
 ## Exports
 
 | Method | Endpoint | Handler | Description |
 |--------|----------|---------|-------------|
-| GET | `/dxf` | Exports | ) |
-| GET | `/revit` | Exports | ) |
+| GET | `/dxf` | Exports | , dependencies=[Depends(require_permission(Permission.EXPORT |
+| GET | `/revit` | Exports | , dependencies=[Depends(require_permission(Permission.EXPORT |
 | GET | `/ifc` | Exports |  |
 
 ## Environment
@@ -79,15 +79,15 @@
 
 | Method | Endpoint | Handler | Description |
 |--------|----------|---------|-------------|
-| GET | `/qomn/audit` | QOMN Engineering | ) |
-| GET | `/qomn/physics-guards` | QOMN Engineering | ) |
+| GET | `/qomn/audit` | QOMN Engineering | , dependencies=[Depends(require_permission(Permission.QOMN_R |
+| GET | `/qomn/physics-guards` | QOMN Engineering | , dependencies=[Depends(require_permission(Permission.QOMN_R |
 | GET | `/qomn/constants` | QOMN Engineering |  |
-| POST | `/qomn/smoke-spacing` | QOMN Engineering | ) |
-| POST | `/qomn/heat-spacing` | QOMN Engineering | ) |
-| POST | `/qomn/battery` | QOMN Engineering | ) |
-| POST | `/qomn/voltage-drop` | QOMN Engineering | ) |
-| POST | `/qomn/place-detectors` | QOMN Engineering | ) |
-| POST | `/qomn/place-duct` | QOMN Engineering | ) |
+| POST | `/qomn/smoke-spacing` | QOMN Engineering | , dependencies=[Depends(require_permission(Permission.QOMN_E |
+| POST | `/qomn/heat-spacing` | QOMN Engineering | , dependencies=[Depends(require_permission(Permission.QOMN_E |
+| POST | `/qomn/battery` | QOMN Engineering | , dependencies=[Depends(require_permission(Permission.QOMN_E |
+| POST | `/qomn/voltage-drop` | QOMN Engineering | , dependencies=[Depends(require_permission(Permission.QOMN_E |
+| POST | `/qomn/place-detectors` | QOMN Engineering | , dependencies=[Depends(require_permission(Permission.QOMN_E |
+| POST | `/qomn/place-duct` | QOMN Engineering | , dependencies=[Depends(require_permission(Permission.QOMN_E |
 | POST | `/qomn/golden-tests` | QOMN Engineering |  |
 
 ## FACP
@@ -95,20 +95,20 @@
 | Method | Endpoint | Handler | Description |
 |--------|----------|---------|-------------|
 | GET | `/facp/panels` | FACP |  |
-| POST | `/facp/select` | FACP | ) |
-| POST | `/facp/verify` | FACP | ) |
-| POST | `/facp/schedule` | FACP | ) |
+| POST | `/facp/select` | FACP | , dependencies=[Depends(require_permission(Permission.FACP_M |
+| POST | `/facp/verify` | FACP | , dependencies=[Depends(require_permission(Permission.FACP_M |
+| POST | `/facp/schedule` | FACP | , dependencies=[Depends(require_permission(Permission.FACP_M |
 | POST | `/facp/spec` | FACP |  |
 
 ## Workflow
 
 | Method | Endpoint | Handler | Description |
 |--------|----------|---------|-------------|
-| GET | `/status` | Workflow | , dependencies=[Depends(verify_api_key_dep)]) |
-| GET | `/{workflow_id}/status` | Workflow | , dependencies=[Depends(verify_api_key_dep)]) |
+| GET | `/status` | Workflow | , dependencies=[Depends(require_permission(Permission.WORKFL |
+| GET | `/{workflow_id}/status` | Workflow | , dependencies=[Depends(require_permission(Permission.WORKFL |
 | GET | `/{workflow_id}/audit` | Workflow |  |
-| POST | `/start` | Workflow | , dependencies=[Depends(verify_api_key_dep)]) |
-| POST | `/{workflow_id}/approve` | Workflow | , dependencies=[Depends(verify_api_key_dep)]) |
+| POST | `/start` | Workflow | , dependencies=[Depends(require_permission(Permission.WORKFL |
+| POST | `/{workflow_id}/approve` | Workflow | , dependencies=[Depends(require_permission(Permission.WORKFL |
 | POST | `/{workflow_id}/reject` | Workflow |  |
 
 ## Memory
@@ -134,6 +134,14 @@
 
 | Method | Endpoint | Handler | Description |
 |--------|----------|---------|-------------|
-| POST | `/detect` | Conflicts | , response_model=ApiResponse[ConflictResponse]) |
+| POST | `/detect` | Conflicts | , response_model=ApiResponse[ConflictResponse], dependencies |
 | POST | `/{conflict_id}/resolve` | Conflicts |  |
+
+## Admin
+
+| Method | Endpoint | Handler | Description |
+|--------|----------|---------|-------------|
+| GET | `/roles` | Admin |  |
+| PUT | `/{key_hash}` | Admin |  |
+| DELETE | `/{key_hash}` | Admin |  |
 

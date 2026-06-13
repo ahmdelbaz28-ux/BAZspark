@@ -14,13 +14,16 @@ PE SIGN-OFF REQUIRED for any changes to canonical constants.
 """
 
 import json
+import logging
 import os
 import re
-import subprocess
 import sys
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 # Canonical constants from fireai/constants/nfpa72.py
@@ -108,8 +111,8 @@ def find_constant_definitions(root_path: Path) -> dict[str, list[dict]]:
                         "line": content[:match.start()].count('\n') + 1,
                         "value": const_value[:50],  # Truncate for readability
                     })
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error scanning %s for constant definitions: %s", py_file, e)
     
     return dict(definitions)
 
@@ -117,48 +120,55 @@ def find_constant_definitions(root_path: Path) -> dict[str, list[dict]]:
 def find_constant_usages(root_path: Path, constants: list[str]) -> dict[str, list[dict]]:
     """Find where constants are imported or used."""
     usages = defaultdict(list)
-    
+    seen_positions: set[tuple[str, int]] = set()  # (file, line) — O(1) duplicate check
+
     # Pattern to find imports
     import_pattern = re.compile(r'from\s+[\w.]+\s+import\s+.*?\b(' + '|'.join(constants) + r')\b')
-    
+
     # Pattern to find usage (after import)
     use_pattern = re.compile(r'\b(' + '|'.join(constants) + r')\b')
-    
+
     for py_file in root_path.rglob("*.py"):
         if "__pycache__" in str(py_file) or "test_" in py_file.name:
             continue
-        
+
         try:
             content = py_file.read_text()
             lines = content.split('\n')
-            
+
             for i, line in enumerate(lines, 1):
                 # Skip comments
                 if line.strip().startswith('#'):
                     continue
-                
+
+                rel_path = str(py_file.relative_to(root_path))
+                pos = (rel_path, i)
+
                 for match in import_pattern.finditer(line):
                     const_name = match.group(1)
-                    usages[const_name].append({
-                        "file": str(py_file.relative_to(root_path)),
-                        "line": i,
-                        "type": "import",
-                        "context": line.strip()[:80],
-                    })
-                
+                    if pos not in seen_positions:
+                        seen_positions.add(pos)
+                        usages[const_name].append({
+                            "file": rel_path,
+                            "line": i,
+                            "type": "import",
+                            "context": line.strip()[:80],
+                        })
+
                 for match in use_pattern.finditer(line):
                     const_name = match.group(1)
                     # Avoid counting the same line twice (import already counted)
-                    if not any(u["file"] == str(py_file.relative_to(root_path)) and u["line"] == i for u in usages[const_name]):
+                    if pos not in seen_positions:
+                        seen_positions.add(pos)
                         usages[const_name].append({
-                            "file": str(py_file.relative_to(root_path)),
+                            "file": rel_path,
                             "line": i,
                             "type": "usage",
                             "context": line.strip()[:80],
                         })
-        except Exception:
-            pass
-    
+        except Exception as e:
+            logger.warning("Error scanning %s for constant usages: %s", py_file, e)
+
     return dict(usages)
 
 
@@ -189,8 +199,8 @@ def check_constant_consistency(root_path: Path) -> list[dict]:
                             "line": def_info["line"],
                             "issue": f"Value {defined_value} differs from canonical {canonical_value}",
                         })
-            except (ValueError, AttributeError):
-                pass
+            except (ValueError, AttributeError) as e:
+                logger.debug("Cannot extract numeric value for drift check: %s", e)
     
     return drift_issues
 
@@ -204,7 +214,7 @@ def generate_report(root_path: Path) -> dict[str, Any]:
     drift_issues = check_constant_consistency(root_path)
     
     report = {
-        "generated_at": str(subprocess.check_output(["date", "+%Y-%m-%d %H:%M:%S"]).decode().strip()),
+        "generated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         "canonicals": CANONICAL_CONSTANTS,
         "definitions": definitions,
         "usages": usages,

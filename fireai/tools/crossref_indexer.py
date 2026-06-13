@@ -9,10 +9,13 @@ Run: python -m fireai.tools.crossref_indexer
 Output: fireai/CROSSREF_INDEX.md
 """
 
+import logging
 import re
-import subprocess
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 # Canonical constants and their sources
@@ -75,9 +78,9 @@ def find_constant_usages(root: Path, constants: list[str]) -> dict:
                         "line": i,
                         "context": line.strip()[:80],
                     })
-        except Exception:
-            pass
-    
+        except Exception as e:
+            logger.warning("Error scanning %s for constant usages: %s", py_file, e)
+
     return dict(usages)
 
 
@@ -107,9 +110,9 @@ def find_inline_definitions(root: Path) -> list[dict]:
                         "expected": "Import from canonical",
                         "fix": "from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M",
                     })
-        except Exception:
-            pass
-    
+        except Exception as e:
+            logger.warning("Error scanning %s for inline definitions: %s", py_file, e)
+
     return drift_issues
 
 
@@ -118,7 +121,7 @@ def generate_markdown(usages: dict, drift: list) -> str:
     
     md = f"""# FireAI — Constants Cross-Reference Map
 
-**Generated:** {subprocess.check_output(['date', '+%Y-%m-%d']).decode().strip()}
+**Generated:** {datetime.now().strftime('%Y-%m-%d')}
 **Purpose:** Track constant usage across codebase
 
 ---

@@ -9,8 +9,8 @@ Output: backend/API_ENDPOINTS_INDEX.md
 """
 
 import re
-import subprocess
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 
 
@@ -72,6 +72,8 @@ def generate_markdown(endpoints: dict) -> str:
         "Elements": [],
         "Conflicts": [],
         "DWG": [],
+        "Admin": [],
+        "Other": [],
     }
     
     # Map modules to categories
@@ -93,6 +95,7 @@ def generate_markdown(endpoints: dict) -> str:
         "elements": "Elements",
         "conflicts": "Conflicts",
         "dwg": "DWG",
+        "api_keys": "Admin",
     }
     
     for module, routes in endpoints.items():
@@ -108,7 +111,7 @@ def generate_markdown(endpoints: dict) -> str:
 ---
 
 """.format(
-        date=subprocess.check_output(["date", "+%Y-%m-%d"]).decode().strip(),
+        date=datetime.now().strftime('%Y-%m-%d'),
         total=sum(len(v) for v in endpoints.values())
     )
     

@@ -371,6 +371,10 @@ def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
                 )
             """)
 
+            # Performance indexes for UDM tables
+            udm.bridge_sql("CREATE INDEX IF NOT EXISTS idx_ep_project ON element_projects(project_id)")
+            udm.bridge_sql("CREATE INDEX IF NOT EXISTS idx_elements_type ON elements(element_type)")
+
             now = datetime.now(timezone.utc).isoformat()
             udm.bridge_insert(
                 "INSERT OR REPLACE INTO elements "

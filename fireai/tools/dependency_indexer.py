@@ -19,41 +19,41 @@ from pathlib import Path
 
 # Known layer assignments (based on architecture analysis)
 LAYER_1_MODULES = {
-    "contracts.py",
-    "nfpa72_models.py",
-    "nfpa72_calculations.py",
-    "unit_converter.py",
+    "contracts",
+    "nfpa72_models",
+    "nfpa72_calculations",
+    "unit_converter",
 }
 
 LAYER_2_MODULES = {
-    "nfpa72_coverage.py",
-    "nfpa72_engine.py",
-    "nfpa72_schemas.py",
-    "nfpa72_technology_dispatcher.py",
-    "voltage_drop.py",
-    "sequence_of_operations.py",
-    "light_current.py",
+    "nfpa72_coverage",
+    "nfpa72_engine",
+    "nfpa72_schemas",
+    "nfpa72_technology_dispatcher",
+    "voltage_drop",
+    "sequence_of_operations",
+    "light_current",
 }
 
 LAYER_3_MODULES = {
-    "qomn_kernel.py",
-    "device_placement.py",
-    "density_optimizer.py",
-    "constraint_engine.py",
-    "proof_certificate.py",
-    "battery_aging_derating.py",
-    "circuit_topology.py",
-    "network_topology.py",
+    "qomn_kernel",
+    "device_placement",
+    "density_optimizer",
+    "constraint_engine",
+    "proof_certificate",
+    "battery_aging_derating",
+    "circuit_topology",
+    "network_topology",
 }
 
 LAYER_4_MODULES = {
-    "digital_twin.py",
-    "digital_twin_interface.py",
-    "floor_orchestrator.py",
-    "multi_floor_orchestrator.py",
-    "analysis_pipeline.py",
-    "pipeline.py",
-    "building_engine.py",
+    "digital_twin",
+    "digital_twin_interface",
+    "floor_orchestrator",
+    "multi_floor_orchestrator",
+    "analysis_pipeline",
+    "pipeline",
+    "building_engine",
 }
 
 
@@ -104,31 +104,41 @@ def build_dependency_map(root: Path) -> dict:
 
 
 def detect_circular_imports(deps: dict) -> list[list[str]]:
-    """Detect circular import chains."""
+    """Detect circular import chains (excluding self-loops from lazy imports)."""
     circular = []
-    
+
     def has_cycle(node: str, visited: set, path: list) -> bool:
         if node in path:
             cycle_start = path.index(node)
             cycle = path[cycle_start:] + [node]
-            if cycle not in circular:
-                circular.append(cycle)
+            # Skip self-loops (module importing itself via lazy import)
+            if len(cycle) == 2 and cycle[0] == cycle[1]:
+                return False
+            # Normalize cycle to avoid duplicates (rotate to smallest element)
+            core = cycle[:-1]
+            min_idx = core.index(min(core))
+            normalized = core[min_idx:] + core[:min_idx] + [core[min_idx]]
+            if normalized not in circular:
+                circular.append(normalized)
             return True
         if node in visited:
             return False
-        
+
         visited.add(node)
         path.append(node)
-        
+
         for dep in deps.get(node, []):
             if dep in deps:  # Only check internal deps
+                # Skip self-imports (lazy import pattern)
+                if dep == node:
+                    continue
                 has_cycle(dep, visited, path.copy())
-        
+
         return False
-    
+
     for node in deps:
         has_cycle(node, set(), [])
-    
+
     return circular
 
 

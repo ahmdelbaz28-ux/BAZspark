@@ -10,12 +10,12 @@
 | Metric | Count |
 |--------|-------|
 | Total core modules | 72 |
-| Layer 1 (Foundation) | 0 |
-| Layer 2 (Standards) | 0 |
-| Layer 3 (Engineering) | 0 |
-| Layer 4 (Integration) | 0 |
-| Circular imports | 37 |
-| Layer violations | 0 |
+| Layer 1 (Foundation) | 1 |
+| Layer 2 (Standards) | 2 |
+| Layer 3 (Engineering) | 4 |
+| Layer 4 (Integration) | 6 |
+| Circular imports | 0 |
+| Layer violations | 19 |
 
 ---
 
@@ -32,18 +32,29 @@ Layer 1 (Foundation):     contracts, nfpa72_models, nfpa72_calculations
 ```
 
 
-## 🚨 Circular Import Chains
+## ⚠️ Layer Violations
 
-1. `nfpa72_models` → `nfpa72_models`
-2. `digital_twin_sync` → `digital_twin_sync`
-3. `digital_twin` → `digital_twin`
-4. `acoustic_calculator` → `acoustic_calculator`
-5. `acoustics_engine` → `acoustics_engine`
-6. `ugld_raytrace` → `ugld_raytrace`
-7. `ugld_acoustics` → `ugld_acoustics`
-8. `secret_rotation` → `secret_rotation`
-9. `security_logging` → `security_logging`
-10. `battery_aging_derating` → `battery_aging_derating`
+| Module | Imports | Violation |
+|--------|---------|----------|
+| `polygon_optimizer` | `nfpa72_calculations` | Layer 0 imports Layer 1 |
+| `boq_generator` | `nfpa72_calculations` | Layer 0 imports Layer 1 |
+| `fire_cli` | `nfpa72_calculations` | Layer 0 imports Layer 1 |
+| `fire_cli` | `building_engine` | Layer 0 imports Layer 4 |
+| `cable_routing_engine` | `voltage_drop` | Layer 0 imports Layer 2 |
+| `cable_routing_engine` | `circuit_topology` | Layer 0 imports Layer 3 |
+| `pathway_survivability_engine` | `contracts` | Layer 0 imports Layer 1 |
+| `floor_analyser` | `nfpa72_technology_dispatcher` | Layer 0 imports Layer 2 |
+| `floor_analyser` | `nfpa72_calculations` | Layer 0 imports Layer 1 |
+| `api_server` | `nfpa72_models` | Layer 0 imports Layer 1 |
+| `density_optimizer_v2` | `nfpa72_models` | Layer 0 imports Layer 1 |
+| `fire_expert_system` | `nfpa72_calculations` | Layer 0 imports Layer 1 |
+| `compliance_proof_document` | `nfpa72_models` | Layer 0 imports Layer 1 |
+| `room_templates` | `nfpa72_models` | Layer 0 imports Layer 1 |
+| `cable_router` | `constraint_engine` | Layer 0 imports Layer 3 |
+| `cable_router` | `nfpa72_engine` | Layer 0 imports Layer 2 |
+| `fireai_core` | `nfpa72_models` | Layer 0 imports Layer 1 |
+| `pdf_report` | `building_engine` | Layer 0 imports Layer 4 |
+| `digital_twin_sync` | `digital_twin` | Layer 0 imports Layer 4 |
 
 
 ## 📦 Module Dependencies
@@ -58,21 +69,21 @@ Layer 1 (Foundation):     contracts, nfpa72_models, nfpa72_calculations
 | `aset_rset_calculator` | 0 | aset_rset_calculator, semi_cfast_engine |
 | `atex_hazardous_arbiter` | 0 | international_reg_selector, models_v21 |
 | `auto_drafting_engine` | 0 | auto_drafting_engine |
-| `battery_aging_derating` | 0 | battery_aging_derating, provenance |
+| `battery_aging_derating` | 3 | battery_aging_derating, provenance |
 | `blockchain_readiness_gate` | 0 | blockchain_readiness_gate |
 | `boq_generator` | 0 | acoustic_calculator, fault_isolator_injector, nfpa72_calculations |
 | `bps_allocator` | 0 | provenance |
-| `building_engine` | 0 | building_engine, delta_cache, fire_zone_engine, floor_analyser, project_learner |
+| `building_engine` | 4 | building_engine, delta_cache, fire_zone_engine, floor_analyser, project_learner |
 | `cable_router` | 0 | cable_routing_engine, constraint_engine, contracts_validation, ifc_parser, nfpa72_engine |
 | `cable_routing_engine` | 0 | circuit_topology, voltage_drop |
 | `ci_benchmark` | 0 | delta_cache, streaming_dwg_parser |
 | `compliance_proof_document` | 0 | compliance_proof_document, nfpa72_models |
 | `conduit_fill_analyzer` | 0 | conduit_fill_analyzer, provenance |
-| `constraint_engine` | 0 | cable_routing_engine, nfpa72_engine |
+| `constraint_engine` | 3 | cable_routing_engine, nfpa72_engine |
 | `density_optimizer_v2` | 0 | density_optimizer_v2, nfpa72_models |
-| `device_placement` | 0 | qomn_kernel |
-| `digital_twin` | 0 | digital_twin |
-| `digital_twin_interface` | 0 | digital_twin_interface |
+| `device_placement` | 3 | qomn_kernel |
+| `digital_twin` | 4 | digital_twin |
+| `digital_twin_interface` | 4 | digital_twin_interface |
 | `digital_twin_sync` | 0 | digital_twin, digital_twin_sync |
 | `elevator_shunt_trip` | 0 | provenance |
 | `event_bus` | 0 | event_bus |
@@ -86,20 +97,20 @@ Layer 1 (Foundation):     contracts, nfpa72_models, nfpa72_calculations
 | `fireai_core` | 0 | audit_blockchain_bridge, audit_store, fire_expert_system, kernel_v30_integration, learning_store, monte_carlo_pipeline, nfpa72_models |
 | `flame_detector_aoc_raytrace` | 0 | models_v21, safety_audit_engine |
 | `floor_analyser` | 0 | duct_detector, floor_analyser, geometry_utils, nfpa72_calculations, nfpa72_technology_dispatcher, polygon_optimizer, scenario_engine, sensor_physics_advisor |
-| `floor_orchestrator` | 0 | nfpa72_calculations, nfpa72_models |
+| `floor_orchestrator` | 4 | nfpa72_calculations, nfpa72_models |
 | `hac_classification_engine` | 0 | international_reg_selector, models_v21 |
 | `hybrid_survivability` | 0 | flame_detector_aoc_raytrace, models_v21, ugld_acoustics, ugld_raytrace |
 | `international_reg_selector` | 0 | models_v21 |
 | `kernel_v30_integration` | 0 | kernel_v30_integration |
 | `mep_sync_injector` | 0 | mep_sync_injector |
-| `multi_floor_orchestrator` | 0 | cable_routing_engine, duct_detector, elevator_shunt_trip, floor_orchestrator, multi_floor_orchestrator, stairwell_smoke_control, voltage_drop |
-| `network_topology` | 0 | provenance |
-| `nfpa72_models` | 0 | contracts, nfpa72_models |
-| `nfpa72_technology_dispatcher` | 0 | nfpa72_calculations |
+| `multi_floor_orchestrator` | 4 | cable_routing_engine, duct_detector, elevator_shunt_trip, floor_orchestrator, multi_floor_orchestrator, stairwell_smoke_control, voltage_drop |
+| `network_topology` | 3 | provenance |
+| `nfpa72_models` | 1 | contracts, nfpa72_models |
+| `nfpa72_technology_dispatcher` | 2 | nfpa72_calculations |
 | `parameter_optimizer` | 0 | parameter_optimizer |
 | `pathway_survivability_engine` | 0 | contracts |
 | `pdf_report` | 0 | building_engine, pdf_report, scenario_engine |
-| `pipeline` | 0 | cable_router, cable_routing_engine, constraint_engine, contracts_validation, ifc_parser, nfpa72_engine, qomn_kernel, release_gates, safety_assurance, schedule_generator |
+| `pipeline` | 4 | cable_router, cable_routing_engine, constraint_engine, contracts_validation, ifc_parser, nfpa72_engine, qomn_kernel, release_gates, safety_assurance, schedule_generator |
 | `polygon_optimizer` | 0 | duct_detector, geometry_utils, nfpa72_calculations, polygon_optimizer |
 | `project_learner` | 0 | project_learner |
 | `revit_acl` | 0 | models_v21 |
@@ -115,7 +126,7 @@ Layer 1 (Foundation):     contracts, nfpa72_models, nfpa72_calculations
 | `security_logging` | 0 | security_logging |
 | `seismic_joint_penalyer` | 0 | provenance |
 | `sensitivity_analyzer` | 0 | sensitivity_analyzer |
-| `sequence_of_operations` | 0 | provenance, sequence_of_operations |
+| `sequence_of_operations` | 2 | provenance, sequence_of_operations |
 | `slc_capacitance` | 0 | provenance |
 | `stairwell_smoke_control` | 0 | building_systems_integration, provenance |
 | `submittal_integrity_gate` | 0 | provenance |

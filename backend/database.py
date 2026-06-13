@@ -193,6 +193,9 @@ class Database:
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_from ON connections(from_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_to ON connections(to_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_entity ON sync_operations(entity_type, entity_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_type ON devices(type)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_status ON sync_operations(status)")
 
     # ========================================================================
     # Projects CRUD
