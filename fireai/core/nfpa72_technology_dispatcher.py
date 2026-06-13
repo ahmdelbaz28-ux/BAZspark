@@ -280,20 +280,24 @@ class EliteTechnologyDispatcher:
             )
 
         # ─── Check 4: Within NFPA table — Point detectors ──────────
-        # Get height-adjusted spacing from NFPA 72 Table 17.6.3.1.1
+        # V130 FIX: Smoke detector spacing is FLAT 9.1m per §17.7.3.2.3.
+        # NO height-based reduction — the table now returns 9.1m at all heights.
         spacing = EliteTechnologyDispatcher._get_smoke_spacing(ceiling_height_m)
 
         # Economic efficiency warning: beam detectors may be more
-        # cost-effective for high ceilings (more detectors needed
-        # with reduced spacing → higher material + install cost)
+        # cost-effective for high ceilings due to stratification concerns
+        # (§17.7.1.11), NOT because spacing is reduced.
         if ceiling_height_m > _HIGH_CEILING_ECONOMIC_THRESHOLD_M:
             warnings.append(
-                f"ECONOMIC_WARNING: Ceiling height {ceiling_height_m:.1f}m requires "
-                f"reduced spacing ({spacing:.1f}m) for point detectors, increasing "
-                f"detector count. Projected beam-type detectors (spacing {_BEAM_SPACING_M}m) "
-                f"may be more cost-effective per NFPA 72 §17.7.2."
+                f"STRATIFICATION_ADVISORY: Ceiling height {ceiling_height_m:.1f}m exceeds "
+                f"{_HIGH_CEILING_ECONOMIC_THRESHOLD_M}m. Per NFPA 72 §17.7.1.11, "
+                f"spot-type smoke detection may be unreliable due to stratification. "
+                f"Projected beam-type detectors (spacing {_BEAM_SPACING_M}m) "
+                f"may be more reliable per NFPA 72 §17.7.2. "
+                f"Spacing remains 9.1m per §17.7.3.2.3 (flat, no height reduction)."
             )
             nfpa_refs.append("NFPA 72-2022 §17.7.2")
+            nfpa_refs.append("NFPA 72-2022 §17.7.1.11")
 
         # Ridge zone warning for sloped ceilings
         if ridge_zone_required:
@@ -310,11 +314,11 @@ class EliteTechnologyDispatcher:
             slope_degrees=slope_degrees,
             reason=(
                 f"Ceiling height {ceiling_height_m:.1f}m is within NFPA 72 "
-                f"Table 17.6.3.1.1 range (≤{_POINT_DETECTOR_MAX_CEILING_M}m). "
-                f"Point-type smoke detectors with height-adjusted spacing "
-                f"S={spacing:.1f}m (R={0.7 * spacing:.2f}m)."
+                f"spot-type detector range (≤{_POINT_DETECTOR_MAX_CEILING_M}m). "
+                f"Point-type smoke detectors with flat spacing "
+                f"S={spacing:.1f}m (R={0.7 * spacing:.2f}m) per §17.7.3.2.3."
             ),
-            nfpa_references=["NFPA 72-2022 Table 17.6.3.1.1"] + nfpa_refs,
+            nfpa_references=["NFPA 72-2022 §17.7.3.2.3"] + nfpa_refs,
             spacing_m=round(spacing, 2),
             ridge_zone_required=ridge_zone_required,
             warnings=warnings,
@@ -322,18 +326,22 @@ class EliteTechnologyDispatcher:
 
     @staticmethod
     def _get_smoke_spacing(ceiling_height_m: float) -> float:
-        """Get height-adjusted smoke detector spacing from NFPA 72 table.
+        """Get smoke detector spacing — FLAT 9.1m per NFPA 72 §17.7.3.2.3.
+
+        V130 FIX: Smoke detector spacing is flat 9.1m at ALL ceiling heights.
+        There is NO height-based reduction for smoke detectors.
+        The table now returns 9.1m for every height bracket.
 
         Args:
             ceiling_height_m: Ceiling height in meters.
 
         Returns:
-            Adjusted spacing S in meters.
+            Flat spacing S = 9.1m per NFPA 72 §17.7.3.2.3.
         """
         for h_max, spacing in _NFPA72_SMOKE_SPACING_TABLE:
             if ceiling_height_m <= h_max:
                 return spacing
-        # Beyond table — use most conservative value
+        # Beyond table — use most conservative value (still 9.1m)
         return _NFPA72_SMOKE_SPACING_TABLE[-1][1]
 
 

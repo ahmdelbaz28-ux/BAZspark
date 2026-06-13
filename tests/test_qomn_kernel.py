@@ -323,14 +323,13 @@ class TestNFPA72Constants:
         assert NFPA72_SMOKE_SPACING_TABLE[0] == (3.0, 9.10)
 
     def test_smoke_spacing_last_row(self):
-        """≤12.2m → 5.6m — conservative fallback."""
-        assert NFPA72_SMOKE_SPACING_TABLE[-1] == (12.2, 5.60)
+        """V130 FIX: ≤12.2m → FLAT 9.1m per §17.7.3.2.3 (no height reduction)."""
+        assert NFPA72_SMOKE_SPACING_TABLE[-1] == (12.2, 9.10)
 
-    def test_spacing_decreases_with_height(self):
-        """Higher ceiling → smaller spacing."""
-        spacings = [s for _, s in NFPA72_SMOKE_SPACING_TABLE]
-        for i in range(len(spacings) - 1):
-            assert spacings[i] >= spacings[i + 1]
+    def test_spacing_flat_at_all_heights(self):
+        """V130 FIX: Smoke spacing is FLAT 9.1m at ALL heights per §17.7.3.2.3."""
+        for _, spacing in NFPA72_SMOKE_SPACING_TABLE:
+            assert spacing == 9.10, f"Expected 9.1m flat spacing, got {spacing}m"
 
     def test_coverage_radius_factor(self):
         """R = 0.7 × S per NFPA 72 §17.7.4.2.3.1."""
@@ -476,15 +475,15 @@ class TestComputeSmokeDetectorSpacing:
     # The V121 flat-only override was removed in favor of the canonical
     # height-adjusted spacing table from fireai/constants/__init__.py.
     def test_medium_ceiling(self):
-        """h = 4.0m → Table 17.6.3.1.1 spacing 8.20m."""
+        """V130 FIX: h=4.0m → FLAT 9.1m spacing per §17.7.3.2.3."""
         result = compute_smoke_detector_spacing(4.0)
-        assert result["listed_spacing_m"] == pytest.approx(8.20, abs=1e-3)
+        assert result["listed_spacing_m"] == pytest.approx(9.10, abs=1e-3)
 
-    def test_high_ceiling_reduces_spacing(self):
-        """V127: Height-adjusted spacing reduces at higher ceilings."""
+    def test_high_ceiling_flat_spacing(self):
+        """V130 FIX: Spacing is FLAT 9.1m at ALL heights per §17.7.3.2.3."""
         r_low = compute_smoke_detector_spacing(3.0)
         r_high = compute_smoke_detector_spacing(6.0)
-        assert r_high["listed_spacing_m"] < r_low["listed_spacing_m"]
+        assert r_high["listed_spacing_m"] == r_low["listed_spacing_m"]  # Both 9.1m
 
     def test_coverage_radius_is_07_times_spacing(self):
         """NFPA 72 §17.7.4.2.3.1: R = 0.7 × S."""

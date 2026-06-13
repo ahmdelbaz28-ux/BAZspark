@@ -381,24 +381,17 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
     """
     h = guard_ceiling_height_m(ceiling_height_m)
 
-    # V127 PHASE C: Height-adjusted spacing from NFPA 72 Table 17.6.3.1.1.
-    # Flat 9.1m applies ONLY at h <= 3.0m.  For higher ceilings (up to 12.2m),
-    # the table provides reduced spacing values. Beyond 12.2m, a conservative
-    # fallback of 5.20m is used.  The stratification warning (§17.7.1.11)
-    # for h > 6.096m is retained as a non-binding advisory.
+    # V130 CRITICAL FIX: Smoke detector spacing is FLAT 9.1m per NFPA 72 §17.7.3.2.3.
+    # Per NFPA 72-2022 §17.7.3.2.3 (verbatim):
+    #   "Spot-type smoke detectors shall be spaced not more than
+    #    30 ft (9.1 m) apart on smooth ceilings."
+    # There is NO height-based spacing reduction for smoke detectors.
+    # The 1%/ft reduction from Table 17.6.3.5.1 applies to HEAT detectors ONLY.
+    # Previous versions incorrectly applied heat detector reduction to smoke
+    # detectors, causing up to 65% over-densification at high ceilings.
     _SPOT_SMOKE_HIGH_CEILING_M = _SMOKE_PRACTICAL_CEILING_HEIGHT_M  # 6.096m (20ft)
-    if h <= NFPA72_SMOKE_TABLE_MAX_HEIGHT_M:
-        table = NFPA72_SMOKE_SPACING_TABLE
-        spacing_m = NFPA72_SMOKE_MAX_SPACING_M
-        table_row = f"h <= 3.0m: flat spacing S=9.1m per §17.7.3.2.3"
-        for h_max, s in table:
-            if h <= h_max:
-                spacing_m = s
-                table_row = f"Table 17.6.3.1.1: h={h_max}m → S={s:.2f}m"
-                break
-    else:
-        spacing_m = NFPA72_SMOKE_SPACING_FALLBACK_M  # 5.20m
-        table_row = f"Beyond table (>{NFPA72_SMOKE_TABLE_MAX_HEIGHT_M}m): fallback S={spacing_m:.2f}m"
+    spacing_m = NFPA72_SMOKE_MAX_SPACING_M  # 9.1m — FLAT per §17.7.3.2.3
+    table_row = f"Flat spacing S=9.1m per NFPA 72 §17.7.3.2.3 (NO height reduction)"
 
     # Coverage radius — NFPA 72 §17.7.4.2.3.1
     radius_m = NFPA72_COVERAGE_RADIUS_FACTOR * spacing_m
@@ -406,23 +399,26 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
     # Compute deterministic hash for audit
     result_hash = _f64_hash(spacing_m) + _f64_hash(radius_m)
 
-    # V120/V127 SAFETY NET — WARNING for high-ceiling spot smoke detection.
+    # V130 SAFETY NET — WARNING for high-ceiling spot smoke detection.
     # Per NFPA 72-2022 §17.7.1.11 (stratification) and consistent FPE guidance,
     # spot-type smoke detection is unreliable above 20 ft (6.096m).
-    # This is a NON-BINDING advisory — the spacing value is still returned
-    # from the table, not forced to 9.1m.
+    # This is a NON-BINDING advisory — the spacing value is still 9.1m
+    # per §17.7.3.2.3 (flat, no height reduction).
+    # At heights where spot smoke detection is unreliable, the engineering
+    # solution is alternative TECHNOLOGY (beam §17.7.4.6, ASD §17.7.4.7),
+    # NOT reducing point detector spacing.
     audit_notice: Optional[str] = None
     if h > _SPOT_SMOKE_HIGH_CEILING_M:
         audit_notice = (
-            f"⚠️ V127 ADVISORY: ceiling {h:.2f} m > "
+            f"⚠️ V130 ADVISORY: ceiling {h:.2f} m > "
             f"{_SPOT_SMOKE_HIGH_CEILING_M:.3f} m (20 ft). Per NFPA 72-2022 "
             "§17.7.1.11 (stratification) and consistent FPE guidance "
             "(ECMAG, SFPE Europe), spot-type smoke detection is "
             "unreliable above this height. Consider: (a) projected beam "
             "detectors per §17.7.4.6; (b) air-sampling per §17.7.4.7; "
-            "(c) performance-based design per Annex B. Spacing per "
-            "Table 17.6.3.1.1 (V127 Phase C: height-adjusted spacing restored "
-            "from canonical constants table; V121 flat-only override removed)."
+            "(c) performance-based design per Annex B. Spacing remains "
+            "9.1m per §17.7.3.2.3 (V130: flat spacing confirmed — NO "
+            "height reduction applies to smoke detectors)."
         )
         try:
             import logging as _logging
@@ -431,10 +427,10 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> Dict[str, Any]:
         except Exception:
             pass
 
-    nfpa_section = "NFPA 72-2022 §17.7.3.2.3, Table 17.6.3.1.1"
+    nfpa_section = "NFPA 72-2022 §17.7.3.2.3 (flat spacing — NO height reduction)"
     formula = (
         f"R = 0.7 × S [§17.7.4.2.3.1], S = {spacing_m:.2f}m "
-        f"[{'table' if h <= NFPA72_SMOKE_TABLE_MAX_HEIGHT_M else 'fallback'}]"
+        f"[flat per §17.7.3.2.3]"
     )
 
     result = {

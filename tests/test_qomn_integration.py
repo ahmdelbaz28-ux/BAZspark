@@ -130,12 +130,12 @@ class TestQOMNKernelLayer2Computation:
         R = r["coverage_radius_m"]
         assert abs(R - 0.7 * S) < 1e-4, f"R={R} ≠ 0.7×S={0.7*S}"
 
-    def test_smoke_spacing_decreases_with_height(self, kernel):
-        """Higher ceilings require tighter detector spacing (more detectors)."""
+    def test_smoke_spacing_flat_at_all_heights(self, kernel):
+        """V130 FIX: Spacing is FLAT 9.1m at ALL heights per §17.7.3.2.3."""
         r_low  = kernel.smoke_detector_spacing(3.0)
         r_high = kernel.smoke_detector_spacing(9.0)
-        assert r_low["listed_spacing_m"] > r_high["listed_spacing_m"], \
-            "Spacing must decrease as ceiling increases"
+        assert r_low["listed_spacing_m"] == r_high["listed_spacing_m"], \
+            "V130: Spacing must be flat 9.1m at ALL heights per §17.7.3.2.3"
 
     def test_battery_golden(self, kernel):
         """GOLDEN TEST: Battery formula per NFPA 72 §10.6.7.2.1."""
@@ -439,24 +439,21 @@ class TestGoldenOutputs:
     """Known inputs → known outputs. Any change = regression."""
 
     def test_golden_smoke_h10ft(self, kernel):
-        """V127: h=3.048m (10ft) → S=8.70m per NFPA 72 Table 17.6.3.1.1.
-        V127 corrected: The old table used h≤3.048m → S=9.144m. The corrected
-        NFPA 72 Table 17.6.3.1.1 starts at h≤3.0m → S=9.10m. Since 3.048 > 3.0,
-        it falls in the h≤3.7m row → S=8.70m."""
+        """V130 FIX: h=3.048m (10ft) → S=9.10m FLAT per §17.7.3.2.3.
+        Previous versions used height-reduced spacing (8.70m), but NFPA 72
+        §17.7.3.2.3 requires FLAT 30ft (9.1m) spacing for smoke detectors
+        at ALL ceiling heights."""
         r = kernel.smoke_detector_spacing(3.048)
-        assert abs(r["listed_spacing_m"] - 8.70) < 1e-3
+        assert abs(r["listed_spacing_m"] - 9.10) < 1e-3
 
     def test_golden_smoke_h15ft(self, kernel):
-        """V127: h=4.572m (15ft) → S=8.20m per NFPA 72 Table 17.6.3.1.1.
-        V127 corrected: The 1%/ft height adjustment (§17.7.3.2.3) was a
-        misapplication of Table 17.6.3.5.1 (heat detectors) to smoke detectors.
-        Now uses Table 17.6.3.1.1 directly: h=4.572m falls in h≤4.6m row → S=8.20m.
-        No additional scalar reduction is applied.
-        """
+        """V130 FIX: h=4.572m (15ft) → S=9.10m FLAT per §17.7.3.2.3.
+        Previous versions used height-reduced spacing (8.20m), but NFPA 72
+        §17.7.3.2.3 requires FLAT 30ft (9.1m) spacing for smoke detectors
+        at ALL ceiling heights."""
         r = kernel.smoke_detector_spacing(4.572)
-        # h=4.572m falls in h≤4.6m row → S=8.20m (Table 17.6.3.1.1)
-        assert abs(r["listed_spacing_m"] - 8.20) < 1e-3, \
-            f"Expected 8.20m per Table 17.6.3.1.1, got {r['listed_spacing_m']}"
+        assert abs(r["listed_spacing_m"] - 9.10) < 1e-3, \
+            f"Expected 9.10m flat per §17.7.3.2.3, got {r['listed_spacing_m']}"
 
     def test_golden_battery_standard(self, kernel):
         """Battery: 0.5A×24h + 3.0A×5min / 0.80 × 1.25."""

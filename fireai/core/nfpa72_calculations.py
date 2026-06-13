@@ -569,14 +569,15 @@ _NFPA72_TABLE_17_6_3_1_1 = list(_CANONICAL_HEIGHT_TABLE)
 _NFPA72_ABSOLUTE_MAX_HEIGHT = 12.2
 
 # Fallback ADJUSTED SPACING for heights above 12.2m (beyond NFPA table).
-# More conservative than the h=12.2m entry (5.60m / 3.70m).
+# V130 FIX: Smoke fallback = 9.10m (flat per §17.7.3.2.3, NO height reduction).
+# Heat fallback = 3.50m (conservative extrapolation from Table 17.6.3.5.1).
 # Coverage radius will be computed as R = 0.7 * spacing_fallback.
-_NFPA72_SMOKE_SPACING_FALLBACK = 5.20  # → R = 3.64m
+_NFPA72_SMOKE_SPACING_FALLBACK = 9.10  # → R = 6.37m (flat per §17.7.3.2.3)
 _NFPA72_HEAT_SPACING_FALLBACK  = 3.50  # → R = 2.45m
 
 # Legacy aliases (deprecated — use spacing fallback constants above)
 # These preserve backward compatibility for code that reads these constants.
-_NFPA72_SMOKE_FALLBACK = round(0.7 * _NFPA72_SMOKE_SPACING_FALLBACK, 2)  # 3.64m
+_NFPA72_SMOKE_FALLBACK = round(0.7 * _NFPA72_SMOKE_SPACING_FALLBACK, 2)  # 6.37m (V130: was 3.64m)
 _NFPA72_HEAT_FALLBACK  = round(0.7 * _NFPA72_HEAT_SPACING_FALLBACK, 2)   # 2.45m
 
 
@@ -695,6 +696,9 @@ def calculate_coverage_radius_from_height(
 
     for h_max, smoke_spacing, heat_spacing in _NFPA72_TABLE_17_6_3_1_1:
         if ceiling_height <= h_max:
+            # V130 FIX: Smoke detectors use FLAT 9.1m per NFPA 72 §17.7.3.2.3.
+            # NO height-based spacing reduction for smoke detectors.
+            # The 1%/ft reduction (Table 17.6.3.5.1) applies to HEAT detectors ONLY.
             spacing = smoke_spacing if detector_type.lower() == "smoke" else heat_spacing
             radius = round(0.7 * spacing, 2)          # R = 0.7 × S (coverage radius)
             wall_dist = round(spacing / 2.0, 2)        # S/2 (max wall distance)
@@ -711,7 +715,8 @@ def calculate_coverage_radius_from_height(
             )
 
     # exactly 12.2m — use last table entry
-    spacing = 5.60 if detector_type.lower() == "smoke" else 3.70
+    # V130 FIX: Smoke = flat 9.1m per §17.7.3.2.3; Heat = 3.70m per Table 17.6.3.5.1
+    spacing = 9.10 if detector_type.lower() == "smoke" else 3.70
     radius = round(0.7 * spacing, 2)
     wall_dist = round(spacing / 2.0, 2)
     return CoverageSpec(

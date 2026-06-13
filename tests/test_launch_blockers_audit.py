@@ -636,8 +636,10 @@ class TestPESignoffRequirements:
         )
 
     def test_smoke_spacing_table_has_regulatory_warning(self):
-        """SMOKE_HEIGHT_SPACING_TABLE must carry a regulatory warning
-        that the height-adjusted values are NOT from NFPA 72 §17.7.3.2.3.
+        """V130 FIX: SMOKE_HEIGHT_SPACING_TABLE now has flat 9.1m at ALL
+        heights per NFPA 72 §17.7.3.2.3. The table must carry a comment
+        explaining that the previous height-reduced values were INCORRECTLY
+        derived from heat detector table (Table 17.6.3.5.1).
 
         Since list.__doc__ is the built-in Python list docstring, we check
         the module source for the comment/docstring attached to the table definition.
@@ -652,11 +654,12 @@ class TestPESignoffRequirements:
         # Take the first 2000 chars after the table definition (includes docstring)
         table_section = table_section[:2000]
 
-        assert ("CONSERVATIVE" in table_section or "WARNING" in table_section or
-                "misapplication" in table_section.lower() or "REGULATORY WARNING" in table_section), (
-            "SMOKE_HEIGHT_SPACING_TABLE definition must carry a regulatory warning that "
-            "the height-adjusted values are derived from heat detector table "
-            "(Table 17.6.3.5.1) and are NOT required by §17.7.3.2.3."
+        # V130: Check for V130 fix reference or CRITICAL FIX or §17.7.3.2.3
+        assert ("V130" in table_section or "CRITICAL FIX" in table_section or
+                "17.7.3.2.3" in table_section or "flat" in table_section.lower()), (
+            "SMOKE_HEIGHT_SPACING_TABLE definition must carry a comment explaining "
+            "that smoke detector spacing is flat 9.1m per NFPA 72 §17.7.3.2.3 "
+            "(V130 critical fix)."
         )
 
 
