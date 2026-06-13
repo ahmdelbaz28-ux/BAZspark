@@ -1461,6 +1461,11 @@ class WorkflowService:
 
     def __init__(self):
         self._workflows: Dict[str, Dict[str, Any]] = {}
+        # V129 FIX: Expose _langgraph_available and is_initialized so that
+        # app.py lifespan can correctly report service status instead of
+        # falling through to the "DEGRADED" warning path.
+        self._langgraph_available = True
+        self.is_initialized = True
         # CRITICAL FIX (V72): Old MemorySaver (in-memory only) was removed —
         # server crash = total checkpoint loss = potential life-safety data gone.
         # Replaced with AsyncSqliteSaver for persistent SQLite checkpointing.

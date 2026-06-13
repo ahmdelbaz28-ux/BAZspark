@@ -99,30 +99,37 @@ class TestDWGPathSecurity:
 
     def test_path_traversal_blocked(self):
         """Path traversal attempts must be blocked by _path_security."""
-        from parsers._path_security import validate_path
+        from parsers._path_security import validate_input_path, UnsafePathError
 
-        # Test that path traversal is blocked
-        with pytest.raises(Exception):
-            validate_path("../../../etc/passwd")
+        # Path traversal with non-existent file should raise UnsafePathError or FileNotFoundError
+        with pytest.raises((UnsafePathError, FileNotFoundError)):
+            validate_input_path("../../../etc/passwd")
 
     def test_absolute_path_blocked(self):
         """Absolute paths outside allowed dirs must be blocked."""
-        from parsers._path_security import validate_path
+        from parsers._path_security import validate_input_path, UnsafePathError
 
-        with pytest.raises(Exception):
-            validate_path("/etc/passwd")
+        with pytest.raises((UnsafePathError, FileNotFoundError)):
+            validate_input_path("/etc/passwd")
 
     def test_normal_relative_path_accepted(self):
         """Normal relative paths within allowed directories should be accepted."""
-        from parsers._path_security import validate_path
+        import tempfile
+        from parsers._path_security import validate_input_path
 
-        # This should not raise for a simple filename
+        # Create a real temp file — validate_input_path checks existence
+        with tempfile.NamedTemporaryFile(suffix=".dxf", delete=False, prefix="test_fireai_") as f:
+            f.write(b"0\nSECTION\n0\nENDSEC\n0\nEOF\n")
+            filepath = f.name
+
         try:
-            result = validate_path("floor_plan.dxf")
-            assert isinstance(result, str)
-        except Exception:
-            # If the function requires an allowlist dir, that's also acceptable
-            pass
+            result = validate_input_path(filepath, allowed_extensions=frozenset({".dxf"}))
+            # validate_input_path returns a resolved Path object
+            from pathlib import Path
+            assert isinstance(result, Path)
+        finally:
+            import os
+            os.unlink(filepath)
 
 
 class TestDXFParser:
@@ -140,8 +147,8 @@ class TestDXFParser:
 
     def test_path_security_import(self):
         """Path security module must be importable."""
-        from parsers._path_security import validate_path
-        assert validate_path is not None
+        from parsers._path_security import validate_input_path
+        assert validate_input_path is not None
 
 
 class TestDWGEndpointSecurity:
