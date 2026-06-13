@@ -563,7 +563,7 @@ class UniversalDataModel:
                 for handle, elems in handle_map.items():
                     if len(elems) > 1:
                         for i in range(len(elems) - 1):
-                            conflict_id = str(uuid.uuid4()) if 'uuid' in dir() else f"conflict_{handle}_{i}"
+                            conflict_id = f"conflict_{handle}_{i}"  # V131 FIX: Removed ambiguous uuid reference
                             try:
                                 import uuid as _uuid
                                 conflict_id = str(_uuid.uuid4())
@@ -671,28 +671,39 @@ class UniversalDataModel:
                 cursor.execute("SELECT COUNT(*) FROM conflicts WHERE resolved = 0")
                 unresolved_conflicts = cursor.fetchone()[0]
 
+                # V131 FIX: Use a proper dataclass instead of dynamic class attributes for mypy
+                from dataclasses import dataclass
+                @dataclass
                 class _Stats:
-                    pass
-                stats = _Stats()
-                stats.total_elements = total_elements
-                stats.active_elements = active_elements
-                stats.deleted_elements = deleted_elements
-                stats.total_connections = total_connections
-                stats.total_conflicts = total_conflicts
-                stats.unresolved_conflicts = unresolved_conflicts
+                    total_elements: int = 0
+                    active_elements: int = 0
+                    deleted_elements: int = 0
+                    total_connections: int = 0
+                    total_conflicts: int = 0
+                    unresolved_conflicts: int = 0
+                stats = _Stats(
+                    total_elements=total_elements,
+                    active_elements=active_elements,
+                    deleted_elements=deleted_elements,
+                    total_connections=total_connections,
+                    total_conflicts=total_conflicts,
+                    unresolved_conflicts=unresolved_conflicts,
+                )
                 return stats
             except MemoryError:
                 raise
             except Exception as e:
                 logger.error("HIGH: Error getting statistics: %s", e)
-                class _Stats:
-                    total_elements = 0
-                    active_elements = 0
-                    deleted_elements = 0
-                    total_connections = 0
-                    total_conflicts = 0
-                    unresolved_conflicts = 0
-                return _Stats()
+                from dataclasses import dataclass
+                @dataclass
+                class _StatsFallback:  # V131 FIX: Renamed to avoid no-redef
+                    total_elements: int = 0
+                    active_elements: int = 0
+                    deleted_elements: int = 0
+                    total_connections: int = 0
+                    total_conflicts: int = 0
+                    unresolved_conflicts: int = 0
+                return _StatsFallback()
 
     # ── Deserialization ───────────────────────────────────────────────────
 

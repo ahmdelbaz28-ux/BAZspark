@@ -140,7 +140,7 @@ class HeadlessIFCBridge:
         except Exception as e:
             raise ValueError(f"Failed to open IFC model: {e}")
         # Geometry settings for tessellation (lazy-initialized)
-        self._geom_settings = None
+        self._geom_settings: object = None  # V131 FIX: Typed as object for mypy compatibility
 
     # ══════════════════════════════════════════════════════════════
     # ORIGINAL API (preserved for backward compatibility)
@@ -517,7 +517,7 @@ class HeadlessIFCBridge:
         except Exception:
             return None, (0, 0, 0), 3.0, 0.0, 0.0
 
-        verts = shape.geometry.verts  # flat [x0,y0,z0, x1,y1,z1, ...]
+        verts = shape.geometry.verts  # type: ignore[union-attr] # flat [x0,y0,z0, x1,y1,z1, ...]
         if not verts:
             return None, (0, 0, 0), 3.0, 0.0, 0.0
 
@@ -548,7 +548,7 @@ class HeadlessIFCBridge:
         if settings is not None:
             try:
                 shape = ifcopenshell.geom.create_shape(settings, entity)
-                verts = shape.geometry.verts
+                verts = shape.geometry.verts  # type: ignore[union-attr]
                 if verts:
                     pts = [(verts[i], verts[i + 1], verts[i + 2]) for i in range(0, len(verts), 3)]
                     xs = [p[0] for p in pts]

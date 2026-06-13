@@ -42,7 +42,7 @@ log = logging.getLogger(__name__)
 
 # ─── Lazy IfcOpenShell import ──────────────────────────────────────────────
 
-_ifcopenshell = None
+_ifcopenshell: object = None  # V131 FIX: Typed as object to satisfy mypy (was Module|bool)
 
 
 def _get_ifcopenshell():
@@ -50,12 +50,13 @@ def _get_ifcopenshell():
     global _ifcopenshell
     if _ifcopenshell is None:
         try:
-            import ifcopenshell as _ifs
+            import ifcopenshell as _ifs  # type: ignore[import-untyped]
 
             _ifcopenshell = _ifs
         except ImportError:
-            _ifcopenshell = False
-    return _ifcopenshell if _ifcopenshell is not False else None
+            _ifcopenshell = None  # V131 FIX: Use None instead of False to avoid type mismatch
+            return None
+    return _ifcopenshell
 
 
 # ─── Enums ──────────────────────────────────────────────────────────────────

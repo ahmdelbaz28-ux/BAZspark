@@ -43,36 +43,42 @@
 <div align="center">
   <table>
     <tr>
+      <td colspan="2"><img src="docs/assets/screenshots/all-gates-green.png" alt="All Gates GREEN" width="900"></td>
+    </tr>
+    <tr>
+      <td colspan="2" align="center"><b>🟢 7/7 CI/CD Gates PASSED — Deployment Authorized</b></td>
+    </tr>
+    <tr>
+      <td><img src="docs/assets/screenshots/gate1-static-analysis.png" alt="Gate 1 Static Analysis" width="450"></td>
       <td><img src="docs/assets/screenshots/test-results.png" alt="Test Results" width="450"></td>
-      <td><img src="docs/assets/screenshots/api-endpoints.png" alt="API Endpoints" width="450"></td>
     </tr>
     <tr>
+      <td align="center"><b>🔍 Gate 1 — Static Analysis: PASS</b></td>
       <td align="center"><b>🧪 5,907 Tests — 100% Pass</b></td>
-      <td align="center"><b>🔗 72+ API Endpoints Verified</b></td>
     </tr>
     <tr>
+      <td><img src="docs/assets/screenshots/api-endpoints.png" alt="API Endpoints" width="450"></td>
       <td><img src="docs/assets/screenshots/dashboard.png" alt="Dashboard" width="450"></td>
-      <td><img src="docs/assets/screenshots/engineering-workspace.png" alt="Engineering Workspace" width="450"></td>
     </tr>
     <tr>
+      <td align="center"><b>🔗 72+ API Endpoints Verified</b></td>
       <td align="center"><b>📊 Dashboard</b></td>
-      <td align="center"><b>📐 Engineering Workspace</b></td>
     </tr>
     <tr>
+      <td><img src="docs/assets/screenshots/engineering-workspace.png" alt="Engineering Workspace" width="450"></td>
       <td><img src="docs/assets/screenshots/fire-alarm-designer.png" alt="Fire Alarm Designer" width="450"></td>
-      <td><img src="docs/assets/screenshots/compliance-center.png" alt="Compliance Center" width="450"></td>
     </tr>
     <tr>
+      <td align="center"><b>📐 Engineering Workspace</b></td>
       <td align="center"><b>🔥 Fire Alarm Designer</b></td>
-      <td align="center"><b>✅ Compliance Center</b></td>
     </tr>
     <tr>
+      <td><img src="docs/assets/screenshots/compliance-center.png" alt="Compliance Center" width="450"></td>
       <td><img src="docs/assets/screenshots/project-management.png" alt="Project Management" width="450"></td>
-      <td><img src="docs/assets/screenshots/connections.png" alt="Connections" width="450"></td>
     </tr>
     <tr>
+      <td align="center"><b>✅ Compliance Center</b></td>
       <td align="center"><b>📁 Project Management</b></td>
-      <td align="center"><b>🔗 Connections</b></td>
     </tr>
   </table>
 </div>
