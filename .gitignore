@@ -163,10 +163,13 @@ config/secrets.json
 .pytest_cache/
 .hypothesis/
 
-# Reports
+# Reports (generated)
 reports/
 coverage.json
 audit/
+
+# But allow phase reports in docs
+!docs/reports/
 
 # Node.js
 node_modules/
