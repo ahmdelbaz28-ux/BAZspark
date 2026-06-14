@@ -300,7 +300,7 @@ function LogRow({ time, user, action, type, msg, file, dev, isSystem }: any) {
   if (type === "purple") border = "border-l-purple-500";
   if (type === "orange") border = "border-l-orange-500";
 
-  let textStyle = isSystem ? "text-slate-500 italic" : "text-slate-300";
+  const textStyle = isSystem ? "text-slate-500 italic" : "text-slate-300";
 
   return (
     <tr className={`bg-slate-900 border-l-2 ${border} hover:bg-slate-800 cursor-pointer`}>

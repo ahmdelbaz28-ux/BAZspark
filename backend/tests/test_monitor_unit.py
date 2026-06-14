@@ -397,6 +397,7 @@ class TestSyncWSValidation:
         # now reads os.getenv("FIREAI_API_KEY") at runtime. Tests must
         # monkeypatch os.environ instead of the removed module attribute.
         import os
+
         from backend.routers.sync import _validate_ws_origin
         original_key = os.environ.get("FIREAI_API_KEY")
         try:
@@ -419,6 +420,7 @@ class TestSyncWSValidation:
         """Test WS API key validation when no key is configured."""
         # V131 FIX: _FIREAI_API_KEY was removed — use os.environ
         import os
+
         from backend.routers.sync import _validate_ws_api_key
         original_key = os.environ.get("FIREAI_API_KEY")
         try:
@@ -437,6 +439,7 @@ class TestSyncWSValidation:
         """Test WS API key validation when key is configured (query param rejected)."""
         # V131 FIX: _FIREAI_API_KEY was removed — use os.environ
         import os
+
         from backend.routers.sync import _validate_ws_api_key
         original_key = os.environ.get("FIREAI_API_KEY")
         try:

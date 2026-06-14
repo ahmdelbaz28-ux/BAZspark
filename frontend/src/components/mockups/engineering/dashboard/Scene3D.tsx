@@ -1,7 +1,6 @@
 import { useEffect, useRef, useMemo } from "react";
 import * as THREE from "three";
-// @ts-ignore - OrbitControls path varies by Three.js version
-const OrbitControlsClass = require("three/examples/jsm/controls/OrbitControls").OrbitControls;
+import { OrbitControls as OrbitControlsClass } from "three/examples/jsm/controls/OrbitControls.js";
 type OrbitControlsType = InstanceType<typeof OrbitControlsClass>;
 
 export function Scene3D() {

@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
 import { Upload, Download, FileCode, AlertCircle } from 'lucide-react';
 import { saveAs } from 'file-saver';
-// @ts-ignore - dxf-parser module compatibility
 import DxfParser from 'dxf-parser';
 import { actions } from '@/store/simpleStore';
 

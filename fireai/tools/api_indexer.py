@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-def extract_endpoints(routers_dir: Path) -> dict:
+def extract_endpoints(routers_dir: Path) -> dict[str, list[dict[str, object]]]:
     """Extract all endpoints from router files."""
     endpoints = defaultdict(list)
 
@@ -52,11 +52,11 @@ def extract_endpoints(routers_dir: Path) -> dict:
     return endpoints
 
 
-def generate_markdown(endpoints: dict) -> str:
+def generate_markdown(endpoints: dict[str, list[dict[str, object]]]) -> str:
     """Generate Markdown documentation."""
 
     # Group by category
-    categories = {
+    categories: dict[str, list[dict[str, object]]] = {
         "Health & Monitoring": [],
         "Projects": [],
         "Devices": [],

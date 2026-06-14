@@ -10,7 +10,6 @@ import pytest
 
 from fireai.core.nfpa72_calculations import (
     AWG_GAUGES,
-    AWG_RESISTANCE_TABLE,
     CoverageSpec,
     auto_select_awg,
     beam_pocket_correction_factor,
