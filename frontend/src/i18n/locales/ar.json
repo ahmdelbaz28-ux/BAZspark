@@ -272,7 +272,6 @@
     "timestamp": "الطابع الزمني",
     "resolve": "حل",
     "noConflictsDetected": "لا توجد تعارضات مكتشفة",
-    "resolved": "محلولة",
     "resolutionFailed": "فشل الحل",
     "resolveConflict": "حل التعارض",
     "selectResolutionStrategy": "حدد استراتيجية الحل لهذا التعارض.",
