@@ -2,6 +2,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import {
+  RadioGroup,
+  RadioGroupItem
+} from '@/components/ui/radio-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 function Conflicts() {
   const { t } = useTranslation();
@@ -47,27 +59,27 @@ function Conflicts() {
               : 'Loading...'}
           </p>
         </div>
-        <button
+        <Button
           onClick={() => detectMutation.mutate()}
           disabled={detectMutation.isPending}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+          className="bg-red-600 hover:bg-red-700 text-white border-none"
         >
           {detectMutation.isPending ? (
             <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Detecting...
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+              {t('conflicts.detecting')}
             </>
           ) : (
             <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
                 <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 <line x1="12" y1="9" x2="12" y2="13" />
                 <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
-              Detect Conflicts
+              {t('conflicts.detectConflicts')}
             </>
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Detect result */}
@@ -186,12 +198,12 @@ function Conflicts() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         {!conflict.resolved && (
-                          <button
+                          <Button
                             onClick={() => setResolveTarget(conflict.conflict_id)}
-                            className="px-3 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white text-xs font-medium rounded-lg transition-colors"
+                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-lg transition-colors"
                           >
-                            Resolve
-                          </button>
+                            {t('conflicts.resolve')}
+                          </Button>
                         )}
                       </td>
                     </tr>
@@ -221,52 +233,49 @@ function Conflicts() {
             )}
 
             <div className="space-y-3 mb-6">
-              <label className="flex items-center gap-3 cursor-pointer p-3 bg-slate-900/50 rounded-lg border border-slate-700 hover:border-orange-500/30 transition-colors">
-                <input
-                  type="radio"
-                  name="strategy"
-                  value="LAST_WRITE_WINS"
-                  checked={resolveStrategy === 'LAST_WRITE_WINS'}
-                  onChange={() => setResolveStrategy('LAST_WRITE_WINS')}
-                  className="text-orange-500 focus:ring-orange-500"
-                />
-                <div>
-                  <p className="text-sm text-white font-medium">Last Write Wins</p>
-                  <p className="text-xs text-slate-400">Accept the most recent change</p>
+              <RadioGroup value={resolveStrategy} onValueChange={setResolveStrategy} className="space-y-3">
+                <div className="flex items-start space-x-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700 hover:border-red-500/30 transition-colors">
+                  <RadioGroupItem value="LAST_WRITE_WINS" id="last-write" className="mt-0.5 data-[state=checked]:border-red-500 data-[state=checked]:bg-red-500" />
+                  <div className="space-y-1">
+                    <label htmlFor="last-write" className="text-sm text-white font-medium cursor-pointer">
+                      {t('conflicts.lastWriteWins')}
+                    </label>
+                    <p className="text-xs text-slate-400">
+                      {t('conflicts.acceptMostRecent')}
+                    </p>
+                  </div>
                 </div>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer p-3 bg-slate-900/50 rounded-lg border border-slate-700 hover:border-orange-500/30 transition-colors">
-                <input
-                  type="radio"
-                  name="strategy"
-                  value="SEMANTIC_MERGE"
-                  checked={resolveStrategy === 'SEMANTIC_MERGE'}
-                  onChange={() => setResolveStrategy('SEMANTIC_MERGE')}
-                  className="text-orange-500 focus:ring-orange-500"
-                />
-                <div>
-                  <p className="text-sm text-white font-medium">Semantic Merge</p>
-                  <p className="text-xs text-slate-400">Intelligently merge both changes</p>
+                <div className="flex items-start space-x-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700 hover:border-red-500/30 transition-colors">
+                  <RadioGroupItem value="SEMANTIC_MERGE" id="semantic-merge" className="mt-0.5 data-[state=checked]:border-red-500 data-[state=checked]:bg-red-500" />
+                  <div className="space-y-1">
+                    <label htmlFor="semantic-merge" className="text-sm text-white font-medium cursor-pointer">
+                      {t('conflicts.semanticMerge')}
+                    </label>
+                    <p className="text-xs text-slate-400">
+                      {t('conflicts.intelligentMerge')}
+                    </p>
+                  </div>
                 </div>
-              </label>
+              </RadioGroup>
             </div>
 
             <div className="flex justify-end gap-3">
-              <button
+              <Button
+                variant="outline"
+                className="border-slate-600 text-slate-300"
                 onClick={() => setResolveTarget(null)}
-                className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
               >
-                Cancel
-              </button>
-              <button
+                {t('common.cancel')}
+              </Button>
+              <Button
                 onClick={() =>
                   resolveMutation.mutate({ id: resolveTarget, strategy: resolveStrategy })
                 }
                 disabled={resolveMutation.isPending}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white border-none"
               >
-                {resolveMutation.isPending ? 'Resolving...' : 'Resolve'}
-              </button>
+                {resolveMutation.isPending ? t('conflicts.resolving') : t('conflicts.resolve')}
+              </Button>
             </div>
           </div>
         </div>

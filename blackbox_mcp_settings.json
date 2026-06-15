@@ -1,7 +1,7 @@
 {
   "mcp": {
     "servers": {
-      "github.com/github/github-mcp-server": {
+"github.com/github/github-mcp-server": {
         "command": "docker",
         "args": [
           "run",
@@ -13,6 +13,15 @@
         ],
         "env": {
           "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github_mcp_pat}"
+        }
+      },
+      "TestSprite": {
+        "command": "npx",
+        "args": [
+          "@testsprite/testsprite-mcp@latest"
+        ],
+        "env": {
+          "API_KEY": "sk-user-yzgoyjQR2p9whikAhJVlSil2Vn94qdE7ISwCxt3-TpXfkPKAC-eB6M3ZQzeY37CZYxBdlZj-N65d-R5XmOt1asGJX-GHDBiOxrA6JhIAgufaFE0vVPLhmxV4A4V6lFu5HtY"
         }
       }
     }
