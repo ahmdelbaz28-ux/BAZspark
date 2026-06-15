@@ -1279,15 +1279,15 @@ async function html2pptx(htmlFile, pres, options = {}) {
       overflowWarnings.push(...bodyDimensions.errors);
     }
 
-    // const dimensionErrors = validateDimensions(bodyDimensions, pres);
-    // if (dimensionErrors.length > 0) {
-    //   validationErrors.push(...dimensionErrors);
-    // }
+    const dimensionErrors = validateDimensions(bodyDimensions, pres);
+    if (dimensionErrors.length > 0) {
+      validationErrors.push(...dimensionErrors);
+    }
 
-    // const textBoxPositionErrors = validateTextBoxPosition(slideData, bodyDimensions);
-    // if (textBoxPositionErrors.length > 0) {
-    //   validationErrors.push(...textBoxPositionErrors);
-    // }
+    const textBoxPositionErrors = validateTextBoxPosition(slideData, bodyDimensions);
+    if (textBoxPositionErrors.length > 0) {
+      validationErrors.push(...textBoxPositionErrors);
+    }
 
     if (slideData.errors && slideData.errors.length > 0) {
       validationErrors.push(...slideData.errors);

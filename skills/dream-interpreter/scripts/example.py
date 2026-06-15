@@ -2,18 +2,22 @@
 """
 Example helper script for dream-interpreter
 
-This is a placeholder script that can be executed directly.
-Replace with actual implementation or delete if not needed.
+DISABLED: This script is a placeholder and has not been implemented.
+It exists to document the expected interface for future development.
+Remove this file once the skill is implemented or if it is no longer needed.
 
-Example real scripts from other skills:
-- pdf/scripts/fill_fillable_fields.py - Fills PDF form fields
-- pdf/scripts/convert_pdf_to_images.py - Converts PDF pages to images
+Expected functionality:
+- Process dream narrative text
+- Extract symbolic elements and themes
+- Generate interpretation based on psychological frameworks
 """
 
+import sys
+
 def main():
-    print("This is an example script for dream-interpreter")
-    # TODO: Add actual script logic here
-    # This could be data processing, file conversion, API calls, etc.
+    print("ERROR: dream-interpreter example script is not implemented.", file=sys.stderr)
+    print("This is a placeholder script. The skill has not been developed yet.", file=sys.stderr)
+    sys.exit(1)
 
 if __name__ == "__main__":
     main()

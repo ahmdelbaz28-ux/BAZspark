@@ -70,7 +70,7 @@ class TaskStatus(str, Enum):
 
 class AuthScheme(str, Enum):
     BEARER = "BEARER"
-    API_KEY = "API_KEY"
+    API_KEY = "API_KEY"  # Auth scheme name, not an actual key value
 
 
 # ===========================================================================

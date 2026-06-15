@@ -3,10 +3,13 @@ Message Bus Transport for Distributed FACP System
 """
 import asyncio
 import json
+import logging
 import threading
 import time
 from abc import abstractmethod
 from typing import Any, Callable, Dict
+
+logger = logging.getLogger(__name__)
 
 from .http_transport import TransportLayer
 
@@ -26,22 +29,22 @@ class MessageBusTransport(TransportLayer):
     @abstractmethod
     def connect(self):
         """Connect to the message bus"""
-        pass
+        raise NotImplementedError("Subclasses must implement connect()")
 
     @abstractmethod
     def disconnect(self):
         """Disconnect from the message bus"""
-        pass
+        raise NotImplementedError("Subclasses must implement disconnect()")
 
     @abstractmethod
     def publish(self, topic: str, message: Dict[str, Any]):
         """Publish a message to a topic"""
-        pass
+        raise NotImplementedError("Subclasses must implement publish()")
 
     @abstractmethod
     def subscribe(self, topic: str, handler: Callable):
         """Subscribe to a topic with a handler"""
-        pass
+        raise NotImplementedError("Subclasses must implement subscribe()")
 
     def send_request(self, request_data: Dict[str, Any], target_node: str = None) -> Dict[str, Any]:
         """

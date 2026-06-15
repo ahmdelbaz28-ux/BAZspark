@@ -36,6 +36,7 @@ References:
 from __future__ import annotations
 
 import logging
+import os
 import time
 
 try:
@@ -283,11 +284,11 @@ class SevereWeatherService:
         life safety even when real-time data is unavailable.
     """
 
-    NWS_ALERTS_URL = "https://api.weather.gov/alerts"
-    NWS_POINT_URL = "https://api.weather.gov/points"
-    METEOALARM_API_URL = "https://api.meteoalarm.org/api/v1/warnings"
-    METEOALARM_ATOM_URL = "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-country"
-    OPENMETEO_ALERTS_URL = "https://api.open-meteo.com/v1/forecast"
+    NWS_ALERTS_URL = os.environ.get("NWS_API_URL", "https://api.weather.gov/alerts")
+    NWS_POINT_URL = os.environ.get("NWS_POINTS_URL", "https://api.weather.gov/points")
+    METEOALARM_API_URL = os.environ.get("METEOALARM_API_URL", "https://api.meteoalarm.org/api/v1/warnings")
+    METEOALARM_ATOM_URL = os.environ.get("METEOALARM_ATOM_URL", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-country")
+    OPENMETEO_ALERTS_URL = os.environ.get("OPENMETEO_ALERTS_URL", "https://api.open-meteo.com/v1/forecast")
 
     # US bounding box (continental US)
     US_LAT_MIN = 24.0

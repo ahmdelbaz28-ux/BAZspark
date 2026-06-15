@@ -16,7 +16,27 @@ const prisma = new PrismaClient();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: (() => {
+    const origin = process.env.CORS_ORIGIN;
+    if (!origin) {
+      if (process.env.NODE_ENV === 'production') {
+        // In production, CORS_ORIGIN MUST be explicitly set
+        console.error(
+          '[SECURITY] CORS_ORIGIN environment variable is not set. ' +
+          'No origins will be allowed. Set CORS_ORIGIN to your frontend URL.'
+        );
+        return '';  // No origins allowed if not configured
+      }
+      // Development only
+      console.warn(
+        '[SECURITY] CORS_ORIGIN not set, using development default. ' +
+        'This MUST be set in production.'
+      );
+      return 'http://localhost:5173';
+    }
+    // Support multiple origins separated by comma
+    return origin.split(',').map(o => o.trim());
+  })(),
   credentials: true
 }));
 

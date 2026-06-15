@@ -5,6 +5,29 @@ import { z } from 'zod';
 import { prisma } from '../index';
 import { errorHandler } from '../middleware/errorHandler';
 
+/**
+ * Get JWT secret from environment variable.
+ * CRITICAL: Fails loudly if JWT_SECRET is not set in production.
+ */
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'FATAL: JWT_SECRET environment variable is not set. ' +
+        'Refusing to sign tokens with no secret configured. ' +
+        'Set JWT_SECRET before starting the server.'
+      );
+    }
+    console.warn(
+      '[SECURITY WARNING] JWT_SECRET is not set! Using insecure development default. ' +
+      'This MUST be set in production.'
+    );
+    return 'dev-only-insecure-secret-DO-NOT-USE-IN-PRODUCTION';
+  }
+  return secret;
+}
+
 const router = Router();
 
 const signupSchema = z.object({
@@ -44,8 +67,8 @@ export const signup = async (req: Request, res: Response) => {
     // Generate JWT
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || 'default-secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as any
+      getJwtSecret(),
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
     
     res.status(201).json({ user, token });
@@ -86,8 +109,8 @@ export const login = async (req: Request, res: Response) => {
     // Generate JWT
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || 'default-secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as any
+      getJwtSecret(),
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
     
     res.json({ 

@@ -32,7 +32,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function loadPlaywright() {
   // Try direct require first
-  try { return require('playwright'); } catch (_) {}
+  try { return require('playwright'); } catch (err) { console.error('[html2pdf] Error loading playwright:', err.message || err); }
 
   // Search common global paths
   const Module = require('module');
@@ -44,24 +44,24 @@ function loadPlaywright() {
   try {
     const g = execSync('npm root -g', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
     if (g) roots.add(g);
-  } catch (_) {}
+  } catch (err) { console.error('[html2pdf] Error finding npm global root:', err.message || err); }
 
   for (const base of roots) {
     const pkg = path.join(base, 'playwright', 'package.json');
     if (!fs.existsSync(pkg)) continue;
-    try { return Module.createRequire(pkg)('playwright'); } catch (_) {}
+    try { return Module.createRequire(pkg)('playwright'); } catch (err) { console.error('[html2pdf] Error loading playwright from path:', err.message || err); }
   }
   throw new Error('Playwright not found. Install: npm install -g playwright');
 }
 
 function loadPdfLib() {
-  try { return require('pdf-lib'); } catch (_) {}
+  try { return require('pdf-lib'); } catch (err) { console.error('[html2pdf] Error loading pdf-lib:', err.message || err); }
   const Module = require('module');
   try {
     const g = execSync('npm root -g', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
     const pkg = path.join(g, 'pdf-lib', 'package.json');
     if (fs.existsSync(pkg)) return Module.createRequire(pkg)('pdf-lib');
-  } catch (_) {}
+  } catch (err) { console.error('[html2pdf] Error loading pdf-lib from global path:', err.message || err); }
   throw new Error('pdf-lib not found. Install: npm install -g pdf-lib');
 }
 
@@ -88,7 +88,7 @@ function resolveChromium(chromiumObj, allowInstall = false) {
   if (allowInstall) {
     const r = spawnSync('npx', ['playwright', 'install', 'chromium'], { stdio: 'inherit', shell: true });
     if (r.status === 0) {
-      try { exe = chromiumObj.executablePath(); } catch (_) {}
+      try { exe = chromiumObj.executablePath(); } catch (err) { console.error('[html2pdf] Error getting Chromium executable path after install:', err.message || err); }
       if (exe && fs.existsSync(exe)) return { status: 'installed', executablePath: exe };
     }
   }

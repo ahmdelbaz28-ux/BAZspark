@@ -1,6 +1,7 @@
 """
 Load Balancer for L2 Orchestrator in Distributed FACP System
 """
+import logging
 import random
 import threading
 import time
@@ -334,18 +335,103 @@ class LoadBalancer:
 
     def perform_health_check(self):
         """
-        Perform health check on all workers
+        Perform health check on all workers.
+        
+        When a worker is detected as unhealthy:
+        1. Mark it as offline
+        2. Redistribute its in-flight tasks to healthy workers
+        3. Adjust weights to avoid routing new tasks to failed workers
+        4. Log the failure for observability
         """
         current_time = time.time()
         if current_time - self.last_health_check < self.health_check_interval:
             return
 
         with self.lock:
-            for _worker_id, worker in self.workers.items():
-                if not worker.is_healthy():
+            for worker_id, worker in self.workers.items():
+                if not worker.is_healthy() and worker.status != "offline":
+                    previous_status = worker.status
                     worker.status = "offline"
-                    # TODO: Handle failed worker appropriately
+                    worker.failure_count += 1
+                    worker.last_failure_time = current_time
+
+                    # Reduce weight to prevent routing to this worker
+                    if worker.failure_count > 3:
+                        worker.weight = 0.0  # Completely exclude from selection
+                    elif worker.failure_count > 1:
+                        worker.weight *= 0.25  # Drastically reduce weight
+
+                    logger = logging.getLogger(__name__)
+                    logger.warning(
+                        "Worker %s marked OFFLINE (heartbeat timeout). "
+                        "Failure count: %d, previous status: %s. "
+                        "Redistributing tasks to healthy workers.",
+                        worker_id, worker.failure_count, previous_status
+                    )
+
+                    # Redistribute in-flight tasks from failed worker
+                    self._redistribute_failed_worker_tasks(worker_id)
+
             self.last_health_check = current_time
+
+    def _redistribute_failed_worker_tasks(self, failed_worker_id: str):
+        """
+        Redistribute tasks that were assigned to a failed worker.
+        
+        Finds all task assignments for the failed worker and attempts
+        to reassign them to healthy workers that can handle the same
+        methods. If no healthy worker is available, tasks are queued
+        for retry when a worker recovers.
+        """
+        tasks_to_redistribute = {}
+
+        # Find tasks assigned to the failed worker
+        for task_id, assigned_worker_id in list(self.task_assignment_history.items()):
+            if assigned_worker_id == failed_worker_id:
+                tasks_to_redistribute[task_id] = assigned_worker_id
+
+        if not tasks_to_redistribute:
+            return
+
+        # Decrement task count on the failed worker
+        failed_worker = self.workers.get(failed_worker_id)
+        if failed_worker:
+            failed_worker.current_tasks = 0
+            failed_worker.current_load = 0.0
+
+        # Find healthy workers that can accept tasks
+        healthy_workers = [
+            w for w in self.workers.values()
+            if w.is_healthy() and w.can_accept_task()
+        ]
+
+        if not healthy_workers:
+            logger = logging.getLogger(__name__)
+            logger.error(
+                "No healthy workers available to redistribute %d tasks from failed worker %s. "
+                "Tasks will be queued for retry.",
+                len(tasks_to_redistribute), failed_worker_id
+            )
+            # Store failed tasks for later retry when a worker recovers
+            self._pending_redistribution.update(tasks_to_redistribute)
+            return
+
+        # Redistribute tasks across healthy workers using least-connections strategy
+        for task_id in tasks_to_redistribute:
+            best_worker = min(healthy_workers, key=lambda w: (w.current_tasks, w.current_load))
+            best_worker.register_task_start()
+            self.task_assignment_history[task_id] = best_worker.worker_id
+            self.worker_selection_history[best_worker.worker_id] = \
+                self.worker_selection_history.get(best_worker.worker_id, 0) + 1
+
+        logger = logging.getLogger(__name__)
+        logger.info(
+            "Redistributed %d tasks from failed worker %s to %d healthy workers.",
+            len(tasks_to_redistribute), failed_worker_id, len(healthy_workers)
+        )
+
+    # Storage for tasks that couldn't be redistributed (no healthy workers available)
+    _pending_redistribution: Dict[str, str] = {}
 
     def get_statistics(self) -> Dict[str, Any]:
         """
@@ -411,7 +497,11 @@ class LoadBalancer:
 
     def handle_worker_recovery(self, worker_id: str):
         """
-        Handle the recovery of a previously failed worker
+        Handle the recovery of a previously failed worker.
+        
+        Restores the worker to online status, resets its weight,
+        refreshes its heartbeat, and redistributes any pending tasks
+        that were queued during its failure.
         """
         with self.lock:
             if worker_id in self.workers:
@@ -419,6 +509,28 @@ class LoadBalancer:
                 worker.status = "online"
                 worker.weight = 1.0  # Reset weight to normal
                 worker.heartbeat()  # Refresh heartbeat
+
+                logger = logging.getLogger(__name__)
+                logger.info(
+                    "Worker %s recovered — status: online, weight: 1.0. "
+                    "Checking for pending tasks to redistribute.",
+                    worker_id
+                )
+
+                # Redistribute pending tasks that were queued during failure
+                if self._pending_redistribution:
+                    pending_count = len(self._pending_redistribution)
+                    for task_id, original_worker_id in list(self._pending_redistribution.items()):
+                        if worker.can_accept_task():
+                            worker.register_task_start()
+                            self.task_assignment_history[task_id] = worker_id
+                            del self._pending_redistribution[task_id]
+
+                    logger.info(
+                        "Redistributed %d/%d pending tasks to recovered worker %s.",
+                        pending_count - len(self._pending_redistribution),
+                        pending_count, worker_id
+                    )
 
     def cleanup_old_assignments(self, max_age_minutes: int = 60):
         """

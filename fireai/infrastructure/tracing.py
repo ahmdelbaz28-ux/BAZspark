@@ -23,6 +23,7 @@ except ImportError:
 
 import functools
 import logging
+import os
 import typing as t
 from contextvars import ContextVar
 
@@ -38,7 +39,7 @@ else:
 
 def setup_tracing(
     service_name: str = 'fireai',
-    endpoint: str = 'http://tempo:4318/v1/traces',
+    endpoint: str = os.environ.get('TEMPO_ENDPOINT', 'http://tempo:4318/v1/traces'),
     sample_rate: float = 1.0,
 ) -> TracerProvider | None:
     if not _OPENTELEMETRY_AVAILABLE:
