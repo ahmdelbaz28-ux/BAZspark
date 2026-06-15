@@ -13,8 +13,9 @@ requests>=2.32.0
 urllib3>=2.7.0      # CVE-2026-26812: insufficient header validation in <2.7.0
 python-multipart>=0.0.9    # PYSEC-2024-60: path traversal in <0.0.7
 pyjwt>=2.6.0
-passlib[bcrypt]>=1.7.4
-bcrypt>=4.0.0
+# NOTE: passlib and bcrypt removed — they were listed as dependencies but never
+# imported in the codebase. Auth uses HMAC (backend/app.py) and API keys,
+# not password hashing. If needed in the future, re-add them.
 python-dotenv>=1.0.0
 alembic>=1.10.0
 
@@ -34,6 +35,11 @@ pillow>=10.0.0      # CVE-2023-44271: DOS in <10.0.0
 pandas>=1.3.0
 networkx>=2.5
 sympy>=1.8
+
+# PostgreSQL support (production database for multi-instance deployments)
+# If DATABASE_URL starts with postgres://, psycopg2 is required.
+# Use psycopg2-binary for easy install, or psycopg2 for production.
+psycopg2-binary>=2.9.0
 
 # Async (optional — see requirements-optional.txt for FACP distributed deps)
 # redis>=4.0.0       → moved to requirements-optional.txt

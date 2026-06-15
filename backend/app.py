@@ -227,16 +227,25 @@ async def lifespan(app: FastAPI):
         try:
             from backend.database import get_db
             db = get_db()
-            # Run WAL checkpoint to ensure all data is flushed to the main DB file
-            db._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-            logger.info("Production shutdown: WAL checkpoint completed")
+            # Run WAL checkpoint for SQLite (no-op for PostgreSQL)
+            if not db._is_postgres:
+                db._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                logger.info("Production shutdown: WAL checkpoint completed")
         except Exception as e:
             logger.warning("Production shutdown: WAL checkpoint failed: %s", e)
         try:
-            from backend.db_service import DatabaseService
-            db_service = DatabaseService()
-            db_service.close()
-            logger.info("Production shutdown: UDM database connection closed")
+            # Use get_db_service() singleton instead of creating a new instance,
+            # to ensure we close the ACTUAL active connection (not a fresh one).
+            from backend.db_service import get_db_service
+            db_service = get_db_service()
+            if db_service is not None:
+                db_service.close()
+                logger.info("Production shutdown: UDM database connection closed")
+            else:
+                logger.debug("Production shutdown: UDM database was not initialized")
+        except ImportError:
+            # get_db_service may not exist in all deployments
+            logger.debug("Production shutdown: db_service module not available")
         except Exception as e:
             logger.debug("Production shutdown: UDM close failed (may not be initialized): %s", e)
 

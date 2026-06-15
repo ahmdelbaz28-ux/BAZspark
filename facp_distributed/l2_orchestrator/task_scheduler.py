@@ -1,11 +1,14 @@
 """
 Task Scheduler for L2 Orchestrator in Distributed FACP System
 """
+import logging
 import threading
 import time
 import uuid
 from enum import Enum
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class TaskPriority(Enum):
@@ -284,9 +287,9 @@ class TaskScheduler:
                 for callback in self.task_notifications[task_id]:
                     try:
                         callback(task_id, result)
-                    except Exception:
+                    except Exception as e:
                         # Don't let callback errors affect the scheduler
-                        pass
+                        logger.warning("Task notification callback error: %s", e)
                 del self.task_notifications[task_id]
 
     def cleanup_completed_tasks(self):
@@ -515,4 +518,4 @@ class DistributedTaskScheduler(TaskScheduler):
         Sync task scheduler with cluster state
         """
         # Implementation would update scheduler with cluster-wide task information
-        pass
+        logger.debug("sync_with_cluster called with %d entries; not yet implemented", len(cluster_task_state))

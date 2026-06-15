@@ -28,6 +28,7 @@ References:
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
@@ -166,7 +167,10 @@ class RegionService:
     applicable fire/electrical codes using the internal database.
     """
 
-    REST_COUNTRIES_URL = "https://restcountries.com/v3.1/alpha"
+    REST_COUNTRIES_URL = os.environ.get(
+        "REST_COUNTRIES_API_URL",
+        "https://restcountries.com/v3.1/alpha"
+    )
 
     def __init__(self):
         self._client: Optional[httpx.AsyncClient] = None

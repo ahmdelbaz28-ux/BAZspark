@@ -2,10 +2,13 @@
 HTTP Transport for Distributed FACP System
 """
 import asyncio
+import logging
 import threading
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 import aiohttp
 import uvicorn
@@ -28,17 +31,17 @@ class TransportLayer(ABC):
     @abstractmethod
     def start(self):
         """Start the transport layer"""
-        pass
+        raise NotImplementedError("Subclasses must implement start()")
 
     @abstractmethod
     def stop(self):
         """Stop the transport layer"""
-        pass
+        raise NotImplementedError("Subclasses must implement stop()")
 
     @abstractmethod
     def send_request(self, request_data: Dict[str, Any], target_node: str = None) -> Dict[str, Any]:
         """Send request to target"""
-        pass
+        raise NotImplementedError("Subclasses must implement send_request()")
 
 
 class HTTPTransport(TransportLayer):

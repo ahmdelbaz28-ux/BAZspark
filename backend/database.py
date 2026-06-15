@@ -1,5 +1,9 @@
 """
-backend/database.py — Lightweight SQLite database layer for the Digital Twin API.
+backend/database.py — Lightweight database layer for the Digital Twin API.
+
+Supports two backends:
+  - SQLite (default) — for single-instance development/deployment
+  - PostgreSQL — for production, multi-replica, and horizontally-scaled deployments
 
 This is SEPARATE from core/database.py (UniversalDataModel) which handles
 BIM element persistence. This module provides simple CRUD tables for:
@@ -10,7 +14,8 @@ BIM element persistence. This module provides simple CRUD tables for:
   - sync_status
   - sync_operations
 
-Uses WAL mode and thread-safe connection management.
+SQLite uses WAL mode and thread-safe connection management.
+PostgreSQL uses psycopg2 with connection pooling.
 """
 
 from __future__ import annotations
@@ -23,7 +28,7 @@ import threading
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Generator, Optional
+from typing import Any, Generator, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -31,19 +36,44 @@ logger = logging.getLogger(__name__)
 _DB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "db")
 _DB_PATH = os.environ.get("DIGITAL_TWIN_DB_PATH", os.path.join(_DB_DIR, "digital_twin.db"))
 
+# PostgreSQL support: if DATABASE_URL starts with postgres:// or postgresql://,
+# use psycopg2 + connection pooling instead of SQLite.
+_DATABASE_URL = os.environ.get("DATABASE_URL", "")
+_USE_POSTGRES = _DATABASE_URL.startswith(("postgres://", "postgresql://"))
+
 
 class Database:
     """
-    Thread-safe SQLite database for the Digital Twin REST API.
+    Thread-safe database for the Digital Twin REST API.
 
-    Provides CRUD operations for projects, devices, connections,
-    reports, sync status, and sync operations. Uses WAL mode for
-    concurrent read performance and RLock for thread safety.
+    Supports two backends:
+      - SQLite (default) — for single-instance development/deployment
+      - PostgreSQL — for production, multi-replica, and horizontally-scaled deployments
+
+    The backend is selected via the DATABASE_URL environment variable:
+      - If DATABASE_URL starts with "postgres://" or "postgresql://", PostgreSQL is used.
+      - Otherwise, SQLite is used with the DIGITAL_TWIN_DB_PATH or default path.
+
+    PostgreSQL mode uses connection pooling (psycopg2.pool) for concurrent access
+    and is compatible with multi-instance deployments (K8s, Docker Compose).
     """
 
     def __init__(self, db_path: str = _DB_PATH) -> None:
         self.db_path = db_path
+        self._lock = threading.RLock()
+        self._is_postgres = _USE_POSTGRES
 
+        if self._is_postgres:
+            self._init_postgres()
+        else:
+            self._init_sqlite(db_path)
+
+    def _ph(self) -> str:
+        """Return the parameter placeholder for the current backend: ? (SQLite) or %s (PostgreSQL)."""
+        return "%s" if self._is_postgres else "?"
+
+    def _init_sqlite(self, db_path: str) -> None:
+        """Initialize SQLite connection with performance pragmas."""
         # CRITICAL FIX: os.path.dirname returns '' for relative paths without
         # directory component (e.g., "digital_twin.db"). os.makedirs('') raises
         # FileNotFoundError. Always use absolute path to compute directory.
@@ -58,7 +88,6 @@ class Database:
             detect_types=sqlite3.PARSE_DECLTYPES,
         )
         self._conn.execute("PRAGMA foreign_keys=ON")
-        self._lock = threading.RLock()
         self._conn.row_factory = sqlite3.Row
 
         # Performance pragmas
@@ -68,22 +97,180 @@ class Database:
         self._conn.execute("PRAGMA temp_store=MEMORY")
 
         self._init_schema()
-        logger.info(f"Digital Twin database initialized at {db_path}")
+        logger.info(f"Digital Twin database initialized (SQLite) at {db_path}")
+
+    def _init_postgres(self) -> None:
+        """Initialize PostgreSQL connection pool."""
+        try:
+            import psycopg2
+            from psycopg2 import pool as pg_pool
+        except ImportError:
+            raise ImportError(
+                "PostgreSQL mode requires psycopg2. Install it with: "
+                "pip install psycopg2-binary  OR  pip install psycopg2"
+            )
+
+        self._pg_pool = pg_pool.ThreadedConnectionPool(
+            minconn=2,
+            maxconn=20,
+            dsn=_DATABASE_URL,
+        )
+        self._conn = None  # Not used in Postgres mode
+        logger.info(
+            f"Digital Twin database initialized (PostgreSQL) — "
+            f"pool: 2–20 connections, URL: {_DATABASE_URL.split('@')[-1]}"
+        )
+        self._init_schema_pg()
 
     @contextmanager
-    def _transaction(self) -> Generator[sqlite3.Cursor, None, None]:
-        """Yield a cursor inside a locked, auto-committing transaction."""
-        with self._lock:
-            cur = self._conn.cursor()
+    def _pg_cursor(self):
+        """Get a cursor from the PostgreSQL connection pool."""
+        from psycopg2.extras import RealDictCursor
+        conn = self._pg_pool.getconn()
+        try:
+            conn.autocommit = False
+            cur = conn.cursor(cursor_factory=RealDictCursor)
             try:
                 yield cur
-                self._conn.commit()
+                conn.commit()
             except Exception:
-                self._conn.rollback()
+                conn.rollback()
                 raise
+            finally:
+                cur.close()
+        finally:
+            self._pg_pool.putconn(conn)
+
+    @contextmanager
+    def _transaction(self):
+        """Yield a cursor inside a locked, auto-committing transaction.
+        
+        Returns a SQLite cursor or PostgreSQL cursor depending on the backend.
+        """
+        if self._is_postgres:
+            with self._pg_cursor() as cur:
+                yield cur
+        else:
+            with self._lock:
+                cur = self._conn.cursor()
+                try:
+                    yield cur
+                    self._conn.commit()
+                except Exception:
+                    self._conn.rollback()
+                    raise
+
+    def _init_schema_pg(self) -> None:
+        """Create all tables in PostgreSQL with PG-compatible syntax."""
+        with self._pg_cursor() as cur:
+            # ── Projects ────────────────────────────────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS projects (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT NOT NULL DEFAULT '',
+                    author TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'draft'
+                        CHECK(status IN ('active', 'archived', 'draft'))
+                )
+            """)
+
+            # ── Devices ─────────────────────────────────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS devices (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    x DOUBLE PRECISION NOT NULL,
+                    y DOUBLE PRECISION NOT NULL,
+                    z DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+                    rotation DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+                    voltage DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+                    current DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+                    load DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+                    properties TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+                )
+            """)
+
+            # ── Connections ─────────────────────────────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS connections (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    from_id TEXT NOT NULL,
+                    to_id TEXT NOT NULL,
+                    cable_size TEXT NOT NULL DEFAULT '1.5mm²',
+                    length DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+                    current DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+                    voltage_drop DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+                    is_overloaded BOOLEAN NOT NULL DEFAULT FALSE,
+                    properties TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+                )
+            """)
+
+            # ── Reports ─────────────────────────────────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS reports (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    content TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+                )
+            """)
+
+            # ── Sync Status ─────────────────────────────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS sync_status (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL UNIQUE,
+                    last_sync TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'idle',
+                    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+                )
+            """)
+
+            # ── Sync Operations ─────────────────────────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS sync_operations (
+                    id TEXT PRIMARY KEY,
+                    sync_id TEXT NOT NULL,
+                    operation TEXT NOT NULL,
+                    entity_type TEXT NOT NULL,
+                    entity_id TEXT NOT NULL,
+                    data TEXT NOT NULL DEFAULT '{}',
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (sync_id) REFERENCES sync_status(id) ON DELETE CASCADE
+                )
+            """)
+
+            # ── Indexes ─────────────────────────────────────────────
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_project ON devices(project_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_project ON reports(project_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_sync ON sync_operations(sync_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_status ON sync_operations(status)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_type ON devices(type)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_category ON devices(category)")
+
+        logger.info("PostgreSQL schema initialized successfully")
 
     def _init_schema(self) -> None:
-        """Create all tables if they don't exist."""
+        """Create all tables if they don't exist (SQLite)."""
         with self._transaction() as cur:
             # ── Projects ────────────────────────────────────────────────
             cur.execute("""
@@ -211,8 +398,8 @@ class Database:
 
         with self._transaction() as cur:
             cur.execute(
-                """INSERT INTO projects (id, name, description, author, created_at, updated_at, status)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                f"""INSERT INTO projects (id, name, description, author, created_at, updated_at, status)
+                   VALUES ({self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()})""",
                 (
                     project_data["id"],
                     project_data["name"],
@@ -228,10 +415,9 @@ class Database:
 
     def get_project(self, project_id: str) -> Optional[dict]:
         """Get a project by ID, with device and connection counts — single query."""
-        with self._lock:
-            cur = self._conn.cursor()
+        with self._transaction() as cur:
             cur.execute(
-                """
+                f"""
                 SELECT
                     p.*,
                     COALESCE(d.device_count, 0) AS device_count,
@@ -247,7 +433,7 @@ class Database:
                     FROM connections
                     GROUP BY project_id
                 ) c ON p.id = c.project_id
-                WHERE p.id = ?
+                WHERE p.id = {self._ph()}
                 """,
                 (project_id,),
             )
@@ -274,9 +460,7 @@ class Database:
         else:
             order = order.upper()
 
-        with self._lock:
-            cur = self._conn.cursor()
-
+        with self._transaction() as cur:
             # Get total count
             cur.execute("SELECT COUNT(*) FROM projects")
             total = cur.fetchone()[0]
@@ -301,7 +485,7 @@ class Database:
                     GROUP BY project_id
                 ) c ON p.id = c.project_id
                 ORDER BY p.{sort} {order}
-                LIMIT ? OFFSET ?
+                LIMIT {self._ph()} OFFSET {self._ph()}
                 """,  # noqa: S608 — sort/order whitelisted above
                 (limit, offset),
             )
@@ -328,7 +512,7 @@ class Database:
             return None
 
         now = datetime.now(timezone.utc).isoformat()
-        set_clauses = ["updated_at = ?"]
+        set_clauses = [f"updated_at = {self._ph()}"]
         values = [now]
 
         field_map = {
@@ -339,14 +523,14 @@ class Database:
         }
         for api_field, db_field in field_map.items():
             if api_field in updates and updates[api_field] is not None:
-                set_clauses.append(f"{db_field} = ?")
+                set_clauses.append(f"{db_field} = {self._ph()}")
                 values.append(updates[api_field])
 
         values.append(project_id)
 
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE projects SET {', '.join(set_clauses)} WHERE id = ?",  # noqa: S608 — set_clauses built from whitelisted field_map keys
+                f"UPDATE projects SET {', '.join(set_clauses)} WHERE id = {self._ph()}",  # noqa: S608 — set_clauses built from whitelisted field_map keys
                 values,
             )
 
@@ -355,11 +539,11 @@ class Database:
     def delete_project(self, project_id: str) -> bool:
         """Delete a project and all its children (CASCADE)."""
         with self._transaction() as cur:
-            cur.execute("DELETE FROM sync_status WHERE project_id = ?", (project_id,))
-            cur.execute("DELETE FROM reports WHERE project_id = ?", (project_id,))
-            cur.execute("DELETE FROM connections WHERE project_id = ?", (project_id,))
-            cur.execute("DELETE FROM devices WHERE project_id = ?", (project_id,))
-            cur.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+            cur.execute(f"DELETE FROM sync_status WHERE project_id = {self._ph()}", (project_id,))
+            cur.execute(f"DELETE FROM reports WHERE project_id = {self._ph()}", (project_id,))
+            cur.execute(f"DELETE FROM connections WHERE project_id = {self._ph()}", (project_id,))
+            cur.execute(f"DELETE FROM devices WHERE project_id = {self._ph()}", (project_id,))
+            cur.execute(f"DELETE FROM projects WHERE id = {self._ph()}", (project_id,))
             return cur.rowcount > 0
 
     def get_global_counts(self) -> dict:
@@ -368,8 +552,7 @@ class Database:
         Uses efficient SQL COUNT queries instead of loading all projects
         into memory. O(1) memory regardless of project count.
         """
-        with self._lock:
-            cur = self._conn.cursor()
+        with self._transaction() as cur:
             cur.execute("SELECT COUNT(*) FROM devices")
             total_devices = cur.fetchone()[0]
             cur.execute("SELECT COUNT(*) FROM connections")
@@ -404,10 +587,10 @@ class Database:
 
         with self._transaction() as cur:
             cur.execute(
-                """INSERT INTO devices
+                f"""INSERT INTO devices
                    (id, project_id, type, name, category, x, y, z, rotation,
                     voltage, current, load, properties, created_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   VALUES ({self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()})""",
                 (
                     device_data["id"],
                     project_id,
@@ -431,10 +614,9 @@ class Database:
 
     def get_device(self, project_id: str, device_id: str) -> Optional[dict]:
         """Get a device by ID within a project."""
-        with self._lock:
-            cur = self._conn.cursor()
+        with self._transaction() as cur:
             cur.execute(
-                "SELECT * FROM devices WHERE id = ? AND project_id = ?",
+                f"SELECT * FROM devices WHERE id = {self._ph()} AND project_id = {self._ph()}",
                 (device_id, project_id),
             )
             row = cur.fetchone()
@@ -470,17 +652,16 @@ class Database:
         else:
             order = order.upper()
 
-        with self._lock:
-            cur = self._conn.cursor()
+        with self._transaction() as cur:
             cur.execute(
-                "SELECT COUNT(*) FROM devices WHERE project_id = ?",
+                f"SELECT COUNT(*) FROM devices WHERE project_id = {self._ph()}",
                 (project_id,),
             )
             total = cur.fetchone()[0]
 
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM devices WHERE project_id = ? ORDER BY {sort} {order} LIMIT ? OFFSET ?",  # noqa: S608 — sort/order whitelisted above
+                f"SELECT * FROM devices WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",  # noqa: S608 — sort/order whitelisted above
                 (project_id, limit, offset),
             )
             rows = cur.fetchall()
@@ -502,7 +683,7 @@ class Database:
             return None
 
         now = datetime.now(timezone.utc).isoformat()
-        set_clauses = ["updated_at = ?"]
+        set_clauses = [f"updated_at = {self._ph()}"]
         values = [now]
 
         simple_fields = {
@@ -517,20 +698,20 @@ class Database:
         }
         for api_field, db_field in simple_fields.items():
             if api_field in updates and updates[api_field] is not None:
-                set_clauses.append(f"{db_field} = ?")
+                set_clauses.append(f"{db_field} = {self._ph()}")
                 values.append(updates[api_field])
 
         # Handle properties merge
         if "properties" in updates and updates["properties"] is not None:
             merged = {**existing["properties"], **updates["properties"]}
-            set_clauses.append("properties = ?")
+            set_clauses.append(f"properties = {self._ph()}")
             values.append(json.dumps(merged))
 
         values.extend([device_id, project_id])
 
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE devices SET {', '.join(set_clauses)} WHERE id = ? AND project_id = ?",  # noqa: S608 — set_clauses built from whitelisted simple_fields keys
+                f"UPDATE devices SET {', '.join(set_clauses)} WHERE id = {self._ph()} AND project_id = {self._ph()}",  # noqa: S608 — set_clauses built from whitelisted simple_fields keys
                 values,
             )
 
@@ -547,7 +728,7 @@ class Database:
         with self._transaction() as cur:
             # Delete orphaned connections first (no FK cascade on from_id/to_id)
             cur.execute(
-                "DELETE FROM connections WHERE (from_id = ? OR to_id = ?) AND project_id = ?",
+                f"DELETE FROM connections WHERE (from_id = {self._ph()} OR to_id = {self._ph()}) AND project_id = {self._ph()}",
                 (device_id, device_id, project_id),
             )
             deleted_conns = cur.rowcount
@@ -556,17 +737,16 @@ class Database:
                     f"Deleted {deleted_conns} orphaned connection(s) for device {device_id}"
                 )
             cur.execute(
-                "DELETE FROM devices WHERE id = ? AND project_id = ?",
+                f"DELETE FROM devices WHERE id = {self._ph()} AND project_id = {self._ph()}",
                 (device_id, project_id),
             )
             return cur.rowcount > 0
 
     def get_all_devices_for_project(self, project_id: str) -> list[dict]:
         """Get ALL devices for a project (no pagination, used for exports)."""
-        with self._lock:
-            cur = self._conn.cursor()
+        with self._transaction() as cur:
             cur.execute(
-                "SELECT * FROM devices WHERE project_id = ?",
+                f"SELECT * FROM devices WHERE project_id = {self._ph()}",
                 (project_id,),
             )
             rows = cur.fetchall()
@@ -597,7 +777,7 @@ class Database:
             from_id = conn_data["fromId"]
             to_id = conn_data["toId"]
             cur.execute(
-                "SELECT id FROM devices WHERE id = ? AND project_id = ?",
+                f"SELECT id FROM devices WHERE id = {self._ph()} AND project_id = {self._ph()}",
                 (from_id, project_id),
             )
             if not cur.fetchone():
@@ -605,16 +785,16 @@ class Database:
                     f"Cannot create connection: from_id '{from_id}' does not exist in project '{project_id}'"
                 )
             cur.execute(
-                "SELECT id FROM devices WHERE id = ? AND project_id = ?",
+                f"SELECT id FROM devices WHERE id = {self._ph()} AND project_id = {self._ph()}",
                 (to_id, project_id),
             )
             if not cur.fetchone():
                 raise ValueError(f"Cannot create connection: to_id '{to_id}' does not exist in project '{project_id}'")
 
             cur.execute(
-                """INSERT INTO connections
+                f"""INSERT INTO connections
                    (id, project_id, from_id, to_id, cable_size, length, type, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                   VALUES ({self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()})""",
                 (
                     conn_data["id"],
                     project_id,
@@ -631,10 +811,9 @@ class Database:
 
     def get_connection(self, project_id: str, connection_id: str) -> Optional[dict]:
         """Get a connection by ID within a project."""
-        with self._lock:
-            cur = self._conn.cursor()
+        with self._transaction() as cur:
             cur.execute(
-                "SELECT * FROM connections WHERE id = ? AND project_id = ?",
+                f"SELECT * FROM connections WHERE id = {self._ph()} AND project_id = {self._ph()}",
                 (connection_id, project_id),
             )
             row = cur.fetchone()
@@ -660,17 +839,16 @@ class Database:
         else:
             order = order.upper()
 
-        with self._lock:
-            cur = self._conn.cursor()
+        with self._transaction() as cur:
             cur.execute(
-                "SELECT COUNT(*) FROM connections WHERE project_id = ?",
+                f"SELECT COUNT(*) FROM connections WHERE project_id = {self._ph()}",
                 (project_id,),
             )
             total = cur.fetchone()[0]
 
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM connections WHERE project_id = ? ORDER BY {sort} {order} LIMIT ? OFFSET ?",  # noqa: S608 — sort/order whitelisted above
+                f"SELECT * FROM connections WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",  # noqa: S608 — sort/order whitelisted above
                 (project_id, limit, offset),
             )
             rows = cur.fetchall()
@@ -689,7 +867,7 @@ class Database:
         """Delete a connection."""
         with self._transaction() as cur:
             cur.execute(
-                "DELETE FROM connections WHERE id = ? AND project_id = ?",
+                f"DELETE FROM connections WHERE id = {self._ph()} AND project_id = {self._ph()}",
                 (connection_id, project_id),
             )
             return cur.rowcount > 0
@@ -722,7 +900,7 @@ class Database:
         values = []
         for field, value in updates.items():
             if field in _FIELD_MAP:
-                set_parts.append(f"{_FIELD_MAP[field]} = ?")
+                set_parts.append(f"{_FIELD_MAP[field]} = {self._ph()}")
                 values.append(value)
 
         if not set_parts:
@@ -733,7 +911,7 @@ class Database:
 
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE connections SET {', '.join(set_parts)} WHERE id = ? AND project_id = ?",
+                f"UPDATE connections SET {', '.join(set_parts)} WHERE id = {self._ph()} AND project_id = {self._ph()}",
                 values,
             )
             if cur.rowcount == 0:
@@ -743,10 +921,9 @@ class Database:
 
     def get_all_connections_for_project(self, project_id: str) -> list[dict]:
         """Get ALL connections for a project (used for exports)."""
-        with self._lock:
-            cur = self._conn.cursor()
+        with self._transaction() as cur:
             cur.execute(
-                "SELECT * FROM connections WHERE project_id = ?",
+                f"SELECT * FROM connections WHERE project_id = {self._ph()}",
                 (project_id,),
             )
             rows = cur.fetchall()
@@ -771,9 +948,9 @@ class Database:
 
         with self._transaction() as cur:
             cur.execute(
-                """INSERT INTO reports
+                f"""INSERT INTO reports
                    (id, project_id, type, name, parameters, status, created_at, completed_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                   VALUES ({self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()})""",
                 (
                     report_data["id"],
                     project_id,
@@ -790,10 +967,9 @@ class Database:
 
     def get_report(self, project_id: str, report_id: str) -> Optional[dict]:
         """Get a report by ID within a project."""
-        with self._lock:
-            cur = self._conn.cursor()
+        with self._transaction() as cur:
             cur.execute(
-                "SELECT * FROM reports WHERE id = ? AND project_id = ?",
+                f"SELECT * FROM reports WHERE id = {self._ph()} AND project_id = {self._ph()}",
                 (report_id, project_id),
             )
             row = cur.fetchone()
@@ -819,17 +995,16 @@ class Database:
         else:
             order = order.upper()
 
-        with self._lock:
-            cur = self._conn.cursor()
+        with self._transaction() as cur:
             cur.execute(
-                "SELECT COUNT(*) FROM reports WHERE project_id = ?",
+                f"SELECT COUNT(*) FROM reports WHERE project_id = {self._ph()}",
                 (project_id,),
             )
             total = cur.fetchone()[0]
 
             offset = (page - 1) * limit
             cur.execute(
-                f"SELECT * FROM reports WHERE project_id = ? ORDER BY {sort} {order} LIMIT ? OFFSET ?",  # noqa: S608 — sort/order whitelisted above
+                f"SELECT * FROM reports WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",  # noqa: S608 — sort/order whitelisted above
                 (project_id, limit, offset),
             )
             rows = cur.fetchall()
@@ -856,11 +1031,11 @@ class Database:
         }
         for api_field, db_field in simple_fields.items():
             if api_field in updates and updates[api_field] is not None:
-                set_clauses.append(f"{db_field} = ?")
+                set_clauses.append(f"{db_field} = {self._ph()}")
                 values.append(updates[api_field])
 
         if "parameters" in updates and updates["parameters"] is not None:
-            set_clauses.append("parameters = ?")
+            set_clauses.append(f"parameters = {self._ph()}")
             values.append(json.dumps(updates["parameters"]))
 
         if not set_clauses:
@@ -869,7 +1044,7 @@ class Database:
         values.extend([report_id, project_id])
         with self._transaction() as cur:
             cur.execute(
-                f"UPDATE reports SET {', '.join(set_clauses)} WHERE id = ? AND project_id = ?",  # noqa: S608 — set_clauses built from whitelisted simple_fields keys
+                f"UPDATE reports SET {', '.join(set_clauses)} WHERE id = {self._ph()} AND project_id = {self._ph()}",  # noqa: S608 — set_clauses built from whitelisted simple_fields keys
                 values,
             )
 
@@ -881,10 +1056,9 @@ class Database:
 
     def get_sync_status(self, project_id: str) -> Optional[dict]:
         """Get sync status for a project."""
-        with self._lock:
-            cur = self._conn.cursor()
+        with self._transaction() as cur:
             cur.execute(
-                "SELECT * FROM sync_status WHERE project_id = ?",
+                f"SELECT * FROM sync_status WHERE project_id = {self._ph()}",
                 (project_id,),
             )
             row = cur.fetchone()
@@ -902,18 +1076,38 @@ class Database:
     def set_sync_status(self, project_id: str, status: dict) -> dict:
         """Upsert sync status for a project."""
         with self._transaction() as cur:
-            cur.execute(
-                """INSERT OR REPLACE INTO sync_status
-                   (project_id, status, last_sync, pending_changes, error)
-                   VALUES (?, ?, ?, ?, ?)""",
-                (
-                    project_id,
-                    status.get("status", "syncing"),
-                    status.get("lastSync", datetime.now(timezone.utc).isoformat()),
-                    status.get("pendingChanges", 0),
-                    status.get("error"),
-                ),
-            )
+            if self._is_postgres:
+                cur.execute(
+                    f"""
+                    INSERT INTO sync_status (project_id, status, last_sync, pending_changes, error)
+                    VALUES ({self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()})
+                    ON CONFLICT (project_id) DO UPDATE SET
+                        status = EXCLUDED.status,
+                        last_sync = EXCLUDED.last_sync,
+                        pending_changes = EXCLUDED.pending_changes,
+                        error = EXCLUDED.error
+                    """,
+                    (
+                        project_id,
+                        status.get("status", "syncing"),
+                        status.get("lastSync", datetime.now(timezone.utc).isoformat()),
+                        status.get("pendingChanges", 0),
+                        status.get("error"),
+                    ),
+                )
+            else:
+                cur.execute(
+                    f"""INSERT OR REPLACE INTO sync_status
+                       (project_id, status, last_sync, pending_changes, error)
+                       VALUES ({self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()})""",
+                    (
+                        project_id,
+                        status.get("status", "syncing"),
+                        status.get("lastSync", datetime.now(timezone.utc).isoformat()),
+                        status.get("pendingChanges", 0),
+                        status.get("error"),
+                    ),
+                )
 
         return self.get_sync_status(project_id)
 
@@ -949,8 +1143,8 @@ class Database:
         with self._transaction() as cur:
             # Check for an existing pending/syncing record for this entity
             cur.execute(
-                """SELECT id, status, retry_count FROM sync_operations
-                   WHERE entity_type = ? AND entity_id = ? AND target_db = ?
+                f"""SELECT id, status, retry_count FROM sync_operations
+                   WHERE entity_type = {self._ph()} AND entity_id = {self._ph()} AND target_db = {self._ph()}
                    ORDER BY id DESC LIMIT 1""",
                 (entity_type, entity_id, target_db),
             )
@@ -963,18 +1157,18 @@ class Database:
                 if status == "error":
                     retry_count += 1
                 cur.execute(
-                    """UPDATE sync_operations
-                       SET status = ?, last_sync_at = ?, error_message = ?, retry_count = ?
-                       WHERE id = ?""",
+                    f"""UPDATE sync_operations
+                       SET status = {self._ph()}, last_sync_at = {self._ph()}, error_message = {self._ph()}, retry_count = {self._ph()}
+                       WHERE id = {self._ph()}""",
                     (status, now, error, retry_count, row_id),
                 )
             else:
                 # Insert new record
                 cur.execute(
-                    """INSERT INTO sync_operations
+                    f"""INSERT INTO sync_operations
                        (entity_type, entity_id, target_db, status, last_sync_at,
                         error_message, retry_count)
-                       VALUES (?, ?, ?, ?, ?, ?, 0)""",
+                       VALUES ({self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, {self._ph()}, 0)""",
                     (entity_type, entity_id, target_db, status, now, error),
                 )
                 row_id = cur.lastrowid
@@ -987,12 +1181,11 @@ class Database:
         Returns all operations with status "pending" or "error" where
         retry_count has not exceeded max_retries.
         """
-        with self._lock:
-            cur = self._conn.cursor()
+        with self._transaction() as cur:
             cur.execute(
-                """SELECT * FROM sync_operations
+                f"""SELECT * FROM sync_operations
                    WHERE status IN ('pending', 'error')
-                     AND retry_count < ?
+                     AND retry_count < {self._ph()}
                    ORDER BY id ASC""",
                 (max_retries,),
             )
@@ -1018,7 +1211,7 @@ class Database:
 
     @staticmethod
     def _row_to_project(
-        row: sqlite3.Row,
+        row: Any,
         device_count: int = 0,
         connection_count: int = 0,
     ) -> dict:
@@ -1035,7 +1228,7 @@ class Database:
         }
 
     @staticmethod
-    def _row_to_device(row: sqlite3.Row) -> dict:
+    def _row_to_device(row: Any) -> dict:
         props = row["properties"]
         if isinstance(props, str):
             try:
@@ -1061,7 +1254,7 @@ class Database:
         }
 
     @staticmethod
-    def _row_to_connection(row: sqlite3.Row) -> dict:
+    def _row_to_connection(row: Any) -> dict:
         return {
             "id": row["id"],
             "projectId": row["project_id"],
@@ -1074,7 +1267,7 @@ class Database:
         }
 
     @staticmethod
-    def _row_to_report(row: sqlite3.Row) -> dict:
+    def _row_to_report(row: Any) -> dict:
         params = row["parameters"]
         if isinstance(params, str):
             try:
@@ -1093,7 +1286,7 @@ class Database:
         }
 
     @staticmethod
-    def _row_to_sync(row: sqlite3.Row) -> dict:
+    def _row_to_sync(row: Any) -> dict:
         return {
             "projectId": row["project_id"],
             "status": row["status"],
@@ -1107,13 +1300,17 @@ class Database:
     # ========================================================================
 
     def close(self) -> None:
-        """Flush WAL and close the persistent connection."""
-        with self._lock:
+        """Close the database connection or pool."""
+        if self._is_postgres:
+            if hasattr(self, '_pg_pool') and self._pg_pool:
+                self._pg_pool.closeall()
+                logger.info("PostgreSQL connection pool closed")
+        else:
             try:
                 self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-                self._conn.close()
-            except Exception as e:
-                logger.debug("WAL checkpoint or close failed in Database.close(): %s", e)
+            except Exception:
+                pass
+            self._conn.close()
 
     def __del__(self) -> None:
         try:

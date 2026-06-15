@@ -5,6 +5,31 @@ export interface AuthRequest extends Request {
   user?: { userId: string; email: string };
 }
 
+/**
+ * Get JWT secret from environment variable.
+ * CRITICAL: Fails loudly if JWT_SECRET is not set in production.
+ * Using a hardcoded secret allows attackers to forge tokens.
+ */
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'FATAL: JWT_SECRET environment variable is not set. ' +
+        'Refusing to authenticate requests with no secret configured. ' +
+        'Set JWT_SECRET before starting the server.'
+      );
+    }
+    // In development only, use a clearly invalid default that logs a warning
+    console.warn(
+      '[SECURITY WARNING] JWT_SECRET is not set! Using insecure development default. ' +
+      'This MUST be set in production.'
+    );
+    return 'dev-only-insecure-secret-DO-NOT-USE-IN-PRODUCTION';
+  }
+  return secret;
+}
+
 export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
@@ -20,7 +45,7 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
     
     const decoded = jwt.verify(
       token, 
-      process.env.JWT_SECRET || 'default-secret'
+      getJwtSecret()
     ) as { userId: string; email: string };
     
     req.user = decoded;

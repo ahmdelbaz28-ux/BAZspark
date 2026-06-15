@@ -455,7 +455,7 @@ class Orchestrator:
             self.load_balancer.register_engine_worker(node_id, capabilities)
         elif node_type == "l2_orchestrator":
             # Handle orchestrator-to-orchestrator communication
-            pass
+            self.logger.debug("Orchestrator node joined cluster: %s (no action needed)", node_id)
 
     def handle_node_leave(self, node_id: str):
         """Handle a node leaving the cluster"""
@@ -464,7 +464,7 @@ class Orchestrator:
     def cleanup_completed_tasks(self):
         """Clean up completed tasks from memory"""
         # Already handled in _record_task_completion, but can do additional cleanup
-        pass
+        self.logger.debug("cleanup_completed_tasks called; no additional cleanup needed")
 
     def get_execution_context(self, request_id: str) -> Optional[Dict[str, Any]]:
         """Get execution context for a request (placeholder)"""
