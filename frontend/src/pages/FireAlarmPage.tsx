@@ -1,112 +1,197 @@
 /**
- * FireAlarmPage.tsx - Wrapper for the FireAlarmDesigner component
- * Includes error boundary and fallback message
+ * FireAlarmPage.tsx - Main Fire Alarm System Dashboard
  */
-import { Component, type ReactNode, Suspense, lazy } from 'react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Flame, AlertTriangle, ArrowLeft, Activity } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { SymbolLibrary } from '@/components/firealarm/SymbolLibrary';
+import { ZoneNavigator } from '@/components/firealarm/ZoneNavigator';
+import { CanvasEditor, Detector } from '@/components/firealarm/CanvasEditor';
+import { DeviceProperties } from '@/components/firealarm/DeviceProperties';
 
-// ============================================================================
-// Lazy load the heavy FireAlarmDesigner
-// ============================================================================
-
-const FireAlarmDesigner = lazy(() =>
-  import('@/components/mockups/engineering/FireAlarmDesigner').then(m => ({
-    default: m.FireAlarmDesigner,
-  }))
-);
-
-// ============================================================================
-// Error Boundary
-// ============================================================================
-
-interface ErrorBoundaryProps {
-  children: ReactNode;
-}
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-}
-
-class FireAlarmErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false, error: null };
+// Mock data for the navigator
+const mockZones = [
+  {
+    id: 'project-1',
+    name: 'Building A Fire Alarm System',
+    type: 'panel' as const,
+    devices: [], // Add empty devices array to satisfy the Zone interface
+    children: [
+      {
+        id: 'facp-1',
+        name: 'FACP-1 (Main Panel)',
+        type: 'panel' as const,
+        devices: [],
+        children: [
+          {
+            id: 'slc-loop-1',
+            name: 'SLC Loop 1',
+            type: 'loop' as const,
+            devices: [],
+            children: [
+              {
+                id: 'zone-1-01',
+                name: 'Zone 1-01: Basement (12 devices)',
+                type: 'zone' as const,
+                devices: [
+                  { id: 'dev-1', name: 'Basement Smoke 01', type: 'smoke', zone: 'zone-1-01', status: 'normal' as const, address: '001' },
+                  { id: 'dev-2', name: 'Basement Heat 01', type: 'heat', zone: 'zone-1-01', status: 'warning' as const, address: '002' },
+                ]
+              },
+              {
+                id: 'zone-1-02',
+                name: 'Zone 1-02: Ground Floor (24 devices)',
+                type: 'zone' as const,
+                devices: [
+                  { id: 'dev-3', name: 'GF Smoke 01', type: 'smoke', zone: 'zone-1-02', status: 'normal' as const, address: '003' },
+                  { id: 'dev-4', name: 'GF Pull 01', type: 'pull', zone: 'zone-1-02', status: 'normal' as const, address: '004' },
+                ]
+              },
+            ]
+          },
+          {
+            id: 'nac-circuit-1',
+            name: 'NAC Circuit 1 (General)',
+            type: 'circuit' as const,
+            devices: [
+              { id: 'dev-5', name: 'GF Horn/Strobe 01', type: 'horns', zone: 'nac-circuit-1', status: 'normal' as const, address: '005' },
+            ]
+          },
+        ]
+      },
+      {
+        id: 'facp-2',
+        name: 'FACP-2 (Annunciator)',
+        type: 'panel' as const,
+        devices: [
+          { id: 'dev-6', name: 'Annunciator Panel', type: 'facp', zone: 'facp-2', status: 'normal' as const, address: '006' },
+        ]
+      },
+    ]
   }
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <Card className="border-slate-700 bg-slate-800/80 max-w-md w-full">
-            <CardContent className="p-8 text-center">
-              <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-amber-400" />
-              <h3 className="text-lg font-medium text-slate-200 mb-2">Designer Unavailable</h3>
-              <p className="text-sm text-slate-400 mb-4">
-                The Fire Alarm Designer component could not be loaded. This may be due to a
-                missing dependency or a rendering error.
-              </p>
-              {this.state.error && (
-                <p className="text-xs text-slate-500 font-mono bg-slate-900 p-2 rounded mb-4">
-                  {this.state.error.message}
-                </p>
-              )}
-              <div className="flex gap-2 justify-center">
-                <NavLink to="/">
-                  <Button variant="outline" className="border-slate-600 text-slate-300">
-                    <ArrowLeft className="h-4 w-4 mr-1" /> Go to Dashboard
-                  </Button>
-                </NavLink>
-                <Button
-                  className="bg-red-600 hover:bg-red-700 text-white border-none"
-                  onClick={() => this.setState({ hasError: false, error: null })}
-                >
-                  Try Again
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-// ============================================================================
-// Loading indicator for Suspense
-// ============================================================================
-
-function DesignerLoader() {
-  return (
-    <div className="flex-1 flex items-center justify-center h-screen bg-slate-900">
-      <div className="flex flex-col items-center gap-3">
-        <Flame className="h-8 w-8 text-red-400 animate-pulse" />
-        <Activity className="h-5 w-5 text-slate-400 animate-pulse" />
-        <span className="text-sm text-slate-400">Loading Fire Alarm Designer...</span>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// FireAlarmPage Component
-// ============================================================================
+];
 
 export function FireAlarmPage() {
+  const { t } = useTranslation();
+  const [detectors, setDetectors] = useState<Detector[]>([
+    { id: 'det-1', x: 100, y: 150, type: 'smoke', status: 'normal', coverageRadius: 6.37 },
+    { id: 'det-2', x: 250, y: 200, type: 'heat', status: 'warning', coverageRadius: 4.27 },
+    { id: 'det-3', x: 400, y: 100, type: 'pull', status: 'normal', coverageRadius: 0 },
+  ]);
+  const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
+  const [showProperties, setShowProperties] = useState(false);
+
+  const handleDeviceSelect = (deviceId: string) => {
+    setSelectedDevice(deviceId);
+    setShowProperties(true);
+  };
+
+  const handleZoomToZone = (zoneId: string) => {
+    alert(`Zooming to zone: ${zoneId}`);
+  };
+
+  const handleSaveDevice = (updatedDevice: any) => {
+    // Update the device in the detectors array
+    setDetectors(prev => prev.map(det => det.id === updatedDevice.id ? updatedDevice : det));
+    setShowProperties(false);
+  };
+
   return (
-    <FireAlarmErrorBoundary>
-      <Suspense fallback={<DesignerLoader />}>
-        <FireAlarmDesigner />
-      </Suspense>
-    </FireAlarmErrorBoundary>
+    <div className="flex flex-1 overflow-auto" aria-label={t('fireAlarm.dashboard')}>
+      {/* Zone Navigator - Left sidebar */}
+      <div className="w-64 h-full bg-slate-900 border-r border-slate-700 p-2">
+        <ZoneNavigator 
+          zones={mockZones} 
+          selectedDevice={selectedDevice}
+          onDeviceSelect={handleDeviceSelect}
+          onZoomToZone={handleZoomToZone}
+        />
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Top Toolbar */}
+        <div className="h-14 flex items-center px-4 border-b border-slate-700 bg-slate-800">
+          <h1 className="text-lg font-semibold text-slate-100">{t('fireAlarm.designer')}</h1>
+          <div className="ml-auto flex gap-2">
+            <Button variant="outline" className="border-slate-600 text-slate-300">
+              {t('common.undo')}
+            </Button>
+            <Button variant="outline" className="border-slate-600 text-slate-300">
+              {t('common.redo')}
+            </Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white border-none">
+              {t('common.save')}
+            </Button>
+          </div>
+        </div>
+
+        {/* Canvas Area */}
+        <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 p-4">
+            <CanvasEditor 
+              detectors={detectors} 
+              onDetectorsChange={setDetectors}
+            />
+          </div>
+
+          {/* Symbol Library - Right sidebar */}
+          <div className="w-80 border-l border-slate-700 p-4 bg-slate-800">
+            <SymbolLibrary />
+            
+            <div className="mt-6">
+              <Card className="border-slate-700 bg-slate-800/80">
+                <CardHeader>
+                  <CardTitle className="text-lg text-slate-100">{t('fireAlarm.projectInfo')}</CardTitle>
+                  <CardDescription className="text-slate-400">
+                    {t('fireAlarm.projectDetails')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">{t('fireAlarm.totalDetectors')}</span>
+                      <span className="text-slate-200">{detectors.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">{t('fireAlarm.smokeDetectors')}</span>
+                      <span className="text-slate-200">{detectors.filter(d => d.type === 'smoke').length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">{t('fireAlarm.heatDetectors')}</span>
+                      <span className="text-slate-200">{detectors.filter(d => d.type === 'heat').length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">{t('fireAlarm.normal')}</span>
+                      <Badge variant="secondary" className="bg-emerald-600/20 text-emerald-400 border-emerald-500/30">
+                        {detectors.filter(d => d.status === 'normal').length}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">{t('fireAlarm.warning')}</span>
+                      <Badge variant="secondary" className="bg-amber-600/20 text-amber-400 border-amber-500/30">
+                        {detectors.filter(d => d.status === 'warning').length}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Device Properties Panel - Appears when device is selected */}
+      {showProperties && selectedDevice && (
+        <DeviceProperties 
+          device={detectors.find(d => d.id === selectedDevice)} 
+          onSave={handleSaveDevice}
+          onClose={() => setShowProperties(false)}
+        />
+      )}
+    </div>
   );
 }

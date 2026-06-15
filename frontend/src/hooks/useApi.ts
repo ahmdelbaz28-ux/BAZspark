@@ -444,3 +444,39 @@ export function useSyncProject(): UseMutationResult<string, unknown> {
 
   return { mutate, loading, error, data, reset };
 }
+
+// useGenerateReport - Mutation hook for generating a report
+export function useGenerateReport(): UseMutationResult<{ projectId: string; data: { type: string; execution_params: Record<string, unknown> } }, Report> {
+  const [data, setData] = useState<Report | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const mutate = useCallback(async (args: { projectId: string; data: { type: string; execution_params: Record<string, unknown> } }): Promise<Report | null> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.generateReport(args.projectId, args.data);
+      setLoading(false);
+      if (res.success && res.data) {
+        setData(res.data);
+        return res.data;
+      } else {
+        setError(res.error || 'Failed to generate report');
+        return null;
+      }
+    } catch (err: unknown) {
+      setLoading(false);
+      const msg = err instanceof Error ? err.message : 'Network error';
+      setError(msg);
+      return null;
+    }
+  }, []);
+
+  const reset = useCallback(() => {
+    setData(null);
+    setLoading(false);
+    setError(null);
+  }, []);
+
+  return { mutate, loading, error, data, reset };
+}
