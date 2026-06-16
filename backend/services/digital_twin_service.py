@@ -351,7 +351,7 @@ class SemanticMapper:
             # Generic element — create block reference
             return self._map_generic_to_autocad(revit_element, layer)
     
-    def _map_wall_to_autocad(self, element: Dict[str, Any], layer: str) -> Dict[str, Any]:
+    def _map_wall_to_autocad(self, element: Dict[str, Any], layer: str) -> Optional[Dict[str, Any]]:
         """Map Revit wall to AutoCAD lines."""
         curve = element.get("curve", [])
         
@@ -595,9 +595,12 @@ class DigitalTwinEngine:
                     entity_type = acad_spec.get("entity_type")
                     
                     if entity_type == "LINE":
+                        start = acad_spec.get("start")
+                        end = acad_spec.get("end")
+                        assert start is not None and end is not None
                         acad_service.draw_line(
-                            acad_spec.get("start"),
-                            acad_spec.get("end"),
+                            start,
+                            end,
                             layer=acad_spec.get("layer", "0")
                         )
                         elements_converted += 1
@@ -606,6 +609,7 @@ class DigitalTwinEngine:
                         # Draw polyline
                         vertices = acad_spec.get("vertices", [])
                         if vertices:
+                            assert acad_service.drawing_engine is not None
                             acad_service.drawing_engine.draw_polyline(
                                 vertices,
                                 closed=acad_spec.get("closed", False),
@@ -615,9 +619,12 @@ class DigitalTwinEngine:
                     
                     elif entity_type == "INSERT":
                         # Insert block
+                        insert = acad_spec.get("insert")
+                        assert insert is not None
+                        assert acad_service.drawing_engine is not None
                         acad_service.drawing_engine.insert_block(
                             acad_spec.get("block_name", "Generic"),
-                            acad_spec.get("insert"),
+                            insert,
                             layer=acad_spec.get("layer", "0")
                         )
                         elements_converted += 1

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging as _logging
+from typing import TYPE_CHECKING
 
 _logger = _logging.getLogger(__name__)
 
@@ -40,9 +41,31 @@ __all__ = [
     "digital_twin",
 ]
 
+if TYPE_CHECKING:
+    from . import health
+    from . import projects
+    from . import devices
+    from . import connections
+    from . import connections_v2
+    from . import elements
+    from . import conflicts
+    from . import reports
+    from . import exports
+    from . import sync
+    from . import monitor
+    from . import memory
+    from . import workflow
+    from . import environment
+    from . import dwg
+    from . import qomn
+    from . import facp
+    from . import api_keys
+    from . import autocad
+    from . import revit
+    from . import digital_twin
+
 # Lazily import all routers in __all__ so they are present in the module namespace
 for _name in __all__:
     _mod = _lazy_import(_name)
     if _mod is not None:
         globals()[_name] = _mod
-del _name, _mod

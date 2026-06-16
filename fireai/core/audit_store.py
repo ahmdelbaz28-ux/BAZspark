@@ -59,7 +59,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 # Optional ECDSA support - graceful degradation if not installed
 try:
-    from ecdsa import BadSignatureError, SigningKey, VerifyingKey
+    from ecdsa import BadSignatureError, SigningKey, VerifyingKey  # type: ignore[import-not-found]
 
     HAS_ECDSA = True
 except ImportError:
@@ -343,7 +343,7 @@ def _get_ecdsa_signer():
         return None
 
     try:
-        _ecdsa_signing_key = SigningKey.from_pem(key_pem)
+        _ecdsa_signing_key = SigningKey.from_pem(key_pem)  # type: ignore[possibly-unbound]
         logger.info("ECDSA signing enabled (NIST P-256 curve)")
         return _ecdsa_signing_key
     except Exception as e:
@@ -399,7 +399,7 @@ def verify_ecdsa_signature(record: Dict[str, Any], public_key_pem: str) -> bool:
         raise ImportError("ecdsa library required for ECDSA verification. Install with: pip install ecdsa")
 
     try:
-        vk = VerifyingKey.from_pem(public_key_pem)
+        vk = VerifyingKey.from_pem(public_key_pem)  # type: ignore[possibly-unbound]
     except Exception as e:
         logger.error("Invalid ECDSA public key: %s", e)
         return False
@@ -425,7 +425,7 @@ def verify_ecdsa_signature(record: Dict[str, Any], public_key_pem: str) -> bool:
     try:
         vk.verify(bytes.fromhex(ecdsa_sig), record["current_hash"].encode("utf-8"))
         return True
-    except BadSignatureError:
+    except BadSignatureError:  # type: ignore[possibly-unbound]
         logger.warning("ECDSA signature verification FAILED - record may be forged")
         return False
     except Exception as e:
@@ -630,7 +630,11 @@ class AuditStore:
     @staticmethod
     def verify_chain() -> tuple:
         """Verify integrity of the entire hash chain and HMAC signatures."""
-        return verify_chain()
+        result = verify_chain()
+        # verify_chain always returns a tuple (never bare None), but Pylance
+        # can't prove that — the assert satisfies the type checker at zero cost.
+        assert result is not None
+        return result
 
     @staticmethod
     def get_events() -> List[Dict[str, Any]]:

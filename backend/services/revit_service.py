@@ -50,10 +50,9 @@ try:
 except ImportError:
     PYREVIT_AVAILABLE = False
     logger.warning("pyRevit not available — Revit API disabled")
-    # Define stubs so Pylance sees DB/revit as always-bound (guarded at call sites)
     from typing import Any
-    DB = Any  # type: ignore[misc]
-    revit = Any  # type: ignore[misc]
+    DB: Any = None
+    revit: Any = None
 
 # Try IFCOpenShell for IFC parsing
 try:
