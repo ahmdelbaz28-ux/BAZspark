@@ -42,7 +42,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     FIREAI_ENV=production \
     LOG_LEVEL=WARNING \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    DIGITAL_TWIN_DB_PATH=/app/data/digital_twin.db \
+    UDM_DB_PATH=/app/data/udm_elements.db
 
 USER fireai
 
