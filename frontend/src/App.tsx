@@ -9,6 +9,8 @@ import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { FireAlarmPage } from './pages/FireAlarmPage';
 import { FireAlarmDesigner } from './components/mockups/engineering/FireAlarmDesigner';
+import { DigitalTwinPage } from './pages/DigitalTwinPage';
+import { CADSettingsPage } from './pages/CADSettingsPage';
 import './i18n';
 import './styles/globals.css';
 import './styles/typography.css';
@@ -35,6 +37,8 @@ function App() {
     { path: '/engineering', element: <EngineeringPage /> },
     { path: '/reports', element: <ReportsPage /> },
     { path: '/settings', element: <SettingsPage /> },
+    { path: '/settings/cad', element: <CADSettingsPage /> },
+    { path: '/digital-twin', element: <DigitalTwinPage /> },
     // Fire Alarm Specific Routes
     { path: '/fire-alarm', element: <FireAlarmPage /> },
     { path: '/fire-alarm/designer', element: <FireAlarmDesigner /> },

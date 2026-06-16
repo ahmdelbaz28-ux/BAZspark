@@ -19,4 +19,8 @@ __all__ = [
     "qomn",
     "facp",
     "api_keys",
+    # New CAD/BIM integration routers
+    "autocad",
+    "revit",
+    "digital_twin",
 ]

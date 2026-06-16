@@ -120,14 +120,29 @@ git clone https://github.com/ahmdelbaz28-ux/revit.git
 cd revit
 
 # Configure environment
-cp .env.example .env
-# EDIT .env: set FIREAI_API_KEY (random 64-char hex), CORS_ORIGINS, CSP_CONNECT_SRC
+# Use the template in this repository: env.example.txt → copy to .env
+copy env.example.txt .env
+# EDIT .env: set FIREAI_API_KEY (random 64-char hex), CORS_ORIGINS, CSP_CONNECT_SRC (optional)
 
 # Build and run
 docker build -t fireai:latest .
 docker compose up -d
 
 # Open http://localhost:8000
+```
+
+### Environment (.env)
+
+> Use the template file created in this repository: `env.example.txt`.
+
+**Local development (recommended):**
+- `FIREAI_ENV=development`
+- `FIREAI_API_KEY` can be set (still recommended). If not set, auth may be relaxed depending on code paths.
+
+Example:
+```bash
+copy env.example.txt .env
+# EDIT .env values as needed
 ```
 
 ### Source (Development)

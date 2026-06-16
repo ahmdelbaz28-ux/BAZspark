@@ -127,6 +127,57 @@ dmypy.json
 *.swp
 *.swo
 
+# pyenv
+.python-version
+.pyenv
+.pyenvrc
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre checker
+.pyre/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -195,3 +246,86 @@ frontend/dist/
 # Audit logs
 *.jsonl
 skills/ppt/scripts/tectonic
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Environment Variables - NEVER COMMIT THESE
+.env
+.env.local
+.env.*.local
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# Secrets and keys
+*.key
+*.pem
+*.cert
+*.crt
+
+# Node modules (frontend)
+node_modules/
+frontend/node_modules/
+
+# Downloaded files
+download/
+downloads/
+
+# Audit logs (optional - archive periodically)
+audit/*.json
+
+# Memory storage
+mem0_qdrant_data/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Test artifacts
+reports/
+coverage/
+tmp/
+temp/
+
+# FireAI artifacts
+fireai/.cache/
+qomn_fire/integration/output/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Generated files
+*.pyd
+*.so
