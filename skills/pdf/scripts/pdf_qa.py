@@ -28,7 +28,7 @@ import sys
 try:
     import pymupdf  # PyMuPDF
 except ImportError:
-    import fitz as pymupdf
+    import _fitz_compat as pymupdf
 
 # ============================================================
 # Config

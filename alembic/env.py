@@ -13,9 +13,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # access to the values within the .ini file in use.
 config = context.config
 
-# Override URL from environment or use default
-db_path = os.getenv("FIREAI_DB_PATH", "db/digital_twin.db")
-config.set_main_option("sqlalchemy.url", f"sqlite:///{db_path}")
+# Override URL from environment (same as main app) or use default
+db_url = os.getenv("DATABASE_URL", "sqlite:///./db/digital_twin.db")
+if db_url.startswith("sqlite:///"):
+    db_path = db_url.replace("sqlite:///", "")
+else:
+    db_path = db_url
+config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

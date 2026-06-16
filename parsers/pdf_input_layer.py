@@ -304,7 +304,7 @@ class PDFInputLayer:
 
     def _extract_data(self, pdf_path: str, result: InputLayerResult):
         """Extract devices, rooms, metadata from PDF."""
-        import fitz  # PyMuPDF
+        import _fitz_compat as fitz  # PyMuPDF
 
         doc = fitz.open(pdf_path)
 

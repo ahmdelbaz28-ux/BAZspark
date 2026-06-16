@@ -9,7 +9,7 @@ Author: The Consultant Who Refused to Lie
 """
 
 try:
-    import fitz  # PyMuPDF
+    import _fitz_compat as fitz  # PyMuPDF
 except ImportError:
     fitz = None  # PDF features unavailable without pymupdf
 from dataclasses import dataclass, field

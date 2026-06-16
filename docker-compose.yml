@@ -24,6 +24,7 @@ services:
     volumes:
       - fireai-data:/app/data
       - fireai-logs:/app/logs
+      - ./db:/app/db
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 30s
@@ -44,8 +45,30 @@ services:
           memory: 512M
           cpus: '0.5'
 
+  redis:
+    image: redis:7-alpine
+    container_name: fireai-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
 volumes:
   fireai-data:
     driver: local
   fireai-logs:
+    driver: local
+  redis-data:
     driver: local
