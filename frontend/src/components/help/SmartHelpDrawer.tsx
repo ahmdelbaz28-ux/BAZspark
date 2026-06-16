@@ -105,6 +105,22 @@ export function SmartHelpDrawer({
   }, [closeHelp, onOpenChange]);
 
   useEffect(() => {
+    if (!open) {
+      closeHelp();
+      return;
+    }
+
+    if (initialContextId) {
+      openHelp(initialContextId, initialSearch);
+      return;
+    }
+
+    if (initialSearch) {
+      setSearchQuery(initialSearch);
+    }
+  }, [initialContextId, initialSearch, open, openHelp, setSearchQuery, closeHelp]);
+
+  useEffect(() => {
     if (typeof document === 'undefined') return undefined;
 
     const updateDirection = () => setDocumentDirection(getDocumentDirection());
@@ -115,19 +131,6 @@ export function SmartHelpDrawer({
 
     return () => observer.disconnect();
   }, []);
-
-  useEffect(() => {
-    if (!open) return;
-
-    if (initialContextId) {
-      openHelp(initialContextId, initialSearch);
-      return;
-    }
-
-    if (initialSearch) {
-      setSearchQuery(initialSearch);
-    }
-  }, [initialContextId, initialSearch, open, openHelp, setSearchQuery]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

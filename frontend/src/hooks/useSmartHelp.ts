@@ -18,8 +18,8 @@ type SmartHelpState = {
 
 type Listener = (state: SmartHelpState) => void;
 
-const topics = Object.freeze(getHelpTopics());
-const categories = Object.freeze(getHelpCategories());
+const topics = getHelpTopics();
+const categories = getHelpCategories();
 
 let helpState: SmartHelpState = {
   isHelpOpen: false,
@@ -55,16 +55,35 @@ function isKnownCategory(category: HelpCategory | 'all'): category is HelpCatego
   return categories.includes(category as HelpCategory);
 }
 
-function getTopicForContext(contextId: HelpTopicId | string, search?: string): HelpTopic | null {
-  return getFirstTopicForContext(contextId) ?? getFallbackHelpTopic(search ?? contextId) ?? null;
+function getTopicForContext(contextId: HelpTopicId | string | null | undefined, search?: string): HelpTopic | null {
+  const context = contextId ?? '';
+  const query = search ?? context;
+
+  if (!context && !query) {
+    return null;
+  }
+
+  return getFirstTopicForContext(context) ?? getFallbackHelpTopic(query) ?? null;
 }
 
-export const openHelp = (contextId: HelpTopicId | string, search = ''): void => {
+export const openHelp = (contextId?: HelpTopicId | string, search = ''): void => {
   setHelpState({
     isHelpOpen: true,
     selectedTopic: getTopicForContext(contextId, search),
-    searchQuery: search,
+    searchQuery: contextId ? search : search,
     category: 'all',
+  });
+};
+
+export const openSearch = (initialQuery = ''): void => {
+  const results = searchHelpTopics(initialQuery, 'all');
+
+  setHelpState({
+    isHelpOpen: true,
+    selectedTopic: results[0]?.topic ?? null,
+    searchQuery: initialQuery,
+    category: 'all',
+    results,
   });
 };
 
@@ -109,6 +128,7 @@ export function useSmartHelp(): SmartHelpHookValue {
 
   return useMemo<SmartHelpHookValue>(() => ({
     openHelp,
+    openSearch,
     closeHelp,
     isHelpOpen: state.isHelpOpen,
     selectedTopic: state.selectedTopic,
