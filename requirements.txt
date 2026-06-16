@@ -25,6 +25,8 @@ cryptography>=42.0.0     # CVE-2024-0727: timing attack in <42.0.0
 argon2-cffi>=23.0.0
 websockets>=12.0
 tenacity>=8.2.0
+# Add bcrypt for stronger API key hashing
+bcrypt>=4.0.0
 
 # CAD and data processing
 ezdxf>=1.0.0
