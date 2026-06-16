@@ -16,6 +16,14 @@ import threading
 from pathlib import Path
 from typing import Optional
 
+# Import bcrypt for stronger password hashing
+try:
+    import bcrypt
+    HAS_BCRYPT = True
+except ImportError:
+    HAS_BCRYPT = False
+    logging.warning("bcrypt not available - using SHA-256 for API key hashing (less secure)")
+
 from backend.rbac import APIKeyInfo, Role
 
 logger = logging.getLogger(__name__)
@@ -27,8 +35,23 @@ _keys_lock = threading.Lock()
 
 
 def _hash_key(key: str) -> str:
-    """Hash an API key using SHA-256."""
-    return hashlib.sha256(key.encode()).hexdigest()
+    """Hash an API key using bcrypt if available, otherwise SHA-256."""
+    if HAS_BCRYPT:
+        # Use bcrypt with a salt for stronger security
+        return bcrypt.hashpw(key.encode(), bcrypt.gensalt()).decode('utf-8')
+    else:
+        # Fallback to SHA-256 if bcrypt is not available
+        return hashlib.sha256(key.encode()).hexdigest()
+
+
+def _verify_key(key: str, hashed_key: str) -> bool:
+    """Verify an API key against its hash."""
+    if HAS_BCRYPT and '$2b$' in hashed_key:
+        # Verify using bcrypt
+        return bcrypt.checkpw(key.encode(), hashed_key.encode())
+    else:
+        # Verify using SHA-256
+        return hashlib.sha256(key.encode()).hexdigest() == hashed_key
 
 
 def _load_keys() -> dict:

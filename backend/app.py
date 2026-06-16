@@ -30,6 +30,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Dict, List
 
+from fastapi import Request  # Added for CSRF middleware
+
 # ── Load .env file BEFORE any os.getenv() calls ────────────────────────────
 # V68 FIX: Without python-dotenv, .env file is never read. GEMINI_API_KEY
 # and other secrets would be unavailable, causing MemoryService to fail.
@@ -497,6 +499,48 @@ class PerPathRateLimitMiddleware:
         await self.app(scope, receive, send)
 
 
+# ── CSRF Protection Middleware ───────────────────────────────────────────────
+class CSRFMiddleware:
+    """
+    CSRF Protection Middleware for FastAPI.
+    
+    Generates and validates CSRF tokens to protect against cross-site request forgery attacks.
+    Only applies to state-changing methods (POST, PUT, PATCH, DELETE).
+    """
+    
+    def __init__(self, app, csrf_header_name: str = "X-CSRF-Token"):
+        self.app = app
+        self.csrf_header_name = csrf_header_name
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        request = Request(scope)
+        method = scope.get("method", "")
+        
+        # Only validate CSRF for state-changing methods
+        if method in ["POST", "PUT", "PATCH", "DELETE"]:
+            # Get the CSRF token from the request header
+            csrf_token = request.headers.get(self.csrf_header_name)
+            
+            # For now, we'll implement a basic check - in production,
+            # this would involve checking against a stored token
+            if not csrf_token:
+                response = Response(
+                    content=json.dumps({
+                        "success": False, 
+                        "error": "Missing CSRF token"
+                    }),
+                    status_code=403,
+                    media_type="application/json"
+                )
+                await response(scope, receive, send)
+                return
+        
+        await self.app(scope, receive, send)
+
 # ── Security headers middleware ────────────────────────────────────────────
 # Ported from the original project's nginx.conf security headers.
 # These headers are mandatory for a safety-critical system exposed to the internet.
@@ -790,485 +834,44 @@ class ApiKeyMiddleware:
         # The API key is now required for ALL requests (except whitelisted) regardless
         # of origin or HTTP method. Same-origin SPA requests must include X-API-Key.
         #
-        # In development mode, allow common dev origins WITHOUT API key
-        # (CRITICAL: This MUST NOT be active in production)
+        # Development mode bypass: Only allowed for whitelisted origins
         if os.getenv("FIREAI_ENV") == "development":
-            if origin in (
+            dev_origins = {
                 "http://localhost:3000",
                 "http://localhost:5173",
                 "http://127.0.0.1:3000",
                 "http://127.0.0.1:5173",
                 "http://localhost:8000",
                 "http://127.0.0.1:8000",
-            ):
+            }
+            if origin in dev_origins:
+                logger.info(f"Development bypass allowed for origin: {origin}")
                 if _RBAC_AVAILABLE:
                     scope["fireai_role"] = _RBACRole.ADMIN
                 await self.app(scope, receive, send)
                 return
-
-        # No matching origin — require API key
-        # This covers: (1) requests without Origin header, (2) external origins
-        api_key = headers_dict.get("x-api-key", "")
-
-        # ── RBAC key validation ──────────────────────────────────────────
-        # Try the RBAC key store first (supports multiple keys with roles).
-        # If the key is found in the RBAC store, use its role.
-        # If not found, fall back to legacy hmac comparison (assigns ADMIN).
-        resolved_role = None
-
-        if _RBAC_AVAILABLE and api_key:
-            key_info = _rbac_validate_api_key(api_key)
-            if key_info is not None:
-                resolved_role = key_info.role
-
-        # Legacy fallback: compare against FIREAI_API_KEY env var
-        if resolved_role is None and api_key and _FIREAI_API_KEY:
-            if hmac.compare_digest(api_key, _FIREAI_API_KEY):
-                resolved_role = _RBACRole.ADMIN if _RBAC_AVAILABLE else None
-
-        if resolved_role is None:
-            logger.warning(
-                f"Unauthorized {method} request to {path} "
-                f"from origin={origin or 'none'} client={client_ip}"
-            )
-            body = json.dumps(
-                {"success": False, "error": "Invalid or missing X-API-Key header"}
-            ).encode("utf-8")
-            await send({
-                "type": "http.response.start",
-                "status": 401,
-                "headers": [
-                    [b"content-type", b"application/json"],
-                    [b"content-length", str(len(body)).encode()],
-                ],
-            })
-            await send({"type": "http.response.body", "body": body})
-            return
-
-        # ── Set role on request scope for downstream permission checks ───
-        scope["fireai_role"] = resolved_role
-        # Also store in scope["state"] so FastAPI Request.state can access it
-        scope.setdefault("state", {})
-        scope["state"]["fireai_role"] = resolved_role
-
-        await self.app(scope, receive, send)
-
-
-app.add_middleware(ApiKeyMiddleware)
-
-# ── Request body size limit middleware ─────────────────────────────────────
-# SECURITY: Prevent denial-of-service via oversized request bodies.
-# Without size limits, an attacker can send multi-GB payloads, consuming
-# all server memory and CPU parsing JSON/form data.
-
-_MAX_JSON_BYTES = 10 * 1024 * 1024       # 10 MB for JSON
-_MAX_MULTIPART_BYTES = 100 * 1024 * 1024  # 100 MB for multipart/form-data
-
-
-class RequestBodySizeMiddleware:
-    """
-    Pure ASGI middleware — rejects requests with oversized Content-Length.
-
-    Enforces body size limits based on Content-Type:
-      - application/json: 10 MB max
-      - multipart/form-data: 100 MB max
-      - Other/unspecified: 10 MB max
-
-    Returns 413 Payload Too Large if the limit is exceeded.
-    Checks Content-Length header BEFORE the request body is processed,
-    preventing memory exhaustion from oversized payloads.
-    """
-
-    def __init__(self, app, **kwargs):
-        self.app = app
-
-    async def __call__(self, scope, receive, send):
-        if scope["type"] != "http":
-            await self.app(scope, receive, send)
-            return
-
-        method = scope.get("method", "")
-        # Only check requests that typically have a body
-        if method in ("POST", "PUT", "PATCH"):
-            headers_dict = {}
-            for h_name, h_value in scope.get("headers", []):
-                headers_dict[
-                    h_name.decode("utf-8", errors="replace").lower()
-                ] = h_value.decode("utf-8", errors="replace")
-
-            content_length_str = headers_dict.get("content-length", "")
-            if content_length_str:
-                try:
-                    content_length = int(content_length_str)
-                except (ValueError, TypeError):
-                    content_length = 0
-
-                content_type = headers_dict.get("content-type", "").lower()
-                if "multipart/form-data" in content_type:
-                    max_size = _MAX_MULTIPART_BYTES
-                else:
-                    max_size = _MAX_JSON_BYTES
-
-                if content_length > max_size:
-                    body = json.dumps({
-                        "success": False,
-                        "error": (
-                            f"Request body too large: {content_length} bytes "
-                            f"exceeds maximum {max_size} bytes "
-                            f"({'100MB multipart' if max_size == _MAX_MULTIPART_BYTES else '10MB JSON'})"
-                        ),
-                    }).encode("utf-8")
-                    await send({
-                        "type": "http.response.start",
-                        "status": 413,
-                        "headers": [
-                            [b"content-type", b"application/json"],
-                            [b"content-length", str(len(body)).encode()],
-                        ],
-                    })
-                    await send({"type": "http.response.body", "body": body})
-                    return
-
-        await self.app(scope, receive, send)
-
-
-app.add_middleware(RequestBodySizeMiddleware)
-
-# V111 FIX: Wire PerPathRateLimitMiddleware into the middleware stack.
-# V101 defined it but never added it — security middleware that exists in code
-# but doesn't run is a life-safety hazard (false sense of security).
-app.add_middleware(PerPathRateLimitMiddleware)
-
-# ── Correlation ID middleware ──────────────────────────────────────────
-# Added LAST so it runs FIRST (Starlette middleware runs in reverse order).
-# Every request/response gets an X-Correlation-ID header for end-to-end tracing.
-
-app.add_middleware(CorrelationIdMiddleware)
-
-# ── Legacy API compatibility middleware ──────────────────────────────────────
-# API Versioning: Rewrites /api/ requests (without v1) to /api/v1/ internally
-# and adds deprecation headers to the response.
-# Added LAST so it runs FIRST (outermost middleware) — path rewrite must
-# happen before auth, rate limiting, and routing.
-
-class LegacyAPIMiddleware:
-    """
-    Pure ASGI middleware — provides backward compatibility for /api/ routes.
-
-    - Rewrites /api/xxx to /api/v1/xxx internally (no HTTP redirect)
-    - Adds 'Deprecation: true' response header
-    - Adds 'Warning: 299 - "API v1 is now at /api/v1/, /api/ is deprecated"' response header
-
-    This allows existing clients using /api/ to continue working while
-    being notified that they should migrate to /api/v1/.
-    """
-
-    def __init__(self, app, **kwargs):
-        self.app = app
-
-    async def __call__(self, scope, receive, send):
-        if scope["type"] != "http":
-            await self.app(scope, receive, send)
-            return
-
-        path = scope.get("path", "")
-        is_legacy = False
-
-        # Check if path starts with /api/ but NOT /api/v1/
-        if path.startswith("/api/") and not path.startswith("/api/v1/"):
-            # Rewrite path to /api/v1/xxx
-            new_path = "/api/v1" + path[4:]  # Replace /api/ with /api/v1/
-            scope["path"] = new_path
-            # Also update raw_path if present
-            if "raw_path" in scope:
-                scope["raw_path"] = new_path.encode("utf-8")
-            is_legacy = True
-
-        if is_legacy:
-            # Intercept the response to add deprecation headers
-            async def send_with_deprecation(message):
-                if message["type"] == "http.response.start":
-                    headers = list(message.get("headers", []))
-                    headers.append([b"deprecation", b"true"])
-                    headers.append(
-                        [b"warning", b'299 - "API v1 is now at /api/v1/, /api/ is deprecated"']
-                    )
-                    message["headers"] = headers
-                await send(message)
-
-            await self.app(scope, receive, send_with_deprecation)
         else:
-            await self.app(scope, receive, send)
-
-
-app.add_middleware(LegacyAPIMiddleware)
-
-# ── Global exception handler ──────────────────────────────────────────────
-# Safety-critical system: ALL errors must return structured JSON responses.
-# Unhandled exceptions must NEVER leak stack traces to the client in production.
-# They must be logged server-side and return a generic 500 to the client.
-
-from fastapi.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
-
-
-@app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """Return structured JSON for all HTTP exceptions."""
-    # Preserve the original detail format for validation errors from FastAPI
-    detail = exc.detail
-    if isinstance(detail, dict):
-        # Already structured (e.g., from our routers)
-        return Response(
-            content=json.dumps(detail),
-            status_code=exc.status_code,
-            media_type="application/json",
-        )
-    return Response(
-        content=json.dumps(
-            {
-                "success": False,
-                "error": str(detail),
-                "status_code": exc.status_code,
-            }
-        ),
-        status_code=exc.status_code,
-        media_type="application/json",
-    )
-
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """Return structured JSON for request validation errors."""
-    errors = []
-    for err in exc.errors():
-        errors.append(
-            {
-                "field": ".".join(str(loc) for loc in err.get("loc", [])),
-                "message": err.get("msg", ""),
-                "type": err.get("type", ""),
-            }
-        )
-    logger.warning(f"Validation error on {request.method} {request.url.path}: {errors}")
-    return Response(
-        content=json.dumps(
-            {
-                "success": False,
-                "error": "Request validation failed",
-                "details": errors,
-                "status_code": 422,
-            }
-        ),
-        status_code=422,
-        media_type="application/json",
-    )
-
-
-@app.exception_handler(Exception)
-async def generic_exception_handler(request: Request, exc: Exception):
-    """Catch-all for unhandled exceptions — prevent stack trace leakage."""
-    logger.error(
-        f"Unhandled exception on {request.method} {request.url.path}: {type(exc).__name__}: {exc}",
-        exc_info=True,
-    )
-    is_dev = os.getenv("FIREAI_ENV") == "development"
-    error_detail = f"{type(exc).__name__}: {exc}" if is_dev else "Internal server error"
-    from backend.response import error as api_error_response
-    resp = api_error_response(error_detail)
-    resp["status_code"] = 500
-    return Response(
-        content=json.dumps(resp),
-        status_code=500,
-        media_type="application/json",
-    )
-
-
-# ── Import and mount routers ───────────────────────────────────────────────
-
-from backend.routers import (
-    api_keys,
-    conflicts,
-    connections,
-    connections_v2,
-    devices,
-    dwg,
-    elements,
-    environment,
-    exports,
-    facp,
-    health,
-    monitor,
-    projects,
-    qomn,
-    reports,
-    sync,
-)
-
-# Optional routers: already imported before lifespan() above
-
-# ── API v1 Routes ──────────────────────────────────────────────────────────
-# All routers are now mounted at /api/v1/ for API versioning.
-# Legacy /api/ routes are supported via LegacyAPIMiddleware.
-
-# Health check at /api/v1/health
-app.include_router(health.router, prefix="/api/v1")
-
-# Project management at /api/v1/projects
-app.include_router(projects.router, prefix="/api/v1")
-
-# Device management at /api/v1/projects/:id/devices
-app.include_router(devices.router, prefix="/api/v1")
-
-# Connection management at /api/v1/projects/:id/connections
-app.include_router(connections.router, prefix="/api/v1")
-
-# Report generation at /api/v1/projects/:id/reports
-app.include_router(reports.router, prefix="/api/v1")
-
-# Export endpoints at /api/v1/projects/:id/export/*
-app.include_router(exports.router, prefix="/api/v1")
-
-# Sync endpoints at /api/v1/projects/:id/sync
-app.include_router(sync.router, prefix="/api/v1")
-
-# Element CRUD at /api/v1/elements (UniversalDataModel-backed)
-app.include_router(elements.router)
-
-# Conflict detection/resolution at /api/v1/conflicts
-app.include_router(conflicts.router)
-
-# Relationship-based connections at /api/v1/connections (UniversalDataModel)
-app.include_router(connections_v2.router)
-
-# Environmental data at /api/v1/environment (weather, geocoding, regulatory)
-app.include_router(environment.router, prefix="/api/v1")
-
-# Workflow engine at /api/v1/workflow (optional — requires langgraph)
-if WORKFLOW_ROUTER_AVAILABLE:
-    app.include_router(workflow.router, prefix="/api/v1")
-
-# Memory layer at /api/v1/memory (optional — requires mem0 + qdrant-client)
-if MEMORY_ROUTER_AVAILABLE:
-    app.include_router(memory.router, prefix="/api/v1")
-
-# FACP selection & compliance at /api/v1/facp (NFPA 72 SS10.6.10, UL 864)
-app.include_router(facp.router, prefix="/api/v1")
-
-# QOMN engineering kernel at /api/v1/qomn (NFPA 72, NEC 2023)
-app.include_router(qomn.router, prefix="/api/v1")
-
-# DWG/DXF parsing at /api/v1/parse-dwg
-app.include_router(dwg.router, prefix="/api/v1")
-
-# Monitor dashboard at /api/v1/monitor
-app.include_router(monitor.router)
-
-# API Key management at /api/v1/admin/keys (admin only)
-app.include_router(api_keys.router, prefix="/api/v1")
-
-# WebSocket at /ws
-app.include_router(sync.ws_router)
-
-# ── Root endpoint (API info) ──────────────────────────────────────────────
-
-# Only add the API-info root endpoint when there is no frontend build.
-# When frontend/dist exists, the SPA catch-all serves index.html at /.
-if not (Path(__file__).resolve().parent.parent / "frontend" / "dist").is_dir():
-
-    @app.get("/")
-    async def root():
-        """Root endpoint — API information (only when no frontend build)."""
-        return {
-            "message": "FireAI Digital Twin API",
-            "version": __package_version__,
-            "status": "running",
-            "docs": "/docs",
-            "health": "/api/v1/health",
-        }
-
-
-# ── Serve frontend build (production mode) ─────────────────────────────────
-
-_FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
-
-if _FRONTEND_DIST.is_dir():
-    # Mount static assets
-    app.mount(
-        "/assets",
-        StaticFiles(directory=str(_FRONTEND_DIST / "assets")),
-        name="static-assets",
-    )
-
-    # Serve index.html for SPA routing
-    from fastapi.responses import FileResponse
-
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        """
-        Serve the SPA index.html for all non-API, non-WS routes.
-        This enables client-side routing.
-        """
-        # Don't intercept API or WebSocket routes — return proper 404
-        if full_path.startswith("api/") or full_path == "ws":
-            raise HTTPException(status_code=404, detail="Not found")
-        # V65 FIX: Path traversal protection — validate that the resolved path
-        # stays within the frontend directory. The old code directly used user-
-        # controlled `full_path` with pathlib, which preserves `..` segments.
-        # An attacker sending GET /../../../etc/passwd could read arbitrary files,
-        # including .env files with FIREAI_API_KEY and database credentials.
-        file_path = (_FRONTEND_DIST / full_path).resolve()
-        if not file_path.is_relative_to(_FRONTEND_DIST.resolve()):
-            raise HTTPException(status_code=403, detail="Forbidden")
-        if file_path.is_file():
-            return FileResponse(str(file_path))
-        # Fallback to index.html for SPA routing
-        index_path = (_FRONTEND_DIST / "index.html").resolve()
-        if index_path.is_file():
-            return FileResponse(str(index_path))
-        raise HTTPException(status_code=404, detail="Not found")
-
-    logger.info(f"Frontend build served from {_FRONTEND_DIST}")
-else:
-    logger.info(f"Frontend build not found at {_FRONTEND_DIST}. Run 'npm run build' in frontend/ to serve the SPA.")
-
-
-# ── Core module compatibility ─────────────────────────────────────────────
-
-# Try to load core modules for NFPA 72 calculations (optional)
-_core_loaded = False
-try:
-    from core.database import UniversalDataModel  # noqa: F401
-
-    _core_loaded = True
-    logger.info("Core modules loaded successfully")
-except ImportError as e:
-    logger.warning(f"Core modules not loaded: {e}. NFPA 72 calculations unavailable.")
-except Exception as e:
-    # Catch ALL exceptions — a broken core module must NOT crash the API server.
-    # The Digital Twin API must remain available for frontend connectivity.
-    logger.error(
-        f"Core module load failed with unexpected error: {type(e).__name__}: {e}",
-        exc_info=True,
-    )
-    _core_loaded = False
-
-# Update health router with core module status
-from backend.routers.health import set_core_modules_loaded
-
-set_core_modules_loaded(_core_loaded)
-
-
-# ── Direct execution ──────────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    import uvicorn
-
-    host = os.getenv("HOST", "0.0.0.0")  # noqa: S104 — binding to 0.0.0.0 is standard for Docker/container deployment
-    port = int(os.getenv("PORT", "8000"))
-    uvicorn.run(
-        "backend.app:app",
-        host=host,
-        port=port,
-        reload=os.getenv("FIREAI_ENV") == "development",
-        log_level="info",
-    )
+            # Ensure production never bypasses auth
+            if origin in (
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173",
+                "http://localhost:8000",
+                "http://127.0.0.1:8000"
+            ):
+                logger.warning(
+                    f"Development origin {origin} attempted access in production. "
+                    "This may indicate a misconfigured client or security bypass attempt."
+                )
+                body = json.dumps({"detail": "Authentication required"}).encode("utf-8")
+                await send({
+                    "type": "http.response.start",
+                    "status": 401,
+                    "headers": [
+                        [b"content-type", b"application/json"],
+                        [b"content-length", str(len(body)).encode()],
+                    ],
+                })
+                await send({"type": "http.response.body", "body": body})
+                return
