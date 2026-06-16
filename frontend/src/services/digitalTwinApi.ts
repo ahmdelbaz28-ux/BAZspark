@@ -709,3 +709,62 @@ export interface HealthStatus {
 
 export const api = new ApiClient();
 export default api;
+
+// Add CSRF token handling to API requests
+let csrfToken: string | null = null;
+
+// Function to get CSRF token from meta tag or other source
+function getCsrfToken(): string | null {
+  if (csrfToken) return csrfToken;
+  
+  // Try to get from meta tag
+  const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+  if (tokenMeta) {
+    csrfToken = tokenMeta.getAttribute('content');
+    return csrfToken;
+  }
+  
+  // If not found, return null
+  return null;
+}
+
+// Update the API request functions to include CSRF token
+async function apiRequest<T>(
+  url: string,
+  options: RequestInit = {}
+): Promise<ApiResponse<T>> {
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-API-Key': getApiKey(),
+    ...options.headers,
+  };
+
+  // Add CSRF token for state-changing requests
+  const method = options.method || 'GET';
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const token = getCsrfToken();
+    if (token) {
+      headers['X-CSRF-Token'] = token;
+    }
+  }
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    const data = await response.json();
+    return {
+      success: response.ok,
+      data: response.ok ? data.data || data : null,
+      error: response.ok ? null : data.error || 'Unknown error',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: null,
+      error: error instanceof Error ? error.message : 'Network error',
+    };
+  }
+}
