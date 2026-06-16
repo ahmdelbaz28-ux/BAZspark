@@ -118,7 +118,7 @@ def _parse_pdf(file_path: Path) -> str:
     """
     # Strategy 1: pymupdf
     try:
-        import fitz
+        import _fitz_compat as fitz
         doc = fitz.open(str(file_path))
         parts: list[str] = []
         for page in doc:

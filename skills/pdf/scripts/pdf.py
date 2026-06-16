@@ -2467,7 +2467,7 @@ def check_missing_glyphs(pdf_path: str) -> List[Dict[str, Any]]:
     Empty list means no issues found.
     """
     try:
-        import fitz  # PyMuPDF
+        import _fitz_compat as fitz  # PyMuPDF
     except ImportError:
         print("Warning: PyMuPDF (fitz) not installed — cannot check missing glyphs", file=sys.stderr)
         return []

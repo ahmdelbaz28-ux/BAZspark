@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Tuple
 
-import fitz
+import _fitz_compat as fitz
 
 
 class SymbolType(Enum):
