@@ -810,68 +810,63 @@ class ApiKeyMiddleware:
                 })
                 await send({"type": "http.response.body", "body": body})
                 return
-            # Development mode: allow without auth, default to ADMIN role
-            logger.warning("FIREAI_API_KEY not set — auth disabled (development only)")
-            if _RBAC_AVAILABLE:
-                scope["fireai_role"] = _RBACRole.ADMIN
-            await self.app(scope, receive, send)
-            return
 
-        # Get headers from ASGI scope (headers are [name_bytes, value_bytes] pairs)
-        headers_dict = {}
-        for h_name, h_value in scope.get("headers", []):
-            headers_dict[
-                h_name.decode("utf-8", errors="replace").lower()
-            ] = h_value.decode("utf-8", errors="replace")
+# ── Register API Routers ──────────────────────────────────────────────────
+import importlib
 
-        origin = headers_dict.get("origin", "")
+_ROUTER_MODULES: list[tuple[str, str | None]] = [
+    ("health", None),
+    ("projects", "/api/v1"),
+    ("devices", "/api/v1"),
+    ("connections", "/api/v1"),
+    ("connections_v2", None),
+    ("conflicts", None),
+    ("elements", None),
+    ("reports", "/api/v1"),
+    ("exports", "/api/v1"),
+    ("sync", "/api/v1"),
+    ("autocad", "/api/v1"),
+    ("revit", "/api/v1"),
+    ("digital_twin", "/api/v1"),
+    ("dwg", "/api/v1"),
+    ("environment", "/api/v1"),
+    ("workflow", "/api/v1"),
+    ("memory", "/api/v1"),
+    ("api_keys", "/api/v1"),
+    ("qomn", "/api/v1"),
+    ("facp", "/api/v1"),
+    ("monitor", None),
+]
 
-        # V65 FIX: Remove Origin-header-based auth bypass entirely.
-        # The old code compared client-controlled Origin against client-controlled Host,
-        # allowing ANY attacker to bypass auth by setting both headers. In a
-        # life-safety system, this is catastrophic — an unauthorized person could
-        # modify fire alarm projects, corrupting engineering data.
-        # The API key is now required for ALL requests (except whitelisted) regardless
-        # of origin or HTTP method. Same-origin SPA requests must include X-API-Key.
-        #
-        # Development mode bypass: Only allowed for whitelisted origins
-        if os.getenv("FIREAI_ENV") == "development":
-            dev_origins = {
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://127.0.0.1:3000",
-                "http://127.0.0.1:5173",
-                "http://localhost:8000",
-                "http://127.0.0.1:8000",
-            }
-            if origin in dev_origins:
-                logger.info(f"Development bypass allowed for origin: {origin}")
-                if _RBAC_AVAILABLE:
-                    scope["fireai_role"] = _RBACRole.ADMIN
-                await self.app(scope, receive, send)
-                return
+_REGISTERED: list[str] = []
+_FAILED: list[str] = []
+
+for _mod_name, _api_prefix in _ROUTER_MODULES:
+    try:
+        _mod = importlib.import_module(f"backend.routers.{_mod_name}")
+        if _api_prefix:
+            app.include_router(_mod.router, prefix=_api_prefix)
         else:
-            # Ensure production never bypasses auth
-            if origin in (
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://127.0.0.1:3000",
-                "http://127.0.0.1:5173",
-                "http://localhost:8000",
-                "http://127.0.0.1:8000"
-            ):
-                logger.warning(
-                    f"Development origin {origin} attempted access in production. "
-                    "This may indicate a misconfigured client or security bypass attempt."
-                )
-                body = json.dumps({"detail": "Authentication required"}).encode("utf-8")
-                await send({
-                    "type": "http.response.start",
-                    "status": 401,
-                    "headers": [
-                        [b"content-type", b"application/json"],
-                        [b"content-length", str(len(body)).encode()],
-                    ],
-                })
-                await send({"type": "http.response.body", "body": body})
-                return
+            app.include_router(_mod.router)
+        _REGISTERED.append(_mod_name)
+    except (ImportError, AttributeError) as _exc:
+        _FAILED.append(_mod_name)
+        logger.debug("Router '%s' not registered: %s", _mod_name, _exc)
+
+# Register WebSocket router from sync module
+try:
+    from backend.routers.sync import ws_router
+    app.include_router(ws_router)
+    _REGISTERED.append("sync/ws")
+except (ImportError, AttributeError) as _exc:
+    logger.debug("WebSocket router not registered: %s", _exc)
+
+WORKFLOW_ROUTER_AVAILABLE = "workflow" in _REGISTERED
+MEMORY_ROUTER_AVAILABLE = "memory" in _REGISTERED
+
+if _REGISTERED:
+    logger.info("Routers registered: %s", ", ".join(_REGISTERED))
+if _FAILED:
+    logger.warning("Routers skipped (optional deps missing): %s", ", ".join(_FAILED))
+
+pass
