@@ -334,14 +334,16 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def hash_api_key(api_key: str) -> str:
-    """Hash API key for storage."""
-    import hashlib
-    return hashlib.sha256(api_key.encode()).hexdigest()
+    """Hash API key for storage using bcrypt."""
+    return bcrypt.hashpw(api_key.encode(), bcrypt.gensalt()).decode()
 
 
 def verify_api_key_hash(plain_key: str, hashed: str) -> bool:
-    """Verify API key against hash."""
-    return hmac.compare_digest(hash_api_key(plain_key), hashed)
+    """Verify API key against stored bcrypt hash."""
+    try:
+        return bcrypt.checkpw(plain_key.encode(), hashed.encode())
+    except Exception:
+        return False
 
 
 def generate_api_key() -> tuple[str, str]:
@@ -462,8 +464,6 @@ async def get_current_user(
 
 def verify_api_key_auth(plain_key: str) -> User | None:
     """Verify API key and return user."""
-    hash_api_key(plain_key)
-
     # Get all active API keys and check
     all_keys = user_db.get_all_api_keys()
 
