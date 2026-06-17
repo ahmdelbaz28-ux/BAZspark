@@ -233,7 +233,7 @@ def test_execution_result_rejects_dict_errors_and_invalid_combinations():
         )
 
     with pytest.raises(ValidationError):
-        ExecutionResult(success=False)
+        ExecutionResult(success=False, data={"result": "should_not_exist"})
 
     failed_result = ExecutionResult(
         success=False,
