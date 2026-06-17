@@ -607,7 +607,7 @@ class SevereWeatherService:
             "Accept": "application/json",
         }
 
-        logger.info(f"Fetching MeteoAlarm JSON API for country={country_code}")
+        logger.info("Fetching MeteoAlarm JSON API for country=%s", country_code)
         response = await client.get(
             f"{self.METEOALARM_API_URL}/{country_code}",
             headers=headers,
@@ -754,7 +754,7 @@ class SevereWeatherService:
             "Accept": "application/atom+xml, application/xml, text/xml",
         }
 
-        logger.info(f"Fetching MeteoAlarm Atom feed for country={country_code}")
+        logger.info("Fetching MeteoAlarm Atom feed for country=%s", country_code)
         response = await client.get(
             f"{self.METEOALARM_ATOM_URL}/{country_code}",
             headers=headers,
@@ -810,7 +810,7 @@ class SevereWeatherService:
                     continue
 
         except ET.ParseError as e:
-            logger.warning(f"MeteoAlarm Atom XML parse error: {e}")
+            logger.warning("MeteoAlarm Atom XML parse error: %s", e)
             # Return empty results — caller will handle fallback
             pass
 

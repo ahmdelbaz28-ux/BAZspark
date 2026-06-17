@@ -546,7 +546,7 @@ async def get_full_environmental_context(
 
     # Handle weather errors
     if isinstance(weather, Exception):
-        logger.warning(f"Weather fetch failed: {weather}")
+        logger.warning("Weather fetch failed: %s", weather)
         weather = weather_svc._get_default(lat, lon)
 
     # Get region context
@@ -658,19 +658,19 @@ async def get_full_phase2_context(
 
     # Handle exceptions from parallel fetches
     if isinstance(weather, Exception):
-        logger.warning(f"Weather fetch failed: {weather}")
+        logger.warning("Weather fetch failed: %s", weather)
         weather = weather_svc._get_default(lat, lon)
 
     if isinstance(elevation, Exception):
-        logger.warning(f"Elevation fetch failed: {elevation}")
+        logger.warning("Elevation fetch failed: %s", elevation)
         elevation = elev_svc._get_default(lat, lon)
 
     if isinstance(air_quality, Exception):
-        logger.warning(f"Air quality fetch failed: {air_quality}")
+        logger.warning("Air quality fetch failed: %s", air_quality)
         air_quality = aq_svc._get_default(lat, lon)
 
     if isinstance(severe_weather, Exception):
-        logger.warning(f"Severe weather fetch failed: {severe_weather}")
+        logger.warning("Severe weather fetch failed: %s", severe_weather)
         severe_weather = sw_svc._get_default(lat, lon)
 
     # Get region context (depends on geocoding)

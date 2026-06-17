@@ -150,7 +150,7 @@ class SafeBuildingEngine:
                     "calc_time_sec": elapsed,
                 }
         except Exception as ex:
-            logger.error(f"Safe Solver Failure upon {room_spec.get('room_id')}: {ex}")
+            logger.error("Safe Solver Failure upon %s: %s", room_spec.get('room_id'), ex)
             return {"room_id": room_spec.get("room_id"), "success": False, "status": "ERROR", "error": str(ex)}
 
     def run_multi_floor_safety_analysis(self, floor_spec_registry: List[Dict[str, Any]]) -> List[Dict]:
@@ -192,7 +192,7 @@ class SafeBuildingEngine:
                 rm_copy["virtual_floor"] = floor_lbl
                 rooms_flatted.append(rm_copy)
 
-        logger.info(f"Commencing protected multi-thread evaluation over {len(rooms_flatted)} discrete areas.")
+        logger.info("Commencing protected multi-thread evaluation over %s discrete areas.", len(rooms_flatted))
 
         with ThreadPoolExecutor(max_workers=self.max_threads) as tpool:
             work_q = {tpool.submit(self._solve_mip_safe, rm_args): rm_args["room_id"] for rm_args in rooms_flatted}
@@ -202,6 +202,6 @@ class SafeBuildingEngine:
                     res_payload = w.result(timeout=180)
                     results.append(res_payload)
                 except Exception:
-                    logger.error(f"Task timeout or death on thread assigned to: {room_trace}")
+                    logger.error("Task timeout or death on thread assigned to: %s", room_trace)
                     results.append({"room_id": room_trace, "success": False, "status": "CRASH"})
         return results
