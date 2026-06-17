@@ -57,36 +57,12 @@ class ConnectRequest(BaseModel):
     force_new: bool = False
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# RATE-LIMITED ENDPOINTS
-# ═══════════════════════════════════════════════════════════════════════════
-
-
-@router.post("/connect", response_model=ConnectResponse)
-@limiter.limit("50/minute")
-async def connect_to_autocad(request: Request, body: ConnectRequest = ConnectRequest()):
-    """
-    Connect to AutoCAD application.
-    
-    Rate limit: 50 requests per minute
-    """
-    service = get_autocad_service()
-    try:
-        result = await service.connect(visible=body.visible, force_new=body.force_new)
-        return ConnectResponse(
-            success=True,
-            message="Connected to AutoCAD",
-            connection_id=result.get("connection_id")
-        )
-    except Exception as e:
-        logger.error(f"AutoCAD connection failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 class ConnectResponse(BaseModel):
     """Response model for AutoCAD connection."""
     success: bool
     message: str
     connected: bool
+    handle: Optional[str] = None
 
 class ReadDwgRequest(BaseModel):
     """Request model for reading DWG file."""
@@ -653,7 +629,3 @@ def _ensure_file_end():
     """Dummy function to ensure file has proper ending."""
     pass
 
-
-def _ensure_file_end():
-    """Dummy function to ensure file has proper ending."""
-    pass

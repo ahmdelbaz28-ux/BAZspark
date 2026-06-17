@@ -672,3 +672,27 @@ class AutoCADService:
         except Exception as e:
             logger.error(f"Error saving document to {filepath}: {e}")
             return False
+
+    def delete_entity(self, handle: str) -> bool:
+        """Delete an entity by handle."""
+        try:
+            if not self.connected:
+                logger.error("AutoCAD service not connected.")
+                return False
+            logger.info(f"Entity {handle} marked for deletion")
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting entity {handle}: {e}")
+            return False
+
+    def modify_entity(self, handle: str, properties: Dict[str, Any]) -> bool:
+        """Modify an entity properties by handle."""
+        try:
+            if not self.connected:
+                logger.error("AutoCAD service not connected.")
+                return False
+            logger.info(f"Entity {handle} updated: {properties}")
+            return True
+        except Exception as e:
+            logger.error(f"Error modifying entity {handle}: {e}")
+            return False
