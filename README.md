@@ -1,5 +1,13 @@
 # CAD/BIM Integration Platform
 
+[![CI/CD Pipeline](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.12-blue)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green)](https://fastapi.tiangolo.com)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Security](https://img.shields.io/badge/security-rate%20limiting-brightgreen)](https://github.com/ahmdelbaz28-ux/revit/security)
+[![OpenAPI](https://img.shields.io/badge/OpenAPI-Swagger%20UI-blue)](https://github.com/ahmdelbaz28-ux/revit/blob/main/backend/app.py)
+[![Docker](https://img.shields.io/badge/docker-ready-blue)](https://github.com/ahmdelbaz28-ux/revit/pkgs/container/revit)
+
 Complete platform for AutoCAD and Revit integration with Digital Twin capabilities.
 
 ## Overview
