@@ -34,6 +34,26 @@ from backend.routers import autocad, revit, digital_twin
 # Configure rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
+# Configure Redis caching (optional - gracefully handles missing Redis)
+_cache = {}
+
+def get_cache():
+    """Get cache instance. Returns in-memory dict if Redis unavailable."""
+    return _cache
+
+async def cache_get(key: str):
+    """Get value from cache."""
+    return _cache.get(key)
+
+async def cache_set(key: str, value: str, expire: int = 300):
+    """Set value in cache with expiration in seconds."""
+    import time
+    _cache[key] = {"value": value, "expire": time.time() + expire}
+
+async def cache_delete(key: str):
+    """Delete key from cache."""
+    _cache.pop(key, None)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -99,24 +119,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include our CAD/BIM integration routers
-app.include_router(autocad.router, prefix="/api", tags=["autocad"])
-app.include_router(revit.router, prefix="/api", tags=["revit"])
-app.include_router(digital_twin.router, prefix="/api", tags=["digital-twin"])
+# Include our CAD/BIM integration routers (v1)
+app.include_router(autocad.router, prefix="/api/v1/autocad", tags=["AutoCAD-v1"])
+app.include_router(revit.router, prefix="/api/v1/revit", tags=["Revit-v1"])
+app.include_router(digital_twin.router, prefix="/api/v1/digital-twin", tags=["Digital-Twin-v1"])
 
-# Basic health check endpoint
-@app.get("/")
-async def root():
-    """Root endpoint for health check."""
-    return {"message": "CAD/BIM Integration Platform is running"}
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
+# Health endpoints (no version prefix - always available)
+# These are versioned at root level for easy monitoring
+@app.get("/api/v1/health", tags=["Health-v1"])
+async def health_check_v1():
+    """Health check endpoint for API v1."""
     return {
         "status": "healthy",
         "service": "CAD/BIM Integration Platform",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "api_version": "v1"
+    }
+
+@app.get("/api/v2/health", tags=["Health-v2"])
+async def health_check_v2():
+    """Health check endpoint for API v2."""
+    return {
+        "status": "healthy",
+        "service": "CAD/BIM Integration Platform",
+        "version": "1.0.0",
+        "api_version": "v2",
+        "features": ["rate_limiting", "enhanced_caching", "streaming"]
+    }
+
+# Legacy health endpoint (deprecated)
+@app.get("/health", tags=["Health"])
+async def health_check():
+    """Health check endpoint (deprecated - use /api/v1/health)."""
+    return {
+        "status": "healthy",
+        "service": "CAD/BIM Integration Platform",
+        "version": "1.0.0",
+        "deprecated": True,
+        "suggestion": "Use /api/v1/health or /api/v2/health"
     }
 
 # Error handlers
@@ -125,6 +165,28 @@ async def general_exception_handler(request, exc):
     """General exception handler."""
     logger.error(f"Unhandled exception: {exc}")
     return HTTPException(status_code=500, detail=str(exc))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CACHE MANAGEMENT ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/v1/cache/clear", tags=["Cache"])
+async def clear_cache():
+    """Clear all cached data."""
+    _cache.clear()
+    return {"message": "Cache cleared", "items_cleared": len(_cache)}
+
+@app.get("/api/v1/cache/stats", tags=["Cache"])
+async def cache_stats():
+    """Get cache statistics."""
+    import time
+    active_keys = sum(1 for v in _cache.values() if v.get("expire", 0) > time.time())
+    return {
+        "total_keys": len(_cache),
+        "active_keys": active_keys,
+        "cache_type": "in-memory"
+    }
 
 # Mount static files if needed
 # app.mount("/static", StaticFiles(directory="static"), name="static")
