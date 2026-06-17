@@ -34,7 +34,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Request
 from pydantic import BaseModel
 
-from backend.app import limiter
+from backend.limiter import limiter
 from backend.services.autocad_service import AutoCADService
 
 logger = logging.getLogger(__name__)

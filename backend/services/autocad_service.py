@@ -27,18 +27,27 @@ USAGE:
 import logging
 import os
 import sys
+import platform
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 logger = logging.getLogger(__name__)
 
-try:
-    import win32com.client
-    import pythoncom
-    HAS_AUTOCAD_API = True
-except ImportError:
-    logger.warning("AutoCAD COM API not available. Install pywin32.")
+# Cross-platform support: Real imports for Windows, mock for Linux/Mac
+IS_WINDOWS = platform.system() == "Windows"
+
+if IS_WINDOWS:
+    try:
+        import win32com.client
+        import pythoncom
+        HAS_AUTOCAD_API = True
+    except ImportError:
+        logger.warning("AutoCAD COM API not available. Install pywin32.")
+        HAS_AUTOCAD_API = False
+else:
+    # Linux/Mac: No win32com available
     HAS_AUTOCAD_API = False
+    logger.info("Running on non-Windows platform. Using simulation mode for AutoCAD.")
 
 
 class AutoCADService:

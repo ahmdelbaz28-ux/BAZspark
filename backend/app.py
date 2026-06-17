@@ -21,8 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 import logging
 
@@ -31,8 +30,8 @@ from pydantic import BaseModel
 # Import our CAD/BIM integration routers
 from backend.routers import autocad, revit, digital_twin
 
-# Configure rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# Import rate limiter from centralized module (avoids circular import)
+from backend.limiter import limiter, get_remote_address
 
 # Configure Redis caching (optional - gracefully handles missing Redis)
 _cache = {}
