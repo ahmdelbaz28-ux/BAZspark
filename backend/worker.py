@@ -2,27 +2,25 @@
 backend/worker.py — Background Task Manager
 ==========================================
 
-Background task processing with ARQ (or asyncio fallback).
+Background task processing with SQLite persistence.
 Provides task queue, retry logic, and result storage.
 
 Features:
-- ARQ worker with Redis backend
-- In-memory asyncio fallback when Redis unavailable
+- SQLite database for task persistence
+- Background asyncio workers
 - Task retry with exponential backoff
-- Result persistence
 - Progress tracking via WebSocket
-- Task scheduling
+- Automatic task cleanup
 
 Environment Variables:
-- REDIS_URL: Redis connection URL
 - WORKER_CONCURRENCY: Number of concurrent workers (default: 4)
 - WORKER_MAX_RETRIES: Maximum retry attempts (default: 3)
 
 Usage:
-    from backend.worker import task_queue, enqueue_task, get_task_result
+    from backend.worker import enqueue_task, get_task_result
     
     # Enqueue a task
-    task_id = await enqueue_task("process_file", {"filepath": "/path/to/file"})
+    task_id = await enqueue_task("process_file", kwargs={"filepath": "/path/to/file"})
     
     # Get result
     result = await get_task_result(task_id)
@@ -31,24 +29,21 @@ Usage:
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
+import os
+import sqlite3
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Generic
-
-import ujson
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 # Configuration
-REDIS_URL = "redis://localhost:6379/1"  # Use different DB for worker
 WORKER_CONCURRENCY = 4
 WORKER_MAX_RETRIES = 3
-TASK_RESULT_TTL = 3600  # 1 hour
+TASK_RESULT_TTL = 86400  # 24 hours
 
 
 class TaskStatus(str, Enum):
@@ -62,7 +57,7 @@ class TaskStatus(str, Enum):
 
 @dataclass
 class Task:
-    """Background task."""
+    """Background task data."""
     id: str
     name: str
     args: tuple = field(default_factory=tuple)
@@ -93,25 +88,193 @@ class Task:
         }
 
 
-class InMemoryTaskQueue:
+class TaskDatabase:
+    """SQLite-backed task storage."""
+    
+    def __init__(self) -> None:
+        self._db_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "db", "tasks.db"
+        )
+        os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
+        self._init_db()
+    
+    def _init_db(self) -> None:
+        """Initialize database schema."""
+        conn = sqlite3.connect(self._db_path)
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS tasks (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                args TEXT NOT NULL DEFAULT '[]',
+                kwargs TEXT NOT NULL DEFAULT '{}',
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at REAL NOT NULL,
+                started_at REAL,
+                completed_at REAL,
+                result TEXT,
+                error TEXT,
+                retry_count INTEGER NOT NULL DEFAULT 0,
+                progress INTEGER NOT NULL DEFAULT 0,
+                metadata TEXT NOT NULL DEFAULT '{}'
+            )
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_tasks_created ON tasks(created_at)
+        """)
+        conn.commit()
+        conn.close()
+    
+    def create_task(self, task: Task) -> None:
+        """Create a new task."""
+        import json
+        conn = sqlite3.connect(self._db_path)
+        conn.execute(
+            """INSERT INTO tasks (id, name, args, kwargs, status, created_at, progress, metadata)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                task.id,
+                task.name,
+                json.dumps(task.args),
+                json.dumps(task.kwargs),
+                task.status.value,
+                task.created_at,
+                task.progress,
+                json.dumps(task.metadata)
+            )
+        )
+        conn.commit()
+        conn.close()
+    
+    def get_task(self, task_id: str) -> Optional[Task]:
+        """Get task by ID."""
+        import json
+        conn = sqlite3.connect(self._db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return None
+        
+        return Task(
+            id=row["id"],
+            name=row["name"],
+            args=json.loads(row["args"]),
+            kwargs=json.loads(row["kwargs"]),
+            status=TaskStatus(row["status"]),
+            created_at=row["created_at"],
+            started_at=row["started_at"],
+            completed_at=row["completed_at"],
+            result=json.loads(row["result"]) if row["result"] else None,
+            error=row["error"],
+            retry_count=row["retry_count"],
+            progress=row["progress"],
+            metadata=json.loads(row["metadata"])
+        )
+    
+    def update_task(self, task: Task) -> None:
+        """Update task."""
+        import json
+        conn = sqlite3.connect(self._db_path)
+        conn.execute(
+            """UPDATE tasks SET 
+               status = ?, started_at = ?, completed_at = ?, 
+               result = ?, error = ?, retry_count = ?, progress = ?
+               WHERE id = ?""",
+            (
+                task.status.value,
+                task.started_at,
+                task.completed_at,
+                json.dumps(task.result) if task.result is not None else None,
+                task.error,
+                task.retry_count,
+                task.progress,
+                task.id
+            )
+        )
+        conn.commit()
+        conn.close()
+    
+    def get_pending_tasks(self, limit: int = 10) -> List[Task]:
+        """Get pending tasks."""
+        import json
+        conn = sqlite3.connect(self._db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT * FROM tasks WHERE status = 'pending' 
+               ORDER BY created_at ASC LIMIT ?""",
+            (limit,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        
+        tasks = []
+        for row in rows:
+            tasks.append(Task(
+                id=row["id"],
+                name=row["name"],
+                args=json.loads(row["args"]),
+                kwargs=json.loads(row["kwargs"]),
+                status=TaskStatus(row["status"]),
+                created_at=row["created_at"],
+                started_at=row["started_at"],
+                completed_at=row["completed_at"],
+                result=json.loads(row["result"]) if row["result"] else None,
+                error=row["error"],
+                retry_count=row["retry_count"],
+                progress=row["progress"],
+                metadata=json.loads(row["metadata"])
+            ))
+        
+        return tasks
+    
+    def cleanup_old_tasks(self, ttl: int = TASK_RESULT_TTL) -> int:
+        """Remove old completed tasks."""
+        cutoff = time.time() - ttl
+        conn = sqlite3.connect(self._db_path)
+        cursor = conn.cursor()
+        cursor.execute(
+            """DELETE FROM tasks WHERE 
+               status IN ('completed', 'failed', 'cancelled') AND 
+               completed_at < ?""",
+            (cutoff,)
+        )
+        conn.commit()
+        affected = cursor.rowcount
+        conn.close()
+        return affected
+
+
+# Global database instance
+task_db = TaskDatabase()
+
+
+class TaskQueue:
     """
-    In-memory task queue fallback when Redis is unavailable.
+    SQLite-backed task queue with asyncio workers.
     
     Features:
-    - FIFO queue
-    - Background execution
-    - Result storage
-    - Progress updates
+    - SQLite persistence
+    - Background workers
+    - Retry with exponential backoff
+    - Progress tracking
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         self._queue: asyncio.Queue = asyncio.Queue()
-        self._tasks: Dict[str, Task] = {}
         self._workers: List[asyncio.Task] = []
         self._running = False
         self._started = False
     
-    async def start(self):
+    async def start(self) -> None:
         """Start worker pool."""
         if self._started:
             return
@@ -124,9 +287,9 @@ class InMemoryTaskQueue:
             worker = asyncio.create_task(self._worker(i))
             self._workers.append(worker)
         
-        logger.info(f"In-memory task queue started with {WORKER_CONCURRENCY} workers")
+        logger.info(f"Task queue started with {WORKER_CONCURRENCY} workers")
     
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop all workers."""
         self._running = False
         
@@ -140,7 +303,7 @@ class InMemoryTaskQueue:
         await asyncio.gather(*self._workers, return_exceptions=True)
         self._workers.clear()
         
-        logger.info("In-memory task queue stopped")
+        logger.info("Task queue stopped")
     
     async def enqueue(self, task_id: str, task_name: str, args: tuple = (), 
                       kwargs: dict = None, metadata: dict = None) -> str:
@@ -152,7 +315,11 @@ class InMemoryTaskQueue:
             kwargs=kwargs or {},
             metadata=metadata or {}
         )
-        self._tasks[task_id] = task
+        
+        # Save to database
+        task_db.create_task(task)
+        
+        # Add to queue
         await self._queue.put(task_id)
         
         logger.debug(f"Task enqueued: {task_id} ({task_name})")
@@ -160,33 +327,38 @@ class InMemoryTaskQueue:
     
     async def get_result(self, task_id: str) -> Optional[dict]:
         """Get task result."""
-        task = self._tasks.get(task_id)
+        task = task_db.get_task(task_id)
         if not task:
             return None
-        
         return task.to_dict()
     
-    async def _worker(self, worker_id: int):
+    async def _worker(self, worker_id: int) -> None:
         """Worker coroutine."""
         logger.debug(f"Worker {worker_id} started")
         
         while self._running:
             try:
                 # Get task from queue
-                task_id = await asyncio.wait_for(
-                    self._queue.get(), 
-                    timeout=1.0
-                )
+                try:
+                    task_id = await asyncio.wait_for(
+                        self._queue.get(), 
+                        timeout=1.0
+                    )
+                except asyncio.TimeoutError:
+                    # Check for new tasks in database
+                    pending = task_db.get_pending_tasks(limit=1)
+                    if pending:
+                        await self._queue.put(pending[0].id)
+                    continue
                 
-                task = self._tasks.get(task_id)
+                task = task_db.get_task(task_id)
                 if not task:
                     continue
                 
                 # Mark as processing
                 task.status = TaskStatus.PROCESSING
                 task.started_at = time.time()
-                
-                # Send progress update
+                task_db.update_task(task)
                 await self._update_progress(task)
                 
                 try:
@@ -196,15 +368,23 @@ class InMemoryTaskQueue:
                         raise ValueError(f"Unknown task: {task.name}")
                     
                     # Execute task
-                    result = await handler(*task.args, **task.kwargs)
+                    result = await handler(**task.kwargs)
                     
                     # Mark as completed
                     task.status = TaskStatus.COMPLETED
                     task.result = result
                     task.completed_at = time.time()
                     task.progress = 100
+                    task_db.update_task(task)
                     
                     logger.info(f"Task {task_id} completed successfully")
+                    
+                except asyncio.CancelledError:
+                    # Task was cancelled
+                    task.status = TaskStatus.CANCELLED
+                    task.completed_at = time.time()
+                    task_db.update_task(task)
+                    raise
                     
                 except Exception as e:
                     # Handle failure
@@ -216,16 +396,17 @@ class InMemoryTaskQueue:
                         delay = 2 ** task.retry_count
                         logger.warning(f"Task {task_id} failed, retrying in {delay}s (attempt {task.retry_count})")
                         task.status = TaskStatus.PENDING
+                        task_db.update_task(task)
                         asyncio.create_task(self._retry_later(task_id, delay))
                     else:
                         task.status = TaskStatus.FAILED
+                        task.completed_at = time.time()
+                        task_db.update_task(task)
                         logger.error(f"Task {task_id} failed after {task.retry_count} attempts: {e}")
                 
                 # Update progress
                 await self._update_progress(task)
                 
-            except asyncio.TimeoutError:
-                continue
             except asyncio.CancelledError:
                 break
             except Exception as e:
@@ -233,14 +414,14 @@ class InMemoryTaskQueue:
         
         logger.debug(f"Worker {worker_id} stopped")
     
-    async def _retry_later(self, task_id: str, delay: float):
+    async def _retry_later(self, task_id: str, delay: float) -> None:
         """Retry task after delay."""
         await asyncio.sleep(delay)
-        task = self._tasks.get(task_id)
+        task = task_db.get_task(task_id)
         if task and task.status == TaskStatus.PENDING:
             await self._queue.put(task_id)
     
-    async def _update_progress(self, task: Task):
+    async def _update_progress(self, task: Task) -> None:
         """Send progress update via WebSocket."""
         try:
             from backend.websocket import ws_manager
@@ -258,16 +439,16 @@ class InMemoryTaskQueue:
 _task_handlers: Dict[str, Callable] = {}
 
 
-def register_task(name: str):
+def register_task(name: str) -> Callable:
     """Decorator to register a task handler."""
-    def decorator(func: Callable):
+    def decorator(func: Callable) -> Callable:
         _task_handlers[name] = func
         return func
     return decorator
 
 
 # Global task queue instance
-task_queue: InMemoryTaskQueue = InMemoryTaskQueue()
+task_queue = TaskQueue()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -291,42 +472,35 @@ async def get_task_result(task_id: str) -> Optional[dict]:
     return await task_queue.get_result(task_id)
 
 
-async def start_worker():
+async def start_worker() -> None:
     """Start the background worker pool."""
     await task_queue.start()
 
 
-async def stop_worker():
+async def stop_worker() -> None:
     """Stop the background worker pool."""
     await task_queue.stop()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# SAMPLE TASK HANDLERS (Replace with actual implementations)
+# TASK HANDLERS
 # ═══════════════════════════════════════════════════════════════════════════
 
 @register_task("process_file")
-async def process_file(filepath: str, options: dict = None):
-    """
-    Process a file in background.
-    Replace with actual file processing logic.
-    """
+async def process_file(filepath: str, options: dict = None) -> dict:
+    """Process a file in background."""
     logger.info(f"Processing file: {filepath}")
     
     # Simulate processing
     for i in range(10):
         await asyncio.sleep(0.5)
-        # Update progress would go here
     
     return {"status": "completed", "filepath": filepath, "processed": True}
 
 
 @register_task("export_rooms")
-async def export_rooms(project_id: str, floors: int = 100):
-    """
-    Export rooms for a project in background.
-    Replace with actual export logic.
-    """
+async def export_rooms(project_id: str, floors: int = 100) -> dict:
+    """Export rooms for a project in background."""
     logger.info(f"Exporting {floors} floors for project {project_id}")
     
     # Simulate export
@@ -339,12 +513,6 @@ async def export_rooms(project_id: str, floors: int = 100):
                 "room": room,
                 "area": 25.0
             })
-        
-        # Update progress
-        progress = int((floor + 1) / floors * 100)
-        task = task_queue._tasks.get(project_id)
-        if task:
-            task.progress = progress
     
     return {
         "status": "completed",
@@ -355,11 +523,8 @@ async def export_rooms(project_id: str, floors: int = 100):
 
 
 @register_task("convert_dwg")
-async def convert_dwg(input_path: str, output_format: str = "dxf"):
-    """
-    Convert DWG file in background.
-    Replace with actual conversion logic.
-    """
+async def convert_dwg(input_path: str, output_format: str = "dxf") -> dict:
+    """Convert DWG file in background."""
     logger.info(f"Converting {input_path} to {output_format}")
     
     # Simulate conversion

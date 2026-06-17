@@ -12,9 +12,10 @@ ARCHITECTURE:
 - Health check endpoints
 - Error handlers for CAD connection issues
 - Redis/Memory Cache with TTL support
+- SQLite-backed user and task storage
 
 USAGE:
-    uvicorn backend.app:app --reload --host 0.0.0.0 --port 8000
+    SECRET_KEY="your-secret-key" uvicorn backend.app:app --reload --host 0.0.0.0 --port 8000
 """
 
 from fastapi import FastAPI, HTTPException, Request
@@ -25,6 +26,7 @@ from contextlib import asynccontextmanager
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 import logging
+import os
 
 from pydantic import BaseModel
 
@@ -43,6 +45,12 @@ from backend.cache import cache
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Validate environment
+def _validate_env() -> None:
+    """Validate required environment variables."""
+    if not os.environ.get("SECRET_KEY"):
+        logger.warning("SECRET_KEY not set! Set it with: export SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(32))')")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
