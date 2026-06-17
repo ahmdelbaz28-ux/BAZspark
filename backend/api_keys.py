@@ -8,6 +8,7 @@ On first startup, creates an admin key from FIREAI_API_KEY env var.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import logging
 import os
@@ -35,23 +36,39 @@ _keys_lock = threading.Lock()
 
 
 def _hash_key(key: str) -> str:
-    """Hash an API key using bcrypt if available, otherwise SHA-256."""
+    """Hash an API key using bcrypt if available, otherwise HMAC-SHA256 with salt.
+
+    FIX #30: Previously the SHA-256 fallback had no salt, making all
+    identical keys produce the same hash (vulnerable to rainbow tables).
+    Now uses HMAC-SHA256 with a random salt stored alongside the hash.
+    """
     if HAS_BCRYPT:
-        # Use bcrypt with a salt for stronger security
         return bcrypt.hashpw(key.encode(), bcrypt.gensalt()).decode('utf-8')
     else:
-        # Fallback to SHA-256 if bcrypt is not available
-        return hashlib.sha256(key.encode()).hexdigest()
+        # Fallback: HMAC-SHA256 with random salt
+        salt = secrets.token_hex(16)
+        h = hmac.new(salt.encode(), key.encode(), hashlib.sha256).hexdigest()
+        return f"hmac-sha256${salt}${h}"
 
 
 def _verify_key(key: str, hashed_key: str) -> bool:
     """Verify an API key against its hash."""
     if HAS_BCRYPT and '$2b$' in hashed_key:
-        # Verify using bcrypt
         return bcrypt.checkpw(key.encode(), hashed_key.encode())
+    elif hashed_key.startswith("hmac-sha256$"):
+        # FIX #30: Verify HMAC-SHA256 with salt
+        try:
+            _, salt, stored_hash = hashed_key.split("$", 2)
+            computed = hmac.new(salt.encode(), key.encode(), hashlib.sha256).hexdigest()
+            return hmac.compare_digest(computed, stored_hash)
+        except (ValueError, IndexError):
+            return False
     else:
-        # Verify using SHA-256
-        return hashlib.sha256(key.encode()).hexdigest() == hashed_key
+        # Legacy: plain SHA-256 (no salt) for backwards compatibility
+        return hmac.compare_digest(
+            hashlib.sha256(key.encode()).hexdigest(),
+            hashed_key,
+        )
 
 
 def _load_keys() -> dict:

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """backend/contract.py — Runtime API response contract validation.
 
 Ensures every API response matches the expected shape before being
@@ -27,6 +25,8 @@ V115 FIX: Contract validators now support BOTH naming conventions:
 The validators accept either convention and log a warning on mismatch
 instead of raising a hard error, since both systems are in production.
 """
+from __future__ import annotations
+
 import logging
 from typing import Any, Dict, List
 

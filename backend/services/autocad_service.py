@@ -83,7 +83,10 @@ class AutoCADService:
             try:
                 self.acad_app = win32com.client.GetActiveObject("AutoCAD.Application")
                 logger.info("Connected to existing AutoCAD instance")
-            except:
+            except Exception:
+                # FIX #7: Changed bare 'except:' to 'except Exception:'
+                # A bare except catches KeyboardInterrupt and SystemExit,
+                # preventing the application from being stopped cleanly.
                 # Launch new AutoCAD instance
                 try:
                     self.acad_app = win32com.client.Dispatch("AutoCAD.Application")
