@@ -130,7 +130,8 @@ markers = [
     "unit: marks tests as unit tests",
     "safety_critical: marks tests as safety-critical",
     "security: marks tests as security-related",
-    "compliance: marks tests as compliance-related"
+    "compliance: marks tests as compliance-related",
+    "asyncio: marks tests as asyncio-related"
 ]
 filterwarnings = [
     "error",
@@ -163,7 +164,7 @@ exclude_lines = [
     "def __repr__",
     "raise AssertionError",
     "raise NotImplementedError",
-    "if __name__ == .__main__.:
+    "if __name__ == '__main__':"
 ]
 
 [tool.bandit]
