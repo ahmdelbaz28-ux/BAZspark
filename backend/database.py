@@ -97,7 +97,7 @@ class Database:
         self._conn.execute("PRAGMA temp_store=MEMORY")
 
         self._init_schema()
-        logger.info(f"Digital Twin database initialized (SQLite) at {db_path}")
+        logger.info("Digital Twin database initialized (SQLite) at %s", db_path)
 
     def _init_postgres(self) -> None:
         """Initialize PostgreSQL connection pool."""
