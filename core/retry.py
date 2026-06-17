@@ -300,7 +300,7 @@ def circuit_breaker_retry(
                     state['open'] = True
                     logger.error(f"Circuit breaker OPENED after {failure_threshold} failures")
                 
-                raise e
+                raise  # FIX: bare 'raise' preserves original traceback; 'raise e' loses it
                 
         return wrapper
     return retry_decorator
