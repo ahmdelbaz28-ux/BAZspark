@@ -33,11 +33,11 @@ from typing import Any, Dict, List, Optional, Union
 logger = logging.getLogger(__name__)
 
 try:
-    import clr
-    import System
-    from System import Array
-    clr.AddReference("System.Windows.Forms")
-    clr.AddReference("System.Drawing")
+    import clr  # type: ignore
+    import System  # type: ignore
+    from System import Array  # type: ignore
+    clr.AddReference("System.Windows.Forms")  # type: ignore
+    clr.AddReference("System.Drawing")  # type: ignore
     HAS_REVIT_API = True
 except ImportError:
     logger.warning("Revit API not available. Install pythonnet.")
@@ -123,12 +123,19 @@ class RevitService:
         """
         # This is a simulated implementation - in reality this would interface with Revit API
         try:
+            # Helper to safely get attribute value
+            def get_attr(obj: Any, name: str, default: Any = None) -> Any:
+                val = getattr(obj, name, default)
+                if hasattr(val, 'ToString'):
+                    return val.ToString()  # type: ignore
+                return val if val is not None else default
+
             element_data = {
-                "id": getattr(element, 'Id', {}).ToString() if hasattr(element, 'Id') else 'unknown',
-                "name": getattr(element, 'Name', 'unnamed'),
-                "category": getattr(element, 'Category', {}).Name if hasattr(element, 'Category') else 'unknown',
-                "level": getattr(element, 'Level', {}).Name if hasattr(element, 'Level') else 'Level 1',
-                "workset": getattr(element, 'WorksetId', {}).ToString() if hasattr(element, 'WorksetId') else 'default',
+                "id": get_attr(element, 'Id', 'unknown'),
+                "name": get_attr(element, 'Name', 'unnamed'),
+                "category": get_attr(element, 'Category', {}).Name if hasattr(element, 'Category') else 'unknown',
+                "level": get_attr(element, 'Level', {}).Name if hasattr(element, 'Level') else 'Level 1',
+                "workset": get_attr(element, 'WorksetId', 'default'),
                 "element_type": getattr(element, 'GetType', lambda: 'Element')(),
             }
             
@@ -184,8 +191,8 @@ class RevitService:
             element_data["parameters"] = {
                 "mark": getattr(element, 'Mark', '') if hasattr(element, 'Mark') else '',
                 "comments": getattr(element, 'Comments', '') if hasattr(element, 'Comments') else '',
-                "phase_created": getattr(element, 'PhaseCreated', {}).Name if hasattr(element, 'PhaseCreated') else '',
-                "phase_demolished": getattr(element, 'PhaseDemolished', {}).Name if hasattr(element, 'PhaseDemolished') else '',
+                "phase_created": get_attr(element, 'PhaseCreated', ''),
+                "phase_demolished": get_attr(element, 'PhaseDemolished', ''),
             }
             
             return element_data
