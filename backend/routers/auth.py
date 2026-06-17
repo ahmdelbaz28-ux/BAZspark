@@ -1,6 +1,5 @@
-"""
-backend/routers/auth.py — Authentication Endpoints
-=================================================
+"""Authentication Endpoints.
+=======================
 
 REST API endpoints for authentication and authorization.
 Provides login, register, token refresh, and API key management.
@@ -23,18 +22,18 @@ ENDPOINTS:
 
 from __future__ import annotations
 
+import hmac
 import logging
 import os
 import secrets
 import sqlite3
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import bcrypt
-import hmac
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
 from backend.rbac import Role
@@ -104,7 +103,7 @@ class APIKeyInfo(BaseModel):
     key_id: str
     name: str
     created_at: float
-    last_used: Optional[float] = None
+    last_used: float | None = None
     disabled: bool = False
 
 
@@ -115,7 +114,7 @@ class APIKeyInfo(BaseModel):
 
 class UserDB:
     """User database with SQLite backend."""
-    
+
     def __init__(self) -> None:
         self._db_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -123,7 +122,7 @@ class UserDB:
         )
         os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
         self._init_db()
-    
+
     def _init_db(self) -> None:
         """Initialize database schema."""
         conn = sqlite3.connect(self._db_path)
@@ -159,18 +158,18 @@ class UserDB:
         conn.commit()
         conn.close()
         self._ensure_default_users()
-    
+
     def _ensure_default_users(self) -> None:
         """Create default users if not exist."""
         conn = sqlite3.connect(self._db_path)
         cursor = conn.cursor()
-        
+
         defaults = [
             ("admin-001", "admin", "admin@fireai.local", "admin123", "admin"),
             ("engineer-001", "engineer", "engineer@fireai.local", "engineer123", "engineer"),
             ("viewer-001", "viewer", "viewer@fireai.local", "viewer123", "viewer"),
         ]
-        
+
         for user_id, username, email, password, role in defaults:
             cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
             if not cursor.fetchone():
@@ -180,11 +179,11 @@ class UserDB:
                     (user_id, username, email, hashed, role, time.time())
                 )
                 logger.info(f"Created default user: {username}")
-        
+
         conn.commit()
         conn.close()
-    
-    def get_user(self, username: str) -> Optional[dict]:
+
+    def get_user(self, username: str) -> dict | None:
         """Get user by username."""
         conn = sqlite3.connect(self._db_path)
         conn.row_factory = sqlite3.Row
@@ -196,8 +195,8 @@ class UserDB:
         row = cursor.fetchone()
         conn.close()
         return dict(row) if row else None
-    
-    def get_user_by_id(self, user_id: str) -> Optional[dict]:
+
+    def get_user_by_id(self, user_id: str) -> dict | None:
         """Get user by ID."""
         conn = sqlite3.connect(self._db_path)
         conn.row_factory = sqlite3.Row
@@ -209,7 +208,7 @@ class UserDB:
         row = cursor.fetchone()
         conn.close()
         return dict(row) if row else None
-    
+
     def create_user(
         self,
         user_id: str,
@@ -228,7 +227,7 @@ class UserDB:
         conn.commit()
         conn.close()
         return {"id": user_id, "username": username, "email": email, "role": role}
-    
+
     def update_last_login(self, user_id: str) -> None:
         """Update last login timestamp."""
         conn = sqlite3.connect(self._db_path)
@@ -238,7 +237,7 @@ class UserDB:
         )
         conn.commit()
         conn.close()
-    
+
     def create_api_key(
         self,
         key_id: str,
@@ -255,8 +254,8 @@ class UserDB:
         conn.commit()
         conn.close()
         return {"key_id": key_id, "user_id": user_id, "name": name}
-    
-    def get_api_key(self, key_id: str) -> Optional[dict]:
+
+    def get_api_key(self, key_id: str) -> dict | None:
         """Get API key by key_id."""
         conn = sqlite3.connect(self._db_path)
         conn.row_factory = sqlite3.Row
@@ -268,7 +267,7 @@ class UserDB:
         row = cursor.fetchone()
         conn.close()
         return dict(row) if row else None
-    
+
     def get_all_api_keys(self) -> list[dict]:
         """Get all API keys (for verification)."""
         conn = sqlite3.connect(self._db_path)
@@ -278,7 +277,7 @@ class UserDB:
         rows = cursor.fetchall()
         conn.close()
         return [dict(row) for row in rows]
-    
+
     def get_user_api_keys(self, user_id: str) -> list[dict]:
         """Get all API keys for a user."""
         conn = sqlite3.connect(self._db_path)
@@ -291,7 +290,7 @@ class UserDB:
         rows = cursor.fetchall()
         conn.close()
         return [dict(row) for row in rows]
-    
+
     def revoke_api_key(self, key_id: str) -> bool:
         """Revoke an API key."""
         conn = sqlite3.connect(self._db_path)
@@ -300,7 +299,7 @@ class UserDB:
         affected = conn.total_changes
         conn.close()
         return affected > 0
-    
+
     def update_api_key_usage(self, key_id: str) -> None:
         """Update API key last used timestamp."""
         conn = sqlite3.connect(self._db_path)
@@ -355,7 +354,7 @@ def generate_api_key() -> tuple[str, str]:
 def create_access_token(data: dict) -> str:
     """Create JWT access token."""
     from datetime import datetime, timedelta, timezone
-    
+
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({
@@ -368,7 +367,7 @@ def create_access_token(data: dict) -> str:
 def create_refresh_token(data: dict) -> str:
     """Create JWT refresh token."""
     from datetime import datetime, timedelta, timezone
-    
+
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(days=7)
     to_encode.update({
@@ -378,7 +377,7 @@ def create_refresh_token(data: dict) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def verify_token(token: str) -> Optional[dict]:
+def verify_token(token: str) -> dict | None:
     """Verify and decode JWT token."""
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -397,6 +396,7 @@ def verify_token(token: str) -> Optional[dict]:
 
 class User:
     """User data structure."""
+
     def __init__(
         self,
         id: str,
@@ -410,7 +410,7 @@ class User:
         self.email = email
         self.role = role
         self.disabled = disabled
-    
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
@@ -427,8 +427,8 @@ class User:
 
 
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
-    api_key: Optional[str] = Depends(api_key_header),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    api_key: str | None = Depends(api_key_header),
 ) -> User:
     """Get current authenticated user."""
     credentials_exception = HTTPException(
@@ -436,13 +436,13 @@ async def get_current_user(
         detail="Invalid credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     # Try API key first
     if api_key:
         user = verify_api_key_auth(api_key)
         if user:
             return user
-    
+
     # Try bearer token
     if credentials:
         payload = verify_token(credentials.credentials)
@@ -456,22 +456,22 @@ async def get_current_user(
                     role=Role(user_data["role"]),
                     disabled=bool(user_data["disabled"])
                 )
-    
+
     raise credentials_exception
 
 
-def verify_api_key_auth(plain_key: str) -> Optional[User]:
+def verify_api_key_auth(plain_key: str) -> User | None:
     """Verify API key and return user."""
-    hashed = hash_api_key(plain_key)
-    
+    hash_api_key(plain_key)
+
     # Get all active API keys and check
     all_keys = user_db.get_all_api_keys()
-    
+
     for key_data in all_keys:
         if verify_api_key_hash(plain_key, key_data["hashed_key"]):
             # Update last used
             user_db.update_api_key_usage(key_data["key_id"])
-            
+
             # Get user
             user_data = user_db.get_user_by_id(key_data["user_id"])
             if user_data:
@@ -482,7 +482,7 @@ def verify_api_key_auth(plain_key: str) -> Optional[User]:
                     role=Role(user_data["role"]),
                     disabled=bool(user_data["disabled"])
                 )
-    
+
     return None
 
 
@@ -503,31 +503,30 @@ async def get_admin_user(current_user: User = Depends(get_current_user)) -> User
 
 @router.post("/login", response_model=TokenResponse)
 async def login(request: LoginRequest) -> TokenResponse:
-    """
-    Authenticate user and return JWT tokens.
-    
+    """Authenticate user and return JWT tokens.
+
     Demo credentials:
     - admin / admin123
     - engineer / engineer123
     - viewer / viewer123
     """
     user_data = user_db.get_user(request.username)
-    
+
     if not user_data or not verify_password(request.password, user_data["hashed_password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password"
         )
-    
+
     if user_data["disabled"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is disabled"
         )
-    
+
     # Update last login
     user_db.update_last_login(user_data["id"])
-    
+
     # Create tokens
     token_data = {
         "sub": user_data["username"],
@@ -536,9 +535,9 @@ async def login(request: LoginRequest) -> TokenResponse:
     }
     access_token = create_access_token(token_data)
     refresh_token = create_refresh_token(token_data)
-    
+
     logger.info(f"User {user_data['username']} logged in successfully")
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -555,7 +554,7 @@ async def register(request: RegisterRequest, _: User = Depends(get_admin_user)) 
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already exists"
         )
-    
+
     # Validate role
     try:
         role = Role(request.role.lower())
@@ -564,11 +563,11 @@ async def register(request: RegisterRequest, _: User = Depends(get_admin_user)) 
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid role. Must be one of: {[r.value for r in Role]}"
         )
-    
+
     # Create user
     user_id = f"user-{secrets.token_hex(4)}"
     hashed_password = hash_password(request.password)
-    
+
     user_db.create_user(
         user_id=user_id,
         username=request.username,
@@ -576,9 +575,9 @@ async def register(request: RegisterRequest, _: User = Depends(get_admin_user)) 
         hashed_password=hashed_password,
         role=role.value
     )
-    
+
     logger.info(f"New user registered: {request.username} with role {role.value}")
-    
+
     return UserResponse(
         id=user_id,
         username=request.username,
@@ -592,20 +591,20 @@ async def register(request: RegisterRequest, _: User = Depends(get_admin_user)) 
 async def refresh_token(request: RefreshRequest) -> TokenResponse:
     """Refresh access token using refresh token."""
     payload = verify_token(request.refresh_token)
-    
+
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired refresh token"
         )
-    
+
     user_data = user_db.get_user_by_id(payload.get("user_id"))
     if not user_data or user_data["disabled"]:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found or disabled"
         )
-    
+
     # Create new tokens
     token_data = {
         "sub": user_data["username"],
@@ -614,7 +613,7 @@ async def refresh_token(request: RefreshRequest) -> TokenResponse:
     }
     access_token = create_access_token(token_data)
     refresh_token = create_refresh_token(token_data)
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -627,16 +626,16 @@ async def create_api_key(current_user: User = Depends(get_current_user)) -> APIK
     """Create a new API key for the current user."""
     plain_key, key_id = generate_api_key()
     hashed_key = hash_api_key(plain_key)
-    
+
     user_db.create_api_key(
         key_id=key_id,
         user_id=current_user.id,
         name=f"Key for {current_user.username}",
         hashed_key=hashed_key
     )
-    
+
     logger.info(f"API key created for user {current_user.username}")
-    
+
     return APIKeyCreateResponse(
         api_key=plain_key,
         key_id=key_id
@@ -663,22 +662,22 @@ async def list_api_keys(current_user: User = Depends(get_current_user)) -> list[
 async def revoke_api_key(key_id: str, current_user: User = Depends(get_current_user)) -> dict:
     """Revoke an API key."""
     key_data = user_db.get_api_key(key_id)
-    
+
     if not key_data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="API key not found"
         )
-    
+
     if key_data["user_id"] != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot revoke API key belonging to another user"
         )
-    
+
     user_db.revoke_api_key(key_id)
     logger.info(f"API key {key_id} revoked by {current_user.username}")
-    
+
     return {"message": "API key revoked successfully"}
 
 
