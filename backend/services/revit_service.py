@@ -27,21 +27,33 @@ USAGE:
 import logging
 import os
 import sys
+import platform
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 logger = logging.getLogger(__name__)
 
-try:
-    import clr  # type: ignore
-    import System  # type: ignore
-    from System import Array  # type: ignore
-    clr.AddReference("System.Windows.Forms")  # type: ignore
-    clr.AddReference("System.Drawing")  # type: ignore
-    HAS_REVIT_API = True
-except ImportError:
-    logger.warning("Revit API not available. Install pythonnet.")
+# Cross-platform support: Real imports for Windows, mock for Linux/Mac
+IS_WINDOWS = platform.system() == "Windows"
+
+if IS_WINDOWS:
+    try:
+        import clr  # type: ignore
+        import System  # type: ignore
+        from System import Array  # type: ignore
+        clr.AddReference("System.Windows.Forms")  # type: ignore
+        clr.AddReference("System.Drawing")  # type: ignore
+        HAS_REVIT_API = True
+    except ImportError:
+        logger.warning("Revit API not available. Install pythonnet.")
+        HAS_REVIT_API = False
+else:
+    # Linux/Mac: No pythonnet available
     HAS_REVIT_API = False
+    clr = None  # type: ignore
+    System = None  # type: ignore
+    Array = None  # type: ignore
+    logger.info("Running on non-Windows platform. Using simulation mode for Revit.")
 
 # We'll implement the Revit service using a simulated approach since we can't actually 
 # connect to Revit without having it installed, but the code structure will be correct
