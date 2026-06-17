@@ -48,8 +48,12 @@ ENDPOINTS:
 - POST /api/revit/execute - Execute AI command
 """
 
-import asyncio
 import logging
+import os
+import re
+import tempfile
+import threading
+import uuid
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Query
@@ -59,7 +63,58 @@ from backend.services.revit_service import RevitService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-service = RevitService()
+
+# ── Thread-safe service singleton ────────────────────────────────────────
+_service: Optional[RevitService] = None
+_service_lock = threading.Lock()
+
+
+def get_revit_service() -> RevitService:
+    """Provide RevitService instance via thread-safe singleton."""
+    global _service
+    if _service is None:
+        with _service_lock:
+            if _service is None:
+                _service = RevitService()
+    return _service
+
+
+# ── Path validation helper (FIX: Path Traversal prevention) ──────────────
+# Prevents reading/writing arbitrary files on the server by restricting
+# file operations to designated data directories.
+_ALLOWED_DIRS = os.environ.get(
+    "FIREAI_DATA_DIRS",
+    "/tmp/fireai-data:./data:./uploads"
+).split(":")
+
+
+def _validate_file_path(filepath: str) -> str:
+    """Validate that a file path is within allowed directories.
+
+    Prevents path traversal attacks (e.g., ../../etc/passwd).
+    Raises HTTPException if the path is outside allowed directories.
+    """
+    resolved = os.path.abspath(filepath)
+    for allowed_dir in _ALLOWED_DIRS:
+        allowed_abs = os.path.abspath(allowed_dir)
+        if resolved.startswith(allowed_abs):
+            return resolved
+    logger.warning("Path traversal blocked: %s", filepath)
+    raise HTTPException(
+        status_code=400,
+        detail="File path is outside allowed directories. Contact administrator.",
+    )
+
+
+# ── Safe error helper ────────────────────────────────────────────────────
+def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException:
+    """Log full exception detail, return safe message to client."""
+    logger.error("%s: %s", log_msg, exc, exc_info=True)
+    return HTTPException(status_code=status_code, detail=log_msg)
+
+
+# Maximum upload size (50 MB)
+_MAX_UPLOAD_SIZE = 50 * 1024 * 1024
 
 
 # =============================================================================
@@ -296,53 +351,59 @@ async def connect_to_revit(request: ConnectRequest = None) -> ConnectResponse:
         Connection status with method used
     """
     try:
+        svc = get_revit_service()
         method = request.method if request else "auto"
-        success = service.connect(method=method)
+        success = svc.connect(method=method)
         
         return ConnectResponse(
             success=success,
-            message=f"Connected via {service.connection_method}" if success else "Connection failed",
-            connected=service.connected,
-            connection_method=service.connection_method
+            message=f"Connected via {svc.connection_method}" if success else "Connection failed",
+            connected=svc.connected,
+            connection_method=svc.connection_method
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error connecting to Revit: {e}")
-        raise HTTPException(status_code=503, detail=f"Failed to connect to Revit: {str(e)}")
+        raise _safe_error(503, "Failed to connect to Revit", e)
 
 
 @router.post("/disconnect", response_model=ConnectResponse, tags=["revit"])
 async def disconnect_from_revit() -> ConnectResponse:
     """Disconnect from Revit application."""
     try:
-        success = service.disconnect()
+        svc = get_revit_service()
+        success = svc.disconnect()
         
         return ConnectResponse(
             success=success,
             message="Disconnected from Revit" if success else "Disconnect failed",
-            connected=service.connected
+            connected=svc.connected
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error disconnecting from Revit: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to disconnect from Revit: {str(e)}")
+        raise _safe_error(500, "Failed to disconnect from Revit", e)
 
 
 @router.get("/status", response_model=StatusResponse, tags=["revit"])
 async def get_revit_status() -> StatusResponse:
     """Get current connection status and capabilities."""
     try:
+        svc = get_revit_service()
         doc_info = {}
-        if service.connected:
-            doc_info = service.get_document_info()
+        if svc.connected:
+            doc_info = svc.get_document_info()
         
         return StatusResponse(
-            connected=service.connected,
-            message="Revit service status" if service.connected else "Revit not connected",
-            connection_method=service.connection_method,
+            connected=svc.connected,
+            message="Revit service status" if svc.connected else "Revit not connected",
+            connection_method=svc.connection_method,
             document_info=doc_info if doc_info else None
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error getting Revit status: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting Revit status: {str(e)}")
+        raise _safe_error(500, "Error getting Revit status", e)
 
 
 # =============================================================================
@@ -352,10 +413,14 @@ async def get_revit_status() -> StatusResponse:
 @router.post("/document/open", tags=["revit"])
 async def open_document(request: DocumentOpenRequest) -> Dict[str, Any]:
     """Open an RVT file."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    success = service.open_document(request.filepath)
+    # FIX: Path traversal validation
+    _validate_file_path(request.filepath)
+    
+    success = svc.open_document(request.filepath)
     if success:
         return {"success": True, "message": f"Opened: {request.filepath}"}
     raise HTTPException(status_code=500, detail="Failed to open document")
@@ -364,10 +429,15 @@ async def open_document(request: DocumentOpenRequest) -> Dict[str, Any]:
 @router.post("/document/save", tags=["revit"])
 async def save_document(request: DocumentSaveRequest) -> Dict[str, Any]:
     """Save the current document."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    success = service.save_document(request.filepath)
+    # FIX: Path traversal validation for save path
+    if request.filepath:
+        _validate_file_path(request.filepath)
+    
+    success = svc.save_document(request.filepath)
     if success:
         return {"success": True, "message": "Document saved"}
     raise HTTPException(status_code=500, detail="Failed to save document")
@@ -376,10 +446,11 @@ async def save_document(request: DocumentSaveRequest) -> Dict[str, Any]:
 @router.post("/document/close", tags=["revit"])
 async def close_document(request: DocumentCloseRequest) -> Dict[str, Any]:
     """Close the current document."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    success = service.close_document(request.save_changes)
+    success = svc.close_document(request.save_changes)
     if success:
         return {"success": True, "message": "Document closed"}
     raise HTTPException(status_code=500, detail="Failed to close document")
@@ -391,10 +462,14 @@ async def close_document(request: DocumentCloseRequest) -> Dict[str, Any]:
 @router.post("/read_rvt", tags=["revit"])
 async def read_rvt_file(filepath: str) -> Dict[str, Any]:
     """Read elements from an RVT file (legacy endpoint)."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    result = service.read_rvt(filepath)
+    # FIX: Path traversal validation
+    _validate_file_path(filepath)
+    
+    result = svc.read_rvt(filepath)
     if not result.get("success", False):
         raise HTTPException(status_code=400, detail=result.get("error", "Unknown error"))
     return result
@@ -403,32 +478,56 @@ async def read_rvt_file(filepath: str) -> Dict[str, Any]:
 @router.post("/write_rvt", tags=["revit"])
 async def write_rvt_file(filepath: str, elements: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Write elements to an RVT file (legacy endpoint)."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    success = service.write_rvt(filepath, elements)
+    # FIX: Path traversal validation
+    _validate_file_path(filepath)
+    
+    success = svc.write_rvt(filepath, elements)
     if success:
-        return {"success": True, "message": f"Wrote to {filepath}"}
+        return {"success": True, "message": "File written successfully"}
     raise HTTPException(status_code=500, detail="Failed to write file")
 
 
 @router.post("/upload_rvt", tags=["revit"])
 async def upload_and_read_rvt(file: UploadFile = File(...)) -> Dict[str, Any]:
-    """Upload an RVT file and read its contents."""
-    if not service.connected:
+    """Upload an RVT file and read its contents.
+
+    FIX: Path traversal prevention, upload size limit, guaranteed cleanup.
+    """
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    import os
-    temp_path = f"temp_{file.filename}"
-    with open(temp_path, "wb") as buffer:
-        buffer.write(await file.read())
+    # Read with size check
+    contents = await file.read()
+    if len(contents) > _MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail="File too large (max 50MB)")
     
-    result = service.read_rvt(temp_path)
-    os.remove(temp_path)
+    # FIX: Safe temp path instead of f"temp_{file.filename}"
+    safe_name = re.sub(r'[^\w\-.]', '_', file.filename or "upload.rvt")
+    temp_dir = tempfile.mkdtemp()
+    temp_path = os.path.join(temp_dir, f"{uuid.uuid4().hex}_{safe_name}")
     
-    if not result.get("success", False):
-        raise HTTPException(status_code=400, detail=result.get("error", "Unknown error"))
-    return result
+    try:
+        with open(temp_path, "wb") as buffer:
+            buffer.write(contents)
+        
+        result = svc.read_rvt(temp_path)
+        
+        if not result.get("success", False):
+            raise HTTPException(status_code=400, detail=result.get("error", "Unknown error"))
+        return result
+    finally:
+        # Guaranteed cleanup
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+                os.rmdir(temp_dir)
+            except OSError:
+                pass
 
 
 # =============================================================================
@@ -441,30 +540,33 @@ async def get_elements(
     element_class: Optional[str] = Query(None, description="Filter by class name")
 ) -> ElementsResponse:
     """Get elements using FilteredElementCollector pattern."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    elements = service.get_elements(category=category, element_class=element_class)
+    elements = svc.get_elements(category=category, element_class=element_class)
     return ElementsResponse(success=True, elements=elements, count=len(elements))
 
 
 @router.get("/elements/selected", response_model=ElementsResponse, tags=["revit"])
 async def get_selected_elements() -> ElementsResponse:
     """Get currently selected elements in Revit UI."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    elements = service.get_selected_elements()
+    elements = svc.get_selected_elements()
     return ElementsResponse(success=True, elements=elements, count=len(elements))
 
 
 @router.get("/elements/{element_id}", tags=["revit"])
 async def get_element(element_id: str) -> Dict[str, Any]:
     """Get a single element by ID."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    element = service.get_element_by_id(element_id)
+    element = svc.get_element_by_id(element_id)
     if element:
         return {"success": True, "element": element}
     raise HTTPException(status_code=404, detail="Element not found")
@@ -473,10 +575,11 @@ async def get_element(element_id: str) -> Dict[str, Any]:
 @router.get("/elements/{element_id}/parameters", tags=["revit"])
 async def get_element_parameters(element_id: str) -> Dict[str, Any]:
     """Get all parameters of an element."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    params = service.get_element_parameters(element_id)
+    params = svc.get_element_parameters(element_id)
     return {"success": True, "parameters": params}
 
 
@@ -487,10 +590,11 @@ async def get_element_parameters(element_id: str) -> Dict[str, Any]:
 @router.post("/elements/create/wall", response_model=ElementResponse, tags=["revit"])
 async def create_wall(request: CreateWallRequest) -> ElementResponse:
     """Create a wall in Revit."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    element_id = service.create_wall(
+    element_id = svc.create_wall(
         start_point=request.start_point,
         end_point=request.end_point,
         height=request.height,
@@ -508,10 +612,11 @@ async def create_wall(request: CreateWallRequest) -> ElementResponse:
 @router.post("/elements/create/floor", response_model=ElementResponse, tags=["revit"])
 async def create_floor(request: CreateFloorRequest) -> ElementResponse:
     """Create a floor in Revit."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    element_id = service.create_floor(
+    element_id = svc.create_floor(
         boundary_points=request.boundary_points,
         level=request.level,
         floor_type=request.floor_type
@@ -527,10 +632,11 @@ async def create_floor(request: CreateFloorRequest) -> ElementResponse:
 @router.post("/elements/create/door", response_model=ElementResponse, tags=["revit"])
 async def create_door(request: CreateDoorRequest) -> ElementResponse:
     """Create a door in a wall."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    element_id = service.create_door(
+    element_id = svc.create_door(
         host_wall_id=request.host_wall_id,
         location_point=request.location_point,
         family_type=request.family_type,
@@ -547,10 +653,11 @@ async def create_door(request: CreateDoorRequest) -> ElementResponse:
 @router.post("/elements/create/window", response_model=ElementResponse, tags=["revit"])
 async def create_window(request: CreateWindowRequest) -> ElementResponse:
     """Create a window in a wall."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    element_id = service.create_window(
+    element_id = svc.create_window(
         host_wall_id=request.host_wall_id,
         location_point=request.location_point,
         family_type=request.family_type,
@@ -567,10 +674,11 @@ async def create_window(request: CreateWindowRequest) -> ElementResponse:
 @router.post("/elements/create/column", response_model=ElementResponse, tags=["revit"])
 async def create_column(request: CreateColumnRequest) -> ElementResponse:
     """Create a structural column."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    element_id = service.create_column(
+    element_id = svc.create_column(
         location_point=request.location_point,
         height=request.height,
         level=request.level,
@@ -587,10 +695,11 @@ async def create_column(request: CreateColumnRequest) -> ElementResponse:
 @router.post("/elements/create/beam", response_model=ElementResponse, tags=["revit"])
 async def create_beam(request: CreateBeamRequest) -> ElementResponse:
     """Create a structural beam."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    element_id = service.create_beam(
+    element_id = svc.create_beam(
         start_point=request.start_point,
         end_point=request.end_point,
         level=request.level,
@@ -607,10 +716,11 @@ async def create_beam(request: CreateBeamRequest) -> ElementResponse:
 @router.post("/elements/create/family", response_model=ElementResponse, tags=["revit"])
 async def create_family(request: CreateFamilyRequest) -> ElementResponse:
     """Create a generic family instance."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    element_id = service.create_family_instance(
+    element_id = svc.create_family_instance(
         family_name=request.family_name,
         category=request.category,
         location_point=request.location_point,
@@ -635,12 +745,13 @@ async def update_parameters(
     request: ParameterUpdateRequest
 ) -> Dict[str, Any]:
     """Update element parameters."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
     success = True
     for param_name, value in request.parameters.items():
-        if not service.set_element_parameter(element_id, param_name, value):
+        if not svc.set_element_parameter(element_id, param_name, value):
             success = False
     
     return {
@@ -652,10 +763,11 @@ async def update_parameters(
 @router.delete("/elements/{element_id}", tags=["revit"])
 async def delete_element(element_id: str) -> Dict[str, Any]:
     """Delete an element."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    success = service.delete_element(element_id)
+    success = svc.delete_element(element_id)
     if success:
         return {"success": True, "message": f"Element {element_id} deleted"}
     raise HTTPException(status_code=500, detail="Failed to delete element")
@@ -668,40 +780,44 @@ async def delete_element(element_id: str) -> Dict[str, Any]:
 @router.get("/views", response_model=ElementsResponse, tags=["revit"])
 async def get_views() -> ElementsResponse:
     """Get all views in the project."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    views = service.get_views()
+    views = svc.get_views()
     return ElementsResponse(success=True, elements=views, count=len(views))
 
 
 @router.get("/levels", response_model=ElementsResponse, tags=["revit"])
 async def get_levels() -> ElementsResponse:
     """Get all levels in the project."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    levels = service.get_levels()
+    levels = svc.get_levels()
     return ElementsResponse(success=True, elements=levels, count=len(levels))
 
 
 @router.get("/grids", response_model=ElementsResponse, tags=["revit"])
 async def get_grids() -> ElementsResponse:
     """Get all grids in the project."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    grids = service.get_grids()
+    grids = svc.get_grids()
     return ElementsResponse(success=True, elements=grids, count=len(grids))
 
 
 @router.get("/worksets", response_model=ElementsResponse, tags=["revit"])
 async def get_worksets() -> ElementsResponse:
     """Get all worksets in the project."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    worksets = service.get_worksets()
+    worksets = svc.get_worksets()
     return ElementsResponse(success=True, elements=worksets, count=len(worksets))
 
 
@@ -715,20 +831,22 @@ async def get_family_symbols(category: str) -> Dict[str, Any]:
     
     Categories: Doors, Windows, Columns, Furniture, etc.
     """
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    symbols = service.get_family_symbols(category)
+    symbols = svc.get_family_symbols(category)
     return {"success": True, "symbols": symbols, "count": len(symbols)}
 
 
 @router.post("/families/load", tags=["revit"])
 async def load_family(request: LoadFamilyRequest) -> Dict[str, Any]:
     """Load a family (.rfa) file into the project."""
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    success = service.load_family(request.family_path, request.category)
+    success = svc.load_family(request.family_path, request.category)
     if success:
         return {"success": True, "message": f"Family loaded: {request.family_path}"}
     raise HTTPException(status_code=500, detail="Failed to load family")
@@ -744,7 +862,8 @@ async def load_api_data(request: LoadAPIDataRequest) -> Dict[str, Any]:
     
     Load revit_data/RevitAPI2022.json or revit_data/RevitAPI2023.json first.
     """
-    success = service.load_revit_api_data(request.json_path)
+    svc = get_revit_service()
+    success = svc.load_revit_api_data(request.json_path)
     if success:
         return {"success": True, "message": f"API data loaded from {request.json_path}"}
     raise HTTPException(status_code=500, detail="Failed to load API data")
@@ -756,7 +875,8 @@ async def search_api_data(request: SearchAPIRequest) -> APIResultResponse:
     
     Requires loading API data first via /search/api/load.
     """
-    results = service.search_api_data(
+    svc = get_revit_service()
+    results = svc.search_api_data(
         keyword=request.keyword,
         api_name=request.api_name,
         namespace=request.namespace,
@@ -770,7 +890,7 @@ async def search_api_data(request: SearchAPIRequest) -> APIResultResponse:
             "description": r.description,
             "type": r.type,
             "namespace": r.namespace,
-            "url": service.get_api_url(r)
+            "url": svc.get_api_url(r)
         }
         for r in results
     ]
@@ -784,7 +904,8 @@ async def search_online(
     engine: str = Query("revitapidocs", description="Search engine")
 ) -> APIResultResponse:
     """Search Revit API documentation online (RevitAPIDocs.com)."""
-    results = await service.search_revit_api(query, engine)
+    svc = get_revit_service()
+    results = await svc.search_revit_api(query, engine)
     
     api_results = [
         {
@@ -813,8 +934,9 @@ async def execute_ai_command(request: AICommandRequest) -> Dict[str, Any]:
     - "Delete element with id 12345"
     - "Search api Wall.Create"
     """
-    if not service.connected:
+    svc = get_revit_service()
+    if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
     
-    result = service.execute_ai_command(request.command, request.context)
+    result = svc.execute_ai_command(request.command, request.context)
     return result

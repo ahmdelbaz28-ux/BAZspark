@@ -1440,7 +1440,7 @@ class RevitService:
             for level in collector:
                 if level.Name == name:
                     return level
-        except:
+        except Exception:
             pass
         
         return None
@@ -1459,7 +1459,7 @@ class RevitService:
             for wt in collector:
                 if wt.Name == wall_type_name:
                     return wt.Id
-        except:
+        except Exception:
             pass
         
         return None
@@ -1478,7 +1478,7 @@ class RevitService:
             for ft in collector:
                 if ft.Name == floor_type_name:
                     return ft.Id
-        except:
+        except Exception:
             pass
         
         return None
@@ -1529,7 +1529,7 @@ class RevitService:
             }
             
             return category_map.get(category_name)
-        except:
+        except Exception:
             return None
     
     def _extract_element_data(self, element) -> Dict[str, Any]:
@@ -1566,7 +1566,7 @@ class RevitService:
                 return str(param.AsElementId())
             else:
                 return param.AsValueString()
-        except:
+        except Exception:
             return None
     
     def _set_element_parameter(self, element, param_name: str, value: Any) -> bool:
@@ -1587,7 +1587,7 @@ class RevitService:
                         param.Set(ElementId(int(value)))
                     return True
             return False
-        except:
+        except Exception:
             return False
     
     def _get_simulated_elements(self, category: Optional[str] = None) -> List[Dict[str, Any]]:

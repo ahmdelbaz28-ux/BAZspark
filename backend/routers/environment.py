@@ -33,8 +33,10 @@ import logging
 import time
 from typing import Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
+from backend.auth import require_permission
+from backend.rbac import Permission
 from backend.services.air_quality_service import get_air_quality_service
 from backend.services.elevation_service import get_elevation_service
 from backend.services.geocoding_service import GeocodingResult, get_geocoding_service
@@ -52,7 +54,8 @@ from backend.services.weather_service import get_weather_service
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/environment", tags=["environment"])
+router = APIRouter(prefix="/environment", tags=["environment"],
+                dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 
 
 # ── Phase 1 Endpoints ───────────────────────────────────────────────────────

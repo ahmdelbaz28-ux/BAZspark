@@ -449,7 +449,7 @@ class AutoCADService:
                         # Check if block exists, if not create a simple one
                         try:
                             block_obj = new_doc.Blocks.Item(name)
-                        except:
+                        except Exception:
                             # Create a simple block definition
                             block_obj = new_doc.Blocks.Add([0, 0, 0], name)
                             # Add a simple rectangle to the block
