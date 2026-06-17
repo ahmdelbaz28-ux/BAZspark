@@ -1,4 +1,5 @@
-"""AutoCAD Integration Service.
+"""
+AutoCAD Integration Service.
 
 Complete AutoCAD integration service with multiple connection methods.
 Based on research from:
@@ -84,10 +85,10 @@ class SimulationEntity:
         self.handle = handle
         self.properties = properties
 
-    def __getitem__(self, key) -> Any:  # noqa: D105
+    def __getitem__(self, key) -> Any:
         return self.properties.get(key)
 
-    def __setitem__(self, key, value) -> None:  # noqa: D105
+    def __setitem__(self, key, value) -> None:
         self.properties[key] = value
 
 
@@ -113,7 +114,8 @@ class SimulationDocument:
 
 
 class AutoCADService:
-    """AutoCAD integration service with multiple connection methods.
+    """
+    AutoCAD integration service with multiple connection methods.
 
     Supports:
     - COM API (Windows only)
@@ -138,7 +140,8 @@ class AutoCADService:
     # =========================================================================
 
     def connect(self, method: str = "auto") -> bool:
-        """Connect to AutoCAD using specified method.
+        """
+        Connect to AutoCAD using specified method.
 
         Args:
             method: Connection method - "com", "simulation", or "auto"
@@ -174,7 +177,7 @@ class AutoCADService:
             try:
                 self.acad_app = win32com.client.GetActiveObject("AutoCAD.Application")
                 logger.info("Connected to existing AutoCAD instance")
-            except Exception:  # noqa: BLE001
+            except Exception:
                 # Launch new instance
                 try:
                     self.acad_app = win32com.client.Dispatch("AutoCAD.Application")
@@ -270,7 +273,8 @@ class AutoCADService:
     # =========================================================================
 
     def create_layer(self, name: str, color: int = 7, visible: bool = True) -> bool:
-        """Create a new layer.
+        """
+        Create a new layer.
 
         Args:
             name: Layer name
@@ -414,7 +418,8 @@ class AutoCADService:
 
     def draw_line(self, start_point: List[float], end_point: List[float],
                   layer: str = "0", color: int = 0) -> Optional[str]:
-        """Draw a line.
+        """
+        Draw a line.
 
         Args:
             start_point: [x, y, z]
@@ -452,7 +457,8 @@ class AutoCADService:
 
     def draw_polyline(self, vertices: List[List[float]],
                       layer: str = "0", color: int = 0, closed: bool = False) -> Optional[str]:
-        """Draw a polyline.
+        """
+        Draw a polyline.
 
         Args:
             vertices: [[x, y, z], ...]
@@ -496,7 +502,8 @@ class AutoCADService:
 
     def draw_rectangle(self, lower_left: List[float], upper_right: List[float],
                        layer: str = "0", color: int = 0) -> Optional[str]:
-        """Draw a rectangle (as closed polyline).
+        """
+        Draw a rectangle (as closed polyline).
 
         Args:
             lower_left: [x, y, z]
@@ -515,7 +522,8 @@ class AutoCADService:
 
     def draw_circle(self, center: List[float], radius: float,
                     layer: str = "0", color: int = 0) -> Optional[str]:
-        """Draw a circle.
+        """
+        Draw a circle.
 
         Args:
             center: [x, y, z]
@@ -554,7 +562,8 @@ class AutoCADService:
     def draw_arc(self, center: List[float], radius: float,
                  start_angle: float, end_angle: float,
                  layer: str = "0", color: int = 0) -> Optional[str]:
-        """Draw an arc.
+        """
+        Draw an arc.
 
         Args:
             center: [x, y, z]
@@ -600,7 +609,8 @@ class AutoCADService:
 
     def draw_ellipse(self, center: List[float], major_axis: List[float],
                      ratio: float, layer: str = "0", color: int = 0) -> Optional[str]:
-        """Draw an ellipse.
+        """
+        Draw an ellipse.
 
         Args:
             center: [x, y, z]
@@ -640,7 +650,8 @@ class AutoCADService:
 
     def draw_text(self, text: str, insertion_point: List[float], height: float = 0.2,
                   layer: str = "0", color: int = 0) -> Optional[str]:
-        """Draw text.
+        """
+        Draw text.
 
         Args:
             text: Text content
@@ -685,7 +696,8 @@ class AutoCADService:
     def draw_dimension_aligned(self, start_point: List[float], end_point: List[float],
                               text_point: List[float],
                               layer: str = "0", color: int = 0) -> Optional[str]:
-        """Draw aligned dimension.
+        """
+        Draw aligned dimension.
 
         Args:
             start_point: [x, y, z]
@@ -726,7 +738,8 @@ class AutoCADService:
     def draw_dimension_linear(self, start_point: List[float], end_point: List[float],
                               text_point: List[float], angle: float = 0,
                               layer: str = "0", color: int = 0) -> Optional[str]:
-        """Draw linear dimension.
+        """
+        Draw linear dimension.
 
         Args:
             start_point: [x, y, z]
@@ -769,7 +782,8 @@ class AutoCADService:
     def draw_dimension_radial(self, center: List[float], chord_point: List[float],
                              leader_length: float = 0,
                              layer: str = "0", color: int = 0) -> Optional[str]:
-        """Draw radial dimension.
+        """
+        Draw radial dimension.
 
         Args:
             center: [x, y, z] - circle center
@@ -810,7 +824,8 @@ class AutoCADService:
     def draw_dimension_diameter(self, center: List[float], chord_point: List[float],
                                 leader_length: float = 0,
                                 layer: str = "0", color: int = 0) -> Optional[str]:
-        """Draw diameter dimension.
+        """
+        Draw diameter dimension.
 
         Args:
             center: [x, y, z] - circle center
@@ -855,7 +870,8 @@ class AutoCADService:
     def insert_block(self, file_path: str, insertion_point: List[float],
                      scale: float = 1.0, rotation: float = 0,
                      layer: str = "0") -> Optional[str]:
-        """Insert a block from file.
+        """
+        Insert a block from file.
 
         Args:
             file_path: Path to block file
@@ -884,7 +900,7 @@ class AutoCADService:
             model_space = self.acad_doc.ModelSpace
             block_name = self.acad_doc.Blocks.Import(file_path, True)
             block = model_space.InsertBlock(insertion_point, block_name, scale, scale, scale, math.radians(rotation))
-            block.Layer = layer  # noqa: E501
+            block.Layer = layer
             handle = block.Handle
             self.active_entities[handle] = block
             logger.info(f"Inserted block from {file_path}")
@@ -919,7 +935,8 @@ class AutoCADService:
     # =========================================================================
 
     def move_entity(self, handle: str, new_point: List[float]) -> bool:
-        """Move an entity.
+        """
+        Move an entity.
 
         Args:
             handle: Entity handle
@@ -961,7 +978,8 @@ class AutoCADService:
             return False
 
     def rotate_entity(self, handle: str, base_point: List[float], angle: float) -> bool:
-        """Rotate an entity.
+        """
+        Rotate an entity.
 
         Args:
             handle: Entity handle
@@ -993,7 +1011,8 @@ class AutoCADService:
             return False
 
     def scale_entity(self, handle: str, base_point: List[float], scale_factor: float) -> bool:
-        """Scale an entity.
+        """
+        Scale an entity.
 
         Args:
             handle: Entity handle
@@ -1030,7 +1049,8 @@ class AutoCADService:
     # =========================================================================
 
     def create_group(self, group_name: str, handles: List[str]) -> bool:
-        """Create a group from entities.
+        """
+        Create a group from entities.
 
         Args:
             group_name: Group name
@@ -1053,7 +1073,7 @@ class AutoCADService:
             for h in handles:
                 try:
                     entities.append(self.acad_doc.HandleToObject(h))
-                except Exception:  # noqa: BLE001
+                except Exception:
                     pass
             if entities:
                 group = self.acad_doc.Groups.Add(group_name)
@@ -1119,7 +1139,8 @@ class AutoCADService:
     # =========================================================================
 
     def get_entities(self, entity_type: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Get entities, optionally filtered by type.
+        """
+        Get entities, optionally filtered by type.
 
         Args:
             entity_type: Filter by entity type (LINE, CIRCLE, etc.) or None for all
@@ -1218,7 +1239,8 @@ class AutoCADService:
     # =========================================================================
 
     def read_dwg(self, filepath: str) -> Dict[str, Any]:
-        """Read entities from DWG file.
+        """
+        Read entities from DWG file.
 
         Args:
             filepath: Path to DWG file
@@ -1260,7 +1282,8 @@ class AutoCADService:
             return {"success": False, "error": str(e), "entities": []}
 
     def write_dwg(self, filepath: str, entities: List[Dict[str, Any]]) -> bool:
-        """Write entities to new DWG file.
+        """
+        Write entities to new DWG file.
 
         Args:
             filepath: Output path
@@ -1357,7 +1380,8 @@ class AutoCADService:
     # =========================================================================
 
     def execute_ai_command(self, command: str) -> Dict[str, Any]:
-        """Execute natural language command.
+        """
+        Execute natural language command.
 
         Supported commands:
         - "draw line from 0,0,0 to 100,100,0"

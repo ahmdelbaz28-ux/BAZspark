@@ -212,6 +212,9 @@ ignore = [
     "D212",  # Multi-line summary second line should be at the end
     "D400",  # First line should end with period
     "D415",  # First line should end with period
+    "BLE001",  # Do not catch blind exception - intentional for API robustness
+    "ANN",   # Type annotations for internal helper classes
+    "SIM",   # flake8-simplify (try-except-pass pattern)
 ]
 
 [tool.ruff.lint.isort]

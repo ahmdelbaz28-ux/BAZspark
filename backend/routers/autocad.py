@@ -1,4 +1,5 @@
-"""AutoCAD Integration Endpoints.
+"""
+AutoCAD Integration Endpoints.
 
 ============================
 
@@ -844,7 +845,8 @@ async def save_document(request: SaveRequest) -> OperationResponse:
 
 @router.post("/execute", response_model=AICommandResponse)
 async def execute_ai_command(request: AICommandRequest) -> AICommandResponse:
-    """Execute natural language command.
+    """
+    Execute natural language command.
 
     Supported commands:
     - "draw line from 0,0,0 to 100,100,0"
