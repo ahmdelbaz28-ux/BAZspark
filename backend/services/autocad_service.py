@@ -26,10 +26,8 @@ USAGE:
 
 import logging
 import os
-import sys
 import platform
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

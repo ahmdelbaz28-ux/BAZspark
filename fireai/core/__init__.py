@@ -31,10 +31,10 @@ from fireai.core.building_engine import BuildingEngine
 
 # V25 — Pipeline Integration Modules (8 consultant subsystems)
 from fireai.core.cable_routing_engine import (
-    MAX_VOLTAGE_DROP_PCT,
-    NOMINAL_VOLTAGE_FA,
+    MAX_VOLTAGE_DROP_PCT as MAX_VOLTAGE_DROP_PCT,
+    NOMINAL_VOLTAGE_FA as NOMINAL_VOLTAGE_FA,
     CableRoutingEngine,
-    ObstacleType,
+    ObstacleType as ObstacleType,
     RouteResult,
     RoutingObstacle3D,
     VoltageDropSegment,
