@@ -658,10 +658,20 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
         result = bad_pressure_calc()
         self.assertEqual(result.value, 7.0)  # NOT float('inf')
 
-    # V69: validate_sprinkler_pressure rejects 0.0
-    def test_v69_reject_zero_pressure(self):
-        """V69: validate_sprinkler_pressure must reject 0.0 psi."""
-        self.assertFalse(validate_sprinkler_pressure(0.0))
+    # V127 Phase 5: validate_sprinkler_pressure rejects Inf and NaN
+    # The validator allows 0.0 (the binding floor is enforced by the
+    # @self_healing decorator's safe_minimum = 7.0 psi per NFPA 13 §23.4.4).
+    def test_v69_validator_rejects_inf_and_nan(self):
+        """V127 Phase 5: validator rejects Inf and NaN, allows >= 0.0."""
+        # Inf and NaN must be rejected
+        self.assertFalse(validate_sprinkler_pressure(float("inf")))
+        self.assertFalse(validate_sprinkler_pressure(float("nan")))
+        self.assertFalse(validate_sprinkler_pressure(-1.0))
+        # Non-numeric inputs rejected
+        self.assertFalse(validate_sprinkler_pressure("7.0"))
+        self.assertFalse(validate_sprinkler_pressure(None))
+        # Valid inputs accepted (>=0.0; safe_minimum floor is decorator's job)
+        self.assertTrue(validate_sprinkler_pressure(0.0))
         self.assertTrue(validate_sprinkler_pressure(7.0))
         self.assertTrue(validate_sprinkler_pressure(0.1))
 

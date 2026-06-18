@@ -32,7 +32,6 @@ from backend.auth import require_permission
 from backend.services.digital_twin_service import (
     ConversionConfig,
     ConversionConfigManager,
-    ConversionResult,
     DigitalTwinService,
 )
 

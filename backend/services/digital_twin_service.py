@@ -35,7 +35,7 @@ import shutil
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -272,7 +272,7 @@ class SemanticMapper:
             if i + 1 < len(coords):
                 vertices.append([coords[i], coords[i+1], 0])  # Add Z=0
         
-        closed = entity.get("closed", False)
+        _closed = entity.get("closed", False)  # noqa: F841  (reserved for future closed-polygon logic)
         
         if category == "Floors" and len(vertices) >= 3:
             return {

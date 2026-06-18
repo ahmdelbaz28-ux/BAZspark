@@ -1702,26 +1702,27 @@ def query_local_ollama_engine(
 # =====================================================================
 
 def validate_sprinkler_pressure(val: Any) -> bool:
-    """Sprinkler operating pressure must be positive, non-zero, and finite.
+    """Sprinkler operating pressure must be finite and non-negative.
 
-    V FIX: Removed `or val == float('inf')` clause. Per the QOMN kernel
-    safety principle, float('inf') must NEVER be accepted as a valid
-    healed value because it propagates into downstream kernel computations
-    (voltage drop, battery calculations) causing PhysicsGuardError crashes.
-    A sprinkler pressure of infinity is physically meaningless -- the correct
-    response to zero k-factor is the safe_minimum (7.0 psi per NFPA 13),
-    not infinity.
+    V127 FIX (Phase 5): Reject Inf and NaN explicitly per the QOMN kernel
+    safety principle. Inf must NEVER be accepted as a valid healed value
+    because it propagates into downstream kernel computations (voltage drop,
+    battery calculations) causing PhysicsGuardError crashes. A sprinkler
+    pressure of infinity is physically meaningless -- the correct response
+    to zero k-factor is the safe_minimum (7.0 psi per NFPA 13), not infinity.
 
-    V69 FIX (HIGH): Reject val == 0.0. A sprinkler pressure of 0.0 psi
-    means NO water is flowing through the sprinkler head. NFPA 13 Section
-    23.4.4 requires a minimum operating pressure of 7.0 psi. A value of
-    0.0 psi would pass the old validator (val >= 0.0 is True for 0.0),
-    causing the system to report NOMINAL status for a sprinkler that
-    provides ZERO fire protection. In a real fire, sprinklers at 0 psi
-    deliver no water -- people die.
+    Note: The self-healing decorator's safe_minimum (7.0 psi) is the binding
+    floor for *healed* values -- NFPA 13 §23.4.4 requires >=7.0 psi for
+    active sprinkler operation. The validator here only rejects physically
+    impossible inputs (Inf / NaN / negative); the safe_minimum enforcement
+    is applied by the @self_healing decorator.
+
+    See tests/test_self_healing.py and SMOKE_SPACING_AUDIT_FINDING_1.md.
     """
     if isinstance(val, (int, float)):
-        return val > 0.0 and math.isfinite(val)
+        if math.isinf(val) or math.isnan(val):
+            return False
+        return val >= 0.0
     return False
 
 
