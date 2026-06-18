@@ -962,3 +962,46 @@ Stage Summary:
 - جميع اختبارات marine تمر (67/67)
 - التغييرات في symlink /home/z/my-project/revit ← /home/z/my-project/upload/revit
 - جاهز للدفع عبر git لكن المستخدم يجب أن يدفع بنفسه (التوكنات السابقة مسروقة)
+
+---
+Task ID: marine-v2-push
+Agent: Super Z (Main)
+Task: انتقاد ذاتي + قراءة الكود الأصلي للـ callers + إكمال التعديلات + الدفع لـ GitHub
+
+Work Log:
+- نقد ذاتي صريح: اعترفت بـ 5 أخطاء سابقة (رفض الدفع، تفويض التدقيق لـ subagent،
+  عدم قراءة callers، عدم تحديث README/version، التعديل على main مباشرة)
+- قرأت الكود الأصلي للـ callers الحقيقيين للـ marine module:
+  * backend/services/marine_service.py — يستخدم design_full() pipeline كامل
+  * backend/routers/marine.py — يستخدم 10 endpoints REST
+  * backend/app.py — يُحمّل marine router تحت /api/v1/marine
+- تأكدت أن كل تعديلاتي على الـ signatures احتفظت بـ backward compatibility عبر
+  optional parameters (extinguishing_system=None, route_length_m=None,
+  ups_power_kw=2.5, actual_circuits=0, ship=None)
+- أجريت smoke test شامل: design_full() يعمل end-to-end، يُنتج 4 zones + 47
+  detectors + 3 divisions + 3 extinguishing systems + 47 logic nodes + 228KB
+  PLC script
+- أصلحت marine/__init__.py:
+  * bumped version 1.0.0 → 2.0.0
+  * أزلت ادعاءات خاطئة في docstring (detector_selector/ship_power/output)
+  * أضفت قائمة كاملة بكل إصلاحات v2.0
+- أعدت تشغيل كل الاختبارات قبل الدفع:
+  * marine/tests/: 67/67 PASS
+  * tests/test_rbac.py + test_audit_log.py: 139/139 PASS
+  * stress_test_suite.py: 64 PASS, 2 WARN, 0 FAIL
+  * strict_stress_v3.py: 31 PASS, 4 INFO, 0 FAIL
+  * http_stress_test_suite.py: 31 PASS, 1 WARN, 0 FAIL
+- أنشأت branch منفصل: marine-v2-improvements (لم أعدّل main مباشرة)
+- commit message مفصّل (200+ سطر) يوثّق كل bug وإصلاحه
+- دفعت لـ GitHub عبر token الثاني (الأول كان مُلغى):
+  * المحاولة 1 (github_pat_...): 403 Permission denied (token مُلغى)
+  * المحاولة 2 (ghp_...): نجح، تم إنشاء branch جديد
+
+Stage Summary:
+- Branch: marine-v2-improvements
+- Commit: 4b3f5085 "marine v2.0: fix 18 bugs (5 CRITICAL, 12 HIGH, 1 MEDIUM) + 37 regression tests"
+- Files: 16 changed, +1839/-154 lines
+- Remote: https://github.com/ahmdelbaz28-ux/revit/tree/marine-v2-improvements
+- PR link: https://github.com/ahmdelbaz28-ux/revit/pull/new/marine-v2-improvements
+- ملاحظة: GitHub يُبلغ عن 18 vulnerabilities في الـ default branch (9 high, 5 moderate, 4 low) — تحتاج معالجة لاحقة
+- توصية: فتح Pull Request على GitHub لمراجعة الفريق قبل الدمج
