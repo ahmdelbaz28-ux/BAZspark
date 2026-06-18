@@ -126,20 +126,39 @@ def validate_api_key(key: str) -> Optional[APIKeyInfo]:
     """Validate an API key and return its info including role.
 
     Returns None if the key is invalid or empty.
+
+    BUGFIX (2026-06-18): The previous implementation called `_hash_key(key)`
+    and looked up that exact hash in the store. This worked for the legacy
+    plain SHA-256 path (deterministic) but BROKE when bcrypt was installed,
+    because `bcrypt.hashpw()` generates a fresh random salt on every call.
+    The result: every API-key authentication attempt returned None, locking
+    every user out of the system whenever bcrypt was available (which is the
+    recommended production path per the module's own docstring).
+
+    The fix is to iterate the stored hashes and use `_verify_key()` for each,
+    which performs a constant-time bcrypt comparison against the stored salt.
+    For the legacy SHA-256 and HMAC-SHA256 paths, `_verify_key()` short-
+    circuits via its prefix check, so the cost is one `_verify_key` call per
+    stored key (typically < 10 keys).
+
+    A residual denial-of-service concern: an attacker who can submit a key
+    that is invalid will cause `_verify_key` to be called for every stored
+    hash. With bcrypt at cost=12 this is ~50ms per key — acceptable for a
+    small key store but worth noting. Mitigation: rate-limit the auth
+    endpoint at the reverse proxy.
     """
     if not key:
         return None
     with _keys_lock:
         keys = _load_keys()
-        key_hash = _hash_key(key)
-        info = keys.get(key_hash)
-    if not info:
-        return None
-    return APIKeyInfo(
-        key_hash=key_hash,
-        role=Role(info["role"]),
-        description=info.get("description", ""),
-    )
+        for stored_hash, info in keys.items():
+            if _verify_key(key, stored_hash):
+                return APIKeyInfo(
+                    key_hash=stored_hash,
+                    role=Role(info["role"]),
+                    description=info.get("description", ""),
+                )
+    return None
 
 
 def validate_api_key_by_hash(key_hash: str) -> Optional[APIKeyInfo]:

@@ -231,18 +231,51 @@ class TestAPIKeyManagement:
         assert deleted is False
 
     def test_key_stored_as_hash(self):
-        """Keys should be stored as SHA-256 hashes, never plaintext."""
-        from backend.api_keys import _load_keys, add_api_key
+        """Keys must be stored as hashed values, never plaintext.
+
+        v2 (2026-06-18): The hash format depends on which backend is
+        available at runtime:
+          - bcrypt (preferred): hashes start with "$2b$" (or "$2a$"/"$2y$")
+          - HMAC-SHA256 fallback: hashes start with "hmac-sha256$"
+          - legacy plain SHA-256: hashes are 64-char hex strings
+
+        We accept any of these formats; the only hard requirement is that
+        the plaintext key MUST NOT appear in the stored data.
+        """
+        from backend.api_keys import _load_keys, add_api_key, _hash_key
         from backend.rbac import Role
 
-        add_api_key("plaintext-key", Role.ADMIN, "Hash test")
+        plaintext = "plaintext-key"
+        add_api_key(plaintext, Role.ADMIN, "Hash test")
 
         keys = _load_keys()
-        expected_hash = hashlib.sha256("plaintext-key".encode()).hexdigest()
-        assert expected_hash in keys
-        # The plaintext key should NOT appear in the stored data
+        assert len(keys) == 1, f"expected exactly 1 stored key, got {len(keys)}"
+
+        stored_hash = next(iter(keys.keys()))
+        # Accept bcrypt ($2b$/$2a$/$2y$) or hmac-sha256$ or 64-char hex
+        is_bcrypt = stored_hash.startswith(("$2b$", "$2a$", "$2y$"))
+        is_hmac = stored_hash.startswith("hmac-sha256$")
+        is_legacy_sha256 = (
+            len(stored_hash) == 64
+            and all(c in "0123456789abcdef" for c in stored_hash)
+        )
+        assert is_bcrypt or is_hmac or is_legacy_sha256, (
+            f"stored hash {stored_hash!r} does not match any expected format "
+            "(bcrypt $2b$, hmac-sha256$, or 64-char hex SHA-256)"
+        )
+
+        # The plaintext key must NEVER appear in the stored data.
         stored_data = json.dumps(keys)
-        assert "plaintext-key" not in stored_data
+        assert plaintext not in stored_data, (
+            f"plaintext key leaked into the keys store: {stored_data!r}"
+        )
+
+        # The hash returned by _hash_key must NOT be reversible to plaintext.
+        # (Sanity check: hashing the same key again produces a different hash
+        # with bcrypt because of the random salt — but with legacy SHA-256 it
+        # would be the same. Either way, the hash must not equal the plaintext.)
+        rehashed = _hash_key(plaintext)
+        assert rehashed != plaintext
 
     def test_update_api_key_role(self):
         """Updating a key's role should change its role."""
