@@ -41,6 +41,34 @@ logger = logging.getLogger(__name__)
 _TARGET_DB = "udm_elements"
 
 
+def _safe_record_sync(entity: str, entity_id: str, error: str) -> None:
+    """Record a sync failure without ever raising.
+
+    The previous version had 8 sites of `try: get_db().record_sync(...)
+    except Exception: pass` — silent failure logging. In a safety-critical
+    fire alarm system, silently swallowing a record_sync failure means
+    the operations team has no visibility into data drift between the
+    Digital Twin DB and the UDM DB. This helper centralizes the pattern
+    and ensures every failure is logged with the original error.
+
+    Args:
+        entity: "project" | "device" | "connection"
+        entity_id: The ID of the entity whose sync failed.
+        error: The original error message (str(e) from the caller).
+    """
+    try:
+        from backend.database import get_db
+        get_db().record_sync(entity, entity_id, _TARGET_DB, "error", error)
+    except Exception:
+        # Last-resort: at least log so the failure is visible in the
+        # application logs even if the DB is unreachable.
+        logger.exception(
+            "Failed to record sync failure (entity=%s, id=%s, target=%s). "
+            "Original error was: %s",
+            entity, entity_id, _TARGET_DB, error,
+        )
+
+
 def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
     """Sync a project from System A to System B after creation.
 
@@ -123,13 +151,8 @@ def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
             return False
 
     except Exception as e:
-        logger.critical("UDM bridge unavailable during project sync: %s", e)
-        # Try to record the failure — may also fail if DB is unavailable
-        try:
-            from backend.database import get_db
-            get_db().record_sync("project", project_id, _TARGET_DB, "error", str(e))
-        except Exception:
-            pass
+        logger.critical("UDM bridge unavailable during project sync: %s", e, exc_info=True)
+        _safe_record_sync("project", project_id, str(e))
         return False
 
 
@@ -213,12 +236,8 @@ def sync_project_update_to_udm(project_id: str, updates: Dict[str, Any]) -> bool
             return False
 
     except Exception as e:
-        logger.critical("UDM bridge unavailable during project update: %s", e)
-        try:
-            from backend.database import get_db
-            get_db().record_sync("project", project_id, _TARGET_DB, "error", str(e))
-        except Exception:
-            pass
+        logger.critical("UDM bridge unavailable during project update: %s", e, exc_info=True)
+        _safe_record_sync("project", project_id, str(e))
         return False
 
 
@@ -271,12 +290,8 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
             return False
 
     except Exception as e:
-        logger.critical("UDM bridge unavailable during project deletion: %s", e)
-        try:
-            from backend.database import get_db
-            get_db().record_sync("project", project_id, _TARGET_DB, "error", str(e))
-        except Exception:
-            pass
+        logger.critical("UDM bridge unavailable during project deletion: %s", e, exc_info=True)
+        _safe_record_sync("project", project_id, str(e))
         return False
 
 
@@ -407,12 +422,8 @@ def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
             return False
 
     except Exception as e:
-        logger.critical("UDM bridge unavailable during device sync: %s", e)
-        try:
-            from backend.database import get_db
-            get_db().record_sync("device", device_id, _TARGET_DB, "error", str(e))
-        except Exception:
-            pass
+        logger.critical("UDM bridge unavailable during device sync: %s", e, exc_info=True)
+        _safe_record_sync("device", device_id, str(e))
         return False
 
 
@@ -516,12 +527,8 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: Dict[str
             return False
 
     except Exception as e:
-        logger.critical("UDM bridge unavailable during device update: %s", e)
-        try:
-            from backend.database import get_db
-            get_db().record_sync("device", device_id, _TARGET_DB, "error", str(e))
-        except Exception:
-            pass
+        logger.critical("UDM bridge unavailable during device update: %s", e, exc_info=True)
+        _safe_record_sync("device", device_id, str(e))
         return False
 
 
@@ -566,12 +573,8 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
             return False
 
     except Exception as e:
-        logger.critical("UDM bridge unavailable during device deletion: %s", e)
-        try:
-            from backend.database import get_db
-            get_db().record_sync("device", device_id, _TARGET_DB, "error", str(e))
-        except Exception:
-            pass
+        logger.critical("UDM bridge unavailable during device deletion: %s", e, exc_info=True)
+        _safe_record_sync("device", device_id, str(e))
         return False
 
 
@@ -647,8 +650,15 @@ def sync_connection_to_udm(project_id: str, connection_data: Dict[str, Any]) -> 
             ]:
                 try:
                     udm.bridge_sql(f"ALTER TABLE relationships {col}")
-                except Exception:
-                    pass
+                except Exception as alter_err:
+                    # Expected when the column already exists from a
+                    # previous migration run. SQLite does not support
+                    # IF NOT EXISTS for ADD COLUMN, so this is the only
+                    # way to make the migration idempotent.
+                    logger.debug(
+                        "Skipping ALTER TABLE relationships %s (likely already exists): %s",
+                        col, alter_err,
+                    )
 
             now = datetime.now(timezone.utc).isoformat()
             udm.bridge_insert(
@@ -677,12 +687,8 @@ def sync_connection_to_udm(project_id: str, connection_data: Dict[str, Any]) -> 
             return False
 
     except Exception as e:
-        logger.critical("UDM bridge unavailable during connection sync: %s", e)
-        try:
-            from backend.database import get_db
-            get_db().record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
-        except Exception:
-            pass
+        logger.critical("UDM bridge unavailable during connection sync: %s", e, exc_info=True)
+        _safe_record_sync("connection", connection_id, str(e))
         return False
 
 
@@ -712,8 +718,15 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
             ]:
                 try:
                     udm.bridge_sql(f"ALTER TABLE relationships {col}")
-                except Exception:
-                    pass
+                except Exception as alter_err:
+                    # Expected when the column already exists from a
+                    # previous migration run. SQLite does not support
+                    # IF NOT EXISTS for ADD COLUMN, so this is the only
+                    # way to make the migration idempotent.
+                    logger.debug(
+                        "Skipping ALTER TABLE relationships %s (likely already exists): %s",
+                        col, alter_err,
+                    )
 
             now = datetime.now(timezone.utc).isoformat()
             udm.bridge_sql(
@@ -749,10 +762,6 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
             return False
 
     except Exception as e:
-        logger.critical("UDM bridge unavailable during connection deletion: %s", e)
-        try:
-            from backend.database import get_db
-            get_db().record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
-        except Exception:
-            pass
+        logger.critical("UDM bridge unavailable during connection deletion: %s", e, exc_info=True)
+        _safe_record_sync("connection", connection_id, str(e))
         return False
