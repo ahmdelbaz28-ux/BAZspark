@@ -70,17 +70,122 @@ SOLAS_FIRE_DIVISION_MATRIX = {
     ("machinery_a", "cargo_space"): "A-60",
     # Machinery to service major (galley) → A-60
     ("machinery_a", "service_major"): "A-60",
+    # Machinery to service minor → A-60
+    ("machinery_a", "service_minor"): "A-60",
+    # Machinery to machinery other → A-60
+    ("machinery_a", "machinery_other"): "A-60",
+    # Machinery to tank space → A-60
+    ("machinery_a", "tank_space"): "A-60",
+    # Machinery to empty space → A-0
+    ("machinery_a", "empty_space"): "A-0",
+    # Machinery to open deck → A-0
+    ("machinery_a", "open_deck"): "A-0",
+
     # Cargo to accommodation → A-60
     ("cargo_space", "accommodation"): "A-60",
     # Cargo to escape route → A-60
     ("cargo_space", "escape_route"): "A-60",
+    # Cargo to control station → A-30
+    ("cargo_space", "control_station"): "A-30",
+    # Cargo to service minor → A-30
+    ("cargo_space", "service_minor"): "A-30",
+    # Cargo to service major → A-60
+    ("cargo_space", "service_major"): "A-60",
+    # Cargo to machinery other → A-60
+    ("cargo_space", "machinery_other"): "A-60",
+    # Cargo to tank space → A-60
+    ("cargo_space", "tank_space"): "A-60",
+    # Cargo to empty space → A-0
+    ("cargo_space", "empty_space"): "A-0",
+    # Cargo to open deck → A-0
+    ("cargo_space", "open_deck"): "A-0",
+
     # Accommodation to escape route → B-15 (passenger ships) or B-0
     ("accommodation", "escape_route"): "B-15",
     # Control station to accommodation → A-30
     ("control_station", "accommodation"): "A-30",
+    # Control station to escape route → A-30
+    ("control_station", "escape_route"): "A-30",
+    # Control station to service minor → A-30
+    ("control_station", "service_minor"): "A-30",
+    # Control station to service major → A-60
+    ("control_station", "service_major"): "A-60",
+    # Control station to machinery other → A-30
+    ("control_station", "machinery_other"): "A-30",
+    # Control station to tank space → A-60
+    ("control_station", "tank_space"): "A-60",
+    # Control station to empty space → A-0
+    ("control_station", "empty_space"): "A-0",
+    # Control station to open deck → A-0
+    ("control_station", "open_deck"): "A-0",
+
+    # Escape route to service minor → B-15
+    ("escape_route", "service_minor"): "B-15",
+    # Escape route to service major → A-60
+    ("escape_route", "service_major"): "A-60",
+    # Escape route to machinery other → A-30
+    ("escape_route", "machinery_other"): "A-30",
+    # Escape route to tank space → A-60
+    ("escape_route", "tank_space"): "A-60",
+    # Escape route to empty space → A-0
+    ("escape_route", "empty_space"): "A-0",
+    # Escape route to open deck → A-0
+    ("escape_route", "open_deck"): "A-0",
+
+    # Service minor to service major → A-30
+    ("service_minor", "service_major"): "A-30",
+    # Service minor to machinery other → A-30
+    ("service_minor", "machinery_other"): "A-30",
+    # Service minor to tank space → A-60
+    ("service_minor", "tank_space"): "A-60",
+    # Service minor to empty space → A-0
+    ("service_minor", "empty_space"): "A-0",
+    # Service minor to open deck → A-0
+    ("service_minor", "open_deck"): "A-0",
+
+    # Service major to machinery other → A-30
+    ("service_major", "machinery_other"): "A-30",
+    # Service major to tank space → A-60
+    ("service_major", "tank_space"): "A-60",
+    # Service major to empty space → A-0
+    ("service_major", "empty_space"): "A-0",
+    # Service major to open deck → A-0
+    ("service_major", "open_deck"): "A-0",
+
+    # Machinery other to machinery other → A-30
+    ("machinery_other", "machinery_other"): "A-30",
+    # Machinery other to tank space → A-60
+    ("machinery_other", "tank_space"): "A-60",
+    # Machinery other to empty space → A-0
+    ("machinery_other", "empty_space"): "A-0",
+    # Machinery other to open deck → A-0
+    ("machinery_other", "open_deck"): "A-0",
+
+    # Tank space to tank space → A-60
+    ("tank_space", "tank_space"): "A-60",
+    # Tank space to empty space → A-0
+    ("tank_space", "empty_space"): "A-0",
+    # Tank space to open deck → A-0
+    ("tank_space", "open_deck"): "A-0",
+
     # Open deck to anything → A-0 minimum
     ("open_deck", "accommodation"): "A-0",
     ("open_deck", "machinery_a"): "A-0",
+    ("open_deck", "cargo_space"): "A-0",
+    ("open_deck", "escape_route"): "A-0",
+    ("open_deck", "service_minor"): "A-0",
+    ("open_deck", "service_major"): "A-0",
+    ("open_deck", "control_station"): "A-0",
+    ("open_deck", "machinery_other"): "A-0",
+    ("open_deck", "tank_space"): "A-0",
+    ("open_deck", "empty_space"): "A-0",
+    ("open_deck", "open_deck"): "A-0",
+
+    # Empty space to anything → A-0 (cofferdams/voids have no rating)
+    ("empty_space", "accommodation"): "A-0",
+    ("empty_space", "escape_route"): "A-0",
+    ("empty_space", "service_minor"): "A-0",
+    ("empty_space", "empty_space"): "A-0",
 }
 
 # Insulation thickness for A-class divisions (typical values, ceramic wool).

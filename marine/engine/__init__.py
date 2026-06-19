@@ -2,8 +2,9 @@
 fire_resistance, extinguishment, alarm_logic)."""
 from marine.engine.alarm_logic import export_to_plc_script, generate_logic_tree
 from marine.engine.extinguishment import (
-    size_co2_total_flooding, size_foam_low_expansion, size_inert_gas,
-    size_sprinkler, size_system, size_water_mist,
+    size_afff, size_co2_total_flooding, size_foam_high_expansion,
+    size_foam_low_expansion, size_inert_gas, size_sprinkler, size_system,
+    size_water_mist,
 )
 from marine.engine.fire_resistance import (
     generate_division_specs, select_insulation_material,
@@ -17,7 +18,7 @@ __all__ = [
     "assign_space_categories", "compute_escape_route_adjacency",
     "divide_into_main_vertical_zones", "export_to_plc_script",
     "generate_division_specs", "generate_logic_tree",
-    "select_insulation_material", "size_co2_total_flooding",
-    "size_foam_low_expansion", "size_inert_gas", "size_sprinkler",
-    "size_system", "size_water_mist",
+    "select_insulation_material", "size_afff", "size_co2_total_flooding",
+    "size_foam_high_expansion", "size_foam_low_expansion", "size_inert_gas",
+    "size_sprinkler", "size_system", "size_water_mist",
 ]

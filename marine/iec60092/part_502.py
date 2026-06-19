@@ -198,6 +198,11 @@ def place_detectors_grid(
       - Max distance from bulkhead: 5.3 m (half spacing)
       - Detector mounted at ceiling (zone.height_m)
 
+    Stratification fix: for ceilings above 12 m a second detector layer is
+    added at an intermediate level (2/3 of ceiling height) so smoke/gas
+    pockets forming below the ceiling are still detected. This doubles the
+    number of placements for high compartments.
+
     Args:
         zone: Zone to fill with detectors.
         detector_type: Type of detector to place.
@@ -230,40 +235,72 @@ def place_detectors_grid(
     rows = max(1, math.ceil(side_m / spacing_m))
     cols = max(1, math.ceil(side_m / spacing_m))
 
+    # Build one layer at a given height.
+    def _build_layer(
+        height_m: float,
+        suffix: str,
+        start_index: int,
+        standard_ref: str,
+    ) -> List[DetectorPlacement]:
+        layer: List[DetectorPlacement] = []
+        detector_index = start_index
+        for r in range(rows):
+            for c in range(cols):
+                x_mm = origin_xyz_mm[0] + (c + 0.5) * (side_m / cols) * 1000
+                y_mm = origin_xyz_mm[1] + (r + 0.5) * (side_m / rows) * 1000
+                z_mm = origin_xyz_mm[2] + height_m * 1000
+
+                rated_temp = None
+                if detector_type == DetectorType.HEAT_FIXED:
+                    if zone.space_category in (
+                        SpaceCategory.MACHINERY_SPACE_A,
+                        SpaceCategory.MACHINERY_SPACE_OTHER,
+                        SpaceCategory.SERVICE_SPACE_MAJOR,
+                    ):
+                        rated_temp = HEAT_DETECTOR_RATED_TEMPS_C["medium"]
+                    else:
+                        rated_temp = HEAT_DETECTOR_RATED_TEMPS_C["low"]
+
+                layer.append(DetectorPlacement(
+                    detector_id=(
+                        f"{zone.zone_id}-D{detector_index:03d}{suffix}-"
+                        f"{detector_type.value}"
+                    ),
+                    zone_id=zone.zone_id,
+                    detector_type=detector_type,
+                    position_xyz_mm=(x_mm, y_mm, z_mm),
+                    coverage_m2=coverage,
+                    rated_temp_c=rated_temp,
+                    mounting_height_m=height_m,
+                    standard_reference=standard_ref,
+                ))
+                detector_index += 1
+        return layer
+
     placements: List[DetectorPlacement] = []
-    detector_index = 1
-    for r in range(rows):
-        for c in range(cols):
-            # Center of each grid cell.
-            x_mm = origin_xyz_mm[0] + (c + 0.5) * (side_m / cols) * 1000
-            y_mm = origin_xyz_mm[1] + (r + 0.5) * (side_m / rows) * 1000
-            z_mm = origin_xyz_mm[2] + zone.height_m * 1000  # ceiling
+    base_count = rows * cols
+    placements.extend(
+        _build_layer(
+            zone.height_m,
+            suffix="",
+            start_index=1,
+            standard_ref="IEC 60092-502 §4 + FSS 9.2.4",
+        )
+    )
 
-            rated_temp = None
-            if detector_type == DetectorType.HEAT_FIXED:
-                # Galley/machinery → medium temp (78°C); else low (54°C).
-                if zone.space_category in (
-                    SpaceCategory.MACHINERY_SPACE_A,
-                    SpaceCategory.MACHINERY_SPACE_OTHER,
-                    SpaceCategory.SERVICE_SPACE_MAJOR,
-                ):
-                    rated_temp = HEAT_DETECTOR_RATED_TEMPS_C["medium"]
-                else:
-                    rated_temp = HEAT_DETECTOR_RATED_TEMPS_C["low"]
-
-            placements.append(DetectorPlacement(
-                detector_id=(
-                    f"{zone.zone_id}-D{detector_index:03d}-{detector_type.value}"
+    if zone.height_m > MAX_DETECTOR_CEILING_HEIGHT_M:
+        strat_height_m = max(3.0, zone.height_m * 2.0 / 3.0)
+        placements.extend(
+            _build_layer(
+                strat_height_m,
+                suffix="-S",
+                start_index=base_count + 1,
+                standard_ref=(
+                    "IEC 60092-502 §4 + FSS 9.2.4 + "
+                    "stratification layer (>12 m ceiling)"
                 ),
-                zone_id=zone.zone_id,
-                detector_type=detector_type,
-                position_xyz_mm=(x_mm, y_mm, z_mm),
-                coverage_m2=coverage,
-                rated_temp_c=rated_temp,
-                mounting_height_m=zone.height_m,
-                standard_reference="IEC 60092-502 §4 + FSS 9.2.4",
-            ))
-            detector_index += 1
+            )
+        )
 
     return placements
 

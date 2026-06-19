@@ -24,14 +24,15 @@ from marine.core.constants import (
     MAX_MAIN_VERTICAL_ZONE_LENGTH_M,
     MAX_PASSENGER_MVZ_LENGTH_M,
     PASSENGER_MVZ_PAX_THRESHOLD,
+    SHIP_FRAME_SPACING_M,
 )
 from marine.core.types import (
     ComplianceResult, MarineZone, ShipProject, SpaceCategory,
 )
 
 # Frame spacing: typical merchant vessel has ~600 mm between frames.
-# (Name kept for backwards-compat — semantically this is METERS_PER_FRAME.)
-_FRAMES_PER_METER = 0.6
+# Reuses the canonical constant SHIP_FRAME_SPACING_M from marine.core.constants.
+_FRAMES_PER_METER = SHIP_FRAME_SPACING_M
 
 
 def divide_into_main_vertical_zones(

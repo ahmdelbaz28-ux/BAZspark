@@ -33,6 +33,7 @@ from marine.core.constants import (
     MIN_ESCAPE_ROUTE_HEIGHT_MM,
     MIN_ESCAPE_ROUTE_WIDTH_MM,
     PASSENGER_MVZ_PAX_THRESHOLD,
+    SHIP_FRAME_SPACING_M,
     SOLAS_FIRE_DIVISION_MATRIX,
 )
 from marine.core.types import (
@@ -292,18 +293,31 @@ def validate_escape_routes(zones: List[MarineZone]) -> ComplianceResult:
 
         # Rule 2: spaces >50 m² require ≥2 escape routes.
         if zone.area_m2 > MIN_AREA_REQUIRING_TWO_ESCAPES_M2:
-            # We can only flag — the zone model captures has_escape_route
-            # as a single bool. A second escape would need explicit modeling.
-            result.warnings.append(
-                f"Zone {zone.zone_id} ({zone.name}): area {zone.area_m2} m² "
-                f"exceeds {MIN_AREA_REQUIRING_TWO_ESCAPES_M2} m² — verify "
-                f"two independent escape routes exist (SOLAS II-2/13.3.2.1)."
-            )
+            if zone.escape_route_count < 2:
+                result.warnings.append(
+                    f"Zone {zone.zone_id} ({zone.name}): area {zone.area_m2} m² "
+                    f"exceeds {MIN_AREA_REQUIRING_TWO_ESCAPES_M2} m² but only "
+                    f"{zone.escape_route_count} escape route(s) defined. "
+                    f"SOLAS II-2/13.3.2.1 requires ≥2 independent escape routes."
+                )
+            else:
+                result.details[zone.zone_id] = {
+                    "escape_route_count": zone.escape_route_count,
+                    "status": "ok",
+                }
 
-        # Rule 3: max distance to stairway (passenger ships).
-        # Stored in ventilation_rate_ach as proxy? No — we need explicit
-        # distance. For now, we warn if no stairway distance is recorded.
-        # TODO V131: add max_distance_to_stairway_m to MarineZone.
+        # Rule 3: max distance to stairway (passenger ships >36 pax).
+        if zone.max_distance_to_stairway_m is not None:
+            if zone.max_distance_to_stairway_m > MAX_DISTANCE_TO_STAIRWAY_M:
+                result.add_finding(
+                    f"Zone {zone.zone_id} ({zone.name}): max distance to stairway "
+                    f"{zone.max_distance_to_stairway_m} m exceeds SOLAS limit "
+                    f"{MAX_DISTANCE_TO_STAIRWAY_M} m (II-2/13.3.2.1)."
+                )
+            else:
+                result.details.setdefault(zone.zone_id, {})[
+                    "max_distance_to_stairway_m"
+                ] = zone.max_distance_to_stairway_m
 
     return result
 
@@ -439,12 +453,9 @@ def required_extinguishing_for_space(
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
 
-_FRAMES_PER_METER = 0.6  # Typical ship frame spacing (~600 mm); configurable
-
-
 def _frames_to_meters(frames: int) -> float:
     """Convert ship frame count to meters (approximate)."""
-    return abs(frames) * _FRAMES_PER_METER
+    return abs(frames) * SHIP_FRAME_SPACING_M
 
 
 def _fire_class_meets_or_exceeds(provided: FireClass, required: FireClass) -> bool:

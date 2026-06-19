@@ -243,6 +243,9 @@ class MarineZone:
     hazard_class: FireHazardClass = FireHazardClass.A
     ventilation_rate_ach: float = 0.0        # Air changes per hour
     has_escape_route: bool = True
+    escape_route_count: int = 1              # SOLAS II-2/13.3.2 escape-route count
+    max_distance_to_stairway_m: Optional[float] = None  # SOLAS II-2/13.3.2.1
+    shape_polygon: Optional[List[Tuple[float, float]]] = None  # Zone footprint (m)
     adjacent_zones: Tuple[str, ...] = field(default_factory=tuple)
 
 
