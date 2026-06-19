@@ -1005,3 +1005,69 @@ Stage Summary:
 - PR link: https://github.com/ahmdelbaz28-ux/revit/pull/new/marine-v2-improvements
 - ملاحظة: GitHub يُبلغ عن 18 vulnerabilities في الـ default branch (9 high, 5 moderate, 4 low) — تحتاج معالجة لاحقة
 - توصية: فتح Pull Request على GitHub لمراجعة الفريق قبل الدمج
+
+---
+Task ID: repo-cleanup-ci-config
+Agent: Super Z (Main)
+Task: Fix broken CI/CD pipeline + harden dependabot auto-merge + add dependabot.yml + document operator actions
+
+Work Log:
+- Performed full GitHub API audit on main (commit c1d7fb42):
+  * 8 remote branches, 5 open PRs, 59 total PRs in history
+  * main branch is NOT protected (curl /branches/main/protection returned "Branch not protected")
+  * CI/CD Pipeline + FireAI Deploy Pipeline both failing on main (last 2 runs)
+  * "Success" job on CI/CD was green despite Gate 1 (Static Analysis) and Gate 4 (Frontend Build) both red
+  * 20 open dependabot alerts (cryptography, python-multipart, lxml, vite, undici, tar, js-yaml)
+  * Secret scanning disabled
+  * delete_branch_on_merge=false, allow_auto_merge=false, visibility=public
+  * .github/dependabot.yml missing (dependabot running with defaults)
+- Root-caused the CI green-on-red bug: 5 instances of `|| true` in ci.yml (test suite, property tests, pip-audit, npm audit) + success job using `if: always()` instead of `if: success()`. Coverage floor was 5% (cosmetic).
+- Root-caused the dependabot auto-merge bug: workflow's JS step treated `statuses.length === 0` as "all green, proceed" — combined with branch protection OFF, any dependabot PR could silently merge without a single test running.
+- Created branch repo-cleanup-ci-config off latest main.
+- Hardened .github/workflows/ci.yml:
+  * Removed all 4 `|| true` from gate steps (test suite, property tests, pip-audit, npm audit)
+  * Raised --cov-fail-under from 5 to 25 (current actual ~39%, so this is a real floor)
+  * Changed success job from `if: always()` to `if: success()` — red gate now produces a skipped success job (visually obvious in GitHub UI)
+  * Added ponytail: comments at every changed site explaining the why
+- Rewrote .github/workflows/dependabot-auto-merge.yml for safety:
+  * Fixed the "no statuses = proceed" bug: new workflow requires at least one CI check to have completed before auto-merging
+  * Added major-version bump detection: refuses to auto-merge major bumps (parses Dependabot PR title for "from N.x to N+1.x")
+  * Changed `gh pr merge --admin --squash` (was wrong flag) to `gh pr merge --squash --auto`
+  * Added explicit failure paths (timeout, failed check, major bump) instead of silent skipping
+- Created .github/dependabot.yml (was missing):
+  * Scoped to 4 ecosystems in use: pip, npm, github-actions, docker
+  * Grouped minor+patch bumps (one weekly PR per ecosystem, not 20)
+  * Major bumps stay separate (so auto-merge workflow can refuse them)
+  * Schedule: weekly Monday 07:00 Africa/Cairo (operator timezone)
+  * Pinned three / @react-three/fiber / @react-three/drei to current major (0.16x series broke 3D viewer twice in 2026)
+  * open-pull-requests-limit: 5 per ecosystem (was unbounded)
+- Created .github/repo-cleanup-plan.md (documentation, ~250 LOC):
+  * §1: token revocation (URGENT — the second PAT mentioned earlier is still active; revoke it now)
+  * §2: enable secret scanning + push protection
+  * §3: enable branch protection on main (with specific gates to require)
+  * §4: fix repo settings (auto-delete branches, allow_auto_merge, actions PR creation)
+  * §5: triage 5 open PRs (table with recommended action per PR)
+  * §6: delete stale local branches
+  * §7: address 20 open dependabot alerts
+  * §8: consider making repo private
+  * Verification commands + risk assessment table
+- Verified YAML syntax for all 3 files (ci.yml, dependabot-auto-merge.yml, dependabot.yml).
+- Verified NO source code touched: git diff shows only .github/workflows/*.yml modified + .github/dependabot.yml + .github/repo-cleanup-plan.md new. Zero .py/.ts/.tsx/.cs files.
+
+Stage Summary:
+- Branch: repo-cleanup-ci-config (1 commit planned, off latest main c1d7fb42)
+- Files modified: 2 (.github/workflows/ci.yml, .github/workflows/dependabot-auto-merge.yml)
+- Files created: 2 (.github/dependabot.yml, .github/repo-cleanup-plan.md)
+- Source code touched: ZERO (verified by git diff name-only filter)
+- Operator actions required (documented in .github/repo-cleanup-plan.md):
+  1. URGENT: revoke [REDACTED-PAT] at https://github.com/settings/tokens
+  2. Enable secret scanning + push protection
+  3. Enable branch protection on main (specific gates listed)
+  4. Enable allow_auto_merge + auto-delete head branches
+  5. Triage 5 open PRs (recommended action per PR in the plan)
+  6. Delete stale branches after PR triage
+  7. Address 20 dependabot alerts (cryptography/python-multipart/lxml are HIGH priority)
+  8. Consider making repo private (currently public with leaked tokens + 20 vulns)
+- Expected post-merge behavior:
+  * CI/CD Pipeline will run RED on main (because Gate 1 Ruff lint + Gate 4 TypeScript check were already failing — they were hidden by `|| true`). This is desired: the failures were always there.
+  * To get CI green, the operator must fix the actual lint + TS errors. Do NOT re-add `|| true`.
