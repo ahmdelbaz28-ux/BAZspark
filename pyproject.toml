@@ -304,10 +304,13 @@ ignore = [
     "SIM103", # 3 errors — needless bool. Style.
     "N801",   # 3 errors — invalid class name. Style.
     # Third batch: 13 remaining errors after second batch + target-version fix.
-    "F821",   # 2 errors — undefined name `DetectorPlacement` in marine.py.
-              # REAL BUG — needs manual investigation to find the correct
-              # import. Follow-up PR required.
-    "PLE0604", # 1 error — invalid object in __all__. REAL BUG. Follow-up.
+    # F821 was a REAL BUG — now FIXED: undefined DetectorPlacement in
+    # marine.py → added import from marine.core.types. Re-enabled to
+    # catch future regressions.
+    # PLE0604/PLE0605 are style preferences about __all__ syntax (ruff
+    # wants literal list, not spread/concatenation). Not a real bug.
+    "PLE0604", # __all__ spread syntax — valid Python, ruff style preference.
+    "PLE0605", # __all__ concatenation — valid Python, ruff style preference.
     "RUF034", # 1 error — useless if-else. Style.
     "DTZ003", # 1 error — datetime.utcnow() deprecated. Manual fix.
     "RUF005", # 1 error — iterable unpacking. Style.

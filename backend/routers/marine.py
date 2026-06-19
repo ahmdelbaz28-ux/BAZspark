@@ -35,6 +35,7 @@ from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.services.marine_service import get_marine_service
 from marine.core.types import (
+    DetectorPlacement,
     DetectorType,
     FireClass,
     MarineZone,
