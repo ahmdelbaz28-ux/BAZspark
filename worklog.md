@@ -1045,3 +1045,31 @@ Stage Summary:
 - Local typecheck: PASS (EXIT_CODE=0)
 - Expected post-merge: Gate 4 (Frontend Build) turns GREEN.
 - Bug fix included: getApiKey was not exported — digitalTwinApi.ts would have thrown ReferenceError at runtime when apiRequest was called. This was a real bug, not just a type error.
+
+---
+Task ID: fix-typescript-errors-amend
+Agent: Super Z (Main)
+Task: Fix 2 additional eslint errors that surfaced after TypeScript fix (Gate 4)
+
+Work Log:
+- PR #66 CI run showed Gate 4 still RED, but the failing step changed from "TypeScript type check" (now ✅) to "Lint check" (❌).
+- Root cause: the 6 TypeScript errors were masking 2 eslint errors in the same gate. Once TypeScript passed, eslint became the failing step.
+- The CI script `OUTPUT=$(npm run lint 2>&1); ERROR_COUNT=$(echo "$OUTPUT" | grep -oP '\d+(?= error)' | head -1)` found `2 errors` in the output.
+- Ran `npm run lint` locally: identified the 2 errors:
+  1. `frontend/src/components/ui/chart.tsx:79:58` - `no-useless-escape` - `\[` escape unnecessary inside character class.
+  2. `frontend/src/engine/BatteryCalculator.ts:71:7` - `prefer-const` - `let recommendedBattery` never reassigned (only properties mutated, not the variable itself).
+- Applied fixes:
+  * chart.tsx: removed the `\` before `[` in the regex character class (kept `]` escaped since it needs escaping inside `[]`).
+  * BatteryCalculator.ts: `let recommendedBattery` → `const recommendedBattery` (verified via grep that the variable itself is never reassigned, only its properties are mutated at lines 79-83).
+- Verified locally:
+  * `npm run lint` → `261 problems (0 errors, 261 warnings)` EXIT=0 ✅
+  * `npm run typecheck` → EXIT=0 ✅
+- Files modified: 2 (chart.tsx, BatteryCalculator.ts). +2/-2 lines.
+- Note: still within operator's authorization for frontend source code fixes to unblock Gate 4.
+
+Stage Summary:
+- Branch: fix-typescript-errors (amended with 2 more files)
+- Total files in PR #66 now: 6 (ContextPanel.tsx, ContextHelpButton.tsx, api.ts, digitalTwinApi.ts, chart.tsx, BatteryCalculator.ts)
+- TypeScript errors: 0 (was 6)
+- eslint errors: 0 (was 2)
+- Expected post-merge: Gate 4 (Frontend Build) turns GREEN.
