@@ -1,5 +1,4 @@
-"""
-fireai/ml/explainers/shap_explainer.py — SHAP Model Explainer
+"""fireai/ml/explainers/shap_explainer.py — SHAP Model Explainer.
 ================================================================
 
 SHAP (SHapley Additive exPlanations) for ML model interpretability.
@@ -20,7 +19,7 @@ Safety justification:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fireai.ml.schemas import ModelExplanation, ModelType
 
@@ -48,11 +47,10 @@ class SHAPExplainer:
     def explain_xgboost(
         self,
         model: Any,
-        feature_vector: List[float],
-        feature_names: List[str],
+        feature_vector: list[float],
+        feature_names: list[str],
     ) -> ModelExplanation:
-        """
-        Generate SHAP explanation for an XGBoost prediction.
+        """Generate SHAP explanation for an XGBoost prediction.
 
         Args:
             model: Trained XGBoost model
@@ -61,6 +59,7 @@ class SHAPExplainer:
 
         Returns:
             ModelExplanation with SHAP values
+
         """
         if not self._available:
             return self._fallback_explanation(
@@ -68,8 +67,8 @@ class SHAPExplainer:
             )
 
         try:
-            import shap
             import numpy as np
+            import shap
 
             # TreeExplainer works for XGBoost/LightGBM
             explainer = shap.TreeExplainer(model)
@@ -121,11 +120,10 @@ class SHAPExplainer:
 
     def explain_lstm(
         self,
-        sequence: List[List[float]],
-        feature_names: Optional[List[str]] = None,
+        sequence: list[list[float]],
+        feature_names: list[str] | None = None,
     ) -> ModelExplanation:
-        """
-        Generate approximate explanation for LSTM.
+        """Generate approximate explanation for LSTM.
 
         LSTM SHAP is computationally expensive; we use a feature-ablation
         approximation (zero out each week, measure delta).
@@ -169,8 +167,7 @@ class SHAPExplainer:
         cox_model: Any,
         features: AssetFeatures,
     ) -> ModelExplanation:
-        """
-        Generate explanation for Cox PH model.
+        """Generate explanation for Cox PH model.
 
         Cox PH is naturally interpretable: hazard_ratio > 1 means the
         feature increases hazard. We compute partial hazard contributions
@@ -181,7 +178,6 @@ class SHAPExplainer:
         lifelines doesn't expose SHAP directly, but the linear predictor
         (sum of coef * feature) IS the contribution to log-hazard.
         """
-        import numpy as np
         import pandas as pd
 
         try:
@@ -235,7 +231,7 @@ class SHAPExplainer:
         model_type: ModelType,
         base_value: float,
         total_contribution: float,
-        top_features: List[Dict[str, Any]],
+        top_features: list[dict[str, Any]],
     ) -> str:
         """Generate human-readable explanation."""
         parts = [
@@ -253,8 +249,8 @@ class SHAPExplainer:
 
     def _build_cox_explanation_text(
         self,
-        hazard_ratios: Dict[str, float],
-        top_features: List[Dict[str, Any]],
+        hazard_ratios: dict[str, float],
+        top_features: list[dict[str, Any]],
     ) -> str:
         parts = [
             "Cox PH model uses hazard ratios (HR > 1 = increases hazard).",
@@ -271,8 +267,8 @@ class SHAPExplainer:
     def _fallback_explanation(
         self,
         model_type: ModelType,
-        feature_vector: List[float],
-        feature_names: List[str],
+        feature_vector: list[float],
+        feature_names: list[str],
     ) -> ModelExplanation:
         """Fallback when SHAP unavailable — use feature values as proxy."""
         contributions = {

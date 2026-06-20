@@ -1,5 +1,4 @@
-"""
-fireai/ml/models/xgboost_model.py — XGBoost Failure Classifier
+"""fireai/ml/models/xgboost_model.py — XGBoost Failure Classifier.
 ================================================================
 
 Gradient-boosted tree classifier for binary failure prediction
@@ -25,7 +24,7 @@ import pickle
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from fireai.ml.schemas import AssetFeatures, MLPrediction, ModelType, RiskLevel
 
@@ -35,7 +34,7 @@ logger = logging.getLogger(__name__)
 # FIX #3: Added has_failures flag (was: MTBF=3650 for all no-failure assets,
 # which made the model think new assets had the same risk profile as
 # 10-year-old assets that had never failed).
-FEATURE_NAMES: List[str] = [
+FEATURE_NAMES: list[str] = [
     "age_days",
     "age_ratio",
     "recent_failures_90d",
@@ -56,14 +55,13 @@ FEATURE_NAMES: List[str] = [
 class TrainingResult:
     model_version: str
     samples_used: int
-    metrics: Dict[str, float]
+    metrics: dict[str, float]
     trained_at: datetime
-    feature_importance: Dict[str, float]
+    feature_importance: dict[str, float]
 
 
 class XGBoostFailureModel:
-    """
-    XGBoost-based failure classifier.
+    """XGBoost-based failure classifier.
 
     Lifecycle:
         1. train() — fit on historical labeled data
@@ -71,14 +69,14 @@ class XGBoostFailureModel:
         3. save() / load() — persist to disk for production reuse
     """
 
-    def __init__(self, model_path: Optional[Path] = None) -> None:
+    def __init__(self, model_path: Path | None = None) -> None:
         self._model = None
         self._calibrator = None  # FIX #9: probability calibrator
         self._model_path = model_path
         self._model_version = "untrained"
         self._training_data_size = 0
-        self._last_trained_at: Optional[datetime] = None
-        self._feature_importance: Dict[str, float] = {}
+        self._last_trained_at: datetime | None = None
+        self._feature_importance: dict[str, float] = {}
 
         # Try to load if path provided
         if model_path and model_path.exists():
@@ -96,9 +94,8 @@ class XGBoostFailureModel:
         except ImportError:
             return False
 
-    def features_to_vector(self, features: AssetFeatures) -> List[float]:
-        """
-        Convert AssetFeatures to model input vector (ordered).
+    def features_to_vector(self, features: AssetFeatures) -> list[float]:
+        """Convert AssetFeatures to model input vector (ordered).
 
         FIX #3: MTBF handling was inverted. Previously we defaulted
         MTBF=3650 (10 years) for assets with no failures — but XGBoost
@@ -135,9 +132,9 @@ class XGBoostFailureModel:
 
     def train(
         self,
-        X: List[List[float]],
-        y: List[int],
-        feature_names: Optional[List[str]] = None,
+        X: list[list[float]],
+        y: list[int],
+        feature_names: list[str] | None = None,
     ) -> TrainingResult:
         """Train XGBoost classifier on labeled failure data."""
         if not self.is_available():
@@ -156,7 +153,7 @@ class XGBoostFailureModel:
             recall_score,
             roc_auc_score,
         )
-        from sklearn.model_selection import StratifiedKFold, train_test_split
+        from sklearn.model_selection import train_test_split
 
         names = feature_names or FEATURE_NAMES
 
@@ -276,15 +273,15 @@ class XGBoostFailureModel:
             feature_importance=self._feature_importance,
         )
 
-    def predict(self, features: AssetFeatures) -> Tuple[float, Dict[str, Any]]:
-        """
-        Predict failure probability.
+    def predict(self, features: AssetFeatures) -> tuple[float, dict[str, Any]]:
+        """Predict failure probability.
 
         Returns:
             (probability, metadata_dict)
             metadata includes model_version, training_data_size, last_trained_at
 
         FIX #9: Uses calibrated probabilities when a calibrator is available.
+
         """
         if self._model is None:
             raise RuntimeError("Model not trained. Call train() first.")
@@ -380,7 +377,7 @@ class XGBoostFailureModel:
         return RiskLevel.LOW
 
     @staticmethod
-    def _estimate_ttf(probability: float, features: AssetFeatures) -> Optional[float]:
+    def _estimate_ttf(probability: float, features: AssetFeatures) -> float | None:
         """Rough TTF estimate from probability and asset age."""
         if probability <= 0.01:
             return None

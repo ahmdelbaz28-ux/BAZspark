@@ -1,5 +1,4 @@
-"""
-fireai/ml/predictive_maintenance.py — ML-Based Predictive Maintenance
+"""fireai/ml/predictive_maintenance.py — ML-Based Predictive Maintenance.
 ======================================================================
 
 Top-level orchestrator that runs multiple ML models in ensemble and
@@ -27,7 +26,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fireai.ml.explainers.shap_explainer import SHAPExplainer
 from fireai.ml.models.cox_model import CoxPHFailureModel
@@ -58,7 +57,7 @@ def _default_models_dir() -> Path:
 class MLModelRegistry:
     """Registry of available ML models with lazy loading."""
 
-    def __init__(self, models_dir: Optional[Path] = None) -> None:
+    def __init__(self, models_dir: Path | None = None) -> None:
         # FIX: was hardcoded to /home/z/my-project/data/ml_models (dev machine path)
         # Now uses FIREAI_ML_MODELS_DIR env var, falling back to CWD-relative.
         self.models_dir = models_dir or _default_models_dir()
@@ -92,7 +91,7 @@ class MLModelRegistry:
     def shap(self) -> SHAPExplainer:
         return self._shap
 
-    def available_models(self) -> List[ModelType]:
+    def available_models(self) -> list[ModelType]:
         """List models that are both installed and trained."""
         available = []
         if self._xgboost.is_available() and self._xgboost._model is not None:
@@ -105,32 +104,31 @@ class MLModelRegistry:
 
 
 class MLFailurePredictor:
-    """
-    Top-level orchestrator for ML-based failure prediction.
+    """Top-level orchestrator for ML-based failure prediction.
 
     Runs requested models in ensemble, combines predictions, and
     generates SHAP explanations for each model that supports them.
     """
 
-    def __init__(self, registry: Optional[MLModelRegistry] = None) -> None:
+    def __init__(self, registry: MLModelRegistry | None = None) -> None:
         self.registry = registry or MLModelRegistry()
 
     def predict(self, request: MLPredictionRequest) -> MLPredictionResponse:
-        """
-        Run ML prediction ensemble.
+        """Run ML prediction ensemble.
 
         Args:
             request: Contains asset features, requested models, explain flag
 
         Returns:
             MLPredictionResponse with ensemble + per-model predictions
+
         """
         asset = request.asset
         models_to_run = self._resolve_models(request.models)
         horizon = request.horizon_days
 
-        predictions: List[MLPrediction] = []
-        explanations: List[ModelExplanation] = []
+        predictions: list[MLPrediction] = []
+        explanations: list[ModelExplanation] = []
 
         for model_type in models_to_run:
             pred, expl = self._run_single_model(
@@ -160,9 +158,8 @@ class MLFailurePredictor:
             statistical_baseline=statistical_baseline,
         )
 
-    def _resolve_models(self, requested: List[ModelType]) -> List[ModelType]:
-        """
-        Resolve requested models to those runnable.
+    def _resolve_models(self, requested: list[ModelType]) -> list[ModelType]:
+        """Resolve requested models to those runnable.
 
         Returns ALL requested models whose underlying library is installed
         (even if not yet trained — they will produce fallback predictions).
@@ -181,11 +178,7 @@ class MLFailurePredictor:
         # Filter to installed-but-maybe-untrained (they'll fallback gracefully)
         result = []
         for m in requested:
-            if m == ModelType.XGBOOST and self.registry.xgboost.is_available():
-                result.append(m)
-            elif m == ModelType.LSTM and self.registry.lstm.is_available():
-                result.append(m)
-            elif m == ModelType.COX_PH and self.registry.cox.is_available():
+            if (m == ModelType.XGBOOST and self.registry.xgboost.is_available()) or (m == ModelType.LSTM and self.registry.lstm.is_available()) or (m == ModelType.COX_PH and self.registry.cox.is_available()):
                 result.append(m)
             elif m in (ModelType.PROPHET, ModelType.LIGHTGBM,
                        ModelType.FALLBACK_STATISTICAL):
@@ -199,7 +192,7 @@ class MLFailurePredictor:
         asset: AssetFeatures,
         horizon: int,
         explain: bool,
-    ) -> tuple[MLPrediction, Optional[ModelExplanation]]:
+    ) -> tuple[MLPrediction, ModelExplanation | None]:
         """Run a single model and optionally generate explanation."""
         try:
             if model_type == ModelType.XGBOOST:
@@ -209,28 +202,27 @@ class MLFailurePredictor:
                     expl = self._explain_xgboost(asset)
                 return pred, expl
 
-            elif model_type == ModelType.LSTM:
+            if model_type == ModelType.LSTM:
                 pred = self.registry.lstm.to_prediction(asset, horizon)
                 expl = None
                 if explain and not pred.is_fallback:
                     expl = self._explain_lstm(asset)
                 return pred, expl
 
-            elif model_type == ModelType.COX_PH:
+            if model_type == ModelType.COX_PH:
                 pred = self.registry.cox.to_prediction(asset, horizon)
                 expl = None
                 if explain and not pred.is_fallback:
                     expl = self._explain_cox(asset)
                 return pred, expl
 
-            else:
-                logger.warning("Unknown model type: %s", model_type)
-                return MLPrediction(
-                    model_type=model_type,
-                    failure_probability=0.5,
-                    risk_level=RiskLevel.MEDIUM,
-                    is_fallback=True,
-                ), None
+            logger.warning("Unknown model type: %s", model_type)
+            return MLPrediction(
+                model_type=model_type,
+                failure_probability=0.5,
+                risk_level=RiskLevel.MEDIUM,
+                is_fallback=True,
+            ), None
 
         except Exception as exc:
             logger.error("Model %s failed: %s", model_type, exc)
@@ -241,7 +233,7 @@ class MLFailurePredictor:
                 is_fallback=True,
             ), None
 
-    def _explain_xgboost(self, asset: AssetFeatures) -> Optional[ModelExplanation]:
+    def _explain_xgboost(self, asset: AssetFeatures) -> ModelExplanation | None:
         """Generate SHAP explanation for XGBoost prediction."""
         try:
             xgb_model = self.registry.xgboost
@@ -255,7 +247,7 @@ class MLFailurePredictor:
             logger.warning("XGBoost explanation failed: %s", exc)
             return None
 
-    def _explain_lstm(self, asset: AssetFeatures) -> Optional[ModelExplanation]:
+    def _explain_lstm(self, asset: AssetFeatures) -> ModelExplanation | None:
         try:
             seq = self.registry.lstm.features_to_sequence(asset)
             return self.registry.shap.explain_lstm(seq)
@@ -263,7 +255,7 @@ class MLFailurePredictor:
             logger.warning("LSTM explanation failed: %s", exc)
             return None
 
-    def _explain_cox(self, asset: AssetFeatures) -> Optional[ModelExplanation]:
+    def _explain_cox(self, asset: AssetFeatures) -> ModelExplanation | None:
         try:
             cox_model = self.registry.cox
             if cox_model._model is None or not cox_model._hazard_ratios:
@@ -276,10 +268,9 @@ class MLFailurePredictor:
 
     @staticmethod
     def _combine_predictions(
-        predictions: List[MLPrediction],
-    ) -> tuple[float, RiskLevel, Optional[float]]:
-        """
-        Combine per-model predictions into ensemble.
+        predictions: list[MLPrediction],
+    ) -> tuple[float, RiskLevel, float | None]:
+        """Combine per-model predictions into ensemble.
 
         Weights (when available):
             - XGBoost: 0.45 (best for tabular features)
@@ -298,7 +289,7 @@ class MLFailurePredictor:
 
         weighted_sum = 0.0
         total_weight = 0.0
-        ttf_values: List[float] = []
+        ttf_values: list[float] = []
 
         for pred in predictions:
             if pred.is_fallback:
@@ -332,17 +323,18 @@ class MLFailurePredictor:
 
     def _compute_statistical_baseline(
         self, asset: AssetFeatures
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Cross-reference with fireai/analytics/predictive_maintenance.py
+    ) -> dict[str, Any] | None:
+        """Cross-reference with fireai/analytics/predictive_maintenance.py
         for deterministic baseline comparison.
         """
         try:
             # Import lazily to avoid circular imports
             from fireai.analytics.predictive_maintenance import (
                 AssetData,
-                AssetType as StatAssetType,
                 PredictiveMaintenance,
+            )
+            from fireai.analytics.predictive_maintenance import (
+                AssetType as StatAssetType,
             )
 
             # Map ML AssetType enum to statistical AssetType enum

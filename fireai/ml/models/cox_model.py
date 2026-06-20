@@ -1,5 +1,4 @@
-"""
-fireai/ml/models/cox_model.py — Cox Proportional Hazards Survival Model
+"""fireai/ml/models/cox_model.py — Cox Proportional Hazards Survival Model.
 =========================================================================
 
 Cox PH model for time-to-failure prediction using survival analysis.
@@ -14,6 +13,7 @@ References:
     - Cox, D.R. (1972) "Regression models and life-tables"
     - NFPA 72-2022 §14.4 (inspection cycles ≈ right-censoring)
     - IEC 61649 (Weibull + Cox PH for reliability)
+
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -35,21 +35,21 @@ logger = logging.getLogger(__name__)
 class CoxTrainingResult:
     model_version: str
     samples_used: int
-    metrics: Dict[str, float]
+    metrics: dict[str, float]
     trained_at: datetime
-    hazard_ratios: Dict[str, float]
+    hazard_ratios: dict[str, float]
 
 
 class CoxPHFailureModel:
     """Cox Proportional Hazards model using lifelines."""
 
-    def __init__(self, model_path: Optional[Path] = None) -> None:
+    def __init__(self, model_path: Path | None = None) -> None:
         self._model = None
         self._model_path = model_path
         self._model_version = "untrained"
         self._training_data_size = 0
-        self._last_trained_at: Optional[datetime] = None
-        self._hazard_ratios: Dict[str, float] = {}
+        self._last_trained_at: datetime | None = None
+        self._hazard_ratios: dict[str, float] = {}
         self._baseline_survival: Any = None
         self._feature_means: Any = None
         self._feature_stds: Any = None
@@ -70,7 +70,7 @@ class CoxPHFailureModel:
 
     def _features_to_cox_input(
         self, features: AssetFeatures
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Convert features to Cox PH input dictionary (standardized at train time)."""
         mtbf = features.mean_time_between_failures_days
         if mtbf is None or mtbf <= 0:
@@ -88,17 +88,17 @@ class CoxPHFailureModel:
 
     def train(
         self,
-        X: List[Dict[str, float]],
-        durations: List[float],
-        events: List[int],
+        X: list[dict[str, float]],
+        durations: list[float],
+        events: list[int],
     ) -> CoxTrainingResult:
-        """
-        Train Cox PH model.
+        """Train Cox PH model.
 
         Args:
             X: List of feature dicts (one per asset)
             durations: Time on observation (days)
             events: 1 if failure observed, 0 if censored
+
         """
         if not self.is_available():
             raise RuntimeError("lifelines not installed. Run: pip install lifelines")
@@ -149,7 +149,7 @@ class CoxPHFailureModel:
             hazard_ratios=self._hazard_ratios,
         )
 
-    def _hazard_ratios_dict(self) -> Dict[str, float]:
+    def _hazard_ratios_dict(self) -> dict[str, float]:
         if self._model is None:
             return {}
         return {
@@ -162,9 +162,8 @@ class CoxPHFailureModel:
 
     def predict(
         self, features: AssetFeatures, horizon_days: int = 90
-    ) -> Tuple[float, float, Dict[str, Any]]:
-        """
-        Predict failure probability and median survival time.
+    ) -> tuple[float, float, dict[str, Any]]:
+        """Predict failure probability and median survival time.
 
         Args:
             features: Asset feature vector
@@ -177,6 +176,7 @@ class CoxPHFailureModel:
         timeline point, which is by definition ~0, so failure_prob was ~1.0
         for every input). Now we use lifelines' `times=` argument to evaluate
         the survival function exactly at the requested horizon.
+
         """
         if self._model is None:
             raise RuntimeError("Model not trained")

@@ -1,5 +1,4 @@
-"""
-fireai/ml/feature_engineering.py — Feature Engineering for ML Models
+"""fireai/ml/feature_engineering.py — Feature Engineering for ML Models.
 =====================================================================
 
 Converts raw asset data + maintenance history into the AssetFeatures
@@ -17,7 +16,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
 
 from fireai.ml.schemas import (
     AssetFeatures,
@@ -52,7 +50,7 @@ class FeatureEngineer:
         asset_id: str,
         asset_type: AssetType,
         installation_date: datetime,
-        maintenance_history: List[MaintenanceEventInput],
+        maintenance_history: list[MaintenanceEventInput],
         manufacturer: str = "",
         model: str = "",
         location: str = "",
@@ -133,9 +131,9 @@ class FeatureEngineer:
 
     @staticmethod
     def _count_failures(
-        history: List[MaintenanceEventInput],
+        history: list[MaintenanceEventInput],
         now: datetime,
-        days: Optional[int],
+        days: int | None,
     ) -> int:
         """Count failure-type events within time window."""
         cutoff = now - timedelta(days=days) if days else datetime.min.replace(tzinfo=timezone.utc)
@@ -148,7 +146,7 @@ class FeatureEngineer:
 
     @staticmethod
     def _count_by_type(
-        history: List[MaintenanceEventInput],
+        history: list[MaintenanceEventInput],
         now: datetime,
         days: int,
         types: set,
@@ -162,8 +160,8 @@ class FeatureEngineer:
 
     @staticmethod
     def _compute_mtbf(
-        history: List[MaintenanceEventInput],
-    ) -> Optional[float]:
+        history: list[MaintenanceEventInput],
+    ) -> float | None:
         """Compute mean time between failures in days."""
         failures = sorted(
             [e for e in history if e.maintenance_type.upper() in FAILURE_TYPES],
@@ -182,10 +180,10 @@ class FeatureEngineer:
 
     @staticmethod
     def _build_weekly_sequence(
-        history: List[MaintenanceEventInput],
+        history: list[MaintenanceEventInput],
         now: datetime,
         weeks: int,
-    ) -> List[int]:
+    ) -> list[int]:
         """Build weekly event count sequence (oldest → newest)."""
         # Initialize all weeks to 0
         sequence = [0] * weeks

@@ -1,5 +1,4 @@
-"""
-fireai/ml/models/lstm_model.py — LSTM Time-Series Failure Forecaster
+"""fireai/ml/models/lstm_model.py — LSTM Time-Series Failure Forecaster.
 =====================================================================
 
 LSTM neural network for predicting failure probability from
@@ -27,7 +26,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from fireai.ml.schemas import AssetFeatures, MLPrediction, ModelType, RiskLevel
 
@@ -42,19 +41,19 @@ INPUT_DIM = 1  # event count per week
 class LSTMTrainingResult:
     model_version: str
     samples_used: int
-    metrics: Dict[str, float]
+    metrics: dict[str, float]
     trained_at: datetime
 
 
 class LSTMFailureModel:
     """LSTM-based failure probability predictor."""
 
-    def __init__(self, model_path: Optional[Path] = None) -> None:
+    def __init__(self, model_path: Path | None = None) -> None:
         self._model = None
         self._model_path = model_path
         self._model_version = "untrained"
         self._training_data_size = 0
-        self._last_trained_at: Optional[datetime] = None
+        self._last_trained_at: datetime | None = None
 
         if model_path and model_path.exists():
             try:
@@ -96,9 +95,8 @@ class LSTMFailureModel:
 
         return _FailureLSTM()
 
-    def features_to_sequence(self, features: AssetFeatures) -> List[List[float]]:
-        """
-        Convert AssetFeatures.recent_event_counts to fixed-length sequence.
+    def features_to_sequence(self, features: AssetFeatures) -> list[list[float]]:
+        """Convert AssetFeatures.recent_event_counts to fixed-length sequence.
         Pads with zeros if shorter than SEQUENCE_LENGTH.
         """
         seq = list(features.recent_event_counts or [])
@@ -112,8 +110,8 @@ class LSTMFailureModel:
 
     def train(
         self,
-        sequences: List[List[List[float]]],
-        labels: List[int],
+        sequences: list[list[list[float]]],
+        labels: list[int],
     ) -> LSTMTrainingResult:
         """Train LSTM on weekly event sequences."""
         if not self.is_available():
@@ -123,7 +121,6 @@ class LSTMFailureModel:
         if len(sequences) < 20:
             raise ValueError(f"Need >= 20 samples for LSTM, got {len(sequences)}")
 
-        import numpy as np
         import torch
         import torch.nn as nn
         from torch.utils.data import DataLoader, TensorDataset
@@ -138,7 +135,7 @@ class LSTMFailureModel:
         optimizer = torch.optim.Adam(self._model.parameters(), lr=0.001)
 
         self._model.train()
-        for epoch in range(50):
+        for _epoch in range(50):
             for batch_X, batch_y in loader:
                 optimizer.zero_grad()
                 outputs = self._model(batch_X)
@@ -164,7 +161,7 @@ class LSTMFailureModel:
             trained_at=self._last_trained_at,
         )
 
-    def predict(self, features: AssetFeatures) -> Tuple[float, Dict[str, Any]]:
+    def predict(self, features: AssetFeatures) -> tuple[float, dict[str, Any]]:
         """Predict failure probability from weekly event sequence."""
         if self._model is None:
             raise RuntimeError("Model not trained")

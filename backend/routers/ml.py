@@ -1,5 +1,4 @@
-"""
-backend/routers/ml.py — ML Subsystem API Router
+"""backend/routers/ml.py — ML Subsystem API Router.
 ==================================================
 
 Exposes ML-based predictive maintenance via FastAPI endpoints.
@@ -32,7 +31,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, List
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 
@@ -77,12 +76,11 @@ def get_registry() -> MLModelRegistry:
 # ── Audit Trail Integration ─────────────────────────────────────────────────
 
 def _write_audit_entry(
-    request_payload: Dict[str, Any],
-    response_payload: Dict[str, Any],
+    request_payload: dict[str, Any],
+    response_payload: dict[str, Any],
     caller_role: str = "unknown",
 ) -> str:
-    """
-    Write an immutable audit entry for an ML prediction.
+    """Write an immutable audit entry for an ML prediction.
 
     Returns the audit_trail_id (UUID4) — callers MUST set it on the response.
 
@@ -120,7 +118,7 @@ def _write_audit_entry(
     return audit_id
 
 
-def _get_caller_role(request: Request, x_api_key: Optional[str]) -> str:
+def _get_caller_role(request: Request, x_api_key: str | None) -> str:
     """Extract caller role from request state (set by ApiKeyMiddleware)."""
     # ApiKeyMiddleware sets scope["fireai_role"] — see backend/security_middleware.py
     role = getattr(request.state, "fireai_role", None) if hasattr(request, "state") else None
@@ -155,11 +153,10 @@ async def health_check() -> dict:
 async def predict_failure(
     request: MLPredictionRequest,
     http_request: Request,
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
     predictor: MLFailurePredictor = Depends(get_predictor),
 ) -> MLPredictionResponse:
-    """
-    Predict asset failure probability using ML ensemble.
+    """Predict asset failure probability using ML ensemble.
 
     Returns ensemble prediction + per-model predictions + SHAP explanations.
     All predictions are ADVISORY — NFPA 72 deterministic rules remain
@@ -194,11 +191,11 @@ async def predict_failure(
     status_code=status.HTTP_200_OK,
 )
 async def predict_failures_batch(
-    requests: List[MLPredictionRequest],
+    requests: list[MLPredictionRequest],
     http_request: Request,
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
     predictor: MLFailurePredictor = Depends(get_predictor),
-) -> List[MLPredictionResponse]:
+) -> list[MLPredictionResponse]:
     """Run predictions for multiple assets (batch mode). Each gets its own audit entry."""
     if len(requests) > 100:
         raise HTTPException(
@@ -207,7 +204,7 @@ async def predict_failures_batch(
         )
 
     caller_role = _get_caller_role(http_request, x_api_key)
-    results: List[MLPredictionResponse] = []
+    results: list[MLPredictionResponse] = []
 
     for req in requests:
         response = predictor.predict(req)
@@ -258,11 +255,10 @@ async def list_models(
 async def train_model(
     request: TrainingRequest,
     http_request: Request,
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
     registry: MLModelRegistry = Depends(get_registry),
 ) -> TrainingResponse:
-    """
-    Trigger model retraining on historical data.
+    """Trigger model retraining on historical data.
 
     RBAC: Requires admin role. Caller role is checked via the same
     ApiKeyMiddleware that sets request.state.fireai_role. We refuse

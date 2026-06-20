@@ -1,5 +1,4 @@
-"""
-fireai/ml/schemas.py — Pydantic schemas for ML subsystem
+"""fireai/ml/schemas.py — Pydantic schemas for ML subsystem.
 ==========================================================
 
 All ML inputs/outputs are typed for FastAPI integration.
@@ -10,10 +9,9 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, confloat, conint
-
 
 # ── Enums (mirror fireai/analytics/predictive_maintenance.py for compat) ─────
 
@@ -38,6 +36,7 @@ class RiskLevel(str, Enum):
 
 class ModelType(str, Enum):
     """Which ML model produced the prediction."""
+
     XGBOOST = "XGBOOST"
     LIGHTGBM = "LIGHTGBM"
     LSTM = "LSTM"
@@ -51,6 +50,7 @@ class ModelType(str, Enum):
 
 class MaintenanceEventInput(BaseModel):
     """A single maintenance/test/failure event for an asset."""
+
     event_id: str
     maintenance_type: str = Field(
         ..., description="INSPECTION | TEST | REPAIR | REPLACEMENT | CALIBRATION | FAILURE"
@@ -61,12 +61,12 @@ class MaintenanceEventInput(BaseModel):
 
 
 class AssetFeatures(BaseModel):
-    """
-    Feature vector for ML-based failure prediction.
+    """Feature vector for ML-based failure prediction.
 
     All features are normalised to be model-agnostic so the same vector
     can be fed to XGBoost, LSTM, Prophet, or Cox PH.
     """
+
     asset_id: str
     asset_type: AssetType
     installation_date: datetime
@@ -85,25 +85,26 @@ class AssetFeatures(BaseModel):
     maintenance_count_365d: conint(ge=0) = 0
     inspection_count_90d: conint(ge=0) = 0
     repair_ratio_365d: confloat(ge=0.0, le=1.0) = 0.0
-    mean_time_between_failures_days: Optional[float] = None
+    mean_time_between_failures_days: float | None = None
     environment_factor: confloat(ge=0.0, le=1.0) = 1.0
     is_battery: bool = False
     is_outdoor: bool = False
 
     # Time-series features (for LSTM/Prophet)
-    recent_event_counts: List[conint(ge=0)] = Field(
+    recent_event_counts: list[conint(ge=0)] = Field(
         default_factory=list,
         description="Weekly event counts for last 52 weeks (LSTM/Prophet input)"
     )
 
     # Raw history (for survival analysis)
-    maintenance_history: List[MaintenanceEventInput] = Field(default_factory=list)
+    maintenance_history: list[MaintenanceEventInput] = Field(default_factory=list)
 
 
 class MLPredictionRequest(BaseModel):
     """Request body for /api/ml/predictive-maintenance/predict."""
+
     asset: AssetFeatures
-    models: List[ModelType] = Field(
+    models: list[ModelType] = Field(
         default=[ModelType.XGBOOST, ModelType.COX_PH],
         description="Which models to run. ENSEMBLE combines all available."
     )
@@ -120,20 +121,20 @@ class MLPredictionRequest(BaseModel):
 # ── Output schemas ───────────────────────────────────────────────────────────
 
 class ModelExplanation(BaseModel):
-    """
-    SHAP-based explanation for a single model's prediction.
+    """SHAP-based explanation for a single model's prediction.
 
     Critical for safety-critical systems: every ML prediction MUST
     carry an explanation traceable to NFPA 72 audit requirements.
     """
+
     model_type: ModelType
     base_value: float = Field(..., description="Expected prediction (mean)")
     prediction_value: float = Field(..., description="Actual prediction")
-    feature_contributions: Dict[str, float] = Field(
+    feature_contributions: dict[str, float] = Field(
         default_factory=dict,
         description="SHAP value per feature (positive = increases failure risk)"
     )
-    top_features: List[Dict[str, Any]] = Field(
+    top_features: list[dict[str, Any]] = Field(
         default_factory=list,
         description="Top 5 features by |SHAP|, sorted descending"
     )
@@ -144,11 +145,12 @@ class ModelExplanation(BaseModel):
 
 class MLPrediction(BaseModel):
     """A single model's prediction."""
+
     model_type: ModelType
     failure_probability: confloat(ge=0.0, le=1.0)
-    predicted_ttf_days: Optional[float] = None
-    confidence_lower: Optional[float] = None
-    confidence_upper: Optional[float] = None
+    predicted_ttf_days: float | None = None
+    confidence_lower: float | None = None
+    confidence_upper: float | None = None
     risk_level: RiskLevel
     is_fallback: bool = Field(
         default=False,
@@ -156,7 +158,7 @@ class MLPrediction(BaseModel):
     )
     model_version: str = ""
     training_data_size: int = 0
-    last_trained_at: Optional[datetime] = None
+    last_trained_at: datetime | None = None
 
 
 class MLPredictionResponse(BaseModel):
@@ -181,16 +183,16 @@ class MLPredictionResponse(BaseModel):
     # Ensemble (combined) prediction
     ensemble_failure_probability: confloat(ge=0.0, le=1.0)
     ensemble_risk_level: RiskLevel
-    ensemble_ttf_days: Optional[float] = None
+    ensemble_ttf_days: float | None = None
 
     # Per-model predictions
-    predictions: List[MLPrediction] = Field(default_factory=list)
+    predictions: list[MLPrediction] = Field(default_factory=list)
 
     # Explanations (one per model that produced one)
-    explanations: List[ModelExplanation] = Field(default_factory=list)
+    explanations: list[ModelExplanation] = Field(default_factory=list)
 
     # Cross-reference to existing statistical engine
-    statistical_baseline: Optional[Dict[str, Any]] = Field(
+    statistical_baseline: dict[str, Any] | None = Field(
         None,
         description="Output of fireai/analytics/predictive_maintenance.py for comparison"
     )
@@ -204,13 +206,14 @@ class MLPredictionResponse(BaseModel):
     )
 
     # Audit trail reference
-    audit_trail_id: Optional[str] = None
+    audit_trail_id: str | None = None
 
 
 # ── Training schemas ─────────────────────────────────────────────────────────
 
 class TrainingRequest(BaseModel):
     """Trigger model retraining on historical data."""
+
     model_type: ModelType
     force: bool = False
     min_samples: conint(ge=10) = 50
@@ -220,7 +223,7 @@ class TrainingResponse(BaseModel):
     model_type: ModelType
     status: str  # "success" | "skipped" | "failed"
     samples_used: int = 0
-    metrics: Dict[str, float] = Field(default_factory=dict)
+    metrics: dict[str, float] = Field(default_factory=dict)
     trained_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     model_version: str = ""
     message: str = ""

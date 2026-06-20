@@ -1,5 +1,4 @@
-"""
-fireai/ml/__init__.py — FireAI Machine Learning Subsystem
+"""fireai/ml/__init__.py — FireAI Machine Learning Subsystem.
 ============================================================
 
 ML-based predictive maintenance that COMPLEMENTS (not replaces) the existing
@@ -19,14 +18,15 @@ References:
     - NFPA 72-2022 §14.4 (Inspection, testing, maintenance)
     - IEC 61508 (Functional safety — ML explainability requirements)
     - Libraries curated from awesome-machine-learning (josephmisiti/awesome-machine-learning)
+
 """
 
+from fireai.ml.explainers.shap_explainer import SHAPExplainer
 from fireai.ml.predictive_maintenance import (
     MLFailurePredictor,
-    MLPrediction,
     MLModelRegistry,
+    MLPrediction,
 )
-from fireai.ml.explainers.shap_explainer import SHAPExplainer
 from fireai.ml.schemas import (
     AssetFeatures,
     MLPredictionRequest,
@@ -41,16 +41,16 @@ from fireai.ml.schemas import (
 __version__ = "1.0.0"
 
 __all__ = [
-    "MLFailurePredictor",
-    "MLPrediction",
-    "MLModelRegistry",
-    "SHAPExplainer",
     "AssetFeatures",
+    "MLFailurePredictor",
+    "MLModelRegistry",
+    "MLPrediction",
     "MLPredictionRequest",
     "MLPredictionResponse",
     "ModelExplanation",
     "ModelType",
     "RiskLevel",
+    "SHAPExplainer",
     "TrainingRequest",
     "TrainingResponse",
     "__version__",
