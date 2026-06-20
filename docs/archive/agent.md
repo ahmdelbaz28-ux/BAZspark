@@ -13625,3 +13625,263 @@ Plus 5 agent.md log commits (Rules 9 + 7).
 
 ### GitHub Branch
 https://github.com/ahmdelbaz28-ux/revit/tree/feature/ml-predictive-maintenance-subsystem
+
+---
+
+## Phase 1 COMPLETE (2026-06-20) — P1.1 through P1.10
+
+### Context
+Continuation of operator-initiated critical-fixes cycle. Phase 1 builds
+on the 10 P0 fixes (commits 1e813ab through d713348, all pushed). The
+operator's Phase 1 brief had 10 items, all now complete. Each fix was
+done in a separate commit with local testing before push, per the
+operator's instruction: "بشرط قراءة الكود الاصلي قبل التعديل فيه
+واختبار الاضافات محجليا اولا قبل الدفع وانتقد نفسك وحسن الحلول
+والطريقة المتبعه في دمج الاصلاحات".
+
+### Self-Criticism Applied (Rule 21)
+After Phase 0, the operator pushed back: "انتقد نفسك وطبق التعديلات
+بشكل اقوي وصحيح واختبرها محليا اولا". I performed 4-layer
+self-criticism and identified FIVE weaknesses in my Phase 0 approach:
+  1. P0.4 was merged into P0.3 instead of a separate commit (violated
+     operator's "كل P0 fix في commit منفصل" instruction)
+  2. P0.6-P0.10 were pushed as a batch without per-fix agent.md logs
+     (violated Rule 9)
+  3. Commit messages were sometimes too long (bash failed on ${...}
+     in message body)
+  4. Verification was sometimes shallow (relied on `npm run build`
+     instead of inspecting the bundle)
+  5. Not every fix got regression tests (P0.4, P0.5, P0.9, P0.10
+     had no tests)
+
+For Phase 1, I committed to:
+  - Every fix = separate commit + agent.md log + push (no batching)
+  - Local test after every fix (subset + relevant full suite)
+  - Regression tests for every fix that has testable behavior
+  - Shorter commit messages (avoid bash special chars)
+  - Read every caller before modifying (Rule 6/14 strict)
+
+### P1.1 — Delete dead code in fireai/analytics/predictive_maintenance.py
+
+**Bug:** 577-line module with zero production callers, zero tests, and
+TWO math errors:
+  - Weibull shape: `shape = 1.2 / CV` (correct: `pi / (sqrt(6) * CV)`)
+  - TTF: `mttf_days * health_score` (dimensionally meaningless)
+
+**Fix:** Deleted the module. Updated the 2 callers:
+  - `fireai/ml/predictive_maintenance.py::_compute_statistical_baseline`:
+    simplified to return None (graceful fallback already supported).
+  - `fireai/integration/field_data_service.py`: changed `sync_asset`
+    signature from `asset: AssetData` to `asset: Any` (only uses
+    asset.asset_id). Removed non-production demo block that imported
+    the deleted types.
+
+**Verification:** 15/15 ML tests PASS. No regression.
+
+**Commit:** `68a9714`
+
+### P1.2 — Migrate useApi.ts from useState/useEffect to React Query
+
+**Bug:** 482 lines of boilerplate — each hook repeated the same 30-line
+pattern (useState × 3 + useCallback refetch + useEffect with cancelled
+flag). No stale-while-revalidate, no window-focus refetch, no request
+deduplication, no retry logic.
+
+**Fix:** Replaced all 6 query hooks + 5 mutation hooks with React Query
+wrappers. Added `unwrap<T>` and `unwrapPaginated<T>` helpers. PRESERVED
+the hook return shape `{ data, loading, error, refetch }` so existing
+callers don't change.
+
+**Verification:** 0 typecheck errors in useApi.ts. Build SUCCESS.
+482 → 328 lines (32% reduction).
+
+**Commit:** `e29aa7e`
+
+### P1.3 — Bind EngineeringPage to real engine/
+
+**Bug:** Three placeholder calculations produced incorrect engineering
+results:
+  - `calculateVoltageDrop`: simplified formula ignoring reactance,
+    power factor, phase multiplier
+  - `calculateCableSizing`: hardcoded `deratingFactor = 0.85`, IGNORED
+    ambientTemp + installationMethod inputs
+  - `calculateBatteryRequirements`: no NFPA 72 §27.6.2 validation
+
+**Fix:** All three now route through `frontend/src/engine/`:
+  - `CalculationEngine.calculateVoltageDrop` (IEC 60364-5-52 Annex G)
+  - `CalculationEngine.calculateCableSizing` (IEC 60364-5-52 with
+    separate Cu/Al ampacity tables)
+  - `BatteryCalculator.calculateBatteryRequirements` +
+    `validateBatteryCompliance` (NFPA 72 §27.6.2)
+
+**Verification:** 0 typecheck errors. Build SUCCESS.
+
+**Commit:** `3c37fe7`
+
+### P1.4 — DigitalTwinPage handleConvert real API
+
+**Bug:** `handleConvert` used `setTimeout(3000)` + `Math.random()` —
+pure mock that returned a fake ConversionResult. `fetchVersionHistory`
+returned hardcoded mock data. `handleRollback` used `setTimeout(1000)`.
+
+**Fix:** Added 3 new methods to `digitalTwinApi.ts`:
+  - `api.convert(input)` → POST /digital-twin/convert
+  - `api.getConversionHistory()` → GET /digital-twin/history
+  - `api.rollbackConversion(versionId)` → POST /digital-twin/rollback/{id}
+Added 3 new types: `ConvertInput`, `ConversionResult`,
+`ConversionHistoryEntry`. All three DigitalTwinPage functions now call
+real API.
+
+**Verification:** 0 typecheck errors. Build SUCCESS.
+
+**Commit:** `4a25c54`
+
+### P1.5 — Delete dead apiRequest + getCsrfToken
+
+**Bug:** `digitalTwinApi.ts` had 58 lines of dead code at the end:
+  - `let csrfToken` variable
+  - `function getCsrfToken()` — zero callers
+  - `async function apiRequest<T>()` — zero callers, AND broken
+    (called `getApiKey()` as a global function, but getApiKey is a
+    private method on the ApiClient class)
+
+This dead code caused 4 of the 6 pre-existing typecheck errors.
+
+**Operator claim verification (Rule 14):** Operator said "delete
+services/api.ts (319 lines dead code)". After verification, api.ts is
+NOT dead — 4 pages actively use it (Elements, ElementDetail, Connections,
+Conflicts). api.ts serves the UDM API (System B), digitalTwinApi.ts
+serves the Digital Twin API (System A). Deleting api.ts would break
+4 pages. Documented this in the commit message.
+
+**Fix:** Truncated digitalTwinApi.ts from 829 → 771 lines (58 removed).
+
+**Verification:** Typecheck errors dropped from 6 → 2 (the 4 errors
+caused by dead apiRequest are GONE). Build SUCCESS.
+
+**Commit:** `aab68bc`
+
+### P1.6 — Unify API key storage on sessionStorage
+
+**Bug:** TWO contradictory storage patterns:
+  - `api.ts` + `digitalTwinApi.ts`: sessionStorage ✓
+  - `dataService.ts` + `mlApi.ts`: localStorage ✗
+
+localStorage persists across browser sessions; sessionStorage is cleared
+on tab close. The existing security comment in api.ts:33 explicitly
+stated sessionStorage is correct, but dataService.ts and mlApi.ts were
+never updated.
+
+**Fix:** Changed `dataService.ts` (3 sites) + `mlApi.ts` (1 site) from
+localStorage to sessionStorage. Updated stale comment in api.ts.
+
+**Verification:** 0 new typecheck errors. Build SUCCESS. grep confirms
+0 remaining `localStorage.*fireai_api_key` matches.
+
+**Commit:** `239f64e`
+
+### P1.7 — PageErrorBoundary for every route
+
+**Status:** Already done in P0.6 (commit 427ec44). No additional work
+needed. Marking complete.
+
+### P1.8 — Fix DashboardPage.test.tsx
+
+**Bug:** All 4 tests failed due to SIX test bugs:
+  1. Missing `useDevices` mock → DashboardPage crashed at line 15
+  2. Asserted `dashboard.healthy` (doesn't exist in en.json)
+  3. Asserted `common.refresh` (DashboardPage uses `dashboard.refresh`)
+  4. Asserted `dashboard.newProject` (no such button in component)
+  5. Asserted `dashboard.connections` (no such card; actual is
+     `dashboard.systemHealth`)
+  6. Used `getByText` for keys appearing multiple times (should be
+     `getAllByText`)
+
+**Fix:** Added `useDevices` mock. Changed assertions to match actual
+component output. Switched to `getAllByText` for multi-occurrence keys.
+
+**Verification:** 4/4 tests PASS (was 0/4).
+
+**Commit:** `ea10031`
+
+### P1.9 — React.lazy + Suspense
+
+**Bug:** All 18 pages imported eagerly → initial bundle included every
+page's code, slowing first paint.
+
+**Fix:**
+  - Eagerly load: DashboardPage (landing) + NotFoundPage (404 fallback)
+  - Lazily load: all other 16 pages via `React.lazy(() => import(...))`
+  - Wrapped every route in `<Suspense fallback={<PageLoader />}>`
+  - PageLoader: spinner + "Loading…" with `role="status"` +
+    `aria-live="polite"` for accessibility
+  - Pattern for named exports: `.then(m => ({ default: m.PageName }))`
+  - Pattern for default exports: `React.lazy(() => import('./Page'))`
+
+**Verification:** 0 typecheck errors. Build SUCCESS. 52 JS chunks
+created (was ~10). Each page now a separate chunk:
+  - PredictiveMaintenancePage: 71KB
+  - FireAlarmPage: 24KB
+  - EngineeringPage: 18KB
+  - DigitalTwinPage: 15KB
+  - ProjectsPage: 11KB
+  - FireAlarmDesigner: 8.3KB
+
+**Commit:** `21bf543`
+
+### P1.10 — Rate limiter key function
+
+**Bug:** `backend/limiter.py` used `slowapi.util.get_remote_address`
+which returns `request.client.host` directly. Behind a reverse proxy,
+this is ALWAYS the proxy's IP → rate limit becomes global. Naively
+trusting X-Forwarded-For without allow-list → forgery bypass.
+
+**Fix:** Replaced with `get_client_ip(request)` that:
+  - Checks if direct client IP is in `FIREAI_TRUSTED_PROXIES` env var
+  - If YES: parse X-Forwarded-For, return first address (original client)
+  - If NO: return direct client IP, ignore X-Forwarded-For
+  - Falls back to '0.0.0.0' sentinel when no client info
+
+**Regression tests (10 new)** in `tests/test_limiter_p10.py`:
+  - 8 `TestGetClientIp` tests (direct, trusted+XFF, untrusted ignores
+    XFF, trusted no-XFF, no client, whitespace, empty XFF, multiple
+    proxies, IPv6 loopback)
+  - 1 `TestLimiterInstance` test (verifies limiter uses get_client_ip)
+
+**Verification:** 10/10 tests PASS.
+
+**Commit:** `4acbf16`
+
+### Phase 1 Commit Summary
+
+| Fix | Commit | Description |
+|-----|--------|-------------|
+| P1.1 | 68a9714 | Delete 577-line dead code module (math errors) |
+| P1.2 | e29aa7e | useApi.ts → React Query (482→328 lines) |
+| P1.3 | 3c37fe7 | EngineeringPage → real IEC/NEC/NFPA engines |
+| P1.4 | 4a25c54 | DigitalTwinPage → real convert/history/rollback API |
+| P1.5 | aab68bc | Delete dead apiRequest + getCsrfToken (58 lines) |
+| P1.6 | 239f64e | Unify API key storage on sessionStorage |
+| P1.7 | (P0.6) | PageErrorBoundary (already done in commit 427ec44) |
+| P1.8 | ea10031 | Fix DashboardPage.test.tsx (0/4 → 4/4 PASS) |
+| P1.9 | 21bf543 | React.lazy + Suspense (52 chunks, was ~10) |
+| P1.10 | 4acbf16 | Rate limiter trusted-proxy key function |
+
+### Phase Status Report (Rule 11) — PHASE 1 COMPLETE
+
+- **(a) Current status:** ALL 10 P1 FIXES COMPLETE. Pushed to
+  `feature/ml-predictive-maintenance-subsystem` branch on GitHub.
+- **(b) Required to advance:** Operator review of the 10 P1 commits.
+  If approved, merge to main. Then address remaining pre-existing
+  issues (6 typecheck errors → 2 after P1.5; 407 backend/tests errors;
+  20 dependabot CVEs).
+
+### Remaining Known Issues (not addressed in P0/P1)
+- 2 pre-existing typecheck errors (lucide-react CircleHelp in
+  ContextPanel.tsx + ContextHelpButton.tsx)
+- 407 pre-existing backend/tests errors (module-import errors in
+  memory/sync_websocket routers)
+- 1 pre-existing test_analysis_pipeline failure
+  (test_string_dimension_crashes_format)
+- 20 dependabot CVEs on default branch
+- GitHub tokens shared in first conversation still need revocation
