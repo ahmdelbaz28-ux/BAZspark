@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Mermaid Diagram Renderer (adapted from Kittle)
+
+Integrated the `MermaidRenderer` component from
+[Kittle](https://github.com/TemRevil/Kittle) (open-source) into FireAI's
+frontend. This adds Mermaid.js diagram rendering with zoom/pan/fullscreen
+support — a feature previously missing from FireAI.
+
+#### What was adapted
+- `frontend/src/components/diagrams/MermaidRenderer.tsx` — adapted from
+  Kittle's `components/MermaidRenderer.tsx`
+- `frontend/src/pages/DiagramDemoPage.tsx` — new demo page with 6 diagram
+  types (flowchart, sequence, ER, state, ML architecture)
+- `frontend/src/components/diagrams/__tests__/MermaidRenderer.test.tsx` —
+  34 tests covering rendering, props, interactions, accessibility, theme,
+  edge cases, and debouncing
+
+#### Adaptation choices (not copy-paste)
+- Replaced `motion/react` (framer-motion) with CSS transitions — avoids
+  adding a new heavy dependency
+- Used shadcn/ui `cn()` utility for class merging
+- Used FireAI's slate-950 dark theme palette (not Kittle's zinc palette)
+- Added TypeScript strict-mode types via `import type { MermaidConfig }`
+- Added accessibility: `role="img"`, `role="dialog"`, `aria-modal`,
+  `aria-label` on all buttons
+- Added `data-testid` attributes for testability
+- Updated `vite.config.ts` to add `vendor-mermaid` chunk for code splitting
+
+#### Why only this component (not the whole Kittle app)
+Kittle is a client-side LLM chat tool. Dming it whole would violate
+FireAI's safety-critical architecture (advisory-only ML contract, server-
+side RBAC, deterministic NFPA 72 gates). Only the self-contained
+MermaidRenderer was adapted — it has zero relative imports and only
+depends on `mermaid` + `lucide-react` (already in FireAI).
+
+#### Test results
+- 34/34 unit tests passing (`MermaidRenderer.test.tsx`)
+- TypeScript: no new errors introduced (pre-existing errors in
+  ContextPanel.tsx and digitalTwinApi.ts are unchanged)
+- Build: succeeds with mermaid isolated in `vendor-mermaid` chunk (2.8MB /
+  758KB gzipped — large but loaded lazily)
+
+#### Route
+- `/diagram-demo` — visual QA page for engineers
+
 ### Fixed — ML Subsystem Critical Bug Fixes (Code Review Round 2)
 
 After a senior-ML-engineer code review identified 10 critical issues in the
