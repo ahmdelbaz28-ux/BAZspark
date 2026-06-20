@@ -487,6 +487,32 @@ class ApiClient {
   }
 
   // ============================================================================
+  // DIGITAL TWIN CONVERSION ENDPOINTS (P1.4 FIX)
+  // Backend: backend/routers/digital_twin.py
+  //   POST /digital-twin/convert    — bidirectional CAD/BIM conversion
+  //   GET  /digital-twin/history    — conversion history
+  //   POST /digital-twin/rollback/{version_id} — rollback to previous version
+  // ============================================================================
+
+  async convert(input: ConvertInput): Promise<ApiResponse<ConversionResult>> {
+    // Backend ConvertRequest uses snake_case fields.
+    return this.post<ConversionResult>('/digital-twin/convert', {
+      source_filepath: input.sourceFile,
+      target_filepath: input.targetFile,
+      conversion_type: input.conversionType,
+      template_path: input.templatePath,
+    });
+  }
+
+  async getConversionHistory(): Promise<ApiResponse<ConversionHistoryEntry[]>> {
+    return this.get<ConversionHistoryEntry[]>('/digital-twin/history');
+  }
+
+  async rollbackConversion(versionId: string): Promise<ApiResponse<void>> {
+    return this.post<void>('/digital-twin/rollback/' + encodeURIComponent(versionId));
+  }
+
+  // ============================================================================
   // EXPORT ENDPOINTS
   // ============================================================================
 
@@ -701,6 +727,39 @@ export interface HealthStatus {
   total_elements?: number;
   total_projects?: number;
   warning?: string;
+}
+
+// ============================================================================
+// DIGITAL TWIN CONVERSION TYPES (P1.4 FIX)
+// Backend: backend/routers/digital_twin.py + backend/services/digital_twin_service.py
+// ============================================================================
+
+export interface ConvertInput {
+  sourceFile: string;
+  targetFile: string;
+  conversionType: 'autocad_to_revit' | 'revit_to_autocad';
+  templatePath?: string;
+}
+
+export interface ConversionResult {
+  success: boolean;
+  source_file: string;
+  target_file: string;
+  elements_converted: number;
+  duration_seconds?: number | null;
+  errors: string[];
+  warnings: string[];
+  timestamp?: string;
+}
+
+export interface ConversionHistoryEntry {
+  version_id: string;
+  timestamp: string;
+  source_file: string;
+  target_file: string;
+  conversion_type: 'autocad_to_revit' | 'revit_to_autocad';
+  elements_count: number;
+  status: 'success' | 'failed' | 'rolled_back';
 }
 
 // ============================================================================
