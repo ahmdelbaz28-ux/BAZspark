@@ -122,12 +122,14 @@ const API_BASE =
 // /api/ml/* — 404. Now we use the full /api/v1/ml base.
 const ML_BASE = `${API_BASE.replace(/\/$/, '')}/ml`;
 
-// FIX: API key from env / localStorage — required by ApiKeyMiddleware
-// In production, this should come from a secure auth context (see useApi hook).
+// P1.6 FIX: API key from sessionStorage (was localStorage) to match the
+// unified storage pattern across all API clients. localStorage persists
+// across browser sessions; sessionStorage is cleared on tab close,
+// reducing the XSS attack window for the API key.
 function getApiKey(): string | null {
-  // Priority: localStorage (set at login) → env (dev only)
-  if (typeof window !== 'undefined' && window.localStorage) {
-    const stored = window.localStorage.getItem('fireai_api_key');
+  // Priority: sessionStorage (set at login) → env (dev only)
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    const stored = window.sessionStorage.getItem('fireai_api_key');
     if (stored) return stored;
   }
   return (import.meta as any).env?.VITE_API_KEY || null;
