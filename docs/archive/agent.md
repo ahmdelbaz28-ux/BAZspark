@@ -13250,3 +13250,145 @@ of a missing dependency.
   remaining Dockerfile concerns (healthcheck URL, COPY ordering). Then P0.5
   (CI pipeline: remove `|| true`, raise `cov-fail-under=70`, success job
   `if: success()`).
+
+---
+
+## P0.4 + P0.5 Fixes (2026-06-20) — Dockerfile facp/ fix + CI gates made real
+
+### Context
+Continuation of operator-initiated Phase 0 critical-fixes cycle. P0.4 and
+P0.5 done together because P0.4 (Dockerfile `facp/` → `facp_system/` +
+`facp_distributed/`) was largely addressed within P0.3's Dockerfile rewrite.
+P0.5 is the CI pipeline integrity fix. Base commit: 57d8489.
+
+### P0.4 — Dockerfile facp/ bug (CRITICAL — Deployment)
+
+**Bug:** `deploy/docker/Dockerfile.api:33` and `deploy/docker/Dockerfile.worker`
+both had `COPY --chown=fireai:fireai facp/ ./facp/`. The `facp/` directory
+does NOT exist in the repo — the real top-level directories are
+`facp_system/` and `facp_distributed/`. This would have caused `docker build`
+to fail with "COPY failed: file does not exist".
+
+**Root cause:** The Dockerfiles were written before the FACP system was
+split into `facp_system/` (single-node panel selection) and
+`facp_distributed/` (L1/L2/L3 distributed architecture). The Dockerfiles
+were never updated to match the new structure.
+
+**Fix:** Applied in P0.3 commit (b45e2ff). All three Dockerfiles
+(root + .api + .worker) now correctly copy `facp_system/` AND
+`facp_distributed/`. The main `Dockerfile` previously only copied
+`facp_system/` (missing `facp_distributed/`) — also fixed.
+
+**Verification:** `grep "facp\b\|facp/" Dockerfile deploy/docker/Dockerfile.*`
+returns only comment matches (P0.4 documentation), no actual `COPY facp/`
+commands.
+
+### P0.5 — CI gates made real (CRITICAL — CI/CD Integrity)
+
+**Bug:** `.github/workflows/ci.yml` had FOUR `|| true` escapes and ONE
+`if: always()` on the success job. Combined effect: the CI pipeline
+reported '✅ All Gates Passed' even when:
+- Test suite had 0% coverage (gate 2: `--cov-fail-under=5 || true`)
+- Property-based tests crashed (gate 3: `pytest ... || true`)
+- pip-audit found critical CVEs (gate 5: `pip-audit ... || true`)
+- npm audit found high-severity vulnerabilities (gate 5: `npm audit ... || true`)
+- ANY upstream gate failed (success job: `if: always()` ignored upstream status)
+
+This made the entire CI pipeline a no-op — every PR appeared green even
+with catastrophic regressions. In a safety-critical fire-protection system,
+this is unacceptable: a regression in NFPA 72 spacing logic (P0.1 territory)
+or audit-trail integrity (P0.8 territory) could ship to production without
+any gate catching it.
+
+**Root cause (Rule 17):** The `|| true` escapes were likely added during
+early development when the codebase was unstable, to keep CI "green"
+while work continued. They were never removed. The `if: always()` on
+the success job was probably added to "always show a summary" but
+silently turned the success badge into a lie.
+
+A half-solution would have been: "remove the `|| true` but keep
+`if: always()` so the summary still runs". Wrong — the summary would
+still print '✅ All Gates Passed' even after a failure. The root-cause
+fix removes BOTH: every `|| true` AND the `if: always()` on success.
+
+**Fix applied:**
+1. Gate 2 (test suite):
+   - Removed `|| true` — tests are now blocking
+   - Raised `--cov-fail-under` from 5% to 70% (matches pyproject.toml)
+   - Removed `-x` (early-exit on first failure) — we want ALL failures
+     in one run, not just the first
+2. Gate 3 (property-based tests):
+   - Removed `|| true` — hypothesis tests are now blocking
+3. Gate 5 (dependency audit):
+   - Removed `|| true` on pip-audit — CVEs now block the pipeline
+   - Removed `|| true` on npm audit — frontend CVEs now block
+   - Switched `pip-audit -r requirements.txt` → `pip-audit -r requirements.lock`
+     (the pinned lockfile from P0.3; requirements.txt no longer exists)
+4. Success job:
+   - Changed `if: always()` → `if: success()`. The success badge now
+     ONLY appears when all 6 upstream gates actually passed.
+5. Pipeline name:
+   - 'CI/CD Pipeline' → 'FireAI CI/CD Pipeline' (P0.10 identity unification)
+6. Header comment:
+   - Updated to reflect FireAI + NFPA 72-2022 context
+   - Listed all 6 gates with their post-P0.5 expectations
+7. Docker health probe (gate 6):
+   - Changed curl URL from `/health` → `/api/health` (canonical path per
+     `backend/app.py:524` — AHJ deployment probes use `/api/health`)
+8. Gate summary echo:
+   - Updated to reflect actual gate semantics ('coverage ≥ 70%',
+     'pip-audit + npm audit', etc.)
+
+**Intentional retention:**
+- `if: always()` on the 'Upload coverage report' step (line 117) is KEPT.
+  We want the coverage HTML artifact uploaded even when tests fail, so
+  developers can see what coverage looked like before the failure. This
+  is diagnostic, not a gate.
+
+**Verification (Rule 10):**
+- YAML parsed successfully (`yaml.safe_load`).
+- All 7 jobs present: static-analysis, test-suite, property-tests,
+  frontend-build, dependency-audit, docker-build, success.
+- `success.if: 'success()'` (was `'always()'`).
+- No `|| true` outside of comments (verified via grep).
+- The 4 remaining `|| true` matches are inside `# P0.5 FIX:` comments
+  documenting what was removed.
+
+### Self-Criticism Notes (Rule 21 — 4 Layers)
+**Layer 1 (Output):** Verified by YAML parse + grep for `|| true`. The
+fix removes the 'green CI lie' that has been hiding regressions since
+the early-development phase.
+
+**Layer 2 (Thinking):** Did NOT rationalize keeping `|| true` on
+security audit "to avoid noise from low-severity findings". The audit
+gate uses `--desc` (show descriptions) and `--audit-level=high` (npm)
+— these are already tuned to the right severity threshold. Any `|| true`
+on a security gate is a security bypass, period.
+
+**Layer 3 (Method):** The fix is root-cause: it changes the CI contract
+from "best effort, always green" to "strict, blocks on real failures".
+The coverage floor raise (5% → 70%) is calibrated to match the floor
+already declared in pyproject.toml — so the same number governs both
+local `pytest` runs and CI. Single source of truth.
+
+**Layer 4 (Commitment):** A green CI badge on a failing build is the
+worst kind of lie in a safety-critical system. It tells the engineer
+"ship it" when the code has a regression that could leave a building
+without fire-alarm coverage. Rule 12: "Wrong code in this system is
+catastrophic — it threatens human life." I would not be able to face
+the families if a regression shipped because CI said 'green' when it
+should have said 'red'.
+
+### Commit Information
+- **Commit hash:** `a9388c8`
+- **Files changed:** 1 (.github/workflows/ci.yml, +32/-18)
+- **Branch:** `feature/ml-predictive-maintenance-subsystem`
+- **GitHub link:** https://github.com/ahmdelbaz28-ux/revit/commit/a9388c8
+- **Pushed:** pending (will push after this agent.md commit)
+
+### Phase Status Report (Rule 11)
+- **(a) Current status:** P0.4 + P0.5 COMPLETE. 5 of 10 P0 fixes done.
+  CI pipeline is now a real gate, not a no-op.
+- **(b) Required to advance:** P0.6 — fix routing in frontend/src/App.tsx
+  + syntax error on line 30 (`const elpOpen` → `const [helpOpen`) +
+  add 5 missing routes + 404 fallback.
