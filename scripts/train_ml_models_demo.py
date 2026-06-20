@@ -26,7 +26,18 @@ from fireai.ml.schemas import (
 
 
 def generate_synthetic_assets(n: int = 200) -> list:
-    """Generate n synthetic asset records with maintenance history."""
+    """
+    Generate n synthetic asset records with maintenance history.
+
+    FIX (Critical Review #11): Cox PH duration semantics were wrong.
+    Previously: duration = age_days (age at prediction time).
+    Now: duration = time from installation to failure (if failed) or
+         to now (if censored / still operating).
+
+    This is the correct survival-analysis semantics: an asset that was
+    installed 5 years ago and failed after 3 years has duration=1095 days,
+    not 1825 days.
+    """
     random.seed(42)
     assets = []
     now = datetime.now(timezone.utc)
@@ -57,13 +68,41 @@ def generate_synthetic_assets(n: int = 200) -> list:
                 )
             )
 
-        # Determine label: did this asset fail in next 90d?
-        # Higher chance of failure if: old + many repairs + harsh env
+        # Determine label: did this asset fail?
+        # Stronger signal than before (was: 0.1 + 0.01*age_years + 0.15*n_repairs + env_factor)
+        # Now: realistic failure-probability curve that the model can actually learn.
+        # - Infant mortality: very low (1% chance in first year)
+        # - Steady-state: rises with age + repair history
+        # - Wear-out: sharp rise after design life
         age_years = (now - install_date).days / 365.25
         n_repairs = sum(1 for e in history if e.maintenance_type in ("REPAIR", "REPLACEMENT"))
-        env_factor = {"indoor": 0, "outdoor": 0.1, "corrosive": 0.3, "coastal": 0.2}.get(env, 0)
-        failure_prob = min(0.85, 0.1 + age_years * 0.01 + n_repairs * 0.15 + env_factor)
+        env_factor = {"indoor": 0.0, "outdoor": 0.10, "corrosive": 0.30, "coastal": 0.20}.get(env, 0.0)
+        design_life_years = 20.0 if asset_type != AssetType.BATTERY else 5.0
+        if age_years < 1:
+            failure_prob = 0.01  # infant mortality: very low
+        elif age_years < design_life_years * 0.5:
+            failure_prob = 0.05 + n_repairs * 0.20 + env_factor  # steady-state
+        elif age_years < design_life_years:
+            failure_prob = 0.20 + n_repairs * 0.20 + env_factor  # approaching wear-out
+        else:
+            # Wear-out phase: probability rises sharply with age past design life
+            wear_out_factor = (age_years - design_life_years) / design_life_years
+            failure_prob = min(0.95, 0.40 + wear_out_factor * 0.40 + n_repairs * 0.15 + env_factor)
+        failure_prob = min(0.95, max(0.01, failure_prob))
         failed = random.random() < failure_prob
+
+        # FIX: compute actual failure date (somewhere between install and now)
+        # For Cox PH, duration = (failure_date - install_date) if failed,
+        # else (now - install_date) for censored assets.
+        if failed:
+            # Failure happened at some point during the asset's life
+            age_days = (now - install_date).days
+            failure_offset_days = random.randint(int(age_days * 0.3), age_days)
+            failure_date = install_date + timedelta(days=failure_offset_days)
+            duration_days = float(failure_offset_days)
+        else:
+            # Censored at observation time (now)
+            duration_days = float((now - install_date).days)
 
         assets.append({
             "asset_type": asset_type,
@@ -73,6 +112,7 @@ def generate_synthetic_assets(n: int = 200) -> list:
             "failed": failed,
             "age_years": age_years,
             "n_repairs": n_repairs,
+            "duration_days": duration_days,  # FIX: correct Cox PH duration
         })
 
     return assets
@@ -112,9 +152,10 @@ def main() -> None:
             y_xgboost.append(1 if a["failed"] else 0)
 
             # Cox PH feature dict
+            # FIX: use duration_days (correct survival semantics) instead of age_days
             cox_model = CoxPHFailureModel()
             X_cox.append(cox_model._features_to_cox_input(feat))
-            durations.append(max(30, feat.age_days))
+            durations.append(max(30.0, a["duration_days"]))
             events.append(1 if a["failed"] else 0)
         except Exception as e:
             print(f"  ⚠ Skipped asset: {e}")

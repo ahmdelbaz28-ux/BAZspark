@@ -87,6 +87,7 @@ export const MLPredictionSchema = z.object({
 });
 
 export const MLPredictionResponseSchema = z.object({
+  enforcement_contract: z.string().default('advisory_only'),
   asset_id: z.string(),
   generated_at: z.string(),
   horizon_days: z.number().int(),
@@ -115,12 +116,31 @@ export type MLPredictionResponse = z.infer<typeof MLPredictionResponseSchema>;
 const API_BASE =
   (import.meta as any).env?.VITE_API_URL || '/api/v1';
 
-function stripV1(url: string): string {
-  // ML router is mounted at /api/ml, not /api/v1/ml
-  return url.replace(/\/api\/v1\/?$/, '/api').replace(/\/$/, '');
+// FIX: ML router is mounted under /api/v1/ml/* (registered via
+// _safe_include_router in backend/app.py with prefix="/api/v1", and the
+// router itself has prefix="/ml"). Previous code stripped /v1 which produced
+// /api/ml/* — 404. Now we use the full /api/v1/ml base.
+const ML_BASE = `${API_BASE.replace(/\/$/, '')}/ml`;
+
+// FIX: API key from env / localStorage — required by ApiKeyMiddleware
+// In production, this should come from a secure auth context (see useApi hook).
+function getApiKey(): string | null {
+  // Priority: localStorage (set at login) → env (dev only)
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const stored = window.localStorage.getItem('fireai_api_key');
+    if (stored) return stored;
+  }
+  return (import.meta as any).env?.VITE_API_KEY || null;
 }
 
-const ML_BASE = `${stripV1(API_BASE)}/ml`;
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const apiKey = getApiKey();
+  if (apiKey) {
+    headers['X-API-Key'] = apiKey;
+  }
+  return headers;
+}
 
 export interface PredictRequest {
   asset: AssetFeatures;
@@ -141,7 +161,7 @@ export async function predictFailure(
 
   const res = await fetch(`${ML_BASE}/predictive-maintenance/predict`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify(body),
   });
 
@@ -159,7 +179,9 @@ export async function checkMLHealth(): Promise<{
   available_models: string[];
   shap_available: boolean;
 }> {
-  const res = await fetch(`${ML_BASE}/predictive-maintenance/health`);
+  const res = await fetch(`${ML_BASE}/predictive-maintenance/health`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) {
     throw new Error(`ML health failed (${res.status})`);
   }
@@ -179,7 +201,9 @@ export async function listMLModels(): Promise<{
     reason: string;
   }>;
 }> {
-  const res = await fetch(`${ML_BASE}/predictive-maintenance/models`);
+  const res = await fetch(`${ML_BASE}/predictive-maintenance/models`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) {
     throw new Error(`ML models list failed (${res.status})`);
   }

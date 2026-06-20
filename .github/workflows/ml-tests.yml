@@ -1,8 +1,14 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# FireAI ML Subsystem — CI Pipeline
+# FireAI ML Subsystem — CI Pipeline (v2 with behavioral tests)
 # ═══════════════════════════════════════════════════════════════════════════
 # Dedicated CI for the fireai/ml/ predictive maintenance subsystem.
-# Runs ML-specific tests + verifies ML library compatibility.
+#
+# Gates:
+#   1. ML Test Suite (24 unit + 12 behavioral = 36 tests)
+#   2. ML Training Sanity (trains on synthetic data, verifies monotonicity)
+#   3. ML Library Compatibility (XGBoost, lifelines, SHAP, sklearn)
+#   4. ML Frontend Build (TypeScript + Vite)
+#   5. Static Analysis (safety boundary: no fireai.ml imports in fireai/core/)
 #
 # Triggers:
 #   - On push/PR when files under fireai/ml/, backend/routers/ml.py,
@@ -39,9 +45,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ── Gate 1: ML Unit & Integration Tests ───────────────────────────────────
+  # ── Gate 1: ML Unit + Behavioral Tests ────────────────────────────────────
   ml-test-suite:
-    name: "ML Test Suite"
+    name: "ML Test Suite (36 tests)"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -67,15 +73,14 @@ jobs:
           pip install -r requirements-ml.txt
           pip install pytest pytest-asyncio httpx
 
-      - name: Run ML unit + integration tests
+      - name: Run all ML tests (unit + behavioral)
         env:
           FIREAI_API_KEY: ci-test-key-${{ github.sha }}
           FIREAI_ENV: development
         run: |
           pytest tests/ml/ -v \
             --tb=short \
-            --junitxml=reports/ml-test-results.xml \
-            || exit 1
+            --junitxml=reports/ml-test-results.xml
 
       - name: Publish ML test results
         if: always()
@@ -93,7 +98,7 @@ jobs:
 
   # ── Gate 2: ML Model Training Sanity Check ────────────────────────────────
   ml-training-sanity:
-    name: "ML Training Sanity"
+    name: "ML Training + Monotonicity"
     runs-on: ubuntu-latest
     needs: ml-test-suite
 
@@ -116,6 +121,42 @@ jobs:
         run: |
           python scripts/train_ml_models_demo.py
 
+      - name: Verify monotonicity (15yo+failures > 1-day-old)
+        env:
+          FIREAI_API_KEY: ci-monotonicity-key-${{ github.sha }}
+        run: |
+          python -c "
+          import sys; sys.path.insert(0, '.')
+          from datetime import datetime, timedelta, timezone
+          from fireai.ml import MLFailurePredictor, MLPredictionRequest
+          from fireai.ml.feature_engineering import FeatureEngineer
+          from fireai.ml.schemas import AssetType, MaintenanceEventInput
+
+          fe = FeatureEngineer()
+          now = datetime.now(timezone.utc)
+          new = fe.build_features(asset_id='NEW', asset_type=AssetType.DETECTOR_SMOKE,
+            installation_date=now - timedelta(days=1), maintenance_history=[],
+            environment_rating='cleanroom', design_life_years=20.0)
+          old = fe.build_features(asset_id='OLD', asset_type=AssetType.DETECTOR_SMOKE,
+            installation_date=now - timedelta(days=365*15),
+            maintenance_history=[
+              MaintenanceEventInput(event_id='M1', maintenance_type='REPAIR', timestamp=now - timedelta(days=200)),
+              MaintenanceEventInput(event_id='M2', maintenance_type='REPAIR', timestamp=now - timedelta(days=60)),
+            ],
+            environment_rating='corrosive', design_life_years=10.0)
+
+          predictor = MLFailurePredictor()
+          r_new = predictor.predict(MLPredictionRequest(asset=new, explain=False))
+          r_old = predictor.predict(MLPredictionRequest(asset=old, explain=False))
+
+          print(f'NEW (1-day-old, cleanroom): {r_new.ensemble_failure_probability:.4f} ({r_new.ensemble_risk_level.value})')
+          print(f'OLD (15yo, 2 repairs, corrosive): {r_old.ensemble_failure_probability:.4f} ({r_old.ensemble_risk_level.value})')
+
+          assert r_old.ensemble_failure_probability > r_new.ensemble_failure_probability, \
+            f'MONOTONICITY FAILED: OLD ({r_old.ensemble_failure_probability}) must be > NEW ({r_new.ensemble_failure_probability})'
+          print('✓ Monotonicity check passed')
+          "
+
       - name: Upload trained model artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -125,7 +166,7 @@ jobs:
 
   # ── Gate 3: ML Library Compatibility Matrix ──────────────────────────────
   ml-library-compat:
-    name: "ML Library Compatibility"
+    name: "ML Library Compat"
     runs-on: ubuntu-latest
     needs: ml-test-suite
     strategy:
@@ -180,20 +221,50 @@ jobs:
         run: npm run build
         working-directory: frontend
 
+  # ── Gate 5: Safety Boundary Static Analysis ───────────────────────────────
+  safety-boundary-check:
+    name: "Safety Boundary (Advisory-Only Enforcement)"
+    runs-on: ubuntu-latest
+    needs: ml-test-suite
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify fireai.ml is NOT imported from deterministic code paths
+        run: |
+          echo "Checking that fireai.ml is not imported from fireai/core/ (safety boundary)..."
+          if grep -rln "from fireai.ml" fireai/core/ 2>/dev/null; then
+            echo "❌ FAIL: fireai/core/ contains fireai.ml imports (breaks advisory-only contract)"
+            exit 1
+          fi
+          echo "✓ fireai/core/ is clean"
+
+          echo "Checking that fireai.ml is not imported from fireai/rules_engine/..."
+          if [ -d fireai/rules_engine ]; then
+            if grep -rln "from fireai.ml" fireai/rules_engine/ 2>/dev/null; then
+              echo "❌ FAIL: fireai/rules_engine/ contains fireai.ml imports"
+              exit 1
+            fi
+            echo "✓ fireai/rules_engine/ is clean"
+          else
+            echo "✓ fireai/rules_engine/ does not exist (skip)"
+          fi
+
   # ── Success Summary ────────────────────────────────────────────────────────
   success:
     name: "✅ ML Subsystem CI Passed"
     runs-on: ubuntu-latest
-    needs: [ml-test-suite, ml-training-sanity, ml-library-compat, ml-frontend-build]
+    needs: [ml-test-suite, ml-training-sanity, ml-library-compat, ml-frontend-build, safety-boundary-check]
     if: always()
     steps:
       - name: Check all gates
         run: |
-          echo "ML Subsystem CI Summary:"
-          echo "========================"
-          echo "✅ ML Test Suite (24 tests)"
-          echo "✅ ML Training Sanity (synthetic data)"
-          echo "✅ ML Library Compatibility (XGBoost, lifelines, SHAP, sklearn)"
-          echo "✅ ML Frontend Build (TypeScript + Vite)"
+          echo "ML Subsystem CI Summary (v2):"
+          echo "================================"
+          echo "✅ Gate 1: ML Test Suite (36 tests)"
+          echo "✅ Gate 2: ML Training + Monotonicity verification"
+          echo "✅ Gate 3: ML Library Compatibility (XGBoost, lifelines, SHAP, sklearn)"
+          echo "✅ Gate 4: ML Frontend Build (TypeScript + Vite)"
+          echo "✅ Gate 5: Safety Boundary (no ML in deterministic paths)"
           echo ""
           echo "Pipeline completed successfully!"

@@ -160,46 +160,81 @@ class CoxPHFailureModel:
             )
         }
 
-    def predict(self, features: AssetFeatures) -> Tuple[float, float, Dict[str, Any]]:
+    def predict(
+        self, features: AssetFeatures, horizon_days: int = 90
+    ) -> Tuple[float, float, Dict[str, Any]]:
         """
         Predict failure probability and median survival time.
 
+        Args:
+            features: Asset feature vector
+            horizon_days: Prediction horizon (e.g. 90 = P(failure within 90 days))
+
         Returns:
-            (failure_probability_90d, median_survival_days, metadata)
+            (failure_probability_at_horizon, median_survival_days, metadata)
+
+        CRITICAL FIX (was: iloc[-1] returned survival at the last training
+        timeline point, which is by definition ~0, so failure_prob was ~1.0
+        for every input). Now we use lifelines' `times=` argument to evaluate
+        the survival function exactly at the requested horizon.
         """
         if self._model is None:
             raise RuntimeError("Model not trained")
         if not self.is_available():
             raise RuntimeError("lifelines not available at inference")
 
+        import numpy as np
         import pandas as pd
 
         feat = self._features_to_cox_input(features)
         df = pd.DataFrame([feat])
 
         # Apply same standardization as training
-        if hasattr(self, "_feature_means") and self._feature_means is not None:
+        if self._feature_means is not None and self._feature_stds is not None:
             for col in self._feature_means.index:
                 if col in df.columns:
                     df[col] = (df[col] - self._feature_means[col]) / self._feature_stds[col]
 
-        # Predict survival function at 90 days
-        sf = self._model.predict_survival_function(df)
-        survival_at_90 = float(sf.iloc[-1, 0]) if len(sf) > 0 else 1.0
-        failure_prob_90d = 1.0 - survival_at_90
+        # FIX: Use times=[horizon_days] to evaluate survival AT the horizon.
+        # Previously we took iloc[-1] which is the survival at the maximum
+        # observed training duration (always ~0 → failure_prob ~1.0).
+        try:
+            sf = self._model.predict_survival_function(df, times=[float(horizon_days)])
+            survival_at_horizon = float(sf.iloc[0, 0])
+        except Exception as exc:
+            logger.warning(
+                "Cox PH survival eval at horizon=%d failed: %s — falling back to median",
+                horizon_days, exc,
+            )
+            # Fallback: interpolate from full survival curve
+            sf_full = self._model.predict_survival_function(df)
+            timeline = sf_full.index.values
+            if len(timeline) > 0 and horizon_days >= float(timeline.min()):
+                survival_at_horizon = float(np.interp(horizon_days, timeline, sf_full.iloc[:, 0].values))
+            else:
+                survival_at_horizon = 1.0
+
+        # Clamp to [0, 1] for numerical safety
+        survival_at_horizon = max(0.0, min(1.0, survival_at_horizon))
+        failure_prob_horizon = 1.0 - survival_at_horizon
 
         # Predict median survival time
         try:
             median = self._model.predict_median(df)
             median_days = float(median.iloc[0]) if hasattr(median, "iloc") else float(median)
+            # Sanity: median must be positive finite
+            if not np.isfinite(median_days) or median_days <= 0:
+                median_days = None
         except Exception:
             median_days = None
 
-        return failure_prob_90d, median_days, {
+        return failure_prob_horizon, median_days, {
             "model_version": self._model_version,
             "training_data_size": self._training_data_size,
             "last_trained_at": self._last_trained_at,
             "hazard_ratios": self._hazard_ratios,
+            "horizon_days": horizon_days,
+            "survival_at_horizon": survival_at_horizon,
         }
 
     def to_prediction(
@@ -208,7 +243,8 @@ class CoxPHFailureModel:
         horizon_days: int = 90,
     ) -> MLPrediction:
         try:
-            proba, median_ttf, meta = self.predict(features)
+            # FIX: forward horizon_days to predict() (was: ignored, defaulted to 90)
+            proba, median_ttf, meta = self.predict(features, horizon_days=horizon_days)
             risk = self._classify_risk(proba)
             return MLPrediction(
                 model_type=ModelType.COX_PH,
@@ -239,6 +275,8 @@ class CoxPHFailureModel:
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "wb") as f:
             pickle.dump({
+                # Schema version — bump when format changes; load() refuses mismatched
+                "schema_version": 2,
                 "model": self._model,
                 "model_version": self._model_version,
                 "training_data_size": self._training_data_size,
@@ -252,13 +290,30 @@ class CoxPHFailureModel:
         import pickle
         with open(path, "rb") as f:
             data = pickle.load(f)
+
+        # Schema version check — refuse mismatched pickles (train/serve skew guard)
+        schema_version = data.get("schema_version", 1)
+        if schema_version < 2:
+            raise RuntimeError(
+                f"Cox PH pickle at {path} has schema_version={schema_version} "
+                f"(required >=2). Old pickles lack feature_means/feature_stds, "
+                f"which causes train/serve skew. Retrain with current code."
+            )
+
+        # Mandatory fields — refuse to load incomplete artifacts
+        if data.get("feature_means") is None or data.get("feature_stds") is None:
+            raise RuntimeError(
+                f"Cox PH pickle at {path} missing feature_means/feature_stds. "
+                f"Refusing to load — would silently skip standardization."
+            )
+
         self._model = data["model"]
         self._model_version = data["model_version"]
         self._training_data_size = data["training_data_size"]
         self._last_trained_at = data["last_trained_at"]
         self._hazard_ratios = data.get("hazard_ratios", {})
-        self._feature_means = data.get("feature_means")
-        self._feature_stds = data.get("feature_stds")
+        self._feature_means = data["feature_means"]
+        self._feature_stds = data["feature_stds"]
 
     @staticmethod
     def _classify_risk(probability: float) -> RiskLevel:

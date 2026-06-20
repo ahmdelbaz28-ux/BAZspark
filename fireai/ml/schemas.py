@@ -161,6 +161,19 @@ class MLPrediction(BaseModel):
 
 class MLPredictionResponse(BaseModel):
     """Full response: ensemble prediction + per-model breakdown + explanations."""
+
+    # CRITICAL SAFETY FIELD — consumers MUST read and respect this contract.
+    # Value is always "advisory_only" — ML outputs MUST NOT override NFPA 72
+    # deterministic rules. Static-analysis test enforces that fireai.ml is
+    # never imported from fireai/core/ or fireai/rules_engine/.
+    enforcement_contract: str = Field(
+        default="advisory_only",
+        description=(
+            "Safety contract. Always 'advisory_only'. Consumers MUST NOT use "
+            "this prediction to override deterministic NFPA 72 calculations."
+        ),
+    )
+
     asset_id: str
     generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     horizon_days: int = 90

@@ -24,6 +24,7 @@ Safety:
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -45,12 +46,24 @@ from fireai.ml.schemas import (
 logger = logging.getLogger(__name__)
 
 
+def _default_models_dir() -> Path:
+    """Resolve models dir from env var, falling back to CWD-relative path."""
+    env_val = os.getenv("FIREAI_ML_MODELS_DIR")
+    if env_val:
+        return Path(env_val)
+    # Default: <repo_root>/data/ml_models/ — works in any environment
+    return Path.cwd() / "data" / "ml_models"
+
+
 class MLModelRegistry:
     """Registry of available ML models with lazy loading."""
 
     def __init__(self, models_dir: Optional[Path] = None) -> None:
-        self.models_dir = models_dir or Path("/home/z/my-project/data/ml_models")
+        # FIX: was hardcoded to /home/z/my-project/data/ml_models (dev machine path)
+        # Now uses FIREAI_ML_MODELS_DIR env var, falling back to CWD-relative.
+        self.models_dir = models_dir or _default_models_dir()
         self.models_dir.mkdir(parents=True, exist_ok=True)
+        logger.debug("ML models directory: %s", self.models_dir)
 
         self._xgboost = XGBoostFailureModel(
             model_path=self.models_dir / "xgboost.pkl"

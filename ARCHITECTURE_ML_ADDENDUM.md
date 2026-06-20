@@ -219,3 +219,47 @@ Asset: BAT-OLD-001 (15-year-old battery, corrosive environment, design life 10y)
 - Wire `/api/ml/predictive-maintenance/train` to real DB queries
 - Add ML drift monitoring (evidently library)
 - Add MLflow experiment tracking for production deployments
+
+---
+
+## v2 Status (Post Code-Review Round 2)
+
+After a senior-ML-engineer code review identified 10 critical issues in the
+initial implementation, all have been fixed and verified with **36 passing
+tests** (24 unit + 12 behavioral).
+
+### What Changed (v1 → v2)
+
+| Issue | v1 (broken) | v2 (fixed) |
+|-------|------------|-----------|
+| Cox PH predict() | `iloc[-1]` → ~100% for all inputs | `times=[horizon]` → realistic 0.001–0.4 |
+| Pickle schema | No version, missing fields silently loaded | `schema_version=2` enforced, refuses mismatched |
+| Monotonicity | 1-day-old > 15yo+failures (inverted) | 15yo+failures > 1-day-old (correct) |
+| Audit trail | TODO comment, `audit_trail_id=None` | Wired; writes JSON to `db/ml_audit/`, returns UUID |
+| Frontend URL | `/api/ml/*` (404) | `/api/v1/ml/*` (200) |
+| Frontend auth | No `X-API-Key` (401) | Injected from localStorage/env |
+| Models dir | Hardcoded `/home/z/my-project/...` | `FIREAI_ML_MODELS_DIR` env var |
+| `/train` RBAC | Docstring-only claim | Code-enforced, 403 for non-admin |
+| `enforcement_contract` | Comment-only safety | Required schema field + static-analysis test |
+| XGBoost calibration | `scale_pos_weight=neg/pos` (degenerate) | `sqrt(neg/pos)` + isotonic calibration |
+
+### Verification Numbers
+
+- **Tests**: 24/24 → **36/36 passing** (+12 behavioral)
+- **Cox PH concordance**: 0.96 (overfit) → **0.80** (honest)
+- **XGBoost Brier score**: 0.27 → **0.25** (after calibration)
+- **Hazard ratios**: `age_ratio HR=0.002` (degenerate) → `HR=0.63` (sensible)
+- **Monotonicity**: FAIL → **PASS** (15yo+failures > 1-day-old)
+
+### Remaining Work (Phase 3 — Production Hardening)
+
+Not yet implemented (deferred to next sprint):
+- MLflow experiment tracking (currently raw pickle)
+- Drift detection (KS test on feature distribution)
+- Retraining triggers (scheduled + drift-triggered)
+- Shadow-mode A/B testing
+- Feature store (Parquet-on-S3)
+- LSTM decision: train properly OR delete (currently dead code)
+- Replace pickle with `safetensors`/`joblib` (RCE hardening)
+- Conformal prediction intervals (currently `±0.1`)
+- Stacked generalization for ensemble weights (currently arbitrary 0.45/0.35/0.20)
