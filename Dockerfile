@@ -19,18 +19,24 @@ FROM python:3.12-slim AS python-builder
 
 WORKDIR /build
 
-# python:3.12-slim does NOT include setuptools/wheel by default, but
-# many packages in requirements.txt need setuptools.build_meta as their
-# PEP 517 build backend. Install them into the SYSTEM Python (not /install)
-# so that pip can find them when building the requirements.
+# python:3.12-slim does NOT include setuptools/wheel by default, and the
+# bundled pip is old enough that its PEP 517 build isolation pulls in a
+# stale setuptools that uses pkgutil.ImpImporter (removed in Python 3.12).
 #
-# Pin setuptools>=68.0.0 — older versions use pkgutil.ImpImporter which
-# was removed in Python 3.12, causing:
-#   AttributeError: module 'pkgutil' has no attribute 'ImpImporter'
-RUN pip install --no-cache-dir "setuptools>=68.0.0" wheel
+# Fix: upgrade pip + setuptools + wheel to versions that support Python 3.12
+# BEFORE installing requirements. This ensures both:
+#   - System-level setuptools is new enough (--no-build-isolation path)
+#   - pip's build-isolation environment pulls a new setuptools automatically
+#     (newer pip defaults to setuptools>=68 for build isolation)
+RUN pip install --no-cache-dir --upgrade pip "setuptools>=68.0.0" wheel
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# Use --no-build-isolation so that pip uses the SYSTEM setuptools (which we
+# just upgraded to >=68) instead of creating an isolated environment with a
+# potentially stale setuptools. This is required for packages like
+# numpy==1.24.3 that don't have prebuilt wheels for Python 3.12 and must
+# be built from source.
+RUN pip install --no-cache-dir --prefix=/install --no-build-isolation -r requirements.txt
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────
 FROM python:3.12-slim
