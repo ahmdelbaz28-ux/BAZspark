@@ -346,8 +346,13 @@ jobs:
           load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # V133: Disable GHA cache — it was serving stale pip install
+          # layers after requirements.txt changed, causing the import
+          # check to fail on missing dependencies. The build is fast
+          # enough without cache (~3 min) and correctness > speed.
+          cache-from: ""
+          cache-to: ""
+          no-cache: true
 
       - name: Test Docker container
         run: |
