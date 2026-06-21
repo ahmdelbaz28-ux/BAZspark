@@ -14,4 +14,8 @@ lxml==4.9.3
 beautifulsoup4==4.12.2
 
 # Rate limiting (used by backend/limiter.py and backend/app.py)
+# slowapi depends on 'limits' which depends on 'packaging' — but
+# packaging is not auto-installed in the slim Docker image, so we
+# pin it explicitly.
 slowapi==0.1.9
+packaging>=23.0
