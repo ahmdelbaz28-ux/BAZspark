@@ -98,16 +98,28 @@ jobs:
           xargs -r -a reports/changed_py_files.txt ruff check \
             --no-cache --exit-non-zero-on-fix
 
-      - name: MyPy type check (changed files)
+      - name: MyPy type check (changed non-test files)
         if: steps.changed.outputs.count != '0'
         run: |
+          # Filter out test files — mypy's --exclude flag does NOT apply to
+          # files explicitly passed on the command line, so we filter here.
+          # Test files have legitimate untyped fixtures/params that would
+          # generate hundreds of false-positive errors.
+          grep -v -E '(test_|conftest|_test)\.py$' reports/changed_py_files.txt \
+            > reports/changed_py_files_no_tests.txt || true
+          NON_TEST_COUNT=$(grep -c '.' reports/changed_py_files_no_tests.txt || echo "0")
+          echo "Non-test changed Python files: $NON_TEST_COUNT"
+          if [ "$NON_TEST_COUNT" -eq 0 ]; then
+            echo "PASS: No non-test files to type-check"
+            exit 0
+          fi
           # --follow-imports=silent: don't report errors from imported modules,
           # only from the explicitly-listed changed files. Without this, mypy
           # follows imports and reports 500+ pre-existing errors in modules
           # the PR didn't touch.
-          xargs -r -a reports/changed_py_files.txt mypy \
+          xargs -r -a reports/changed_py_files_no_tests.txt mypy \
             --ignore-missing-imports --no-strict-optional \
-            --follow-imports=silent --exclude '.*test.*'
+            --follow-imports=silent
 
       - name: Bandit security scan (changed files)
         if: steps.changed.outputs.count != '0'
