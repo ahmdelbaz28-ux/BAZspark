@@ -380,26 +380,24 @@ class TestPredictFailure:
     ):
         """If shape ≤ 0.1, exponential model is used."""
         # Use monkeypatch so the mutation is automatically reverted after the test,
-        # even under parallel execution (pytest-xdist).
+        # even under parallel execution (pytest-xdist). No manual try/finally
+        # cleanup needed — monkeypatch.setitem is undone by pytest teardown.
         monkeypatch.setitem(
             PredictiveMaintenance.DEFAULT_WEIBULL,
             AssetType.DETECTOR_SMOKE,
             (0.05, 1000.0),
         )
-        try:
-            asset = AssetData(
-                asset_id="DEGEN",
-                asset_type=AssetType.DETECTOR_SMOKE,
-                installation_date=datetime.now(timezone.utc),
-            )
-            pred = pm.predict_failure([], asset)
-            assert pred.model_type == "exponential"
-            assert pred.mttf_days == pytest.approx(1000.0)
-            # Exponential: F(90) = 1 - exp(-90/scale) = 1 - exp(-0.09)
-            expected = 1.0 - math.exp(-90.0 / 1000.0)
-            assert pred.failure_probability_90d == pytest.approx(expected, rel=1e-3)
-        finally:
-            PredictiveMaintenance.DEFAULT_WEIBULL[AssetType.DETECTOR_SMOKE] = original
+        asset = AssetData(
+            asset_id="DEGEN",
+            asset_type=AssetType.DETECTOR_SMOKE,
+            installation_date=datetime.now(timezone.utc),
+        )
+        pred = pm.predict_failure([], asset)
+        assert pred.model_type == "exponential"
+        assert pred.mttf_days == pytest.approx(1000.0)
+        # Exponential: F(90) = 1 - exp(-90/scale) = 1 - exp(-0.09)
+        expected = 1.0 - math.exp(-90.0 / 1000.0)
+        assert pred.failure_probability_90d == pytest.approx(expected, rel=1e-3)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
