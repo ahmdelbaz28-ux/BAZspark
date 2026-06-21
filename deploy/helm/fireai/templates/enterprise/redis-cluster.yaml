@@ -112,6 +112,10 @@ spec:
               containerPort: 16379
               protocol: TCP
           env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -141,16 +145,6 @@ spec:
                 --maxmemory 512mb \
                 --maxmemory-policy allkeys-lru \
                 --requirepass "$REDIS_PASSWORD"
-          env:
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.redisCluster.existingSecret }}
-                  key: {{ .Values.redisCluster.existingSecretPasswordKey }}
           resources:
             {{- toYaml .Values.redisCluster.resources | nindent 12 }}
           livenessProbe:

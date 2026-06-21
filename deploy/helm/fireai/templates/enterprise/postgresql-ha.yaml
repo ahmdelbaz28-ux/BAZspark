@@ -124,8 +124,6 @@ spec:
       securityContext:
         fsGroup: 999  # postgres group in the official image
       serviceAccountName: {{ include "fireai.fullname" . }}-postgresql
-      {{- if .Values.postgresqlHA.walArchive.serviceAccountAnnotation }}
-      {{- end }}
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

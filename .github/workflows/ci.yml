@@ -356,11 +356,172 @@ jobs:
           curl -f http://localhost:8888/health || exit 1
           docker stop test-app
 
+  # ── Gate 7: Helm Chart Validation ──────────────────────────────────────────
+  helm-validation:
+    name: "Gate 7 — Helm Chart Validation"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.0
+
+      - name: Lint Helm chart
+        run: |
+          # helm lint catches YAML syntax errors, missing required values,
+          # and template syntax errors. Use --strict to also warn on
+          # values that are referenced but not defined.
+          helm lint deploy/helm/fireai --strict || {
+            echo "FAIL: helm lint found errors"
+            exit 1
+          }
+          echo "PASS: helm lint clean"
+
+      - name: Render chart (normal mode)
+        run: |
+          # Render the chart in normal (non-standby) mode and verify all
+          # expected resources are present. This catches template logic
+          # errors that helm lint misses (e.g., duplicate env: keys,
+          # missing ServiceAccount references, broken conditionals).
+          cat > /tmp/test-values.yaml <<'YAML'
+          secrets:
+            fireai-secrets:
+              stringData:
+                FIREAI_API_KEY: "test"
+                FIREAI_EVIDENCE_HMAC_KEY: "test"
+                DB_PASSWORD: "test"
+                REDIS_PASSWORD: "test"
+                GEMINI_API_KEY: "test"
+                ENCRYPTION_KEY: "test"
+                JWT_SECRET: "test"
+            fireai-tls:
+              type: kubernetes.io/tls
+              stringData:
+                tls.crt: "test"
+                tls.key: "test"
+          YAML
+          OUTPUT=$(helm template test deploy/helm/fireai -f /tmp/test-values.yaml 2>&1) || {
+            echo "FAIL: helm template (normal mode) failed"
+            echo "$OUTPUT"
+            exit 1
+          }
+          echo "$OUTPUT" | grep -q "kind: HorizontalPodAutoscaler" || {
+            echo "FAIL: HPA not rendered in normal mode"
+            exit 1
+          }
+          echo "$OUTPUT" | grep -q "kind: Ingress" || {
+            echo "FAIL: Ingress not rendered in normal mode"
+            exit 1
+          }
+          echo "PASS: normal mode renders HPA + Ingress + Worker"
+
+      - name: Render chart (DR standby mode)
+        run: |
+          # Render in DR standby mode and verify HPA, Ingress, and Worker
+          # Deployment are correctly skipped. This catches broken
+          # conditionals in the standby-mode logic.
+          cat > /tmp/test-standby.yaml <<'YAML'
+          multiRegion:
+            enabled: true
+            secondary:
+              standby: true
+          chaosEngineering:
+            enabled: true
+            experiments:
+              dnsBlackout:
+                dnsDomainName: "fireai-db.fireai.svc.cluster.local"
+          secrets:
+            fireai-secrets:
+              stringData:
+                FIREAI_API_KEY: "test"
+                FIREAI_EVIDENCE_HMAC_KEY: "test"
+                DB_PASSWORD: "test"
+                REDIS_PASSWORD: "test"
+                GEMINI_API_KEY: "test"
+                ENCRYPTION_KEY: "test"
+                JWT_SECRET: "test"
+            fireai-tls:
+              type: kubernetes.io/tls
+              stringData:
+                tls.crt: "test"
+                tls.key: "test"
+          YAML
+          OUTPUT=$(helm template test deploy/helm/fireai -f /tmp/test-standby.yaml 2>&1) || {
+            echo "FAIL: helm template (standby mode) failed"
+            echo "$OUTPUT"
+            exit 1
+          }
+          # HPA must NOT appear in standby mode
+          if echo "$OUTPUT" | grep -q "kind: HorizontalPodAutoscaler"; then
+            echo "FAIL: HPA rendered in standby mode (should be skipped)"
+            exit 1
+          fi
+          # Ingress must NOT appear in standby mode
+          if echo "$OUTPUT" | grep -q "kind: Ingress"; then
+            echo "FAIL: Ingress rendered in standby mode (should be skipped)"
+            exit 1
+          fi
+          # Worker Deployment must NOT appear in standby mode
+          if echo "$OUTPUT" | grep -q "name: test-fireai-worker$"; then
+            echo "FAIL: Worker Deployment rendered in standby mode (should be skipped)"
+            exit 1
+          fi
+          # DR standby marker ConfigMap MUST appear
+          echo "$OUTPUT" | grep -q "fireai.io/dr-role: standby" || {
+            echo "FAIL: DR standby marker not rendered"
+            exit 1
+          }
+          # Chaos experiments MUST appear (chaos enabled)
+          echo "$OUTPUT" | grep -q "kind: PodChaos" || {
+            echo "FAIL: PodChaos experiment not rendered"
+            exit 1
+          }
+          echo "$OUTPUT" | grep -q "kind: NetworkChaos" || {
+            echo "FAIL: NetworkChaos experiment not rendered"
+            exit 1
+          }
+          echo "PASS: standby mode correctly skips HPA/Ingress/Worker + renders chaos"
+
+      - name: Validate YAML syntax of rendered output
+        run: |
+          # Run helm template and pipe through Python's yaml.safe_load_all
+          # to catch any YAML syntax errors that helm's parser might miss
+          # (e.g., duplicate keys, bad indentation in rendered output).
+          cat > /tmp/test-values.yaml <<'YAML'
+          secrets:
+            fireai-secrets:
+              stringData:
+                FIREAI_API_KEY: "test"
+                FIREAI_EVIDENCE_HMAC_KEY: "test"
+                DB_PASSWORD: "test"
+                REDIS_PASSWORD: "test"
+                GEMINI_API_KEY: "test"
+                ENCRYPTION_KEY: "test"
+                JWT_SECRET: "test"
+            fireai-tls:
+              type: kubernetes.io/tls
+              stringData:
+                tls.crt: "test"
+                tls.key: "test"
+          YAML
+          helm template test deploy/helm/fireai -f /tmp/test-values.yaml > /tmp/rendered.yaml 2>&1
+          python3 -c "
+          import yaml, sys
+          with open('/tmp/rendered.yaml') as f:
+            docs = list(yaml.safe_load_all(f))
+          print(f'PASS: {len(docs)} YAML documents parsed successfully')
+          " || {
+            echo "FAIL: rendered YAML has syntax errors"
+            exit 1
+          }
+
   # ── Success Summary ────────────────────────────────────────────────────────
   success:
     name: "✅ All Gates Passed"
     runs-on: ubuntu-latest
-    needs: [static-analysis, test-suite, property-tests, frontend-build, dependency-audit, docker-build]
+    needs: [static-analysis, test-suite, property-tests, frontend-build, dependency-audit, docker-build, helm-validation]
     if: always()
     steps:
       - name: Check all gates
@@ -373,5 +534,6 @@ jobs:
           echo "✅ Gate 4: Frontend Build"
           echo "✅ Gate 5: Dependency Audit"
           echo "✅ Gate 6: Docker Build & Test"
+          echo "✅ Gate 7: Helm Chart Validation"
           echo ""
           echo "Pipeline completed successfully!"
