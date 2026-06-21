@@ -146,7 +146,7 @@ def analyze_results(results: list[dict[str, Any]]) -> dict[str, Any]:
             "p99": p99,
             "stdev": statistics.stdev(response_times) if len(response_times) > 1 else 0,
         },
-        "throughput_req_s": len(results) / (max(response_times) / 1000),
+        "throughput_req_s": len(results) / duration_seconds,
     }
 
     return summary
