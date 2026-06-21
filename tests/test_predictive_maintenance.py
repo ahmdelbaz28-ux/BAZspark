@@ -35,14 +35,11 @@ from fireai.analytics.predictive_maintenance import (
     AssetData,
     AssetHealth,
     AssetType,
-    FailurePrediction,
     MaintenanceEvent,
-    MaintenanceRecommendation,
     MaintenanceType,
     PredictiveMaintenance,
     RiskLevel,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures

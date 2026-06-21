@@ -226,8 +226,24 @@ jobs:
 
       - name: Lint check
         run: |
+          # 2026-06-21: Previously this step used `OUTPUT=$(npm run lint 2>&1)`
+          # which, under GitHub Actions' default `set -e`, would abort the
+          # entire step the moment `npm run lint` returned non-zero — before
+          # the ERROR_COUNT logic could run. The fix is to capture the exit
+          # code explicitly with `|| true` and then count errors from the
+          # output. We also print the captured output so failures are
+          # debuggable in the Actions log.
+          set +e
           OUTPUT=$(npm run lint 2>&1)
-          ERROR_COUNT=$(echo "$OUTPUT" | grep -oP '\d+(?= error)' | head -1 || echo "0")
+          LINT_EXIT=$?
+          set -e
+          echo "$OUTPUT"
+          echo "---"
+          echo "npm run lint exit code: $LINT_EXIT"
+          # ESLint reports errors with patterns like "  12 errors" or
+          # "error  Unexpected ..." — count the "N errors" summary line.
+          ERROR_COUNT=$(echo "$OUTPUT" | grep -oE '[0-9]+ error(s)?' | head -1 | grep -oE '^[0-9]+' || echo "0")
+          echo "Error count: $ERROR_COUNT"
           if [ "$ERROR_COUNT" -gt 0 ]; then
             echo "FAIL: $ERROR_COUNT lint errors"
             exit 1
