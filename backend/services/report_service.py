@@ -226,7 +226,7 @@ def generate_cable_sizing_report(connections: List[Dict[str, Any]]) -> Dict[str,
         "totalConnections": len(connections),
         "connections": [
             {
-                "id": c["id"],
+                "id": c.get("id"),
                 "cableSize": c["cableSize"],
                 "length": c["length"],
                 "type": c["type"],
