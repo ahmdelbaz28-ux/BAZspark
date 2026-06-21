@@ -316,12 +316,18 @@ class TestPredictFailure:
         # And battery has higher 90d failure probability
         assert bat_pred.failure_probability_90d > facp_pred.failure_probability_90d
 
-    def test_exponential_fallback_for_degenerate_shape(self, pm: PredictiveMaintenance):
+    def test_exponential_fallback_for_degenerate_shape(
+        self, pm: PredictiveMaintenance, monkeypatch: pytest.MonkeyPatch
+    ):
         """If shape ≤ 0.1, exponential model is used."""
-        # Patch the DEFAULT_WEIBULL to force a degenerate shape
-        original = PredictiveMaintenance.DEFAULT_WEIBULL[AssetType.DETECTOR_SMOKE]
+        # Use monkeypatch so the mutation is automatically reverted after the test,
+        # even under parallel execution (pytest-xdist).
+        monkeypatch.setitem(
+            PredictiveMaintenance.DEFAULT_WEIBULL,
+            AssetType.DETECTOR_SMOKE,
+            (0.05, 1000.0),
+        )
         try:
-            PredictiveMaintenance.DEFAULT_WEIBULL[AssetType.DETECTOR_SMOKE] = (0.05, 1000.0)
             asset = AssetData(
                 asset_id="DEGEN",
                 asset_type=AssetType.DETECTOR_SMOKE,
