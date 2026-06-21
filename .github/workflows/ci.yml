@@ -105,10 +105,18 @@ jobs:
           # files explicitly passed on the command line, so we filter here.
           # Test files have legitimate untyped fixtures/params that would
           # generate hundreds of false-positive errors.
-          grep -v -E '(test_|conftest|_test)\.py$' reports/changed_py_files.txt \
+          #
+          # Filter criteria (any one matches → file is a test file):
+          #   /tests/  — file is in a tests directory
+          #   test_    — filename starts with test_ (pytest convention)
+          #   _test.py — filename ends with _test.py (Go-style convention)
+          #   conftest — pytest shared fixture file
+          grep -v -E '(/tests/|/test/|test_|_test\.py$|conftest)' \
+            reports/changed_py_files.txt \
             > reports/changed_py_files_no_tests.txt || true
           NON_TEST_COUNT=$(grep -c '.' reports/changed_py_files_no_tests.txt || echo "0")
           echo "Non-test changed Python files: $NON_TEST_COUNT"
+          cat reports/changed_py_files_no_tests.txt
           if [ "$NON_TEST_COUNT" -eq 0 ]; then
             echo "PASS: No non-test files to type-check"
             exit 0
