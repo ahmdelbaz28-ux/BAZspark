@@ -23,7 +23,11 @@ WORKDIR /build
 # many packages in requirements.txt need setuptools.build_meta as their
 # PEP 517 build backend. Install them into the SYSTEM Python (not /install)
 # so that pip can find them when building the requirements.
-RUN pip install --no-cache-dir setuptools wheel
+#
+# Pin setuptools>=68.0.0 — older versions use pkgutil.ImpImporter which
+# was removed in Python 3.12, causing:
+#   AttributeError: module 'pkgutil' has no attribute 'ImpImporter'
+RUN pip install --no-cache-dir "setuptools>=68.0.0" wheel
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
