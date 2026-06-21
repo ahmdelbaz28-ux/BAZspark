@@ -7,7 +7,7 @@ name = "cad-bim-integration-platform"
 dynamic = ["version"]
 description = "Complete platform for AutoCAD and Revit integration with Digital Twin capabilities"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [{name = "FireAI Project", email = "contact@fireai.org"}]
 classifiers = [
@@ -94,7 +94,7 @@ Changelog = "https://github.com/fireai/platform/blob/main/CHANGELOG.md"
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py310']
 include = '\.pyi?$'
 
 [tool.mypy]
@@ -192,7 +192,7 @@ skips = ["B101", "B102"]  # Skip "assert used" and "exec used" for testing purpo
 
 [tool.ruff]
 line-length = 100
-target-version = "py38"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
