@@ -745,19 +745,60 @@ function getApiKey(): string | null {
   return null;
 }
 
-// Function to get CSRF token from meta tag or other source
-function getCsrfToken(): string | null {
+// V133 (2026-06-22): Fetch a fresh CSRF token from the backend.
+// The backend CSRFMiddleware handles GET /api/csrf-token and returns
+// { "csrf_token": "<43-char-token>" }. The token is one-time-use —
+// after each state-changing request, a new token must be fetched.
+// We cache the token in memory (csrfToken) and clear it after each use.
+async function fetchCsrfToken(): Promise<string | null> {
+  // If we already have a cached token, return it
   if (csrfToken) return csrfToken;
 
-  // Try to get from meta tag
+  try {
+    const response = await fetch('/api/csrf-token', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.csrf_token) {
+        csrfToken = data.csrf_token;
+        return csrfToken;
+      }
+    }
+  } catch {
+    // Network error or backend not available — fall through to meta tag
+  }
+
+  // Fallback: try meta tag (for server-rendered pages that embed the token)
   const tokenMeta = document.querySelector('meta[name="csrf-token"]');
   if (tokenMeta) {
     csrfToken = tokenMeta.getAttribute('content');
     return csrfToken;
   }
 
-  // If not found, return null
   return null;
+}
+
+// Function to get CSRF token — tries cache first, then fetches if needed.
+// This is async because it may need to call the backend.
+function getCsrfTokenSync(): string | null {
+  // Return cached token if available (sync path)
+  if (csrfToken) return csrfToken;
+
+  // Fallback: try meta tag (sync)
+  const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+  if (tokenMeta) {
+    csrfToken = tokenMeta.getAttribute('content');
+    return csrfToken;
+  }
+
+  return null;
+}
+
+// Clear the cached CSRF token after use (one-time-use tokens).
+function clearCsrfToken(): void {
+  csrfToken = null;
 }
 
 // Update the API request functions to include CSRF token
@@ -782,9 +823,10 @@ async function apiRequest<T>(
   }
 
   // Add CSRF token for state-changing requests
+  // V133: fetch token from backend if not cached, then clear after use
   const method = options.method || 'GET';
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-    const token = getCsrfToken();
+    const token = await fetchCsrfToken();
     if (token) {
       headers['X-CSRF-Token'] = token;
     }
@@ -795,6 +837,11 @@ async function apiRequest<T>(
       ...options,
       headers,
     });
+
+    // V133: Clear the CSRF token after use (one-time-use tokens)
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      clearCsrfToken();
+    }
 
     const data = await response.json();
     return {

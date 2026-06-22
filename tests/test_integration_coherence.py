@@ -165,6 +165,14 @@ class TestAPIEndpointMapping:
         # Extract just the paths from backend endpoints (strip HTTP method)
         backend_paths = {ep.split(" ", 1)[1] for ep in backend_endpoints}
 
+        # V133: Some paths are handled by middleware, not routers.
+        # CSRFMiddleware handles GET /api/csrf-token internally.
+        # Add these to the known-paths set so they don't trigger false positives.
+        middleware_handled_paths = {
+            "/api/csrf-token",  # CSRFMiddleware
+        }
+        backend_paths |= middleware_handled_paths
+
         # Check each frontend call — allow path params like /api/v1/projects/{id}
         unresolved: list[str] = []
         for call_url in frontend_calls:
