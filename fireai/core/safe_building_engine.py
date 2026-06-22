@@ -150,12 +150,17 @@ class SafeBuildingEngine:
                     "calc_time_sec": elapsed,
                 }
         except Exception as ex:
-<<<<<<< HEAD
-            logger.error(f"Safe Solver Failure upon {room_spec.get('room_id')}: {ex}")
-=======
-            logger.error("Safe Solver Failure upon %s: %s", room_spec.get("room_id", "UNK"), ex)
->>>>>>> c1d7fb42e6fb81df96dd0f01e9e06b9f73e295e1
-            return {"room_id": room_spec.get("room_id", "UNK"), "success": False, "status": "ERROR", "error": str(ex)}
+            logger.error(
+                "Safe Solver Failure upon %s: %s",
+                room_spec.get("room_id", "UNK"),
+                ex,
+            )
+            return {
+                "room_id": room_spec.get("room_id", "UNK"),
+                "success": False,
+                "status": "ERROR",
+                "error": str(ex),
+            }
 
     def run_multi_floor_safety_analysis(self, floor_spec_registry: List[Dict[str, Any]]) -> List[Dict]:
         """

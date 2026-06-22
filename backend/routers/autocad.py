@@ -96,6 +96,8 @@ def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException
 
 class ConnectRequest(BaseModel):
     """Request model for AutoCAD connection."""
+    # AutoCADService.connect() in this codebase does not accept these args.
+    # Kept for backward compatibility with older clients.
     visible: bool = True
     force_new: bool = False
 
@@ -198,7 +200,9 @@ async def connect_to_autocad(request: ConnectRequest) -> ConnectResponse:
     try:
         service = get_autocad_service()
 
-        if not service.connect(visible=request.visible, force_new=request.force_new):
+        connected = service.connect()
+
+        if not connected:
             raise HTTPException(
                 status_code=503,
                 detail="Failed to connect to AutoCAD. Is AutoCAD installed and running?",
