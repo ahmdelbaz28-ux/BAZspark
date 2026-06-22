@@ -1,0 +1,143 @@
+{{- if .Values.external.postgresql.ha.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "fireai.postgresql.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+spec:
+  serviceName: {{ include "fireai.postgresql.fullname" . }}-headless
+  replicas: {{ .Values.external.postgresql.ha.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "fireai.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgresql
+  template:
+    metadata:
+      labels:
+        {{- include "fireai.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: postgresql
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "fireai.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.external.postgresql.ha.podSecurityContext | nindent 8 }}
+      initContainers:
+      # Init container to configure PostgreSQL for HA
+      - name: postgres-init
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          echo "Initializing PostgreSQL configuration..."
+          mkdir -p /shared-config/postgresql
+          # Determine role based on pod index (first pod is master, others are replicas)
+          POD_INDEX=$(echo ${HOSTNAME} | sed 's/.*-\([0-9]*\)$/\1/')
+          if [ "$POD_INDEX" = "0" ]; then
+            echo "primary" > /shared-config/role
+            echo "Setting up primary PostgreSQL server..."
+          else
+            echo "replica" > /shared-config/role
+            echo "Setting up replica PostgreSQL server..."
+          fi
+        volumeMounts:
+        - name: shared-config
+          mountPath: /shared-config
+      containers:
+      - name: postgresql
+        securityContext:
+          {{- toYaml .Values.external.postgresql.ha.containerSecurityContext | nindent 10 }}
+        image: "{{ .Values.external.postgresql.ha.image.repository }}:{{ .Values.external.postgresql.ha.image.tag }}"
+        imagePullPolicy: {{ .Values.external.postgresql.ha.image.pullPolicy }}
+        ports:
+        - name: postgres
+          containerPort: 5432
+          protocol: TCP
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        - name: POSTGRES_DB
+          value: {{ .Values.external.postgresql.database | quote }}
+        - name: POSTGRES_USER
+          value: {{ .Values.external.postgresql.user | quote }}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "fireai.secret.name" . }}
+              key: DB_PASSWORD
+        - name: REPLICATION_USER
+          value: {{ .Values.external.postgresql.ha.replicationUser | quote }}
+        - name: REPLICATION_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "fireai.secret.name" . }}
+              key: REPLICATION_PASSWORD
+        # Set role dynamically based on pod index
+        - name: POSTGRESQL_ROLE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: shared-config
+          mountPath: /shared-config
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -h localhost -p 5432 -U {{ .Values.external.postgresql.user }}
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -h localhost -p 5432 -U {{ .Values.external.postgresql.user }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          {{- toYaml .Values.external.postgresql.ha.resources | nindent 10 }}
+      volumes:
+      - name: shared-config
+        emptyDir: {}
+      {{- with .Values.external.postgresql.ha.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.external.postgresql.ha.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.external.postgresql.ha.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.external.postgresql.ha.persistence.size }}
+      {{- if .Values.external.postgresql.ha.persistence.storageClassName }}
+      storageClassName: {{ .Values.external.postgresql.ha.persistence.storageClassName }}
+      {{- end }}
+{{- end }}

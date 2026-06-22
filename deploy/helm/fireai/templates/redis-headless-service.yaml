@@ -1,0 +1,23 @@
+{{- if .Values.redis.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fireai.redis.fullname" . }}-headless
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  clusterIP: None  # This makes it a headless service for StatefulSets
+  publishNotReadyAddresses: true
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+  - name: cluster
+    port: 16379
+    targetPort: 16379
+  selector:
+    {{- include "fireai.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+{{- end }}

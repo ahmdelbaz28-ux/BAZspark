@@ -99,15 +99,10 @@ jobs:
           pip install -e ".[dev]"
           pip install pytest pytest-cov pytest-asyncio hypothesis
 
-      - name: Run test suite with coverage
+      - name: Run tests with coverage
         run: |
-          pytest tests/ backend/tests/ -v \
-            --tb=short \
-            --cov=backend --cov=fireai --cov=core \
-            --cov-report=html:reports/coverage_html \
-            --cov-report=term-missing \
-            --cov-fail-under=5 \
-            -x || true
+          python -m pytest tests/ --cov=backend --cov-report=xml --cov-report=html --cov-fail-under=70 \
+          --disable-warnings
 
       - name: Upload coverage report
         if: always()

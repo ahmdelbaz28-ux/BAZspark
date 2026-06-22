@@ -1,0 +1,20 @@
+{{- if .Values.external.postgresql.ha.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fireai.postgresql.fullname" . }}-headless
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+spec:
+  clusterIP: None  # This makes it a headless service for StatefulSets
+  publishNotReadyAddresses: true
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: 5432
+  selector:
+    {{- include "fireai.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+{{- end }}

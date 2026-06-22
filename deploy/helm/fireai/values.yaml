@@ -347,11 +347,121 @@ external:
     port: 5432
     database: fireai
     user: fireai
+    # PostgreSQL HA configuration
+    ha:
+      enabled: true
+      replicaCount: 3  # 1 master + 2 replicas
+      mode: "streaming_replication"  # streaming_replication or patroni
+      replicationUser: "repl_user"
+      replicationPassword: ""
+      # Dynamic role assignment per pod
+      role: ""  # Will be set dynamically: master/replica based on pod index
+      persistence:
+        size: 20Gi
+        storageClass: ""
+      resources:
+        requests:
+          cpu: 500m
+          memory: 512Mi
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+      # PostgreSQL 16 compatibility - use new backup methods instead of pg_start_backup/pg_stop_backup
+      backup:
+        method: "pg_basebackup"  # pg_basebackup instead of deprecated pg_start_backup/pg_stop_backup
+        retention: "7d"
+        schedule: "0 1 * * *"  # Daily at 1 AM
   redis:
     enabled: true
     host: fireai-redis
     port: 6379
     db: 0
+    password: ""
+    # Redis cluster configuration
+    cluster:
+      enabled: true
+      replicaCount: 6  # 3 masters + 3 slaves (1:1 ratio)
+      persistence:
+        size: 10Gi
+        storageClass: ""
+      resources:
+        requests:
+          cpu: 250m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: false  # Need write access for cluster operations
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        capabilities:
+          drop:
+            - ALL
+      podSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      image:
+        repository: redis
+        tag: "7.2-alpine"
+        pullPolicy: IfNotPresent
+      bootstrap:
+        enabled: true
+        replicasPerMaster: 1  # For a 3-node cluster, this creates 3 masters + 3 slaves
+        image:
+          repository: redis
+          tag: "7.2-alpine"
+          pullPolicy: IfNotPresent
+        nodeSelector: {}
+        tolerations: []
+
+# ── Redis Configuration ──────────────────────────────────────────────────────
+redis:
+  enabled: true
+  replicaCount: {{ .Values.external.redis.cluster.replicaCount }}
+  image:
+    repository: {{ .Values.external.redis.image.repository }}
+    tag: {{ .Values.external.redis.image.tag }}
+    pullPolicy: {{ .Values.external.redis.image.pullPolicy }}
+  persistence:
+    size: {{ .Values.external.redis.cluster.persistence.size }}
+    {{- if .Values.external.redis.cluster.persistence.storageClass }}
+    storageClassName: {{ .Values.external.redis.cluster.persistence.storageClass }}
+    {{- end }}
+  resources:
+    requests:
+      cpu: {{ .Values.external.redis.cluster.resources.requests.cpu }}
+      memory: {{ .Values.external.redis.cluster.resources.requests.memory }}
+    limits:
+      cpu: {{ .Values.external.redis.cluster.resources.limits.cpu }}
+      memory: {{ .Values.external.redis.cluster.resources.limits.memory }}
+  securityContext:
+    allowPrivilegeEscalation: {{ .Values.external.redis.cluster.securityContext.allowPrivilegeEscalation }}
+    readOnlyRootFilesystem: {{ .Values.external.redis.cluster.securityContext.readOnlyRootFilesystem }}
+    runAsNonRoot: {{ .Values.external.redis.cluster.securityContext.runAsNonRoot }}
+    runAsUser: {{ .Values.external.redis.cluster.securityContext.runAsUser }}
+    runAsGroup: {{ .Values.external.redis.cluster.securityContext.runAsGroup }}
+    capabilities:
+      drop:
+        {{- toYaml .Values.external.redis.cluster.securityContext.capabilities.drop | nindent 8 }}
+  podSecurityContext:
+    runAsNonRoot: {{ .Values.external.redis.cluster.podSecurityContext.runAsNonRoot }}
+    runAsUser: {{ .Values.external.redis.cluster.podSecurityContext.runAsUser }}
+    runAsGroup: {{ .Values.external.redis.cluster.podSecurityContext.runAsGroup }}
+    fsGroup: {{ .Values.external.redis.cluster.podSecurityContext.fsGroup }}
+  clusterBootstrap:
+    enabled: {{ .Values.external.redis.cluster.bootstrap.enabled }}
+    replicasPerMaster: {{ .Values.external.redis.cluster.bootstrap.replicasPerMaster }}
+    image:
+      repository: {{ .Values.external.redis.cluster.bootstrap.image.repository }}
+      tag: {{ .Values.external.redis.cluster.bootstrap.image.tag }}
+      pullPolicy: {{ .Values.external.redis.cluster.bootstrap.image.pullPolicy }}
+  nodeSelector: {{ .Values.external.redis.cluster.bootstrap.nodeSelector }}
+  tolerations: {{ .Values.external.redis.cluster.bootstrap.tolerations }}
 
 # ── Monitoring ───────────────────────────────────────────────────────────────
 monitoring:

@@ -12,15 +12,112 @@
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+const CSRF_API_BASE_URL = import.meta.env.VITE_API_URL || '/api'; // CSRF endpoint is at root level
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
+
+// CSRF token storage and management
+let csrfToken: string | null = null;
+let csrfTokenExpiry: number | null = null;
 
 // Add the missing getApiKey function
 function getApiKey(): string {
   // You can implement your API key retrieval logic here
   // For example, from environment variables, localStorage, or a secure store
   return localStorage.getItem('api_key') || import.meta.env.VITE_API_KEY || '';
+}
+
+// Function to fetch a new CSRF token from the backend
+async function fetchCsrfToken(): Promise<string> {
+  try {
+    const response = await fetch(`${CSRF_API_BASE_URL}/csrf-token`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': getApiKey(),
+      },
+      credentials: 'include' // Include cookies if needed for session management
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch CSRF token: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.csrf_token;
+  } catch (error) {
+    console.error('Error fetching CSRF token:', error);
+    throw error;
+  }
+}
+
+// Function to get a valid CSRF token (with caching and refresh logic)
+async function getValidCsrfToken(): Promise<string> {
+  // If we have a token that hasn't expired, return it
+  if (csrfToken && csrfTokenExpiry && Date.now() < csrfTokenExpiry) {
+    return csrfToken;
+  }
+
+  // Otherwise, fetch a new token
+  csrfToken = await fetchCsrfToken();
+  
+  // Set expiry time (assuming tokens expire after 1 hour, adjust as needed)
+  csrfTokenExpiry = Date.now() + (55 * 60 * 1000); // 55 minutes (refresh before 1-hour expiry)
+
+  return csrfToken;
+}
+
+// Make a request with CSRF token
+async function makeRequestWithCsrf<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  // Get a valid CSRF token
+  const token = await getValidCsrfToken();
+
+  // Add CSRF token to headers
+  const headers = {
+    ...(options.headers || {}),
+    'X-CSRF-Token': token,
+    'X-API-Key': getApiKey(),
+  };
+
+  // Make the request with the CSRF token
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+    credentials: 'include' // Include cookies if needed
+  });
+
+  if (!response.ok) {
+    // If the request failed due to CSRF token invalidation, try once more with a new token
+    if (response.status === 403) {
+      // Clear the cached token and try again
+      csrfToken = null;
+      csrfTokenExpiry = null;
+      
+      const newToken = await getValidCsrfToken();
+      const retryHeaders = {
+        ...(options.headers || {}),
+        'X-CSRF-Token': newToken,
+        'X-API-Key': getApiKey(),
+      };
+
+      const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers: retryHeaders,
+        credentials: 'include'
+      });
+
+      if (!retryResponse.ok) {
+        throw new Error(`Request failed: ${retryResponse.status} ${retryResponse.statusText}`);
+      }
+
+      return retryResponse.json();
+    }
+
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
 }
 
 
