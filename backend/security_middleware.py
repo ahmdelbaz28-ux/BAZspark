@@ -55,7 +55,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 # Re-export CorrelationIdMiddleware for a single import surface.
 # Lazy import to avoid circular dependency if backend.request_context
 # ever imports from this module in the future.
-from backend.request_context import CorrelationIdMiddleware  # noqa: F401
+from backend.request_context import CorrelationIdMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -475,12 +475,12 @@ class CSRFMiddleware:
         # Verify: _redis.exists(f"csrf:{token}")
     """
 
-    from typing import Callable, Awaitable
+    from typing import Awaitable, Callable, ClassVar
     AppType = Callable[[dict, object, object], Awaitable[None]]
 
-    SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
-    TOKEN_HEADER = b"x-csrf-token"
-    TOKEN_TTL_SECONDS = 3600  # 1 hour
+    SAFE_METHODS: ClassVar[set[str]] = {"GET", "HEAD", "OPTIONS"}
+    TOKEN_HEADER: ClassVar[bytes] = b"x-csrf-token"
+    TOKEN_TTL_SECONDS: ClassVar[int] = 3600  # 1 hour
 
     def __init__(self, app: "CSRFMiddleware.AppType") -> None:
         self.app = app
@@ -580,8 +580,8 @@ class CSRFMiddleware:
 
 
 __all__ = [
-    "SecurityHeadersMiddleware",
-    "CorrelationIdMiddleware",
     "ApiKeyMiddleware",
     "CSRFMiddleware",
+    "CorrelationIdMiddleware",
+    "SecurityHeadersMiddleware",
 ]

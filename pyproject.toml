@@ -272,6 +272,9 @@ ignore = [
 # verify with `ruff check <file>` (should be 0 errors).
 "backend/routers/marine.py" = ["I001", "F401", "RUF013", "RUF022", "RUF046", "RUF005", "E402"]
 "fireai/core/nfpa72_calculations.py" = ["I001", "F401", "RUF013", "RUF022", "RUF046", "RUF005", "E402"]
+# V133: security_middleware.py has pre-existing F841, E402, SIM100 violations
+# in SecurityHeadersMiddleware and ApiKeyMiddleware (not in the new CSRFMiddleware).
+"backend/security_middleware.py" = ["F841", "E402", "SIM110", "RUF100"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["backend", "core", "parsers", "fireai", "skills", "qomn_conduit", "db", "tests", "facp"]
