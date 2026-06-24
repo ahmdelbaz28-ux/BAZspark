@@ -8,6 +8,29 @@ import os
 import unittest
 from unittest.mock import Mock, patch, MagicMock
 
+# Ensure key symbols are imported for static analysis and manual tests
+try:
+    from controller import get_controller, CADBIMController
+except Exception:
+    get_controller = None  # type: ignore[assignment]
+    CADBIMController = None  # type: ignore[assignment]
+
+
+try:
+    from actions import ActionType, build_workflow, autocad_new_drawing_workflow, revit_create_wall_workflow, etabs_run_analysis_workflow
+except Exception:
+    ActionType = None  # type: ignore
+    build_workflow = None  # type: ignore
+    autocad_new_drawing_workflow = None  # type: ignore
+    revit_create_wall_workflow = None  # type: ignore
+    etabs_run_analysis_workflow = None  # type: ignore
+
+try:
+    from vision import ScreenAnalyzer, DetectedObject
+except Exception:
+    ScreenAnalyzer = None  # type: ignore
+    DetectedObject = None  # type: ignore
+
 # Add the skill directory to the path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -161,6 +184,8 @@ def run_unit_tests():
 
 
 def run_manual_tests():
+    # Placeholder to ensure `controller` is bound for static analysis
+    controller = None
     """Run manual validation tests"""
     print("\n🔧 Manual Functionality Tests:")
     print("=" * 50)
