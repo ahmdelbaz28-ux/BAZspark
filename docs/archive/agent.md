@@ -13481,7 +13481,7 @@ PE Review: V131-PE-002 — All 10 simulations APPROVED
 - Ruff clean for skill files
 
 ### Commit Information
-- **Commit Hash:** [pending — will be filled after git commit]
+- **Commit Hash:** `b801019e513d1da1c46baec5f414e1a0026dea4e`
 - **Branch:** `fix/ci-debt-ruff-and-frontend` (will PR to main)
 - **Previous Merge:** PR #75 → main (commit 004c9e2c)
 
