@@ -1,5 +1,4 @@
-"""
-ETAP Expert Skill — Internal Simulation Engine
+"""ETAP Expert Skill — Internal Simulation Engine.
 ================================================
 Implements the 5 numerical simulation examples from Section 15.2 of the skill.
 
@@ -27,7 +26,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from typing import Any
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PHYSICAL CONSTANTS
@@ -93,8 +91,7 @@ def simulate_cable_sizing(
     fault_current_ka: float = 50.0,
     clearing_time_s: float = 0.5,
 ) -> CableSizingResult:
-    """
-    Simulate cable sizing per skill Section 15.2 Example 1.
+    """Simulate cable sizing per skill Section 15.2 Example 1.
 
     Steps:
         1. Ampacity check against NEC Table 310.16 (75°C Cu)
@@ -103,6 +100,7 @@ def simulate_cable_sizing(
 
     Returns:
         CableSizingResult with all calculated values
+
     """
     assumptions = [
         f"PF = {pf} (typical industrial)",
@@ -148,8 +146,8 @@ def simulate_cable_sizing(
     x_per_1000ft = z["x"]
 
     # Scale to actual length
-    r_actual = r_per_1000ft * (length_ft / 1000.0)
-    x_actual = x_per_1000ft * (length_ft / 1000.0)
+    r_per_1000ft * (length_ft / 1000.0)
+    x_per_1000ft * (length_ft / 1000.0)
 
     # VD = I × (R·cosφ + X·sinφ) × L  (3-phase line-to-line voltage drop)
     # Note: formula uses per-length R and X scaled by L
@@ -220,8 +218,7 @@ def simulate_transformer_sizing(
     growth_factor: float = 1.2,
     impedance_pct: float = 5.75,
 ) -> TransformerSizingResult:
-    """
-    Simulate transformer sizing per skill Section 15.2 Example 2.
+    """Simulate transformer sizing per skill Section 15.2 Example 2.
 
     Steps:
         1. kW → kVA: kVA = kW / PF
@@ -336,8 +333,7 @@ def simulate_protection_coordination(
     efficiency: float = 0.93,
     starting_multiple: float = 6.0,  # NEMA Code F typical
 ) -> ProtectionCoordinationResult:
-    """
-    Simulate 50/51 relay settings for 500HP motor per skill Section 15.2 Example 3.
+    """Simulate 50/51 relay settings for 500HP motor per skill Section 15.2 Example 3.
 
     Steps:
         1. Calculate motor FLA: FLA = P / (√3 × V × PF × η)
@@ -455,8 +451,7 @@ def simulate_arc_flash(
     conductor_gap_mm: float = 25.0,  # MCC typical
     equipment_type: str = "MCC",
 ) -> ArcFlashResult:
-    """
-    Simulate arc flash calculation per skill Section 15.2 Example 4.
+    """Simulate arc flash calculation per skill Section 15.2 Example 4.
 
     Uses IEEE 1584-2018 equations (simplified for V ≤ 1kV):
         Iarc = 10^(0.00402 + 0.983 × log(Ibf))  [V ≤ 1 kV]
@@ -573,8 +568,7 @@ def simulate_flisr(
     customers_faulted: int = 50,
     customers_restored: int = 200,
 ) -> FLISRResult:
-    """
-    Simulate FLISR operation per skill Section 15.2 Example 5.
+    """Simulate FLISR operation per skill Section 15.2 Example 5.
 
     Steps:
         1. Fault detection (SCADA alarm)
@@ -689,8 +683,7 @@ def simulate_harmonic_analysis(
     system_inductance_mh: float = 0.1,  # For resonance check
     capacitor_uf: float | None = None,  # For resonance check
 ) -> HarmonicAnalysisResult:
-    """
-    Simulate harmonic analysis per IEEE 519-2014.
+    """Simulate harmonic analysis per IEEE 519-2014.
 
     Steps:
         1. Calculate ISC/IL ratio → determine TDD limit (Table 2)
@@ -841,8 +834,7 @@ def simulate_transient_stability(
     system_frequency_hz: float = 60.0,
     actual_clearing_time_s: float = 0.1,  # Fault clearing time to evaluate
 ) -> TransientStabilityResult:
-    """
-    Simulate transient stability per Equal Area Criterion.
+    """Simulate transient stability per Equal Area Criterion.
 
     Calculates Critical Clearing Time (CCT) — the maximum fault duration
     before the generator loses synchronism.

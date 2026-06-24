@@ -1,5 +1,4 @@
-"""
-Gate 5: Adversarial Audit — Property-Based Tests
+"""Gate 5: Adversarial Audit — Property-Based Tests.
 ==================================================
 Fuzz-tests the skill loader and simulation engine with random inputs
 to find hidden defects, edge cases, and unsafe assumptions.
@@ -20,15 +19,14 @@ import math
 import sys
 from pathlib import Path
 
-import pytest
-from hypothesis import HealthCheck, assume, given, settings, strategies as st
+from hypothesis import HealthCheck, assume, given, settings
+from hypothesis import strategies as st
 
 SKILL_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 from internal_simulation_engine import (  # noqa: E402
     NEC_310_16_COPPER_75C,
-    PPE_CATEGORIES,
     determine_ppe_category,
     simulate_arc_flash,
     simulate_cable_sizing,
@@ -37,12 +35,9 @@ from internal_simulation_engine import (  # noqa: E402
     simulate_transformer_sizing,
 )
 from skill_loader import (  # noqa: E402
-    EXPECTED_SECTIONS,
     SKILL_NAME,
-    SKILL_VERSION,
     load_skill,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PROPERTY 1: Skill loader never crashes on valid input
@@ -54,7 +49,7 @@ class TestLoaderPropertyBased:
 
     @given(run=st.integers(min_value=1, max_value=50))
     @settings(max_examples=20, deadline=2000)
-    def test_loader_always_passes_on_valid_skill(self, run):
+    def test_loader_always_passes_on_valid_skill(self, run) -> None:
         """Loader must always pass on the valid SKILL.md — no flakiness."""
         result = load_skill(SKILL_ROOT / "SKILL.md")
         assert result.is_valid, f"Loader failed on run {run}"
@@ -63,7 +58,7 @@ class TestLoaderPropertyBased:
 
     @given(path=st.text(min_size=1, max_size=50))
     @settings(max_examples=30, deadline=2000)
-    def test_loader_handles_nonexistent_paths_gracefully(self, path):
+    def test_loader_handles_nonexistent_paths_gracefully(self, path) -> None:
         """Loader must NOT crash on nonexistent paths — return error result."""
         assume(not Path(path).exists())
         result = load_skill(path)
@@ -87,7 +82,7 @@ class TestCableSizingProperties:
     )
     @settings(max_examples=50, deadline=3000,
               suppress_health_check=[HealthCheck.function_scoped_fixture])
-    def test_ampacity_always_exceeds_load_current(self, current, voltage, length, pf):
+    def test_ampacity_always_exceeds_load_current(self, current, voltage, length, pf) -> None:
         """Ampacity of recommended cable MUST be ≥ load current."""
         try:
             result = simulate_cable_sizing(
@@ -110,7 +105,7 @@ class TestCableSizingProperties:
         voltage=st.floats(min_value=120, max_value=1000, allow_nan=False),
     )
     @settings(max_examples=30, deadline=3000)
-    def test_voltage_drop_always_positive(self, current, voltage):
+    def test_voltage_drop_always_positive(self, current, voltage) -> None:
         """Voltage drop must be positive (physics: any current through R > 0)."""
         try:
             result = simulate_cable_sizing(
@@ -136,7 +131,7 @@ class TestTransformerSizingProperties:
         pf=st.floats(min_value=0.7, max_value=1.0, allow_nan=False),
     )
     @settings(max_examples=50, deadline=3000)
-    def test_required_kva_always_exceeds_load_kva(self, load_kw, pf):
+    def test_required_kva_always_exceeds_load_kva(self, load_kw, pf) -> None:
         """Required kVA MUST exceed load kVA (kW/PF) due to safety + growth factors."""
         result = simulate_transformer_sizing(load_kw=load_kw, pf=pf)
         load_kva = load_kw / pf
@@ -149,7 +144,7 @@ class TestTransformerSizingProperties:
         load_kw=st.floats(min_value=100, max_value=5000, allow_nan=False),
     )
     @settings(max_examples=30, deadline=3000)
-    def test_recommended_size_exceeds_required(self, load_kw):
+    def test_recommended_size_exceeds_required(self, load_kw) -> None:
         """Recommended transformer size MUST be ≥ required kVA."""
         result = simulate_transformer_sizing(load_kw=load_kw)
         assert result.recommended_size_kva >= result.required_kva
@@ -168,7 +163,7 @@ class TestProtectionCoordinationProperties:
         voltage=st.sampled_from([4160, 6600, 13800]),
     )
     @settings(max_examples=30, deadline=3000)
-    def test_50_pickup_greater_than_51_pickup(self, hp, voltage):
+    def test_50_pickup_greater_than_51_pickup(self, hp, voltage) -> None:
         """50 pickup must be > 51 pickup (8× FLA > 1.05× FLA)."""
         result = simulate_protection_coordination(motor_hp=hp, motor_voltage_v=voltage)
         assert result.relay_50_pickup_primary_a > result.relay_51_pickup_primary_a
@@ -177,7 +172,7 @@ class TestProtectionCoordinationProperties:
         hp=st.floats(min_value=50, max_value=2000, allow_nan=False),
     )
     @settings(max_examples=20, deadline=3000)
-    def test_locked_rotor_less_than_50_pickup(self, hp):
+    def test_locked_rotor_less_than_50_pickup(self, hp) -> None:
         """50 pickup should be > locked rotor (6× FLA) for coordination."""
         result = simulate_protection_coordination(motor_hp=hp)
         # 50 = 8 × FLA, locked rotor = 6 × FLA → 50 > locked rotor
@@ -196,7 +191,7 @@ class TestArcFlashProperties:
         ibf_ka=st.floats(min_value=1, max_value=100, allow_nan=False),
     )
     @settings(max_examples=30, deadline=3000)
-    def test_arcing_current_less_than_bolted_fault(self, ibf_ka):
+    def test_arcing_current_less_than_bolted_fault(self, ibf_ka) -> None:
         """Iarc MUST be < Ibf (arcing impedance > 0)."""
         result = simulate_arc_flash(bolted_fault_current_ka=ibf_ka)
         assert result.arcing_current_ka < ibf_ka, (
@@ -207,7 +202,7 @@ class TestArcFlashProperties:
         ibf_ka=st.floats(min_value=5, max_value=80, allow_nan=False),
     )
     @settings(max_examples=30, deadline=3000)
-    def test_incident_energy_positive(self, ibf_ka):
+    def test_incident_energy_positive(self, ibf_ka) -> None:
         """Incident energy must be positive."""
         result = simulate_arc_flash(bolted_fault_current_ka=ibf_ka)
         assert result.incident_energy_cal_cm2 > 0
@@ -216,7 +211,7 @@ class TestArcFlashProperties:
         ibf_ka=st.floats(min_value=1, max_value=100, allow_nan=False),
     )
     @settings(max_examples=30, deadline=3000)
-    def test_ppe_category_in_valid_range(self, ibf_ka):
+    def test_ppe_category_in_valid_range(self, ibf_ka) -> None:
         """PPE category must be 0-4."""
         result = simulate_arc_flash(bolted_fault_current_ka=ibf_ka)
         assert 0 <= result.ppe_category <= 4
@@ -225,7 +220,7 @@ class TestArcFlashProperties:
         energy=st.floats(min_value=0, max_value=1000, allow_nan=False),
     )
     @settings(max_examples=50, deadline=2000)
-    def test_ppe_category_monotonically_increasing(self, energy):
+    def test_ppe_category_monotonically_increasing(self, energy) -> None:
         """Higher energy → same or higher PPE category."""
         cat, _ = determine_ppe_category(energy)
         # Check category boundaries
@@ -255,7 +250,7 @@ class TestFLISRProperties:
         z_per_mile=st.floats(min_value=0.1, max_value=2.0, allow_nan=False),
     )
     @settings(max_examples=50, deadline=3000)
-    def test_fault_distance_obeys_ohms_law(self, fault_current, source_voltage, z_per_mile):
+    def test_fault_distance_obeys_ohms_law(self, fault_current, source_voltage, z_per_mile) -> None:
         """Distance = (V/I) / Z_per_mile — pure Ohm's law."""
         result = simulate_flisr(
             fault_current_a=fault_current,
@@ -271,7 +266,7 @@ class TestFLISRProperties:
         loading=st.floats(min_value=0, max_value=100, allow_nan=False),
     )
     @settings(max_examples=20, deadline=2000)
-    def test_no_restoration_when_alternate_full(self, loading):
+    def test_no_restoration_when_alternate_full(self, loading) -> None:
         """If alternate source is at 100%, no restoration possible."""
         result = simulate_flisr(alternate_source_loading_pct=loading)
         if loading >= 80:
@@ -292,7 +287,7 @@ class TestNoNaNInf:
         voltage=st.floats(min_value=120, max_value=1000, allow_nan=False, allow_infinity=False),
     )
     @settings(max_examples=20, deadline=3000)
-    def test_cable_sizing_no_nan(self, current, voltage):
+    def test_cable_sizing_no_nan(self, current, voltage) -> None:
         try:
             result = simulate_cable_sizing(load_current_a=current, voltage_v=voltage)
         except ValueError:
@@ -305,7 +300,7 @@ class TestNoNaNInf:
         ibf_ka=st.floats(min_value=1, max_value=100, allow_nan=False, allow_infinity=False),
     )
     @settings(max_examples=20, deadline=3000)
-    def test_arc_flash_no_nan(self, ibf_ka):
+    def test_arc_flash_no_nan(self, ibf_ka) -> None:
         result = simulate_arc_flash(bolted_fault_current_ka=ibf_ka)
         assert math.isfinite(result.arcing_current_ka)
         assert math.isfinite(result.incident_energy_cal_cm2)
@@ -315,7 +310,7 @@ class TestNoNaNInf:
         load_kw=st.floats(min_value=10, max_value=10000, allow_nan=False, allow_infinity=False),
     )
     @settings(max_examples=20, deadline=3000)
-    def test_transformer_sizing_no_nan(self, load_kw):
+    def test_transformer_sizing_no_nan(self, load_kw) -> None:
         result = simulate_transformer_sizing(load_kw=load_kw)
         assert math.isfinite(result.required_kva)
         assert math.isfinite(result.recommended_size_kva)

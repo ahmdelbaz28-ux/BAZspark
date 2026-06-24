@@ -1,5 +1,4 @@
-"""
-ETAP Expert Skill Loader
+"""ETAP Expert Skill Loader.
 =========================
 Validates and loads the etap-expert skill, enforcing structural integrity
 per FireAI agent.md Rule 14 (NO MODIFICATION WITHOUT VERIFICATION).
@@ -22,7 +21,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 try:
     import yaml
@@ -165,8 +163,7 @@ class ValidationResult:
 
 
 def parse_front_matter(content: str) -> tuple[SkillFrontMatter | None, str | None]:
-    """
-    Parse YAML front-matter from SKILL.md content.
+    """Parse YAML front-matter from SKILL.md content.
 
     Front-matter is delimited by --- at start and end.
     Returns (front_matter, error_message).
@@ -260,14 +257,14 @@ def extract_standards(content: str) -> dict[str, list[str]]:
 
 
 def load_skill(skill_path: Path | str) -> ValidationResult:
-    """
-    Load and validate the etap-expert skill.
+    """Load and validate the etap-expert skill.
 
     Args:
         skill_path: Path to SKILL.md file
 
     Returns:
         ValidationResult with full structure if valid
+
     """
     result = ValidationResult(is_valid=True)
     skill_path = Path(skill_path)
@@ -384,9 +381,9 @@ def main() -> int:
     if len(sys.argv) > 1:
         skill_path = Path(sys.argv[1])
 
-    print(f"═" * 70)
-    print(f"ETAP Expert Skill Loader — Validation Report")
-    print(f"═" * 70)
+    print("═" * 70)
+    print("ETAP Expert Skill Loader — Validation Report")
+    print("═" * 70)
     print(f"Skill path: {skill_path}")
     print()
 
@@ -394,13 +391,13 @@ def main() -> int:
 
     if result.structure:
         s = result.structure
-        print(f"Front-matter:")
+        print("Front-matter:")
         print(f"  name:        {s.front_matter.name}")
         print(f"  version:     {s.front_matter.version}")
         print(f"  author:      {s.front_matter.author}")
         print(f"  description: {s.front_matter.description[:80]}...")
         print()
-        print(f"Structure:")
+        print("Structure:")
         print(f"  Total lines:              {s.total_lines}")
         print(f"  Total chars:              {s.total_chars}")
         print(f"  Sections found:           {len(s.sections)} / {EXPECTED_SECTIONS}")
@@ -424,10 +421,10 @@ def main() -> int:
         for e in result.errors:
             print(f"  - {e}")
         print()
-        print(f"RESULT: FAILED")
+        print("RESULT: FAILED")
         return 1
 
-    print(f"✅ RESULT: PASSED")
+    print("✅ RESULT: PASSED")
     return 0
 
 

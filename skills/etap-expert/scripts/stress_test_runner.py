@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-ETAP Expert Skill — Stress Test Runner (Orchestrator)
+"""ETAP Expert Skill — Stress Test Runner (Orchestrator).
 =======================================================
 Runs all 5 gates of verification per FireAI agent.md VERIFICATION GATES:
 
@@ -191,12 +190,12 @@ def run_all_gates(verbose: bool = False, only_gate: int | None = None) -> list[G
         print(f"  Tests: {result.tests_passed}/{result.tests_run} passed, {result.tests_failed} failed")
 
         if result.failures and verbose:
-            print(f"\n  Failures:")
+            print("\n  Failures:")
             for f in result.failures:
                 print(f"    - {f[:150]}")
 
         if result.errors and verbose:
-            print(f"\n  Errors:")
+            print("\n  Errors:")
             for e in result.errors:
                 print(f"    - {e[:150]}")
 
@@ -206,7 +205,7 @@ def run_all_gates(verbose: bool = False, only_gate: int | None = None) -> list[G
 def print_summary(results: list[GateResult]) -> dict[str, Any]:
     """Print final summary and return report dict."""
     print(f"\n{'═' * 70}")
-    print(f"  FINAL SUMMARY — ETAP EXPERT SKILL STRESS TEST")
+    print("  FINAL SUMMARY — ETAP EXPERT SKILL STRESS TEST")
     print(f"{'═' * 70}")
 
     total_passed = sum(1 for r in results if r.passed)
@@ -220,7 +219,7 @@ def print_summary(results: list[GateResult]) -> dict[str, Any]:
     print(f"  Tests: {total_tests_passed}/{total_tests} passed, {total_tests_failed} failed")
     print(f"  Total duration: {total_duration:.2f}s")
 
-    print(f"\n  Per-gate breakdown:")
+    print("\n  Per-gate breakdown:")
     print(f"  {'Gate':<6} {'Name':<40} {'Status':<10} {'Tests':<15} {'Duration':<10}")
     print(f"  {'─' * 6} {'─' * 40} {'─' * 10} {'─' * 15} {'─' * 10}")
     for r in results:

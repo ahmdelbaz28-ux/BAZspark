@@ -1,5 +1,4 @@
-"""
-Gate 6: Integration Tests — ETAP Skill ↔ FireAI Modules
+"""Gate 6: Integration Tests — ETAP Skill ↔ FireAI Modules.
 =========================================================
 Validates that the ETAP skill's calculation methods produce results
 compatible with FireAI's existing engineering modules.
@@ -77,7 +76,7 @@ class TestCableSizingVoltageDropIntegration:
             nominal_voltage=24.0,
         )
 
-    def test_etap_skill_recommends_4_0_awg_for_high_current(self, etap_cable_result):
+    def test_etap_skill_recommends_4_0_awg_for_high_current(self, etap_cable_result) -> None:
         """For 200A load, ETAP skill recommends 4/0 AWG (230A ampacity)."""
         from internal_simulation_engine import simulate_cable_sizing
 
@@ -85,7 +84,7 @@ class TestCableSizingVoltageDropIntegration:
         assert result.recommended_size == "4/0 AWG"
         assert result.ampacity_a >= 200
 
-    def test_fireai_voltage_drop_accepts_etap_recommended_size(self):
+    def test_fireai_voltage_drop_accepts_etap_recommended_size(self) -> None:
         """FireAI voltage_drop must accept '4/0' AWG (per NEC Table 8)."""
         try:
             from fireai.core.voltage_drop import calculate_voltage_drop
@@ -103,7 +102,7 @@ class TestCableSizingVoltageDropIntegration:
         assert result["voltage_drop_pct"] > 0
         assert math.isfinite(result["voltage_drop_v"])
 
-    def test_both_modules_use_75c_copper_baseline(self):
+    def test_both_modules_use_75c_copper_baseline(self) -> None:
         """Both ETAP skill and FireAI use 75°C copper reference."""
         # ETAP: NEC Table 310.16 (75°C Cu)
         # FireAI: NEC Chapter 9 Table 8 (75°C Cu, DC resistance)
@@ -123,7 +122,7 @@ class TestCableSizingVoltageDropIntegration:
         skill_content = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         assert "75°C" in skill_content  # NEC Table 310.16 reference
 
-    def test_awg_table_overlap(self):
+    def test_awg_table_overlap(self) -> None:
         """ETAP NEC 310.16 and FireAI Table 8 cover overlapping AWG range."""
         from internal_simulation_engine import NEC_310_16_COPPER_75C
 
@@ -169,7 +168,7 @@ class TestCableSizingVoltageDropIntegration:
 class TestArcFlashAtexIntegration:
     """Integration: ETAP arc flash ↔ FireAI atex_hazardous_arbiter."""
 
-    def test_both_modules_reference_distinct_standards(self):
+    def test_both_modules_reference_distinct_standards(self) -> None:
         """ETAP uses IEEE 1584, FireAI uses IEC 60079 — no conflict."""
         skill_content = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         assert "IEEE 1584" in skill_content  # Arc flash standard
@@ -184,9 +183,9 @@ class TestArcFlashAtexIntegration:
         assert "IEC 60079" in atex_source  # Explosive atmospheres
         assert "ATEX" in atex_source
 
-    def test_etap_ppe_categories_match_nfpa_70e(self):
+    def test_etap_ppe_categories_match_nfpa_70e(self) -> None:
         """ETAP PPE categories must align with NFPA 70E Table 130.7(C)(15)(c)."""
-        from internal_simulation_engine import PPE_CATEGORIES, determine_ppe_category
+        from internal_simulation_engine import determine_ppe_category
 
         # Verify category boundaries per NFPA 70E
         # Category 0: < 1.2 cal/cm²
@@ -200,7 +199,7 @@ class TestArcFlashAtexIntegration:
         assert determine_ppe_category(30.0)[0] == 3
         assert determine_ppe_category(50.0)[0] == 4
 
-    def test_corrected_skill_example_gives_category_2(self):
+    def test_corrected_skill_example_gives_category_2(self) -> None:
         """After Arc Flash fix (En=17.14, E=21.2 cal/cm²), PPE = Category 2."""
         skill_content = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         # Verify the corrected values are in the skill
@@ -210,7 +209,7 @@ class TestArcFlashAtexIntegration:
         # PPE for Cat 2 is 8 cal/cm² arc-rated (not 40 cal/cm²)
         assert "8 cal/cm² arc-rated" in skill_content
 
-    def test_atex_module_does_not_use_ieee_1584(self):
+    def test_atex_module_does_not_use_ieee_1584(self) -> None:
         """FireAI atex module must NOT use IEEE 1584 (different domain)."""
         try:
             atex_file = PROJECT_ROOT / "fireai" / "core" / "atex_hazardous_arbiter.py"
@@ -223,7 +222,7 @@ class TestArcFlashAtexIntegration:
         # IEEE 1584 may appear in comments but should NOT be the primary standard
         # (atex is for explosive atmospheres, not arc flash)
 
-    def test_etap_skill_does_not_reference_iec_60079_for_arc_flash(self):
+    def test_etap_skill_does_not_reference_iec_60079_for_arc_flash(self) -> None:
         """ETAP skill's arc flash section uses IEEE 1584, not IEC 60079."""
         skill_content = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         # Find arc flash section
@@ -253,7 +252,7 @@ class TestArcFlashAtexIntegration:
 class TestMarineIntegration:
     """Integration: ETAP marine section ↔ FireAI marine_service."""
 
-    def test_both_reference_iec_60092(self):
+    def test_both_reference_iec_60092(self) -> None:
         """Both ETAP skill and FireAI marine module reference IEC 60092."""
         skill_content = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         assert "IEC 60092" in skill_content
@@ -268,7 +267,7 @@ class TestMarineIntegration:
         # marine_service references IEC 60092 in its imports/docstring
         assert "IEC 60092" in ms_source or "iec60092" in ms_source.lower()
 
-    def test_etap_marine_section_covers_iec_61363(self):
+    def test_etap_marine_section_covers_iec_61363(self) -> None:
         """ETAP skill Section 25 covers IEC 61363 (marine short circuit)."""
         skill_content = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         # Find marine section
@@ -279,7 +278,7 @@ class TestMarineIntegration:
         assert "IEC 60092" in marine_section  # Electrical installations
         assert "IEC 61363" in marine_section  # Short circuit
 
-    def test_fireai_marine_service_imports_iec60092_module(self):
+    def test_fireai_marine_service_imports_iec60092_module(self) -> None:
         """FireAI marine_service imports from marine.iec60092 package."""
         try:
             ms_file = PROJECT_ROOT / "backend" / "services" / "marine_service.py"
@@ -290,7 +289,7 @@ class TestMarineIntegration:
         # Check import statements in source
         assert "marine.iec60092" in ms_source or "from marine.iec60092" in ms_source
 
-    def test_etap_marine_voltage_levels_match_fireai_scope(self):
+    def test_etap_marine_voltage_levels_match_fireai_scope(self) -> None:
         """ETAP marine voltages (400V, 690V, 3.3kV, 6.6kV) match FireAI scope."""
         skill_content = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         # ETAP skill lists marine voltage levels
@@ -299,7 +298,7 @@ class TestMarineIntegration:
         assert "3.3kV" in skill_content
         assert "6.6kV" in skill_content
 
-    def test_etap_marine_standards_table_comprehensive(self):
+    def test_etap_marine_standards_table_comprehensive(self) -> None:
         """ETAP marine standards table covers SOLAS, Lloyd's, DNV, ABS."""
         skill_content = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         # Find marine standards section
@@ -327,7 +326,7 @@ class TestMarineIntegration:
 class TestCrossModuleNumericalConsistency:
     """Verify numerical values are consistent across modules."""
 
-    def test_awg_4_0_resistance_consistent_across_modules(self):
+    def test_awg_4_0_resistance_consistent_across_modules(self) -> None:
         """4/0 AWG resistance must be consistent between ETAP and FireAI.
 
         ETAP skill Example 1 uses:
@@ -364,7 +363,7 @@ class TestCrossModuleNumericalConsistency:
             f"FireAI={fireai_3_0_r_per_kft:.4f} Ω/kft, diff={pct_diff:.2f}%"
         )
 
-    def test_nev_310_16_ampacity_consistent_with_physical_law(self):
+    def test_nev_310_16_ampacity_consistent_with_physical_law(self) -> None:
         """NEC Table 310.16 ampacity should obey I ∝ area relationship."""
         from internal_simulation_engine import NEC_310_16_COPPER_75C
 
@@ -377,7 +376,7 @@ class TestCrossModuleNumericalConsistency:
         amp_2_0 = NEC_310_16_COPPER_75C["2/0 AWG"]
         assert amp_2_0 < amp_3_0, "2/0 AWG should have lower ampacity than 3/0 AWG"
 
-    def test_ieee_1584_formula_produces_realistic_arcing_current(self):
+    def test_ieee_1584_formula_produces_realistic_arcing_current(self) -> None:
         """IEEE 1584 formula: Iarc must be < Ibf (arcing impedance > 0)."""
         from internal_simulation_engine import simulate_arc_flash
 
@@ -387,7 +386,7 @@ class TestCrossModuleNumericalConsistency:
             f"Iarc = {result.arcing_current_ka} kA should be 30-50 kA for 50 kA bolted fault"
         )
 
-    def test_flisr_ohms_law_consistent_with_fireai_voltage_drop(self):
+    def test_flisr_ohms_law_consistent_with_fireai_voltage_drop(self) -> None:
         """Both FLISR (V=I×Z) and FireAI voltage_drop (V=I×R) use Ohm's law.
 
         This is a fundamental physics consistency check — both modules
