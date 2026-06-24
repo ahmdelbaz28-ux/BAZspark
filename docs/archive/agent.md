@@ -12968,6 +12968,9 @@ The ETAP skill complements FireAI's existing modules in the electrical power dom
 - Property-based tests with 50+ random inputs confirm no NaN/Inf, no crashes, physical constraints satisfied
 
 ### Commit Information
-- **Commit Hash:** [pending — will be filled after git commit]
-- **GitHub Link:** [pending — will be filled after git push]
+- **Commit Hash:** `1e532a0079cacb8ded4ed320f12bd05a041382fd`
+- **Branch:** `feat/etap-expert-skill-v131` (main is protected — PR required)
+- **GitHub Commit Link:** https://github.com/ahmdelbaz28-ux/revit/commit/1e532a0079cacb8ded4ed320f12bd05a041382fd
+- **GitHub Branch Link:** https://github.com/ahmdelbaz28-ux/revit/tree/feat/etap-expert-skill-v131
+- **Pull Request URL:** https://github.com/ahmdelbaz28-ux/revit/pull/new/feat/etap-expert-skill-v131
 
