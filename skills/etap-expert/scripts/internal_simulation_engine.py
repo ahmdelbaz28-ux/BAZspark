@@ -626,18 +626,343 @@ def simulate_flisr(
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# MASTER RUNNER
+# SIMULATION 6: HARMONIC ANALYSIS (IEEE 519-2014)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# IEEE 519-2014 limits harmonic distortion at the Point of Common Coupling
+# (PCC). Two key metrics:
+#   - THD_V (voltage THD): < 5% for general systems (≤69 kV)
+#   - TDD_I (current TDD): varies by ISC/IL ratio (Table 2)
+#
+# Per skill Section 13.1 (IEEE 519) and Section 9.9 (Harmonics):
+#   "Harmonic Analysis — THD, resonance, filter design"
+
+
+@dataclass
+class HarmonicAnalysisResult:
+    """Result of harmonic analysis per IEEE 519-2014."""
+
+    fundamental_frequency_hz: float
+    voltage_nominal_v: float
+    load_current_a: float
+    isc_a: float  # Short-circuit current at PCC
+    isc_il_ratio: float  # ISC/IL ratio (determines TDD limit)
+    thd_voltage_pct: float
+    thd_current_pct: float
+    tdd_limit_pct: float  # IEEE 519 Table 2 limit
+    voltage_limit_pct: float  # IEEE 519 Table 1 limit
+    voltage_compliant: bool
+    current_compliant: bool
+    harmonics: dict[int, float] = field(default_factory=dict)  # h-order → % of fundamental
+    resonance_freq_hz: float | None = None
+    assumptions: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+
+
+# IEEE 519-2014 Table 1 — Voltage Distortion Limits (≤69 kV)
+IEEE_519_VOLTAGE_LIMIT_PCT = 5.0  # THD_V limit for systems ≤ 69 kV
+
+# IEEE 519-2014 Table 2 — Current TDD Limits by ISC/IL ratio
+IEEE_519_TDD_LIMITS = [
+    (20, 5.0),    # ISC/IL < 20 → TDD limit 5%
+    (50, 8.0),    # 20 ≤ ISC/IL < 50 → 8%
+    (100, 12.0),  # 50 ≤ ISC/IL < 100 → 12%
+    (1000, 15.0), # 100 ≤ ISC/IL < 1000 → 15%
+    (float("inf"), 20.0),  # ISC/IL ≥ 1000 → 20%
+]
+
+
+def get_tdd_limit(isc_il_ratio: float) -> float:
+    """Get IEEE 519 TDD limit based on ISC/IL ratio."""
+    for upper, limit in IEEE_519_TDD_LIMITS:
+        if isc_il_ratio < upper:
+            return limit
+    return 20.0
+
+
+def simulate_harmonic_analysis(
+    voltage_nominal_v: float = 480.0,
+    load_current_a: float = 200.0,
+    isc_a: float = 20000.0,  # 20 kA short-circuit at PCC
+    fundamental_freq_hz: float = 60.0,
+    harmonics: dict[int, float] | None = None,  # h-order → % of fundamental current
+    system_inductance_mh: float = 0.1,  # For resonance check
+    capacitor_uf: float | None = None,  # For resonance check
+) -> HarmonicAnalysisResult:
+    """
+    Simulate harmonic analysis per IEEE 519-2014.
+
+    Steps:
+        1. Calculate ISC/IL ratio → determine TDD limit (Table 2)
+        2. Calculate THD_V and THD_I from harmonic spectrum
+        3. Check against IEEE 519 Table 1 (voltage) and Table 2 (current)
+        4. Detect parallel resonance (if capacitor present)
+
+    Default harmonic spectrum: typical 6-pulse VFD (THD_I ≈ 30%)
+    """
+    if harmonics is None:
+        # Typical 6-pulse VFD harmonic spectrum (% of fundamental current)
+        # Per IEEE 519-2014 Annex A — characteristic harmonics for 6-pulse
+        harmonics = {
+            5: 20.0,   # 5th harmonic — 20% of fundamental (worst for 6-pulse)
+            7: 14.0,   # 7th harmonic — 14%
+            11: 9.0,   # 11th harmonic — 9%
+            13: 7.0,   # 13th harmonic — 7%
+            17: 5.0,   # 17th harmonic — 5%
+            19: 4.0,   # 19th harmonic — 4%
+        }
+
+    assumptions = [
+        f"Fundamental frequency = {fundamental_freq_hz} Hz",
+        f"Nominal voltage = {voltage_nominal_v} V",
+        f"Load current (IL) = {load_current_a} A",
+        f"Short-circuit current (ISC) = {isc_a} A at PCC",
+        "Harmonic spectrum: 6-pulse VFD (typical industrial)",
+        f"Voltage limit per IEEE 519-2014 Table 1 (≤69 kV): {IEEE_519_VOLTAGE_LIMIT_PCT}%",
+    ]
+
+    warnings: list[str] = []
+
+    # Step 1: ISC/IL ratio → TDD limit
+    isc_il_ratio = isc_a / load_current_a if load_current_a > 0 else float("inf")
+    tdd_limit = get_tdd_limit(isc_il_ratio)
+
+    # Step 2: Calculate THD_I (current THD)
+    # THD_I = sqrt(Σ I_h²) / I_1 × 100%
+    sum_i_h_sq = sum((pct / 100.0) ** 2 for pct in harmonics.values())
+    thd_current_pct = math.sqrt(sum_i_h_sq) * 100.0
+
+    # Step 3: Calculate THD_V (voltage THD)
+    # Simplified: V_h ≈ I_h × Z_h where Z_h = h × X_L (inductive system)
+    # For typical system: V_h_pu ≈ I_h_pu × h × X_L_pu
+    # Assume X_L = 0.05 pu (typical transformer impedance)
+    x_l_pu = 0.05
+    sum_v_h_sq = 0.0
+    for h, pct in harmonics.items():
+        i_h_pu = (pct / 100.0) * (load_current_a / isc_a)  # I_h in per-unit of ISC
+        v_h_pu = i_h_pu * h * x_l_pu  # V_h ≈ I_h × h × X_L
+        sum_v_h_sq += v_h_pu ** 2
+    thd_voltage_pct = math.sqrt(sum_v_h_sq) * 100.0
+
+    # Step 4: Compliance check
+    voltage_compliant = thd_voltage_pct <= IEEE_519_VOLTAGE_LIMIT_PCT
+    current_compliant = thd_current_pct <= tdd_limit
+
+    # Step 5: Resonance detection (if capacitor present)
+    resonance_freq_hz = None
+    if capacitor_uf is not None and capacitor_uf > 0:
+        # Parallel resonance: f_r = 1 / (2π × sqrt(L × C))
+        l_h = system_inductance_mh / 1000.0  # mH → H
+        c_f = capacitor_uf / 1e6  # µF → F
+        resonance_freq_hz = 1.0 / (2.0 * math.pi * math.sqrt(l_h * c_f))
+
+        # Check if resonance is near a characteristic harmonic
+        for h in harmonics:
+            harmonic_freq = h * fundamental_freq_hz
+            if abs(resonance_freq_hz - harmonic_freq) / harmonic_freq < 0.1:
+                warnings.append(
+                    f"⚠️ RESONANCE RISK: f_resonance = {resonance_freq_hz:.1f} Hz "
+                    f"is within 10% of harmonic h={h} ({harmonic_freq:.1f} Hz) — "
+                    "amplification likely"
+                )
+
+    if not voltage_compliant:
+        warnings.append(
+            f"Voltage THD {thd_voltage_pct:.2f}% exceeds IEEE 519 limit "
+            f"({IEEE_519_VOLTAGE_LIMIT_PCT}%) — install harmonic filter"
+        )
+    if not current_compliant:
+        warnings.append(
+            f"Current TDD {thd_current_pct:.2f}% exceeds IEEE 519 limit "
+            f"({tdd_limit}% for ISC/IL={isc_il_ratio:.1f}) — install filter or 12-pulse drive"
+        )
+
+    return HarmonicAnalysisResult(
+        fundamental_frequency_hz=fundamental_freq_hz,
+        voltage_nominal_v=voltage_nominal_v,
+        load_current_a=load_current_a,
+        isc_a=isc_a,
+        isc_il_ratio=isc_il_ratio,
+        thd_voltage_pct=thd_voltage_pct,
+        thd_current_pct=thd_current_pct,
+        tdd_limit_pct=tdd_limit,
+        voltage_limit_pct=IEEE_519_VOLTAGE_LIMIT_PCT,
+        voltage_compliant=voltage_compliant,
+        current_compliant=current_compliant,
+        harmonics=harmonics,
+        resonance_freq_hz=resonance_freq_hz,
+        assumptions=assumptions,
+        warnings=warnings,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SIMULATION 7: TRANSIENT STABILITY (EQUAL AREA CRITERION)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Per skill Section 10.1 (Transient Stability) and Section 15.2 Example 4:
+#   Critical Clearing Time (CCT) = max fault duration before instability
+#   Equal Area Criterion: Accelerating Area = Decelerating Area
+#
+# For a single machine against infinite bus:
+#   P_e = (E × V / X) × sin(δ)  [electrical power output]
+#   P_m = constant [mechanical power input]
+#   During fault: P_e_fault = 0 (3-phase bolted fault at generator terminals)
+#   After fault cleared: P_e_post = P_e (sinusoidal)
+#
+# Critical Clearing Angle (δ_cc):
+#   cos(δ_cc) = [P_m × (δ_max - δ_0) - P_e_max × cos(δ_max)] / P_e_max
+# Where:
+#   δ_0 = initial rotor angle = asin(P_m / P_e_max)
+#   δ_max = π - δ_0 (maximum swing before instability)
+
+
+@dataclass
+class TransientStabilityResult:
+    """Result of transient stability analysis (Equal Area Criterion)."""
+
+    mechanical_power_pu: float
+    electrical_power_max_pu: float  # P_e_max = E×V/X
+    initial_rotor_angle_rad: float  # δ_0
+    max_rotor_angle_rad: float  # δ_max = π - δ_0
+    critical_clearing_angle_rad: float  # δ_cc
+    critical_clearing_time_s: float  # CCT (calculated from δ_cc)
+    h_constant_s: float  # Generator inertia constant (PEP8 lowercase)
+    system_frequency_hz: float
+    is_stable: bool  # True if fault cleared before δ_cc
+    assumptions: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+
+
+def simulate_transient_stability(
+    mechanical_power_pu: float = 0.8,  # P_m in per-unit
+    electrical_power_max_pu: float = 1.5,  # P_e_max = E×V/X in per-unit
+    h_constant_s: float = 4.0,  # Inertia constant H (typical 3-7s for steam)
+    system_frequency_hz: float = 60.0,
+    actual_clearing_time_s: float = 0.1,  # Fault clearing time to evaluate
+) -> TransientStabilityResult:
+    """
+    Simulate transient stability per Equal Area Criterion.
+
+    Calculates Critical Clearing Time (CCT) — the maximum fault duration
+    before the generator loses synchronism.
+
+    Steps:
+        1. Calculate initial rotor angle δ_0 = asin(P_m / P_e_max)
+        2. Calculate max swing angle δ_max = π - δ_0
+        3. Apply Equal Area Criterion to find δ_cc (critical clearing angle)
+        4. Convert δ_cc to CCT using swing equation
+        5. Compare actual clearing time to CCT
+
+    Per skill Section 10.1:
+        "CCT = Maximum time a fault can persist before the system becomes unstable"
+    """
+    assumptions = [
+        f"Mechanical power P_m = {mechanical_power_pu} pu",
+        f"Max electrical power P_e_max = {electrical_power_max_pu} pu (E×V/X)",
+        f"Generator inertia H = {h_constant_s} s (typical 3-7s for steam)",
+        f"System frequency = {system_frequency_hz} Hz",
+        "Single machine against infinite bus model",
+        "3-phase bolted fault at generator terminals (P_e_fault = 0 during fault)",
+        "Equal Area Criterion applied per skill Section 10.1",
+    ]
+
+    warnings: list[str] = []
+
+    # Validation: P_m must be < P_e_max for stable operation
+    if mechanical_power_pu >= electrical_power_max_pu:
+        raise ValueError(
+            f"P_m ({mechanical_power_pu} pu) must be < P_e_max ({electrical_power_max_pu} pu) "
+            "for stable operation — generator cannot supply required power"
+        )
+
+    # Step 1: Initial rotor angle
+    # P_m = P_e_max × sin(δ_0) → δ_0 = asin(P_m / P_e_max)
+    delta_0 = math.asin(mechanical_power_pu / electrical_power_max_pu)
+
+    # Step 2: Maximum swing angle (before instability)
+    # δ_max = π - δ_0 (generator loses sync if δ > δ_max)
+    delta_max = math.pi - delta_0
+
+    # Step 3: Critical Clearing Angle (Equal Area Criterion)
+    # Accelerating area (during fault): A_acc = P_m × (δ_cc - δ_0)
+    # Decelerating area (after clearance): A_dec = P_e_max × (cos(δ_cc) - cos(δ_max))
+    #                                         - P_m × (δ_max - δ_cc)
+    # Setting A_acc = A_dec and solving for δ_cc:
+    # cos(δ_cc) = [P_m × (δ_max - δ_0) - P_e_max × cos(δ_max)] / P_e_max + cos(δ_max) × (P_m/P_e_max - 1) + cos(δ_max)
+    #
+    # Simplified standard form (Anderson & Fouad, "Power System Control and Stability"):
+    # cos(δ_cc) = [P_m / P_e_max × (δ_max - δ_0)] - cos(δ_max) + (P_m / P_e_max) × cos(δ_max)
+    # Wait, let me use the cleaner form:
+    # cos(δ_cc) = (P_m / P_e_max) × (δ_max - δ_0) + cos(δ_max)
+
+    p_m_ratio = mechanical_power_pu / electrical_power_max_pu
+    cos_delta_cc = p_m_ratio * (delta_max - delta_0) + math.cos(delta_max)
+
+    # Clamp to valid range [-1, 1] for acos
+    cos_delta_cc = max(-1.0, min(1.0, cos_delta_cc))
+    delta_cc = math.acos(cos_delta_cc)
+
+    # Step 4: Critical Clearing Time (CCT)
+    # From swing equation: 2H × d²δ/dt² = P_m - P_e (during fault, P_e = 0)
+    # Integrating: δ(t) = δ_0 + (P_m / 4H) × ω_s × t²
+    # Where ω_s = 2πf (synchronous angular frequency)
+    # At t = CCT: δ = δ_cc
+    # → δ_cc = δ_0 + (P_m / 4H) × ω_s × CCT²
+    # → CCT = sqrt((δ_cc - δ_0) × 4H / (P_m × ω_s))
+
+    omega_s = 2.0 * math.pi * system_frequency_hz
+    delta_diff = delta_cc - delta_0
+    if delta_diff <= 0:
+        cct = 0.0
+        warnings.append("Critical clearing angle ≤ initial angle — system inherently unstable")
+    else:
+        cct = math.sqrt((delta_diff * 4.0 * h_constant_s) / (mechanical_power_pu * omega_s))
+
+    # Step 5: Stability assessment
+    is_stable = actual_clearing_time_s < cct
+
+    if not is_stable:
+        warnings.append(
+            f"⚠️ UNSTABLE: Actual clearing time {actual_clearing_time_s}s exceeds "
+            f"CCT {cct:.4f}s — generator will lose synchronism"
+        )
+    elif actual_clearing_time_s > 0.9 * cct:
+        warnings.append(
+            f"⚠️ MARGINAL: Clearing time {actual_clearing_time_s}s is within 10% of CCT "
+            f"({cct:.4f}s) — limited stability margin"
+        )
+
+    return TransientStabilityResult(
+        mechanical_power_pu=mechanical_power_pu,
+        electrical_power_max_pu=electrical_power_max_pu,
+        initial_rotor_angle_rad=delta_0,
+        max_rotor_angle_rad=delta_max,
+        critical_clearing_angle_rad=delta_cc,
+        critical_clearing_time_s=cct,
+        h_constant_s=h_constant_s,
+        system_frequency_hz=system_frequency_hz,
+        is_stable=is_stable,
+        assumptions=assumptions,
+        warnings=warnings,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MASTER RUNNER (UPDATED with 7 simulations)
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 def run_all_simulations() -> dict[str, Any]:
-    """Run all 5 simulations and return results as dict."""
+    """Run all 7 simulations and return results as dict."""
     return {
         "cable_sizing": simulate_cable_sizing().__dict__,
         "transformer_sizing": simulate_transformer_sizing().__dict__,
         "protection_coordination": simulate_protection_coordination().__dict__,
         "arc_flash": simulate_arc_flash().__dict__,
         "flisr": simulate_flisr().__dict__,
+        "harmonic_analysis": simulate_harmonic_analysis().__dict__,
+        "transient_stability": simulate_transient_stability().__dict__,
     }
 
 
@@ -647,14 +972,14 @@ if __name__ == "__main__":
     results = run_all_simulations()
 
     print("═" * 70)
-    print("ETAP Expert Skill — Internal Simulation Engine Results")
+    print("ETAP Expert Skill — Internal Simulation Engine Results (7 simulations)")
     print("═" * 70)
     print()
 
     for name, result in results.items():
         print(f"━━━ {name.upper().replace('_', ' ')} ━━━")
         # Remove nested lists for clean print
-        clean = {k: v for k, v in result.items() if not isinstance(v, list)}
+        clean = {k: v for k, v in result.items() if not isinstance(v, (list, dict))}
         print(json.dumps(clean, indent=2, default=str))
         if result.get("warnings"):
             print(f"  ⚠️  Warnings: {len(result['warnings'])}")

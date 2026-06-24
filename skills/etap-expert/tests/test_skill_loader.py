@@ -146,9 +146,10 @@ class TestSimulationEngineExecution:
 
         results = run_all_simulations()
         assert isinstance(results, dict)
-        assert len(results) == 5
-        assert "cable_sizing" in results
-        assert "transformer_sizing" in results
-        assert "protection_coordination" in results
-        assert "arc_flash" in results
-        assert "flisr" in results
+        # V131 Phase 2: expanded from 5 → 7 simulations (added Harmonic + Transient Stability)
+        assert len(results) == 7
+        expected_keys = {
+            "cable_sizing", "transformer_sizing", "protection_coordination",
+            "arc_flash", "flisr", "harmonic_analysis", "transient_stability"
+        }
+        assert set(results.keys()) == expected_keys

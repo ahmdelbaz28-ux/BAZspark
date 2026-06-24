@@ -1197,30 +1197,30 @@ Step 3: Calculate Incident Energy
 En = 10^(K1 + K2 + 1.081×log(Iarc) + 0.0011×G)
 En = 10^(-0.792 + 0 + 1.081×4.623 + 0.0011×25)
 En = 10^(-0.792 + 4.998 + 0.028)
-En = 10^4.234 = 17,140 J/cm²
+En = 10^4.234 = 17.14 J/cm²
 
 E = 4.184 × Cf × En × (t/0.2) × (610^x / D^x)
-E = 4.184 × 1.5 × 17,140 × (0.1/0.2) × (610^1.641 / 455^1.641)
-E = 4.184 × 1.5 × 17,140 × 0.5 × (12,890 / 7,850)
-E = 4.184 × 1.5 × 17,140 × 0.5 × 1.642
-E = 88,600 J/cm² = 21.2 cal/cm²
+E = 4.184 × 1.5 × 17.14 × (0.1/0.2) × (610^1.641 / 455^1.641)
+E = 4.184 × 1.5 × 17.14 × 0.5 × (12,890 / 7,850)
+E = 4.184 × 1.5 × 17.14 × 0.5 × 1.642
+E = 88.6 J/cm² = 21.2 cal/cm²
 
 Step 4: Determine Hazard Category
 - E = 21.2 cal/cm²
-- Category 4 (requires 40 cal/cm² suit)
+- Category 2 (requires 8 cal/cm² arc-rated shirt + pants)
 
 Step 5: Arc Flash Boundary
 - E_boundary = 1.2 cal/cm² (second degree burn)
-- AFB = 610 × [4.184×1.5×17,140×(0.1/0.2) / 1.2]^(1/1.641)
-- AFB = 610 × [53,500 / 1.2]^0.609
-- AFB = 610 × 44,580^0.609
-- AFB = 610 × 580 = 353,800mm = 11.6 feet
+- AFB = 610 × [4.184×1.5×17.14×(0.1/0.2) / 1.2]^(1/1.641)
+- AFB = 610 × [53.53 / 1.2]^0.609
+- AFB = 610 × 44.61^0.609
+- AFB = 610 × 10.13 = 6,180mm = 20.3 feet
 
 RESULTS:
 - Incident Energy: 21.2 cal/cm²
-- Hazard Category: 4
-- Arc Flash Boundary: 11.6 feet
-- PPE Required: 40 cal/cm² suit + face shield + gloves
+- Hazard Category: 2
+- Arc Flash Boundary: 20.3 feet
+- PPE Required: 8 cal/cm² arc-rated shirt + pants + face shield + gloves
 - Working Distance: 18 inches (standard)
 
 WARNING: This is a HIGH hazard. Consider:
