@@ -16,11 +16,24 @@ from enum import Enum
 import logging
 
 # Vision & GUI
-import pyautogui
+try:
+    import pyautogui  # type: ignore[import-not-found]
+    PYautogui_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    pyautogui = None  # type: ignore[assignment]
+    PYautogui_AVAILABLE = False
+
 import cv2
 import numpy as np
 from PIL import Image
-import mss
+
+try:
+    import mss  # type: ignore[import-not-found]
+    MSS_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    mss = None  # type: ignore[assignment]
+    MSS_AVAILABLE = False
+
 
 # Windows automation
 try:
@@ -28,20 +41,32 @@ try:
     from pywinauto import Desktop, Application
     PYWINAUTO_AVAILABLE = True
 except ImportError:
+    pywinauto = None  # type: ignore[assignment]
+    Desktop = None  # type: ignore[assignment]
+    Application = None  # type: ignore[assignment]
     PYWINAUTO_AVAILABLE = False
 
 # CAD APIs
 try:
     import win32com.client
     WIN32_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
+    win32com = None  # type: ignore[assignment]
     WIN32_AVAILABLE = False
 
 try:
     import clr
     DOTNET_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
+    clr = None  # type: ignore[assignment]
     DOTNET_AVAILABLE = False
+
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:  # pragma: no cover
+    # These are only for type-checking; runtime imports happen in `revit_api_connect`.
+    from Autodesk.Revit.DB import Document, View, Element, XYZ  # noqa: F401
+    from Autodesk.Revit.UI import UIApplication, UIDocument  # noqa: F401
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("CAD-BIM-Controller")
@@ -88,9 +113,15 @@ class CADBIMController:
         self.active_app: Optional[AppType] = None
         self.active_window = None
         self.pywinauto_app = None
-        self.sct = mss.mss() if 'mss' in globals() else None
-        pyautogui.FAILSAFE = True  # Emergency stop by moving mouse to corner
-        pyautogui.PAUSE = 0.5
+
+        # Optional runtime dependency: `mss`
+        self.sct = mss.mss() if MSS_AVAILABLE and mss is not None else None
+
+        # Optional runtime dependency: `pyautogui`
+        if PYautogui_AVAILABLE and pyautogui is not None:
+            pyautogui.FAILSAFE = True  # Emergency stop by moving mouse to corner
+            pyautogui.PAUSE = 0.5
+
         
     # ═══════════════════════════════════════════════════════
     # 1. Launch applications
@@ -146,6 +177,9 @@ class CADBIMController:
     
     def capture_screen(self, region: Optional[ScreenRegion] = None) -> np.ndarray:
         """Take screenshot"""
+        if self.sct is None:
+            raise RuntimeError("mss is not available. Install `mss` to enable screenshots.")
+
         if region:
             monitor = {
                 "left": region.x, "top": region.y,
@@ -153,11 +187,12 @@ class CADBIMController:
             }
         else:
             monitor = self.sct.monitors[1]  # Primary screen
-            
+
         screenshot = self.sct.grab(monitor)
         img = np.array(screenshot)
         img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
         return img
+
     
     def capture_to_base64(self, region: Optional[ScreenRegion] = None) -> str:
         """Screenshot as base64 for AI"""
@@ -193,8 +228,9 @@ class CADBIMController:
         Requires: pip install easyocr
         """
         try:
-            import easyocr
+            import easyocr  # type: ignore[import-not-found]
             reader = easyocr.Reader(['en', 'ar'])
+
             img = self.capture_screen()
             results = reader.readtext(img)
             
@@ -219,10 +255,14 @@ class CADBIMController:
     
     def click(self, region: ScreenRegion, button: str = "left") -> bool:
         """Click on region"""
+        if not (PYautogui_AVAILABLE and pyautogui is not None):
+            raise RuntimeError("pyautogui is not available. Install `pyautogui` to enable GUI automation.")
+
         x, y = region.center()
         pyautogui.click(x, y, button=button)
         logger.info(f"Clicked at ({x}, {y})")
         return True
+
     
     def click_by_text(self, text: str, offset: tuple = (0, 0)) -> bool:
         """Find text and click on it"""
@@ -246,27 +286,47 @@ class CADBIMController:
     
     def type_text(self, text: str, interval: float = 0.05) -> None:
         """Type text"""
+        if not (PYautogui_AVAILABLE and pyautogui is not None):
+            raise RuntimeError("pyautogui is not available. Install `pyautogui` to enable GUI automation.")
+
         pyautogui.typewrite(text, interval=interval)
         logger.info(f"Typed: {text}")
+
     
     def press_key(self, key: str) -> None:
         """Press key"""
+        if not (PYautogui_AVAILABLE and pyautogui is not None):
+            raise RuntimeError("pyautogui is not available. Install `pyautogui` to enable GUI automation.")
+
         pyautogui.press(key)
         logger.info(f"Pressed: {key}")
+
     
     def hotkey(self, *keys: str) -> None:
         """Press combination (Ctrl+S, Alt+F4, etc.)"""
+        if not (PYautogui_AVAILABLE and pyautogui is not None):
+            raise RuntimeError("pyautogui is not available. Install `pyautogui` to enable GUI automation.")
+
         pyautogui.hotkey(*keys)
         logger.info(f"Hotkey: {'+'.join(keys)}")
+
     
     def scroll(self, clicks: int, x: Optional[int] = None, y: Optional[int] = None) -> None:
         """Scroll"""
+        if not (PYautogui_AVAILABLE and pyautogui is not None):
+            raise RuntimeError("pyautogui is not available. Install `pyautogui` to enable GUI automation.")
+
         pyautogui.scroll(clicks, x, y)
+
     
     def drag(self, start: tuple, end: tuple, duration: float = 0.5) -> None:
         """Drag from point to point"""
+        if not (PYautogui_AVAILABLE and pyautogui is not None):
+            raise RuntimeError("pyautogui is not available. Install `pyautogui` to enable GUI automation.")
+
         pyautogui.moveTo(start[0], start[1])
         pyautogui.dragTo(end[0], end[1], duration=duration)
+
     
     def wait_for_element(self, image_path: str, timeout: float = 30.0, check_interval: float = 1.0) -> Optional[ScreenRegion]:
         """Wait for element to appear on screen"""
@@ -305,13 +365,19 @@ class CADBIMController:
             return None
             
         try:
-            clr.AddReference("RevitAPI")
-            clr.AddReference("RevitAPIUI")
+            # mypy/pyright would understand these when `clr` is installed.
+            clr_ = cast(Any, clr)
+            clr_.AddReference("RevitAPI")
+            clr_.AddReference("RevitAPIUI")
             from Autodesk.Revit.DB import Document, View, Element, XYZ
             from Autodesk.Revit.UI import UIApplication, UIDocument
             logger.info("Connected to Revit API")
-            return {"clr": clr, "revit_types": {"Document": Document, "View": View, "Element": Element, "XYZ": XYZ}}
+            return {
+                "clr": clr_,
+                "revit_types": {"Document": Document, "View": View, "Element": Element, "XYZ": XYZ},
+            }
         except Exception as e:
+
             logger.error(f"Revit API connection failed: {e}")
             return None
     
