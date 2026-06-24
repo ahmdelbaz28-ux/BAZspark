@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,State,Use useState for local state,Simple component state should use useState hook,useState for form inputs toggles counters,Class components this.state,"const [count, setCount] = useState(0)",this.state = { count: 0 },Medium,https://react.dev/reference/react/useState
 2,State,Lift state up when needed,Share state between siblings by lifting to parent,Lift shared state to common ancestor,Prop drilling through many levels,Parent holds state passes down,Deep prop chains,Medium,https://react.dev/learn/sharing-state-between-components
@@ -53,7 +52,6 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 51,Patterns,Container/Presentational split,Separate data logic from UI,Container fetches presentational renders,Mixed data and UI in one,<UserContainer><UserView/></UserContainer>,<User /> with fetch and render,Low,
 52,Patterns,Render props for flexibility,Share code via render prop pattern,Render prop for customizable rendering,Duplicate logic across components,<DataFetcher render={data => ...}/>,Copy paste fetch logic,Low,https://react.dev/reference/react/cloneElement#passing-data-with-a-render-prop
 53,Patterns,Compound components,Related components sharing state,Tab + TabPanel sharing context,Prop drilling between related,<Tabs><Tab/><TabPanel/></Tabs>,<Tabs tabs={[]} panels={[...]}/>,Low,
-=======
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,State,Use useState for local state,Simple component state should use useState hook,useState for form inputs toggles counters,Class components this.state,"const [count, setCount] = useState(0)",this.state = { count: 0 },Medium,https://react.dev/reference/react/useState
 2,State,Lift state up when needed,Share state between siblings by lifting to parent,Lift shared state to common ancestor,Prop drilling through many levels,Parent holds state passes down,Deep prop chains,Medium,https://react.dev/learn/sharing-state-between-components
@@ -108,4 +106,3 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 51,Patterns,Container/Presentational split,Separate data logic from UI,Container fetches presentational renders,Mixed data and UI in one,<UserContainer><UserView/></UserContainer>,<User /> with fetch and render,Low,
 52,Patterns,Render props for flexibility,Share code via render prop pattern,Render prop for customizable rendering,Duplicate logic across components,<DataFetcher render={data => ...}/>,Copy paste fetch logic,Low,https://react.dev/reference/react/cloneElement#passing-data-with-a-render-prop
 53,Patterns,Compound components,Related components sharing state,Tab + TabPanel sharing context,Prop drilling between related,<Tabs><Tab/><TabPanel/></Tabs>,<Tabs tabs={[]} panels={[...]}/>,Low,
->>>>>>> 41a73a519f55e77d76d61002304d3916ec7acc34

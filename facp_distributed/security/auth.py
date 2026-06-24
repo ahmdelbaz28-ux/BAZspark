@@ -1,13 +1,16 @@
 """
 Authentication System for Distributed FACP
 """
+from __future__ import annotations
 import hashlib
 import secrets
 import time
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import jwt  # PyJWT
+
+_global_user_store = {}
 
 
 class UserRole(Enum):
@@ -53,7 +56,7 @@ class TokenManager:
 
         return token_str
 
-    def validate_token(self, token: str) -> tuple[bool, Optional[Dict[str, Any]]]:
+    def validate_token(self, token: str) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
         Validate an authentication token
         :param token: Token string to validate
@@ -112,8 +115,9 @@ class AuthProvider:
             "created_at": time.time(),
             "node_id": node_id  # Which node registered this user
         }
+        _global_user_store[user_id] = {"roles": roles, "permissions": permissions}
 
-    def authenticate_request(self, security_block: Dict[str, Any], source_node: str = None) -> tuple[bool, Optional[Dict[str, Any]]]:
+    def authenticate_request(self, security_block: Dict[str, Any], source_node: str = None) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
         Authenticate a request based on security block
         :param security_block: Security information from request

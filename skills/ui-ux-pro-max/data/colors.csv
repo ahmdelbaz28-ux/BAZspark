@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 No,Product Type,Primary (Hex),Secondary (Hex),CTA (Hex),Background (Hex),Text (Hex),Border (Hex),Notes
 1,SaaS (General),#2563EB,#3B82F6,#F97316,#F8FAFC,#1E293B,#E2E8F0,Trust blue + orange CTA contrast
 2,Micro SaaS,#6366F1,#818CF8,#10B981,#F5F3FF,#1E1B4B,#E0E7FF,Indigo primary + emerald CTA
@@ -96,7 +95,6 @@ No,Product Type,Primary (Hex),Secondary (Hex),CTA (Hex),Background (Hex),Text (H
 94,Generative AI Art,#18181B,#3F3F46,#EC4899,#FAFAFA,#09090B,#E4E4E7,Canvas neutral + creative pink
 95,Spatial / Vision OS,#FFFFFF,#E5E5E5,#007AFF,#888888,#000000,#CCCCCC,Glass white + system blue
 96,Climate Tech,#059669,#10B981,#FBBF24,#ECFDF5,#064E3B,#A7F3D0,Nature green + solar gold
-=======
 No,Product Type,Primary (Hex),Secondary (Hex),CTA (Hex),Background (Hex),Text (Hex),Border (Hex),Notes
 1,SaaS (General),#2563EB,#3B82F6,#F97316,#F8FAFC,#1E293B,#E2E8F0,Trust blue + orange CTA contrast
 2,Micro SaaS,#6366F1,#818CF8,#10B981,#F5F3FF,#1E1B4B,#E0E7FF,Indigo primary + emerald CTA
@@ -194,4 +192,3 @@ No,Product Type,Primary (Hex),Secondary (Hex),CTA (Hex),Background (Hex),Text (H
 94,Generative AI Art,#18181B,#3F3F46,#EC4899,#FAFAFA,#09090B,#E4E4E7,Canvas neutral + creative pink
 95,Spatial / Vision OS,#FFFFFF,#E5E5E5,#007AFF,#888888,#000000,#CCCCCC,Glass white + system blue
 96,Climate Tech,#059669,#10B981,#FBBF24,#ECFDF5,#064E3B,#A7F3D0,Nature green + solar gold
->>>>>>> 41a73a519f55e77d76d61002304d3916ec7acc34

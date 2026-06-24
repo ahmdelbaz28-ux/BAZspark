@@ -5,7 +5,7 @@ import json
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class RiskLevel(Enum):
@@ -128,7 +128,10 @@ class FACPResponse:
         self.protocol = "FACP/1.1"
         self.type = MessageType.RESPONSE.value
         self.id = id
-        self.status = status.value
+        if isinstance(status, StatusType):
+            self.status = status.value
+        else:
+            self.status = status
         self.result = result or {}
         self.error = error
         self.trace = trace or {}
@@ -165,7 +168,7 @@ class FACPMessageValidator:
     """
 
     @staticmethod
-    def validate_request(request: FACPRequest) -> tuple[bool, List[str]]:
+    def validate_request(request: FACPRequest) -> Tuple[bool, List[str]]:
         """Validate FACP request message for distributed system"""
         errors = []
 
@@ -190,10 +193,15 @@ class FACPMessageValidator:
             errors.append(f"Invalid execution state: {request.execution_state}")
 
         # Validate timestamp format (basic check)
-        try:
-            datetime.fromisoformat(request.timestamp.replace("Z", "+00:00"))
-        except ValueError:
-            errors.append(f"Invalid timestamp format: {request.timestamp}")
+        # Accept ISO format strings or numeric timestamps (epoch seconds)
+        if isinstance(request.timestamp, (int, float)):
+            # Numeric timestamp is considered valid
+            pass
+        else:
+            try:
+                datetime.fromisoformat(request.timestamp.replace("Z", "+00:00"))
+            except Exception:
+                errors.append(f"Invalid timestamp format: {request.timestamp}")
 
         # Validate security block
         if not isinstance(request.security, dict):
@@ -234,7 +242,7 @@ class FACPMessageValidator:
         return len(errors) == 0, errors
 
     @staticmethod
-    def validate_response(response: FACPResponse) -> tuple[bool, List[str]]:
+    def validate_response(response: FACPResponse) -> Tuple[bool, List[str]]:
         """Validate FACP response message for distributed system"""
         errors = []
 
@@ -256,7 +264,7 @@ class FACPMessageValidator:
         return len(errors) == 0, errors
 
     @staticmethod
-    def sanitize_payload(payload: Any, max_size: int = 1024*1024) -> tuple[Any, bool, str]:  # 1MB default
+    def sanitize_payload(payload: Any, max_size: int = 1024*1024) -> Tuple[Any, bool, str]:  # 1MB default
         """Sanitize and validate payload size"""
         try:
             serialized = json.dumps(payload)

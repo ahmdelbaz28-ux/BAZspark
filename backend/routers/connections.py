@@ -9,6 +9,7 @@ calculations per NFPA 72-2022 §27.4.1.2.
 from __future__ import annotations
 
 import uuid
+from typing import Union  # Add Union import for Python 3.8 compatibility
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -105,9 +106,9 @@ async def create_connection(project_id: str, input_data: CreateConnectionInput):
 async def update_connection(
     project_id: str,
     connection_id: str,
-    cableSize: str | None = None,
-    length: float | None = None,
-    connection_type: str | None = None,  # FIX #14: Renamed 'type' to 'connection_type' — 'type' shadows built-in
+    cableSize: Union[str, None] = None,
+    length: Union[float, None] = None,
+    connection_type: Union[str, None] = None,  # FIX #14: Renamed 'type' to 'connection_type' — 'type' shadows built-in
 ):
     """Update an existing connection in a project.
 

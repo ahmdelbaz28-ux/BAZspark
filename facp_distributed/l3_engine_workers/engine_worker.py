@@ -1,11 +1,12 @@
 """
 Engine Worker for L3 in Distributed FACP System
 """
+from __future__ import annotations
 import logging
 import threading
 import time
 import uuid
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from ..protocol.message_schema import FACPResponse
 from ..security.isolation import SandboxController, StatelessExecutionValidator
@@ -139,7 +140,7 @@ class EngineWorker:
 
         return False
 
-    def _validate_constraints(self, request_data: Dict[str, Any]) -> tuple[bool, str]:
+    def _validate_constraints(self, request_data: Dict[str, Any]) -> Tuple[bool, str]:
         """
         Validate request constraints
         """

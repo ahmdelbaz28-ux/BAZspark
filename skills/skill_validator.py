@@ -8,7 +8,7 @@ using Pydantic models with strict type checking and validation.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional, TypeVar, Generic, List, Dict, Optional as Opt, Union
+from typing import Any, Optional, TypeVar, Generic, List, Dict, Optional as Opt, Union, Tuple
 
 from pydantic import (
     BaseModel,
@@ -105,12 +105,12 @@ class SkillDescription(BaseModel):
         max_length=5000,
         description="Detailed description",
     )
-    trigger_words: list[str] = Field(
+    trigger_words: List[str] = Field(
         min_length=1,
         max_length=50,
         description="Keywords that activate this skill",
     )
-    use_cases: list[str] = Field(
+    use_cases: List[str] = Field(
         default_factory=list,
         max_length=20,
         description="Common use case descriptions",
@@ -118,7 +118,7 @@ class SkillDescription(BaseModel):
     
     @field_validator("trigger_words")
     @classmethod
-    def validate_triggers(cls, v: list[str]) -> list[str]:
+    def validate_triggers(cls, v: List[str]) -> List[str]:
         """Ensure trigger words are meaningful and lowercase.
         Numeric-only triggers are prefixed with a letter to satisfy .islower() checks.
         """
@@ -152,11 +152,11 @@ class SkillPermissions(BaseModel):
     filesystem_read: bool = Field(default=False, description="Requires read access")
     filesystem_write: bool = Field(default=False, description="Requires write access")
     subprocess: bool = Field(default=False, description="Can spawn subprocesses")
-    env_vars: list[str] = Field(default_factory=list, description="Required env vars")
+    env_vars: List[str] = Field(default_factory=list, description="Required env vars")
     
     @field_validator("env_vars", mode="before")
     @classmethod
-    def validate_env_vars(cls, v: Any) -> list[str]:
+    def validate_env_vars(cls, v: Any) -> List[str]:
         if isinstance(v, str):
             return [x.strip() for x in v.split(",") if x.strip()]
         return v if isinstance(v, list) else []
@@ -172,7 +172,7 @@ class SkillRequirements(BaseModel):
         default="3.10",
         description="Minimum Python version",
     )
-    dependencies: dict[str, str] = Field(
+    dependencies: Dict[str, str] = Field(
         default_factory=dict,
         description="Package name to version spec",
     )
@@ -206,7 +206,7 @@ class ExecutionError(BaseModel):
         description="How to resolve",
     )
     can_retry: bool = Field(default=False, description="Whether retry is safe")
-    details: Opt[dict[str, Any]] = Field(
+    details: Opt[Dict[str, Any]] = Field(
         default=None,
         description="Additional context",
     )
@@ -239,7 +239,7 @@ class ExecutionResult(BaseModel, Generic[T]):
             raise ValueError("Cannot have data on failed execution")
         return self
     
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         """Serialize to dictionary for JSON export."""
         return self.model_dump(mode="json")
 
@@ -265,18 +265,18 @@ class SkillManifest(BaseModel):
         default="1.0",
         pattern=r"^\d+\.\d+$",
     )
-    tags: list[str] = Field(default_factory=list, max_length=10)
+    tags: List[str] = Field(default_factory=list, max_length=10)
     
     @field_validator("tags", mode="before")
     @classmethod
-    def validate_tags(cls, v: Any) -> list[str]:
+    def validate_tags(cls, v: Any) -> List[str]:
         if isinstance(v, str):
             return [x.strip().lower() for x in v.split(",") if x.strip()]
         return v if isinstance(v, list) else []
     
     @field_validator("tags")
     @classmethod
-    def validate_tags_content(cls, v: list[str]) -> list[str]:
+    def validate_tags_content(cls, v: List[str]) -> List[str]:
         """Ensure tags are meaningful."""
         return [t for t in v if len(t) >= 2]
     
@@ -292,7 +292,7 @@ class SkillManifest(BaseModel):
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-def validate_skill_manifest(data: dict[str, Any]) -> tuple[bool, Opt[str]]:
+def validate_skill_manifest(data: Dict[str, Any]) -> Tuple[bool, Opt[str]]:
     """
     Validate skill manifest data.
     

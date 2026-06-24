@@ -28,13 +28,6 @@ from fastapi.responses import JSONResponse
 from backend.auth import require_permission
 from backend.rbac import Permission
 
-try:
-    from backend.limiter import limiter
-    _HAS_LIMITER = True
-except ImportError:
-    _HAS_LIMITER = False
-    limiter = None  # type: ignore[assignment]
-
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/parse-dwg", tags=["dwg"])
@@ -49,26 +42,13 @@ _MAX_DWG_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
 _AUTH = [Depends(require_permission(Permission.PROJECT_CREATE))]
 
 
-def rate_limit_if_enabled(func):
-    """Apply rate limiting decorator if enabled."""
-    if _HAS_LIMITER:
-        return limiter.limit("10/minute")(func)
-    return func
-
-
-@router.post("", dependencies=_AUTH)
-@rate_limit_if_enabled
-async def parse_dwg(request: Request, file: UploadFile = File(...)):  # noqa: B008
+async def _parse_dwg_logic(request: Request, file: UploadFile):
     """
-    Upload a DWG or DXF file for parsing.
-
-    Returns structured parsing results including room count, conversion
-    time, and any errors/warnings. On validation failure, returns a
-    400-level error with details.
-
-    STRESS-TEST FIX #5: Now requires PROJECT_CREATE permission and is
-    rate-limited to 10/minute per client IP. Chunks are streamed directly
-    to a temp file (no in-memory accumulation).
+    Internal function containing the actual parsing logic.
+    
+    This separates the business logic from the route definition to allow
+    for conditional decorator application without affecting FastAPI's
+    signature analysis.
     """
     # ── Validate file extension ─────────────────────────────────────────
     if not file.filename:
@@ -109,14 +89,14 @@ async def parse_dwg(request: Request, file: UploadFile = File(...)):  # noqa: B0
             out_f.flush()
             os.fsync(out_f.fileno())
 
-        # ── Validate non-empty file ─────────────────────────────────────
+        # ── Validate non-empty file ────────────────────────────────────────
         if empty:
             raise HTTPException(
                 status_code=422,
                 detail={"success": False, "error": "Empty file uploaded"},
             )
 
-        # ── Parse via DWGParser ─────────────────────────────────────────
+        # ── Parse via DWGParser ───────────────────────────────────────────
         try:
             from parsers.dwg_parser import DWGParser
         except ImportError as import_err:
@@ -132,7 +112,7 @@ async def parse_dwg(request: Request, file: UploadFile = File(...)):  # noqa: B0
         parser = DWGParser()
         result = parser.parse(temp_path)
 
-        # ── Map result to HTTP response ─────────────────────────────────
+        # ── Map result to HTTP response ──────────────────────────────────
         if not result.success:
             detail = {
                 "success": False,
@@ -174,9 +154,35 @@ async def parse_dwg(request: Request, file: UploadFile = File(...)):  # noqa: B0
             },
         )
     finally:
-        # ── Clean up temp file ─────────────────────────────────────────
+        # ── Clean up temp file ───────────────────────────────────────────
         if temp_path:
             try:
                 os.unlink(temp_path)
             except Exception as exc:
                 logger.debug("Temp file cleanup failed: %s", exc)
+
+
+# Define the route once without rate limiting initially
+@router.post("", dependencies=_AUTH)
+async def parse_dwg(request: Request, file: UploadFile = File(...)):  # noqa: B008
+    """
+    Upload a DWG or DXF file for parsing.
+
+    Returns structured parsing results including room count, conversion
+    time, and any errors/warnings. On validation failure, returns a
+    400-level error with details.
+
+    STRESS-TEST FIX #5: Now requires PROJECT_CREATE permission and is
+    rate-limited to 10/minute per client IP. Chunks are streamed directly
+    to a temp file (no in-memory accumulation).
+    """
+    return await _parse_dwg_logic(request, file)
+
+
+# Conditionally apply rate limiting after the route is defined
+try:
+    from backend.limiter import limiter
+    parse_dwg = limiter.limit("10/minute")(parse_dwg)
+except ImportError:
+    # If limiter is not available, the function remains without rate limiting
+    pass

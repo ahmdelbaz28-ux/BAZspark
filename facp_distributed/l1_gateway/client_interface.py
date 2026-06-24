@@ -4,7 +4,7 @@ Client Interface for L1 Gateway in Distributed FACP System
 import threading
 import time
 import uuid
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Tuple, List
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -305,7 +305,7 @@ class RequestNormalizer:
             }
 
     @staticmethod
-    def validate_normalized_request(request_data: Dict[str, Any]) -> tuple[bool, list]:
+    def validate_normalized_request(request_data: Dict[str, Any]) -> Tuple[bool, List]:
         """Validate a normalized request"""
         errors = []
 

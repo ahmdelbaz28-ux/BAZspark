@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Composition,Use Composition API for new projects,Composition API offers better TypeScript support and logic reuse,<script setup> for components,Options API for new projects,<script setup>,export default { data() },Medium,https://vuejs.org/guide/extras/composition-api-faq.html
 2,Composition,Use script setup syntax,Cleaner syntax with automatic exports,<script setup> with defineProps,setup() function manually,<script setup>,<script> setup() { return {} },Low,https://vuejs.org/api/sfc-script-setup.html
@@ -49,7 +48,6 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 47,Accessibility,Bind aria attributes dynamically,Keep ARIA in sync with state,":aria-expanded=""isOpen""",Static ARIA values,":aria-expanded=""menuOpen""","aria-expanded=""true""",Medium,
 48,SSR,Use Nuxt for SSR,Full-featured SSR framework,Nuxt 3 for SSR apps,Manual SSR setup,npx nuxi init my-app,Custom SSR configuration,Medium,https://nuxt.com/
 49,SSR,Handle hydration mismatches,Client/server content must match,ClientOnly for browser-only content,Different content server/client,<ClientOnly><BrowserWidget/></ClientOnly>,<div>{{ Date.now() }}</div>,High,
-=======
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Composition,Use Composition API for new projects,Composition API offers better TypeScript support and logic reuse,<script setup> for components,Options API for new projects,<script setup>,export default { data() },Medium,https://vuejs.org/guide/extras/composition-api-faq.html
 2,Composition,Use script setup syntax,Cleaner syntax with automatic exports,<script setup> with defineProps,setup() function manually,<script setup>,<script> setup() { return {} },Low,https://vuejs.org/api/sfc-script-setup.html
@@ -100,4 +98,3 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 47,Accessibility,Bind aria attributes dynamically,Keep ARIA in sync with state,":aria-expanded=""isOpen""",Static ARIA values,":aria-expanded=""menuOpen""","aria-expanded=""true""",Medium,
 48,SSR,Use Nuxt for SSR,Full-featured SSR framework,Nuxt 3 for SSR apps,Manual SSR setup,npx nuxi init my-app,Custom SSR configuration,Medium,https://nuxt.com/
 49,SSR,Handle hydration mismatches,Client/server content must match,ClientOnly for browser-only content,Different content server/client,<ClientOnly><BrowserWidget/></ClientOnly>,<div>{{ Date.now() }}</div>,High,
->>>>>>> 41a73a519f55e77d76d61002304d3916ec7acc34

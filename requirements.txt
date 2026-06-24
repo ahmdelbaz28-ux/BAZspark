@@ -7,8 +7,8 @@ pydantic==2.5.0
 python-multipart==0.0.6
 psutil==5.9.6
 numpy==1.24.3
-pandas==2.1.3
-matplotlib==3.8.2
+pandas==1.5.3  # Compatible with Python 3.8
+matplotlib==3.7.5  # Compatible with Python 3.8
 scipy==1.11.4
 lxml==4.9.3
 beautifulsoup4==4.12.2
@@ -18,3 +18,17 @@ slowapi==0.1.8
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-timeout==2.2.0
+
+# GUI Automation & Computer Vision
+pyautogui>=0.9.54
+pywinauto>=0.6.8
+Pillow>=10.0.0
+opencv-python>=4.8.0
+mss>=9.0.1
+easyocr>=1.7.0
+
+# For AutoCAD COM API
+pywin32>=306
+
+# For Revit .NET API
+pythonnet>=3.0.1

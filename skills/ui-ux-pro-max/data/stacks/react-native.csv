@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Components,Use functional components,Hooks-based components are standard,Functional components with hooks,Class components,const App = () => { },class App extends Component,Medium,https://reactnative.dev/docs/intro-react
 2,Components,Keep components small,Single responsibility principle,Split into smaller components,Large monolithic components,<Header /><Content /><Footer />,500+ line component,Medium,
@@ -51,7 +50,6 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 49,Native,Use native modules carefully,Bridge has overhead,Batch native calls,Frequent bridge crossing,Batch updates,Call native on every keystroke,High,
 50,Native,Use Expo when possible,Simplified development,Expo for standard features,Bare RN for simple apps,expo install package,react-native link package,Low,https://docs.expo.dev/
 51,Native,Handle permissions,Request permissions properly,Check and request permissions,Assume permissions granted,PermissionsAndroid.request(),Access without permission check,High,https://reactnative.dev/docs/permissionsandroid
-=======
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Components,Use functional components,Hooks-based components are standard,Functional components with hooks,Class components,const App = () => { },class App extends Component,Medium,https://reactnative.dev/docs/intro-react
 2,Components,Keep components small,Single responsibility principle,Split into smaller components,Large monolithic components,<Header /><Content /><Footer />,500+ line component,Medium,
@@ -104,4 +102,3 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 49,Native,Use native modules carefully,Bridge has overhead,Batch native calls,Frequent bridge crossing,Batch updates,Call native on every keystroke,High,
 50,Native,Use Expo when possible,Simplified development,Expo for standard features,Bare RN for simple apps,expo install package,react-native link package,Low,https://docs.expo.dev/
 51,Native,Handle permissions,Request permissions properly,Check and request permissions,Assume permissions granted,PermissionsAndroid.request(),Access without permission check,High,https://reactnative.dev/docs/permissionsandroid
->>>>>>> 41a73a519f55e77d76d61002304d3916ec7acc34

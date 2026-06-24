@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Views,Use struct for views,SwiftUI views are value types,struct MyView: View,class MyView: View,struct ContentView: View { var body: some View },class ContentView: View,High,https://developer.apple.com/documentation/swiftui/view
 2,Views,Keep views small and focused,Single responsibility for each view,Extract subviews for complex layouts,Large monolithic views,Extract HeaderView FooterView,500+ line View struct,Medium,
@@ -50,7 +49,6 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 48,Architecture,Use MVVM pattern,Separate view and logic,ViewModel for business logic,Logic in View,ObservableObject ViewModel,@State for complex logic,Medium,
 49,Architecture,Keep views dumb,Views display view model state,View reads from ViewModel,Business logic in View,view.items from vm.items,Complex filtering in View,Medium,
 50,Architecture,Use dependency injection,Inject dependencies for testing,Initialize with dependencies,Hard-coded dependencies,init(service: ServiceProtocol),let service = RealService(),Medium,
-=======
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Views,Use struct for views,SwiftUI views are value types,struct MyView: View,class MyView: View,struct ContentView: View { var body: some View },class ContentView: View,High,https://developer.apple.com/documentation/swiftui/view
 2,Views,Keep views small and focused,Single responsibility for each view,Extract subviews for complex layouts,Large monolithic views,Extract HeaderView FooterView,500+ line View struct,Medium,
@@ -102,4 +100,3 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 48,Architecture,Use MVVM pattern,Separate view and logic,ViewModel for business logic,Logic in View,ObservableObject ViewModel,@State for complex logic,Medium,
 49,Architecture,Keep views dumb,Views display view model state,View reads from ViewModel,Business logic in View,view.items from vm.items,Complex filtering in View,Medium,
 50,Architecture,Use dependency injection,Inject dependencies for testing,Initialize with dependencies,Hard-coded dependencies,init(service: ServiceProtocol),let service = RealService(),Medium,
->>>>>>> 41a73a519f55e77d76d61002304d3916ec7acc34

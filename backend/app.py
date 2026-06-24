@@ -499,6 +499,28 @@ for _router_name in (
 ):
     _safe_include_router(_router_name)
 
+# Also include routers under unversioned /api prefix for compatibility.
+for _router_name in (
+    "projects",
+    "devices",
+    "connections",
+    "connections_v2",
+    "elements",
+    "conflicts",
+    "reports",
+    "exports",
+    "sync",
+    "memory",
+    "workflow",
+    "environment",
+    "dwg",
+    "qomn",
+    "facp",
+    "api_keys",
+    "analyze",
+):
+    _safe_include_router(_router_name, prefix="/api")
+
 # V130 MARINE MODULE: Mount the marine fire-safety router.
 # Provides endpoints for IMO SOLAS II-2, IEC 60092-502, ship zone division,
 # detector selection, extinguishing sizing, alarm-logic generation, and
@@ -526,6 +548,7 @@ app.include_router(health_router_module.router, prefix="/api", tags=["Health"])
 app.include_router(revit_api.router, prefix="/api/v1", tags=["revit"])  # Added Revit API router
 app.include_router(engineering_copilot.router, prefix="/api/v1", tags=["engineering-copilot"])  # Added Engineering Copilot router
 app.include_router(projects.router, prefix="/api/v1", tags=["projects"])
+app.include_router(projects.router, prefix="/api", tags=["projects"])
 
 # Add admin rollback endpoint
 @app.post("/api/v1/admin/rollback", tags=["Admin"])

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Routing,Use App Router for new projects,App Router is the recommended approach in Next.js 14+,app/ directory with page.tsx,pages/ for new projects,app/dashboard/page.tsx,pages/dashboard.tsx,Medium,https://nextjs.org/docs/app
 2,Routing,Use file-based routing,Create routes by adding files in app directory,page.tsx for routes layout.tsx for layouts,Manual route configuration,app/blog/[slug]/page.tsx,Custom router setup,Medium,https://nextjs.org/docs/app/building-your-application/routing
@@ -52,7 +51,6 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 50,Security,Sanitize user input,Never trust user input,Escape sanitize validate all input,Direct interpolation of user data,DOMPurify.sanitize(userInput),dangerouslySetInnerHTML={{ __html: userInput }},High,
 51,Security,Use CSP headers,Content Security Policy for XSS protection,Configure CSP in next.config.js,No security headers,headers() with CSP,No CSP configuration,High,https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy
 52,Security,Validate Server Action input,Server Actions are public endpoints,Validate and authorize in Server Action,Trust Server Action input,Auth check + validation in action,Direct database call without check,High,
-=======
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Routing,Use App Router for new projects,App Router is the recommended approach in Next.js 14+,app/ directory with page.tsx,pages/ for new projects,app/dashboard/page.tsx,pages/dashboard.tsx,Medium,https://nextjs.org/docs/app
 2,Routing,Use file-based routing,Create routes by adding files in app directory,page.tsx for routes layout.tsx for layouts,Manual route configuration,app/blog/[slug]/page.tsx,Custom router setup,Medium,https://nextjs.org/docs/app/building-your-application/routing
@@ -106,4 +104,3 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 50,Security,Sanitize user input,Never trust user input,Escape sanitize validate all input,Direct interpolation of user data,DOMPurify.sanitize(userInput),dangerouslySetInnerHTML={{ __html: userInput }},High,
 51,Security,Use CSP headers,Content Security Policy for XSS protection,Configure CSP in next.config.js,No security headers,headers() with CSP,No CSP configuration,High,https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy
 52,Security,Validate Server Action input,Server Actions are public endpoints,Validate and authorize in Server Action,Trust Server Action input,Auth check + validation in action,Direct database call without check,High,
->>>>>>> 41a73a519f55e77d76d61002304d3916ec7acc34

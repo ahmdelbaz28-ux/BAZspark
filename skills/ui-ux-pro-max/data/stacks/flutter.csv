@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Widgets,Use StatelessWidget when possible,Immutable widgets are simpler,StatelessWidget for static UI,StatefulWidget for everything,class MyWidget extends StatelessWidget,class MyWidget extends StatefulWidget (static),Medium,https://api.flutter.dev/flutter/widgets/StatelessWidget-class.html
 2,Widgets,Keep widgets small,Single responsibility principle,Extract widgets into smaller pieces,Large build methods,Column(children: [Header() Content()]),500+ line build method,Medium,
@@ -52,7 +51,6 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 50,Platform,Use kIsWeb for web,Web platform detection,kIsWeb for web checks,Platform for web,if (kIsWeb) {},Platform.isWeb (doesn't exist),Medium,
 51,Packages,Use pub.dev packages,Community packages,Popular maintained packages,Custom implementations,cached_network_image,Custom image cache,Medium,https://pub.dev/
 52,Packages,Check package quality,Quality before adding,Pub points and popularity,Any package without review,100+ pub points,Unmaintained packages,Medium,
-=======
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Widgets,Use StatelessWidget when possible,Immutable widgets are simpler,StatelessWidget for static UI,StatefulWidget for everything,class MyWidget extends StatelessWidget,class MyWidget extends StatefulWidget (static),Medium,https://api.flutter.dev/flutter/widgets/StatelessWidget-class.html
 2,Widgets,Keep widgets small,Single responsibility principle,Extract widgets into smaller pieces,Large build methods,Column(children: [Header() Content()]),500+ line build method,Medium,
@@ -106,4 +104,3 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 50,Platform,Use kIsWeb for web,Web platform detection,kIsWeb for web checks,Platform for web,if (kIsWeb) {},Platform.isWeb (doesn't exist),Medium,
 51,Packages,Use pub.dev packages,Community packages,Popular maintained packages,Custom implementations,cached_network_image,Custom image cache,Medium,https://pub.dev/
 52,Packages,Check package quality,Quality before adding,Pub points and popularity,Any package without review,100+ pub points,Unmaintained packages,Medium,
->>>>>>> 41a73a519f55e77d76d61002304d3916ec7acc34

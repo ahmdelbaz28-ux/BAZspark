@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Reactivity,Use $: for reactive statements,Automatic dependency tracking,$: for derived values,Manual recalculation,$: doubled = count * 2,let doubled; count && (doubled = count * 2),Medium,https://svelte.dev/docs/svelte-components#script-3-$-marks-a-statement-as-reactive
 2,Reactivity,Trigger reactivity with assignment,Svelte tracks assignments not mutations,Reassign arrays/objects to trigger update,Mutate without reassignment,"items = [...items, newItem]",items.push(newItem),High,https://svelte.dev/docs/svelte-components#script-2-assignments-are-reactive
@@ -53,7 +52,6 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 51,TypeScript,Type events with createEventDispatcher,Type-safe events,createEventDispatcher<Events>(),Untyped dispatch,createEventDispatcher<{ save: Data }>(),createEventDispatcher(),Medium,
 52,Accessibility,Use semantic elements,Proper HTML in templates,button nav main appropriately,div for everything,<button on:click>,<div on:click>,High,
 53,Accessibility,Add aria to dynamic content,Accessible state changes,aria-live for updates,Silent dynamic updates,"<div aria-live=""polite"">{message}</div>",<div>{message}</div>,Medium,
-=======
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Reactivity,Use $: for reactive statements,Automatic dependency tracking,$: for derived values,Manual recalculation,$: doubled = count * 2,let doubled; count && (doubled = count * 2),Medium,https://svelte.dev/docs/svelte-components#script-3-$-marks-a-statement-as-reactive
 2,Reactivity,Trigger reactivity with assignment,Svelte tracks assignments not mutations,Reassign arrays/objects to trigger update,Mutate without reassignment,"items = [...items, newItem]",items.push(newItem),High,https://svelte.dev/docs/svelte-components#script-2-assignments-are-reactive
@@ -108,4 +106,3 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 51,TypeScript,Type events with createEventDispatcher,Type-safe events,createEventDispatcher<Events>(),Untyped dispatch,createEventDispatcher<{ save: Data }>(),createEventDispatcher(),Medium,
 52,Accessibility,Use semantic elements,Proper HTML in templates,button nav main appropriately,div for everything,<button on:click>,<div on:click>,High,
 53,Accessibility,Add aria to dynamic content,Accessible state changes,aria-live for updates,Silent dynamic updates,"<div aria-live=""polite"">{message}</div>",<div>{message}</div>,Medium,
->>>>>>> 41a73a519f55e77d76d61002304d3916ec7acc34

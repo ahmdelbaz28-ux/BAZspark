@@ -418,6 +418,13 @@ async def export_report(
                 status_code=501,
                 detail="PDF export requires the reportlab package",
             )
+        except TypeError as e:
+            # Known incompatibility with OpenSSL MD5; indicate PDF not supported.
+            logger.error("PDF generation TypeError: %s", e, exc_info=True)
+            raise HTTPException(
+                status_code=501,
+                detail="PDF export not supported in this environment",
+            )
         except Exception as e:
             # V113 SECURITY: Never expose str(e) to client
             logger.error("PDF generation failed: %s", e, exc_info=True)

@@ -24,11 +24,11 @@ Endpoints:
     GET  /marine/fire-classes         — List SOLAS fire division classes
 """
 
-from __future__ import annotations
+
 
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Body
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -443,9 +443,7 @@ async def design_power(request: Request, body):  # Removed type annotation to av
     dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
 )
 @limiter.limit("30/minute")
-async def generate_etap(
-    request: Request, body: EtapExportRequest,
-) -> Dict[str, Any]:
+async def generate_etap(request: Request, body: EtapExportRequest = Body(...)) -> Dict[str, Any]:
     """Generate ETAP-compatible load and source CSVs."""
     from marine.iec60092.electrical_installations import design_fire_system_power
     from marine.integration.etap_bridge import (
@@ -475,9 +473,7 @@ async def generate_etap(
     dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
 )
 @limiter.limit("30/minute")
-async def generate_dxf(
-    request: Request, body: DxfExportRequest,
-) -> Dict[str, Any]:
+async def generate_dxf(request: Request, body: DxfExportRequest = Body(...)) -> Dict[str, Any]:
     """Generate a complete AutoCAD DXF file."""
     from marine.integration.autocad_exporter import generate_full_dxf
     zones = [zone_to_domain(z) for z in body.zones]
@@ -502,9 +498,7 @@ async def generate_dxf(
     dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
 )
 @limiter.limit("30/minute")
-async def generate_revit(
-    request: Request, body: RevitExportRequest,
-) -> Dict[str, Any]:
+async def generate_revit(request: Request, body: RevitExportRequest = Body(...)) -> Dict[str, Any]:
     """Generate Revit families, placements, and division elements."""
     from marine.engine.fire_resistance import generate_division_specs
     from marine.integration.revit_exporter import (

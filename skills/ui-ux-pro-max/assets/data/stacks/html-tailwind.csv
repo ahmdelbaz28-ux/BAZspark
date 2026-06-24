@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Animation,Use Tailwind animate utilities,Built-in animations are optimized and respect reduced-motion,Use animate-pulse animate-spin animate-ping,Custom @keyframes for simple effects,animate-pulse,@keyframes pulse {...},Medium,https://tailwindcss.com/docs/animation
 2,Animation,Limit bounce animations,Continuous bounce is distracting and causes motion sickness,Use animate-bounce sparingly on CTAs only,Multiple bounce animations on page,Single CTA with animate-bounce,5+ elements with animate-bounce,High,
@@ -55,7 +54,6 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 53,Layout,Use shrink-0 shorthand,Shorter class name for flex-shrink-0,shrink-0 shrink,flex-shrink-0 flex-shrink,shrink-0,flex-shrink-0,Low,https://tailwindcss.com/docs/flex-shrink
 54,Layout,Use size-* for square dimensions,Single utility for equal width and height,size-4 size-8 size-12,Separate h-* w-* for squares,size-6,h-6 w-6,Low,https://tailwindcss.com/docs/size
 55,Images,SVG explicit dimensions,Add width/height attributes to SVGs to prevent layout shift before CSS loads,<svg class='size-6' width='24' height='24'>,SVG without explicit dimensions,<svg class='size-6' width='24' height='24'>,<svg class='size-6'>,High,
-=======
 No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 1,Animation,Use Tailwind animate utilities,Built-in animations are optimized and respect reduced-motion,Use animate-pulse animate-spin animate-ping,Custom @keyframes for simple effects,animate-pulse,@keyframes pulse {...},Medium,https://tailwindcss.com/docs/animation
 2,Animation,Limit bounce animations,Continuous bounce is distracting and causes motion sickness,Use animate-bounce sparingly on CTAs only,Multiple bounce animations on page,Single CTA with animate-bounce,5+ elements with animate-bounce,High,
@@ -112,4 +110,3 @@ No,Category,Guideline,Description,Do,Don't,Code Good,Code Bad,Severity,Docs URL
 53,Layout,Use shrink-0 shorthand,Shorter class name for flex-shrink-0,shrink-0 shrink,flex-shrink-0 flex-shrink,shrink-0,flex-shrink-0,Low,https://tailwindcss.com/docs/flex-shrink
 54,Layout,Use size-* for square dimensions,Single utility for equal width and height,size-4 size-8 size-12,Separate h-* w-* for squares,size-6,h-6 w-6,Low,https://tailwindcss.com/docs/size
 55,Images,SVG explicit dimensions,Add width/height attributes to SVGs to prevent layout shift before CSS loads,<svg class='size-6' width='24' height='24'>,SVG without explicit dimensions,<svg class='size-6' width='24' height='24'>,<svg class='size-6'>,High,
->>>>>>> 41a73a519f55e77d76d61002304d3916ec7acc34

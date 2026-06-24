@@ -1,6 +1,7 @@
 """
 Execution Isolation System for Distributed FACP System
 """
+from __future__ import annotations
 import os
 import shutil
 import signal
@@ -10,7 +11,7 @@ import tempfile
 import threading
 import time
 from enum import Enum
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Tuple, List
 
 
 class ExecutionEnvironment(Enum):
@@ -34,7 +35,7 @@ class ExecutionIsolationManager:
         self.lock = threading.Lock()
         self.sandbox_base_path = tempfile.mkdtemp(prefix="facp_sandbox_")
 
-    def create_sandboxed_execution(self, func: Callable, args: tuple = (), kwargs: dict = None,
+    def create_sandboxed_execution(self, func: Callable, args: Tuple[Any, ...] = (), kwargs: dict = None,
                                    timeout: int = 8000, max_memory_mb: int = 512) -> Dict[str, Any]:
         """
         Create a sandboxed execution environment for a function
@@ -336,7 +337,7 @@ class SandboxController:
         with self.lock:
             del self.active_sandboxes[sandbox_id]
 
-    def enforce_execution_constraints(self, request_data: Dict[str, Any]) -> tuple[bool, str]:
+    def enforce_execution_constraints(self, request_data: Dict[str, Any]) -> Tuple[bool, str]:
         """
         Enforce execution constraints based on request data
         """
@@ -359,7 +360,7 @@ class SandboxController:
 
         return True, "Constraints are valid"
 
-    def validate_no_external_access(self, code: str) -> tuple[bool, list[str]]:
+    def validate_no_external_access(self, code: str) -> Tuple[bool, List[str]]:
         """
         Validate that code doesn't attempt external access
         """
@@ -461,7 +462,7 @@ class StatelessExecutionValidator:
             "__dict__",
         ]
 
-    def validate_stateless_code(self, code: str) -> tuple[bool, list[str]]:
+    def validate_stateless_code(self, code: str) -> Tuple[bool, List[str]]:
         """
         Validate that code doesn't maintain state
         """
@@ -472,7 +473,7 @@ class StatelessExecutionValidator:
 
         return len(violations) == 0, violations
 
-    def validate_deterministic_function(self, func: Callable) -> tuple[bool, str]:
+    def validate_deterministic_function(self, func: Callable) -> Tuple[bool, str]:
         """
         Validate that a function is deterministic
         """

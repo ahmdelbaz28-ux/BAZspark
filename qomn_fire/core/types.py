@@ -26,7 +26,7 @@ class FittingType(Enum):
     TEE = "TEE"
     COUPLING = "COUPLING"
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Point3D:
     x: float
     y: float
@@ -43,7 +43,7 @@ class Point3D:
     def to_dict(self) -> Dict[str, float]:
         return {"X": self.x, "Y": self.y, "Z": self.z}
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Wall:
     """Structural wall element extracted from IFC/DXF parsing."""
     id: str
@@ -52,7 +52,7 @@ class Wall:
     height_m: float
     thickness_m: float
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Opening:
     """Door or window opening in a wall."""
     id: str
@@ -61,7 +61,7 @@ class Opening:
     width_m: float
     height_m: float
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Room:
     """Enclosed room/space with boundary polygon."""
     id: str
@@ -76,7 +76,7 @@ class Room:
     # Per NFPA 72 §17.7.4, coverage calculations require accurate room geometry.
     has_placeholder_boundary: bool = False
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Building:
     """Top-level building model containing all parsed geometric elements."""
     file_hash: str
@@ -137,7 +137,7 @@ class Building:
         )
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Device:
     id: str
     device_type: DeviceType
@@ -150,12 +150,12 @@ class Device:
         serialized = f"{self.id}:{self.device_type.value}:{self.location.x:.4f},{self.location.y:.4f},{self.location.z:.4f}:{self.elevation_ft}:{self.circuit}:{self.zone}"
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Fitting:
     fitting_type: FittingType
     location: Point3D
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class ConduitRun:
     id: str
     conduit_type: ConduitType
@@ -171,7 +171,7 @@ class ConduitRun:
         serialized = f"{self.id}:{self.conduit_type.value}:{self.trade_size}:{pt_strs}:{self.total_length_ft:.4f}:{self.bend_count}:{self.bend_degrees}"
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class FireAlarmPanel:
     model: str
     manufacturer: str
@@ -186,7 +186,7 @@ class FireAlarmPanel:
     alarm_current_amps: float
     power_supply_watts: int
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class ProjectRequirements:
     device_count: int
     nac_circuit_count: int
@@ -198,7 +198,7 @@ class ProjectRequirements:
     jurisdiction: str
     preferred_manufacturer: Optional[str] = None
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class PanelRecommendation:
     recommended_model: str
     manufacturer: str
@@ -213,7 +213,7 @@ class PanelRecommendation:
     alternatives: Tuple[str, ...]
     signature_hash: str
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class HatchSpec:
     pattern_name: str
     angle: float
@@ -223,7 +223,7 @@ class HatchSpec:
     description: str
     code_reference: str
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class TitleBlock:
     project_name: str
     drawing_number: str
@@ -236,7 +236,7 @@ class TitleBlock:
     client: str
     address: str
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Revision:
     number: int
     date: str

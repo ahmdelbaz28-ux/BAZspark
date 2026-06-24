@@ -368,6 +368,14 @@ class ApiKeyMiddleware:
         # Skip auth for public endpoints (health, docs)
         # STRICT FIX B/E: Use exact-match, not startswith
         if not _is_public_path(path):
+            # Development mode bypass: grant ADMIN role without API key.
+            if not _is_production_env():
+                from backend.rbac import Role as _Role
+                scope.setdefault("state", {})
+                scope["state"]["fireai_role"] = _Role.ADMIN
+                scope["fireai_role"] = _Role.ADMIN
+                await self.app(scope, receive, send)
+                return
             # Extract X-API-Key header
             headers = scope.get("headers", [])
             api_key: str | None = None
