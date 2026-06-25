@@ -14,7 +14,7 @@ Features:
 
 Usage:
     from fireai.infrastructure.local_vector_store import LocalVectorStore
-    
+
     store = LocalVectorStore()
     store.add("def hello(): pass", metadata={"type": "function", "name": "hello"})
     results = store.search("function definition", k=5)
@@ -58,22 +58,22 @@ class VectorChunk:
 class LocalVectorStore:
     """
     Local vector store for code chunks.
-    
+
     Supports two embedding modes:
     1. TF-IDF (local, no API) - enabled by default
     2. OpenAI embeddings via Modal API - when OPENAI_API_KEY set
-    
+
     Features:
     - Add chunks with automatic embedding
     - Search by semantic similarity
     - Filter by metadata
     - Batch operations
-    
+
     Args:
         embedding_mode: "tfidf" (local) or "openai" (API)
         max_chunks: Maximum chunks to store (LRU eviction)
     """
-    
+
     def __init__(
         self,
         embedding_mode: str = "tfidf",
@@ -81,12 +81,12 @@ class LocalVectorStore:
     ):
         self.embedding_mode = embedding_mode
         self.max_chunks = max_chunks
-        
+
         # Storage
         self._chunks: dict[str, VectorChunk] = {}
         self._vectors: list[np.ndarray] = []
         self._contents: list[str] = []
-        
+
         # TF-IDF vectorizer
         if _HAS_SKLEARN and embedding_mode == "tfidf":
             self._vectorizer = TfidfVectorizer(
@@ -99,15 +99,15 @@ class LocalVectorStore:
         else:
             self._vectorizer = None
             self._fitted = False
-        
+
         # Statistics
         self._total_embedded = 0
-    
+
     def _generate_chunk_id(self, content: str, metadata: dict) -> str:
         """Generate unique chunk ID."""
         unique_str = f"{content[:100]}:{metadata.get('file_path', '')}:{metadata.get('line_start', 0)}"
-        return hashlib.md5(unique_str.encode()).hexdigest()[:12]
-    
+        return hashlib.md5(unique_str.encode(), usedforsecurity=False).hexdigest()[:12]
+
     def _embed_tfidf(self, texts: list[str]) -> np.ndarray:
         """Embed texts using TF-IDF."""
         if not self._fitted:
@@ -121,21 +121,23 @@ class LocalVectorStore:
                 logger.warning(f"TF-IDF transform failed: {e}")
                 return np.zeros((len(texts), 100))
         return self._matrix
-    
+
     def _embed_openai(self, texts: list[str]) -> np.ndarray:
         """Embed texts using OpenAI API via Modal."""
         import httpx
-        
-        api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("MODAL_API_KEY")
-        modal_key = os.environ.get("MODAL_RESEARCH_KEY", "modalresearch_TzUJFpXlhpM9zxRhymgDm4DZmIT_IFDGYuPtZT9Eekg")
-        
+
+        modal_key = os.environ.get(
+            "MODAL_RESEARCH_KEY",
+            "modalresearch_TzUJFpXlhpM9zxRhymgDm4DZmIT_IFDGYuPtZT9Eekg"
+        )
+
         # For Modal, use their embeddings endpoint
         url = "https://api.us-west-2.modal.direct/v1/embeddings"
         headers = {
             "Authorization": f"Bearer {modal_key}",
             "Content-Type": "application/json",
         }
-        
+
         embeddings = []
         for text in texts:
             try:
@@ -162,32 +164,32 @@ class LocalVectorStore:
             except Exception as e:
                 logger.warning(f"Embedding error: {e}")
                 embeddings.append(np.zeros(1536))
-        
+
         return np.array(embeddings)
-    
+
     def _compute_keyword_scores(self, query: str, content: str) -> float:
         """Compute simple keyword-based relevance score."""
         query_words = set(query.lower().split())
         content_words = set(re.findall(r'\w+', content.lower()))
-        
+
         if not query_words:
             return 0.0
-        
+
         # Count matches
         matches = len(query_words & content_words)
-        
+
         # Bonus for exact phrase matches
         if query.lower() in content.lower():
             matches += 5
-        
+
         # Bonus for word starts
         for word in query_words:
             for content_word in content_words:
                 if content_word.startswith(word) or word.startswith(content_word):
                     matches += 0.5
-        
+
         return matches / len(query_words)
-    
+
     def add(
         self,
         content: str,
@@ -196,21 +198,21 @@ class LocalVectorStore:
     ) -> str:
         """
         Add a chunk to the store.
-        
+
         Args:
             content: Text content
             metadata: Optional metadata (file_path, line_start, chunk_type, etc.)
             chunk_id: Optional custom ID (generated if not provided)
-            
+
         Returns:
             chunk_id of the added chunk
         """
         if metadata is None:
             metadata = {}
-        
+
         if chunk_id is None:
             chunk_id = self._generate_chunk_id(content, metadata)
-        
+
         # Create chunk
         chunk = VectorChunk(
             chunk_id=chunk_id,
@@ -218,42 +220,42 @@ class LocalVectorStore:
             metadata=metadata,
             tokens=len(content) // 4,  # Approximate tokens
         )
-        
+
         # Add to storage
         self._chunks[chunk_id] = chunk
         self._contents.append(content)
-        
+
         # Embed (lazy)
         self._total_embedded += 1
-        
+
         # LRU: remove oldest if over limit
         if len(self._chunks) > self.max_chunks:
             oldest_id = next(iter(self._chunks))
             del self._chunks[oldest_id]
-        
+
         # Refit TF-IDF if using local embeddings
         if self.embedding_mode == "tfidf" and _HAS_SKLEARN:
             self._fitted = False
-        
+
         logger.debug(f"Added chunk {chunk_id} to vector store")
         return chunk_id
-    
+
     def add_batch(self, chunks: list[dict[str, Any]]) -> list[str]:
         """
         Add multiple chunks at once.
-        
+
         Args:
             chunks: List of {"content": ..., "metadata": {...}} dicts
-            
+
         Returns:
             List of chunk_ids
         """
         return [self.add(c["content"], c.get("metadata", {})) for c in chunks]
-    
+
     def get(self, chunk_id: str) -> Optional[VectorChunk]:
         """Get a chunk by ID."""
         return self._chunks.get(chunk_id)
-    
+
     def search(
         self,
         query: str,
@@ -262,17 +264,17 @@ class LocalVectorStore:
     ) -> list[dict[str, Any]]:
         """
         Search for chunks similar to query.
-        
+
         Args:
             query: Search query (can be empty if using filter_metadata)
             k: Number of results to return
             filter_metadata: Optional metadata filters
-            
+
         Returns:
             List of {"chunk_id", "content", "metadata", "score"} dicts
         """
         results = []
-        
+
         for chunk_id, chunk in self._chunks.items():
             # Apply metadata filter first
             if filter_metadata:
@@ -283,14 +285,14 @@ class LocalVectorStore:
                         break
                 if skip:
                     continue
-            
+
             # Compute score (keyword + TF-IDF)
             score = self._compute_keyword_scores(query, chunk.content)
-            
+
             # For empty query with filter, give score of 1.0
             if not query and filter_metadata:
                 score = 1.0
-            
+
             if score > 0 or (not query and filter_metadata):
                 results.append({
                     "chunk_id": chunk_id,
@@ -298,21 +300,21 @@ class LocalVectorStore:
                     "metadata": chunk.metadata,
                     "score": score if score > 0 else 1.0,
                 })
-        
+
         # TF-IDF similarity (if available)
         if self.embedding_mode == "tfidf" and _HAS_SKLEARN and len(self._contents) > 0:
             try:
                 all_contents = list(self._chunks.values())
                 all_texts = [c.content for c in all_contents]
-                
+
                 if all_texts:
                     # Fit and transform all at once
                     content_matrix = self._vectorizer.fit_transform(all_texts).toarray()
                     query_vec = self._vectorizer.transform([query]).toarray()
-                    
+
                     # Compute similarities
                     similarities = cosine_similarity(query_vec, content_matrix)[0]
-                    
+
                     # Add TF-IDF scores
                     for i, chunk in enumerate(all_contents):
                         tfidf_score = float(similarities[i])
@@ -332,12 +334,12 @@ class LocalVectorStore:
                             })
             except Exception as e:
                 logger.warning(f"TF-IDF search failed: {e}")
-        
+
         # Sort by score
         results.sort(key=lambda x: -x["score"])
-        
+
         return results[:k]
-    
+
     def search_by_file(self, file_path: str, k: int = 10) -> list[dict[str, Any]]:
         """Get chunks from a specific file."""
         return self.search(
@@ -345,7 +347,7 @@ class LocalVectorStore:
             k=k,
             filter_metadata={"file_path": file_path},
         )
-    
+
     def delete(self, chunk_id: str) -> bool:
         """Delete a chunk by ID."""
         if chunk_id in self._chunks:
@@ -353,25 +355,25 @@ class LocalVectorStore:
             self._fitted = False
             return True
         return False
-    
+
     def clear(self):
         """Clear all chunks."""
         self._chunks.clear()
         self._contents.clear()
         self._fitted = False
-    
+
     @property
     def total_chunks(self) -> int:
         """Get total number of chunks."""
         return len(self._chunks)
-    
+
     def get_stats(self) -> dict[str, Any]:
         """Get store statistics."""
         type_counts = defaultdict(int)
         for chunk in self._chunks.values():
             chunk_type = chunk.metadata.get("chunk_type", "unknown")
             type_counts[chunk_type] += 1
-        
+
         return {
             "total_chunks": self.total_chunks,
             "max_chunks": self.max_chunks,
