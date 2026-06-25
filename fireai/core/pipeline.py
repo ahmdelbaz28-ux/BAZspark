@@ -1274,6 +1274,55 @@ def analyze_room(
     )
     overall_success = not critical_failures and math.isfinite(coverage_pct) and coverage_pct > 0.0
 
+    # ── P0 SAFETY FIX (V132): Audit Chain Restoration ─────────────────────
+    # Per agent.md Rule 12 (Safety-First) + NFPA 72 §7.5 (Audit Trail):
+    # The stateless API path MUST record every analysis to the immutable
+    # audit chain. Previously, only the stateful AnalysisPipeline class
+    # wrote to AuditStore — API-driven analyses left ZERO forensic trail.
+    # This fix is a side-effect call: it does NOT hold state, does NOT
+    # block the result on failure (graceful degradation), but DOES
+    # guarantee legal traceability for every room analyzed.
+    # See: docs/archive/agent.md V67-V84 audit chain requirements.
+    try:
+        from fireai.core.audit_store import AuditStore as _AuditStore
+
+        _AuditStore.add_event(
+            event_type="ROOM_ANALYSIS",
+            room_id=room_id,
+            details_dict={
+                "run_id": run_id,
+                "success": overall_success,
+                "release_status": release_status,
+                "safety_tier": safety_tier,
+                "coverage_pct": round(coverage_pct, 4),
+                "detector_count": len(positions),
+                "detector_radius_m": radius_m,
+                "max_spacing_m": spacing_m,
+                "ceiling_height_m": ceiling_h,
+                "detector_type": det_type,
+                "area_m2": area_m2,
+                "total_ms": round(total_ms, 2),
+                "evidence_hash": evidence_hash,
+                "qomn_audit": qomn_audit,
+                "ambient_temperature_c": ambient_temperature_c,
+                "input_content_hash": _content_hash,
+                "source": "stateless_api_pipeline",
+                "nfpa_reference": "NFPA 72-2022 §7.5 (Audit Trail)",
+            },
+        )
+    except Exception as audit_exc:  # pragma: no cover — never block on audit failure
+        # Per fail-safe principle: audit write failure MUST NOT prevent
+        # the engineering result from being returned. However, it MUST be
+        # surfaced as a warning so operators know the audit chain is broken.
+        warnings.append(
+            f"[AUDIT CHAIN] Failed to record ROOM_ANALYSIS event: {audit_exc!r}. "
+            f"NFPA 72 §7.5 audit trail integrity at risk — investigate AuditStore."
+        )
+        logger.error(
+            "Audit chain write failed for run_id=%s room_id=%s: %s",
+            run_id, room_id, audit_exc, exc_info=True,
+        )
+
     return PipelineResult(
         run_id=run_id,
         room_id=room_id,
@@ -1698,8 +1747,46 @@ def _failed_result(
     t_total: float,
     room_id: str = "",
 ) -> PipelineResult:
-    """Build a failure result when a critical stage fails."""
+    """Build a failure result when a critical stage fails.
+
+    V137 F-4 FIX: Added audit chain recording for FAILED analyses.
+    The V132 P0 fix only recorded audits on SUCCESS paths (the normal
+    return at the end of analyze_room). Early returns via _failed_result
+    skipped the audit write entirely — leaving ZERO forensic trail for
+    the cases that MOST need investigation (stage failures).
+    Now we record a ROOM_ANALYSIS event with success=False before returning.
+    """
     room_id = room_id or str(payload.get("room_id", "UNKNOWN") if isinstance(payload, dict) else "UNKNOWN")
+
+    # V137 F-4: Record audit for failed analysis (was missing entirely)
+    try:
+        from fireai.core.audit_store import AuditStore as _AuditStore
+        _AuditStore.add_event(
+            event_type="ROOM_ANALYSIS_FAILED",
+            room_id=room_id,
+            details_dict={
+                "run_id": run_id,
+                "success": False,
+                "release_status": "blocked",
+                "safety_tier": SafetyTier.REJECTED.value,
+                "errors": errors[:10],  # First 10 errors (cap for size)
+                "stage_count": len(stages),
+                "failed_stages": [s.stage_name for s in stages if not s.success],
+                "total_ms": round((time.perf_counter() - t_total) * 1000.0, 2),
+                "source": "stateless_api_pipeline_failed_result",
+                "nfpa_reference": "NFPA 72-2022 §7.5 (Audit Trail)",
+            },
+        )
+    except Exception as audit_exc:
+        warnings.append(
+            f"[AUDIT CHAIN] Failed to record ROOM_ANALYSIS_FAILED event: {audit_exc!r}. "
+            f"NFPA 72 §7.5 audit trail integrity at risk."
+        )
+        logger.error(
+            "Audit chain write failed for FAILED run_id=%s room_id=%s: %s",
+            run_id, room_id, audit_exc, exc_info=True,
+        )
+
     return PipelineResult(
         run_id=run_id,
         room_id=room_id,
