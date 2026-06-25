@@ -14264,7 +14264,9 @@ Test breakdown:
 - Beam pocket ceiling height reduced by beam depth (NFPA 72 §17.6.3.1.3)
 
 ### Commit Information
-- **Commit Hash:** (pending — will be filled after git commit)
+- **Commit Hash:** `c5a0ef5f`
 - **Branch:** `feat/v133-total-remediation` (V135 added to V133/V134 PR)
+- **Pull Request:** https://github.com/ahmdelbaz28-ux/revit/pull/79
+- **Direct commit link:** https://github.com/ahmdelbaz28-ux/revit/commit/c5a0ef5f
 - **Tests:** 506 passed, 0 failed, 0 regressions
 
