@@ -1,4 +1,5 @@
-"""fireai/core/floor_analyser.py  V3.0.
+"""
+fireai/core/floor_analyser.py  V3.0.
 ====================================
 Safe, sequential floor-level fire alarm design analyser.
 
@@ -136,7 +137,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RoomSummary:
-    """Compact per-room summary for floor report.
+    """
+    Compact per-room summary for floor report.
 
     Attributes:
         room_id:        Unique room identifier from input dict.
@@ -229,7 +231,8 @@ class RoomSummary:
 
 @dataclass
 class FloorReport:
-    """Complete analysis report for one floor.
+    """
+    Complete analysis report for one floor.
 
     Attributes:
         floor_id:            Floor identifier.
@@ -267,7 +270,8 @@ class FloorReport:
 
 
 class FloorAnalyser:
-    """Safe, sequential full-floor fire alarm design analyser.
+    """
+    Safe, sequential full-floor fire alarm design analyser.
 
     Uses the V7.3 DensityOptimizer directly - no ExpertSystem.
     Optional MIP verification (use_mip=True) proves optimality after greedy.
@@ -367,7 +371,8 @@ class FloorAnalyser:
     # ─── public ──────────────────────────────────────────────────────
 
     def analyse(self, rooms: list[dict]) -> FloorReport:
-        """Analyse all rooms on the floor and return a FloorReport.
+        """
+        Analyse all rooms on the floor and return a FloorReport.
 
         Processes rooms sequentially (no parallelism) and applies the
         triple-check gate to each room independently.
@@ -837,7 +842,8 @@ class FloorAnalyser:
         layout: DetectorLayout,
         summary: RoomSummary,
     ) -> None:
-        """Run MIP Set Covering ILP as verification after greedy placement.
+        """
+        Run MIP Set Covering ILP as verification after greedy placement.
 
         MIP proves the minimum detector count on a candidate grid.
         This is VERIFICATION ONLY — greedy placement is always used.
@@ -930,7 +936,8 @@ class FloorAnalyser:
         polygon_coords: list,
         radius: float,
     ) -> int:
-        """Filter detectors that fall outside a non-rectangular polygon (V4.0).
+        """
+        Filter detectors that fall outside a non-rectangular polygon (V4.0).
 
         DensityOptimizer places detectors on the bounding rectangle. For
         L-shaped or other non-rectangular rooms, some detectors may land
@@ -984,7 +991,8 @@ class FloorAnalyser:
         layout: DetectorLayout,
         summary: RoomSummary,
     ) -> None:
-        """Run Greedy Set Cover verifier on a non-rectangular polygon (V6.0).
+        """
+        Run Greedy Set Cover verifier on a non-rectangular polygon (V6.0).
 
         This is VERIFICATION ONLY — it never replaces the actual placement.
         The verifier proves how many detectors suffice on the actual polygon
@@ -1073,7 +1081,8 @@ class FloorAnalyser:
         room_dict: dict,
         summary: RoomSummary,
     ) -> None:
-        """Run duct detector analysis for a room (V3.1).
+        """
+        Run duct detector analysis for a room (V3.1).
 
         If the room_dict contains a 'ducts' key with a list of duct
         specifications, this method analyses each duct per NFPA 72 §17.7.5
@@ -1168,7 +1177,8 @@ class FloorAnalyser:
         ceiling_h: float,
         det_type_str: str,
     ) -> None:
-        """Run fire scenario verification after detector placement (V3.0).
+        """
+        Run fire scenario verification after detector placement (V3.0).
 
         Tests the placed detector layout against standard NFPA 72 §17.7.3
         fire scenarios. This is VERIFICATION ONLY — it does not modify
@@ -1299,7 +1309,8 @@ class FloorAnalyser:
 
     @staticmethod
     def _check_safety_refusal(room_type: str, detector_type: str) -> tuple:
-        """Validate room_type + detector_type combination against NFPA 72 safety rules.
+        """
+        Validate room_type + detector_type combination against NFPA 72 safety rules.
 
         This is a simple rule-based check — NOT an ExpertSystem.
         It enforces clear NFPA 72 prohibitions that must not be violated
@@ -1336,7 +1347,8 @@ class FloorAnalyser:
 
     @staticmethod
     def _build_room(room_dict: dict) -> Room:
-        """Build a Room object from a dictionary.
+        """
+        Build a Room object from a dictionary.
 
         Calculates width/length from the bounding box of polygon_coords.
         This means L-shaped rooms are treated as their bounding rectangle

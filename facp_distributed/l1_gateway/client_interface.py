@@ -1,6 +1,4 @@
-"""
-Client Interface for L1 Gateway in Distributed FACP System
-"""
+"""Client Interface for L1 Gateway in Distributed FACP System"""
 import threading
 import time
 import uuid
@@ -14,9 +12,8 @@ from .gateway import L1Gateway
 
 
 class ClientInterface:
-    """
-    Interface layer that handles external client connections (IDEs, etc.)
-    """
+    """Interface layer that handles external client connections (IDEs, etc.)"""
+
     def __init__(self, l1_gateway: L1Gateway, host: str = "0.0.0.0", port: int = 8000):
         self.l1_gateway = l1_gateway
         self.host = host
@@ -68,10 +65,9 @@ class ClientInterface:
 
                 if success:
                     return response
-                else:
-                    # Error response already formatted by L1 gateway
-                    status_code = 400 if response.get("error") else 500
-                    return JSONResponse(status_code=status_code, content=response)
+                # Error response already formatted by L1 gateway
+                status_code = 400 if response.get("error") else 500
+                return JSONResponse(status_code=status_code, content=response)
 
             except Exception as e:
                 return JSONResponse(
@@ -82,7 +78,7 @@ class ClientInterface:
                         "status": "error",
                         "error": {
                             "code": "CLIENT_INTERFACE_ERROR",
-                            "message": f"Error in client interface: {str(e)}"
+                            "message": f"Error in client interface: {e!s}"
                         },
                         "trace": {
                             "execution_path": ["L1_client_interface"],
@@ -149,14 +145,12 @@ class ClientInterface:
 
 
 class RequestNormalizer:
-    """
-    Normalizes requests from various client types to FACP/1.1 format
-    """
+    """Normalizes requests from various client types to FACP/1.1 format"""
 
     @staticmethod
     def normalize_vscode_extension_request(raw_request: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize request from VSCode extension"""
-        normalized = {
+        return {
             "protocol": "FACP/1.1",
             "type": "request",
             "id": raw_request.get("id", str(int(time.time() * 1000000))),
@@ -185,12 +179,11 @@ class RequestNormalizer:
                 "max_recursion_depth": raw_request.get("maxDepth", 5)
             }
         }
-        return normalized
 
     @staticmethod
     def normalize_autocad_plugin_request(raw_request: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize request from AutoCAD plugin"""
-        normalized = {
+        return {
             "protocol": "FACP/1.1",
             "type": "request",
             "id": raw_request.get("requestId", str(int(time.time() * 1000000))),
@@ -224,12 +217,11 @@ class RequestNormalizer:
                 "max_recursion_depth": raw_request.get("maxDepth", 3)
             }
         }
-        return normalized
 
     @staticmethod
     def normalize_revit_addin_request(raw_request: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize request from Revit add-in"""
-        normalized = {
+        return {
             "protocol": "FACP/1.1",
             "type": "request",
             "id": raw_request.get("transactionId", str(int(time.time() * 1000000))),
@@ -263,7 +255,6 @@ class RequestNormalizer:
                 "max_recursion_depth": raw_request.get("maxDepth", 5)
             }
         }
-        return normalized
 
     @staticmethod
     def normalize_generic_request(raw_request: Dict[str, Any]) -> Dict[str, Any]:
@@ -271,38 +262,37 @@ class RequestNormalizer:
         # Try to detect the source and apply appropriate normalization
         if "extensionVersion" in raw_request:
             return RequestNormalizer.normalize_vscode_extension_request(raw_request)
-        elif "drawingName" in raw_request:
+        if "drawingName" in raw_request:
             return RequestNormalizer.normalize_autocad_plugin_request(raw_request)
-        elif "projectName" in raw_request:
+        if "projectName" in raw_request:
             return RequestNormalizer.normalize_revit_addin_request(raw_request)
-        else:
-            # Generic normalization
-            return {
-                "protocol": "FACP/1.1",
-                "type": "request",
-                "id": raw_request.get("id", str(uuid.uuid4())),
-                "timestamp": raw_request.get("timestamp", time.time()),
-                "source": "client",
-                "target": "orchestrator",
-                "execution_state": "RECEIVED",
-                "method": raw_request.get("method", "unknown"),
-                "params": {
-                    "task": raw_request.get("task", "unknown"),
-                    "payload": raw_request.get("payload", raw_request.get("data", {})),
-                    "context": raw_request.get("context", {})
-                },
-                "security": {
-                    "auth_token": raw_request.get("authToken", raw_request.get("auth_token")),
-                    "permissions": raw_request.get("permissions", []),
-                    "risk_level": raw_request.get("riskLevel", "low"),
-                    "idempotency_key": raw_request.get("idempotencyKey", raw_request.get("idempotency_key"))
-                },
-                "constraints": {
-                    "timeout_ms": raw_request.get("timeout", 8000),
-                    "max_memory_mb": raw_request.get("maxMemory", 512),
-                    "max_recursion_depth": raw_request.get("maxDepth", 5)
-                }
+        # Generic normalization
+        return {
+            "protocol": "FACP/1.1",
+            "type": "request",
+            "id": raw_request.get("id", str(uuid.uuid4())),
+            "timestamp": raw_request.get("timestamp", time.time()),
+            "source": "client",
+            "target": "orchestrator",
+            "execution_state": "RECEIVED",
+            "method": raw_request.get("method", "unknown"),
+            "params": {
+                "task": raw_request.get("task", "unknown"),
+                "payload": raw_request.get("payload", raw_request.get("data", {})),
+                "context": raw_request.get("context", {})
+            },
+            "security": {
+                "auth_token": raw_request.get("authToken", raw_request.get("auth_token")),
+                "permissions": raw_request.get("permissions", []),
+                "risk_level": raw_request.get("riskLevel", "low"),
+                "idempotency_key": raw_request.get("idempotencyKey", raw_request.get("idempotency_key"))
+            },
+            "constraints": {
+                "timeout_ms": raw_request.get("timeout", 8000),
+                "max_memory_mb": raw_request.get("maxMemory", 512),
+                "max_recursion_depth": raw_request.get("maxDepth", 5)
             }
+        }
 
     @staticmethod
     def validate_normalized_request(request_data: Dict[str, Any]) -> tuple[bool, list]:
@@ -342,9 +332,7 @@ class RequestNormalizer:
 
 
 def create_client_interface_with_gateway(validation_firewall, transport_config=None) -> ClientInterface:
-    """
-    Factory function to create a complete L1 client interface with gateway
-    """
+    """Factory function to create a complete L1 client interface with gateway"""
     from ..transport.http_transport import HTTPTransport
 
     # Create HTTP transport for the gateway
@@ -358,10 +346,9 @@ def create_client_interface_with_gateway(validation_firewall, transport_config=N
     l1_gateway = L1Gateway(validation_firewall, transport)
 
     # Create the client interface
-    client_interface = ClientInterface(
+    return ClientInterface(
         l1_gateway=l1_gateway,
         host=transport_config.get("host", "0.0.0.0") if transport_config else "0.0.0.0",
         port=transport_config.get("interface_port", 8000) if transport_config else 8000
     )
 
-    return client_interface

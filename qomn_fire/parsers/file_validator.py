@@ -146,7 +146,7 @@ class FileValidator:
                     ))
             except Exception as e:
                 return Result(error=CorruptionError(
-                    message=f"IFC footer read failed: {str(e)}",
+                    message=f"IFC footer read failed: {e!s}",
                     code_ref="OS IO Stream",
                     remedy="Verify file physical disk integrity."
                 ))
@@ -165,7 +165,7 @@ class FileValidator:
                     ))
             except Exception as e:
                 return Result(error=CorruptionError(
-                    message=f"DXF footer read failed: {str(e)}",
+                    message=f"DXF footer read failed: {e!s}",
                     code_ref="OS IO Stream",
                     remedy="Re-save drawing on standard solid state memory."
                 ))
@@ -180,7 +180,7 @@ class FileValidator:
             return Result(value=sha.hexdigest())
         except Exception as e:
             return Result(error=FileValidationError(
-                message=f"Hashing sequence crashed: {str(e)}",
+                message=f"Hashing sequence crashed: {e!s}",
                 code_ref="OS Cryptography Engine",
                 remedy="Verify file physical disk integrity."
             ))

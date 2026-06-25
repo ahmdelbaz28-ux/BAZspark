@@ -557,10 +557,12 @@ class TestValidateRoomInputInvalid:
         assert exc_info.value.field == "room_polygon"
 
     def test_non_list_polygon_crashes_on_compute(self):
-        """BUG: A string of len >= 3 passes polygon validation but crashes
+        """
+        BUG: A string of len >= 3 passes polygon validation but crashes
         in _compute_area_from_polygon because it's not actually a list
         of coordinate pairs. The source only raises ContractViolation for
-        < 3 vertices; non-list polygons with len >= 3 slip through."""
+        < 3 vertices; non-list polygons with len >= 3 slip through.
+        """
         with pytest.raises((ContractViolation, ValueError)):
             validate_room_input(self._base_payload(room_polygon="bad"))
 

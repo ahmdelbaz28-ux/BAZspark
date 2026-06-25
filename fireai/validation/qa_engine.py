@@ -1,4 +1,5 @@
-"""fireai/validation/qa_engine.py.
+"""
+fireai/validation/qa_engine.py.
 ================================
 Advanced QA — Automated validation, regression framework, and
 architecture conformance checking for fire alarm designs.
@@ -173,7 +174,8 @@ class DesignData:
 
 
 class QAEngine:
-    """Automated validation, regression framework, and architecture conformance.
+    """
+    Automated validation, regression framework, and architecture conformance.
 
     Provides 25+ QA checks covering:
       1. Detector count reasonableness
@@ -199,7 +201,8 @@ class QAEngine:
     # ── Design Validation ──────────────────────────────────────────────
 
     def validate_design(self, design: DesignData) -> QAReport:
-        """Run all QA checks against a fire alarm design.
+        """
+        Run all QA checks against a fire alarm design.
 
         Args:
             design: The fire alarm design to validate.
@@ -268,7 +271,8 @@ class QAEngine:
         baseline: DesignData,
         proposed: DesignData,
     ) -> RegressionReport:
-        """Compare a proposed design against a baseline to detect regressions.
+        """
+        Compare a proposed design against a baseline to detect regressions.
 
         Args:
             baseline: The original (approved) design.
@@ -354,7 +358,8 @@ class QAEngine:
     def check_architecture_conformance(
         self, design: DesignData
     ) -> ConformanceReport:
-        """Check design conforms to expected architectural patterns.
+        """
+        Check design conforms to expected architectural patterns.
 
         Validates:
           - Design pattern usage (singleton services, layered architecture)

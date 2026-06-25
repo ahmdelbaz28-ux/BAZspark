@@ -12,8 +12,10 @@ License: http://github.com/gtalarico/revitapidocs/blob/master/LICENSE.md
 """
 
 import clr
+
 clr.AddReference("RevitAPI")
-from Autodesk.Revit.DB import Workset, Transaction
+from Autodesk.Revit.DB import Transaction, Workset
+
 doc = __revit__.ActiveUIDocument.Document
 
 workset_name = 'Point Clouds'

@@ -1,4 +1,5 @@
-"""twin_db.py — SQLite-Backed Twin System of Record.
+"""
+twin_db.py — SQLite-Backed Twin System of Record.
 =================================================
 Adapted from Elite Platform V2 twin_db.py.
 
@@ -29,7 +30,8 @@ from typing import Any
 
 
 class TwinSystemOfRecord:
-    """SQLite-backed twin snapshot store with drift detection.
+    """
+    SQLite-backed twin snapshot store with drift detection.
 
     All data is stored in a single SQLite database file.
     Thread safety: uses a new connection per operation (safe for
@@ -38,7 +40,8 @@ class TwinSystemOfRecord:
     """
 
     def __init__(self, db_path: str) -> None:
-        """Initialize the twin database.
+        """
+        Initialize the twin database.
 
         Args:
             db_path: Path to the SQLite database file.
@@ -99,7 +102,8 @@ class TwinSystemOfRecord:
         analysis_payload: dict[str, Any],
         envelope: dict[str, Any],
     ) -> None:
-        """Save a complete snapshot bundle to the database.
+        """
+        Save a complete snapshot bundle to the database.
 
         STRENGTHENED: Validates snapshot_id is non-empty before saving.
         An empty snapshot_id would create a corrupt record that overwrites
@@ -150,7 +154,8 @@ class TwinSystemOfRecord:
             conn.close()
 
     def load_snapshot_bundle(self, snapshot_id: str) -> dict[str, Any]:
-        """Load a complete snapshot bundle by ID.
+        """
+        Load a complete snapshot bundle by ID.
 
         Args:
             snapshot_id: The snapshot ID to load.
@@ -190,7 +195,8 @@ class TwinSystemOfRecord:
         snapshot_id: str,
         created_at: str,
     ) -> None:
-        """Register a connector (BIM/IFC) revision.
+        """
+        Register a connector (BIM/IFC) revision.
 
         Args:
             connector_name:   Name of the connector (e.g. "revit", "ifc").
@@ -216,7 +222,8 @@ class TwinSystemOfRecord:
             conn.close()
 
     def latest_connector_revision(self, source_model_id: str) -> dict[str, Any] | None:
-        """Get the latest connector revision for a source model.
+        """
+        Get the latest connector revision for a source model.
 
         Args:
             source_model_id: External model identifier.
@@ -266,7 +273,8 @@ class TwinSystemOfRecord:
         movement_threshold_m: float | None = None,
         polygon_tolerance_m: float | None = None,
     ) -> list[dict[str, Any]]:
-        """Diff two snapshots to detect drift.
+        """
+        Diff two snapshots to detect drift.
 
         Compares rooms (added, removed, geometry changed) and
         detectors (added, removed, moved).
@@ -421,7 +429,8 @@ class TwinSystemOfRecord:
 
     @staticmethod
     def _position_distance(pos_a: tuple, pos_b: tuple) -> float:
-        """Euclidean distance between two 3D positions.
+        """
+        Euclidean distance between two 3D positions.
 
         Handles None coordinates by treating them as 0.0.
         """
@@ -435,7 +444,8 @@ class TwinSystemOfRecord:
 
     @staticmethod
     def _polygons_approx_equal(poly_a: list, poly_b: list, tolerance_m: float = 0.005) -> bool:
-        """Check if two polygons are approximately equal within tolerance.
+        """
+        Check if two polygons are approximately equal within tolerance.
 
         Compares point-by-point. Returns False if:
           - Different number of points

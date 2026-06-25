@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""api_server.py — FastAPI REST wrapper for FireAI
+"""
+api_server.py — FastAPI REST wrapper for FireAI
 Based on V10 Enhanced + LearningStore.
 
 SECURITY FIXES APPLIED:
@@ -105,7 +106,8 @@ _init_api_keys()
 
 
 async def verify_api_key(api_key: str = Security(_API_KEY_HEADER)) -> str:
-    """Verify the API key from the request header.
+    """
+    Verify the API key from the request header.
 
     Raises:
         HTTPException: 401 if API key is missing or invalid.
@@ -130,7 +132,8 @@ async def verify_api_key(api_key: str = Security(_API_KEY_HEADER)) -> str:
 
 
 class RateLimiter:
-    """Simple in-memory rate limiter per client IP.
+    """
+    Simple in-memory rate limiter per client IP.
 
     SELF-CRITIQUE FIX:
       The previous version had a MEMORY LEAK: old client IPs were
@@ -147,7 +150,8 @@ class RateLimiter:
         self._clients: dict[str, list[float]] = {}
 
     def check(self, client_id: str) -> bool:
-        """Check if request is within rate limit.
+        """
+        Check if request is within rate limit.
 
         Returns:
             True if allowed, False if rate limited.
@@ -202,7 +206,8 @@ _system_lock = threading.Lock()
 
 
 def _get_system() -> FireAISystem:
-    """Get or lazily create the FireAI system instance (thread-safe).
+    """
+    Get or lazily create the FireAI system instance (thread-safe).
 
     Uses double-checked locking for thread-safe lazy initialization.
     This prevents race conditions when multiple threads call _get_system()
@@ -473,7 +478,8 @@ def analyse_floor(rooms: list[RoomRequest]):
 # ✅ NEW: Audit verification endpoint (from consultant suggestion)
 @app.get("/audit/verify", dependencies=[Depends(verify_api_key)])
 def audit_verify():
-    """Verify audit trail integrity — authenticated.
+    """
+    Verify audit trail integrity — authenticated.
 
     Checks the entire hash chain and HMAC signatures.
     Returns verification status with details if tampered.
@@ -513,7 +519,8 @@ class IntegrationRequest(BaseModel):
 
 @app.post("/integration", dependencies=[Depends(verify_api_key)])
 def run_integration(req: IntegrationRequest):
-    """Run the FULL integration pipeline — all 8 subsystems.
+    """
+    Run the FULL integration pipeline — all 8 subsystems.
 
     Wires together: cable routing, digital twin sync, acoustics,
     multi-floor orchestrator, kernel V30, hash chain audit,
@@ -558,7 +565,8 @@ def run_integration(req: IntegrationRequest):
 
 @app.get("/audit/hashchain", dependencies=[Depends(verify_api_key)])
 def hashchain_report():
-    """Get SHA-256 hash chain audit compliance report.
+    """
+    Get SHA-256 hash chain audit compliance report.
 
     Returns the tamper-evident audit trail compliance report that
     AHJs can verify independently per NFPA 72 §10.6.

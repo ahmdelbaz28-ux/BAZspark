@@ -438,7 +438,8 @@ class TestHybridSurvivabilityEngineValidation:
 
 
 class TestHybridSurvivabilityEngineClassification:
-    """Test the 4-state classification logic.
+    """
+    Test the 4-state classification logic.
 
     Classification is the Cartesian product of {optical, no_optical}
     x {acoustic, no_acoustic}, yielding 4 exhaustive and mutually
@@ -575,12 +576,10 @@ class TestHybridSurvivabilityEngineClassification:
             lp = leak_point
             if lp[0] == 0.0:  # Point 0: optical yes, acoustic no
                 return self._make_ray_result(triggered=False, snr_db=-5.0)
-            elif lp[0] == 1.0:  # Point 1: optical no, acoustic yes
+            if lp[0] == 1.0 or lp[0] == 2.0:  # Point 1: optical no, acoustic yes
                 return self._make_ray_result(triggered=True)
-            elif lp[0] == 2.0:  # Point 2: optical yes, acoustic yes
-                return self._make_ray_result(triggered=True)
-            else:  # Point 3: neither
-                return self._make_ray_result(triggered=False, snr_db=-10.0)
+            # Point 3: neither
+            return self._make_ray_result(triggered=False, snr_db=-10.0)
 
         with patch("fireai.core.hybrid_survivability.trace_acoustic_ray") as mock_trace:
             mock_trace.side_effect = mock_trace_side_effect
@@ -658,8 +657,7 @@ class TestHybridSurvivabilityEngineClassification:
             call_count[0] += 1
             if sensor.sensor_id == "UGLD-1":
                 return self._make_ray_result(triggered=True, snr_db=20.0)
-            else:
-                return self._make_ray_result(triggered=True, snr_db=30.0)
+            return self._make_ray_result(triggered=True, snr_db=30.0)
 
         with patch("fireai.core.hybrid_survivability.trace_acoustic_ray") as mock_trace:
             mock_trace.side_effect = mock_trace_side_effect

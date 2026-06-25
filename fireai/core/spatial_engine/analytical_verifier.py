@@ -49,7 +49,8 @@ class AnalyticalResult:
 
 
 class AnalyticalVerifier:
-    """Pure analytical coverage verifier — no grid, no approximation.
+    """
+    Pure analytical coverage verifier — no grid, no approximation.
 
     This engine verifies coverage by checking:
     1. All 4 room corners are within R of some detector
@@ -77,7 +78,8 @@ class AnalyticalVerifier:
         length: float,
         detectors: list[tuple[float, float]],
     ) -> AnalyticalResult:
-        """Verify coverage using pure analytical methods.
+        """
+        Verify coverage using pure analytical methods.
 
         Args:
             width: Room width in meters.
@@ -160,7 +162,8 @@ class AnalyticalVerifier:
         detectors: list[tuple[float, float]],
         result: AnalyticalResult,
     ) -> bool:
-        """Check all detector-to-detector midpoints are covered.
+        """
+        Check all detector-to-detector midpoints are covered.
 
         V30 B10: Replaced O(D²) all-pairs enumeration with spatial bin index.
         Only detector pairs within 2R (NFPA 72 max spacing) can have an
@@ -286,7 +289,8 @@ class AnalyticalVerifier:
         wall_name: str,
         result: AnalyticalResult,
     ) -> bool:
-        """Check a single wall using interval merging (exact method).
+        """
+        Check a single wall using interval merging (exact method).
 
         Each detector within R of the wall projects a coverage interval.
         If the merged intervals cover [0, wall_length], the wall is fully covered.
@@ -347,7 +351,8 @@ class AnalyticalVerifier:
         length: float,
         detectors: list[tuple[float, float]],
     ) -> float:
-        """Estimate coverage percentage using area calculation.
+        """
+        Estimate coverage percentage using area calculation.
 
         Uses the inclusion-exclusion principle for overlapping circles
         within a rectangular room. This is an ESTIMATE, not a proof.
@@ -396,7 +401,8 @@ class AnalyticalVerifier:
         length: float,
         detectors: list[tuple[float, float]],
     ) -> float:
-        """Find the maximum distance from any detector.
+        """
+        Find the maximum distance from any detector.
 
         This is the farthest point from any detector, which is the
         worst-case coverage gap. For rectangular rooms with detectors

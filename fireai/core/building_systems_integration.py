@@ -1,4 +1,5 @@
-"""fireai.core.building_systems_integration — Building Systems Fire Integration.
+"""
+fireai.core.building_systems_integration — Building Systems Fire Integration.
 =============================================================================
 
 Implements fire alarm integration with building systems per NFPA 72:
@@ -34,7 +35,8 @@ from enum import Enum
 
 
 class ElevatorRecallPhase(str, Enum):
-    """Elevator recall phases per NFPA 72 §21.3.
+    """
+    Elevator recall phases per NFPA 72 §21.3.
 
     Phase I: Recall to designated floor (away from fire)
     Phase II: Independent service (firefighter control)
@@ -54,7 +56,8 @@ class ElevatorRecallPhase(str, Enum):
 
 @dataclass(frozen=True)
 class ElevatorRecallResult:
-    """Result from elevator recall assessment.
+    """
+    Result from elevator recall assessment.
 
     NFPA 72 §21.3 requires:
       - Lobby detector on each floor → Phase I recall
@@ -89,7 +92,8 @@ def evaluate_elevator_recall(
     # V114 FIX: Fail-safe — Phase II must be confirmed, not assumed
     has_phase_ii: bool = False,
 ) -> ElevatorRecallResult:
-    """Evaluate elevator recall compliance per NFPA 72 §21.3.
+    """
+    Evaluate elevator recall compliance per NFPA 72 §21.3.
 
     Args:
         elevator_id: Elevator identifier.
@@ -162,7 +166,8 @@ def evaluate_elevator_recall(
 
 @dataclass(frozen=True)
 class HVACShutdownResult:
-    """Result from HVAC shutdown assessment.
+    """
+    Result from HVAC shutdown assessment.
 
     NFPA 72 §21.4 requires:
       - Duct smoke detector → shutdown of affected AHU
@@ -187,7 +192,8 @@ def evaluate_hvac_shutdown(
     is_fire_floor: bool = False,
     is_building_wide: bool = False,
 ) -> HVACShutdownResult:
-    """Evaluate HVAC shutdown compliance per NFPA 72 §21.4.
+    """
+    Evaluate HVAC shutdown compliance per NFPA 72 §21.4.
 
     NFPA 72 §21.4 and IMC §606:
       - AHU > 2000 CFM → duct smoke detector required
@@ -242,7 +248,8 @@ def evaluate_hvac_shutdown(
 
 @dataclass(frozen=True)
 class SmokeControlResult:
-    """Result from smoke control assessment.
+    """
+    Result from smoke control assessment.
 
     NFPA 92 and NFPA 72 §21.5:
       - Smoke control must activate on fire alarm
@@ -273,7 +280,8 @@ def evaluate_smoke_control(
     has_fire_alarm_interlock: bool = False,
     has_stairwell_pressurization: bool = False,
 ) -> SmokeControlResult:
-    """Evaluate smoke control compliance per NFPA 92 / NFPA 72 §21.5.
+    """
+    Evaluate smoke control compliance per NFPA 92 / NFPA 72 §21.5.
 
     NFPA 92 requires:
       - Stairwell pressurization: minimum 25 Pa (0.10 in. w.g.)
@@ -376,7 +384,8 @@ def evaluate_smoke_control(
 
 @dataclass(frozen=True)
 class FirePumpResult:
-    """Result from fire pump monitoring assessment.
+    """
+    Result from fire pump monitoring assessment.
 
     NFPA 20 and NFPA 72 §21.8 require monitoring of:
       - Pump running status
@@ -405,7 +414,8 @@ def evaluate_fire_pump(
     has_phase_reversal: bool = False,
     has_suction_pressure: bool = False,
 ) -> FirePumpResult:
-    """Evaluate fire pump monitoring per NFPA 20 / NFPA 72 §21.8.
+    """
+    Evaluate fire pump monitoring per NFPA 20 / NFPA 72 §21.8.
 
     NFPA 20 §10.4 and NFPA 72 §21.8 require:
       - Pump running: supervisory signal
@@ -455,7 +465,8 @@ def evaluate_fire_pump(
 
 @dataclass
 class BuildingSystemsAssessment:
-    """Composite assessment of all building fire safety integrations.
+    """
+    Composite assessment of all building fire safety integrations.
 
     This aggregates all building system assessments into a single
     result that can be used by the release gate system.
@@ -470,7 +481,8 @@ class BuildingSystemsAssessment:
     nfpa_references: list[str] = field(default_factory=list)
 
     def evaluate(self) -> None:
-        """Aggregate all sub-assessments.
+        """
+        Aggregate all sub-assessments.
 
         V106 SAFETY FIX: Empty assessment lists means NO evaluation was performed.
         An unevaluated building must NOT claim compliance — fail-safe default.

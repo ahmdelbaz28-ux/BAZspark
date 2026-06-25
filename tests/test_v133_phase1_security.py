@@ -1,4 +1,5 @@
-"""test_v133_phase1_security.py — Tests for PHASE 1 Security Hardening.
+"""
+test_v133_phase1_security.py — Tests for PHASE 1 Security Hardening.
 
 Validates CSRF middleware, path traversal defense, and audit integrity.
 """
@@ -9,8 +10,6 @@ import os
 import tempfile
 
 import pytest
-from fastapi.testclient import TestClient
-
 
 # ---------------------------------------------------------------------------
 # CSRF Tests
@@ -95,8 +94,9 @@ class TestPathTraversalDefense:
 
     def test_path_traversal_rejected(self):
         """../../etc/passwd should be rejected (400 if blocked, 404 if not found)."""
-        from backend.routers.autocad import _validate_autocad_file_path
         from fastapi import HTTPException
+
+        from backend.routers.autocad import _validate_autocad_file_path
         with pytest.raises(HTTPException) as exc:
             _validate_autocad_file_path("../../etc/passwd.dwg")
         # Path traversal is blocked with 400 (if path is rejected by security)
@@ -105,23 +105,26 @@ class TestPathTraversalDefense:
 
     def test_null_byte_injection_rejected(self):
         """Null byte in path should be rejected."""
-        from backend.routers.autocad import _validate_autocad_file_path
         from fastapi import HTTPException
+
+        from backend.routers.autocad import _validate_autocad_file_path
         with pytest.raises((HTTPException, Exception)):
             _validate_autocad_file_path("test.dwg\x00.txt")
 
     def test_nonexistent_file_returns_404(self):
         """Non-existent file should return 404 (not 400)."""
-        from backend.routers.autocad import _validate_autocad_file_path
         from fastapi import HTTPException
+
+        from backend.routers.autocad import _validate_autocad_file_path
         with pytest.raises(HTTPException) as exc:
             _validate_autocad_file_path("/tmp/nonexistent_file_12345.dwg")
         assert exc.value.status_code == 404
 
     def test_disallowed_extension_rejected(self):
         """Files with non-BIM extensions should be rejected."""
-        from backend.routers.autocad import _validate_autocad_file_path
         from fastapi import HTTPException
+
+        from backend.routers.autocad import _validate_autocad_file_path
         # Create a temp file with wrong extension
         with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
             f.write(b"test")

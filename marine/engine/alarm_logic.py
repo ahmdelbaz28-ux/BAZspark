@@ -36,13 +36,15 @@ v2 BUGFIXES:
 from __future__ import annotations
 
 import re
-from typing import List, Optional, Set
 
 from marine.core.types import (
-    AlarmLevel, AlarmLogicNode, ComplianceResult, DetectorPlacement,
-    ExtinguishingSystem, MarineZone, SpaceCategory,
+    AlarmLevel,
+    AlarmLogicNode,
+    DetectorPlacement,
+    ExtinguishingSystem,
+    MarineZone,
+    SpaceCategory,
 )
-
 
 # ─── Identifier sanitisation (IEC 61131-3 limits) ──────────────────────────
 
@@ -53,7 +55,8 @@ _INVALID_IDENT_RE = re.compile(r"[^A-Za-z0-9_]")
 
 
 def _to_ident(name: str) -> str:
-    """Sanitise a name into a valid IEC 61131-3 identifier.
+    """
+    Sanitise a name into a valid IEC 61131-3 identifier.
 
     Hyphens, dots, and other punctuation are replaced with underscores.
     The result is prefixed with `_` if it doesn't start with a letter/underscore
@@ -67,10 +70,11 @@ def _to_ident(name: str) -> str:
 
 def generate_logic_tree(
     zone: MarineZone,
-    detector_placements: List[DetectorPlacement],
-    extinguishing_system: Optional[ExtinguishingSystem] = None,
-) -> List[AlarmLogicNode]:
-    """Generate alarm-logic nodes for every detector in a zone.
+    detector_placements: list[DetectorPlacement],
+    extinguishing_system: ExtinguishingSystem | None = None,
+) -> list[AlarmLogicNode]:
+    """
+    Generate alarm-logic nodes for every detector in a zone.
 
     Each detector generates ≥1 logic node. Multi-criteria detectors
     generate multiple nodes (one per sensor).
@@ -89,8 +93,9 @@ def generate_logic_tree(
             will match the actually-selected extinguishing system. If
             None, defaults to `release_water_mist` for machinery and
             `release_co2` for cargo (preserving v1 behavior).
+
     """
-    nodes: List[AlarmLogicNode] = []
+    nodes: list[AlarmLogicNode] = []
     cat = zone.space_category
 
     # Determine the correct release output for this zone's selected system.
@@ -165,8 +170,9 @@ def generate_logic_tree(
     return nodes
 
 
-def export_to_plc_script(nodes: List[AlarmLogicNode]) -> str:
-    """Export logic tree as a Structured Text (ST) PLC script (IEC 61131-3).
+def export_to_plc_script(nodes: list[AlarmLogicNode]) -> str:
+    """
+    Export logic tree as a Structured Text (ST) PLC script (IEC 61131-3).
 
     Generates a runnable ST program for any IEC 61131-3-compliant PLC
     (Siemens S7, Schneider Modicon, ABB AC500, etc.).
@@ -185,14 +191,14 @@ def export_to_plc_script(nodes: List[AlarmLogicNode]) -> str:
          latch forever when the detector clears.
     """
     # ── Collect unique I/O tags across all nodes ───────────────────────────
-    declared_inputs: List[str] = []   # detector inputs
-    declared_outputs: List[str] = []  # action outputs
-    declared_interlocks: List[str] = []
-    seen_inputs: Set[str] = set()
-    seen_outputs: Set[str] = set()
+    declared_inputs: list[str] = []   # detector inputs
+    declared_outputs: list[str] = []  # action outputs
+    declared_interlocks: list[str] = []
+    seen_inputs: set[str] = set()
+    seen_outputs: set[str] = set()
 
-    delayed_outputs: List[tuple] = []  # (node_id, output_name, delay_s)
-    needs_interlock: List[str] = []   # node_ids with interlocks
+    delayed_outputs: list[tuple] = []  # (node_id, output_name, delay_s)
+    needs_interlock: list[str] = []   # node_ids with interlocks
 
     for n in nodes:
         in_ident = _to_ident(n.trigger_detector)
@@ -214,7 +220,7 @@ def export_to_plc_script(nodes: List[AlarmLogicNode]) -> str:
                 delayed_outputs.append((n.node_id, out_ident, n.delay_s))
 
     # ── Build the ST program ───────────────────────────────────────────────
-    lines: List[str] = [
+    lines: list[str] = [
         "// ─── Auto-generated Fire Alarm Logic Tree ───────────────",
         "// Source: marine.engine.alarm_logic.generate_logic_tree()",
         "// Standard: SOLAS II-2/5.6 + IEC 60092-502 + IEC 61131-3",
@@ -289,4 +295,4 @@ def export_to_plc_script(nodes: List[AlarmLogicNode]) -> str:
     return "\n".join(lines)
 
 
-__all__ = ["generate_logic_tree", "export_to_plc_script"]
+__all__ = ["export_to_plc_script", "generate_logic_tree"]

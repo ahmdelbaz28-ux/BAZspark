@@ -1,4 +1,5 @@
-"""Gate 9: Import-Level Integration Tests (V131 Phase 4).
+"""
+Gate 9: Import-Level Integration Tests (V131 Phase 4).
 ======================================================
 Direct import-level integration between ETAP Skill and FireAI modules.
 These tests verify that the bridge modules can IMPORT and USE FireAI

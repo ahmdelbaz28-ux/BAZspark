@@ -248,7 +248,7 @@ def check_line_spacing(root: ET.Element) -> CheckResult:
         return CheckResult("line-spacing", True, "No body paragraphs")
 
     if len(spacing_values) <= 1:
-        dominant = list(spacing_values.keys())[0] if spacing_values else "default"
+        dominant = next(iter(spacing_values.keys())) if spacing_values else "default"
         return CheckResult("line-spacing", True, f"Line spacing uniform (line={dominant})")
 
     # Find the most common line spacing
@@ -310,7 +310,8 @@ def check_image_overflow(root: ET.Element) -> CheckResult:
 
 
 def check_image_aspect_ratio(docx_path: str, root: ET.Element) -> CheckResult:
-    """Check whether images are stretched/distorted (aspect ratio drift).
+    """
+    Check whether images are stretched/distorted (aspect ratio drift).
 
     Compares the original aspect ratio of embedded images with the display aspect ratio set in wp:extent.
     Drift >10% is considered distortion (pie charts becoming elliptical, radar charts becoming diamond-shaped, etc).
@@ -608,9 +609,9 @@ def check_toc(root: ET.Element, docx_path: str = "") -> CheckResult:
 
                     if missing_outline:
                         issues.append(
-                            "TOC_OUTLINE_MISSING: %s style(s) missing outlineLvl — "
+                            "TOC_OUTLINE_MISSING: {} style(s) missing outlineLvl — "
                             "Word TOC update won't find these headings. "
-                            "Run add_toc_placeholders.py to fix" % ", ".join(missing_outline)
+                            "Run add_toc_placeholders.py to fix".format(", ".join(missing_outline))
                         )
 
                 # Check 4: updateFields not set to true
@@ -633,8 +634,7 @@ def check_toc(root: ET.Element, docx_path: str = "") -> CheckResult:
     if not issues:
         if has_toc:
             return CheckResult("toc", True, "TOC field present and update-ready")
-        else:
-            return CheckResult("toc", True, "No TOC needed")
+        return CheckResult("toc", True, "No TOC needed")
 
     severity = "error" if any(k in i for i in issues for k in ("FIELD_MISSING", "NO_HEADINGS", "OUTLINE_MISSING")) else "warning"
     return CheckResult("toc", False, "; ".join(issues[:5]), severity)

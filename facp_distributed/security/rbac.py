@@ -1,6 +1,4 @@
-"""
-RBAC System for Distributed FACP System
-"""
+"""RBAC System for Distributed FACP System"""
 import time
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -8,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 class Role(Enum):
     """Predefined roles in the distributed system"""
+
     VIEWER = "viewer"
     OPERATOR = "operator"
     ADMIN = "admin"
@@ -16,6 +15,7 @@ class Role(Enum):
 
 class Permission(Enum):
     """Predefined permissions in the distributed system"""
+
     READ = "read"
     WRITE = "write"
     EXECUTE = "execute"
@@ -26,9 +26,8 @@ class Permission(Enum):
 
 
 class RBACEngine:
-    """
-    Role-Based Access Control Engine for distributed system
-    """
+    """Role-Based Access Control Engine for distributed system"""
+
     def __init__(self):
         self.roles = {}
         self.permissions = {}
@@ -67,7 +66,7 @@ class RBACEngine:
         """Create a new role with specified permissions"""
         self.roles[role_name] = permissions
 
-    def assign_role_to_user(self, user_id: str, role: str, expires_at: Optional[float] = None, node_id: str = None):
+    def assign_role_to_user(self, user_id: str, role: str, expires_at: Optional[float] = None, node_id: Optional[str] = None):
         """Assign a role to a user with optional node context"""
         if role not in self.roles:
             raise ValueError(f"Role '{role}' does not exist")
@@ -88,7 +87,7 @@ class RBACEngine:
             }
             self.user_roles[user_id].append(assignment)
 
-    def remove_role_from_user(self, user_id: str, role: str, node_id: str = None):
+    def remove_role_from_user(self, user_id: str, role: str, node_id: Optional[str] = None):
         """Remove a role from a user with optional node context"""
         if user_id in self.user_roles:
             if node_id:
@@ -101,7 +100,7 @@ class RBACEngine:
                 # Remove role for all nodes
                 self.user_roles[user_id] = [r for r in self.user_roles[user_id] if r['role'] != role]
 
-    def get_user_permissions(self, user_id: str, node_context: str = None) -> List[str]:
+    def get_user_permissions(self, user_id: str, node_context: Optional[str] = None) -> List[str]:
         """Get permissions for a user based on their roles in specific node context"""
         if user_id not in self.user_roles:
             return []
@@ -129,12 +128,12 @@ class RBACEngine:
 
         return list(permissions)
 
-    def has_permission(self, user_id: str, required_permission: str, node_context: str = None) -> bool:
+    def has_permission(self, user_id: str, required_permission: str, node_context: Optional[str] = None) -> bool:
         """Check if a user has a specific permission in node context"""
         user_permissions = self.get_user_permissions(user_id, node_context)
         return required_permission in user_permissions
 
-    def has_role(self, user_id: str, required_role: str, node_context: str = None) -> bool:
+    def has_role(self, user_id: str, required_role: str, node_context: Optional[str] = None) -> bool:
         """Check if a user has a specific role in node context"""
         if user_id not in self.user_roles:
             return False
@@ -153,7 +152,7 @@ class RBACEngine:
 
         return False
 
-    def is_authorized(self, user_id: str, required_permissions: List[str], node_context: str = None) -> bool:
+    def is_authorized(self, user_id: str, required_permissions: List[str], node_context: Optional[str] = None) -> bool:
         """Check if user has all required permissions in node context"""
         user_permissions = set(self.get_user_permissions(user_id, node_context))
         required_set = set(required_permissions)
@@ -164,9 +163,7 @@ class RBACEngine:
         return self.role_hierarchy.get(role)
 
     def distribute_state(self, target_nodes: list):
-        """
-        Distribute RBAC state to other nodes in the cluster
-        """
+        """Distribute RBAC state to other nodes in the cluster"""
         rbac_state = {
             "roles": self.roles,
             "role_hierarchy": self.role_hierarchy,
@@ -179,9 +176,7 @@ class RBACEngine:
             self.distributed_cache[node] = rbac_state
 
     def sync_with_cluster(self, cluster_rbac_state: Dict[str, Any]):
-        """
-        Sync RBAC state with cluster
-        """
+        """Sync RBAC state with cluster"""
         # Merge cluster state with local state
         cluster_roles = cluster_rbac_state.get("roles", {})
         cluster_user_roles = cluster_rbac_state.get("user_roles", {})
@@ -213,13 +208,12 @@ class RBACEngine:
 
 
 class PermissionChecker:
-    """
-    Permission checking utility for distributed system
-    """
+    """Permission checking utility for distributed system"""
+
     def __init__(self, rbac_engine: RBACEngine):
         self.rbac_engine = rbac_engine
 
-    def check_method_access(self, user_id: str, method: str, node_context: str = None) -> tuple[bool, str]:
+    def check_method_access(self, user_id: str, method: str, node_context: Optional[str] = None) -> tuple[bool, str]:
         """
         Check if user can access a specific method in node context
         :param user_id: User ID
@@ -261,10 +255,9 @@ class PermissionChecker:
         # Check if user has required permissions in node context
         if self.rbac_engine.is_authorized(user_id, required_permissions, node_context):
             return True, "Access granted"
-        else:
-            return False, f"Insufficient permissions. Required: {required_permissions}"
+        return False, f"Insufficient permissions. Required: {required_permissions}"
 
-    def check_resource_access(self, user_id: str, resource: str, action: str, node_context: str = None) -> tuple[bool, str]:
+    def check_resource_access(self, user_id: str, resource: str, action: str, node_context: Optional[str] = None) -> tuple[bool, str]:
         """
         Check if user can perform an action on a resource in node context
         :param user_id: User ID
@@ -277,10 +270,9 @@ class PermissionChecker:
 
         if self.rbac_engine.has_permission(user_id, required_permission, node_context):
             return True, "Access granted"
-        else:
-            return False, f"Insufficient permissions for {action} on {resource}"
+        return False, f"Insufficient permissions for {action} on {resource}"
 
-    def get_user_capabilities(self, user_id: str, node_context: str = None) -> Dict[str, Any]:
+    def get_user_capabilities(self, user_id: str, node_context: Optional[str] = None) -> Dict[str, Any]:
         """Get all capabilities for a user in node context"""
         permissions = self.rbac_engine.get_user_permissions(user_id, node_context)
         roles = []
@@ -328,11 +320,9 @@ class PermissionChecker:
 
     def validate_cross_node_access(self, requesting_user: str, target_node: str,
                                  action: str, resource: str) -> tuple[bool, str]:
-        """
-        Validate if a user can access resources on a different node
-        """
+        """Validate if a user can access resources on a different node"""
         # Check if user has permission to access the target node type
-        node_type = target_node.split('_')[0] if '_' in target_node else target_node
+        node_type = target_node.split('_', maxsplit=1)[0] if '_' in target_node else target_node
 
         required_perm = f"{node_type}_access" if node_type in ['engine', 'client', 'orchestrator'] else "admin"
 
@@ -341,7 +331,5 @@ class PermissionChecker:
             resource_perm = f"{action}"
             if self.rbac_engine.has_permission(requesting_user, resource_perm):
                 return True, "Cross-node access granted"
-            else:
-                return False, f"Insufficient permissions for {action} on {resource}"
-        else:
-            return False, f"User does not have access to {node_type} nodes"
+            return False, f"Insufficient permissions for {action} on {resource}"
+        return False, f"User does not have access to {node_type} nodes"

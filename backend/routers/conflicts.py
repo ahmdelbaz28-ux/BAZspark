@@ -1,4 +1,5 @@
-"""FireAI Digital Twin - Conflicts Router.
+"""
+FireAI Digital Twin - Conflicts Router.
 =======================================
 Endpoints for conflict detection and resolution.
 

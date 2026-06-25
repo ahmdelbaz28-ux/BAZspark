@@ -1,4 +1,5 @@
-"""backend/services/marine_service.py — Marine Fire-Safety Service Layer.
+"""
+backend/services/marine_service.py — Marine Fire-Safety Service Layer.
 =====================================================================
 Service layer that orchestrates the marine package engines behind the
 backend/routers/marine.py REST API.
@@ -71,7 +72,8 @@ class MarineService:
         ship: ShipProject,
         zones: list[MarineZone] | None = None,
     ) -> dict[str, Any]:
-        """Run the complete marine fire-safety design pipeline.
+        """
+        Run the complete marine fire-safety design pipeline.
 
         Args:
             ship: Ship project descriptor.

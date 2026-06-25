@@ -36,8 +36,10 @@ from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
 
 class TestV130FlatSpacing:
-    """V130: Smoke detector spacing is FLAT 9.1m at ALL ceiling heights.
-    Per NFPA 72-2022 §17.7.3.2.3: 30 ft (9.1 m) — NO height reduction."""
+    """
+    V130: Smoke detector spacing is FLAT 9.1m at ALL ceiling heights.
+    Per NFPA 72-2022 §17.7.3.2.3: 30 ft (9.1 m) — NO height reduction.
+    """
 
     @pytest.mark.parametrize("height", [
         3.0,     # 10 ft
@@ -82,12 +84,16 @@ class TestV130FlatSpacing:
 
 
 class TestV130AuditNotice:
-    """V130 adds an audit_notice key for h > 6.096m (stratification advisory).
-    Low ceilings have no audit_notice key (backward-compatible shape)."""
+    """
+    V130 adds an audit_notice key for h > 6.096m (stratification advisory).
+    Low ceilings have no audit_notice key (backward-compatible shape).
+    """
 
     def test_low_ceiling_no_audit_notice_key(self):
-        """h ≤ 6.096 m: dict must NOT have audit_notice key
-        (backward-compatible shape)."""
+        """
+        H ≤ 6.096 m: dict must NOT have audit_notice key
+        (backward-compatible shape).
+        """
         for h in (1.0, 3.0, 4.0, 5.0, 6.0, 6.096):
             r = compute_smoke_detector_spacing(h)
             assert "audit_notice" not in r, (
@@ -96,7 +102,7 @@ class TestV130AuditNotice:
             )
 
     def test_high_ceiling_includes_audit_notice(self):
-        """h > 6.096 m: dict MUST include audit_notice key."""
+        """H > 6.096 m: dict MUST include audit_notice key."""
         for h in (6.1, 7.0, 9.0, 12.0, 15.0, 18.0):
             r = compute_smoke_detector_spacing(h)
             assert "audit_notice" in r, (
@@ -111,8 +117,10 @@ class TestV130AuditNotice:
         assert "17.7.1.11" in r["audit_notice"]
 
     def test_audit_notice_offers_alternatives(self):
-        """The notice must direct the operator toward beam, aspirating,
-        OR performance-based design — never leaving them without guidance."""
+        """
+        The notice must direct the operator toward beam, aspirating,
+        OR performance-based design — never leaving them without guidance.
+        """
         r = compute_smoke_detector_spacing(10.0)
         notice = r["audit_notice"].lower()
         assert "beam" in notice
@@ -132,8 +140,10 @@ class TestV130AuditNotice:
         assert "17.7.3.2.3" in notice
 
     def test_audit_notice_threshold_exact(self):
-        """The threshold is EXACTLY 6.096 m (20 ft). 6.096 = no notice,
-        6.097 = notice."""
+        """
+        The threshold is EXACTLY 6.096 m (20 ft). 6.096 = no notice,
+        6.097 = notice.
+        """
         r_at = compute_smoke_detector_spacing(6.096)
         r_above = compute_smoke_detector_spacing(6.097)
         assert "audit_notice" not in r_at
@@ -146,8 +156,10 @@ class TestV130AuditNotice:
 
 
 class TestV130WarningLog:
-    """V130 logs a WARNING at the kernel's logger when high-
-    ceiling spot smoke detection is requested. This is non-blocking."""
+    """
+    V130 logs a WARNING at the kernel's logger when high-
+    ceiling spot smoke detection is requested. This is non-blocking.
+    """
 
     def test_warning_emitted_above_threshold(self, caplog):
         with caplog.at_level(logging.WARNING, logger="fireai.core.qomn_kernel"):
@@ -172,9 +184,11 @@ class TestV130WarningLog:
         )
 
     def test_logging_failure_does_not_break_computation(self, monkeypatch):
-        """If logging fails for any reason, the engineering computation
+        """
+        If logging fails for any reason, the engineering computation
         MUST still return correctly. Per agent.md: 'logging failures must
-        never break the engineering computation.'"""
+        never break the engineering computation.'
+        """
         import logging as _real_logging
         original_get_logger = _real_logging.getLogger
 

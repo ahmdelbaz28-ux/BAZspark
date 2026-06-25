@@ -22,13 +22,11 @@ Exercises:
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
-import json
-import time
 import tempfile
-import asyncio
-from pathlib import Path
+import time
 
 PROJECT_ROOT = "/home/z/my-project/revit"
 sys.path.insert(0, PROJECT_ROOT)
@@ -67,6 +65,7 @@ def _setup_keys():
 def _get_client():
     """Create a TestClient for the FastAPI app."""
     from fastapi.testclient import TestClient
+
     from backend.app import app
     return TestClient(app)
 
@@ -342,7 +341,7 @@ def test_rate_limiter() -> None:
         # Make 15 requests with viewer key (will fail auth, but rate limit
         # applies at the SlowAPI layer BEFORE auth runs).
         statuses = []
-        for i in range(15):
+        for _i in range(15):
             r = client.post("/api/v1/parse-dwg",
                             headers={"X-API-Key": "viewer_key_http_test"})
             statuses.append(r.status_code)
@@ -520,7 +519,7 @@ def test_api_key_perf_http() -> None:
         # Time 20 consecutive authenticated requests
         t0 = time.time()
         for _ in range(20):
-            r = client.get("/api/v1/projects",
+            client.get("/api/v1/projects",
                            headers={"X-API-Key": "admin_key_http_test"})
         elapsed = time.time() - t0
 
@@ -539,7 +538,7 @@ def test_api_key_perf_http() -> None:
         # Invalid key should be FAST (O(1) HMAC lookup, no bcrypt)
         t0 = time.time()
         for _ in range(20):
-            r = client.get("/api/v1/projects",
+            client.get("/api/v1/projects",
                            headers={"X-API-Key": "invalid_key_perf_test"})
         elapsed_invalid = time.time() - t0
         avg_invalid_ms = (elapsed_invalid / 20) * 1000

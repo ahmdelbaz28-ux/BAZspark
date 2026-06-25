@@ -161,9 +161,7 @@ class TestIntegratedQomnFire(unittest.TestCase):
         self.assertEqual(rec.recommended_model, "FC924")
 
     def test_determinism_100_cycles(self):
-        """
-        VERIFICATION TEST 6: Determinism — same inputs produce bit-identical signatures.
-        """
+        """VERIFICATION TEST 6: Determinism — same inputs produce bit-identical signatures."""
         from qomn_fire.core.types import ProjectRequirements
         from qomn_fire.engine.panel_selector import SelectionEngine
 

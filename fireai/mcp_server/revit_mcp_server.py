@@ -1,4 +1,5 @@
-"""revit_mcp_server.py — Main Revit MCP Server Entry Point.
+"""
+revit_mcp_server.py — Main Revit MCP Server Entry Point.
 ========================================================
 LIFE-SAFETY CRITICAL: This module provides the MCP server that bridges
 AI assistants (Claude, GPT) with the Revit BIM model.
@@ -41,7 +42,8 @@ logger = logging.getLogger(__name__)
 
 
 class RevitMCPServer:
-    """MCP Server for Revit BIM integration with full safety controls.
+    """
+    MCP Server for Revit BIM integration with full safety controls.
 
     SAFETY: This server enforces the following non-negotiable rules:
       1. ALL inputs are sanitized before processing
@@ -65,7 +67,8 @@ class RevitMCPServer:
         return self._update_queue
 
     def process_request(self, request: MCPRequest) -> MCPResponse:
-        """Process an incoming MCP request.
+        """
+        Process an incoming MCP request.
 
         SAFETY GATE SEQUENCE:
           1. Sanitize all inputs (SanitizedMCPHandler)
@@ -110,7 +113,8 @@ class RevitMCPServer:
     def _handle_update_bim_parameter(
         self, request: MCPRequest, params: dict[str, Any]
     ) -> MCPResponse:
-        """Handle a BIM parameter update by queuing it for safe Revit execution.
+        """
+        Handle a BIM parameter update by queuing it for safe Revit execution.
 
         SAFETY: This NEVER directly modifies the Revit model.
         Instead, it creates a ModelUpdateAction and enqueues it
@@ -274,7 +278,8 @@ class RevitMCPServer:
     def _handle_room_classification(
         self, request: MCPRequest, params: dict[str, Any]
     ) -> MCPResponse:
-        """Handle a room classification update.
+        """
+        Handle a room classification update.
 
         SAFETY: The hazard override verifier is applied during
         sanitization (Gate 4 in SanitizedMCPHandler). If the AI

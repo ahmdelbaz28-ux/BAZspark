@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""fireai/cli.py - Unified CLI for FireAI
+"""
+fireai/cli.py - Unified CLI for FireAI
 Usage: python -m fireai.cli build -f FILE.dxf -o OUTPUT_DIR.
 
 V82 FIX: Removed all dead ``src.*`` imports that never existed.

@@ -1,4 +1,5 @@
-"""backend/project_bridge.py — Cross-database project & device synchronization bridge.
+"""
+backend/project_bridge.py — Cross-database project & device synchronization bridge.
 
 Ensures that project creation, update, and deletion in System A
 (digital_twin.db) is reflected in System B (udm_elements.db).
@@ -42,7 +43,8 @@ _TARGET_DB = "udm_elements"
 
 
 def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
-    """Sync a project from System A to System B after creation.
+    """
+    Sync a project from System A to System B after creation.
 
     Maps System A fields to System B fields and creates the project
     in the UDM database. Records the sync status in sync_operations.
@@ -134,7 +136,8 @@ def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
 
 
 def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool:
-    """Sync a project update from System A to System B.
+    """
+    Sync a project update from System A to System B.
 
     Records the sync status in sync_operations.
 
@@ -223,7 +226,8 @@ def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool
 
 
 def sync_project_delete_to_udm(project_id: str) -> bool:
-    """Sync a project deletion from System A to System B.
+    """
+    Sync a project deletion from System A to System B.
 
     Deletes the project and all element associations from UDM.
     Records the sync status in sync_operations.
@@ -294,7 +298,8 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
 
 
 def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
-    """Sync a device from System A to System B after creation.
+    """
+    Sync a device from System A to System B after creation.
 
     Maps System A device fields to System B element fields so that
     the conflict detection system can detect spatial overlaps.
@@ -417,7 +422,8 @@ def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
 
 
 def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str, Any]) -> bool:
-    """Sync a device update from System A to System B.
+    """
+    Sync a device update from System A to System B.
 
     Records the sync status in sync_operations.
 
@@ -526,7 +532,8 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str
 
 
 def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
-    """Sync a device deletion from System A to System B.
+    """
+    Sync a device deletion from System A to System B.
 
     Soft-deletes the element and removes its project association.
     Soft delete preserves the audit trail for NFPA 72 traceability.
@@ -595,7 +602,8 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
 
 
 def sync_connection_to_udm(project_id: str, connection_data: dict[str, Any]) -> bool:
-    """Sync a connection from System A to System B after creation.
+    """
+    Sync a connection from System A to System B after creation.
 
     Maps System A connection fields to System B relationship fields so that
     the conflict detection system can see cable wiring between devices.
@@ -685,7 +693,8 @@ def sync_connection_to_udm(project_id: str, connection_data: dict[str, Any]) -> 
 
 
 def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
-    """Sync a connection deletion from System A to System B.
+    """
+    Sync a connection deletion from System A to System B.
 
     Soft-deletes the relationship in UDM. Soft delete preserves the
     audit trail for NFPA 72 traceability — cable connection deletions

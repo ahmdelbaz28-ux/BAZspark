@@ -36,7 +36,8 @@ def run_resilience_check(
     iterations: int = _MC_ITERATIONS,
     seed: int = 42,
 ) -> tuple[float, float, bool]:
-    """Run Monte Carlo resilience check for detector placement.
+    """
+    Run Monte Carlo resilience check for detector placement.
 
     Args:
         positions: Current detector positions.
@@ -64,7 +65,8 @@ def _run_resilience_check_fast(
     iterations: int = _MC_ITERATIONS,
     seed: int = 42,
 ) -> tuple[float, float, bool]:
-    """Accelerated Monte Carlo using numpy vectorized operations.
+    """
+    Accelerated Monte Carlo using numpy vectorized operations.
 
     Args:
         positions: Current detector positions.
@@ -128,7 +130,8 @@ def _run_resilience_check_original(
     iterations: int = _MC_ITERATIONS,
     seed: int = 42,
 ) -> tuple[float, float, bool]:
-    """Original Monte Carlo implementation (fallback).
+    """
+    Original Monte Carlo implementation (fallback).
 
     This is the same as the implementation in fire_expert_system.py.
 

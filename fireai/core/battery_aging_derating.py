@@ -1,4 +1,5 @@
-"""battery_aging_derating.py — NFPA 72 §10.6.7 Battery Capacity Auditor.
+"""
+battery_aging_derating.py — NFPA 72 §10.6.7 Battery Capacity Auditor.
 =====================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -139,7 +140,8 @@ END_OF_DISCHARGE_VOLTAGE_PER_CELL = 1.75  # Volts
 
 @dataclass(frozen=True)
 class BatterySpec:
-    """Specification of a lead-acid battery bank.
+    """
+    Specification of a lead-acid battery bank.
 
     Attributes:
         amp_hour_20h: Rated capacity in Ah at the 20-hour discharge rate.
@@ -168,7 +170,8 @@ class BatterySpec:
 
 @dataclass(frozen=True)
 class LoadProfile:
-    """Fire alarm load profile for battery calculation.
+    """
+    Fire alarm load profile for battery calculation.
 
     NFPA 72 §10.6.7.2.1 requires the battery to support:
       1. Standby load for the required period (24h or 60h)
@@ -200,7 +203,8 @@ class LoadProfile:
 
 
 def get_temperature_derating_factor(temperature_c: float) -> float:
-    """Calculate battery capacity derating factor for a given temperature.
+    """
+    Calculate battery capacity derating factor for a given temperature.
 
     Uses linear interpolation of the IEEE 485 temperature derating table.
     For temperatures below the minimum data point (-10°C), uses the minimum
@@ -266,7 +270,8 @@ def get_aging_derating_factor(
     service_life_years: float = DEFAULT_SERVICE_LIFE_YEARS,
     current_age_years: float = 0.0,
 ) -> float:
-    """Calculate battery capacity derating factor for aging.
+    """
+    Calculate battery capacity derating factor for aging.
 
     Per IEEE 1188, VRLA batteries should be replaced when they reach 80%
     of their rated capacity. For life-safety design, we size the battery
@@ -313,7 +318,8 @@ def get_aging_derating_factor(
 
 @dataclass
 class BatterySizingResult:
-    """Result of battery capacity calculation with full audit trail.
+    """
+    Result of battery capacity calculation with full audit trail.
 
     Attributes:
         required_ah: Calculated minimum Ah at the 20-hour rate, accounting
@@ -355,7 +361,8 @@ def _compute_discharge_rate_correction(
     load_amps: float,
     battery_ah_20h: float,
 ) -> float:
-    """Compute Peukert correction for discharge rate.
+    """
+    Compute Peukert correction for discharge rate.
 
     Battery Ah ratings are given at the 20-hour discharge rate.
     At higher discharge rates (alarm condition), the effective capacity
@@ -447,7 +454,8 @@ def size_battery(
     safety_margin_pct: float = 0.0,
     nfpa_supervisory_period: str = "24h",
 ) -> BatterySizingResult:
-    """Calculate required battery capacity per NFPA 72 §10.6.7.
+    """
+    Calculate required battery capacity per NFPA 72 §10.6.7.
 
     The calculation follows this sequence:
       1. Calculate Ah needed for standby period
@@ -792,7 +800,8 @@ def size_battery(
 
 
 class BatteryAuditor:
-    """Audits battery capacity for a fire alarm system per NFPA 72 §10.6.7.
+    """
+    Audits battery capacity for a fire alarm system per NFPA 72 §10.6.7.
 
     Usage::
 
@@ -829,7 +838,8 @@ class BatteryAuditor:
         standby_load_amps: float,
         alarm_load_amps: float,
     ) -> BatterySizingResult:
-        """Run battery capacity audit with configured parameters.
+        """
+        Run battery capacity audit with configured parameters.
 
         Args:
             standby_load_amps: Total standby current (A).
@@ -851,7 +861,8 @@ class BatteryAuditor:
         )
 
     def audit_from_load_profile(self, profile: LoadProfile) -> BatterySizingResult:
-        """Run battery capacity audit using a LoadProfile object.
+        """
+        Run battery capacity audit using a LoadProfile object.
 
         Args:
             profile: LoadProfile with standby and alarm load data.
@@ -878,7 +889,8 @@ class BatteryAuditor:
 
 
 def battery_result_for_gate(result: BatterySizingResult) -> dict[str, Any]:
-    """Convert BatterySizingResult to the dict format expected by Gate 8.
+    """
+    Convert BatterySizingResult to the dict format expected by Gate 8.
 
     This function bridges between battery_aging_derating.py and
     release_gates.py verify_and_evaluate() battery_result parameter.

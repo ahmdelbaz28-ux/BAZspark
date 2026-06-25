@@ -1,4 +1,5 @@
-"""ETAP Skill ↔ FireAI Bridge Module.
+"""
+ETAP Skill ↔ FireAI Bridge Module.
 ===================================
 Direct integration between the ETAP Expert Skill and FireAI's existing
 engineering modules. This enables bidirectional data flow:
@@ -74,7 +75,8 @@ def bridge_voltage_drop(
     voltage_v: float = 480.0,
     pf: float = 0.85,
 ) -> VoltageDropBridgeResult:
-    """Bridge ETAP cable sizing with FireAI voltage_drop module.
+    """
+    Bridge ETAP cable sizing with FireAI voltage_drop module.
 
     Args:
         load_current_a: Load current in Amperes
@@ -204,7 +206,8 @@ def bridge_arc_flash_atex(
     hazardous_area: bool = False,
     hazard_type: str = "gas",  # "gas", "dust", "none"
 ) -> ArcFlashAtexBridgeResult:
-    """Bridge ETAP arc flash with FireAI ATEX analysis.
+    """
+    Bridge ETAP arc flash with FireAI ATEX analysis.
 
     Args:
         bolted_fault_current_ka: Bolted fault current (kA)
@@ -306,7 +309,8 @@ def bridge_marine_power_fire_safety(
     generator_count: int = 3,
     ship_length_m: float = 200.0,
 ) -> MarineBridgeResult:
-    """Bridge ETAP marine power analysis with FireAI marine fire safety.
+    """
+    Bridge ETAP marine power analysis with FireAI marine fire safety.
 
     Args:
         ship_voltage_v: Ship voltage (690V typical for large vessels)
@@ -394,7 +398,8 @@ def bridge_harmonic_analysis(
     isc_a: float = 20000.0,
     has_vfd: bool = True,
 ) -> HarmonicBridgeResult:
-    """Bridge ETAP harmonic analysis with FireAI (when harmonic module exists).
+    """
+    Bridge ETAP harmonic analysis with FireAI (when harmonic module exists).
 
     Args:
         load_current_a: Load current

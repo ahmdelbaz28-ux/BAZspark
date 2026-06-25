@@ -1,4 +1,5 @@
-"""backend/routers/qomn.py — QOMN-FIRE Engineering Kernel REST API.
+"""
+backend/routers/qomn.py — QOMN-FIRE Engineering Kernel REST API.
 ================================================================
 REST endpoints for the QOMN-FIRE deterministic engineering kernel.
 
@@ -48,7 +49,8 @@ _NEC_TABLE8_VALID_AWG: frozenset = frozenset({
 
 
 def _normalize_awg_gauge(v: Any) -> str:
-    """Normalize AWG input identically to the kernel; reject if not in NEC Table 8.
+    """
+    Normalize AWG input identically to the kernel; reject if not in NEC Table 8.
 
     SAFETY: This is the SINGLE point of AWG validation for the HTTP API.
     A value passing here MUST be accepted by fireai.core.qomn_kernel.
@@ -104,7 +106,8 @@ except ImportError:
 
 
 def _get_kernel():
-    """Lazy-initialize QOMNKernel singleton with thread-safe double-checked locking.
+    """
+    Lazy-initialize QOMNKernel singleton with thread-safe double-checked locking.
 
     V58 FIX (BUG #7): Added threading.Lock for thread safety. Previously,
     two concurrent requests could both see _kernel is None and create
@@ -255,7 +258,8 @@ class DuctDetectorRequest(BaseModel):
 
 @router.post("/qomn/smoke-spacing", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def compute_smoke_spacing(req: SmokeSpacingRequest):
-    """Compute smoke detector spacing per NFPA 72 Table 17.6.3.1.
+    """
+    Compute smoke detector spacing per NFPA 72 Table 17.6.3.1.
 
     Runs full Layer 0→L1→L2→L3→L4 pipeline:
       L0: Physics guard (ceiling height 0+, ≤18.288m)
@@ -277,7 +281,8 @@ async def compute_smoke_spacing(req: SmokeSpacingRequest):
 
 @router.post("/qomn/heat-spacing", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def compute_heat_spacing(req: HeatSpacingRequest):
-    """Compute heat detector spacing per NFPA 72 §17.6.3.1.
+    """
+    Compute heat detector spacing per NFPA 72 §17.6.3.1.
 
     Formula: S = 0.7 × √A  Maximum: 15.24m (50 ft)
 
@@ -295,7 +300,8 @@ async def compute_heat_spacing(req: HeatSpacingRequest):
 
 @router.post("/qomn/battery", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def compute_battery(req: BatteryRequest):
-    """Compute battery capacity per NFPA 72 §10.6.7.2.1.
+    """
+    Compute battery capacity per NFPA 72 §10.6.7.2.1.
 
     Formula: Ah = (I_sb×T_sb + I_al×T_al) / efficiency × safety_factor
     Default: 24h standby + 5min alarm, 25% safety factor, 80% efficiency.
@@ -317,7 +323,8 @@ async def compute_battery(req: BatteryRequest):
 
 @router.post("/qomn/voltage-drop", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def compute_voltage_drop(req: VoltageDropRequest):
-    """Compute circuit voltage drop per NEC Chapter 9, Table 8.
+    """
+    Compute circuit voltage drop per NEC Chapter 9, Table 8.
 
     Formula: V_drop = 2 × I × L × R_per_m  (DC round-trip)
     Resistance values from NEC 2023 Table 8 (copper, stranded, 75°C).
@@ -335,7 +342,8 @@ async def compute_voltage_drop(req: VoltageDropRequest):
 
 @router.post("/qomn/place-detectors", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def place_detectors(req: RoomRequest):
-    """Place fire alarm detectors in a room per NFPA 72-2022.
+    """
+    Place fire alarm detectors in a room per NFPA 72-2022.
 
     Full placement pipeline:
       1. Compute spacing per Table 17.6.3.1 (smoke) or §17.6.3.1 (heat)
@@ -467,7 +475,8 @@ async def place_detectors(req: RoomRequest):
 
 @router.post("/qomn/place-duct", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def place_duct_detector(req: DuctDetectorRequest):
-    """Compute duct detector placement per NFPA 72 §17.7.4.
+    """
+    Compute duct detector placement per NFPA 72 §17.7.4.
 
     Air velocity must be 0.305–15.24 m/s (60–3000 fpm).
     Number of detectors depends on duct width.
@@ -505,7 +514,8 @@ async def place_duct_detector(req: DuctDetectorRequest):
 
 @router.get("/qomn/audit", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def get_audit_log():
-    """Export full QOMN audit log for AHJ review.
+    """
+    Export full QOMN audit log for AHJ review.
 
     Per QOMN Specification §3 Layer 4:
     'AHJ can access without vendor cooperation'
@@ -526,7 +536,8 @@ async def get_audit_log():
 
 @router.get("/qomn/physics-guards", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def get_physics_guards():
-    """Return all physics guard limits with code references.
+    """
+    Return all physics guard limits with code references.
 
     Per QOMN Specification §3 Layer 0.
     """
@@ -597,7 +608,8 @@ async def get_physics_guards():
 
 @router.get("/qomn/constants", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def get_qomn_constants():
-    """Return all QOMN-FIRE engineering constants with code references.
+    """
+    Return all QOMN-FIRE engineering constants with code references.
 
     Provides the full set of NFPA 72, NEC, and QOMN specification constants
     used by the deterministic engineering kernel. Useful for client-side
@@ -657,7 +669,8 @@ async def get_qomn_constants():
 
 @router.post("/qomn/golden-tests", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
 async def run_golden_tests():
-    """Run QOMN golden test suite per QOMN Specification §9.
+    """
+    Run QOMN golden test suite per QOMN Specification §9.
 
     Verified against NFPA 72 Handbook examples and NEC worked examples.
     All results must match expected values exactly (IEEE-754 deterministic).
@@ -796,7 +809,8 @@ async def run_golden_tests():
 # ── Error Handler ─────────────────────────────────────────────────────────────
 
 def _handle_error(exc: Exception) -> NoReturn:
-    """Convert QOMN kernel exceptions to HTTP responses.
+    """
+    Convert QOMN kernel exceptions to HTTP responses.
 
     V58 FIX (BUG #17): Return type changed from None to NoReturn since
     this function always raises HTTPException.

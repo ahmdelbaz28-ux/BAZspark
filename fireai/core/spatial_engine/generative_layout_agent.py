@@ -1,4 +1,5 @@
-"""generative_layout_agent.py — Generative Design Engine for FireAI.
+"""
+generative_layout_agent.py — Generative Design Engine for FireAI.
 ====================================================================
 
 MISSION TASK 2 — Generative Design Engine (The Market Value Driver)
@@ -235,7 +236,8 @@ class GenerativeResult:
 
 
 def _generate_variant_worker(args: tuple[str, dict[str, Any]]) -> dict[str, Any]:
-    """Multiprocessing worker — generates ONE variant.
+    """
+    Multiprocessing worker — generates ONE variant.
 
     Must be module-level (not nested) for pickle compatibility with
     multiprocessing.Pool.
@@ -403,7 +405,8 @@ def _deserialize_layout(data: dict[str, Any]) -> DetectorLayout:
 
 
 class GenerativeLayoutAgent:
-    """Generative Design Engine — produces 3 scored layout variants.
+    """
+    Generative Design Engine — produces 3 scored layout variants.
 
     Usage:
         agent = GenerativeLayoutAgent()
@@ -422,7 +425,8 @@ class GenerativeLayoutAgent:
         use_multiprocessing: bool = True,
         n_workers: int | None = None,
     ) -> None:
-        """Initialize the generative agent.
+        """
+        Initialize the generative agent.
 
         Args:
             coverage_weight: Weight for coverage % in scoring.
@@ -465,7 +469,8 @@ class GenerativeLayoutAgent:
         detector_type: str = "smoke",
         audit_run_id: str | None = None,
     ) -> GenerativeResult:
-        """Generate all 3 layout variants for a room.
+        """
+        Generate all 3 layout variants for a room.
 
         Args:
             room: Room to design for.
@@ -615,7 +620,8 @@ class GenerativeLayoutAgent:
 
     @staticmethod
     def _compute_cost(layout: DetectorLayout, detector_type: str) -> float:
-        """Compute total cost of a layout (detectors + cable + conduit).
+        """
+        Compute total cost of a layout (detectors + cable + conduit).
 
         Per UNIT_COSTS from boq_generator.py.
         """
@@ -646,7 +652,8 @@ class GenerativeLayoutAgent:
 
     @staticmethod
     def _compute_overlap_pct(layout: DetectorLayout) -> float:
-        """Compute average overlap percentage between detector coverage circles.
+        """
+        Compute average overlap percentage between detector coverage circles.
 
         0% = no overlap (minimum cost)
         100% = all detectors at same point (maximum redundancy)
@@ -708,7 +715,8 @@ class GenerativeLayoutAgent:
         total_cost: float,
         reference_cost: float = 1000.0,
     ) -> float:
-        """Compute weighted score for a variant.
+        """
+        Compute weighted score for a variant.
 
         V135 F-8 FIX: The OLD formula used a MULTIPLICATIVE denominator
         ``(1 + w_cost × cost)`` which made cost dominate the score
@@ -764,7 +772,8 @@ class GenerativeLayoutAgent:
         variants: dict[LayoutVariant, VariantResult],
         occupancy_type: str,
     ) -> LayoutVariant:
-        """Recommend the best variant for the given occupancy.
+        """
+        Recommend the best variant for the given occupancy.
 
         V135 F-9 FIX: The OLD docstring said "Cost-Minimized only
         recommended for low-hazard + budget-constrained" but the code
@@ -836,7 +845,8 @@ class GenerativeLayoutAgent:
     def _generate_parallel(
         self, tasks: list[tuple[str, dict[str, Any], dict[str, Any]]]
     ) -> list[dict[str, Any]]:
-        """Generate variants in parallel using multiprocessing.Pool.
+        """
+        Generate variants in parallel using multiprocessing.Pool.
 
         Uses fork context per agent.md V37 (threads forbidden due to GIL).
         """
@@ -873,7 +883,8 @@ class GenerativeLayoutAgent:
         is_compliant: bool,
         error: str | None,
     ) -> str | None:
-        """Record a GENERATIVE_ATTEMPT event in AuditStore.
+        """
+        Record a GENERATIVE_ATTEMPT event in AuditStore.
 
         Per agent.md Rule 12 + NFPA 72 §7.5: every generative attempt
         (including rejected variants) MUST be recorded for legal

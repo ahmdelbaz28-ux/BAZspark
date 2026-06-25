@@ -1,4 +1,5 @@
-"""bim_provider.py — Provider-Agnostic BIM Abstraction Layer.
+"""
+bim_provider.py — Provider-Agnostic BIM Abstraction Layer.
 ==============================================================
 
 MISSION TASK 1.2 — Architectural Decoupling (The Sustainability Layer)
@@ -79,7 +80,8 @@ logger = logging.getLogger(__name__)
 
 
 class BIMProviderCapability(str, Enum):
-    """Capabilities a BIM provider may declare.
+    """
+    Capabilities a BIM provider may declare.
 
     Used by callers to gracefully degrade when a provider lacks a feature
     (e.g., a cloud REST API may not support live event subscriptions).
@@ -102,7 +104,8 @@ class BIMProviderCapability(str, Enum):
 
 @runtime_checkable
 class BIMProvider(Protocol):
-    """Provider-agnostic BIM interface.
+    """
+    Provider-agnostic BIM interface.
 
     Any class that implements these methods is a valid BIMProvider —
     no inheritance required (structural subtyping per PEP 544).
@@ -138,7 +141,8 @@ class BIMProvider(Protocol):
         source: str | None = None,
         **kwargs: Any,
     ) -> list[BIMRoom]:
-        """Extract rooms from the BIM source.
+        """
+        Extract rooms from the BIM source.
 
         Args:
             source: Optional path/URL/identifier. If None, the provider
@@ -164,7 +168,8 @@ class BIMProvider(Protocol):
         source: str | None = None,
         **kwargs: Any,
     ) -> list[dict[str, Any]]:
-        """Read existing fire alarm devices from the BIM source.
+        """
+        Read existing fire alarm devices from the BIM source.
 
         Returns:
             List of device dicts with at minimum: device_id, room_id,
@@ -179,7 +184,8 @@ class BIMProvider(Protocol):
         target: str | None = None,
         **kwargs: Any,
     ) -> int:
-        """Write fire alarm devices back to the BIM source.
+        """
+        Write fire alarm devices back to the BIM source.
 
         Args:
             devices: List of device dicts to write.
@@ -195,7 +201,8 @@ class BIMProvider(Protocol):
         ...
 
     def health_check(self) -> dict[str, Any]:
-        """Verify provider is operational.
+        """
+        Verify provider is operational.
 
         Returns:
             Dict with keys:
@@ -216,7 +223,8 @@ class BIMProvider(Protocol):
 
 
 class BIMProviderRegistry:
-    """Runtime registry for BIM providers.
+    """
+    Runtime registry for BIM providers.
 
     Allows dynamic registration and lookup by name. The active provider
     is selected via ``FIREAI_BIM_PROVIDER`` environment variable.
@@ -230,7 +238,8 @@ class BIMProviderRegistry:
 
     @classmethod
     def register(cls, name: str, provider_class: type) -> None:
-        """Register a provider class under ``name``.
+        """
+        Register a provider class under ``name``.
 
         Args:
             name: Unique identifier (e.g., 'local_revit', 'forge').
@@ -275,7 +284,8 @@ class BIMProviderRegistry:
         name: str | None = None,
         **kwargs: Any,
     ) -> BIMProvider | None:
-        """Get a provider instance by name.
+        """
+        Get a provider instance by name.
 
         Args:
             name: Provider name. If None, reads from ``FIREAI_BIM_PROVIDER``
@@ -332,7 +342,8 @@ class BIMProviderRegistry:
 
     @classmethod
     def _clear_for_testing(cls) -> None:
-        """Clear all registrations (for testing only).
+        """
+        Clear all registrations (for testing only).
 
         V135 F-32 FIX: Renamed from ``clear()`` to ``_clear_for_testing()``
         to prevent accidental production calls. The OLD public name could
@@ -357,7 +368,8 @@ def get_provider(name: str | None = None, **kwargs: Any) -> BIMProvider | None:
 
 
 class LocalRevitProvider:
-    """BIMProvider implementation backed by local Revit/AutoCAD/IFC/JSON.
+    """
+    BIMProvider implementation backed by local Revit/AutoCAD/IFC/JSON.
 
     Wraps the existing ``RevitAPIBridge`` (which auto-detects Revit API,
     pyrevit, ifcopenshell, JSON file, DXF). This provider is the
@@ -399,7 +411,8 @@ class LocalRevitProvider:
         source: str | None = None,
         **kwargs: Any,
     ) -> list[BIMRoom]:
-        """Extract rooms via RevitAPIBridge.
+        """
+        Extract rooms via RevitAPIBridge.
 
         Args:
             source: Optional file path (for IFC/JSON/DXF modes).
@@ -428,7 +441,8 @@ class LocalRevitProvider:
         source: str | None = None,
         **kwargs: Any,
     ) -> list[dict[str, Any]]:
-        """Read devices from BIM source.
+        """
+        Read devices from BIM source.
 
         Note: RevitAPIBridge doesn't have a dedicated device reader;
         this is a stub that returns empty list until RevitAPIBridge
@@ -443,7 +457,8 @@ class LocalRevitProvider:
         target: str | None = None,
         **kwargs: Any,
     ) -> int:
-        """Write devices to Revit (only works inside Revit API).
+        """
+        Write devices to Revit (only works inside Revit API).
 
         Raises:
             NotImplementedError: When not running inside Revit (no
@@ -482,7 +497,8 @@ class LocalRevitProvider:
 
 
 class IfcFileProvider:
-    """BIMProvider implementation backed by IFC files via ifcopenshell.
+    """
+    BIMProvider implementation backed by IFC files via ifcopenshell.
 
     This provider is the recommended choice for cloud deployments and
     CI/CD pipelines — no Revit install required, pure Python.
@@ -536,7 +552,8 @@ class IfcFileProvider:
         source: str | None = None,
         **kwargs: Any,
     ) -> list[BIMRoom]:
-        """Extract rooms from an IFC file.
+        """
+        Extract rooms from an IFC file.
 
         Args:
             source: Path to .ifc file. Required.
@@ -618,7 +635,8 @@ class IfcFileProvider:
         target: str | None = None,
         **kwargs: Any,
     ) -> int:
-        """Write devices to IFC file (append mode).
+        """
+        Write devices to IFC file (append mode).
 
         V135 F-10 FIX: This is a stub. Previously returned 0 (silent failure).
         Now raises NotImplementedError per the BIMProvider Protocol docstring:
@@ -654,7 +672,8 @@ class IfcFileProvider:
 
 
 class AutodeskForgeProvider:
-    """BIMProvider implementation backed by Autodesk Platform Services (APS,
+    """
+    BIMProvider implementation backed by Autodesk Platform Services (APS,
     formerly Forge). This is a STUB — full implementation requires APS
     API credentials and the APS Design Automation API.
 
@@ -710,7 +729,8 @@ class AutodeskForgeProvider:
         return self._CAPABILITIES
 
     def _get_auth_token(self) -> str | None:
-        """Get APS OAuth2 token (cached until expiry).
+        """
+        Get APS OAuth2 token (cached until expiry).
 
         Returns:
             Bearer token string, or None if credentials missing/invalid.
@@ -747,7 +767,8 @@ class AutodeskForgeProvider:
         source: str | None = None,
         **kwargs: Any,
     ) -> list[BIMRoom]:
-        """Extract rooms via APS Model Derivative API.
+        """
+        Extract rooms via APS Model Derivative API.
 
         Args:
             source: APS object URN (base64-encoded).
@@ -798,7 +819,8 @@ class AutodeskForgeProvider:
         )
 
     def health_check(self) -> dict[str, Any]:
-        """Check APS connectivity and credentials.
+        """
+        Check APS connectivity and credentials.
 
         V135 F-19 FIX: The OLD code returned ``healthy: True`` when
         credentials were present, even though the provider is a STUB

@@ -1,4 +1,5 @@
-"""backend/services/weather_service.py — Real-time weather data for FireAI.
+"""
+backend/services/weather_service.py — Real-time weather data for FireAI.
 
 Provides ambient temperature, wind speed, and relative humidity from
 Open-Meteo (https://open-meteo.com) — a free, no-auth, CORS-enabled API.
@@ -51,7 +52,8 @@ DEFAULT_HUMIDITY_PCT = 50.0        # Mid-range (conservative for acoustic propag
 
 @dataclass(frozen=True)
 class WeatherData:
-    """Immutable weather snapshot for engineering calculations.
+    """
+    Immutable weather snapshot for engineering calculations.
 
     Attributes:
         temperature_c: Ambient temperature in Celsius
@@ -81,7 +83,8 @@ class WeatherData:
 
     @property
     def air_density_kg_m3(self) -> float:
-        """Air density at current conditions (ideal gas approximation).
+        """
+        Air density at current conditions (ideal gas approximation).
         Used for smoke control and zone extent calculations.
         """
         # rho = P / (R * T) where P=101325 Pa, R=287.05 J/(kg*K)
@@ -94,7 +97,8 @@ class WeatherData:
 
 
 class WeatherService:
-    """Async weather data provider with TTL caching and fail-safe defaults.
+    """
+    Async weather data provider with TTL caching and fail-safe defaults.
 
     Uses Open-Meteo (free, no auth, CORS-enabled) as the primary source.
     Falls back to conservative defaults on any failure.
@@ -180,7 +184,8 @@ class WeatherService:
     async def _fetch_open_meteo(
         self, latitude: float, longitude: float
     ) -> WeatherData:
-        """Fetch current weather from Open-Meteo API.
+        """
+        Fetch current weather from Open-Meteo API.
 
         API: https://api.open-meteo.com/v1/forecast
         Parameters:
@@ -242,7 +247,8 @@ class WeatherService:
         return weather
 
     def _get_default(self, latitude: float, longitude: float) -> WeatherData:
-        """Return conservative default weather data.
+        """
+        Return conservative default weather data.
 
         These defaults are SAFER than no data:
         - 40°C indoor temp (conservative for HAC/battery)
@@ -269,7 +275,8 @@ class WeatherService:
         latitude: float,
         longitude: float,
     ) -> WeatherData:
-        """Fetch current weather for engineering calculations.
+        """
+        Fetch current weather for engineering calculations.
 
         Strategy:
           1. Check cache — return if fresh (< TTL)
@@ -324,7 +331,8 @@ class WeatherService:
         longitude: float,
         is_indoor: bool = True,
     ):
-        """Get EnvironmentalContext for core calculations.
+        """
+        Get EnvironmentalContext for core calculations.
 
         Bridges weather data → fireai.core.models_v21.EnvironmentalContext
 
@@ -369,7 +377,8 @@ _weather_lock = threading.Lock()
 
 
 def get_weather_service() -> WeatherService:
-    """Get the singleton WeatherService instance.
+    """
+    Get the singleton WeatherService instance.
 
     V65 FIX: Added thread-safe double-checked locking, matching the pattern
     used in database.py and qomn.py. Old code was not thread-safe — two

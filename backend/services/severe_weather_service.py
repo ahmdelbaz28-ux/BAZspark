@@ -1,4 +1,5 @@
-"""backend/services/severe_weather_service.py — Severe weather alerts for FireAI.
+"""
+backend/services/severe_weather_service.py — Severe weather alerts for FireAI.
 
 Provides active weather alerts from multiple international sources:
   - US National Weather Service (NWS) API for US locations
@@ -105,7 +106,8 @@ _ISO_TO_METEOALARM: dict[str, str] = {
 
 
 class WeatherAlertSeverity:
-    """NWS/MeteoAlarm alert severity levels.
+    """
+    NWS/MeteoAlarm alert severity levels.
 
     Maps both NWS and MeteoAlarm severity terminology to a unified scale:
       - MeteoAlarm Red   → Extreme
@@ -130,7 +132,8 @@ class WeatherAlertSeverity:
 
 
 class WeatherAlertType:
-    """Common alert types relevant to fire safety engineering.
+    """
+    Common alert types relevant to fire safety engineering.
 
     Covers both NWS and MeteoAlarm event types.
     """
@@ -179,7 +182,8 @@ _METEOALARM_TYPE_MAP: dict[str, str] = {
 
 @dataclass(frozen=True)
 class WeatherAlert:
-    """A single weather alert relevant to fire safety engineering.
+    """
+    A single weather alert relevant to fire safety engineering.
 
     Attributes:
         event: Alert event type (e.g., "Tornado Warning")
@@ -227,7 +231,8 @@ class WeatherAlert:
 
 @dataclass(frozen=True)
 class SevereWeatherData:
-    """Immutable severe weather data for engineering calculations.
+    """
+    Immutable severe weather data for engineering calculations.
 
     Attributes:
         active_alerts: List of active weather alerts
@@ -268,7 +273,8 @@ class SevereWeatherData:
 
 
 class SevereWeatherService:
-    """Async severe weather alert provider with international source dispatch.
+    """
+    Async severe weather alert provider with international source dispatch.
 
     Source selection based on coordinates:
       - US locations (lat 24-50, lon -125 to -66): Use NWS API
@@ -350,7 +356,8 @@ class SevereWeatherService:
     # ── Source Detection ──────────────────────────────────────────────────
 
     def _is_us_location(self, latitude: float, longitude: float) -> bool:
-        """Determine if coordinates fall within US NWS coverage area.
+        """
+        Determine if coordinates fall within US NWS coverage area.
 
         Uses bounding box for continental US. NWS also covers Alaska,
         Hawaii, and US territories, but these have limited alert coverage.
@@ -369,7 +376,8 @@ class SevereWeatherService:
         )
 
     def _determine_coverage(self, latitude: float, longitude: float) -> str:
-        """Determine the best alert source for given coordinates.
+        """
+        Determine the best alert source for given coordinates.
 
         Strategy:
           1. US bounding box → "us" (NWS)
@@ -412,7 +420,8 @@ class SevereWeatherService:
     async def _fetch_nws_alerts(
         self, latitude: float, longitude: float
     ) -> SevereWeatherData:
-        """Fetch active weather alerts from NWS API.
+        """
+        Fetch active weather alerts from NWS API.
 
         Uses the NWS alerts endpoint with point filtering:
         https://api.weather.gov/alerts?point={lat},{lon}
@@ -506,7 +515,8 @@ class SevereWeatherService:
     async def _fetch_meteoalarm_alerts(
         self, latitude: float, longitude: float, country_code: str
     ) -> SevereWeatherData:
-        """Fetch active weather alerts from MeteoAlarm EU API.
+        """
+        Fetch active weather alerts from MeteoAlarm EU API.
 
         MeteoAlarm provides weather warnings for EU/EEA member states
         using the Common Alerting Protocol (CAP) format.
@@ -587,7 +597,8 @@ class SevereWeatherService:
     async def _fetch_meteoalarm_json(
         self, country_code: str
     ) -> tuple[list[WeatherAlert], bool, bool]:
-        """Fetch alerts from MeteoAlarm JSON API (v1).
+        """
+        Fetch alerts from MeteoAlarm JSON API (v1).
 
         Endpoint: https://api.meteoalarm.org/api/v1/warnings/{country_code}
 
@@ -654,7 +665,8 @@ class SevereWeatherService:
         return alerts, has_power_risk, has_extreme_temp
 
     def _parse_meteoalarm_warning(self, warning: dict) -> WeatherAlert | None:
-        """Parse a single MeteoAlarm warning dict into a WeatherAlert.
+        """
+        Parse a single MeteoAlarm warning dict into a WeatherAlert.
 
         MeteoAlarm JSON warning structure (varies by API version):
           - event: Alert type description
@@ -732,7 +744,8 @@ class SevereWeatherService:
     async def _fetch_meteoalarm_atom(
         self, country_code: str
     ) -> tuple[list[WeatherAlert], bool, bool]:
-        """Fetch alerts from MeteoAlarm Atom feed (legacy fallback).
+        """
+        Fetch alerts from MeteoAlarm Atom feed (legacy fallback).
 
         Endpoint: https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-country/{cc}
 
@@ -821,7 +834,8 @@ class SevereWeatherService:
     def _parse_meteoalarm_atom_entry(
         self, entry: ET.Element, ns: dict
     ) -> WeatherAlert | None:
-        """Parse a single Atom <entry> element into a WeatherAlert.
+        """
+        Parse a single Atom <entry> element into a WeatherAlert.
 
         MeteoAlarm Atom entries contain:
           - <title>: Alert headline
@@ -906,7 +920,8 @@ class SevereWeatherService:
     async def _fetch_openmeteo_alerts(
         self, latitude: float, longitude: float
     ) -> SevereWeatherData:
-        """Attempt to fetch weather alerts from Open-Meteo.
+        """
+        Attempt to fetch weather alerts from Open-Meteo.
 
         Open-Meteo provides limited weather alert data for some regions.
         This is a best-effort global fallback when neither NWS nor
@@ -1030,7 +1045,8 @@ class SevereWeatherService:
         longitude: float,
         coverage_area: str = "none",
     ) -> SevereWeatherData:
-        """Return default severe weather data (no alerts).
+        """
+        Return default severe weather data (no alerts).
 
         No alerts = assume normal conditions. This is acceptable because:
         - Lack of alert data is not inherently dangerous
@@ -1067,7 +1083,8 @@ class SevereWeatherService:
     async def _resolve_country_code(
         self, latitude: float, longitude: float
     ) -> str | None:
-        """Resolve coordinates to an ISO 3166-1 alpha-2 country code.
+        """
+        Resolve coordinates to an ISO 3166-1 alpha-2 country code.
 
         Uses the GeocodingService (reverse geocoding) to determine
         the country. Returns None if resolution fails.
@@ -1102,7 +1119,8 @@ class SevereWeatherService:
         latitude: float,
         longitude: float,
     ) -> SevereWeatherData:
-        """Fetch severe weather alerts for engineering calculations.
+        """
+        Fetch severe weather alerts for engineering calculations.
 
         Strategy (international dispatch):
           1. Check cache — return if fresh (< 10-min TTL)

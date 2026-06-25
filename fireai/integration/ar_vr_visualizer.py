@@ -1,4 +1,5 @@
-"""fireai/integration/ar_vr_visualizer.py.
+"""
+fireai/integration/ar_vr_visualizer.py.
 ========================================
 AR/VR Visualization — Generates 3D scene descriptions for AR/VR rendering.
 
@@ -243,7 +244,8 @@ class Scene:
 
 
 class LODManager:
-    """Manages level-of-detail for large scenes.
+    """
+    Manages level-of-detail for large scenes.
 
     Determines which nodes should render at a given camera distance
     to maintain performance on AR/VR devices.
@@ -295,7 +297,8 @@ class LODManager:
 
 @dataclass
 class DesignData:
-    """Fire alarm design data consumed by the AR/VR visualizer.
+    """
+    Fire alarm design data consumed by the AR/VR visualizer.
 
     Mirrors the structure from fireai/validation/qa_engine.py DesignData
     to avoid circular imports while maintaining compatibility.
@@ -331,7 +334,8 @@ class CoverageResult:
 
 
 class ARVRVisualizer:
-    """Generates 3D scene descriptions for AR/VR rendering.
+    """
+    Generates 3D scene descriptions for AR/VR rendering.
 
     Converts fire alarm designs into:
     - Three.js scene JSON for web-based VR
@@ -382,7 +386,8 @@ class ARVRVisualizer:
         design: DesignData,
         fmt: SceneFormat,
     ) -> Any:
-        """Generate a 3D scene description in the requested format.
+        """
+        Generate a 3D scene description in the requested format.
 
         Args:
             design: Fire alarm design data.
@@ -409,7 +414,8 @@ class ARVRVisualizer:
         raise ValueError(f"Unsupported scene format: {fmt}")
 
     def generate_threejs(self, design: DesignData) -> dict:
-        """Generate a Three.js-compatible JSON scene description.
+        """
+        Generate a Three.js-compatible JSON scene description.
 
         Returns a dict matching the Three.js JSON Object/Scene format (v3.1+)
         that can be loaded via THREE.ObjectLoader or THREE.JSONLoader.
@@ -418,7 +424,8 @@ class ARVRVisualizer:
         return self._scene_to_threejs(scene)
 
     def generate_gltf(self, design: DesignData) -> bytes:
-        """Generate a binary glTF 2.0 representation of the scene.
+        """
+        Generate a binary glTF 2.0 representation of the scene.
 
         Returns bytes in .glb format (binary glTF with embedded buffers).
         """
@@ -426,7 +433,8 @@ class ARVRVisualizer:
         return self._scene_to_glb(scene)
 
     def generate_aframe_html(self, design: DesignData) -> str:
-        """Generate a self-contained A-Frame HTML document for web AR/VR.
+        """
+        Generate a self-contained A-Frame HTML document for web AR/VR.
 
         Includes:
         - Room geometry
@@ -444,7 +452,8 @@ class ARVRVisualizer:
         scene: Scene,
         coverage_data: CoverageResult,
     ) -> Scene:
-        """Add coverage radius visualization to an existing scene.
+        """
+        Add coverage radius visualization to an existing scene.
 
         For each uncovered area or detector position, adds translucent
         spheres or cubes indicating coverage radius at 50% opacity.
@@ -511,7 +520,8 @@ class ARVRVisualizer:
         device_id: str,
         text: str,
     ) -> Scene:
-        """Add a clickable text annotation to a device in the scene.
+        """
+        Add a clickable text annotation to a device in the scene.
 
         Args:
             scene: Existing 3D scene to augment.
@@ -1187,7 +1197,8 @@ class ARVRVisualizer:
     # ── Format: glTF 2.0 binary ──────────────────────────────────────────
 
     def _scene_to_glb(self, scene: Scene) -> bytes:
-        """Generate a minimal binary glTF (GLB) representation.
+        """
+        Generate a minimal binary glTF (GLB) representation.
 
         This is a simplified glTF generator that creates a valid .glb
         with scene structure. For production, the glTF JSON and binary
@@ -1373,7 +1384,8 @@ class ARVRVisualizer:
         self,
         geom: MeshGeometry,
     ) -> tuple[list[float], list[int]]:
-        """Generate vertex positions and triangle indices for a primitive mesh.
+        """
+        Generate vertex positions and triangle indices for a primitive mesh.
 
         Returns (positions, indices) where positions is a flat list of
         x,y,z floats and indices is a flat list of triangle indices.
@@ -1759,7 +1771,8 @@ class ARVRVisualizer:
     # ── Format: USDZ ─────────────────────────────────────────────────────
 
     def _generate_usdz(self, scene: Scene) -> str:
-        """Generate a USDA (USD ASCII) scene description for USDZ packaging.
+        """
+        Generate a USDA (USD ASCII) scene description for USDZ packaging.
 
         USDZ is a zip archive containing USDA/USDC files. This generates
         the USDA text representation that can be zipped into a .usdz file.

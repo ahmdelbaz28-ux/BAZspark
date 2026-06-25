@@ -1,10 +1,13 @@
-"""marine/integration/etap_bridge.py — ETAP Power System Integration.
+"""
+marine/integration/etap_bridge.py — ETAP Power System Integration.
 Exports ship electrical model (fire-system loads + UPS + redundancy) to ETAP
-.ort project format (CSV-based intermediate) for power-system analysis."""
+.ort project format (CSV-based intermediate) for power-system analysis.
+"""
 from __future__ import annotations
+
 import csv
 import io
-from typing import List
+
 from marine.core.types import ShipElectricalSpec, ShipProject
 
 
@@ -14,7 +17,8 @@ def export_etap_loads_csv(
     extinguish_load_w: float = 2000.0,
     ups_power_kw: float = 2.5,
 ) -> str:
-    """Export fire-system loads as ETAP-compatible CSV.
+    """
+    Export fire-system loads as ETAP-compatible CSV.
 
     BUGFIX v2: previously computed UPS load as `ups_capacity_ah * 0.024`
     which yields kWh (Ah × V / 1000), not kW (real power). ETAP load-flow
@@ -33,6 +37,7 @@ def export_etap_loads_csv(
             battery's Ah capacity (which only determines autonomy duration).
             Default 2.5 kW (typical for a 500 W detection + 1 kW alarm +
             2 kW extinguishing system at 50% headroom).
+
     """
     output = io.StringIO()
     w = csv.writer(output)

@@ -217,7 +217,8 @@ class TestDWGParserSecurity:
                 pass
 
     def test_parse_rejects_oversized_file(self):
-        """A file larger than the configured max is rejected (DoS guard).
+        """
+        A file larger than the configured max is rejected (DoS guard).
 
         V122 NOTE: We test the validate_file_size helper directly to
         avoid having to reload parsers.dwg_parser (which would corrupt
@@ -246,8 +247,10 @@ class TestDWGParserSecurity:
 
 
 class TestParseDwgAliasSecurity:
-    """V122: parse_dwg() — the backward-compat list-returning alias —
-    applies identical security validation."""
+    """
+    V122: parse_dwg() — the backward-compat list-returning alias —
+    applies identical security validation.
+    """
 
     def test_parse_dwg_rejects_leading_dash(self):
         parser = DWGParser()
@@ -281,9 +284,11 @@ class TestParseDwgAliasSecurity:
 
 
 class TestConvertToDxfBeltAndBraces:
-    """V122: _convert_to_dxf has its own subprocess-boundary check so
+    """
+    V122: _convert_to_dxf has its own subprocess-boundary check so
     that if a future refactor forgets entry-point validation, the
-    subprocess STILL refuses the path."""
+    subprocess STILL refuses the path.
+    """
 
     def test_convert_refuses_leading_dash(self):
         """Direct call to _convert_to_dxf with bad path → refused."""

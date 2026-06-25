@@ -18,7 +18,7 @@ class ConsistencyIssue:
     """Represents a consistency issue found in the story"""
 
     def __init__(self, issue_type: str, severity: str, description: str,
-                 locations: List[str], details: Dict = None):
+                 locations: List[str], details: Optional[Dict] = None):
         self.issue_type = issue_type  # character, plot, world, timeline
         self.severity = severity  # critical, warning, info
         self.description = description
@@ -229,7 +229,7 @@ class ConsistencyChecker:
 
                 if loc_name in self.world_facts:
                     # Check if description is consistent
-                    prev_value, prev_location = self.world_facts[loc_name]
+                    _prev_value, _prev_location = self.world_facts[loc_name]
                     # In a real implementation, would do semantic comparison
                 else:
                     self.world_facts[loc_name] = (match.group(0), location)
@@ -288,7 +288,6 @@ class ConsistencyChecker:
 
     def analyze_project(self) -> Dict:
         """Run all consistency checks on the project"""
-
         # Load character profiles
         self.load_all_characters()
 
@@ -316,7 +315,7 @@ class ConsistencyChecker:
         for issue in self.issues:
             issues_by_severity[issue.severity].append(issue.to_dict())
 
-        analysis = {
+        return {
             'total_issues': len(self.issues),
             'critical_issues': len(issues_by_severity['critical']),
             'warnings': len(issues_by_severity['warning']),
@@ -326,12 +325,10 @@ class ConsistencyChecker:
             'all_issues': [issue.to_dict() for issue in self.issues]
         }
 
-        return analysis
 
 
 def main():
     """Main entry point for consistency checker"""
-
     if len(sys.argv) < 2:
         print("Usage: consistency_checker.py <project_directory> [--output json|markdown]")
         sys.exit(1)

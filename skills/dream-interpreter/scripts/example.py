@@ -14,6 +14,7 @@ Expected functionality:
 
 import sys
 
+
 def main():
     print("ERROR: dream-interpreter example script is not implemented.", file=sys.stderr)
     print("This is a placeholder script. The skill has not been developed yet.", file=sys.stderr)

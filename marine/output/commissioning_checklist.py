@@ -1,16 +1,14 @@
-"""marine/output/commissioning_checklist.py — Shipboard commissioning checklist.
+"""
+marine/output/commissioning_checklist.py — Shipboard commissioning checklist.
 
 Generates a structured checklist for commissioning marine fire-detection,
 alarm, and extinguishing systems after installation on board.
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional
-
 from marine.core.types import DetectorType, ExtinguishingSystem
 
-
-COMMISSIONING_ITEMS: List[Dict[str, str]] = [
+COMMISSIONING_ITEMS: list[dict[str, str]] = [
     {
         "id": "C-01",
         "category": "Documentation",
@@ -57,9 +55,9 @@ COMMISSIONING_ITEMS: List[Dict[str, str]] = [
 
 
 def generate_commissioning_checklist(
-    detector_types: Optional[List[DetectorType]] = None,
-    extinguishing_systems: Optional[List[ExtinguishingSystem]] = None,
-) -> List[Dict[str, str]]:
+    detector_types: list[DetectorType] | None = None,
+    extinguishing_systems: list[ExtinguishingSystem] | None = None,
+) -> list[dict[str, str]]:
     """Return a commissioning checklist, optionally tailored to the systems."""
     checklist = list(COMMISSIONING_ITEMS)
     if detector_types:

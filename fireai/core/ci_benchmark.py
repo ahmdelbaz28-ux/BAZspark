@@ -1,4 +1,5 @@
-"""ci_benchmark.py — Automated CI Benchmark Suite.
+"""
+ci_benchmark.py — Automated CI Benchmark Suite.
 ================================================
 Section 11.5: "Automated CI benchmark that fails PRs with >5% performance
 regression."
@@ -61,7 +62,8 @@ class BenchResult:
 
 
 def _run_timed(fn: Callable, n: int = 1_000, warmup: int = 100) -> tuple[float, float]:
-    """Run fn n times, return (ops_per_sec, std_dev_pct).
+    """
+    Run fn n times, return (ops_per_sec, std_dev_pct).
     Uses multiple rounds for statistical stability.
     """
     # Warmup
@@ -88,7 +90,8 @@ def _run_timed(fn: Callable, n: int = 1_000, warmup: int = 100) -> tuple[float, 
 
 
 class CIBenchmarkSuite:
-    """Runs all FireAI performance benchmarks and compares to baseline.
+    """
+    Runs all FireAI performance benchmarks and compares to baseline.
     Fails (exit code 1) if any benchmark regresses by > REGRESSION_THRESHOLD%.
     """
 
@@ -291,7 +294,8 @@ class CIBenchmarkSuite:
         return path
 
     def compare_to_baseline(self, path: str | None = None) -> tuple[bool, list[str]]:
-        """Compare current results to saved baseline.
+        """
+        Compare current results to saved baseline.
         Returns (all_passed, list_of_failures).
         Fails if any benchmark is >REGRESSION_THRESHOLD% slower.
         """

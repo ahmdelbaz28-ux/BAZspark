@@ -1,4 +1,5 @@
-"""NFPA 72 V5 Calculations - Radius, Heat, and Sloped Ceiling Calculations
+"""
+NFPA 72 V5 Calculations - Radius, Heat, and Sloped Ceiling Calculations
 This module provides calculation functions for NFPA 72 Chapter 17 compliance.
 All calculations are law-compliant based on NFPA 72 (2022 Edition).
 ⚠️ LEGAL DISCLAIMER:
@@ -37,7 +38,8 @@ def get_heat_detector_placement_params(
     beam_depth_m: float = 0.0,
     ceiling_slope_degrees: float = 0.0,
 ) -> dict:
-    """Get heat detector placement parameters per NFPA 72.
+    """
+    Get heat detector placement parameters per NFPA 72.
 
     Args:
         spec: HeatDetectorSpec with manufacturer, model_number, listed_spacing
@@ -83,7 +85,8 @@ def get_heat_detector_placement_params(
 # ============================================================================
 @lru_cache(maxsize=128)  # V9: memoize pure function
 def calculate_smoke_detector_radius(ceiling_height_m: float) -> float:
-    """Calculate recommended coverage radius for smoke detector.
+    """
+    Calculate recommended coverage radius for smoke detector.
 
     Args:
         ceiling_height_m: Ceiling height in meters
@@ -100,7 +103,8 @@ def calculate_smoke_detector_spacing(
     room_width_m: float,
     room_depth_m: float
 ) -> tuple[int, int]:
-    """Calculate number of smoke detectors needed per NFPA 72 spacing.
+    """
+    Calculate number of smoke detectors needed per NFPA 72 spacing.
 
     Args:
         ceiling_spec: Ceiling specification
@@ -130,7 +134,8 @@ def calculate_heat_detector_coverage_chebyshev(
     point_y: float,
     spacing_m: float = 6.1
 ) -> bool:
-    """Check if a point is covered by a heat detector using Chebyshev distance.
+    """
+    Check if a point is covered by a heat detector using Chebyshev distance.
     For heat detectors, NFPA 72 uses rectangular (square) coverage areas,
     not circular. This is because heat detection responds to absolute
     temperature rise, not smoke migration.
@@ -161,7 +166,8 @@ def calculate_heat_detector_spacing_rectangular(
     room_depth_m: float,
     spacing_m: float = 6.1
 ) -> tuple[int, int]:
-    """Calculate number of heat detectors needed using rectangular spacing.
+    """
+    Calculate number of heat detectors needed using rectangular spacing.
 
     Args:
         room_width_m: Room width in meters
@@ -181,7 +187,8 @@ def generate_heat_detector_positions(
     ceiling_spec: CeilingSpec,
     spacing_m: float | None = None
 ) -> list[tuple[float, float]]:
-    """Generate heat detector positions using square grid pattern.
+    """
+    Generate heat detector positions using square grid pattern.
     CRITICAL FIX: Now applies NFPA 72 height-adjusted spacing for heat detectors.
     At high ceilings, heat detector spacing MUST be reduced per Table 17.6.3.5.1.
 
@@ -230,7 +237,8 @@ def is_point_covered_by_heat_detectors(
     detector_positions: list[tuple[float, float]],
     spacing_m: float = 6.1
 ) -> bool:
-    """Check if a point is covered by any heat detector.
+    """
+    Check if a point is covered by any heat detector.
     Uses SQUARE_GRID (Chebyshev) coverage, NOT circular.
 
     Args:
@@ -256,7 +264,8 @@ def calculate_ridge_zone_boundary(
     slope_degrees: float,
     buffer_m: float = 0.9
 ) -> tuple[float, float, float, float]:
-    """Calculate ridge zone boundary for sloped ceiling.
+    """
+    Calculate ridge zone boundary for sloped ceiling.
     Per NFPA 72, for sloped ceilings > 1.5°, at least one detector
     must be located in the ridge zone (within 0.9m / 3ft of the ridge).
 
@@ -297,7 +306,8 @@ def is_in_ridge_zone(
     slope_degrees: float,
     buffer_m: float = 0.9
 ) -> bool:
-    """Check if a point is in the ridge zone.
+    """
+    Check if a point is in the ridge zone.
 
     Args:
         point: (x, y) position to check
@@ -329,7 +339,8 @@ def is_in_ridge_zone(
             min_x <= px <= max_x and
             min_y <= py <= max_y)
 def requires_ridge_zone_detector(ceiling_spec: CeilingSpec) -> bool:
-    """Check if ceiling requires ridge zone detector.
+    """
+    Check if ceiling requires ridge zone detector.
 
     Args:
         ceiling_spec: Ceiling specification
@@ -350,7 +361,8 @@ def calculate_detector_requirements(
     ceiling_spec: CeilingSpec,
     detector_type: DetectorType = DetectorType.SMOKE
 ) -> dict:
-    """Calculate detector requirements for a room.
+    """
+    Calculate detector requirements for a room.
 
     Args:
         room_spec: Room specification
@@ -424,7 +436,8 @@ __all__ = [\
 # ============================================================================
 
 def calculate_max_spacing(ceiling: CeilingSpec, detector_type: DetectorType) -> float:
-    """NFPA 72 §17.6.3 - spacing between detectors.
+    """
+    NFPA 72 §17.6.3 - spacing between detectors.
 
     CRITICAL FIX: This now returns the actual LISTED SPACING (S) from NFPA 72
     Table 17.6.3.1.1, NOT the coverage radius.  The old version incorrectly
@@ -449,7 +462,8 @@ def calculate_max_spacing(ceiling: CeilingSpec, detector_type: DetectorType) -> 
 
 
 def calculate_coverage_radius(ceiling: CeilingSpec, detector_type: DetectorType) -> float:
-    """NFPA 72 §17.7.4.2.3.1 - coverage radius R = 0.7 × S.
+    """
+    NFPA 72 §17.7.4.2.3.1 - coverage radius R = 0.7 × S.
 
     The coverage radius R = 0.7 × S is the distance from a detector to the
     farthest point in its coverage cell on a square grid at spacing S.
@@ -472,7 +486,8 @@ def calculate_coverage_radius(ceiling: CeilingSpec, detector_type: DetectorType)
 
 
 def calculate_max_wall_distance(ceiling: CeilingSpec, detector_type: DetectorType) -> float:
-    """NFPA 72 §17.6.3.1.1 - max wall distance = S/2 (half the listed spacing).
+    """
+    NFPA 72 §17.6.3.1.1 - max wall distance = S/2 (half the listed spacing).
 
     CRITICAL FIX: Previous version incorrectly returned the coverage radius
     R = 0.7 × S instead of the wall distance S/2. Per NFPA 72 §17.6.3.1.1,
@@ -510,7 +525,8 @@ def estimate_detector_count_polygon(polygon, ceiling_height_m: float, detector_t
 
 
 def minimum_detector_count_rectangular(width_m: float, depth_m: float, ceiling_height_m: float) -> int:
-    """Minimum detector count for rectangular room.
+    """
+    Minimum detector count for rectangular room.
 
     CRITICAL FIX (Issue #10): Previous version used `get_smoke_detector_coverage_max()
     * 2` as spacing, which equals 5.5 * 2 = 11.0m at h=3.0m. This exceeds the
@@ -605,7 +621,8 @@ _NFPA72_HEAT_FALLBACK  = round(0.7 * _NFPA72_HEAT_SPACING_FALLBACK, 2)   # 2.45m
 
 @dataclass(frozen=True)
 class CoverageSpec:
-    """Structured coverage specification from NFPA 72 Table 17.6.3.1.1.
+    """
+    Structured coverage specification from NFPA 72 Table 17.6.3.1.1.
 
     The coverage radius R is computed from the height-adjusted spacing S
     via the NFPA 72 0.7S rule: R = 0.7 × S. This ensures that when
@@ -645,7 +662,8 @@ def calculate_coverage_radius_from_height(
     ceiling_height: float,
     detector_type: DetectorTypeSimple = "smoke",
 ) -> CoverageSpec:
-    """Calculate coverage radius from ceiling height per NFPA 72 Table 17.6.3.1.1.
+    """
+    Calculate coverage radius from ceiling height per NFPA 72 Table 17.6.3.1.1.
 
     Higher ceilings produce SMALLER adjusted spacings (more detectors) because
     smoke disperses more before reaching the detector — NFPA 72 §17.6.3.1.1.
@@ -755,7 +773,8 @@ def calculate_coverage_radius_from_height(
 
 
 def get_ceiling_height_warnings(height: float) -> list[str]:
-    """Get validation warnings for a ceiling height.
+    """
+    Get validation warnings for a ceiling height.
 
     Returns a list of warning strings. Empty list means no warnings.
     Non-throwing alternative to validate_ceiling_height (which raises).
@@ -792,7 +811,8 @@ def beam_pocket_correction_factor(
     beam_depth_m: float,
     ceiling_height_m: float,
 ) -> float:
-    """Return spacing reduction factor when beams subdivide a ceiling.
+    """
+    Return spacing reduction factor when beams subdivide a ceiling.
 
     NFPA 72 §17.6.3.6: if beam depth > 10 % of ceiling height, spacing
     within each beam pocket is limited to the pocket width.
@@ -836,7 +856,8 @@ def calculate_corridor_spacing(
     detector_type: DetectorType,
     corridor_width_m: float,
 ) -> float:
-    """NFPA 72 §17.6.3.3 — detector spacing for corridors (width ≤ 3 m).
+    """
+    NFPA 72 §17.6.3.3 — detector spacing for corridors (width ≤ 3 m).
 
     Detectors in narrow corridors may use the corridor width in the
     coverage radius calculation, allowing larger along-corridor spacing.
@@ -881,7 +902,8 @@ def calculate_duct_detector_positions(
     duct: HVACDuct,
     max_spacing_m: float = _DUCT_DETECTOR_MAX_SPACING_M,
 ) -> list[tuple[float, float]]:
-    """Compute required detector positions along an HVAC duct centreline.
+    """
+    Compute required detector positions along an HVAC duct centreline.
 
     NFPA 72 §17.7.5.4.2 requires detectors at intervals ≤ 10 m along
     supply air ducts where the duct cross-section exceeds 0.09 m².
@@ -942,7 +964,8 @@ def check_voltage_drop(
     cable_length_m: float,
     max_drop_fraction: float = 0.10,
 ) -> dict[str, float]:
-    """Check that voltage drop along a cable run does not exceed the limit.
+    """
+    Check that voltage drop along a cable run does not exceed the limit.
 
     V78 FIX: Changed default from 0.15 (15%) to 0.10 (10%). 15% does not
     correspond to any NFPA 72 section. NFPA 72 §27.4.1.2 limits PLFA circuits
@@ -1018,7 +1041,8 @@ def required_battery_capacity_ah(
     alarm_minutes: float = 5.0,
     safety_factor: float = 1.20,
 ) -> float:
-    """Calculate required battery capacity for a fire alarm control unit.
+    """
+    Calculate required battery capacity for a fire alarm control unit.
 
     NFPA 72 §10.6.7.2.1: 24 h standby + 5 min alarm (for most occupancies).
 
@@ -1142,7 +1166,8 @@ def calculate_inrush_current(
     device_type: str,
     quantity: int,
 ) -> dict[str, float]:
-    """Calculate steady-state and inrush (worst-case) current for NAC devices.
+    """
+    Calculate steady-state and inrush (worst-case) current for NAC devices.
 
     NFPA 72 §10.14.1 requires that voltage at the most remote device be
     sufficient "under alarm conditions."  When multiple strobes activate
@@ -1208,7 +1233,8 @@ def calculate_nac_loading(
     devices: list[dict[str, Any]],
     panel_voltage_v: float = 24.0,
 ) -> dict[str, Any]:
-    """Calculate total NAC circuit loading for mixed device types.
+    """
+    Calculate total NAC circuit loading for mixed device types.
 
     Aggregates steady-state and inrush currents across all devices on a
     single NAC circuit, then checks against the 3 A panel limit.
@@ -1276,7 +1302,8 @@ def auto_select_awg(
     max_drop_fraction: float = 0.10,
     min_device_voltage_v: float = 16.0,
 ) -> dict[str, Any]:
-    """Automatically select the smallest AWG wire gauge that satisfies voltage drop.
+    """
+    Automatically select the smallest AWG wire gauge that satisfies voltage drop.
 
     Evaluates each AWG gauge from smallest permitted (14) to largest (10), and
     returns the first gauge where the voltage at the most remote device stays

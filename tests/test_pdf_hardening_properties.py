@@ -53,7 +53,8 @@ from fireai.core.nfpa72_schemas import (
     hvac_vel=st.floats(min_value=0.0, max_value=2.5, allow_nan=False, allow_infinity=False),
 )
 def test_coverage_radius_properties(spacing, height, ceiling_type, hvac_vel):
-    """Test fundamental mathematical properties of coverage radius.
+    """
+    Test fundamental mathematical properties of coverage radius.
 
     Properties verified:
       1. Radius must be positive (> 0)
@@ -107,7 +108,8 @@ def test_coverage_radius_properties(spacing, height, ceiling_type, hvac_vel):
     height=st.floats(min_value=3.0, max_value=12.2, allow_nan=False, allow_infinity=False),
 )
 def test_coverage_radius_from_height_properties(height):
-    """Test NFPA 72 height-adjusted coverage radius calculation.
+    """
+    Test NFPA 72 height-adjusted coverage radius calculation.
 
     Properties verified:
       1. Radius decreases as height increases (more detectors at higher ceilings)
@@ -149,7 +151,8 @@ def test_coverage_radius_from_height_properties(height):
     length_m=st.floats(min_value=5.0, max_value=500.0, allow_nan=False, allow_infinity=False),
 )
 def test_voltage_drop_properties(supply_v, current_a, resistance, length_m):
-    """Test fundamental properties of voltage drop calculation.
+    """
+    Test fundamental properties of voltage drop calculation.
 
     Properties verified:
       1. Voltage drop is always positive
@@ -206,7 +209,8 @@ def test_voltage_drop_properties(supply_v, current_a, resistance, length_m):
     temp_c=st.floats(min_value=20.0, max_value=70.0, allow_nan=False, allow_infinity=False),
 )
 def test_voltage_drop_with_temperature_correction(supply_v, current_a, resistance, length_m, temp_c):
-    """Test that Pydantic VoltageDropInput includes temperature correction.
+    """
+    Test that Pydantic VoltageDropInput includes temperature correction.
 
     Per NEC Table 310.15(B)(2)(a), higher temperatures reduce conductor
     ampacity, effectively increasing voltage drop.
@@ -262,9 +266,10 @@ def test_convergence_config_properties(epsilon, max_iter):
 
 @given(value=st.one_of(st.just(float('nan')), st.just(float('inf')), st.just(float('-inf'))))
 def test_nan_inf_rejected_in_schemas(value):
-    """NaN and Inf values MUST be rejected in all Pydantic schemas.
-    V114 Fix: NaN bypasses comparison guards, producing false compliance."""
-
+    """
+    NaN and Inf values MUST be rejected in all Pydantic schemas.
+    V114 Fix: NaN bypasses comparison guards, producing false compliance.
+    """
     with pytest.raises(ValidationError):
         NFPA72Input(spacing_m=value, ceiling_height_m=3.0)
 

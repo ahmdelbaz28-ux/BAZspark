@@ -20,7 +20,7 @@ from __future__ import annotations
 import enum
 import math
 from dataclasses import dataclass, field
-from typing import Generic, List, Optional, Tuple, TypeVar
+from typing import Generic, TypeVar
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Result[T, E] — never raise in computation paths
@@ -40,20 +40,20 @@ class Result(Generic[T, E]):
     Inspired by Rust Result<T,E> — adapted for Python 3.12 fire safety systems.
     """
 
-    __slots__ = ("_value", "_error", "_ok")
+    __slots__ = ("_error", "_ok", "_value")
 
-    def __init__(self, value: Optional[T], error: Optional[E], ok: bool) -> None:
+    def __init__(self, value: T | None, error: E | None, ok: bool) -> None:
         self._value = value
         self._error = error
         self._ok = ok
 
     @classmethod
-    def ok(cls, value: T) -> "Result[T, E]":
+    def ok(cls, value: T) -> Result[T, E]:
         """Construct a success result."""
         return cls(value=value, error=None, ok=True)
 
     @classmethod
-    def err(cls, error: E) -> "Result[T, E]":
+    def err(cls, error: E) -> Result[T, E]:
         """Construct an error result."""
         return cls(value=None, error=error, ok=False)
 
@@ -104,6 +104,7 @@ class ConduitType(enum.Enum):
     UPVC_SCH80 — Rigid PVC Schedule 80 (NEC Article 352)
     RGD        — Rigid Metal Conduit (NEC Article 344, also called RMC)
     """
+
     EMT        = "EMT"
     UPVC_SCH40 = "UPVC_SCH40"
     UPVC_SCH80 = "UPVC_SCH80"
@@ -127,6 +128,7 @@ class TradeSize(enum.Enum):
     Reference: NEC Chapter 9, Table 4 — Dimensions and Percent Area
                of Conduit and Tubing.
     """
+
     HALF_INCH       = "1/2"
     THREE_QUARTER   = "3/4"
     ONE_INCH        = "1"
@@ -153,6 +155,7 @@ class FittingType(enum.Enum):
     PULL_BOX  — Pull/junction box required when cumulative bend > 360°
                 (NEC 358.26 / 352.26 / 344.26)
     """
+
     ELBOW_90 = "ELBOW_90"
     ELBOW_45 = "ELBOW_45"
     COUPLING = "COUPLING"
@@ -183,7 +186,9 @@ class Point3D:
         x: Easting coordinate in metres.
         y: Northing coordinate in metres.
         z: Elevation coordinate in metres (floor level = 0.0).
+
     """
+
     x: float
     y: float
     z: float
@@ -196,7 +201,7 @@ class Point3D:
                     "Non-finite coordinates indicate data corruption."
                 )
 
-    def distance_to(self, other: "Point3D") -> float:
+    def distance_to(self, other: Point3D) -> float:
         """Euclidean distance in metres. Formula: √(Δx²+Δy²+Δz²)."""
         return math.sqrt(
             (self.x - other.x) ** 2
@@ -204,7 +209,7 @@ class Point3D:
             + (self.z - other.z) ** 2
         )
 
-    def manhattan_to(self, other: "Point3D") -> float:
+    def manhattan_to(self, other: Point3D) -> float:
         """Manhattan distance — admissible A* heuristic for orthogonal routing."""
         return abs(self.x - other.x) + abs(self.y - other.y) + abs(self.z - other.z)
 
@@ -230,7 +235,9 @@ class PlacedFitting:
         angle_deg:       Bend angle in degrees (90 or 45 for elbows, 0 others).
         developed_length_m: Arc length of bend in metres (0 for straight fittings).
         weight_kg:       Fitting weight in kg (0.0 if not catalogued).
+
     """
+
     fitting_type:       FittingType
     conduit_type:       ConduitType
     trade_size:         TradeSize
@@ -262,7 +269,9 @@ class ConduitSegment:
         conduit_type: Material type.
         trade_size:  Nominal trade size.
         length_m:    Euclidean length in metres (computed from start/end).
+
     """
+
     start:        Point3D
     end:          Point3D
     conduit_type: ConduitType
@@ -304,13 +313,15 @@ class ConduitRun:
         total_bend_deg: Cumulative bend degrees (NEC limit: 360°).
         is_compliant:   True if all NEC checks pass.
         violations:     List of NEC violation strings (empty if compliant).
+
     """
+
     run_id:         str
     conduit_type:   ConduitType
     trade_size:     TradeSize
-    segments:       List[ConduitSegment] = field(default_factory=list)
-    fittings:       List[PlacedFitting]  = field(default_factory=list)
-    violations:     List[str]            = field(default_factory=list)
+    segments:       list[ConduitSegment] = field(default_factory=list)
+    fittings:       list[PlacedFitting]  = field(default_factory=list)
+    violations:     list[str]            = field(default_factory=list)
 
     @property
     def total_length_m(self) -> float:
@@ -361,7 +372,9 @@ class FillResult:
         status:               "COMPLIANT" or "VIOLATION" string.
         recommended_size:     Next larger trade size if non-compliant, else None.
         nec_reference:        Citation string for this calculation.
+
     """
+
     conduit_type:              ConduitType
     trade_size:                TradeSize
     conductor_count:           int
@@ -371,7 +384,7 @@ class FillResult:
     max_allowed_pct:           float
     is_compliant:              bool
     status:                    str
-    recommended_size:          Optional[TradeSize]
+    recommended_size:          TradeSize | None
     nec_reference:             str
 
     def __repr__(self) -> str:
@@ -400,7 +413,9 @@ class BendResult:
         developed_length_m:  Same in metres.
         is_compliant:        actual_radius_in ≥ min_required_in.
         nec_reference:       Article citation for this conduit type.
+
     """
+
     conduit_type:        ConduitType
     trade_size:          TradeSize
     actual_radius_in:    float
@@ -434,8 +449,10 @@ class RoutePath:
         total_length_m:   Sum of segment lengths in metres.
         bend_count:       Number of direction changes (90° turns).
         elevation_change_m: Absolute vertical displacement.
+
     """
-    waypoints:          Tuple[Point3D, ...]
+
+    waypoints:          tuple[Point3D, ...]
     total_length_m:     float
     bend_count:         int
     elevation_change_m: float

@@ -26,6 +26,7 @@ logger = logging.getLogger("fireai.input_layer")
 
 class DeviceType(Enum):
     """NFPA 170 device types."""
+
     SMOKE_DETECTOR = "SMOKE_DETECTOR"
     HEAT_DETECTOR = "HEAT_DETECTOR"
     PULL_STATION = "PULL_STATION"
@@ -47,6 +48,7 @@ class DeviceType(Enum):
 @dataclass
 class ExtractedDevice:
     """Device extracted from PDF with real coordinates."""
+
     device_type: DeviceType
     x: float              # Real-world X (converted from page coords)
     y: float              # Real-world Y (converted from page coords)
@@ -72,6 +74,7 @@ class ExtractedDevice:
 @dataclass
 class RoomBoundary:
     """Room extracted from floor plan."""
+
     name: str              # Room number/name
     area_sqft: float       # Calculated area
     center_x: float
@@ -93,6 +96,7 @@ class RoomBoundary:
 @dataclass
 class DrawingMetadata:
     """Metadata extracted from drawing."""
+
     building_name: Optional[str] = None
     floor_level: Optional[str] = None
     drawing_scale: Optional[str] = None
@@ -116,6 +120,7 @@ class DrawingMetadata:
 @dataclass
 class InputLayerResult:
     """Result of input layer processing."""
+
     source_pdf: str
     confidence_result: ConfidenceResult
     devices: List[ExtractedDevice] = field(default_factory=list)
@@ -232,7 +237,8 @@ class PDFInputLayer:
     def __init__(self, scale_factor: float = 1.0):
         """
         Args:
-            scale_factor: Convert page units to real-world feet
+        scale_factor: Convert page units to real-world feet
+
         """
         self.scale_factor = scale_factor
 
@@ -245,6 +251,7 @@ class PDFInputLayer:
 
         Returns:
             InputLayerResult with extracted data
+
         """
         # V126: Path security + file-size cap
         from parsers._path_security import (
@@ -597,6 +604,7 @@ def process_drawing(pdf_path: str) -> InputLayerResult:
 
     Returns:
         InputLayerResult with extracted data
+
     """
     layer = PDFInputLayer()
     return layer.process(pdf_path)
@@ -608,6 +616,7 @@ def quick_accept_check(pdf_path: str) -> Tuple[bool, str]:
 
     Returns:
         (accepted: bool, message: str)
+
     """
     try:
         confidence = ParserConfidence(pdf_path).evaluate()

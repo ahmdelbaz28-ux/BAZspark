@@ -144,7 +144,8 @@ class TestWireSpec:
         assert ws.outer_diameter_mm == pytest.approx(3.05, abs=0.01)
 
     def test_unknown_awg_uses_default_6_0mm(self):
-        """Unknown AWG/insulation combo should use conservative 6.0mm default.
+        """
+        Unknown AWG/insulation combo should use conservative 6.0mm default.
 
         V78 FIX: Default changed from 3.5mm to 6.0mm (most conservative).
         Unknown cable dimensions should assume the largest likely diameter
@@ -198,7 +199,7 @@ class TestFillLimits:
         assert FILL_LIMITS[2] == pytest.approx(0.31)
 
     def test_three_plus_conductors_40_pct(self):
-        assert DEFAULT_FILL_LIMIT == pytest.approx(0.40)
+        assert pytest.approx(0.40) == DEFAULT_FILL_LIMIT
 
     def test_fill_limits_sum_reasonable(self):
         """All fill limits must be between 0 and 1."""
@@ -270,9 +271,11 @@ class TestWireDiameterTable:
     """Verify NEC Chapter 9 Table 5 wire diameter data integrity."""
 
     def test_fplp_diameters_increase_with_awg(self):
-        """Larger AWG number = thinner wire = smaller diameter... wait,
+        """
+        Larger AWG number = thinner wire = smaller diameter... wait,
         actually smaller AWG number = thicker wire = larger diameter.
-        AWG 10 > AWG 12 > AWG 14 > AWG 16 > AWG 18 in diameter."""
+        AWG 10 > AWG 12 > AWG 14 > AWG 16 > AWG 18 in diameter.
+        """
         d10 = WIRE_DIAMETERS_MM[("FPLP", 10)]
         d12 = WIRE_DIAMETERS_MM[("FPLP", 12)]
         d14 = WIRE_DIAMETERS_MM[("FPLP", 14)]
@@ -357,7 +360,7 @@ class TestConduitSizerBasic:
     """ConduitSizer basic conduit fill analysis."""
 
     def test_single_fplp_14awg_fits_half_inch(self):
-        """Single 14 AWG FPLP wire should fit in 1/2\" EMT easily."""
+        r"""Single 14 AWG FPLP wire should fit in 1/2\" EMT easily."""
         sizer = ConduitSizer()
         result = sizer.analyze_routing_bundle(
             bundle_id="TEST-1",
@@ -392,8 +395,10 @@ class TestConduitSizerBasic:
         assert val["conduit_trade_size"] in valid_sizes
 
     def test_fill_limit_single_conductor(self):
-        """Single conductor gets 53% fill limit per NEC Ch.9 Table 1.
-        Fallback dict uses 'actual_fill_percentage' — verify fill is within 53% limit."""
+        """
+        Single conductor gets 53% fill limit per NEC Ch.9 Table 1.
+        Fallback dict uses 'actual_fill_percentage' — verify fill is within 53% limit.
+        """
         sizer = ConduitSizer()
         result = sizer.analyze_routing_bundle(
             bundle_id="SINGLE",
@@ -614,8 +619,10 @@ class TestAnalyzeWithWireOverrides:
         assert val["is_compliant"] is True
 
     def test_wire_upsize_increases_area(self):
-        """Upsizing wires (e.g., 14→10 AWG) increases total cable area,
-        potentially requiring larger conduit."""
+        """
+        Upsizing wires (e.g., 14→10 AWG) increases total cable area,
+        potentially requiring larger conduit.
+        """
         sizer = ConduitSizer()
         # Without override
         result_no_override = sizer.analyze_routing_bundle(

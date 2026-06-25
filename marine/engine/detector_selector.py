@@ -8,11 +8,11 @@ References:
     [IEC502] IEC 60092-502:1999 §4 (detectors) + §6 (alarm circuits)
     [FSS]    IMO FSS Code Ch. 9 (detector spacing tables)
     [LR]     Lloyd's Register Rules Part 6 §2.4 (detection)
+
 """
 from __future__ import annotations
 
 import math
-from typing import List
 
 from marine.core.constants import (
     DETECTOR_COVERAGE_M2,
@@ -31,7 +31,8 @@ def select_detector_type(
     zone: MarineZone,
     ship: ShipProject,
 ) -> ComplianceResult:
-    """Select appropriate detector type(s) for a marine zone.
+    """
+    Select appropriate detector type(s) for a marine zone.
 
     Decision matrix based on IEC 60092-502 + FSS Ch. 9:
       - Machinery (A)  → heat_fixed + flame_uv_ir + smoke_photo
@@ -48,6 +49,7 @@ def select_detector_type(
 
     Returns:
         ComplianceResult with ``details["selected_types"]`` = list of DetectorType.
+
     """
     result = ComplianceResult(
         compliant=True,
@@ -55,7 +57,7 @@ def select_detector_type(
     )
 
     cat = zone.space_category
-    selected: List[DetectorType] = []
+    selected: list[DetectorType] = []
 
     if cat == SpaceCategory.MACHINERY_SPACE_A:
         selected = [
@@ -69,12 +71,7 @@ def select_detector_type(
     elif cat == SpaceCategory.MACHINERY_SPACE_OTHER:
         selected = [DetectorType.HEAT_FIXED, DetectorType.SMOKE_PHOTOELECTRIC]
 
-    elif cat == SpaceCategory.ACCOMMODATION:
-        selected = [DetectorType.SMOKE_PHOTOELECTRIC]
-        if ship.is_passenger_ship:
-            selected.append(DetectorType.CO)
-
-    elif cat == SpaceCategory.ESCAPE_ROUTE:
+    elif cat == SpaceCategory.ACCOMMODATION or cat == SpaceCategory.ESCAPE_ROUTE:
         selected = [DetectorType.SMOKE_PHOTOELECTRIC]
         if ship.is_passenger_ship:
             selected.append(DetectorType.CO)
@@ -112,7 +109,8 @@ def calculate_detector_count(
     zone: MarineZone,
     detector_type: DetectorType,
 ) -> ComplianceResult:
-    """Calculate the number of detectors required for a zone.
+    """
+    Calculate the number of detectors required for a zone.
 
     Per IEC 60092-502 + FSS Code Ch. 9 Table 9.1:
         N = ceil(area_m2 / coverage_m2)
@@ -127,6 +125,7 @@ def calculate_detector_count(
 
     Returns:
         ComplianceResult with ``details["detector_count"]`` = int.
+
     """
     result = ComplianceResult(
         compliant=True,
@@ -162,4 +161,4 @@ def calculate_detector_count(
     return result
 
 
-__all__ = ["select_detector_type", "calculate_detector_count"]
+__all__ = ["calculate_detector_count", "select_detector_type"]

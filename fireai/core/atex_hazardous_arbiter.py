@@ -1,4 +1,5 @@
-"""atex_hazardous_arbiter.py – ATEX Hazardous Area Arbiter.
+"""
+atex_hazardous_arbiter.py – ATEX Hazardous Area Arbiter.
 =========================================================
 Determines required equipment protection level (EPL) and ATEX category
 from physics-derived zone classification. Validates equipment selection.
@@ -49,7 +50,8 @@ def _validate_zone_hazard_consistency(
     errors: list,
     warnings: list,
 ) -> None:
-    """GAP-05: Cross-validate zone classification against hazard family.
+    """
+    GAP-05: Cross-validate zone classification against hazard family.
 
     IEC 60079-10-1:2015 §1.3:
     - Zones 0/1/2 are defined for GAS or VAPOUR hazards.
@@ -363,7 +365,8 @@ _TEMP_CLASS_MAP: dict[str, float] = {
 
 
 class ATEXHazardousArbiter:
-    """Determines required equipment protection level and ATEX category
+    """
+    Determines required equipment protection level and ATEX category
     from physics-derived HAC results.
 
     V21 API:  arbitrate_v21() uses Pydantic ATEXEquipmentSpec
@@ -383,7 +386,8 @@ class ATEXHazardousArbiter:
         hac_critical: list[str] | None = None,
         space_id: str = "",
     ) -> ATEXArbitrationResult:
-        """V21 arbitrate using Pydantic ATEXEquipmentSpec.
+        """
+        V21 arbitrate using Pydantic ATEXEquipmentSpec.
         Fix #14, #15, #16, #17 all enforced by Pydantic validators.
         """
         hac_warnings = hac_warnings or []
@@ -598,7 +602,8 @@ class ATEXHazardousArbiter:
         hac_result,
         hazard_system: HazardSystem = HazardSystem.ATEX_ZONE,
     ):
-        """Legacy arbitrate — accepts HACResultLegacy from hac_classification_engine.
+        """
+        Legacy arbitrate — accepts HACResultLegacy from hac_classification_engine.
         Prefer arbitrate_v21() for new code.
         """
         warnings: list[str] = list(hac_result.warnings)

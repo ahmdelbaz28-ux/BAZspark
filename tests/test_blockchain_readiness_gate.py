@@ -14,6 +14,7 @@ Key distinction verified:
 References:
   RFC 6962 §2.1   — Certificate Transparency Merkle tree
   RFC 6962 §2.1.1 — Merkle audit proof (inclusion proof)
+
 """
 
 from __future__ import annotations
@@ -270,7 +271,7 @@ class TestBlockchainReadinessGate:
         assert gate2.check_tamper(gate1.merkle_root) is False
 
     def test_anchor_to_audit_trail_appends(self):
-        """anchoring adds ONE event — does NOT replace chain."""
+        """Anchoring adds ONE event — does NOT replace chain."""
         gate = BlockchainReadinessGate(["art1", "art2"])
         existing_chain = [{"event_type": "previous_event"}]
         updated = gate.anchor_to_audit_trail(existing_chain)

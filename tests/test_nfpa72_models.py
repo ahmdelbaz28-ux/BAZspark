@@ -75,7 +75,7 @@ class TestConstants:
 
     def test_min_wall_distance(self):
         """NFPA 72 §17.6.3.1.1: 4 inches = 0.10m."""
-        assert MIN_WALL_DISTANCE_M == pytest.approx(0.10, abs=0.01)
+        assert pytest.approx(0.10, abs=0.01) == MIN_WALL_DISTANCE_M
 
     def test_max_dimension_m(self):
         assert MAX_DIMENSION_M == 1000.0
@@ -897,21 +897,21 @@ class TestGetSmokeDetectorRadiusSafe:
         assert r == pytest.approx(3.64, abs=0.01)
 
     def test_return_details_standard(self):
-        r, details = get_smoke_detector_radius_safe(3.0, _return_details=True)
+        _r, details = get_smoke_detector_radius_safe(3.0, _return_details=True)
         assert details["flag"] is None
         assert details["conservative"] is False
         assert details["input_height"] == 3.0
         assert details["effective_height"] == 3.0
 
     def test_return_details_low_ceiling(self):
-        r, details = get_smoke_detector_radius_safe(2.4, _return_details=True)
+        _r, details = get_smoke_detector_radius_safe(2.4, _return_details=True)
         assert details["flag"] is not None
         assert "LOW_CEILING" in details["flag"]
         assert details["conservative"] is True
         assert details["effective_height"] == 3.0
 
     def test_return_details_high_ceiling(self):
-        r, details = get_smoke_detector_radius_safe(20.0, _return_details=True)
+        _r, details = get_smoke_detector_radius_safe(20.0, _return_details=True)
         assert details["flag"] is not None
         assert "HIGH_CEILING" in details["flag"]
         assert details["conservative"] is True
@@ -942,11 +942,11 @@ class TestGetSmokeDetectorCoverageMaxSafe:
         assert r == pytest.approx(10.1, abs=0.01)
 
     def test_return_details_low(self):
-        r, details = get_smoke_detector_coverage_max_safe(2.0, _return_details=True)
+        _r, details = get_smoke_detector_coverage_max_safe(2.0, _return_details=True)
         assert details["flag"] == "LOW_CEILING"
 
     def test_return_details_high(self):
-        r, details = get_smoke_detector_coverage_max_safe(20.0, _return_details=True)
+        _r, details = get_smoke_detector_coverage_max_safe(20.0, _return_details=True)
         assert details["flag"] == "HIGH_CEILING"
 
 

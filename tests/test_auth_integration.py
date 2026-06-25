@@ -34,7 +34,8 @@ def test_projects_with_admin_key(client):
 
 
 def test_legacy_api_deprecated(client):
-    """Legacy /api/ path should add deprecation warning.
+    """
+    Legacy /api/ path should add deprecation warning.
 
     STRESS-TEST FIX #8: Previously /api/projects returned 404 because the
     projects router was not registered in app.py. Now it's registered under
@@ -49,7 +50,8 @@ def test_legacy_api_deprecated(client):
 
 
 def test_legacy_health_deprecated(client):
-    """Legacy /api/health should still work.
+    """
+    Legacy /api/health should still work.
 
     STRESS-TEST FIX: Deprecation headers are a future enhancement; the
     test now just verifies the endpoint is reachable and returns 200.
@@ -67,7 +69,8 @@ def test_v1_health_no_deprecation(client):
 
 
 def test_oversized_request_rejected(client):
-    """Request body size limit should be enforced.
+    """
+    Request body size limit should be enforced.
 
     STRESS-TEST FIX: Pydantic field validation rejects oversized strings
     BEFORE the request body size limit kicks in. Both 413 (too large body)

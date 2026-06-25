@@ -71,7 +71,8 @@ class ExactCoverageResult:
 
 
 class ExactCoverageEngine:
-    """Exact polygon-based coverage verifier for non-rectangular rooms.
+    """
+    Exact polygon-based coverage verifier for non-rectangular rooms.
 
     Uses Shapely's polygon difference to find uncovered areas.
     Applies a 2% safety factor on coverage radius consistent with
@@ -119,7 +120,8 @@ class ExactCoverageEngine:
     _CIRCLE_SEGS = 16
 
     def __init__(self, coverage_radius_m: float) -> None:
-        """Initialize with coverage radius.
+        """
+        Initialize with coverage radius.
 
         Args:
             coverage_radius_m: NFPA 72 coverage radius R in meters.
@@ -141,7 +143,8 @@ class ExactCoverageEngine:
         obstacles: list[list[tuple[float, float]]] | None = None,
         analytical_passed: bool = False,  # V30 B3: skip flag
     ) -> ExactCoverageResult:
-        """Verify coverage using exact polygon difference.
+        """
+        Verify coverage using exact polygon difference.
 
         V30 B3: Added analytical_passed parameter. If the lightweight
         AnalyticalVerifier already returned proof_valid=True, we skip
@@ -362,7 +365,8 @@ class ExactCoverageEngine:
 
     @staticmethod
     def _fast_union(geoms: list) -> Any:
-        """V55 B3: Union list of geometries using the fastest available method.
+        """
+        V55 B3: Union list of geometries using the fastest available method.
 
         Auto-selects strategy based on geometry count:
           <= 5:  Sequential reduce (minimal overhead)
@@ -414,7 +418,8 @@ class ExactCoverageEngine:
         sensor_locations: list[tuple[float, float]],
         obstacle_coords_list: list[list[tuple[float, float]]],
     ) -> ExactCoverageResult:
-        """Convenience method for rooms with interior obstacles.
+        """
+        Convenience method for rooms with interior obstacles.
 
         Args:
             room_boundary_coords: Room polygon vertices.

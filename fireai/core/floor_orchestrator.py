@@ -1,4 +1,5 @@
-"""floor_orchestrator.py — FireAI V20.2 with Audit Integration
+"""
+floor_orchestrator.py — FireAI V20.2 with Audit Integration
 CRITICAL SAFETY:
   1. SSOT: meta from engine.solve() is the ONLY source of truth.
   2. Sequential: No threads — pure logic only.
@@ -188,7 +189,8 @@ class FloorResult:
 
 
 class FloorOrchestrator:
-    """CRITICAL RULES:
+    """
+    CRITICAL RULES:
     1. New Engine for EVERY room.
     2. meta from engine.solve() is SSOT.
     3. RuntimeError FAILS FAST — stops everything.

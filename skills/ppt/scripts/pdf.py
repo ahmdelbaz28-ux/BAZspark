@@ -50,7 +50,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Set, Tuple
+from typing import Callable
 
 # ═══════════════════════════════════════════════════════════════
 #  Section 0: Framework — Output, @cmd registry, CLI parser
@@ -66,7 +66,7 @@ class Output:
         raise SystemExit(0)
 
     @staticmethod
-    def error(error: str, message: str, hint: Optional[str] = None, code: int = 1):
+    def error(error: str, message: str, hint: str | None = None, code: int = 1):
         payload = {"status": "error", "error": error, "message": message}
         if hint is not None:
             payload["hint"] = hint
@@ -82,7 +82,7 @@ class Output:
 
 
 # Command registry
-_COMMANDS: Dict[str, Callable] = {}
+_COMMANDS: dict[str, Callable] = {}
 
 
 def cmd(name: str):
@@ -124,13 +124,14 @@ def _load_json_arg(argv: list) -> dict:
             Output.error("FileError", f"Failed to read file: {exc}")
 
     Output.error("MissingData", "Requires --data or --file argument")
+    return None
 
 
-def _resolve_page_indices(range_spec: Optional[str], page_count: int) -> List[int]:
+def _resolve_page_indices(range_spec: str | None, page_count: int) -> list[int]:
     """Turn a human-friendly range string (1-indexed) into a sorted list of 0-based indices."""
     if not range_spec:
         return list(range(page_count))
-    indices: Set[int] = set()
+    indices: set[int] = set()
     for segment in range_spec.split(","):
         segment = segment.strip()
         if "-" in segment:
@@ -151,7 +152,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 #  Section 1: env — environment diagnostics and auto-fix
 # ═══════════════════════════════════════════════════════════════
 
-def _probe_cmd(name: str, version_args: Optional[List[str]] = None) -> Tuple[str, str]:
+def _probe_cmd(name: str, version_args: list[str] | None = None) -> tuple[str, str]:
     """Check if a command exists and optionally get its version. Returns (status, detail)."""
     path = shutil.which(name)
     if path is None:
@@ -169,7 +170,7 @@ def _probe_cmd(name: str, version_args: Optional[List[str]] = None) -> Tuple[str
         return ("ok", "")
 
 
-def _probe_python_module(mod_name: str) -> Tuple[str, str]:
+def _probe_python_module(mod_name: str) -> tuple[str, str]:
     """Check if a Python module is importable and get its version."""
     try:
         result = subprocess.run(
@@ -183,14 +184,14 @@ def _probe_python_module(mod_name: str) -> Tuple[str, str]:
         return ("missing", "")
 
 
-def _probe_node() -> Tuple[str, str]:
+def _probe_node() -> tuple[str, str]:
     s, d = _probe_cmd("node", ["--version"])
     if s == "ok" and d:
         d = d.lstrip("v")
     return (s, d)
 
 
-def _probe_python() -> Tuple[str, str]:
+def _probe_python() -> tuple[str, str]:
     try:
         import platform
         return ("ok", platform.python_version())
@@ -198,7 +199,7 @@ def _probe_python() -> Tuple[str, str]:
         return ("ok", "")
 
 
-def _probe_libreoffice() -> Tuple[str, str]:
+def _probe_libreoffice() -> tuple[str, str]:
     candidates = [
         "/Applications/LibreOffice.app/Contents/MacOS/soffice",
         os.path.expanduser("~/Applications/LibreOffice.app/Contents/MacOS/soffice"),
@@ -217,7 +218,7 @@ def _probe_libreoffice() -> Tuple[str, str]:
     return ("missing", "")
 
 
-def _probe_tectonic() -> Tuple[str, str]:
+def _probe_tectonic() -> tuple[str, str]:
     home_bin = Path.home() / "tectonic"
     if home_bin.exists() and os.access(home_bin, os.X_OK):
         return ("ok", "")
@@ -229,7 +230,7 @@ def _probe_tectonic() -> Tuple[str, str]:
     return ("missing", "")
 
 
-def _probe_playwright_npm() -> Tuple[str, str]:
+def _probe_playwright_npm() -> tuple[str, str]:
     """Check if playwright npm package is installed."""
     try:
         result = subprocess.run(
@@ -255,7 +256,7 @@ def _probe_playwright_npm() -> Tuple[str, str]:
     return ("missing", "")
 
 
-def _probe_chromium() -> Tuple[str, str]:
+def _probe_chromium() -> tuple[str, str]:
     """Check if Playwright Chromium browser is installed."""
     import platform as _platform
     home = Path.home()
@@ -315,7 +316,7 @@ def env_check(argv: list):
     # Human-readable output
     rc = 0
 
-    def show(name: str, status: Tuple[str, str], optional: bool = False):
+    def show(name: str, status: tuple[str, str], optional: bool = False):
         nonlocal rc
         s, d = status
         if s == "ok":
@@ -723,7 +724,7 @@ def meta_get(argv: list):
 
     kv_pairs = {}
     if doc.docinfo:
-        for k in doc.docinfo.keys():
+        for k in doc.docinfo:
             try:
                 kv_pairs[str(k).lstrip("/")] = str(doc.docinfo[k])
             except Exception:
@@ -888,7 +889,7 @@ def _extra_props(node, kind: str) -> dict:
     if kind == "checkbox":
         ap = node.get("/AP")
         if ap and "/N" in ap:
-            states = [str(s) for s in ap["/N"].keys()]
+            states = [str(s) for s in ap["/N"]]
             props["states"] = states
             props["checked_value"] = next((s for s in states if s != "/Off"), states[0] if states else None)
     elif kind in ("dropdown", "listbox"):
@@ -906,7 +907,7 @@ def _extra_props(node, kind: str) -> dict:
             for child in kids:
                 ap = child.get("/AP")
                 if ap and "/N" in ap:
-                    radio_vals.extend(str(k) for k in ap["/N"].keys() if str(k) != "/Off")
+                    radio_vals.extend(str(k) for k in ap["/N"] if str(k) != "/Off")
             if radio_vals:
                 props["options"] = radio_vals
     return props
@@ -1042,7 +1043,7 @@ def form_fill(argv: list):
             if val in ("true", "True", "1", True):
                 ap = node.get("/AP")
                 if ap and "/N" in ap:
-                    checked_name = next((str(k) for k in ap["/N"].keys() if str(k) != "/Off"), "/Yes")
+                    checked_name = next((str(k) for k in ap["/N"] if str(k) != "/Off"), "/Yes")
                     if not checked_name.startswith("/"):
                         checked_name = f"/{checked_name}"
                     node["/V"] = pikepdf.Name(checked_name)
@@ -1115,7 +1116,7 @@ def _get_field_info(reader) -> list:
     fields = reader.get_fields()
 
     field_info_by_id = {}
-    possible_radio_names: Set[str] = set()
+    possible_radio_names: set[str] = set()
 
     for field_id, field in fields.items():
         if field.get("/Kids"):
@@ -1124,7 +1125,7 @@ def _get_field_info(reader) -> list:
             continue
         field_info_by_id[field_id] = _make_field_dict(field, field_id)
 
-    radio_fields_by_id: Dict[str, dict] = {}
+    radio_fields_by_id: dict[str, dict] = {}
 
     for page_index, page in enumerate(reader.pages):
         annotations = page.get('/Annots', [])
@@ -1252,7 +1253,7 @@ def form_fill_legacy(argv: list):
         fields = json.load(f)
 
     # Group by page number
-    fields_by_page: Dict[int, dict] = {}
+    fields_by_page: dict[int, dict] = {}
     for field in fields:
         if "value" in field:
             field_id = field["field_id"]
@@ -1314,7 +1315,8 @@ def _transform_coordinates(bbox, image_width, image_height, pdf_width, pdf_heigh
 
 
 def _normalise_fields_json(raw: dict) -> dict:
-    """Accept both the current sheet-based schema and the legacy flat schema.
+    """
+    Accept both the current sheet-based schema and the legacy flat schema.
 
     Current (v2) schema uses ``sheet[].pg/dims/regions[]`` with nested
     ``label.bbox``, ``target.bbox``, ``ink{}``.
@@ -1375,7 +1377,7 @@ def form_annotate(argv: list):
     from pypdf import PdfReader, PdfWriter
     from pypdf.annotations import FreeText
 
-    with open(fields_json_path, "r") as f:
+    with open(fields_json_path) as f:
         fields_data = _normalise_fields_json(json.load(f))
 
     reader = PdfReader(input_pdf)
@@ -1477,7 +1479,7 @@ def form_validate(argv: list):
 
     from PIL import Image, ImageDraw
 
-    with open(fields_json_path, 'r') as f:
+    with open(fields_json_path) as f:
         data = _normalise_fields_json(json.load(f))
 
     img = Image.open(input_path)
@@ -1508,7 +1510,7 @@ class _RectAndField:
     field: dict
 
 
-def get_bounding_box_messages(fields_json_stream) -> List[str]:
+def get_bounding_box_messages(fields_json_stream) -> list[str]:
     """Check for overlapping bounding boxes. Returns list of messages (max 20)."""
     messages = []
     raw = json.load(fields_json_stream)
@@ -1600,7 +1602,7 @@ _SOFFICE_CANDIDATES = [
 ]
 
 
-def _locate_soffice() -> Optional[str]:
+def _locate_soffice() -> str | None:
     """Search for a working soffice binary."""
     for candidate in _SOFFICE_CANDIDATES:
         if Path(candidate).is_file():
@@ -1704,7 +1706,7 @@ _NOISE_RE = re.compile(
 )
 
 
-def _find_tectonic() -> Optional[str]:
+def _find_tectonic() -> str | None:
     """Locate the tectonic binary: script_dir first, ~/tectonic, then PATH."""
     local_bin = _SCRIPT_DIR / "tectonic"
     if local_bin.exists() and os.access(local_bin, os.X_OK):
@@ -1712,8 +1714,7 @@ def _find_tectonic() -> Optional[str]:
     home_bin = Path.home() / "tectonic"
     if home_bin.exists() and os.access(home_bin, os.X_OK):
         return str(home_bin)
-    system_bin = shutil.which("tectonic")
-    return system_bin
+    return shutil.which("tectonic")
 
 
 def _human_size(nbytes: int) -> str:
@@ -1778,7 +1779,7 @@ def _classify_lines(lines):
     return errors, warnings, layout, pdf_note
 
 
-def _parse_writing_note(note: Optional[str]):
+def _parse_writing_note(note: str | None):
     m = re.search(r"Writing `(.+?)` \((.+?)\)", note or "")
     return (m.group(1), m.group(2)) if m else (None, None)
 
@@ -1913,14 +1914,14 @@ def _restore_escapes(s: str) -> str:
 
 
 # --- Step 1: superscripts/subscripts -> <super>/<sub> ---
-_SUPERSCRIPT_MAP: Dict[str, str] = {
+_SUPERSCRIPT_MAP: dict[str, str] = {
     "\u2070": "0", "\u00b9": "1", "\u00b2": "2", "\u00b3": "3", "\u2074": "4",
     "\u2075": "5", "\u2076": "6", "\u2077": "7", "\u2078": "8", "\u2079": "9",
     "\u207a": "+", "\u207b": "-", "\u207c": "=", "\u207d": "(", "\u207e": ")",
     "\u207f": "n", "\u1da6": "i",
 }
 
-_SUBSCRIPT_MAP: Dict[str, str] = {
+_SUBSCRIPT_MAP: dict[str, str] = {
     "\u2080": "0", "\u2081": "1", "\u2082": "2", "\u2083": "3", "\u2084": "4",
     "\u2085": "5", "\u2086": "6", "\u2087": "7", "\u2088": "8", "\u2089": "9",
     "\u208a": "+", "\u208b": "-", "\u208c": "=", "\u208d": "(", "\u208e": ")",
@@ -1944,14 +1945,14 @@ def _replace_super_sub(s: str) -> str:
 
 
 # --- Step 2: symbol fallback for SimHei (protect tags, then replace) ---
-_SYMBOL_FALLBACK: Dict[str, str] = {
+_SYMBOL_FALLBACK: dict[str, str] = {
     # Currently empty - enable entries as needed for fonts missing specific glyphs
 }
 
 
 def _fallback_symbols(s: str) -> str:
     # Protect <super>/<sub> tags from being modified
-    placeholders: Dict[str, str] = {}
+    placeholders: dict[str, str] = {}
 
     def _protect_tag(m: re.Match) -> str:
         key = f"@@TAG{len(placeholders)}@@"
@@ -1979,8 +1980,7 @@ def sanitize_code(text: str) -> str:
     """
     s = _restore_escapes(text)
     s = _replace_super_sub(s)
-    s = _fallback_symbols(s)
-    return s
+    return _fallback_symbols(s)
 
 
 @cmd("code.sanitize")
@@ -1989,7 +1989,7 @@ def code_sanitize(argv: list):
     if not argv:
         Output.error("MissingArg", "Usage: code.sanitize <target_script.py>")
     target = argv[0]
-    with open(target, "r", encoding="utf-8") as f:
+    with open(target, encoding="utf-8") as f:
         code = f.read()
     sanitized = sanitize_code(code)
     with open(target, "w", encoding="utf-8") as f:

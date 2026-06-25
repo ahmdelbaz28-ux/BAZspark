@@ -1,4 +1,5 @@
-"""backend/services/region_service.py — Regulatory region detection for FireAI.
+"""
+backend/services/region_service.py — Regulatory region detection for FireAI.
 
 Determines applicable fire/electrical codes based on country/location.
 Uses REST Countries API (free, no auth) for country metadata.
@@ -62,7 +63,8 @@ class ElectricalCode(str, Enum):
 
 @dataclass(frozen=True)
 class RegionContext:
-    """Immutable regulatory region context for engineering calculations.
+    """
+    Immutable regulatory region context for engineering calculations.
 
     Attributes:
         country_code: ISO 3166-1 alpha-2 (e.g., "US", "EG", "SA")
@@ -162,7 +164,8 @@ _REGION_INFERRED_FRAMEWORK: dict[str, RegulatoryFramework] = {
 
 
 class RegionService:
-    """Async regulatory region detection service.
+    """
+    Async regulatory region detection service.
 
     Uses REST Countries API for country metadata, then maps to
     applicable fire/electrical codes using the internal database.
@@ -195,7 +198,8 @@ class RegionService:
     async def get_region_context(
         self, country_code: str
     ) -> RegionContext:
-        """Get regulatory region context for a country.
+        """
+        Get regulatory region context for a country.
 
         Strategy:
           1. Look up country in internal framework map

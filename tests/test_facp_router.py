@@ -39,7 +39,8 @@ app = FastAPI()
 
 @app.middleware("http")
 async def mock_auth_middleware(request, call_next):
-    """Set ENGINEER role on all test requests so FACP_MANAGE permission is granted.
+    """
+    Set ENGINEER role on all test requests so FACP_MANAGE permission is granted.
 
     Without this, get_current_role() defaults to VIEWER which lacks FACP_MANAGE,
     causing all POST endpoints to return 403 Forbidden.

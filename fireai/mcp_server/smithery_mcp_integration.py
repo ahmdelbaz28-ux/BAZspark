@@ -1,4 +1,5 @@
-"""smithery_mcp_integration.py — Agentic BIM Control (READ-ONLY + Human-Approved Writes).
+"""
+smithery_mcp_integration.py — Agentic BIM Control (READ-ONLY + Human-Approved Writes).
 =======================================================================================
 
 MISSION PHASE 3 — Agentic BIM Control via Smithery MCP (REDESIGNED FOR SAFETY)
@@ -107,7 +108,8 @@ class ActionStatus(str, Enum):
 
 @dataclass
 class ProposedAction:
-    """A proposed Revit action (NOT yet executed).
+    """
+    A proposed Revit action (NOT yet executed).
 
     The AI creates these proposals. A human engineer reviews them in Revit
     and approves or rejects each one. Only approved actions are executed.
@@ -192,7 +194,8 @@ class ProposedAction:
 
 
 class RevitAPIDocsSearcher:
-    """Searches local Revit API documentation offline.
+    """
+    Searches local Revit API documentation offline.
 
     The project ships with RevitAPI2022.json and RevitAPI2023.json —
     comprehensive API reference data extracted from Revit's official docs.
@@ -214,7 +217,8 @@ class RevitAPIDocsSearcher:
         revit_version: str = "2023",
         max_results: int = 10,
     ) -> list[dict[str, Any]]:
-        """Search Revit API docs for a query.
+        """
+        Search Revit API docs for a query.
 
         Args:
             query: Search query (class name, method name, namespace).
@@ -270,7 +274,8 @@ class RevitAPIDocsSearcher:
         class_name: str,
         revit_version: str = "2023",
     ) -> bool:
-        """Verify that a Revit API class exists in the target version.
+        """
+        Verify that a Revit API class exists in the target version.
 
         Args:
             class_name: Full class name (e.g., "Autodesk.Revit.DB.Wall").
@@ -359,7 +364,8 @@ class RevitAPIDocsSearcher:
 
 
 class SmitheryMCPClient:
-    """Client for Smithery MCP (Model Context Protocol) integration.
+    """
+    Client for Smithery MCP (Model Context Protocol) integration.
 
     SAFETY DESIGN:
     - READ operations (searching docs, reading BIM data) can execute directly.
@@ -387,7 +393,8 @@ class SmitheryMCPClient:
     """
 
     def __init__(self, api_key: str | None = None) -> None:
-        """Initialize Smithery MCP client.
+        """
+        Initialize Smithery MCP client.
 
         Args:
             api_key: Optional Smithery API key. If None, reads from env var.
@@ -415,7 +422,8 @@ class SmitheryMCPClient:
         revit_version: str = "2023",
         max_results: int = 10,
     ) -> list[dict[str, Any]]:
-        """Search local Revit API documentation.
+        """
+        Search local Revit API documentation.
 
         This is a READ-ONLY operation — safe to execute without human review.
 
@@ -439,7 +447,8 @@ class SmitheryMCPClient:
         return self._docs_searcher.verify_class_exists(class_name, revit_version)
 
     def read_rooms_from_bim(self, source: str | None = None) -> list[dict[str, Any]]:
-        """Read rooms from BIM source (READ-ONLY).
+        """
+        Read rooms from BIM source (READ-ONLY).
 
         Delegates to the BIMProvider abstraction (V132 TASK 1.2).
         """
@@ -468,7 +477,8 @@ class SmitheryMCPClient:
         confidence: float = 0.0,
         nfpa_reference: str = "",
     ) -> ProposedAction:
-        """Propose creating a new detector in the Revit model.
+        """
+        Propose creating a new detector in the Revit model.
 
         ⚠️  This does NOT execute the creation. It enqueues a proposal
         for HUMAN REVIEW. The human must approve it in Revit before
@@ -511,7 +521,8 @@ class SmitheryMCPClient:
         confidence: float = 0.0,
         nfpa_reference: str = "",
     ) -> ProposedAction:
-        """Propose updating an existing Revit element.
+        """
+        Propose updating an existing Revit element.
 
         ⚠️  Does NOT execute the update. Enqueues for human review.
         """
@@ -535,7 +546,8 @@ class SmitheryMCPClient:
         confidence: float = 0.0,
         nfpa_reference: str = "",
     ) -> ProposedAction:
-        """Propose deleting a Revit element.
+        """
+        Propose deleting a Revit element.
 
         ⚠️  HIGH RISK: Deletion is irreversible. Requires EXPLICIT human
         approval. The proposal includes a mandatory warning.
@@ -563,7 +575,8 @@ class SmitheryMCPClient:
     # ------------------------------------------------------------------
 
     def _enqueue_for_human_review(self, action: ProposedAction) -> None:
-        """Enqueue a proposed action for human review.
+        """
+        Enqueue a proposed action for human review.
 
         Uses the existing ThreadSafeModelUpdateQueue (V30, V114) which
         was designed for exactly this purpose: queueing proposed changes
@@ -684,7 +697,8 @@ class SmitheryMCPClient:
     # ------------------------------------------------------------------
 
     def connect_to_smithery(self) -> bool:
-        """Connect to Smithery cloud API (optional).
+        """
+        Connect to Smithery cloud API (optional).
 
         Smithery provides additional MCP tools (e.g., cloud-hosted Revit API
         search with semantic queries). This is OPTIONAL — local search

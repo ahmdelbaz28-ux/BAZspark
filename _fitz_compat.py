@@ -1,4 +1,5 @@
-"""fitz.py — PyMuPDF compatibility shim.
+"""
+fitz.py — PyMuPDF compatibility shim.
 
 PyMuPDF 1.23+ renamed the 'fitz' module to 'pymupdf'.
 This compat module allows ``import fitz`` to still work.
@@ -43,6 +44,7 @@ except ImportError:
 
     class _PymupdfNotInstalled:
         """Stub that raises ImportError when any attribute is accessed."""
+
         def __getattr__(self, name: str) -> Any:
             raise ImportError(
                 f"pymupdf is not installed. Cannot access fitz.{name}. "

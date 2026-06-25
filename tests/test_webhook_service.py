@@ -1,4 +1,5 @@
-"""test_webhook_service.py — Tests for Webhook Delivery Service.
+"""
+test_webhook_service.py — Tests for Webhook Delivery Service.
 
 MISSION TASK 3.3 — Validates the WebhookDeliveryService that delivers
 events to external HTTP endpoints with retry, DLQ, and HMAC signatures.
@@ -9,21 +10,17 @@ Per agent.md Rule 1: no fabrication.
 
 from __future__ import annotations
 
-import json
-
 import pytest
 
 from fireai.infrastructure.webhook_service import (
-    compute_webhook_signature,
-    DeliveryStatus,
-    DeadLetterEntry,
     WEBHOOK_EVENT_TYPES,
+    DeliveryStatus,
     WebhookDeliveryAttempt,
     WebhookDeliveryService,
     WebhookStatus,
     WebhookSubscription,
+    compute_webhook_signature,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

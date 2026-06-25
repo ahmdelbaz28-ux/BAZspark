@@ -1,6 +1,4 @@
-"""
-Setup file for Distributed FACP System
-"""
+"""Setup file for Distributed FACP System"""
 import os
 
 from setuptools import find_packages, setup
@@ -10,7 +8,7 @@ def read_version():
     """Read version from VERSION file"""
     version_file = os.path.join(os.path.dirname(__file__), "..", "VERSION")
     try:
-        with open(version_file, 'r') as f:
+        with open(version_file) as f:
             return f.read().strip()
     except FileNotFoundError:
         return "1.1.0"  # Default version
@@ -20,7 +18,7 @@ def read_readme():
     """Read README file"""
     readme_file = os.path.join(os.path.dirname(__file__), "..", "README.md")
     try:
-        with open(readme_file, 'r', encoding='utf-8') as f:
+        with open(readme_file, encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
         return "Distributed FireAI Agent Communication Protocol (FACP) System"

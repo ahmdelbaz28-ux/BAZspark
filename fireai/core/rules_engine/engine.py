@@ -1,4 +1,5 @@
-"""FireAI Rules Engine — Core Engine.
+"""
+FireAI Rules Engine — Core Engine.
 ==================================
 
 Pure-Python forward-chaining rules engine with:
@@ -36,7 +37,8 @@ logger = logging.getLogger(__name__)
 
 
 class RulePriority(IntEnum):
-    """Priority levels for conflict resolution.
+    """
+    Priority levels for conflict resolution.
 
     Lower value = higher priority = fires first.
     Safety-critical rules MUST have the highest priority (lowest number).
@@ -55,7 +57,8 @@ class RulePriority(IntEnum):
 
 @dataclass(frozen=True)
 class Fact:
-    """An immutable fact asserted into the rules engine.
+    """
+    An immutable fact asserted into the rules engine.
 
     Facts are the data that rules match against. Each fact has:
     - A type (e.g., 'room', 'detector', 'ceiling')
@@ -75,7 +78,8 @@ class Fact:
     asserted_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def matches(self, fact_type: str, **conditions) -> bool:
-        """Check if this fact matches a type and optional conditions.
+        """
+        Check if this fact matches a type and optional conditions.
 
         Conditions are key-value pairs checked against properties.
         A callable condition is treated as a predicate.
@@ -108,7 +112,8 @@ class Fact:
 
 @dataclass
 class RuleResult:
-    """The result of a rule firing.
+    """
+    The result of a rule firing.
 
     Contains the action taken, any new facts asserted, any facts
     retracted, and a severity level for audit purposes.
@@ -129,7 +134,8 @@ class RuleResult:
 
 @dataclass
 class RuleAuditEntry:
-    """Audit log entry for a rule evaluation.
+    """
+    Audit log entry for a rule evaluation.
 
     EVERY rule evaluation (whether it fires or not) is logged.
     This is a safety-critical requirement — you must be able to
@@ -155,7 +161,8 @@ ActionFn = Callable[[List[Fact], "RulesEngine"], List[RuleResult]]
 
 @dataclass
 class Rule:
-    """A declarative rule with structured metadata.
+    """
+    A declarative rule with structured metadata.
 
     Inspired by durable_rules' rule definition DSL but with:
     - Explicit NFPA section references (auditability)
@@ -213,7 +220,8 @@ class Rule:
 
 
 class RulesEngine:
-    """Forward-chaining rules engine with audit trail and truth maintenance.
+    """
+    Forward-chaining rules engine with audit trail and truth maintenance.
 
     Thread-safe via per-session locking. Each session represents one
     analysis context (e.g., one room or one building).
@@ -276,7 +284,8 @@ class RulesEngine:
     # ── Rule Management ──────────────────────────────────────────────────
 
     def add_rule(self, rule: Rule) -> None:
-        """Add a rule to the engine.
+        """
+        Add a rule to the engine.
 
         Validates that the rule has required fields and indexes it
         in the alpha network for efficient matching.
@@ -313,7 +322,8 @@ class RulesEngine:
     # ── Fact Management ──────────────────────────────────────────────────
 
     def assert_fact(self, fact: Fact) -> str:
-        """Assert a fact into the engine.
+        """
+        Assert a fact into the engine.
 
         If a fact with the same ID already exists, it is replaced
         (retract + re-assert) to trigger truth maintenance.
@@ -330,7 +340,8 @@ class RulesEngine:
             return fact.fact_id
 
     def retract_fact(self, fact_id: str) -> bool:
-        """Retract a fact from the engine.
+        """
+        Retract a fact from the engine.
 
         Triggers truth maintenance: any derived facts that depended
         on this fact are also retracted (cascading).
@@ -385,7 +396,8 @@ class RulesEngine:
     # ── Evaluation ───────────────────────────────────────────────────────
 
     def evaluate(self) -> list[RuleResult]:
-        """Run the forward-chaining evaluation loop.
+        """
+        Run the forward-chaining evaluation loop.
 
         This is the main entry point. It:
         1. Matches facts against rule conditions (alpha network)
@@ -564,7 +576,8 @@ class RulesEngine:
         return results
 
     def _evaluate_joins(self, alpha_candidates: list[tuple[Rule, list[Fact]]]) -> list[tuple[Rule, list[Fact]]]:
-        """Evaluate beta network join conditions.
+        """
+        Evaluate beta network join conditions.
 
         For rules with join_conditions, find pairs of facts that
         satisfy the join predicate across fact types.
@@ -636,7 +649,8 @@ class RulesEngine:
         return [r for r in self._results if r.severity <= RulePriority.SAFETY_VIOLATION]
 
     def get_compliance_summary(self) -> dict[str, Any]:
-        """Get a summary of compliance status from rule results.
+        """
+        Get a summary of compliance status from rule results.
 
         Returns a structured summary suitable for engineering reports.
         """
@@ -662,7 +676,8 @@ class RulesEngine:
         }
 
     def reset(self) -> None:
-        """Reset the engine state for a new evaluation cycle.
+        """
+        Reset the engine state for a new evaluation cycle.
 
         Clears facts, results, and audit log. Keeps rules.
         """
@@ -676,7 +691,8 @@ class RulesEngine:
             self._iteration = 0
 
     def explain(self, fact_id: str, _visited: set | None = None) -> dict[str, Any]:
-        """Explain why a fact exists — trace its derivation chain.
+        """
+        Explain why a fact exists — trace its derivation chain.
 
         Safety-critical feature: you must be able to explain every
         conclusion the system reaches.

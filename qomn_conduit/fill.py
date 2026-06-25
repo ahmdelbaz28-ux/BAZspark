@@ -25,7 +25,6 @@ ENGINEERING SOURCES:
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional, Tuple
 
 from qomn_conduit.errors import CodeViolationError, PhysicsError
 from qomn_conduit.types import (
@@ -64,7 +63,7 @@ def _max_fill_pct(conductor_count: int) -> float:
 
 # Format: (ConduitType, TradeSize) → internal area in in²
 # Source: NEC 2022 Chapter 9, Table 4
-_INTERNAL_AREA_IN2: Dict[Tuple[ConduitType, TradeSize], float] = {
+_INTERNAL_AREA_IN2: dict[tuple[ConduitType, TradeSize], float] = {
     # EMT — Electrical Metallic Tubing (NEC Table 4, EMT section)
     (ConduitType.EMT, TradeSize.HALF_INCH):      0.304,
     (ConduitType.EMT, TradeSize.THREE_QUARTER):   0.533,
@@ -99,7 +98,7 @@ _INTERNAL_AREA_IN2: Dict[Tuple[ConduitType, TradeSize], float] = {
 }
 
 # Ordered trade sizes for "next larger" recommendation
-_TRADE_SIZE_ORDER: List[TradeSize] = [
+_TRADE_SIZE_ORDER: list[TradeSize] = [
     TradeSize.HALF_INCH,
     TradeSize.THREE_QUARTER,
     TradeSize.ONE_INCH,
@@ -109,7 +108,7 @@ _TRADE_SIZE_ORDER: List[TradeSize] = [
 ]
 
 
-def _next_larger_size(current: TradeSize) -> Optional[TradeSize]:
+def _next_larger_size(current: TradeSize) -> TradeSize | None:
     """Return the next larger trade size, or None if already at maximum."""
     try:
         idx = _TRADE_SIZE_ORDER.index(current)
@@ -123,7 +122,7 @@ def _next_larger_size(current: TradeSize) -> Optional[TradeSize]:
 def get_internal_area(
     conduit_type: ConduitType,
     trade_size: TradeSize,
-) -> "Result[float, PhysicsError]":
+) -> Result[float, PhysicsError]:
     """
     Return the tabulated internal cross-sectional area in in².
 
@@ -136,6 +135,7 @@ def get_internal_area(
     Returns:
         Result.ok(float) — area in in².
         Result.err(PhysicsError) — unsupported combination.
+
     """
     key = (conduit_type, trade_size)
     area = _INTERNAL_AREA_IN2.get(key)
@@ -158,8 +158,8 @@ def get_internal_area(
 def calculate_fill(
     conduit_type: ConduitType,
     trade_size: TradeSize,
-    cable_diameters: List[float],
-) -> "Result[FillResult, PhysicsError | CodeViolationError]":
+    cable_diameters: list[float],
+) -> Result[FillResult, PhysicsError | CodeViolationError]:
     """
     Calculate conduit fill percentage per NEC Chapter 9, Table 1.
 
@@ -184,6 +184,7 @@ def calculate_fill(
         Result.err(CodeViolationError) — fill > NEC limit.
 
     Reference: NEC 2022 Chapter 9, Table 1.
+
     """
     # ── Input validation ─────────────────────────────────────────────────────
 
@@ -243,7 +244,7 @@ def calculate_fill(
 
     # ── Recommendation if non-compliant ──────────────────────────────────────
 
-    recommended: Optional[TradeSize] = None
+    recommended: TradeSize | None = None
     if not is_compliant:
         candidate = _next_larger_size(trade_size)
         while candidate is not None:

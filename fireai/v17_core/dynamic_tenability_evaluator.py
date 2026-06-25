@@ -1,4 +1,5 @@
-"""v17_core/dynamic_tenability_evaluator.py — NFPA 101 §9.3 ASET vs RSET.
+"""
+v17_core/dynamic_tenability_evaluator.py — NFPA 101 §9.3 ASET vs RSET.
 ======================================================================
 CRITICAL LIFE-SAFETY MODULE — Part of the V17 Critical Trilogy
 
@@ -79,7 +80,8 @@ from fireai.core.aset_rset_calculator import (
 
 
 class TenabilityEvaluator:
-    """V17 Dynamic Tenability Evaluator with DecisionProvenance audit trail.
+    """
+    V17 Dynamic Tenability Evaluator with DecisionProvenance audit trail.
 
     Evaluates whether building occupants can escape before conditions become
     untenable. This is the FUNDAMENTAL life-safety analysis:
@@ -121,7 +123,8 @@ class TenabilityEvaluator:
         walking_speed_mps: float = 1.0,
         pre_movement_delay_s: float = 60.0,
     ) -> None:
-        """Initialize the tenability evaluator.
+        """
+        Initialize the tenability evaluator.
 
         Args:
             walking_speed_mps: Default walking speed in m/s. Overridden
@@ -147,7 +150,8 @@ class TenabilityEvaluator:
         temperature_series: list[tuple[float, float]] | None = None,
         co_ppm_series: list[tuple[float, float]] | None = None,
     ) -> Any:
-        """Validate ASET vs RSET with DecisionProvenance audit trail.
+        """
+        Validate ASET vs RSET with DecisionProvenance audit trail.
 
         Calculates whether building occupants can escape before conditions
         become untenable. Uses the physics-correct core implementations
@@ -330,7 +334,8 @@ class TenabilityEvaluator:
         ventilation_opening_m2: float = 2.0,
         ceiling_type: str = "FLAT",
     ) -> dict[str, Any]:
-        """Perform a complete ASET/RSET analysis using physics-based engine.
+        """
+        Perform a complete ASET/RSET analysis using physics-based engine.
 
         This is the integration function that connects to semi_cfast_engine
         for physics-based smoke modeling. Falls back to simplified calculation

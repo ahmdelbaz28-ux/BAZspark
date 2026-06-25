@@ -1,4 +1,5 @@
-"""acoustic_calculator.py — NFPA 72 Audible Notification Compliance.
+"""
+acoustic_calculator.py — NFPA 72 Audible Notification Compliance.
 =================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -143,7 +144,8 @@ def calculate_spl_at_distance(
     room_volume_m3: float | None = None,
     include_reverberant_field: bool = True,
 ) -> SPLResult:
-    """Calculate Sound Pressure Level at a given distance from a source.
+    """
+    Calculate Sound Pressure Level at a given distance from a source.
 
     Uses the correct inverse square law formula:
         Lp(d) = Lp(ref) - 20 * log10(d / d_ref)
@@ -255,7 +257,8 @@ def check_audibility_compliance(
     room_absorption_m2: float | None = None,
     room_volume_m3: float | None = None,
 ) -> AudibilityResult:
-    """Check if a speaker/horn provides adequate audibility per NFPA 72.
+    """
+    Check if a speaker/horn provides adequate audibility per NFPA 72.
 
     Args:
         source_dba: Speaker output in dBA at the reference distance.
@@ -331,7 +334,8 @@ def calculate_min_speakers_for_room(
     ref_distance_m: float = DEFAULT_REF_DISTANCE_M,
     room_absorption_m2: float | None = None,
 ) -> SpeakerPlacementResult:
-    """Calculate minimum number of speakers needed for a rectangular room.
+    """
+    Calculate minimum number of speakers needed for a rectangular room.
 
     Uses iterative spacing reduction until all points in the room
     meet NFPA 72 audibility requirements. Replaces the hardcoded
@@ -445,7 +449,8 @@ def get_speaker_coverage_radius(
     room_height_m: float = 3.0,
     room_absorption_m2: float | None = None,
 ) -> float:
-    """Compute the effective speaker coverage radius per NFPA 72 §18.4/§18.5.
+    """
+    Compute the effective speaker coverage radius per NFPA 72 §18.4/§18.5.
 
     This function replaces the deprecated fixed SPEAKER_COVERAGE=30.0 constant.
     It calculates the maximum distance at which a speaker provides adequate
@@ -526,7 +531,8 @@ BARRIER_ATTENUATION_DB = {
 
 @dataclass
 class CheckPoint:
-    """A point in space where SPL is evaluated (3D).
+    """
+    A point in space where SPL is evaluated (3D).
 
     Attributes:
         x: X coordinate in metres.
@@ -544,7 +550,8 @@ class CheckPoint:
 
 @dataclass
 class Speaker:
-    """A fire alarm speaker/horn with position and specification.
+    """
+    A fire alarm speaker/horn with position and specification.
 
     Attributes:
         x: X coordinate in metres.
@@ -566,7 +573,8 @@ class Speaker:
 
 @dataclass
 class Barrier:
-    """A sound barrier between a speaker and listener.
+    """
+    A sound barrier between a speaker and listener.
 
     Attributes:
         barrier_type: Key from BARRIER_ATTENUATION_DB (e.g., "standard_door").
@@ -590,7 +598,8 @@ class Barrier:
 
 @dataclass
 class RoomAcousticResult:
-    """Result of acoustic analysis for a room with multiple speakers.
+    """
+    Result of acoustic analysis for a room with multiple speakers.
 
     Attributes:
         room_id: Room identifier.
@@ -615,7 +624,8 @@ class RoomAcousticResult:
 
 
 class AcousticSPLCalculator:
-    """Multi-speaker room SPL calculator with 3D barrier support.
+    """
+    Multi-speaker room SPL calculator with 3D barrier support.
 
     This class provides the integration interface for the orchestrator.
     Unlike the standalone functions (which check one speaker at one point),
@@ -651,7 +661,8 @@ class AcousticSPLCalculator:
         self,
         room_ambient_noise: dict[str, float] | None = None,
     ) -> None:
-        """Initialize the acoustic calculator.
+        """
+        Initialize the acoustic calculator.
 
         Args:
             room_ambient_noise: Dict mapping occupancy types to ambient noise
@@ -687,7 +698,8 @@ class AcousticSPLCalculator:
         mode: str = "public",
         room_absorption_m2: float | None = None,
     ) -> RoomAcousticResult:
-        """Calculate SPL at all check points from all speakers in a room.
+        """
+        Calculate SPL at all check points from all speakers in a room.
 
         For each check point:
           1. Calculate 3D distance to each speaker

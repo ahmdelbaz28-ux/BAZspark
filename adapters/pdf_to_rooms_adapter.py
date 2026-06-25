@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -20,16 +20,17 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Room:
     """Represents a room extracted from a floor plan."""
+
     name: str = ""
     polygon: Any = None  # shapely Polygon or None
-    occupancy_type: Optional[str] = None
+    occupancy_type: str | None = None
     area: float = 0.0
 
 
 def extract_rooms_from_walls(
-    walls: List[Any],
+    walls: list[Any],
     pdf_path: str = "",
-) -> Tuple[List[Room], Dict[str, Any]]:
+) -> tuple[list[Room], dict[str, Any]]:
     """
     Extract rooms from a list of wall geometry objects.
 
@@ -46,9 +47,10 @@ def extract_rooms_from_walls(
     Returns:
         Tuple of (rooms_list, report_dict) where report_dict contains
         status, wall_count, and any processing warnings.
+
     """
-    rooms: List[Room] = []
-    report: Dict[str, Any] = {
+    rooms: list[Room] = []
+    report: dict[str, Any] = {
         "status": "ok",
         "wall_count": len(walls) if walls else 0,
         "warnings": [],
@@ -125,6 +127,7 @@ def select_safe_detector_type(
 
     Returns:
         Detector type string: "smoke", "heat", "duct", or "beam"
+
     """
     # Default to smoke detector (most sensitive, most protective)
     if room.occupancy_type in ("kitchen", "mechanical", "utility"):

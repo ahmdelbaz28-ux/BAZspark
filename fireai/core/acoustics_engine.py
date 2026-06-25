@@ -1,4 +1,5 @@
-"""acoustics_engine.py — Unified Acoustics Integration Engine for FireAI.
+"""
+acoustics_engine.py — Unified Acoustics Integration Engine for FireAI.
 ======================================================================
 CRITICAL LIFE-SAFETY MODULE — V25
 
@@ -154,7 +155,8 @@ DEFAULT_CEILING_ABSORPTION_COEFF: float = 0.04
 
 @dataclass
 class AcousticCoverageResult:
-    """NFPA 72 §18.4 audible notification coverage verification result.
+    """
+    NFPA 72 §18.4 audible notification coverage verification result.
 
     Aggregates compliance status across all evaluated check points in a
     room (or set of rooms), providing per-point detail and an overall
@@ -192,7 +194,8 @@ class AcousticCoverageResult:
 
 @dataclass
 class UGLDDetectionZone:
-    """Coverage zone for a single UGLD sensor-leak pair.
+    """
+    Coverage zone for a single UGLD sensor-leak pair.
 
     Produced during multi-sensor coverage analysis to describe whether a
     specific sensor can detect a specific leak, and under what acoustic
@@ -227,7 +230,8 @@ class UGLDDetectionZone:
 
 @dataclass
 class UGLDCoverageGap:
-    """A leak-source location not adequately covered by any UGLD sensor.
+    """
+    A leak-source location not adequately covered by any UGLD sensor.
 
     Represents a gap in the multi-sensor coverage map where no single
     sensor can reliably detect a postulated leak.  These gaps must be
@@ -254,7 +258,8 @@ class UGLDCoverageGap:
 
 @dataclass
 class UGLDCoverageResult:
-    """Multi-sensor UGLD coverage analysis result per ISA-TR84.00.07.
+    """
+    Multi-sensor UGLD coverage analysis result per ISA-TR84.00.07.
 
     Provides a unified view of detection capability across all sensors
     for all evaluated leak-source locations.
@@ -302,7 +307,8 @@ def _image_source_reflection_spl(
     relative_humidity_pct: float = 50.0,
     ceiling_absorption_coeff: float = DEFAULT_CEILING_ABSORPTION_COEFF,
 ) -> float:
-    """Calculate the SPL contribution from a first-order ceiling reflection.
+    """
+    Calculate the SPL contribution from a first-order ceiling reflection.
 
     Uses the **image source method**: the ceiling reflection is modelled by
     placing a virtual (image) source at the mirror position of the real
@@ -383,7 +389,8 @@ def _image_source_reflection_spl(
 
 
 def _combine_spl_db(spl_a: float, spl_b: float) -> float:
-    """Energetically add two SPL values (logarithmic addition).
+    """
+    Energetically add two SPL values (logarithmic addition).
 
     SPL_total = 10 * log10(10^(A/10) + 10^(B/10))
 
@@ -416,7 +423,8 @@ def _evaluate_ugld_trigger(
     final_spl: float,
     sensor: UltrasonicSensor,
 ) -> tuple[bool, float]:
-    """Evaluate whether a UGLD sensor triggers for a given final SPL.
+    """
+    Evaluate whether a UGLD sensor triggers for a given final SPL.
 
     A sensor triggers only if BOTH conditions are met:
       1. final_spl >= sensor trigger threshold (hardware limit)
@@ -452,7 +460,8 @@ def _evaluate_ugld_trigger(
 
 
 class AcousticsEngine:
-    """Unified acoustics integration engine combining NFPA 72 audible
+    """
+    Unified acoustics integration engine combining NFPA 72 audible
     notification coverage verification and ISA-TR84.00.07 UGLD detection.
 
     This class is the **single entry point** for all acoustic analysis in
@@ -514,7 +523,8 @@ class AcousticsEngine:
         self,
         room_ambient_noise: dict[str, float] | None = None,
     ) -> None:
-        """Initialize the unified acoustics engine.
+        """
+        Initialize the unified acoustics engine.
 
         Args:
             room_ambient_noise: Optional mapping of occupancy type to
@@ -544,7 +554,8 @@ class AcousticsEngine:
         room_absorption_m2: float | None = None,
         room_volume_m3: float | None = None,
     ) -> AcousticCoverageResult:
-        """Verify NFPA 72 §18.4 audible notification coverage.
+        """
+        Verify NFPA 72 §18.4 audible notification coverage.
 
         Delegates SPL calculation to :class:`AcousticSPLCalculator` and
         aggregates the result into a unified :class:`AcousticCoverageResult`
@@ -722,7 +733,8 @@ class AcousticsEngine:
         ceiling_absorption_coeff: float = DEFAULT_CEILING_ABSORPTION_COEFF,
         use_conservative_absorption: bool = False,
     ) -> UGLDCoverageResult:
-        """ISA-TR84.00.07 ultrasonic gas leak detection ray tracing.
+        """
+        ISA-TR84.00.07 ultrasonic gas leak detection ray tracing.
 
         Traces an acoustic ray from a postulated gas leak to a UGLD sensor,
         computing:
@@ -956,7 +968,8 @@ class AcousticsEngine:
         ceiling_absorption_coeff: float = DEFAULT_CEILING_ABSORPTION_COEFF,
         use_conservative_absorption: bool = False,
     ) -> UGLDCoverageResult:
-        """Multi-sensor UGLD coverage analysis per ISA-TR84.00.07.
+        """
+        Multi-sensor UGLD coverage analysis per ISA-TR84.00.07.
 
         Evaluates every postulated leak point against every UGLD sensor,
         building a combined coverage map.  A leak point is considered

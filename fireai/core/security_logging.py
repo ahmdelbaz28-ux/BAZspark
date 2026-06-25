@@ -1,4 +1,5 @@
-"""fireai.core.security_logging — Security Event Audit Logging & Log Rotation.
+"""
+fireai.core.security_logging — Security Event Audit Logging & Log Rotation.
 ==========================================================================
 
 Centralized security event logging for the FireAI system. Provides:
@@ -121,7 +122,8 @@ _ENV_CACHE_TIMESTAMP: float = 0.0
 
 
 def _refresh_env_cache() -> None:
-    """Refresh the cached environment variable values.
+    """
+    Refresh the cached environment variable values.
 
     Uses a 5-second cache TTL to avoid calling os.getenv() on every single
     mask_sensitive() call while still picking up key rotation changes
@@ -137,7 +139,8 @@ def _refresh_env_cache() -> None:
 
 
 def _force_refresh_env_cache() -> None:
-    """Force-refresh the env var cache regardless of TTL.
+    """
+    Force-refresh the env var cache regardless of TTL.
 
     Called internally when cache is empty or TTL expired.
     Also useful for testing after setting env vars at runtime.
@@ -158,7 +161,8 @@ _refresh_env_cache()
 
 
 def mask_sensitive(text: str, mask: str = "***REDACTED***") -> str:
-    """Mask sensitive values in a string before logging.
+    """
+    Mask sensitive values in a string before logging.
 
     Replaces API keys, tokens, passwords, and other secrets with
     a redaction marker. This prevents accidental credential leakage
@@ -201,7 +205,8 @@ def mask_sensitive(text: str, mask: str = "***REDACTED***") -> str:
 
 
 class SensitiveDataFilter(logging.Filter):
-    """Logging filter that automatically masks sensitive data in log records.
+    """
+    Logging filter that automatically masks sensitive data in log records.
 
     Attach to any logger to prevent credential leakage:
         logger.addFilter(SensitiveDataFilter())
@@ -243,7 +248,8 @@ def configure_log_rotation(
     max_bytes: int = _DEFAULT_MAX_BYTES,
     backup_count: int = _DEFAULT_BACKUP_COUNT,
 ) -> None:
-    """Configure size-based log rotation for a logger.
+    """
+    Configure size-based log rotation for a logger.
 
     Uses loguru when available (with zip compression and 30-day retention),
     falls back to Python's RotatingFileHandler when loguru is not installed.
@@ -326,7 +332,8 @@ def configure_timed_rotation(
     when: str = "midnight",
     backup_count: int = _DEFAULT_RETENTION_DAYS,
 ) -> None:
-    """Configure time-based log rotation for a logger.
+    """
+    Configure time-based log rotation for a logger.
 
     Uses loguru when available (with zip compression), falls back to
     Python's TimedRotatingFileHandler when loguru is not installed.
@@ -421,7 +428,8 @@ class SecurityEventType:
 
 
 def _compute_chain_hash(event_json: str) -> str:
-    """Compute the next chain hash from an event's JSON representation.
+    """
+    Compute the next chain hash from an event's JSON representation.
 
     Uses HMAC-SHA256 when AUDIT_HMAC_KEY is set (tamper-proof), falls
     back to plain SHA-256 when no key is configured (tamper-evident only).
@@ -442,7 +450,8 @@ def _compute_chain_hash(event_json: str) -> str:
 
 
 class SecurityAuditLogger:
-    """Dedicated logger for security-sensitive events.
+    """
+    Dedicated logger for security-sensitive events.
 
     Writes security events to a separate log file with:
     - Tamper-evident chain hashing (each entry links to the previous)
@@ -520,7 +529,8 @@ class SecurityAuditLogger:
         self._logger.addHandler(handler)
 
     def _recover_chain_hash(self) -> str:
-        """Recover the chain hash from the existing log file.
+        """
+        Recover the chain hash from the existing log file.
 
         V105 FIX (HIGH-1): On process restart, the chain hash must link
         to the last entry in the existing log. Without this, new entries
@@ -563,7 +573,8 @@ class SecurityAuditLogger:
         event_type: str,
         **details: Any,
     ) -> str:
-        """Log a security event with tamper-evident chain hashing.
+        """
+        Log a security event with tamper-evident chain hashing.
 
         Thread-safe: acquires self._lock to prevent concurrent chain hash
         corruption (V102 FIX — same pattern as audit_log.py V69-11 FIX).
@@ -631,7 +642,8 @@ class SecurityAuditLogger:
             return event_id
 
     def verify_chain(self) -> dict[str, Any]:
-        """Verify the integrity of the security audit log chain.
+        """
+        Verify the integrity of the security audit log chain.
 
         V105 FIX (CRITICAL-1): Now uses _compute_chain_hash() for
         re-computation, matching log_event()'s algorithm. Previously,

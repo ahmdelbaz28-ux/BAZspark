@@ -1,4 +1,5 @@
-"""hac_classification_engine.py – Hazardous Area Classification Engine.
+"""
+hac_classification_engine.py – Hazardous Area Classification Engine.
 =====================================================================
 Classifies hazardous areas from physical parameters (physics-first,
 no manual human input for zone assignment).
@@ -107,7 +108,8 @@ _V21_TO_LEGACY_DEGREE = {
 
 
 def _map_ventilation_to_legacy(vent: VentilationLevel) -> VentilationDegree:
-    """Map V21 VentilationLevel to legacy VentilationDegree with WARNING on POOR→LOW.
+    """
+    Map V21 VentilationLevel to legacy VentilationDegree with WARNING on POOR→LOW.
 
     POOR ventilation (f=0.05, almost stagnant) maps to LOW (f=0.20, poor distribution)
     in the legacy system, losing a 4× effectiveness factor. This is a known
@@ -191,7 +193,8 @@ _BASE_RADII_M: dict[ATEXZone, float] = {
 
 @dataclass(frozen=True)
 class SubstancePropertiesLegacy:
-    """Legacy substance properties dataclass.
+    """
+    Legacy substance properties dataclass.
 
     V49 FIX: lfl_vol_pct default changed from 0.0 to None.
     Previous default of 0.0 was physically meaningless — no real substance
@@ -335,7 +338,8 @@ def _iec_annex_b_extent(
     ambient_temp_c: float = 40.0,
     is_indoor: bool = True,
 ) -> tuple:
-    """GAP-01: IEC 60079-10-1:2015 Annex B — Hazardous Area Extent.
+    """
+    GAP-01: IEC 60079-10-1:2015 Annex B — Hazardous Area Extent.
     Returns (horizontal_m, vertical_m, volume_m3).
 
     Consultant Phase 5 improvement: added density fallback with warning
@@ -500,7 +504,8 @@ def _resolve_zone_with_grade_vent(
     ventilation: VentilationLevel,
     is_gas: bool,
 ) -> ZoneType:
-    """GAP-02: IEC 60079-10-1:2015 §4.2 + §4.3.
+    """
+    GAP-02: IEC 60079-10-1:2015 §4.2 + §4.3.
     Zone from release grade (primary) modified by ventilation (secondary).
 
     IEC §4.3 Note 2: "high dilution may reduce zone extent but should
@@ -532,7 +537,8 @@ def _resolve_zone_with_grade_vent(
 
 
 class HACClassificationEngine:
-    """Classifies hazardous areas from physical parameters.
+    """
+    Classifies hazardous areas from physical parameters.
 
     V21 API:  classify_v21() uses Pydantic models (strict, fail-fast)
     Legacy:   classify() still available for backward compatibility
@@ -565,7 +571,8 @@ class HACClassificationEngine:
         release_rate_kg_s: float = 0.0,
         room_volume_m3: float = 1000.0,
     ) -> HACResult:
-        """V21.2 classify using Pydantic models — fail-fast on invalid input.
+        """
+        V21.2 classify using Pydantic models — fail-fast on invalid input.
 
         GAP-02: release_grade is now the PRIMARY zone determinant per IEC §4.2.
         ventilation is the SECONDARY modifier per IEC §4.3.
@@ -888,7 +895,8 @@ class HACClassificationEngine:
         critical_flags,
         lfl_corrected=None,
     ) -> HACResult:
-        """Fix #8: Hybrid = classify separately, take most severe (V21.2).
+        """
+        Fix #8: Hybrid = classify separately, take most severe (V21.2).
 
         .. deprecated::
             This method is DEAD CODE — classify_v21() handles HYBRID inline
@@ -1013,7 +1021,8 @@ class HACClassificationEngine:
         indoor: bool,
         src_h: float,
     ) -> ZoneExtent:
-        """Fix #7 + Fix #13: No x10, hemisphere for indoor, IEC Annex A.
+        """
+        Fix #7 + Fix #13: No x10, hemisphere for indoor, IEC Annex A.
 
         GAP-09: src_h (source height above floor) is accepted but NOT used.
         Source height affects dispersion plume geometry per IEC 60079-10-1
@@ -1066,7 +1075,8 @@ class HACClassificationEngine:
         indoor: bool,
         src_h: float,
     ) -> ZoneExtent:
-        """Dust extent per IEC 60079-10-2 Annex A.
+        """
+        Dust extent per IEC 60079-10-2 Annex A.
 
         GAP-09: src_h (source height above floor) is accepted but NOT used.
         Source height affects dust cloud dispersion — elevated releases
@@ -1117,7 +1127,8 @@ class HACClassificationEngine:
         is_indoor: bool = True,
         ambient_temp_c: float = 40.0,
     ) -> HACResultLegacy:
-        """Legacy classify — backward compatible with dataclass inputs.
+        """
+        Legacy classify — backward compatible with dataclass inputs.
         Prefer classify_v21() for new code.
 
         FIX #7 (HIGH): Default ambient_temp_c changed from 25.0°C to 40.0°C

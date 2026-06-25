@@ -1,4 +1,5 @@
-"""backend/routers/autocad.py — AutoCAD Integration Endpoints.
+"""
+backend/routers/autocad.py — AutoCAD Integration Endpoints.
 ==========================================================
 
 REST API endpoints for AutoCAD integration operations.
@@ -59,7 +60,8 @@ _AUTOCAD_ALLOWED_EXTENSIONS = frozenset({".dwg", ".dxf", ".rvt", ".rfa", ".ifc"}
 
 
 def _validate_autocad_file_path(filepath: str) -> str:
-    r"""Validate DWG/DXF file path against path traversal and injection attacks.
+    r"""
+    Validate DWG/DXF file path against path traversal and injection attacks.
 
     V133 PHASE 1.2: Mirrors the protection already in revit.py:_validate_file_path.
     Previously, autocad.py used only ``os.path.exists()`` which accepted ANY path,
@@ -539,7 +541,8 @@ _MAX_UPLOAD_SIZE = 50 * 1024 * 1024
 @router.post("/upload_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("10/minute")
 async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) -> ReadFileResponse:
-    """Upload a DWG file and read its contents.
+    """
+    Upload a DWG file and read its contents.
 
     FIX #5: Path traversal prevention — uses tempfile + uuid for safe paths
     instead of trusting file.filename. Also enforces upload size limit.

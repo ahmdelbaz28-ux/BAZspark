@@ -1,6 +1,4 @@
-"""
-HTTP Transport for Distributed FACP System
-"""
+"""HTTP Transport for Distributed FACP System"""
 import asyncio
 import logging
 import threading
@@ -16,9 +14,8 @@ from fastapi import FastAPI, Request
 
 
 class TransportLayer(ABC):
-    """
-    Abstract base class for transport layers
-    """
+    """Abstract base class for transport layers"""
+
     def __init__(self):
         self.handlers = {}  # method -> handler_function
         self.is_running = False
@@ -39,15 +36,14 @@ class TransportLayer(ABC):
         raise NotImplementedError("Subclasses must implement stop()")
 
     @abstractmethod
-    def send_request(self, request_data: Dict[str, Any], target_node: str = None) -> Dict[str, Any]:
+    def send_request(self, request_data: Dict[str, Any], target_node: Optional[str] = None) -> Dict[str, Any]:
         """Send request to target"""
         raise NotImplementedError("Subclasses must implement send_request()")
 
 
 class HTTPTransport(TransportLayer):
-    """
-    HTTP transport implementation for distributed FACP
-    """
+    """HTTP transport implementation for distributed FACP"""
+
     def __init__(self, host: str = "0.0.0.0", port: int = 8000, node_type: str = "l2_orchestrator"):
         super().__init__()
         self.host = host
@@ -79,24 +75,22 @@ class HTTPTransport(TransportLayer):
                 method = request_data.get("method", "")
                 if method in self.handlers:
                     handler = self.handlers[method]
-                    response = await handler(request_data) if asyncio.iscoroutinefunction(handler) else handler(request_data)
-                    return response
-                else:
-                    return {
-                        "protocol": "FACP/1.1",
-                        "id": request_data.get("id", "unknown"),
-                        "status": "error",
-                        "error": {
-                            "code": "METHOD_NOT_FOUND",
-                            "message": f"Method {method} not found"
-                        },
-                        "trace": {
-                            "node_id": self.node_id,
-                            "node_type": self.node_type,
-                            "execution_path": [self.node_type],
-                            "latency_ms": 0
-                        }
+                    return await handler(request_data) if asyncio.iscoroutinefunction(handler) else handler(request_data)
+                return {
+                    "protocol": "FACP/1.1",
+                    "id": request_data.get("id", "unknown"),
+                    "status": "error",
+                    "error": {
+                        "code": "METHOD_NOT_FOUND",
+                        "message": f"Method {method} not found"
+                    },
+                    "trace": {
+                        "node_id": self.node_id,
+                        "node_type": self.node_type,
+                        "execution_path": [self.node_type],
+                        "latency_ms": 0
                     }
+                }
             except Exception as e:
                 return {
                     "protocol": "FACP/1.1",
@@ -157,8 +151,7 @@ class HTTPTransport(TransportLayer):
         try:
             timeout = aiohttp.ClientTimeout(total=30)  # 30 second timeout
             async with session.post(target_url, json=request_data, timeout=timeout) as response:
-                result = await response.json()
-                return result
+                return await response.json()
         except Exception as e:
             return {
                 "protocol": "FACP/1.1",
@@ -176,7 +169,7 @@ class HTTPTransport(TransportLayer):
                 }
             }
 
-    def send_request(self, request_data: Dict[str, Any], target_node: str = None) -> Dict[str, Any]:
+    def send_request(self, request_data: Dict[str, Any], target_node: Optional[str] = None) -> Dict[str, Any]:
         """
         Send request to target (synchronous wrapper for async method)
         target_node format: "host:port" (e.g., "localhost:8001")
@@ -222,9 +215,8 @@ class HTTPTransport(TransportLayer):
 
 
 class TransportRouter:
-    """
-    Routes requests to appropriate transport based on configuration
-    """
+    """Routes requests to appropriate transport based on configuration"""
+
     def __init__(self):
         self.transports = {}
         self.active_transport = None
@@ -245,8 +237,8 @@ class TransportRouter:
         """Get a specific transport"""
         return self.transports.get(name)
 
-    def route_request(self, request_data: Dict[str, Any], target_node: str = None,
-                     transport_hint: str = None) -> Dict[str, Any]:
+    def route_request(self, request_data: Dict[str, Any], target_node: Optional[str] = None,
+                     transport_hint: Optional[str] = None) -> Dict[str, Any]:
         """Route request to appropriate transport and node"""
         transport = None
 
@@ -260,14 +252,13 @@ class TransportRouter:
 
         if transport:
             return transport.send_request(request_data, target_node)
-        else:
-            # Return error if no transport available
-            return {
-                "error": {
-                    "code": "TRANSPORT_UNAVAILABLE",
-                    "message": "No transport available to handle request"
-                }
+        # Return error if no transport available
+        return {
+            "error": {
+                "code": "TRANSPORT_UNAVAILABLE",
+                "message": "No transport available to handle request"
             }
+        }
 
     def start_all(self):
         """Start all configured transports"""

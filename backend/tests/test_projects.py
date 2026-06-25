@@ -1,4 +1,5 @@
-"""test_projects.py — Projects CRUD integration tests.
+"""
+test_projects.py — Projects CRUD integration tests.
 
 Verifies project creation, retrieval, update, deletion, and
 the cross-database bridge sync (backend DB ↔ UDM).

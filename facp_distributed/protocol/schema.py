@@ -1,6 +1,4 @@
-"""
-FACP Distributed Protocol Schema Definitions
-"""
+"""FACP Distributed Protocol Schema Definitions"""
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -9,9 +7,7 @@ from typing import Any, Dict, Optional
 
 @dataclass
 class FACPDistributedSchema:
-    """
-    Defines the schema for distributed FACP messages
-    """
+    """Defines the schema for distributed FACP messages"""
 
     # Enhanced Request schema for distributed system
     @staticmethod
@@ -94,9 +90,7 @@ class FACPDistributedSchema:
 
 
 class FACPDistributedSerializationHelper:
-    """
-    Helper class for serializing/deserializing distributed FACP messages
-    """
+    """Helper class for serializing/deserializing distributed FACP messages"""
 
     @staticmethod
     def create_request(

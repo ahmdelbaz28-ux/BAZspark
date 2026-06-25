@@ -44,8 +44,7 @@ def find_evidence(resume_text: str, keyword: str, window: int = 30) -> str | Non
         return None
     start = max(0, m.start() - window)
     end = min(len(resume_text), m.end() + window)
-    snippet = resume_text[start:end].replace("\n", " ").strip()
-    return snippet
+    return resume_text[start:end].replace("\n", " ").strip()
 
 
 def fuzzy_hit(resume_text: str, keyword: str) -> str | None:

@@ -45,7 +45,8 @@ from fireai.core.audit_store import (
 
 @pytest.fixture(autouse=True)
 def reset_database():
-    """Reset the module-level database state before each test.
+    """
+    Reset the module-level database state before each test.
 
     Uses :memory: database for isolation between tests.
     """
@@ -246,13 +247,13 @@ class TestVerifyChain:
 
     def test_single_event_valid(self):
         add_event("TEST", "R1", {"key": "value"})
-        is_valid, error = verify_chain()
+        is_valid, _error = verify_chain()
         assert is_valid is True
 
     def test_multiple_events_valid(self):
         for i in range(10):
             add_event("TEST", f"R{i}", {"step": i})
-        is_valid, error = verify_chain()
+        is_valid, _error = verify_chain()
         assert is_valid is True
 
     def test_tampered_hash_detected(self):
@@ -318,7 +319,7 @@ class TestVerifyChain:
         conn.commit()
         _as._release_connection(conn)
 
-        is_valid, error = verify_chain()
+        is_valid, _error = verify_chain()
         assert is_valid is False
 
 
@@ -378,7 +379,7 @@ class TestAuditStoreFacade:
 
     def test_verify_chain_delegates(self):
         AuditStore.add_event("TEST", "R1", {"key": "value"})
-        is_valid, error = AuditStore.verify_chain()
+        is_valid, _error = AuditStore.verify_chain()
         assert is_valid is True
 
     def test_get_events_delegates(self):
@@ -496,7 +497,7 @@ class TestEdgeCases:
         """Chain must remain valid after 100 events."""
         for i in range(100):
             add_event("TEST", f"R{i}", {"step": i})
-        is_valid, error = verify_chain()
+        is_valid, _error = verify_chain()
         assert is_valid is True
 
 

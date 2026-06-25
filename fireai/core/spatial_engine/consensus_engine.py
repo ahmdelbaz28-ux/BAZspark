@@ -1,4 +1,5 @@
-"""Consensus Verification Engine — Triple Verification System.
+"""
+Consensus Verification Engine — Triple Verification System.
 ===========================================================
 Combines results from all three independent verification engines
 to produce a consensus verdict with confidence level.
@@ -85,7 +86,8 @@ class ConsensusResult:
 
 
 class ConsensusEngine:
-    """Triple verification consensus engine.
+    """
+    Triple verification consensus engine.
 
     Runs all three independent verification engines and produces
     a consensus verdict based on agreement level.
@@ -119,7 +121,8 @@ class ConsensusEngine:
         grid_proof_valid: bool | None = None,
         grid_coverage_pct: float | None = None,
     ) -> ConsensusResult:
-        """Run all verification engines and produce consensus.
+        """
+        Run all verification engines and produce consensus.
 
         Args:
             width: Room width in meters.

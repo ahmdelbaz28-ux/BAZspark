@@ -21,7 +21,6 @@ import string
 import threading
 import time
 
-
 from fireai.core.secret_rotation import KeyRotator
 from fireai.core.security_logging import mask_sensitive
 
@@ -93,9 +92,9 @@ class TestMandatoryInputValidation:
         for input_str in malicious_inputs:
             sanitized = self._sanitize_input(input_str)
             # Null byte should be removed from the sanitized output
-            assert "\x00" not in sanitized, f"Null byte injection not blocked: {repr(input_str)}"
+            assert "\x00" not in sanitized, f"Null byte injection not blocked: {input_str!r}"
             # The sanitized output should be different from input (null byte removed)
-            assert sanitized != input_str, f"Null byte not removed: {repr(input_str)}"
+            assert sanitized != input_str, f"Null byte not removed: {input_str!r}"
 
     def test_sql_injection_pattern_detection(self):
         """CRITICAL: Detect SQL injection patterns."""

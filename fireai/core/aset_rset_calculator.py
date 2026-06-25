@@ -1,4 +1,5 @@
-"""aset_rset_calculator.py — ASET vs RSET Life-Safety Analysis.
+"""
+aset_rset_calculator.py — ASET vs RSET Life-Safety Analysis.
 ============================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -202,7 +203,8 @@ def calculate_aset(
     fire_heat_release_kw: float | None = None,
     room_volume_m3: float | None = None,
 ) -> ASETResult:
-    """Calculate Available Safe Egress Time (ASET).
+    """
+    Calculate Available Safe Egress Time (ASET).
 
     Two modes:
       1. TIME-SERIES MODE: Provide smoke_layer_height_series as
@@ -415,7 +417,8 @@ def calculate_rset(
     population_density: float | None = None,
     detection_time_s: float | None = None,
 ) -> RSETResult:
-    """Calculate Required Safe Egress Time (RSET).
+    """
+    Calculate Required Safe Egress Time (RSET).
 
     RSET = Detection Time + Premovement Delay + Travel Time
 
@@ -603,7 +606,8 @@ def validate_aset_vs_rset(
     rset_result: RSETResult,
     override_safety_factor: float | None = None,
 ) -> AsetRsetValidation:
-    """Validate that ASET exceeds RSET with safety margin.
+    """
+    Validate that ASET exceeds RSET with safety margin.
 
     This is the FUNDAMENTAL life-safety check:
         Design is SAFE if: ASET > RSET × Safety Factor
@@ -692,7 +696,8 @@ def perform_aset_rset_analysis(
     ventilation_opening_m2: float = 2.0,
     ceiling_type: str = "FLAT",
 ) -> dict[str, Any]:
-    """Perform a complete ASET vs RSET analysis using semi_cfast_engine physics.
+    """
+    Perform a complete ASET vs RSET analysis using semi_cfast_engine physics.
 
     This is the integration function that connects the physics-based
     semi_cfast_engine to release_gates.py Gate 7. It creates a FireScenario,

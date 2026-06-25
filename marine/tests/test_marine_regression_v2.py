@@ -1,4 +1,5 @@
-"""marine/tests/test_marine_regression_v2.py — Regression tests for v2 bugfixes.
+"""
+marine/tests/test_marine_regression_v2.py — Regression tests for v2 bugfixes.
 
 Each test corresponds to a specific bug from the v2 audit report:
   - Zone overlap bug (zone_mapper)
@@ -21,43 +22,57 @@ Each test corresponds to a specific bug from the v2 audit report:
 """
 from __future__ import annotations
 
-import math
+import functools
+import operator
+
 import pytest
 
-from marine.core.types import (
-    AlarmLevel, DetectorPlacement, DetectorType, ExtinguishingSystem,
-    FireClass, MarineZone, ShipProject, ShipType, SpaceCategory,
-)
 from marine.core.errors import ExtinguishingDesignError
+from marine.core.types import (
+    AlarmLevel,
+    DetectorType,
+    ExtinguishingSystem,
+    FireClass,
+    MarineZone,
+    ShipProject,
+    ShipType,
+    SpaceCategory,
+)
 from marine.engine.alarm_logic import (
-    generate_logic_tree, export_to_plc_script,
+    export_to_plc_script,
+    generate_logic_tree,
 )
 from marine.engine.extinguishment import (
-    size_afff, size_co2_total_flooding, size_foam_high_expansion,
-    size_inert_gas, size_water_mist,
+    size_afff,
+    size_co2_total_flooding,
+    size_foam_high_expansion,
+    size_inert_gas,
 )
 from marine.engine.fire_resistance import (
-    generate_division_specs, select_insulation_material,
+    generate_division_specs,
+    select_insulation_material,
 )
 from marine.engine.zone_mapper import (
-    assign_space_categories, divide_into_main_vertical_zones,
+    assign_space_categories,
+    divide_into_main_vertical_zones,
 )
 from marine.iec60092.electrical_installations import (
-    design_fire_system_power, validate_insulation_monitoring,
+    validate_insulation_monitoring,
 )
 from marine.iec60092.part_502 import validate_alarm_circuit_redundancy
-from marine.iso15370.thermal_alarms import (
-    calculate_thermal_alarm_count, select_thermal_alarm_class,
-)
 from marine.integration.autocad_exporter import generate_full_dxf
 from marine.integration.etap_bridge import export_etap_loads_csv
 from marine.integration.scada_bridge import (
-    build_modbus_registers, dashboard_payload,
+    build_modbus_registers,
+    dashboard_payload,
+)
+from marine.iso15370.thermal_alarms import (
+    calculate_thermal_alarm_count,
 )
 from marine.solas.chapter_ii_2 import (
-    required_extinguishing_for_space, validate_main_vertical_zones,
+    required_extinguishing_for_space,
+    validate_main_vertical_zones,
 )
-
 
 # ─── Fixtures ───────────────────────────────────────────────────────────────
 
@@ -112,8 +127,10 @@ def escape_route_zone() -> MarineZone:
 # ─── Bug #1: Zone Overlap ────────────────────────────────────────────────────
 
 class TestZoneOverlapRegression:
-    """Bugs: zones overlapped by up to 15 m because start/end frames were
-    computed with inconsistent formulas."""
+    """
+    Bugs: zones overlapped by up to 15 m because start/end frames were
+    computed with inconsistent formulas.
+    """
 
     def test_adjacent_zones_share_boundary(self, cargo_ship):
         zones = divide_into_main_vertical_zones(199.0, cargo_ship)
@@ -154,9 +171,11 @@ class TestZoneOverlapRegression:
 # ─── Bug #12: assign_space_categories field-drop ─────────────────────────────
 
 class TestAssignSpaceCategoriesRegression:
-    """Bug: previously this function rebuilt the dataclass by hand and
+    """
+    Bug: previously this function rebuilt the dataclass by hand and
     silently dropped 4 fields (required_fire_class, hazard_class,
-    ventilation_rate_ach, has_escape_route)."""
+    ventilation_rate_ach, has_escape_route).
+    """
 
     def test_preserves_has_escape_route_false(self, cargo_ship):
         # Create a zone with has_escape_route=False — previously this got
@@ -186,8 +205,10 @@ class TestAssignSpaceCategoriesRegression:
 # ─── Bug #3: CO2 safety factor + alternative method ──────────────────────────
 
 class TestCO2SizingRegression:
-    """Bug: CO2 mass was under-estimated by ~25% because safety factor was
-    hardcoded to 1.0 and the alternative (free-gas) method was not used."""
+    """
+    Bug: CO2 mass was under-estimated by ~25% because safety factor was
+    hardcoded to 1.0 and the alternative (free-gas) method was not used.
+    """
 
     def test_co2_mass_uses_larger_method(self, engine_room_zone):
         design = size_co2_total_flooding(engine_room_zone, "engine_room")
@@ -210,9 +231,11 @@ class TestCO2SizingRegression:
 # ─── Bug #2: Inert gas formula ───────────────────────────────────────────────
 
 class TestInertGasRegression:
-    """Bug: IG discharge time was constant 2880s regardless of zone size.
+    """
+    Bug: IG discharge time was constant 2880s regardless of zone size.
     Also: linear (not logarithmic) purge formula under-estimated IG volume
-    by ~14×."""
+    by ~14×.
+    """
 
     def test_discharge_time_scales_with_volume(self, tanker):
         # Same ship, two different tank sizes → discharge times must differ.
@@ -261,9 +284,11 @@ class TestInertGasRegression:
 # ─── Bug #4, #5: New size_foam_high_expansion and size_afff ──────────────────
 
 class TestNewExtinguishingSizers:
-    """Bug: FOAM_HIGH and AFFF constants were imported but no size_* function
+    """
+    Bug: FOAM_HIGH and AFFF constants were imported but no size_* function
     existed. README claimed both were sized; code fell through to a 12 kg
-    dry-chemical default."""
+    dry-chemical default.
+    """
 
     def test_foam_high_expansion_sizing(self):
         zone = MarineZone(
@@ -297,9 +322,11 @@ class TestNewExtinguishingSizers:
 # ─── Bugs #6-#10: PLC script IEC 61131-3 compliance ─────────────────────────
 
 class TestPLCScriptRegression:
-    """Bugs: PLC output used AT %I* (invalid), duplicate VAR declarations,
+    """
+    Bugs: PLC output used AT %I* (invalid), duplicate VAR declarations,
     undeclared interlock vars, inline TON() calls (function blocks can't
-    be invoked inline), no ELSE reset (latched forever)."""
+    be invoked inline), no ELSE reset (latched forever).
+    """
 
     def _build_nodes(self, engine_room_zone, cargo_ship):
         from marine.iec60092.part_502 import place_detectors_grid
@@ -361,8 +388,10 @@ class TestPLCScriptRegression:
         assert ": TON;" in script
 
     def test_logic_release_matches_selected_system(self, engine_room_zone, cargo_ship):
-        """Bug: release output was hardcoded to release_water_mist regardless
-        of the actually-selected extinguishing system."""
+        """
+        Bug: release output was hardcoded to release_water_mist regardless
+        of the actually-selected extinguishing system.
+        """
         from marine.iec60092.part_502 import place_detectors_grid
         dps = place_detectors_grid(engine_room_zone, DetectorType.FLAME_UV_IR)
         # Generate logic with CO2 selected (not water_mist).
@@ -374,7 +403,7 @@ class TestPLCScriptRegression:
         action_nodes = [n for n in nodes if n.alarm_level == AlarmLevel.ACTION]
         assert action_nodes, "No ACTION-level node generated for flame detector"
         # The release output must match the selected system (release_co2_total).
-        all_outputs = sum((list(n.action_outputs) for n in action_nodes), [])
+        all_outputs = functools.reduce(operator.iadd, (list(n.action_outputs) for n in action_nodes), [])
         assert "release_co2_total" in all_outputs, (
             f"Expected release_co2_total in outputs, got {all_outputs}"
         )
@@ -387,8 +416,10 @@ class TestPLCScriptRegression:
 # ─── Bug #18: Fire-resistance material consistency ───────────────────────────
 
 class TestFireResistanceMaterialConsistency:
-    """Bug: generate_division_specs returned "intumescent_board" for B-15
-    while select_insulation_material returned "intumescent_paint"."""
+    """
+    Bug: generate_division_specs returned "intumescent_board" for B-15
+    while select_insulation_material returned "intumescent_paint".
+    """
 
     def test_b15_material_consistent(self):
         direct = select_insulation_material(FireClass.B_15)
@@ -415,12 +446,13 @@ class TestFireResistanceMaterialConsistency:
 # ─── Bug #20, #21, #22: ISO 15370 thermal alarm count ────────────────────────
 
 class TestThermalAlarmRegression:
-    """Bugs: int() truncation under-counted alarms; area-based formula
-    wrong for linear corridors; no scope check."""
+    """
+    Bugs: int() truncation under-counted alarms; area-based formula
+    wrong for linear corridors; no scope check.
+    """
 
     def test_ceil_not_truncate(self):
         """Area=150 m², spacing=10 m → int(1.5)=1 (wrong), ceil(1.5)=2 (right)."""
-        from marine.core.types import ThermalAlarmClass
         zone = MarineZone(
             zone_id="ESC", name="Corridor",
             space_category=SpaceCategory.ESCAPE_ROUTE,
@@ -477,8 +509,10 @@ class TestThermalAlarmRegression:
 # ─── Bug #23: ETAP UPS units ─────────────────────────────────────────────────
 
 class TestETAPBridgeRegression:
-    """Bug: UPS load was computed as Ah × 0.024, labeled as kW but actually
-    yielding kWh (energy, not power)."""
+    """
+    Bug: UPS load was computed as Ah × 0.024, labeled as kW but actually
+    yielding kWh (energy, not power).
+    """
 
     def test_ups_load_is_in_kw(self):
         from marine.core.types import ShipElectricalSpec
@@ -489,7 +523,7 @@ class TestETAPBridgeRegression:
         )
         csv = export_etap_loads_csv(ship, spec, ups_power_kw=5.0)
         # The UPS row should report 5.00 kW (not 100*0.024=2.40).
-        assert "5.00" in csv, f"UPS load should be 5.00 kW (ups_power_kw param)"
+        assert "5.00" in csv, "UPS load should be 5.00 kW (ups_power_kw param)"
         assert "2.40" not in csv, (
             "UPS load still computed from Ah × 0.024 — kWh labeled as kW."
         )
@@ -498,8 +532,10 @@ class TestETAPBridgeRegression:
 # ─── Bug #24: SCADA dashboard timestamp ──────────────────────────────────────
 
 class TestSCADATimestampRegression:
-    """Bug: dashboard_payload hardcoded a fake timestamp and accepted no
-    parameter to override it."""
+    """
+    Bug: dashboard_payload hardcoded a fake timestamp and accepted no
+    parameter to override it.
+    """
 
     def test_timestamp_can_be_overridden(self):
         payload = dashboard_payload(
@@ -578,8 +614,10 @@ class TestDXFOutputRegression:
 # ─── Bug #17: Passenger-ship 24m MVZ limit ───────────────────────────────────
 
 class TestPassengerMVZLimitRegression:
-    """Bug: SOLAS II-2/2.2.1.1 mandates 24m MVZ limit for passenger ships
-    >36 pax, but code applied 40m uniformly."""
+    """
+    Bug: SOLAS II-2/2.2.1.1 mandates 24m MVZ limit for passenger ships
+    >36 pax, but code applied 40m uniformly.
+    """
 
     def test_large_passenger_uses_24m_limit(self, large_passenger_ship):
         # 120 m / 24 m = 5 zones minimum (vs 3 for cargo).
@@ -616,9 +654,11 @@ class TestPassengerMVZLimitRegression:
 # ─── Bug #14: Passenger-ship cargo CO2 requirement ───────────────────────────
 
 class TestPassengerCargoCO2Regression:
-    """Bug: SOLAS II-2/10.7.1.1 requires fixed extinguishing in cargo spaces
+    """
+    Bug: SOLAS II-2/10.7.1.1 requires fixed extinguishing in cargo spaces
     of passenger ships regardless of GT — but code applied >2000 GT rule
-    uniformly. A passenger ship with GT=0 (default!) got nothing."""
+    uniformly. A passenger ship with GT=0 (default!) got nothing.
+    """
 
     def test_passenger_ship_cargo_requires_co2(self, large_passenger_ship):
         # Passenger ship with GT=0 (default if not set explicitly).
@@ -635,8 +675,10 @@ class TestPassengerCargoCO2Regression:
 # ─── Bug #29: validate_alarm_circuit_redundancy ──────────────────────────────
 
 class TestAlarmCircuitRedundancyRegression:
-    """Bug: function never added a finding — accepted no actual_circuits
-    input, so the validator could never FAIL."""
+    """
+    Bug: function never added a finding — accepted no actual_circuits
+    input, so the validator could never FAIL.
+    """
 
     def test_finds_when_actual_below_required(self, engine_room_zone):
         result = validate_alarm_circuit_redundancy(
@@ -656,8 +698,10 @@ class TestAlarmCircuitRedundancyRegression:
 # ─── Bug #30: validate_insulation_monitoring ─────────────────────────────────
 
 class TestInsulationMonitoringRegression:
-    """Bugs: function took no ship param (flagged non-tankers too strictly);
-    did not validate UPS autonomy ≥30 min."""
+    """
+    Bugs: function took no ship param (flagged non-tankers too strictly);
+    did not validate UPS autonomy ≥30 min.
+    """
 
     def test_non_tanker_missing_imd_is_warning_not_finding(self, cargo_ship):
         from marine.core.types import ShipElectricalSpec

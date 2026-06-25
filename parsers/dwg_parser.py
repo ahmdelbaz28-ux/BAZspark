@@ -26,7 +26,7 @@ import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from parsers._path_security import (
     UnsafePathError,
@@ -141,7 +141,8 @@ class DWGParser:
 
     @staticmethod
     def _assemble_closed_polygons(lines: list, tolerance: float = 0.01) -> list:
-        """Chain LINE segments into closed polygons by matching endpoints.
+        """
+        Chain LINE segments into closed polygons by matching endpoints.
 
         This solves the classic DWG/DXF problem where walls are drawn as
         separate LINE entities instead of closed polylines.  The algorithm
@@ -176,6 +177,7 @@ class DWGParser:
             Each inner list is a closed polygon's vertex sequence
             (first vertex == last vertex NOT duplicated; closing
             is implied by polyline_closed=True downstream).
+
         """
         if not lines:
             return []
@@ -196,8 +198,8 @@ class DWGParser:
         for idx, (start, end) in enumerate(lines):
             sx, sy = start
             ex, ey = end
-            cs = (int(math.floor(sx / cell_size)), int(math.floor(sy / cell_size)))
-            ce = (int(math.floor(ex / cell_size)), int(math.floor(ey / cell_size)))
+            cs = (math.floor(sx / cell_size), math.floor(sy / cell_size))
+            ce = (math.floor(ex / cell_size), math.floor(ey / cell_size))
             grid_start.setdefault(cs, set()).add(idx)
             grid_end.setdefault(ce, set()).add(idx)
 
@@ -206,8 +208,8 @@ class DWGParser:
 
         def _find_neighbours(px: float, py: float) -> list:
             """Return line indices whose start or end is within tolerance of (px,py)."""
-            cx = int(math.floor(px / cell_size))
-            cy = int(math.floor(py / cell_size))
+            cx = math.floor(px / cell_size)
+            cy = math.floor(py / cell_size)
             candidates = set()
             for dx in (-1, 0, 1):
                 for dy in (-1, 0, 1):
@@ -252,7 +254,7 @@ class DWGParser:
                         consumed.add(idx)
                         changed = True
                         break
-                    elif d_te <= tol_sq:
+                    if d_te <= tol_sq:
                         chain_vertices.append(ls)
                         consumed.add(idx)
                         changed = True
@@ -275,7 +277,7 @@ class DWGParser:
                         consumed.add(idx)
                         changed = True
                         break
-                    elif d_he <= tol_sq:
+                    if d_he <= tol_sq:
                         chain_vertices.insert(0, ls)
                         consumed.add(idx)
                         changed = True
@@ -292,7 +294,8 @@ class DWGParser:
         return closed_polygons
 
     def extract_rooms_from_chaos(self, doc) -> list:
-        """Extract rooms from a potentially-corrupted or adversarial document.
+        """
+        Extract rooms from a potentially-corrupted or adversarial document.
 
         This method is the **chaos-safe** entry point.  It iterates over
         entities in ``doc.modelspace()``, skips any entity whose coordinates
@@ -322,6 +325,7 @@ class DWGParser:
         that could allow a building to be signed off as "protected" when
         it is not.  Rejecting poisoned data at the parser boundary is
         the conservative (safer) choice per Life-Safety Rule 5.
+
         """
         # V82 FIX: core.models now exists at project root — no sys.path
         # manipulation needed. The old code hacked sys.path to work around
@@ -451,6 +455,7 @@ class DWGParser:
 
         Raises:
             (no longer raises directly — see Returns)
+
         """
         import time
 
@@ -514,8 +519,7 @@ class DWGParser:
 
         # Step 3: Parse DXF
         try:
-            dxf_result = self._parse_dxf_directly(dxf_path, start)
-            return dxf_result
+            return self._parse_dxf_directly(dxf_path, start)
         finally:
             # Clean up temp file
             if dxf_path != dwg_path:
@@ -524,8 +528,9 @@ class DWGParser:
                 except Exception as exc:
                     logger.debug("Temp file cleanup failed: %s", exc)
 
-    def _parse_dxf_directly(self, dxf_path: str, start_time: float = None) -> DWGParseResult:
-        """Parse DXF file directly using ezdxf without LibreDWG conversion.
+    def _parse_dxf_directly(self, dxf_path: str, start_time: Optional[float] = None) -> DWGParseResult:
+        """
+        Parse DXF file directly using ezdxf without LibreDWG conversion.
 
         V46: Extracted from parse() to support both DWG→DXF pipeline and
         direct DXF input. Also provides extract_rooms_from_chaos() for
@@ -565,12 +570,14 @@ class DWGParser:
     # malformed DXF content, but the path-level checks (extension,
     # allowed dirs, no null bytes, no leading dash) are still required.
     def parse_dwg(self, dwg_path: str) -> list:
-        """Parse DWG/DXF file and return list of room elements.
+        """
+        Parse DWG/DXF file and return list of room elements.
         Backward compatibility alias — returns list, not DWGParseResult.
 
         Raises:
             UnsafePathError: if the input path fails security validation
             FileNotFoundError: if the file does not exist
+
         """
         # V122 SECURITY: validation happens BEFORE the ezdxf import so
         # that a malicious path is rejected even on systems without
@@ -592,7 +599,8 @@ class DWGParser:
         return self.extract_rooms_from_chaos(doc)
 
     def _convert_to_dxf(self, dwg_path: str) -> str:
-        """Convert DWG to DXF using dxf-out.
+        """
+        Convert DWG to DXF using dxf-out.
 
         SECURITY CONTRACT:
             This is a PRIVATE method. The caller MUST have already

@@ -69,6 +69,7 @@ except ImportError:
 @dataclass
 class Room:
     """BIM room extracted from IfcSpace."""
+
     id: str
     name: str = ""
     geometry: Polygon = None
@@ -81,6 +82,7 @@ class Room:
 @dataclass
 class Device:
     """Fire protection device extracted from IfcSensor."""
+
     id: str
     device_type: str = "SMOKE_PHOTOELECTRIC"
     position: Point = None
@@ -89,6 +91,7 @@ class Device:
 @dataclass
 class Obstruction:
     """Obstruction extracted from IfcColumn/IfcBeam."""
+
     id: str
     geometry: Polygon = None
     height: float = 2.4
@@ -107,6 +110,7 @@ except ImportError:
 
 class ToleranceModel:
     """Tolerance model for spatial normalization (inline stub)."""
+
     def __init__(self, area_tolerance: float = 0.01, dist_tolerance: float = 0.001):
         self.area_tolerance = area_tolerance
         self.dist_tolerance = dist_tolerance
@@ -114,13 +118,15 @@ class ToleranceModel:
 
 class _ErrorSeverity:
     """Error severity levels for normalization errors."""
+
     CRITICAL = "CRITICAL"
     WARNING = "WARNING"
     INFO = "INFO"
 
 
 class SpatialNormalizer:
-    """Spatial normalizer for BIM elements.
+    """
+    Spatial normalizer for BIM elements.
 
     V109 FIX: Uses conditional import — tries to use the real
     validation.spatial_normalizer.SpatialNormalizer first, then falls
@@ -128,6 +134,7 @@ class SpatialNormalizer:
     coordinate validation, unit conversion, and geometry repair
     (buffer(0) for invalid polygons).
     """
+
     # If the core normalizer is available, delegate to it
     _core_normalizer = None
 
@@ -143,7 +150,8 @@ class SpatialNormalizer:
                 self._core_normalizer = None
 
     def normalize(self, room, devices, obstructions, unit: str = "meters"):
-        """Normalize room, devices, and obstructions.
+        """
+        Normalize room, devices, and obstructions.
 
         Returns (norm_room, norm_devices, norm_obstructions, errors).
         """
@@ -278,9 +286,7 @@ class IFCBridge:
                     self.obstruction_to_room[elem_id] = room_id
 
     def audit_spatial_decisions(self) -> str:
-        """
-        Returns a text report summarizing all spatial resolution decisions.
-        """
+        """Returns a text report summarizing all spatial resolution decisions."""
         lines = ["=== Spatial Resolution Audit ==="]
         by_source = {}
         for entry in self.resolution_log:
@@ -427,7 +433,7 @@ class IFCBridge:
                 try:
                     placement = space.ObjectPlacement
                     if placement:
-                        x, y, z = self._resolve_placement(placement)
+                        x, y, _z = self._resolve_placement(placement)
                         if x > 0 or y > 0:  # Valid placement
                             # V111 CRITICAL FIX: Do NOT create fabricated geometry.
                             # A 10x10m box around a placement point is NOT real room

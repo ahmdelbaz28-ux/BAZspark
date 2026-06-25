@@ -1,4 +1,5 @@
-"""fireai.core.ifc_parser — IFC Building Geometry Extraction.
+"""
+fireai.core.ifc_parser — IFC Building Geometry Extraction.
 =========================================================
 
 Reads building geometry from IFC files (ISO 16739) and produces a
@@ -90,7 +91,8 @@ class CellState(Enum):
 
 @dataclass(frozen=True)
 class BoundingBox3D:
-    """Axis-aligned 3D bounding box.
+    """
+    Axis-aligned 3D bounding box.
 
     All coordinates in meters. The box is defined by two corner points
     (min_x, min_y, min_z) and (max_x, max_y, max_z).
@@ -160,7 +162,8 @@ class BoundingBox3D:
 
 @dataclass(frozen=True)
 class SpaceInfo:
-    """Information about a navigable IfcSpace.
+    """
+    Information about a navigable IfcSpace.
 
     Attributes:
         space_id: IFC GlobalId.
@@ -184,7 +187,8 @@ class SpaceInfo:
 
 @dataclass(frozen=True)
 class BuildingModel:
-    """Complete building model extracted from IFC.
+    """
+    Complete building model extracted from IFC.
 
     Contains all geometry needed for cable routing:
     - Obstacles (walls, slabs, beams, columns)
@@ -263,7 +267,8 @@ _OPENING_TYPES = {
 
 
 def _classify_ifc_element(ifc_class: str) -> IfcElementType:
-    """Map IFC class name to IfcElementType.
+    """
+    Map IFC class name to IfcElementType.
 
     Args:
         ifc_class: IFC class name (e.g. 'IfcWallStandardCase').
@@ -279,7 +284,8 @@ def _extract_fire_rating(
     element,
     element_type: IfcElementType | None = None,
 ) -> tuple[bool, float]:
-    """Extract fire rating from IFC element properties.
+    """
+    Extract fire rating from IFC element properties.
 
     Checks Pset_FireRatingCommon and similar property sets.
 
@@ -342,7 +348,8 @@ def _extract_fire_rating(
 
 
 def _compute_world_placement(element) -> tuple[float, float, float] | None:
-    """Recursively resolve nested IfcLocalPlacement chain to world coordinates.
+    """
+    Recursively resolve nested IfcLocalPlacement chain to world coordinates.
 
     IFC supports nested placements where an IfcLocalPlacement references a
     parent via PlacementRelTo. The world position is the sum of all offsets
@@ -423,7 +430,8 @@ def _compute_world_placement(element) -> tuple[float, float, float] | None:
 
 
 def _extract_extrusion_direction(item) -> tuple[float, float, float] | None:
-    """Extract the extrusion direction from an IfcExtrudedAreaSolid.
+    """
+    Extract the extrusion direction from an IfcExtrudedAreaSolid.
 
     IfcExtrudedAreaSolid.ExtrudedDirection is a unit IfcDirection vector
     indicating the direction of extrusion. If the direction cannot be
@@ -458,7 +466,8 @@ def _extract_extrusion_direction(item) -> tuple[float, float, float] | None:
 
 
 def _is_z_axis_direction(dx: float, dy: float, dz: float, tolerance: float = 1e-6) -> bool:
-    """Check if an extrusion direction is approximately the Z-axis (0, 0, ±1).
+    """
+    Check if an extrusion direction is approximately the Z-axis (0, 0, ±1).
 
     Args:
         dx, dy, dz: Direction vector components.
@@ -478,7 +487,8 @@ def _is_z_axis_direction(dx: float, dy: float, dz: float, tolerance: float = 1e-
 
 
 def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:
-    """Extract bounding box from an IFC element.
+    """
+    Extract bounding box from an IFC element.
 
     Uses IfcOpenShell geometry processing to get the actual 3D
     bounding box of the element.
@@ -832,7 +842,8 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:
 
 
 def parse_ifc_file(file_path: str) -> BuildingModel:
-    """Parse an IFC file and extract building geometry.
+    """
+    Parse an IFC file and extract building geometry.
 
     ISO 16739 — Industry Foundation Classes:
       Extracts IfcWall, IfcSlab, IfcBeam, IfcSpace, IfcDoor, IfcWindow
@@ -867,7 +878,8 @@ def parse_ifc_file(file_path: str) -> BuildingModel:
 
 
 def parse_ifc_from_string(ifc_content: str) -> BuildingModel:
-    """Parse IFC content from a string.
+    """
+    Parse IFC content from a string.
 
     Useful for testing without physical files.
 
@@ -904,7 +916,8 @@ def parse_ifc_from_string(ifc_content: str) -> BuildingModel:
 
 
 def _extract_building_model(ifc_model) -> BuildingModel:
-    """Extract building model from an IfcOpenShell model object.
+    """
+    Extract building model from an IfcOpenShell model object.
 
     Args:
         ifc_model: IfcOpenShell model object.
@@ -1022,7 +1035,8 @@ def _build_occupancy_grid(
     resolution: float = 0.1,
     padding_m: float = 1.0,
 ) -> tuple[tuple[float, float, float], tuple[int, int, int], bytes]:
-    """Build a 3D occupancy grid from extracted building elements.
+    """
+    Build a 3D occupancy grid from extracted building elements.
 
     Grid Convention:
       - Each cell represents a (resolution × resolution × resolution) cube
@@ -1124,7 +1138,8 @@ def build_abstract_model(
     building_name: str = "Abstract",
     resolution: float = 0.1,
 ) -> BuildingModel:
-    """Build a BuildingModel from programmatic obstacles (no IFC file).
+    """
+    Build a BuildingModel from programmatic obstacles (no IFC file).
 
     This is the primary interface for testing and for systems that
     don't have IFC files. Obstacles are defined directly as
@@ -1159,7 +1174,8 @@ def get_cell_state(
     y: float,
     z: float,
 ) -> CellState:
-    """Query the occupancy grid at a world coordinate.
+    """
+    Query the occupancy grid at a world coordinate.
 
     Converts world coordinates (meters) to grid indices and
     returns the CellState at that position.
@@ -1199,7 +1215,8 @@ def world_to_grid(
     y: float,
     z: float,
 ) -> tuple[int, int, int]:
-    """Convert world coordinates (meters) to grid indices.
+    """
+    Convert world coordinates (meters) to grid indices.
 
     V63 FIX: Uses math.floor instead of int() for coordinate
     conversion. int() truncates toward zero, which incorrectly
@@ -1230,7 +1247,8 @@ def grid_to_world(
     iy: int,
     iz: int,
 ) -> tuple[float, float, float]:
-    """Convert grid indices to world coordinates (cell center).
+    """
+    Convert grid indices to world coordinates (cell center).
 
     Args:
         model: BuildingModel with grid.

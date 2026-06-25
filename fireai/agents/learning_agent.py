@@ -1,4 +1,5 @@
-"""fireai/agents/learning_agent.py — Knowledge Accumulation Agent.
+"""
+fireai/agents/learning_agent.py — Knowledge Accumulation Agent.
 =================================================================
 Persistent memory store using SQLite. Stores design experiences,
 discovers and registers design patterns, retrieves similar scenarios
@@ -121,7 +122,8 @@ def _compute_similarity(a: dict[str, float], b: dict[str, float]) -> float:
 
 
 class LearningAgent:
-    """Agent that accumulates knowledge across sessions:
+    """
+    Agent that accumulates knowledge across sessions:
     - Persistent memory store (SQLite)
     - Experience storage (design decisions, outcomes)
     - Knowledge accumulation pattern library

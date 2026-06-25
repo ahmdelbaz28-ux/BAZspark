@@ -1,4 +1,5 @@
-"""fireai/analytics/ml_pipeline.py — End-to-End ML Pipeline.
+"""
+fireai/analytics/ml_pipeline.py — End-to-End ML Pipeline.
 ============================================================
 Feature engineering, model registry, training with cross-validation,
 and evaluation framework for fire alarm design data.
@@ -125,7 +126,8 @@ logger = logging.getLogger(__name__)
 
 
 class _SafeUnpickler(pickle.Unpickler):
-    """Restricted unpickler that only allows whitelisted class modules.
+    """
+    Restricted unpickler that only allows whitelisted class modules.
 
     Per Gate 5 (Adversarial Audit) F3: pickle.loads() on data from
     the SQLite model registry is an RCE vector. This class replaces
@@ -374,7 +376,8 @@ def _get_fallback_model(model_type: str, hyperparameters: dict[str, Any]) -> Any
 
 
 class MLPipeline:
-    """End-to-end ML pipeline:
+    """
+    End-to-end ML pipeline:
     - Feature engineering from fire alarm design data
     - Model registry (versioned, metadata-tagged)
     - Training pipeline with cross-validation

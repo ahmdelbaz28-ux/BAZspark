@@ -156,24 +156,30 @@ class TestGetDetectorSpacing:
         assert result.table_row_used == "≤3.0m"
 
     def test_smoke_at_4m(self):
-        """At 4.0 m, smoke detector: flat 9.10m per NFPA 72 §17.7.3.2.3.
-        M-10 FIX: No height-based reduction for smoke detectors."""
+        """
+        At 4.0 m, smoke detector: flat 9.10m per NFPA 72 §17.7.3.2.3.
+        M-10 FIX: No height-based reduction for smoke detectors.
+        """
         result = get_detector_spacing(4.0, "smoke")
         # M-10 FIX: Smoke spacing is flat 9.10m at ALL heights
         assert result.max_spacing_m == 9.10
         assert result.coverage_radius_m == round(0.7 * 9.10, 4)
 
     def test_smoke_at_7_5m(self):
-        """At 7.5 m, smoke detector: flat 9.10m per NFPA 72 §17.7.3.2.3.
-        M-10 FIX: No height-based reduction for smoke detectors."""
+        """
+        At 7.5 m, smoke detector: flat 9.10m per NFPA 72 §17.7.3.2.3.
+        M-10 FIX: No height-based reduction for smoke detectors.
+        """
         result = get_detector_spacing(7.5, "smoke")
         # M-10 FIX: Smoke spacing is flat 9.10m at ALL heights
         assert result.max_spacing_m == 9.10
         assert result.coverage_radius_m == round(0.7 * 9.10, 4)
 
     def test_smoke_at_12_2m(self):
-        """At exactly 12.2 m, smoke detector: flat 9.10m per NFPA 72 §17.7.3.2.3.
-        M-10 FIX: No height-based reduction for smoke detectors."""
+        """
+        At exactly 12.2 m, smoke detector: flat 9.10m per NFPA 72 §17.7.3.2.3.
+        M-10 FIX: No height-based reduction for smoke detectors.
+        """
         result = get_detector_spacing(12.2, "smoke")
         # M-10 FIX: Smoke spacing is flat 9.10m at ALL heights
         assert result.max_spacing_m == 9.10
@@ -181,8 +187,10 @@ class TestGetDetectorSpacing:
         assert result.table_row_used == "≤12.2m"
 
     def test_smoke_at_15m_exceeds_table(self):
-        """At 15 m, smoke detector exceeds table — flat 9.10m fallback.
-        M-10 FIX: Flat 9.10m at all heights, even beyond table."""
+        """
+        At 15 m, smoke detector exceeds table — flat 9.10m fallback.
+        M-10 FIX: Flat 9.10m at all heights, even beyond table.
+        """
         result = get_detector_spacing(15.0, "smoke")
         assert result.max_spacing_m == 9.10  # Flat spacing fallback
         assert result.coverage_radius_m == round(0.7 * 9.10, 4)
@@ -265,8 +273,10 @@ class TestGetDetectorSpacing:
         assert "17.6.3.1" in result.nfpa_section
 
     def test_formula_contains_spacing_and_height(self):
-        """Formula string should contain the spacing value and height.
-        M-10 FIX: Smoke spacing is now flat 9.1m at all heights."""
+        """
+        Formula string should contain the spacing value and height.
+        M-10 FIX: Smoke spacing is now flat 9.1m at all heights.
+        """
         result = get_detector_spacing(4.0, "smoke")
         # M-10 FIX: spacing is flat 9.1m, not height-reduced 7.3m
         assert "9.1" in result.formula
@@ -301,10 +311,12 @@ class TestEstimateDetectorCount:
         assert result["min_detector_count"] > 1
 
     def test_high_ceiling_needs_more_detectors(self):
-        """M-10 FIX: Smoke detectors have FLAT spacing at all heights.
+        """
+        M-10 FIX: Smoke detectors have FLAT spacing at all heights.
         For smoke detectors, spacing doesn't change with height.
         For heat detectors, higher ceiling = smaller spacing = more detectors.
-        We test with heat detectors to verify the height-based reduction."""
+        We test with heat detectors to verify the height-based reduction.
+        """
         low = estimate_detector_count(200.0, 3.0, "heat")
         high = estimate_detector_count(200.0, 10.0, "heat")
         assert high["min_detector_count"] > low["min_detector_count"]
@@ -363,8 +375,10 @@ class TestEstimateDetectorCount:
         assert result["min_detector_count"] >= 1
 
     def test_invalid_ceiling_height_gives_count_1(self):
-        """V96 FIX: Invalid ceiling height now raises ValueError in
-        get_detector_spacing, which estimate_detector_count propagates."""
+        """
+        V96 FIX: Invalid ceiling height now raises ValueError in
+        get_detector_spacing, which estimate_detector_count propagates.
+        """
         with pytest.raises(ValueError, match="ceiling_height_m"):
             estimate_detector_count(50.0, -1.0, "smoke")
 
@@ -380,7 +394,8 @@ class TestCalculateBattery:
     # --- Known value calculations ---
 
     def test_basic_calculation(self):
-        """Verify the full Ah calculation with known values.
+        """
+        Verify the full Ah calculation with known values.
 
         I_standby = 0.5A, I_alarm = 1.5A, 24h standby, 5min alarm
         standby_ah = 0.5 × 24 = 12.0
@@ -467,8 +482,10 @@ class TestCalculateBattery:
     # --- Standard battery size selection ---
 
     def test_installed_ah_is_standard_size(self):
-        """installed_ah should always be a standard battery size or a
-        round-up to nearest 10."""
+        """
+        installed_ah should always be a standard battery size or a
+        round-up to nearest 10.
+        """
         result = calculate_battery(0.5, 1.5)
         # Check that installed_ah is either in the standard sizes list
         # or is a multiple of 10 (the fallback)
@@ -597,7 +614,8 @@ class TestCalculateBattery:
 
 
 class TestCalculateVoltageDrop:
-    """Tests for calculate_voltage_drop().
+    """
+    Tests for calculate_voltage_drop().
 
     The ×2 DC return path factor is life-safety critical — it was a bug
     in a previous version. These tests explicitly verify it.
@@ -606,7 +624,8 @@ class TestCalculateVoltageDrop:
     # --- DC return path ×2 factor (LIFE SAFETY CRITICAL) ---
 
     def test_dc_return_path_factor(self):
-        """V_drop MUST include ×2 factor for DC return path.
+        """
+        V_drop MUST include ×2 factor for DC return path.
 
         Without ×2, voltage drop would be reported at 50% of actual
         value — a life-safety-dangerous bug.
@@ -668,12 +687,14 @@ class TestCalculateVoltageDrop:
         assert result.is_compliant is False
 
     def test_compliant_boundary(self):
-        """Test near the compliance boundary.
+        """
+        Test near the compliance boundary.
 
         Note: due to floating-point arithmetic, the exact boundary
         may produce drop_pct slightly above 10.0 (e.g. 10.0000001),
         which rounds to 10.0 for display but makes is_compliant False.
-        We test just inside the boundary instead."""
+        We test just inside the boundary instead.
+        """
         current = 1.0
         gauge = "14"
         r_per_km = AWG_RESISTANCE_OHM_PER_KM[gauge]
@@ -956,7 +977,8 @@ class TestVerifyFaultIsolatorPlacement:
     # --- Empty list ---
 
     def test_empty_device_list(self):
-        """V69-4 FIX: Empty device list is NOT compliant — fail-safe.
+        """
+        V69-4 FIX: Empty device list is NOT compliant — fail-safe.
 
         An empty device list could indicate a data extraction failure
         (parser bug), not that the circuit is genuinely compliant.
@@ -1155,10 +1177,12 @@ class TestCrossCutting:
         assert abs(v_drop_at_max - expected_max_drop) < 0.1
 
     def test_all_spacing_tables_have_decreasing_spacing(self):
-        """As ceiling height increases, HEAT detector spacing should decrease.
+        """
+        As ceiling height increases, HEAT detector spacing should decrease.
         M-10 FIX: Smoke detector spacing is FLAT (9.10m) at all heights per
         NFPA 72 §17.7.3.2.3 — it does NOT decrease. Only heat detectors
-        have height-based spacing reduction per Table 17.6.3.5.1."""
+        have height-based spacing reduction per Table 17.6.3.5.1.
+        """
         # Heat table: spacing MUST decrease with height
         heat_spacings = [s for _, s in _HEAT_SPACING_TABLE]
         for i in range(len(heat_spacings) - 1):

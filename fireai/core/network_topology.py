@@ -1,4 +1,5 @@
-"""fireai/core/network_topology.py.
+"""
+fireai/core/network_topology.py.
 =================================
 Master Network Backbone Topology & Class X Redundancy Router.
 
@@ -86,7 +87,8 @@ _CITE_UL864 = "UL 864 10th Ed."
 
 @dataclass(frozen=True)
 class PanelNode:
-    """Represents a FACP panel in the network topology.
+    """
+    Represents a FACP panel in the network topology.
 
     Attributes:
         panel_id: Unique panel identifier (e.g. "FACP-01").
@@ -104,7 +106,8 @@ class PanelNode:
 
 @dataclass(frozen=True)
 class NetworkLink:
-    """Represents a physical network link between two panels.
+    """
+    Represents a physical network link between two panels.
 
     Attributes:
         link_id: Unique link identifier.
@@ -125,7 +128,8 @@ class NetworkLink:
 
 
 class NetworkTopologyAuditor:
-    """Audits and designs the master network backbone topology
+    """
+    Audits and designs the master network backbone topology
     for Class X compliance per NFPA 72 §23.8.
 
     The auditor analyses the network graph formed by panel nodes and
@@ -151,7 +155,8 @@ class NetworkTopologyAuditor:
         panels: list[dict[str, Any]],
         links: list[dict[str, Any]],
     ) -> Any:
-        """Audit the network topology for Class X compliance.
+        """
+        Audit the network topology for Class X compliance.
 
         Args:
             panels: Each dict must have:
@@ -505,7 +510,8 @@ class NetworkTopologyAuditor:
         adj: dict[str, list[str]],
         panel_ids: set,
     ) -> str:
-        """Classify the network topology type.
+        """
+        Classify the network topology type.
 
         Returns:
             "star", "daisy_chain", "ring", "disconnected_rings", "mesh",
@@ -550,7 +556,8 @@ class NetworkTopologyAuditor:
         adj: dict[str, list[str]],
         panel_ids: set,
     ) -> bool:
-        """Check whether the graph is fully connected using BFS.
+        """
+        Check whether the graph is fully connected using BFS.
 
         Returns:
             True if all panels are reachable from any starting panel.
@@ -575,7 +582,8 @@ class NetworkTopologyAuditor:
         adj: dict[str, list[str]],
         panel_ids: set,
     ) -> list[tuple[str, str]]:
-        """Find all bridge edges using Tarjan's algorithm.
+        """
+        Find all bridge edges using Tarjan's algorithm.
 
         A bridge is an edge whose removal increases the number of
         connected components. In a life-safety network, a bridge is

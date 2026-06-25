@@ -1,4 +1,5 @@
-"""NFPA 72 compliance calculations tests — SAFETY CRITICAL.
+"""
+NFPA 72 compliance calculations tests — SAFETY CRITICAL.
 
 Tests all public functions in fireai.core.nfpa72_calculations against
 NFPA 72 (2022 Edition) requirements.  Every calculation must be traceable

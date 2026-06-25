@@ -17,13 +17,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
-
+from typing import Any
 
 # ─── Ship Classification (SOLAS II-2 / IMO) ─────────────────────────────────
 
 class ShipType(str, Enum):
-    """SOLAS ship-type classification per SOLAS Ch. II-2/2.2.
+    """
+    SOLAS ship-type classification per SOLAS Ch. II-2/2.2.
 
     The ship type drives the applicable fire-protection ruleset:
       - PASSENGER  → SOLAS II-2 Part D (special passenger rules)
@@ -32,6 +32,7 @@ class ShipType(str, Enum):
       - OFFSHORE   → MODU Code (Mobile Offshore Drilling Units)
       - SMALL_CRAFT → NFPA 302 (replaces SOLAS for <24m load line craft)
     """
+
     PASSENGER = "passenger"        # >12 passengers (SOLAS II-2 Part D)
     CARGO = "cargo"                # General cargo ships (SOLAS II-2 Part C)
     TANKER = "tanker"              # Oil/chemical/gas carriers (IEC 60092-502)
@@ -41,6 +42,7 @@ class ShipType(str, Enum):
 
 class ShipService(str, Enum):
     """Ship service category — refines ShipType for rule selection."""
+
     CONTAINER = "container"
     BULK_CARRIER = "bulk_carrier"
     RO_RO = "ro_ro"               # Roll-on/roll-off
@@ -58,7 +60,8 @@ class ShipService(str, Enum):
 # ─── Fire Divisions (SOLAS II-2 Reg. 9) ─────────────────────────────────────
 
 class FireClass(str, Enum):
-    """SOLAS II-2/9.2 fire division classification.
+    """
+    SOLAS II-2/9.2 fire division classification.
 
     "A" class divisions (steel/equivalent + insulation):
       - A-60: 60 minutes insulation (engine rooms, cargo spaces, galleys)
@@ -72,6 +75,7 @@ class FireClass(str, Enum):
 
     "C" class divisions: non-combustible, no fire rating.
     """
+
     A_60 = "A-60"
     A_30 = "A-30"
     A_15 = "A-15"
@@ -92,11 +96,13 @@ class FireClass(str, Enum):
 
 
 class SpaceCategory(str, Enum):
-    """SOLAS II-2 space categories for fire-rating assignment.
+    """
+    SOLAS II-2 space categories for fire-rating assignment.
 
     Per SOLAS II-2 Table 9.1 — the matrix of required fire divisions
     between adjacent spaces. The categories drive FireClass selection.
     """
+
     CONTROL_STATION = "control_station"            # Wheelhouse, radio room
     ESCAPE_ROUTE = "escape_route"                   # Corridors, stairways
     ACCOMMODATION = "accommodation"                 # Cabins, mess rooms
@@ -113,7 +119,8 @@ class SpaceCategory(str, Enum):
 # ─── Fire Detection (IEC 60092-502 / FSS Code Ch. 9) ────────────────────────
 
 class DetectorType(str, Enum):
-    """Marine fire detector types per IEC 60092-502 and FSS Code Ch. 9.
+    """
+    Marine fire detector types per IEC 60092-502 and FSS Code Ch. 9.
 
     Selection rules:
       - Heat detectors   → engine rooms, galleys, drying rooms (high ambient)
@@ -122,6 +129,7 @@ class DetectorType(str, Enum):
       - CO detectors     → accommodation (early warning for smouldering fires)
       - Multi-criteria   → high-value spaces (combine 2+ sensor types)
     """
+
     HEAT_FIXED = "heat_fixed"               # Fixed temperature (e.g. 57°C, 78°C)
     HEAT_RATE_OF_RISE = "heat_ror"          # Rate-of-rise (8.3°C/min per FSS 9.2.1)
     SMOKE_IONIZATION = "smoke_ion"          # Ionization smoke (legacy)
@@ -138,6 +146,7 @@ class DetectorType(str, Enum):
 
 class AlarmLevel(str, Enum):
     """SOLAS II-2/5 alarm action levels."""
+
     FAULT = "fault"             # Detector fault (open/short circuit)
     PRE_ALARM = "pre_alarm"     # Early warning (engineer action only)
     ALARM = "alarm"             # Muster alarm (general evacuation)
@@ -147,7 +156,8 @@ class AlarmLevel(str, Enum):
 # ─── Extinguishing Systems (IMO MSC.1/Circ.1316/1165) ───────────────────────
 
 class ExtinguishingSystem(str, Enum):
-    """Marine fixed fire-extinguishing systems per SOLAS II-2/10.
+    """
+    Marine fixed fire-extinguishing systems per SOLAS II-2/10.
 
     Selection by space + hazard:
       - WATER_MIST      → machinery spaces, accommodation (MSC.1/Circ.1165)
@@ -159,6 +169,7 @@ class ExtinguishingSystem(str, Enum):
       - SPRINKLER       → accommodation (SOLAS II-2/8)
       - INERT_GAS       → cargo tanks (IG system — tankers)
     """
+
     WATER_MIST = "water_mist"
     CO2_TOTAL = "co2_total"
     FOAM_LOW = "foam_low"
@@ -171,6 +182,7 @@ class ExtinguishingSystem(str, Enum):
 
 class FireHazardClass(str, Enum):
     """NFPA 10 + marine fire hazard classification."""
+
     A = "A"  # Ordinary combustibles (wood, paper, textiles)
     B = "B"  # Flammable liquids (oil, fuel, paint)
     C = "C"  # Energized electrical equipment
@@ -182,6 +194,7 @@ class FireHazardClass(str, Enum):
 
 class ThermalAlarmClass(str, Enum):
     """ISO 15370 thermal alarm classes for passenger-ship escape routes."""
+
     CLASS_A = "thermal_a"   # Responds at 70°C ± 5°C
     CLASS_B = "thermal_b"   # Responds at 90°C ± 5°C
 
@@ -190,15 +203,17 @@ class ThermalAlarmClass(str, Enum):
 
 @dataclass(frozen=True)
 class ShipProject:
-    """Top-level marine project descriptor.
+    """
+    Top-level marine project descriptor.
 
     Captures the ship identity and classification that drives rule
     selection across all engines. Created once per project; passed
     immutably to every engine function.
     """
+
     project_id: str
     ship_name: str
-    imo_number: Optional[str] = None        # 7-digit IMO ship number
+    imo_number: str | None = None        # 7-digit IMO ship number
     ship_type: ShipType = ShipType.CARGO
     service: ShipService = ShipService.BULK_CARRIER
     length_overall_m: float = 0.0           # LOA in metres
@@ -206,7 +221,7 @@ class ShipProject:
     passenger_capacity: int = 0             # >12 → SOLAS passenger rules
     flag_state: str = ""                    # For flag-state requirements
     classification_society: str = "LR"      # LR, DNV, BV, ABS, etc.
-    build_date: Optional[str] = None        # YYYY-MM-DD (keel-lay date)
+    build_date: str | None = None        # YYYY-MM-DD (keel-lay date)
 
     @property
     def is_passenger_ship(self) -> bool:
@@ -225,12 +240,14 @@ class ShipProject:
 
 @dataclass(frozen=True)
 class MarineZone:
-    """A fire-protection zone per SOLAS II-2 main-vertical-zone concept.
+    """
+    A fire-protection zone per SOLAS II-2 main-vertical-zone concept.
 
     SOLAS II-2/2.2: "Main vertical zones" — the ship is divided into
     vertical zones by A-60 class bulkheads, not more than 40m apart,
     to contain fire within one zone.
     """
+
     zone_id: str
     name: str
     space_category: SpaceCategory
@@ -244,21 +261,22 @@ class MarineZone:
     ventilation_rate_ach: float = 0.0        # Air changes per hour
     has_escape_route: bool = True
     escape_route_count: int = 1              # SOLAS II-2/13.3.2 escape-route count
-    max_distance_to_stairway_m: Optional[float] = None  # SOLAS II-2/13.3.2.1
-    shape_polygon: Optional[List[Tuple[float, float]]] = None  # Zone footprint (m)
-    adjacent_zones: Tuple[str, ...] = field(default_factory=tuple)
+    max_distance_to_stairway_m: float | None = None  # SOLAS II-2/13.3.2.1
+    shape_polygon: list[tuple[float, float]] | None = None  # Zone footprint (m)
+    adjacent_zones: tuple[str, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
 class DetectorPlacement:
     """Result of detector-selector engine: one detector's placement."""
+
     detector_id: str
     zone_id: str
     detector_type: DetectorType
-    position_xyz_mm: Tuple[float, float, float]   # mm from ship origin
+    position_xyz_mm: tuple[float, float, float]   # mm from ship origin
     coverage_m2: float
-    rated_temp_c: Optional[float] = None           # For HEAT_FIXED
-    sensitivity: Optional[str] = None              # For SMOKE_PHOTO etc.
+    rated_temp_c: float | None = None           # For HEAT_FIXED
+    sensitivity: str | None = None              # For SMOKE_PHOTO etc.
     mounting_height_m: float = 3.0
     standard_reference: str = "IEC 60092-502 §4"
 
@@ -266,12 +284,13 @@ class DetectorPlacement:
 @dataclass(frozen=True)
 class FireResistanceSpec:
     """Specification of a fire division (bulkhead or deck)."""
+
     division_id: str
     from_zone: str
     to_zone: str
     required_class: FireClass
     material: str                                # "steel", "non-combustible"
-    insulation_material: Optional[str] = None    # "ceramic wool", "A-60 board"
+    insulation_material: str | None = None    # "ceramic wool", "A-60 board"
     insulation_thickness_mm: float = 0.0
     penetration_protected: bool = True           # Cable/pipe penetrations
     standard_reference: str = "SOLAS II-2/9.2"
@@ -280,6 +299,7 @@ class FireResistanceSpec:
 @dataclass(frozen=True)
 class ExtinguishingDesign:
     """Result of extinguishment engine for one protected space."""
+
     system_type: ExtinguishingSystem
     protected_zone: str
     protected_volume_m3: float
@@ -295,23 +315,26 @@ class ExtinguishingDesign:
 @dataclass(frozen=True)
 class AlarmLogicNode:
     """Node in the alarm logic tree (PLC/DCS programmable logic)."""
+
     node_id: str
     trigger_detector: str                        # Detector ID
     zone_id: str
     alarm_level: AlarmLevel
-    action_outputs: Tuple[str, ...]              # e.g. ("horn_z3", "release_co2")
+    action_outputs: tuple[str, ...]              # e.g. ("horn_z3", "release_co2")
     delay_s: float = 0.0
-    interlocks: Tuple[str, ...] = field(default_factory=tuple)
+    interlocks: tuple[str, ...] = field(default_factory=tuple)
     standard_reference: str = "SOLAS II-2/5 + IEC 60092-502"
 
 
 @dataclass(frozen=True)
 class ShipElectricalSpec:
-    """Marine electrical system specification per IEC 60092 series.
+    """
+    Marine electrical system specification per IEC 60092 series.
 
     Covers power supply for fire-detection/alarm/extinguishing systems
     with mandatory redundancy and UPS per SOLAS II-2/5.1.3.
     """
+
     main_supply_voltage: float = 440.0           # V AC (IEC 60092-301)
     emergency_supply_voltage: float = 230.0      # V AC
     ups_capacity_ah: float = 0.0                 # Battery capacity (Ah)
@@ -326,11 +349,12 @@ class ShipElectricalSpec:
 @dataclass
 class ComplianceResult:
     """Generic compliance-check result returned by every engine."""
+
     compliant: bool
-    findings: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    findings: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     standard_reference: str = ""
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
     def add_finding(self, msg: str) -> None:
         self.findings.append(msg)

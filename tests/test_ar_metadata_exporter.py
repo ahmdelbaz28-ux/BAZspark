@@ -1,4 +1,5 @@
-"""test_ar_metadata_exporter.py — Tests for AR Metadata Exporter.
+"""
+test_ar_metadata_exporter.py — Tests for AR Metadata Exporter.
 
 MISSION TASK 4.2 — Validates GLB/USDZ export with behind-the-wall metadata.
 """
@@ -12,17 +13,15 @@ import zipfile
 import pytest
 
 from fireai.integration.ar_metadata_exporter import (
-    ARExportFormat,
-    ARMetadataExporter,
-    ARSceneNode,
-    ARSnapshot,
-    ARVisibilityMode,
     GLB_CHUNK_BIN,
     GLB_CHUNK_JSON,
     GLTF_MAGIC,
     GLTF_VERSION,
+    ARExportFormat,
+    ARMetadataExporter,
+    ARSceneNode,
+    ARSnapshot,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -158,7 +157,7 @@ class TestGLBExport:
         json_length = struct.unpack("<I", glb[12:16])[0]
         # Bin chunk starts after header (12) + json chunk header (8) + json data
         bin_offset = 12 + 8 + json_length
-        bin_length = struct.unpack("<I", glb[bin_offset:bin_offset+4])[0]
+        struct.unpack("<I", glb[bin_offset:bin_offset+4])[0]
         bin_type = struct.unpack("<I", glb[bin_offset+4:bin_offset+8])[0]
         assert bin_type == GLB_CHUNK_BIN
 

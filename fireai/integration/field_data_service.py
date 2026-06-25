@@ -1,4 +1,5 @@
-"""fireai/integration/field_data_service.py.
+"""
+fireai/integration/field_data_service.py.
 ==========================================
 Field Data Integration — Mobile data capture, inspection feedback,
 and asset synchronization with conflict detection.
@@ -145,7 +146,8 @@ class SyncResult:
 
 
 class FieldDataService:
-    """Mobile data capture, inspection feedback, and asset synchronization.
+    """
+    Mobile data capture, inspection feedback, and asset synchronization.
 
     Features:
       - Inspection submission with validation
@@ -367,7 +369,8 @@ class FieldDataService:
     def _resolve_conflict(
         self, asset_id: str, local_ver: int, remote_ver: int
     ) -> str:
-        """Last-write-wins conflict resolution.
+        """
+        Last-write-wins conflict resolution.
 
         The higher version number wins. If versions are equal,
         the remote version is preferred (field data is considered

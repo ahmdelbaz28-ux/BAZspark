@@ -236,7 +236,8 @@ class CeilingSpec:
         beam_depth_m: float = 0.0,
         beam_spacing_m: float = 0.0,
     ) -> CeilingSpec:
-        """V9: Factory method — clamps height to NFPA range instead of raising.
+        """
+        V9: Factory method — clamps height to NFPA range instead of raising.
         Use this for production code to avoid crashes on unusual building heights.
 
         Heights outside 3.0–18.288m are clamped with a warning logged.
@@ -512,7 +513,8 @@ class RoomSpec:
 
     @property
     def area_sqm(self) -> float:
-        """Calculate room area from polygon if available, otherwise from dimensions.
+        """
+        Calculate room area from polygon if available, otherwise from dimensions.
 
         CRITICAL FIX: Previously computed from width_m * depth_m only,
         ignoring the actual polygon geometry. For non-rectangular rooms,
@@ -625,7 +627,8 @@ class HeatDetectorSpec:
 # ============================================================================
 @dataclass
 class DetectorPlacement:
-    """Individual detector placement
+    """
+    Individual detector placement
     FIXED: 2026-05-14
     - Added ceiling_height_m as explicit parameter
     - Uses get_smoke_detector_radius_safe() for safe fallback
@@ -640,7 +643,8 @@ class DetectorPlacement:
     coverage_radius_m: float | None = None
 
     def __post_init__(self):
-        """Initialize coverage radius with type-appropriate fallback.
+        """
+        Initialize coverage radius with type-appropriate fallback.
         V20.2 FIX: Use detector-type-appropriate default radius.
         Heat detectors use R = 0.7 × 6.1m = 4.27m, NOT the smoke detector
         radius of 6.37m. Using smoke radius for heat detectors overestimates
@@ -686,7 +690,8 @@ class CoverageResult:
 
 @dataclass
 class NFPAComplianceResult:
-    """Overall NFPA compliance check result.
+    """
+    Overall NFPA compliance check result.
 
     LEGAL DISCLAIMER: This software is provided for compliance assistance only.
     It does not constitute legal advice, engineering judgment, or AHJ approval.
@@ -725,7 +730,8 @@ class NFPAComplianceResult:
 
 @dataclass
 class FireAlarmPanel:
-    """Fire Alarm Control Panel per NFPA 72 Chapter 21.
+    """
+    Fire Alarm Control Panel per NFPA 72 Chapter 21.
 
     ⚠️ CRITICAL LIMITS:
     - Maximum 250 devices per zone (NFPA 72 21.2.2)
@@ -757,7 +763,8 @@ class FireAlarmPanel:
         self.connected_devices.append(device_id)
 
     def check_voltage_drop(self, distance_m: float) -> float:
-        """Calculate voltage drop at distance.
+        """
+        Calculate voltage drop at distance.
 
         DEPRECATED (Issue #12): This simplified formula (0.04V/100m) ignores
         load current and wire gauge. For accurate voltage drop calculations
@@ -813,7 +820,8 @@ Verify all detector placements with local AHJ requirements.
 # HELPER FUNCTIONS - Radius Calculations
 # ============================================================================
 def get_smoke_detector_radius(ceiling_height_m: float) -> float:
-    """Calculate smoke detector coverage radius based on NFPA 72 Table 17.6.3.2.
+    """
+    Calculate smoke detector coverage radius based on NFPA 72 Table 17.6.3.2.
 
     Args:
         ceiling_height_m: Ceiling height in meters
@@ -870,7 +878,8 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
 
 
 def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
-    """Calculate maximum coverage area (circles can extend to) per NFPA 72.
+    """
+    Calculate maximum coverage area (circles can extend to) per NFPA 72.
 
     Args:
         ceiling_height_m: Ceiling height in meters
@@ -898,7 +907,8 @@ def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
 
 
 def validate_ceiling_height(ceiling_height_m: float) -> None:
-    """Validate ceiling height against NFPA 72 limits.
+    """
+    Validate ceiling height against NFPA 72 limits.
 
     Args:
         ceiling_height_m: Ceiling height in meters
@@ -926,7 +936,8 @@ def validate_ceiling_height(ceiling_height_m: float) -> None:
 # Principle: More detectors (closer spacing) = safer for fire safety.
 # ============================================================================
 def get_smoke_detector_radius_safe(ceiling_height_m: float, _return_details: bool = False) -> float:
-    """⭐ ELITE SOLUTION: Get smoke detector radius with SAFE FALLBACK.
+    """
+    ⭐ ELITE SOLUTION: Get smoke detector radius with SAFE FALLBACK.
     This provides CONSERVATIVE values for heights outside NFPA 72 range.
     More detectors (closer spacing) = safer design.
 
@@ -1048,7 +1059,8 @@ def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_detail
 
 
 def _get_max_internal(h: float) -> float:
-    """Internal max coverage lookup.
+    """
+    Internal max coverage lookup.
 
     CRITICAL FIX (Issue #11): Previous version used min_h <= h <= max_h for
     ALL ranges, causing overlapping boundaries at h=4.3, 6.1, 7.6, 9.1.

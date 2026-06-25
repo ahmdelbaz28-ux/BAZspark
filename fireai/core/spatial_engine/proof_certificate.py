@@ -39,7 +39,8 @@ from .density_optimizer import DETECTOR_RADIUS
 
 @dataclass
 class ProofCertificate:
-    """Machine-readable coverage proof certificate.
+    """
+    Machine-readable coverage proof certificate.
 
     This certificate can be independently verified:
     1. Recompute the grid with the same parameters
@@ -97,7 +98,8 @@ class ProofCertificate:
     warnings: list[str] = field(default_factory=list)
 
     def compute_hash(self) -> str:
-        """Compute SHA-256 hash of all proof parameters.
+        """
+        Compute SHA-256 hash of all proof parameters.
 
         This hash binds the certificate to its inputs — changing any
         parameter will produce a different hash. This prevents tampering.
@@ -149,7 +151,8 @@ class ProofCertificate:
 
 
 class ProofCertificateGenerator:
-    """Generate coverage proof certificates.
+    """
+    Generate coverage proof certificates.
 
     Uses the δ-conservative grid verification method to produce
     a mathematical proof that every point in the room is within
@@ -196,7 +199,8 @@ class ProofCertificateGenerator:
         wall_coverage_complete: bool = False,
         spacing_compliant: bool = False,
     ) -> ProofCertificate:
-        """Generate a coverage proof certificate.
+        """
+        Generate a coverage proof certificate.
 
         Args:
             room_id: Unique room identifier.

@@ -30,16 +30,15 @@ Focus areas:
 """
 from __future__ import annotations
 
-import os
-import sys
+import asyncio
 import json
-import time
+import os
+import statistics
+import sys
 import tempfile
 import threading
-import asyncio
+import time
 import traceback
-import statistics
-from pathlib import Path
 
 PROJECT_ROOT = "/home/z/my-project/revit"
 sys.path.insert(0, PROJECT_ROOT)
@@ -69,11 +68,13 @@ def record(name: str, status: str, details: str = "") -> None:
 # TEST 1: Timing attack on validate_api_key
 # ============================================================================
 def test_timing_attack_validate() -> None:
-    """If validate_api_key takes longer for valid-prefix keys than random keys,
-    an attacker can use timing to enumerate valid key prefixes."""
+    """
+    If validate_api_key takes longer for valid-prefix keys than random keys,
+    an attacker can use timing to enumerate valid key prefixes.
+    """
     print("\n[STRICT 1] Timing Attack on validate_api_key")
     try:
-        from backend.api_keys import add_api_key, validate_api_key, _lookup_key
+        from backend.api_keys import add_api_key, validate_api_key
         from backend.rbac import Role
 
         # Add a real key
@@ -119,8 +120,10 @@ def test_timing_attack_validate() -> None:
 # TEST 2: ApiKeyMiddleware path prefix bypass
 # ============================================================================
 def test_path_prefix_bypass() -> None:
-    """If public paths use startswith, an attacker might craft
-    /health/../api/v1/cache/stats to bypass auth."""
+    """
+    If public paths use startswith, an attacker might craft
+    /health/../api/v1/cache/stats to bypass auth.
+    """
     print("\n[STRICT 2] Path Prefix Bypass")
     try:
         from backend.security_middleware import _is_public_path
@@ -164,14 +167,16 @@ def test_path_prefix_bypass() -> None:
 # TEST 3: Cache memory exhaustion via large values
 # ============================================================================
 def test_cache_large_value_dos() -> None:
-    """If cache_set doesn't cap value size, an attacker can store
-    a 1GB string in one entry, exhausting memory with few requests."""
+    """
+    If cache_set doesn't cap value size, an attacker can store
+    a 1GB string in one entry, exhausting memory with few requests.
+    """
     print("\n[STRICT 3] Cache Large Value DoS")
     try:
         for mod in list(sys.modules.keys()):
             if "backend.app" in mod:
                 del sys.modules[mod]
-        from backend.app import cache_set, cache_get, _cache, _CACHE_MAX_VALUE_SIZE
+        from backend.app import _CACHE_MAX_VALUE_SIZE, cache_get, cache_set
 
         # Try to store a value larger than the cap
         big_value = "x" * (_CACHE_MAX_VALUE_SIZE + 1)
@@ -192,13 +197,15 @@ def test_cache_large_value_dos() -> None:
 # TEST 4: Cache expired entries never cleaned if stats never called
 # ============================================================================
 def test_cache_expired_cleanup_gap() -> None:
-    """Expired entries are only cleaned by cache_stats or when cache_get
+    """
+    Expired entries are only cleaned by cache_stats or when cache_get
     finds them expired. If nobody calls cache_stats, expired entries
     accumulate until cap is hit (then LRU evicts them, but they waste space).
 
     STRICT FIX H: A background reaper thread now cleans expired entries
     every _CACHE_REAPER_INTERVAL seconds (default 60). This test verifies
-    the reaper works by setting a short interval and checking cleanup."""
+    the reaper works by setting a short interval and checking cleanup.
+    """
     print("\n[STRICT 4] Cache Expired Cleanup Gap")
     try:
         for mod in list(sys.modules.keys()):
@@ -206,7 +213,7 @@ def test_cache_expired_cleanup_gap() -> None:
                 del sys.modules[mod]
         # Set short reaper interval for testing
         os.environ["FIREAI_CACHE_REAPER_INTERVAL"] = "1"
-        from backend.app import cache_set, _cache, _CACHE_MAX_ENTRIES, _cache_reaper_started
+        from backend.app import _cache, cache_set
 
         # Set 50 entries with 1-second expiry
         async def _set_short():
@@ -239,8 +246,10 @@ def test_cache_expired_cleanup_gap() -> None:
 # TEST 5: ApiKeyMiddleware blocks WebSocket /api/v1/sync
 # ============================================================================
 def test_websocket_auth_handling() -> None:
-    """WebSocket handshake is HTTP GET with Upgrade header. Does
-    ApiKeyMiddleware handle it? Or does it block all WebSockets?"""
+    """
+    WebSocket handshake is HTTP GET with Upgrade header. Does
+    ApiKeyMiddleware handle it? Or does it block all WebSockets?
+    """
     print("\n[STRICT 5] WebSocket Auth Handling")
     try:
         # The middleware checks scope["type"] != "http" → pass through.
@@ -249,8 +258,9 @@ def test_websocket_auth_handling() -> None:
         # But WebSocket itself has scope["type"] == "websocket" → skipped.
         # This means: the handshake requires X-API-Key, but the WS connection
         # itself doesn't (sync.py validates via message).
-        from backend.security_middleware import ApiKeyMiddleware, _PUBLIC_PATH_PREFIXES
         import inspect
+
+        from backend.security_middleware import _PUBLIC_PATH_PREFIXES, ApiKeyMiddleware
         src = inspect.getsource(ApiKeyMiddleware)
 
         if 'scope["type"] != "http"' in src:
@@ -274,6 +284,7 @@ def test_head_options_auth() -> None:
     print("\n[STRICT 6] HEAD/OPTIONS Auth")
     try:
         from fastapi.testclient import TestClient
+
         from backend.app import app
         client = TestClient(app)
 
@@ -311,7 +322,7 @@ def test_concurrent_add_race() -> None:
     """Two threads adding the same key simultaneously — does the lock hold?"""
     print("\n[STRICT 7] Concurrent add_api_key Race")
     try:
-        from backend.api_keys import add_api_key, _load_keys
+        from backend.api_keys import _load_keys, add_api_key
         from backend.rbac import Role
 
         errors = []
@@ -355,7 +366,7 @@ def test_concurrent_add_race() -> None:
 def test_edge_case_keys() -> None:
     print("\n[STRICT 8] Edge Case API Keys")
     try:
-        from backend.api_keys import validate_api_key, add_api_key, _MAX_KEY_LENGTH
+        from backend.api_keys import _MAX_KEY_LENGTH, add_api_key, validate_api_key
         from backend.rbac import Role
 
         # Empty string
@@ -423,12 +434,15 @@ def test_edge_case_keys() -> None:
 # TEST 9: ApiKeyMiddleware sets state correctly on Request object
 # ============================================================================
 def test_middleware_state_on_request() -> None:
-    """The middleware sets scope["state"]["fireai_role"], but does
+    """
+    The middleware sets scope["state"]["fireai_role"], but does
     require_permission() read from request.state (which FastAPI builds
-    from scope["state"])?"""
+    from scope["state"])?
+    """
     print("\n[STRICT 9] Middleware State Visible to require_permission()")
     try:
         from fastapi.testclient import TestClient
+
         from backend.app import app
         client = TestClient(app)
 
@@ -454,6 +468,7 @@ def test_dwg_endpoint_auth_enforced() -> None:
     print("\n[STRICT 10] DWG Endpoint Auth Enforced")
     try:
         from fastapi.testclient import TestClient
+
         from backend.app import app
         client = TestClient(app)
 
@@ -492,8 +507,10 @@ def test_dwg_endpoint_auth_enforced() -> None:
 # TEST 11: Secret file TOCTOU on first run
 # ============================================================================
 def test_secret_file_toctou() -> None:
-    """If two processes start simultaneously, both might try to create
-    the secret file. os.open with O_CREAT|O_EXCL would prevent this."""
+    """
+    If two processes start simultaneously, both might try to create
+    the secret file. os.open with O_CREAT|O_EXCL would prevent this.
+    """
     print("\n[STRICT 11] Secret File TOCTOU")
     try:
         from backend.security_middleware import _PUBLIC_PATH_PREFIXES  # noqa
@@ -517,12 +534,15 @@ def test_secret_file_toctou() -> None:
 # TEST 12: API key file permissions on the JSON file
 # ============================================================================
 def test_keys_file_permissions() -> None:
-    """The api_keys.json file should also have 0o600 permissions
-    (contains bcrypt hashes — still sensitive)."""
+    """
+    The api_keys.json file should also have 0o600 permissions
+    (contains bcrypt hashes — still sensitive).
+    """
     print("\n[STRICT 12] API Keys File Permissions")
     try:
-        from backend import api_keys as ak_mod
         import inspect
+
+        from backend import api_keys as ak_mod
         src = inspect.getsource(ak_mod._save_keys)
         # The temp file is created with 0o600, then os.replace preserves
         # the temp file's permissions.
@@ -540,14 +560,16 @@ def test_keys_file_permissions() -> None:
 # TEST 13: Cache lock holds during eviction (no starvation)
 # ============================================================================
 def test_cache_lock_starvation() -> None:
-    """If cache_set holds the lock during eviction of many entries,
-    concurrent cache_get calls starve. Test with sustained writes + reads."""
+    """
+    If cache_set holds the lock during eviction of many entries,
+    concurrent cache_get calls starve. Test with sustained writes + reads.
+    """
     print("\n[STRICT 13] Cache Lock Starvation")
     try:
         for mod in list(sys.modules.keys()):
             if "backend.app" in mod:
                 del sys.modules[mod]
-        from backend.app import cache_set, cache_get, _cache, _CACHE_MAX_ENTRIES
+        from backend.app import _CACHE_MAX_ENTRIES, cache_get, cache_set
 
         # Fill cache to cap
         async def _fill():
@@ -596,12 +618,15 @@ def test_cache_lock_starvation() -> None:
 # TEST 14: Path traversal via /api/v1/../api/v1/cache/stats
 # ============================================================================
 def test_path_normalization_bypass() -> None:
-    """ASGI scope['path'] is normalized by the server (uvicorn), so
+    """
+    ASGI scope['path'] is normalized by the server (uvicorn), so
     /api/v1/../api/v1/cache/stats becomes /api/v1/cache/stats.
-    But what about double-encoded paths?"""
+    But what about double-encoded paths?
+    """
     print("\n[STRICT 14] Path Normalization Bypass")
     try:
         from fastapi.testclient import TestClient
+
         from backend.app import app
         client = TestClient(app)
 
@@ -638,8 +663,10 @@ def test_path_normalization_bypass() -> None:
 # TEST 15: DWG upload size limit off-by-one
 # ============================================================================
 def test_dwg_size_limit_boundary() -> None:
-    """Verify size limit is enforced at exactly _MAX_DWG_SIZE_BYTES,
-    not _MAX_DWG_SIZE_BYTES + 1."""
+    """
+    Verify size limit is enforced at exactly _MAX_DWG_SIZE_BYTES,
+    not _MAX_DWG_SIZE_BYTES + 1.
+    """
     print("\n[STRICT 15] DWG Size Limit Boundary")
     try:
         from backend.routers.dwg import _MAX_DWG_SIZE_BYTES
@@ -661,8 +688,9 @@ def test_middleware_no_body_buffer() -> None:
     """Verify the middleware is pure ASGI (doesn't read the body)."""
     print("\n[STRICT 16] Middleware No Body Buffer")
     try:
-        from backend.security_middleware import ApiKeyMiddleware
         import inspect
+
+        from backend.security_middleware import ApiKeyMiddleware
         src = inspect.getsource(ApiKeyMiddleware)
         # The middleware should NOT call await receive() anywhere
         if "await receive" in src:
@@ -680,9 +708,11 @@ def test_middleware_no_body_buffer() -> None:
 # TEST 17: 401 response doesn't leak timing info about valid vs invalid keys
 # ============================================================================
 def test_401_response_timing() -> None:
-    """If invalid key returns 401 immediately but valid-prefix key
+    """
+    If invalid key returns 401 immediately but valid-prefix key
     takes longer, attacker can enumerate. We already test this in #1
-    but here we test the HTTP-level middleware path."""
+    but here we test the HTTP-level middleware path.
+    """
     print("\n[STRICT 17] 401 Response Timing")
     try:
         # Already covered by TEST 1 — just record INFO
@@ -704,6 +734,7 @@ def test_cache_value_size_limit_exists() -> None:
             if "backend.app" in mod:
                 del sys.modules[mod]
         import inspect
+
         from backend import app as app_mod
         src = inspect.getsource(app_mod)
         if "_CACHE_MAX_VALUE_SIZE" in src:
@@ -721,11 +752,14 @@ def test_cache_value_size_limit_exists() -> None:
 # TEST 19: API key length cap (NEW requirement)
 # ============================================================================
 def test_api_key_length_cap() -> None:
-    """Verify validate_api_key rejects keys longer than a sane limit
-    (e.g. 1KB) before computing HMAC."""
+    """
+    Verify validate_api_key rejects keys longer than a sane limit
+    (e.g. 1KB) before computing HMAC.
+    """
     print("\n[STRICT 19] API Key Length Cap")
     try:
         import inspect
+
         from backend import api_keys as ak_mod
         src = inspect.getsource(ak_mod)
         if "_MAX_KEY_LENGTH" in src:
@@ -743,8 +777,10 @@ def test_api_key_length_cap() -> None:
 # TEST 20: Concurrent atomic write doesn't lose data
 # ============================================================================
 def test_concurrent_save_no_data_loss() -> None:
-    """Two threads adding DIFFERENT keys simultaneously — both should
-    be persisted (no lost update)."""
+    """
+    Two threads adding DIFFERENT keys simultaneously — both should
+    be persisted (no lost update).
+    """
     print("\n[STRICT 20] Concurrent Save No Data Loss")
     try:
         from backend.api_keys import add_api_key, validate_api_key
@@ -772,7 +808,7 @@ def test_concurrent_save_no_data_loss() -> None:
                     ok += 1
         if ok == 100:
             record("no_data_loss", "PASS",
-                   f"All 100 concurrent adds persisted and validate")
+                   "All 100 concurrent adds persisted and validate")
         elif len(errors) > 0:
             record("no_data_loss", "FAIL",
                    f"{len(errors)} errors during concurrent adds: {errors[:3]}")

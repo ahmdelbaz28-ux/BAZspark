@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Generate an HTML report from run_loop.py output.
+"""
+Generate an HTML report from run_loop.py output.
 
 Takes the JSON output from run_loop.py and generates a visual HTML report
 showing each description attempt with check/x for each test case.
@@ -246,7 +247,7 @@ def generate_html(data: dict, auto_refresh: bool = False, skill_name: str = "") 
                 ratio = correct / total
                 if ratio >= 0.8:
                     return "score-good"
-                elif ratio >= 0.5:
+                if ratio >= 0.5:
                     return "score-ok"
             return "score-bad"
 

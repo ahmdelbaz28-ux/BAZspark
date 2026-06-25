@@ -1,4 +1,5 @@
-"""fireai/core/qomn_kernel.py — QOMN-FIRE Deterministic Engineering Kernel
+"""
+fireai/core/qomn_kernel.py — QOMN-FIRE Deterministic Engineering Kernel
 QOMN-FIRE: Zero-Defect Fire Alarm & Light Current Engineering Kernel.
 
 ARCHITECTURE: Five strict layers per QOMN specification:
@@ -46,7 +47,8 @@ from typing import Any
 
 
 class PhysicsGuardError(ValueError):
-    """Raised when input violates physical possibility or code limit.
+    """
+    Raised when input violates physical possibility or code limit.
 
     Per QOMN Specification §3 Layer 0:
     'Reject any input that is physically impossible or outside code bounds
@@ -73,7 +75,8 @@ class ValidationError(ValueError):
 
 
 def _guard_finite(value: float, field: str) -> float:
-    """IEEE-754 guard: reject NaN and Inf before any computation.
+    """
+    IEEE-754 guard: reject NaN and Inf before any computation.
 
     Source: IEEE-754-2008 §7 — Exception handling.
     NaN and Inf are NEVER permitted in life-safety computations.
@@ -92,7 +95,8 @@ def _guard_finite(value: float, field: str) -> float:
 
 
 def guard_area_m2(area_m2: float) -> float:
-    """Guard: room area must be physically possible.
+    """
+    Guard: room area must be physically possible.
 
     Constraints:
       area > 0           — physically impossible to have zero/negative area
@@ -112,7 +116,8 @@ def guard_area_m2(area_m2: float) -> float:
 
 
 def guard_ceiling_height_m(h: float) -> float:
-    """Guard: ceiling height must be within NFPA 72 detector placement scope.
+    """
+    Guard: ceiling height must be within NFPA 72 detector placement scope.
 
     Constraints:
       h > 0       — physically impossible
@@ -138,7 +143,8 @@ def guard_ceiling_height_m(h: float) -> float:
 
 
 def guard_current_a(current: float, wire_ampacity: float, gauge: str) -> float:
-    """Guard: circuit current must not exceed wire ampacity.
+    """
+    Guard: circuit current must not exceed wire ampacity.
 
     Source: NEC 2023 §310.16 — Ampacity of conductors
     """
@@ -152,7 +158,8 @@ def guard_current_a(current: float, wire_ampacity: float, gauge: str) -> float:
 
 
 def guard_voltage_v(voltage: float, system_rating: float) -> float:
-    """Guard: voltage must not exceed system rating.
+    """
+    Guard: voltage must not exceed system rating.
 
     Source: NEC 2023 §110.3(B) — Use in accordance with listing
     """
@@ -167,7 +174,8 @@ def guard_voltage_v(voltage: float, system_rating: float) -> float:
 
 
 def guard_temperature_c(temp: float, detector_rating_c: float) -> float:
-    """Guard: ambient temperature must not exceed detector rating.
+    """
+    Guard: ambient temperature must not exceed detector rating.
 
     Source: NFPA 72-2022 §17.6.2 — Temperature rating of heat detectors
     """
@@ -185,7 +193,8 @@ def guard_temperature_c(temp: float, detector_rating_c: float) -> float:
 
 
 def guard_efficiency(eff: float) -> float:
-    """Guard: efficiency must be ≤ 1.0 (100%).
+    """
+    Guard: efficiency must be ≤ 1.0 (100%).
 
     Source: Physics — conservation of energy
     """
@@ -211,7 +220,7 @@ def guard_efficiency(eff: float) -> float:
 # All NFPA 72 constants are now in fireai/constants/nfpa72.py (Single Source of Truth).
 # The old table applied heat detector reduction (1%/ft) to smoke detectors —
 # a known misapplication of NFPA 72 Table 17.6.3.5.1.
-from fireai.constants.nfpa72 import (  # noqa: E402,I001
+from fireai.constants.nfpa72 import (  # noqa: I001
     BATTERY_ALARM_MINUTES as NFPA72_ALARM_MINUTES,
     BATTERY_DISCHARGE_EFFICIENCY as NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
     BATTERY_SAFETY_FACTOR as NFPA72_BATTERY_SAFETY_FACTOR,
@@ -347,7 +356,8 @@ ACCESS_CONTROL_READER_HEIGHT_M: tuple[float, float] = (1.067, 1.219)  # 42"–48
 
 
 def _f64_hash(value: float) -> str:
-    """Compute deterministic IEEE-754 bit-level hash of a float64.
+    """
+    Compute deterministic IEEE-754 bit-level hash of a float64.
 
     Uses struct.pack to get exact binary representation, then SHA-256.
     Guarantees same hash on any platform for same input.
@@ -359,7 +369,8 @@ def _f64_hash(value: float) -> str:
 
 
 def compute_smoke_detector_spacing(ceiling_height_m: float) -> dict[str, Any]:
-    """Compute smoke detector spacing per NFPA 72-2022 §17.7.3.2.3.
+    """
+    Compute smoke detector spacing per NFPA 72-2022 §17.7.3.2.3.
 
     V121 FIX: Flat spacing per NFPA 72-2022 §17.7.3.2.3
     ═══════════════════════════════════════════════════════
@@ -470,7 +481,8 @@ def compute_heat_detector_spacing(
     ceiling_height_m: float,
     area_per_detector_m2: float,
 ) -> dict[str, Any]:
-    """Compute heat detector spacing per NFPA 72 §17.6.
+    """
+    Compute heat detector spacing per NFPA 72 §17.6.
 
     Formula: S = 0.7 × √A  [NFPA 72 §17.6.3.1]
     Maximum: 50 ft (15.24 m)  [NFPA 72 §17.6.3.1]
@@ -559,7 +571,8 @@ def compute_battery_capacity_ah(
     safety_factor: float = NFPA72_BATTERY_SAFETY_FACTOR,
     discharge_efficiency: float = NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
 ) -> dict[str, Any]:
-    """Compute battery capacity per NFPA 72 §10.6.7.2.1.
+    """
+    Compute battery capacity per NFPA 72 §10.6.7.2.1.
 
     Formula:
         Ah_standby = I_standby × T_standby_hours
@@ -630,7 +643,8 @@ def compute_voltage_drop(
     supply_voltage_v: float = 24.0,
     max_drop_pct: float = 10.0,
 ) -> dict[str, Any]:
-    """Compute circuit voltage drop per NEC Chapter 9, Table 8.
+    """
+    Compute circuit voltage drop per NEC Chapter 9, Table 8.
 
     Formula: V_drop = 2 × I × L × R_per_m
     (factor of 2 for DC round-trip: supply + return)
@@ -715,7 +729,8 @@ def compute_voltage_drop(
 
 
 def validate_smoke_spacing_result(result: dict) -> dict:
-    """Validate computed smoke spacing against code limits.
+    """
+    Validate computed smoke spacing against code limits.
 
     Source: NFPA 72-2022 §17.7.3.2.1
     """
@@ -735,7 +750,8 @@ def validate_smoke_spacing_result(result: dict) -> dict:
 
 
 def validate_battery_result(result: dict) -> dict:
-    """Validate battery calculation result.
+    """
+    Validate battery calculation result.
 
     Source: NFPA 72-2022 §10.6.7.2.1
     """
@@ -750,7 +766,8 @@ def validate_battery_result(result: dict) -> dict:
 
 
 def validate_voltage_drop_result(result: dict) -> dict:
-    """Validate voltage drop result against physical and code limits.
+    """
+    Validate voltage drop result against physical and code limits.
 
     Source: NEC 2023 Chapter 9
     """
@@ -764,7 +781,8 @@ def validate_voltage_drop_result(result: dict) -> dict:
 
 
 def validate_heat_spacing_result(result: dict) -> dict:
-    """Validate computed heat detector spacing against code limits.
+    """
+    Validate computed heat detector spacing against code limits.
 
     V58 FIX (BUG #3): This function was completely missing — heat detector
     spacing results were returned without any L3 validation.
@@ -799,7 +817,8 @@ def validate_heat_spacing_result(result: dict) -> dict:
 
 @dataclass
 class AuditEntry:
-    """Single computation audit record.
+    """
+    Single computation audit record.
 
     Per QOMN §3 Layer 4: 'Every computation logged with:
     timestamp, input, formula reference, output, hash'
@@ -815,7 +834,8 @@ class AuditEntry:
 
 
 class QOMNAuditLog:
-    """Append-only audit log per QOMN Layer 4.
+    """
+    Append-only audit log per QOMN Layer 4.
 
     Requirements per QOMN §3 Layer 4:
       - Append-only (entries never modified or deleted)
@@ -890,7 +910,8 @@ class QOMNAuditLog:
         }
 
     def verify_chain_integrity(self) -> bool:
-        """Verify the hash chain is intact (tamper detection).
+        """
+        Verify the hash chain is intact (tamper detection).
 
         V58 FIX (BUG #1): Now uses _compute_chain_hash() instead of plain
         hashlib.sha256() so that verification matches recording when HMAC
@@ -918,7 +939,8 @@ class QOMNAuditLog:
 
 
 class QOMNKernel:
-    """Main QOMN-FIRE Deterministic Engineering Kernel.
+    """
+    Main QOMN-FIRE Deterministic Engineering Kernel.
 
     Orchestrates all five layers in sequence:
       L0 → L1 → L2 → L3 → L4
@@ -952,7 +974,8 @@ class QOMNKernel:
         return result
 
     def heat_detector_spacing(self, ceiling_height_m: float, area_per_detector_m2: float) -> dict[str, Any]:
-        """Compute heat detector spacing. Full L0→L4 pipeline.
+        """
+        Compute heat detector spacing. Full L0→L4 pipeline.
 
         V58 FIX (BUG #3): Now includes L3 validation before audit record.
         Previously skipped validation entirely — no validate_heat_spacing_result()

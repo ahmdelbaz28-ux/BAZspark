@@ -95,7 +95,7 @@ class DwgConverter:
                 return Result(value=output_dxf_path)
             except Exception as e:
                 return Result(error=ConversionError(
-                    message=f"Fallback converter write failed: {str(e)}",
+                    message=f"Fallback converter write failed: {e!s}",
                     code_ref="IO Mock Converter",
                     remedy="Ensure target output directories are writeable."
                 ))
@@ -125,7 +125,7 @@ class DwgConverter:
             ))
         except subprocess.SubprocessError as e:
             return Result(error=ConversionError(
-                message=f"LibreDWG subprocess conversion crashed: {str(e)}",
+                message=f"LibreDWG subprocess conversion crashed: {e!s}",
                 code_ref="LibreDWG dwg2dxf",
                 remedy="Perform manual DWG to DXF export inside AutoCAD/DraftSight."
             ))

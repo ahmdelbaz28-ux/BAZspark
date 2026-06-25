@@ -1,4 +1,5 @@
-"""CSD (Control Station Device) Generation Module.
+"""
+CSD (Control Station Device) Generation Module.
 This module defines the necessary enums, dataclasses, and generator class for
 CSD representation and compliance reporting.
 """
@@ -79,7 +80,8 @@ class CSDGenerator:
         )
 
     def generate_compliance_report(self, devices: list[CSDDevice]) -> CSDComplianceReport:
-        """Generates a compliance report for the provided list of CSD devices.
+        """
+        Generates a compliance report for the provided list of CSD devices.
         A device is non-compliant if it is in FAULT or INACTIVE state.
         """
         report_id = f"REP-{uuid.uuid4().hex[:8].upper()}"

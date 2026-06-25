@@ -17,6 +17,7 @@ References:
   Fix #3: Norway → EFTA (not EU)
   Fix #4: CLASS_III has no IEC zone equivalent
   Q3: UnknownCountryError RAISES instead of silent fallback
+
 """
 
 from __future__ import annotations

@@ -76,7 +76,7 @@ class TestCatalogLookup:
     """Valid (conduit_type, trade_size, fitting_type) must return the correct fitting."""
 
     def test_emt_half_inch_elbow_90(self):
-        """EMT ½\" ELBOW_90 must return E90-050."""
+        r"""EMT ½\" ELBOW_90 must return E90-050."""
         result = get_fitting(ConduitType.EMT, TradeSize.HALF_INCH, FittingType.ELBOW_90)
         assert result.is_ok()
         assert result.value.catalog_number == "E90-050"
@@ -84,25 +84,25 @@ class TestCatalogLookup:
         assert result.value.bend_radius_in == pytest.approx(4.0, abs=0.001)
 
     def test_upvc_sch40_three_quarter_elbow_90(self):
-        """UPVC Sch40 ¾\" ELBOW_90 must return P90-075."""
+        r"""UPVC Sch40 ¾\" ELBOW_90 must return P90-075."""
         result = get_fitting(ConduitType.UPVC_SCH40, TradeSize.THREE_QUARTER, FittingType.ELBOW_90)
         assert result.is_ok()
         assert result.value.catalog_number == "P90-075"
 
     def test_rgd_one_inch_elbow_90(self):
-        """RGD 1\" ELBOW_90 must return R90-100."""
+        r"""RGD 1\" ELBOW_90 must return R90-100."""
         result = get_fitting(ConduitType.RGD, TradeSize.ONE_INCH, FittingType.ELBOW_90)
         assert result.is_ok()
         assert result.value.catalog_number == "R90-100"
 
     def test_upvc_sch80_half_inch_elbow_90(self):
-        """UPVC Sch80 ½\" ELBOW_90 must return S90-050."""
+        r"""UPVC Sch80 ½\" ELBOW_90 must return S90-050."""
         result = get_fitting(ConduitType.UPVC_SCH80, TradeSize.HALF_INCH, FittingType.ELBOW_90)
         assert result.is_ok()
         assert result.value.catalog_number == "S90-050"
 
     def test_emt_coupling_half_inch(self):
-        """EMT ½\" COUPLING must return EC-050."""
+        r"""EMT ½\" COUPLING must return EC-050."""
         result = get_fitting(ConduitType.EMT, TradeSize.HALF_INCH, FittingType.COUPLING)
         assert result.is_ok()
         assert result.value.catalog_number == "EC-050"
@@ -160,7 +160,7 @@ class TestGoldenCatalogData:
     """Verified against NEC published dimensional data."""
 
     def test_e90_050_dimensions(self):
-        """E90-050: EMT ½\" elbow — OD=0.706\", R=4.0\", L=6.283\"."""
+        r"""E90-050: EMT ½\" elbow — OD=0.706\", R=4.0\", L=6.283\"."""
         result = get_fitting(ConduitType.EMT, TradeSize.HALF_INCH, FittingType.ELBOW_90)
         assert result.is_ok()
         f = result.value
@@ -171,7 +171,7 @@ class TestGoldenCatalogData:
         assert f.developed_length_in == pytest.approx(math.pi * 4.0 / 2, abs=0.001)
 
     def test_e90_200_dimensions(self):
-        """E90-200: EMT 2\" elbow — OD=2.197\", R=9.5\", L=14.922\"."""
+        r"""E90-200: EMT 2\" elbow — OD=2.197\", R=9.5\", L=14.922\"."""
         result = get_fitting(ConduitType.EMT, TradeSize.TWO_INCH, FittingType.ELBOW_90)
         assert result.is_ok()
         f = result.value

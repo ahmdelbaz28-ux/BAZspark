@@ -1,4 +1,5 @@
-"""core/retry.py — AI Agent Skill Retry & Fault Tolerance System.
+"""
+core/retry.py — AI Agent Skill Retry & Fault Tolerance System.
 =============================================================
 
 Production-ready retry mechanism using Tenacity patterns.
@@ -48,7 +49,8 @@ def network_retry(
         OSError
     )
 ):
-    """Retry decorator for network operations with exponential backoff.
+    """
+    Retry decorator for network operations with exponential backoff.
 
     Args:
         max_attempts: Maximum number of retry attempts
@@ -87,7 +89,8 @@ def skill_retry(
         SyntaxError
     )
 ):
-    """Retry decorator for skill loading and initialization.
+    """
+    Retry decorator for skill loading and initialization.
 
     Args:
         max_attempts: Maximum number of retry attempts
@@ -120,7 +123,8 @@ def conditional_retry(
     max_attempts: int = 3,
     max_delay: int = 60
 ):
-    """Retry decorator that retries based on return value condition.
+    """
+    Retry decorator that retries based on return value condition.
 
     Args:
         condition_func: Function that returns True if retry is needed
@@ -148,7 +152,8 @@ def timeout_retry(
     max_delay: int = 10,
     exceptions: Tuple[Type[BaseException], ...] = (TimeoutError,)
 ):
-    """Retry decorator with total timeout constraint.
+    """
+    Retry decorator with total timeout constraint.
 
     Args:
         timeout_seconds: Total timeout in seconds
@@ -180,7 +185,8 @@ def persistent_retry(
         RuntimeError
     )
 ):
-    """Persistent retry decorator for critical operations.
+    """
+    Persistent retry decorator for critical operations.
 
     Args:
         max_attempts: Maximum number of retry attempts (high for critical ops)
@@ -212,7 +218,8 @@ def async_network_retry(
         OSError
     )
 ):
-    """Async version of network retry decorator.
+    """
+    Async version of network retry decorator.
 
     Args:
         max_attempts: Maximum number of retry attempts
@@ -258,7 +265,8 @@ def circuit_breaker_retry(
         TimeoutError
     )
 ):
-    """Circuit breaker pattern with retry capability.
+    """
+    Circuit breaker pattern with retry capability.
 
     Args:
         failure_threshold: Number of consecutive failures before opening circuit

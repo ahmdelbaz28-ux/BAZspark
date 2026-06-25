@@ -13,7 +13,7 @@ SAFETY PRINCIPLE under test:
 from __future__ import annotations
 
 import math
-from typing import Any, Dict
+from typing import Any
 
 from fireai.core.release_gates import (
     _gate_battery,
@@ -32,7 +32,7 @@ from fireai.core.release_gates import (
 # FIXTURES — reusable inputs for a fully-passing scenario
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _green_input_payload() -> Dict[str, Any]:
+def _green_input_payload() -> dict[str, Any]:
     """Minimal input_payload that passes G1, and carries G3/G4/G8 data."""
     return {
         "room_id": "R-101",
@@ -43,14 +43,14 @@ def _green_input_payload() -> Dict[str, Any]:
     }
 
 
-def _green_nfpa_results() -> Dict[str, Any]:
+def _green_nfpa_results() -> dict[str, Any]:
     """Minimal nfpa_results that passes G2."""
     return {
         "is_compliant": True,
     }
 
 
-def _green_loop_data() -> Dict[str, Any]:
+def _green_loop_data() -> dict[str, Any]:
     """Minimal loop_data that passes G6 and G7."""
     return {
         "voltage_drop": {"is_compliant": True, "voltage_drop_pct": 3.2},
@@ -58,7 +58,7 @@ def _green_loop_data() -> Dict[str, Any]:
     }
 
 
-def _full_green_kwargs() -> Dict[str, Any]:
+def _full_green_kwargs() -> dict[str, Any]:
     """All keyword arguments that produce release_status='green'."""
     return {
         "input_payload": _green_input_payload(),
@@ -335,7 +335,8 @@ class TestG6VoltageDrop:
         assert result["passed"] is True
 
     def test_voltage_drop_not_a_dict_blocks(self) -> None:
-        """V67 SAFETY FIX: If voltage_drop value is not a dict, release is BLOCKED.
+        """
+        V67 SAFETY FIX: If voltage_drop value is not a dict, release is BLOCKED.
 
         Previous behavior (V12-V66) defaulted to True (PASS), creating a
         false-GREEN release pathway. Missing/invalid compliance data must
@@ -348,7 +349,8 @@ class TestG6VoltageDrop:
         assert "not a dict" in result["reason"].lower() or "cannot verify" in result["reason"].lower()
 
     def test_voltage_drop_dict_missing_is_compliant_blocks(self) -> None:
-        """V67 SAFETY FIX: If voltage_drop dict lacks is_compliant, release is BLOCKED.
+        """
+        V67 SAFETY FIX: If voltage_drop dict lacks is_compliant, release is BLOCKED.
 
         Previous behavior (V12-V66) defaulted to True (PASS), creating a
         false-GREEN release pathway. Missing compliance data must default
@@ -412,7 +414,8 @@ class TestG7FaultIsolation:
         assert result["passed"] is True
 
     def test_fault_isolation_not_a_dict_blocks(self) -> None:
-        """V67 SAFETY FIX: If fault_isolation value is not a dict, release is BLOCKED.
+        """
+        V67 SAFETY FIX: If fault_isolation value is not a dict, release is BLOCKED.
 
         Previous behavior (V12-V66) defaulted to True (PASS), creating a
         false-GREEN release pathway. Invalid compliance data must default
@@ -424,7 +427,8 @@ class TestG7FaultIsolation:
         assert "not a dict" in result["reason"].lower() or "cannot verify" in result["reason"].lower()
 
     def test_fault_isolation_dict_missing_compliant_blocks(self) -> None:
-        """V67 SAFETY FIX: If fault_isolation dict lacks compliant, release is BLOCKED.
+        """
+        V67 SAFETY FIX: If fault_isolation dict lacks compliant, release is BLOCKED.
 
         Previous behavior (V12-V66) defaulted to True (PASS), creating a
         false-GREEN release pathway. Missing compliance data must default
@@ -652,7 +656,8 @@ class TestVerifyAndEvaluate:
         assert result["checks"]["G3_coverage"]["passed"] is False
 
     def test_coverage_blocked_without_explicit_data(self) -> None:
-        """When coverage_pct unavailable, G3 FAILS even if NFPA says compliant.
+        """
+        When coverage_pct unavailable, G3 FAILS even if NFPA says compliant.
 
         SAFETY FIX (CRITICAL-3): The old behavior allowed is_compliant=True
         to bypass the coverage gate, creating a false-GREEN release pathway.

@@ -89,7 +89,8 @@ _DEV_KEY_WARNED = False
 
 
 def _get_hmac_key() -> str:
-    """Get HMAC key from environment variable.
+    """
+    Get HMAC key from environment variable.
 
     SECURITY BEHAVIOR:
       - Production: AUDIT_HMAC_KEY env var is REQUIRED (32+ chars).
@@ -178,7 +179,8 @@ _chain_lock: threading.Lock = threading.Lock()
 
 
 def _init_database() -> None:
-    """Initialize database with V11 schema (ECDSA signature column).
+    """
+    Initialize database with V11 schema (ECDSA signature column).
 
     Thread-safe: uses _init_lock to prevent double-initialisation under
     concurrent requests. Without this lock two threads can both see
@@ -263,7 +265,8 @@ def _init_database() -> None:
 
 
 def _get_connection() -> sqlite3.Connection:
-    """Get database connection (initializes on first call).
+    """
+    Get database connection (initializes on first call).
 
     For :memory: databases, returns the SAME persistent connection,
     because sqlite3.connect(":memory:") creates a new empty database
@@ -277,7 +280,8 @@ def _get_connection() -> sqlite3.Connection:
 
 
 def _release_connection(conn: sqlite3.Connection) -> None:
-    """Release a database connection.
+    """
+    Release a database connection.
 
     For :memory: databases, do NOT close the persistent connection.
     For file databases, close normally.
@@ -323,7 +327,8 @@ _ecdsa_initialized = False
 
 
 def _get_ecdsa_signer():
-    """Get ECDSA signing key from environment variable (lazy init).
+    """
+    Get ECDSA signing key from environment variable (lazy init).
 
     The key MUST be provided in PEM format via the AUDIT_ECDSA_KEY_PEM
     environment variable. If not set, ECDSA signing is disabled.
@@ -366,7 +371,8 @@ def _get_ecdsa_signer():
 
 
 def _compute_ecdsa_signature(current_hash: str) -> str | None:
-    """Compute ECDSA signature on the hash chain entry.
+    """
+    Compute ECDSA signature on the hash chain entry.
 
     Signs the current_hash (which already chains to previous_hash),
     providing non-repudiation: only the private key holder could have
@@ -388,7 +394,8 @@ def _compute_ecdsa_signature(current_hash: str) -> str | None:
 
 
 def verify_ecdsa_signature(record: dict[str, Any], public_key_pem: str) -> bool:
-    """Verify ECDSA signature of an audit record using a public key.
+    """
+    Verify ECDSA signature of an audit record using a public key.
 
     This function can be used by third parties (Civil Defense, AHJ,
     independent auditor) to verify record integrity WITHOUT access
@@ -455,7 +462,8 @@ def verify_ecdsa_signature(record: dict[str, Any], public_key_pem: str) -> bool:
 
 
 def add_event(event_type: str, room_id: str, details_dict: dict[str, Any]) -> str:
-    """Add a new audit event to the chain with optional ECDSA signing.
+    """
+    Add a new audit event to the chain with optional ECDSA signing.
 
     V11 Enhancement: When ECDSA is enabled (AUDIT_ECDSA_KEY_PEM set),
     each record is also signed with an asymmetric ECDSA key. This
@@ -524,7 +532,8 @@ def add_event(event_type: str, room_id: str, details_dict: dict[str, Any]) -> st
 
 
 def verify_chain() -> tuple[bool, dict[str, Any] | None] | None:
-    """Verify the integrity of the entire hash chain AND HMAC signature.
+    """
+    Verify the integrity of the entire hash chain AND HMAC signature.
 
     V138 F-9 FIX: Added _chain_lock to prevent concurrent read-during-write
     on the shared :memory: connection. Without this, verify_chain could
@@ -595,7 +604,8 @@ def verify_chain() -> tuple[bool, dict[str, Any] | None] | None:
 
 
 def get_events() -> list[dict[str, Any]]:
-    """Get all events as a list of dictionaries (read-only).
+    """
+    Get all events as a list of dictionaries (read-only).
 
     V11 Enhancement: Includes ecdsa_signature field when available.
     """
@@ -647,7 +657,8 @@ def get_events() -> list[dict[str, Any]]:
 
 
 class AuditStore:
-    """Facade class for tamper-evident audit log operations.
+    """
+    Facade class for tamper-evident audit log operations.
 
     Delegates to the module-level functions so that callers can use
     either the functional API (``add_event()``) or the class-based

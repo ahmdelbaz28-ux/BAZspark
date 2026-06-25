@@ -1,4 +1,5 @@
-"""ETAP Expert Skill Loader.
+"""
+ETAP Expert Skill Loader.
 =========================
 Validates and loads the etap-expert skill, enforcing structural integrity
 per FireAI agent.md Rule 14 (NO MODIFICATION WITHOUT VERIFICATION).
@@ -163,7 +164,8 @@ class ValidationResult:
 
 
 def parse_front_matter(content: str) -> tuple[SkillFrontMatter | None, str | None]:
-    """Parse YAML front-matter from SKILL.md content.
+    """
+    Parse YAML front-matter from SKILL.md content.
 
     Front-matter is delimited by --- at start and end.
     Returns (front_matter, error_message).
@@ -257,7 +259,8 @@ def extract_standards(content: str) -> dict[str, list[str]]:
 
 
 def load_skill(skill_path: Path | str) -> ValidationResult:
-    """Load and validate the etap-expert skill.
+    """
+    Load and validate the etap-expert skill.
 
     Args:
         skill_path: Path to SKILL.md file

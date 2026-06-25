@@ -1,4 +1,5 @@
-"""fireai.conduit.errors — Error Types for Conduit Fitting Engine.
+"""
+fireai.conduit.errors — Error Types for Conduit Fitting Engine.
 ==============================================================
 
 Every error includes:
@@ -25,7 +26,8 @@ class Severity(enum.Enum):
 
 
 class ConduitError(Exception):
-    """Base class for all conduit engine errors.
+    """
+    Base class for all conduit engine errors.
 
     Never use bare except. Always catch ConduitError or a specific subclass.
 
@@ -67,7 +69,8 @@ class ConduitError(Exception):
 
 
 class PhysicsError(ConduitError):
-    """Physically impossible input detected.
+    """
+    Physically impossible input detected.
 
     Raised when input values violate physical laws:
       - Negative length, radius, or diameter
@@ -91,7 +94,8 @@ class PhysicsError(ConduitError):
 
 
 class CodeViolationError(ConduitError):
-    """Input or result exceeds NEC/NFPA limit.
+    """
+    Input or result exceeds NEC/NFPA limit.
 
     Raised when a computed value violates a specific code requirement:
       - Conduit fill exceeds NEC Chapter 9, Table 1 limit
@@ -121,7 +125,8 @@ class CodeViolationError(ConduitError):
 
 
 class CatalogError(ConduitError):
-    """Requested fitting not found in the catalog.
+    """
+    Requested fitting not found in the catalog.
 
     Raised when a (conduit_type, trade_size, fitting_type) combination
     does not exist in the immutable fitting catalog. This typically
@@ -155,7 +160,8 @@ class CatalogError(ConduitError):
 
 
 class RoutingError(ConduitError):
-    """No valid conduit path exists between two points.
+    """
+    No valid conduit path exists between two points.
 
     Raised when the A* router cannot find a path that satisfies all
     constraints (obstacle clearance, bend limits, physical space).

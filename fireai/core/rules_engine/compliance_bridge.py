@@ -1,4 +1,5 @@
-"""FireAI Rules Engine — Integration Bridge.
+"""
+FireAI Rules Engine — Integration Bridge.
 ==========================================
 
 Bridges the new Rules Engine with the existing FireAI compliance
@@ -48,7 +49,8 @@ def room_to_facts(
     is_corridor: bool = False,
     occupancy_type: str = "office",
 ) -> list[Fact]:
-    """Convert a room specification to Rule Engine facts.
+    """
+    Convert a room specification to Rule Engine facts.
 
     This is the main entry point for analyzing a room through the
     declarative rules engine.
@@ -147,7 +149,8 @@ def battery_result_to_fact(
     is_adequate: bool,
     nfpa_section: str = "NFPA 72 §10.6.7",
 ) -> Fact:
-    """Convert a battery calculation result to a Rule Engine fact.
+    """
+    Convert a battery calculation result to a Rule Engine fact.
 
     This bridges nfpa72_engine.calculate_battery() output into
     the Rules Engine so that RULE_BATTERY_INADEQUATE (NFPA72-011)
@@ -175,7 +178,8 @@ def voltage_drop_result_to_fact(
     is_compliant: bool,
     nfpa_section: str = "NFPA 72 §10.6.4",
 ) -> Fact:
-    """Convert a voltage drop result to a Rule Engine fact.
+    """
+    Convert a voltage drop result to a Rule Engine fact.
 
     This bridges nfpa72_engine.calculate_voltage_drop() output into
     the Rules Engine so that RULE_VOLTAGE_DROP_EXCEEDED (NFPA72-012)
@@ -204,7 +208,8 @@ def fault_isolation_result_to_fact(
     isolator_count: int,
     nfpa_section: str = "NFPA 72 §12.3",
 ) -> Fact:
-    """Convert a fault isolation result to a Rule Engine fact.
+    """
+    Convert a fault isolation result to a Rule Engine fact.
 
     This bridges nfpa72_engine.verify_fault_isolator_placement() output
     into the Rules Engine so that RULE_FAULT_ISOLATION_VIOLATION (NFPA72-013)
@@ -233,7 +238,8 @@ def fault_isolation_result_to_fact(
 
 @dataclass
 class ComplianceReport:
-    """Structured compliance report from the rules engine.
+    """
+    Structured compliance report from the rules engine.
 
     Compatible with the existing ExpertResult format but enriched
     with rule evaluation details and truth maintenance data.
@@ -253,7 +259,8 @@ class ComplianceReport:
 def results_to_report(
     engine: RulesEngine,
 ) -> ComplianceReport:
-    """Convert Rule Engine results to a ComplianceReport.
+    """
+    Convert Rule Engine results to a ComplianceReport.
 
     This is the main output conversion function. It takes a fully
     evaluated RulesEngine and produces a structured report.
@@ -328,7 +335,8 @@ def results_to_report(
 
 
 class NFPA72ComplianceChecker:
-    """High-level API for NFPA 72 compliance checking using the rules engine.
+    """
+    High-level API for NFPA 72 compliance checking using the rules engine.
 
     This provides a simple interface for the rest of the FireAI system
     to use the rules engine without dealing with low-level details.
@@ -360,7 +368,8 @@ class NFPA72ComplianceChecker:
         self._sync_tms_after_evaluate = True
 
     def validate_tms_consistency(self) -> list[str]:
-        """Check TMS consistency between engine and standalone TMS.
+        """
+        Check TMS consistency between engine and standalone TMS.
 
         Returns list of stale fact IDs. Empty list = consistent.
         SAFETY: This should always return an empty list.
@@ -450,7 +459,8 @@ class NFPA72ComplianceChecker:
         installed_ah: float,
         is_adequate: bool,
     ) -> str:
-        """Add a battery calculation result for compliance checking.
+        """
+        Add a battery calculation result for compliance checking.
 
         Bridges nfpa72_engine.calculate_battery() results into the
         Rules Engine. Rule NFPA72-011 will fire if is_adequate=False.
@@ -477,7 +487,8 @@ class NFPA72ComplianceChecker:
         max_length_m: float,
         is_compliant: bool,
     ) -> str:
-        """Add a voltage drop result for compliance checking.
+        """
+        Add a voltage drop result for compliance checking.
 
         Bridges nfpa72_engine.calculate_voltage_drop() results into the
         Rules Engine. Rule NFPA72-012 will fire if is_compliant=False.
@@ -501,7 +512,8 @@ class NFPA72ComplianceChecker:
         device_count: int,
         isolator_count: int,
     ) -> str:
-        """Add a fault isolation result for compliance checking.
+        """
+        Add a fault isolation result for compliance checking.
 
         Bridges nfpa72_engine.verify_fault_isolator_placement() results
         into the Rules Engine. Rule NFPA72-013 will fire if compliant=False.
@@ -575,7 +587,8 @@ class NFPA72ComplianceChecker:
         self.tms.reset()  # FIX: was missing — stale TMS records survived reset
 
     def _synchronize_tms(self) -> None:
-        """Synchronize the standalone TMS with the engine's internal TMS.
+        """
+        Synchronize the standalone TMS with the engine's internal TMS.
 
         SAFETY FIX (CRITICAL-5): The engine maintains _derived_from and
         _supports dictionaries internally that track fact dependencies.
@@ -608,7 +621,8 @@ class NFPA72ComplianceChecker:
 
 @dataclass
 class DualComplianceResult:
-    """Result from running BOTH compliance engines in parallel.
+    """
+    Result from running BOTH compliance engines in parallel.
 
     SAFETY PRINCIPLE: If the two engines disagree, the design MUST be REJECTED.
     A divergence means one engine found a violation the other missed — which
@@ -638,7 +652,8 @@ def dual_compliance_check(
     context: dict[str, Any],
     session_id: str = "",
 ) -> DualComplianceResult:
-    """Run BOTH compliance engines and REJECT on divergence.
+    """
+    Run BOTH compliance engines and REJECT on divergence.
 
     SAFETY: This is the highest-level compliance verification. It runs:
     1. ComplianceEngine (clause-mapped, validation/compliance_engine.py)

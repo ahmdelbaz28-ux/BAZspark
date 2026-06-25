@@ -1,6 +1,4 @@
-"""
-Message Queue for Event Bus in Distributed FACP System
-"""
+"""Message Queue for Event Bus in Distributed FACP System"""
 import queue
 import threading
 import time
@@ -25,11 +23,10 @@ class MessageStatus(Enum):
 
 
 class Message:
-    """
-    Represents a message in the distributed FACP system
-    """
+    """Represents a message in the distributed FACP system"""
+
     def __init__(self, topic: str, data: Dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL,
-                 correlation_id: str = None, reply_to: str = None, headers: Dict[str, str] = None):
+                 correlation_id: Optional[str] = None, reply_to: Optional[str] = None, headers: Optional[Dict[str, str]] = None):
         self.id = str(uuid.uuid4())
         self.topic = topic
         self.data = data
@@ -88,9 +85,8 @@ class Message:
 
 
 class MessageQueue:
-    """
-    Thread-safe message queue for the distributed system
-    """
+    """Thread-safe message queue for the distributed system"""
+
     def __init__(self, name: str, max_size: int = 10000):
         self.name = name
         self.max_size = max_size
@@ -110,9 +106,7 @@ class MessageQueue:
         self.message_ttl = 3600  # 1 hour default TTL
 
     def enqueue(self, message: Message) -> bool:
-        """
-        Add a message to the queue
-        """
+        """Add a message to the queue"""
         try:
             with self.lock:
                 if self.queue.qsize() >= self.max_size:
@@ -135,10 +129,8 @@ class MessageQueue:
         except queue.Full:
             return False
 
-    def dequeue(self, topic_filter: str = None) -> Optional[Message]:
-        """
-        Remove and return a message from the queue
-        """
+    def dequeue(self, topic_filter: Optional[str] = None) -> Optional[Message]:
+        """Remove and return a message from the queue"""
         try:
             with self.lock:
                 if topic_filter:
@@ -162,26 +154,21 @@ class MessageQueue:
 
                     self.stats["dequeued"] += 1
                     return message
-                else:
-                    # Message was removed from messages dict, put it back in queue
-                    q.put((priority, timestamp, message_id))
-                    return None
+                # Message was removed from messages dict, put it back in queue
+                q.put((priority, timestamp, message_id))
+                return None
         except queue.Empty:
             return None
 
     def subscribe(self, topic: str, callback: Callable[[Message], None]):
-        """
-        Subscribe to messages on a specific topic
-        """
+        """Subscribe to messages on a specific topic"""
         with self.lock:
             if topic not in self.subscribers:
                 self.subscribers[topic] = []
             self.subscribers[topic].append(callback)
 
     def publish(self, message: Message) -> bool:
-        """
-        Publish a message to the appropriate topic
-        """
+        """Publish a message to the appropriate topic"""
         success = self.enqueue(message)
 
         # Notify subscribers if any
@@ -196,9 +183,7 @@ class MessageQueue:
         return success
 
     def acknowledge(self, message_id: str) -> bool:
-        """
-        Acknowledge successful processing of a message
-        """
+        """Acknowledge successful processing of a message"""
         with self.lock:
             if message_id in self.messages:
                 message = self.messages[message_id]
@@ -209,9 +194,7 @@ class MessageQueue:
             return False
 
     def nack(self, message_id: str, retry: bool = True) -> bool:
-        """
-        Negative acknowledgment - message failed processing
-        """
+        """Negative acknowledgment - message failed processing"""
         with self.lock:
             if message_id not in self.messages:
                 return False
@@ -230,51 +213,38 @@ class MessageQueue:
                 if message.topic in self.topic_queues:
                     self.topic_queues[message.topic].put((priority_value, time.time(), message.id))
                 return True
-            else:
-                # Max attempts reached, move to dead letter queue or discard
-                del self.messages[message_id]
-                self.stats["failed"] += 1
-                return False
+            # Max attempts reached, move to dead letter queue or discard
+            del self.messages[message_id]
+            self.stats["failed"] += 1
+            return False
 
     def get_message(self, message_id: str) -> Optional[Message]:
-        """
-        Get a message by ID
-        """
+        """Get a message by ID"""
         with self.lock:
             return self.messages.get(message_id)
 
     def get_queue_size(self) -> int:
-        """
-        Get the current size of the main queue
-        """
+        """Get the current size of the main queue"""
         return self.queue.qsize()
 
     def get_topic_size(self, topic: str) -> int:
-        """
-        Get the size of a specific topic queue
-        """
+        """Get the size of a specific topic queue"""
         if topic in self.topic_queues:
             return self.topic_queues[topic].qsize()
         return 0
 
     def get_stats(self) -> Dict[str, Any]:
-        """
-        Get queue statistics
-        """
+        """Get queue statistics"""
         with self.lock:
             return self.stats.copy()
 
     def get_messages_by_topic(self, topic: str) -> List[Message]:
-        """
-        Get all messages for a specific topic
-        """
+        """Get all messages for a specific topic"""
         with self.lock:
             return [msg for msg in self.messages.values() if msg.topic == topic]
 
     def cleanup_expired_messages(self):
-        """
-        Remove expired messages based on TTL
-        """
+        """Remove expired messages based on TTL"""
         current_time = time.time()
         expired_messages = []
 
@@ -289,9 +259,7 @@ class MessageQueue:
         return len(expired_messages)
 
     def clear_queue(self):
-        """
-        Clear all messages from the queue
-        """
+        """Clear all messages from the queue"""
         with self.lock:
             self.queue.queue.clear()
             for topic_queue in self.topic_queues.values():
@@ -301,27 +269,19 @@ class MessageQueue:
             self.stats = dict.fromkeys(self.stats.keys(), 0)
 
     def pause(self):
-        """
-        Pause the queue (stop accepting new messages)
-        """
+        """Pause the queue (stop accepting new messages)"""
         self.running = False
 
     def resume(self):
-        """
-        Resume the queue (start accepting new messages)
-        """
+        """Resume the queue (start accepting new messages)"""
         self.running = True
 
     def is_empty(self) -> bool:
-        """
-        Check if the main queue is empty
-        """
+        """Check if the main queue is empty"""
         return self.queue.empty()
 
     def peek(self) -> Optional[Message]:
-        """
-        Peek at the next message without removing it (not thread-safe for modification)
-        """
+        """Peek at the next message without removing it (not thread-safe for modification)"""
         with self.lock:
             if not self.queue.empty():
                 # Get item without removing from queue
@@ -333,9 +293,8 @@ class MessageQueue:
 
 
 class PriorityQueue(MessageQueue):
-    """
-    Priority-based message queue with additional features
-    """
+    """Priority-based message queue with additional features"""
+
     def __init__(self, name: str, max_size: int = 10000):
         super().__init__(name, max_size)
         self.priority_queues = {  # Separate queues for each priority level
@@ -346,9 +305,7 @@ class PriorityQueue(MessageQueue):
         }
 
     def enqueue(self, message: Message) -> bool:
-        """
-        Add a message to the appropriate priority queue
-        """
+        """Add a message to the appropriate priority queue"""
         try:
             with self.lock:
                 if self.queue.qsize() >= self.max_size:
@@ -378,9 +335,7 @@ class PriorityQueue(MessageQueue):
             return False
 
     def dequeue_by_priority(self, priority: MessagePriority) -> Optional[Message]:
-        """
-        Dequeue a message with a specific priority
-        """
+        """Dequeue a message with a specific priority"""
         try:
             with self.lock:
                 q = self.priority_queues[priority]
@@ -396,16 +351,13 @@ class PriorityQueue(MessageQueue):
 
                     self.stats["dequeued"] += 1
                     return message
-                else:
-                    q.put((priority_val, timestamp, message_id))
-                    return None
+                q.put((priority_val, timestamp, message_id))
+                return None
         except queue.Empty:
             return None
 
     def get_priority_stats(self) -> Dict[str, int]:
-        """
-        Get statistics broken down by priority
-        """
+        """Get statistics broken down by priority"""
         with self.lock:
             return {
                 "critical": self.priority_queues[MessagePriority.CRITICAL].qsize(),
@@ -416,10 +368,9 @@ class PriorityQueue(MessageQueue):
 
 
 class DistributedMessageQueue(MessageQueue):
-    """
-    Distributed message queue that can synchronize with other nodes
-    """
-    def __init__(self, name: str, max_size: int = 10000, node_id: str = None):
+    """Distributed message queue that can synchronize with other nodes"""
+
+    def __init__(self, name: str, max_size: int = 10000, node_id: Optional[str] = None):
         super().__init__(name, max_size)
         self.node_id = node_id or f"node_{int(time.time())}_{uuid.uuid4().hex[:8]}"
         self.cluster_sync_callback = None
@@ -427,15 +378,11 @@ class DistributedMessageQueue(MessageQueue):
         self.message_replication_factor = 2  # How many nodes to replicate to
 
     def set_cluster_sync_callback(self, callback):
-        """
-        Set callback for cluster synchronization
-        """
+        """Set callback for cluster synchronization"""
         self.cluster_sync_callback = callback
 
     def enqueue(self, message: Message) -> bool:
-        """
-        Override to support distributed enqueue
-        """
+        """Override to support distributed enqueue"""
         success = super().enqueue(message)
 
         # Replicate to other nodes if callback is available
@@ -450,19 +397,15 @@ class DistributedMessageQueue(MessageQueue):
         return success
 
     def sync_with_cluster(self, cluster_messages: List[Dict[str, Any]]):
-        """
-        Sync messages with cluster
-        """
+        """Sync messages with cluster"""
         for msg_data in cluster_messages:
             if msg_data["node_source"] != self.node_id:  # Don't process our own messages
                 message = Message.from_dict(msg_data)
                 # Add to our distributed messages
                 self.distributed_messages[message.id] = message
 
-    def get_local_and_distributed_messages(self, topic: str = None) -> List[Message]:
-        """
-        Get both local and distributed messages
-        """
+    def get_local_and_distributed_messages(self, topic: Optional[str] = None) -> List[Message]:
+        """Get both local and distributed messages"""
         local_msgs = self.get_messages_by_topic(topic) if topic else list(self.messages.values())
         distributed_msgs = [msg for msg in self.distributed_messages.values()
                            if topic is None or msg.topic == topic]

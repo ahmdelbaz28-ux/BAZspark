@@ -1,11 +1,9 @@
-"""
-WebSocket Transport for Distributed FACP System
-"""
+"""WebSocket Transport for Distributed FACP System"""
 import asyncio
 import json
 import threading
 import time
-from typing import Any, Dict, Set
+from typing import Any, Dict, Optional, Set
 
 import websockets
 
@@ -13,9 +11,8 @@ from .http_transport import TransportLayer
 
 
 class WebSocketTransport(TransportLayer):
-    """
-    WebSocket transport implementation for distributed FACP
-    """
+    """WebSocket transport implementation for distributed FACP"""
+
     def __init__(self, host: str = "0.0.0.0", port: int = 8002, node_type: str = "l2_orchestrator"):
         super().__init__()
         self.host = host
@@ -151,7 +148,7 @@ class WebSocketTransport(TransportLayer):
         if websocket in self.clients:
             await websocket.send(message)
 
-    def send_request(self, request_data: Dict[str, Any], target_node: str = None) -> Dict[str, Any]:
+    def send_request(self, request_data: Dict[str, Any], target_node: Optional[str] = None) -> Dict[str, Any]:
         """
         Send request to target WebSocket endpoint
         target_node format: "ws://host:port" (e.g., "ws://localhost:8002")

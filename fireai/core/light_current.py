@@ -1,4 +1,5 @@
-"""fireai.core.light_current — QOMN-FIRE Light Current System Design.
+"""
+fireai.core.light_current — QOMN-FIRE Light Current System Design.
 =================================================================
 
 Deterministic engineering calculations for light current systems.
@@ -272,7 +273,8 @@ def validate_horizontal_cable(
     cable_type: CableType = CableType.CAT6,
     patch_cord_m: float = 5.0,
 ) -> StructuredCablingResult:
-    """Validate horizontal cabling run per TIA-568.2-D.
+    """
+    Validate horizontal cabling run per TIA-568.2-D.
 
     TIA-568 Rules:
     - Maximum horizontal cable: 90m
@@ -334,7 +336,8 @@ def validate_fiber_link(
     fiber_type: FiberType = FiberType.OM3,
     attenuation_margin_db: float = 3.0,
 ) -> FiberOpticResult:
-    """Validate fiber optic link per TIA-598 / TIA-568.3-D.
+    """
+    Validate fiber optic link per TIA-598 / TIA-568.3-D.
 
     TIA-598 Rules:
     - OS1/OS2: max 1.0 dB/km at 1310nm
@@ -408,7 +411,8 @@ def calculate_cctv_coverage(
     height_m: float = 3.0,
     min_overlap_pct: float = 20.0,
 ) -> CCTVResult:
-    """Calculate CCTV camera coverage for a room.
+    """
+    Calculate CCTV camera coverage for a room.
 
     Rules:
     - Height: 2.5m-3.5m for facial recognition
@@ -490,7 +494,8 @@ def validate_access_control(
     has_rte: bool = False,
     egress_type: str = "fail_safe",
 ) -> AccessControlResult:
-    """Validate access control installation per NFPA 101 / ADA.
+    """
+    Validate access control installation per NFPA 101 / ADA.
 
     NFPA 101 Rules:
     - Free egress required per §7.2.1.6

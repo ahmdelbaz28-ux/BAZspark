@@ -1,4 +1,5 @@
-"""backend/routers/sync.py — Project synchronization and WebSocket endpoint.
+"""
+backend/routers/sync.py — Project synchronization and WebSocket endpoint.
 
 Provides:
   - POST /api/projects/:id/sync  — trigger project sync
@@ -41,7 +42,8 @@ ws_router = APIRouter(tags=["websocket"])
 
 
 class ConnectionManager:
-    """Manages WebSocket connections for real-time project updates.
+    """
+    Manages WebSocket connections for real-time project updates.
 
     Tracks per-client project subscriptions so that broadcasts only
     reach clients that subscribed to the relevant project.
@@ -74,7 +76,8 @@ class ConnectionManager:
         return "unknown"
 
     async def connect(self, websocket: WebSocket) -> None:
-        """Accept and register a WebSocket connection.
+        """
+        Accept and register a WebSocket connection.
 
         Returns True if connection was accepted, False if rejected
         due to per-IP limit exceeded.
@@ -217,7 +220,8 @@ async def get_sync_status(project_id: str):
 # ── WebSocket endpoint ─────────────────────────────────────────────────────
 
 def _validate_ws_origin(websocket: WebSocket) -> bool:
-    """Validate the origin of a WebSocket connection.
+    """
+    Validate the origin of a WebSocket connection.
 
     Rejects connections from non-local origins when FIREAI_API_KEY is set,
     unless the request is same-origin (from the SPA served by this app).
@@ -259,7 +263,8 @@ def _validate_ws_origin(websocket: WebSocket) -> bool:
 
 
 def _validate_ws_api_key(websocket: WebSocket) -> bool:
-    """Check if the WebSocket connection provides a valid API key.
+    """
+    Check if the WebSocket connection provides a valid API key.
 
     The key MUST be provided as the FIRST message after connect:
     {"action": "auth", "apiKey": "..."}
@@ -282,7 +287,8 @@ def _validate_ws_api_key(websocket: WebSocket) -> bool:
 
 @ws_router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
-    """WebSocket endpoint for real-time project updates.
+    """
+    WebSocket endpoint for real-time project updates.
 
     SECURITY:
     - Origin validation: Rejects cross-origin connections when API key is set

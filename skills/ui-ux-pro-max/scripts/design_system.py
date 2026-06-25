@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Design System Generator - Aggregates search results and applies reasoning
 to generate comprehensive design system recommendations.
@@ -17,6 +16,7 @@ import csv
 import json
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 # Allow both `python design_system.py ...` and `python -m ...` execution.
 try:
@@ -49,10 +49,10 @@ class DesignSystemGenerator:
         filepath = DATA_DIR / REASONING_FILE
         if not filepath.exists():
             return []
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, encoding='utf-8') as f:
             return list(csv.DictReader(f))
 
-    def _multi_domain_search(self, query: str, style_priority: list = None) -> dict:
+    def _multi_domain_search(self, query: str, style_priority: Optional[list] = None) -> dict:
         """Execute searches across multiple domains."""
         results = {}
         for domain, config in SEARCH_CONFIG.items():
@@ -164,7 +164,7 @@ class DesignSystemGenerator:
         """Extract results list from search result dict."""
         return search_result.get("results", [])
 
-    def generate(self, query: str, project_name: str = None) -> dict:
+    def generate(self, query: str, project_name: Optional[str] = None) -> dict:
         """Generate complete design system recommendation."""
         # Step 1: First search product to get category
         product_result = search(query, "product", 1)
@@ -463,8 +463,8 @@ def format_markdown(design_system: dict) -> str:
 
 
 # ============ MAIN ENTRY POINT ============
-def generate_design_system(query: str, project_name: str = None, output_format: str = "ascii",
-                           persist: bool = False, page: str = None, output_dir: str = None) -> str:
+def generate_design_system(query: str, project_name: Optional[str] = None, output_format: str = "ascii",
+                           persist: bool = False, page: Optional[str] = None, output_dir: Optional[str] = None) -> str:
     """
     Main entry point for design system generation.
 
@@ -478,6 +478,7 @@ def generate_design_system(query: str, project_name: str = None, output_format: 
 
     Returns:
         Formatted design system string
+
     """
     generator = DesignSystemGenerator()
     design_system = generator.generate(query, project_name)
@@ -492,7 +493,7 @@ def generate_design_system(query: str, project_name: str = None, output_format: 
 
 
 # ============ PERSISTENCE FUNCTIONS ============
-def persist_design_system(design_system: dict, page: str = None, output_dir: str = None, page_query: str = None) -> dict:
+def persist_design_system(design_system: dict, page: Optional[str] = None, output_dir: Optional[str] = None, page_query: Optional[str] = None) -> dict:
     """
     Persist design system to design-system/<project>/ folder using Master + Overrides pattern.
 
@@ -504,6 +505,7 @@ def persist_design_system(design_system: dict, page: str = None, output_dir: str
 
     Returns:
         dict with created file paths and status
+
     """
     base_dir = Path(output_dir) if output_dir else Path.cwd()
 
@@ -806,7 +808,7 @@ def format_master_md(design_system: dict) -> str:
     return "\n".join(lines)
 
 
-def format_page_override_md(design_system: dict, page_name: str, page_query: str = None) -> str:
+def format_page_override_md(design_system: dict, page_name: str, page_query: Optional[str] = None) -> str:
     """Format a page-specific override file with intelligent AI-generated content."""
     project = design_system.get("project_name", "PROJECT")
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1050,7 +1052,7 @@ def _detect_page_type(context: str, style_results: list) -> str:
 
         if "dashboard" in best_for or "data" in best_for:
             return "Dashboard / Data View"
-        elif "landing" in best_for or "marketing" in best_for:
+        if "landing" in best_for or "marketing" in best_for:
             return "Landing / Marketing"
 
     return "General"

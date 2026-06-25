@@ -71,7 +71,8 @@ class TestDeterministicRunID:
         )
         r1 = place_fittings(path1, ConduitType.EMT, TradeSize.HALF_INCH)
         r2 = place_fittings(path2, ConduitType.EMT, TradeSize.HALF_INCH)
-        assert r1.is_ok() and r2.is_ok()
+        assert r1.is_ok()
+        assert r2.is_ok()
         assert r1.value.run_id != r2.value.run_id
 
     def test_run_id_starts_with_run_prefix(self):
@@ -93,7 +94,8 @@ class TestDeterministicRunID:
         )
         run1 = place_fittings(path, ConduitType.EMT, TradeSize.HALF_INCH)
         run2 = place_fittings(path, ConduitType.EMT, TradeSize.HALF_INCH)
-        assert run1.is_ok() and run2.is_ok()
+        assert run1.is_ok()
+        assert run2.is_ok()
         out1 = generate_revit_conduit(run1.value)
         out2 = generate_revit_conduit(run2.value)
         assert out1["sha256"] == out2["sha256"]
@@ -166,9 +168,11 @@ class TestCompleteCouplingCatalog:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestFillResultAlwaysReturned:
-    """calculate_fill must return Result.ok(FillResult) for valid inputs,
+    """
+    calculate_fill must return Result.ok(FillResult) for valid inputs,
     even when fill exceeds NEC limit. The FillResult.is_compliant flag
-    and status field indicate compliance, not the Result type."""
+    and status field indicate compliance, not the Result type.
+    """
 
     def test_violation_returns_fill_result(self):
         """Non-compliant fill returns ok(FillResult) with is_compliant=False."""
@@ -293,7 +297,7 @@ class TestBoundingBoxEdgeCases:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestFittingEngineLargerSizes:
-    """Fitting engine must work correctly with larger trade sizes (1\"-2\")."""
+    r"""Fitting engine must work correctly with larger trade sizes (1\"-2\")."""
 
     @pytest.mark.parametrize("ts", [
         TradeSize.ONE_INCH, TradeSize.ONE_QUARTER,

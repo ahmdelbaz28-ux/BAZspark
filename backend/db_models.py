@@ -1,4 +1,5 @@
-"""backend/db_models.py — SQLAlchemy ORM models for Alembic autogenerate support.
+"""
+backend/db_models.py — SQLAlchemy ORM models for Alembic autogenerate support.
 
 These models mirror the exact schema defined in database.py (_init_schema / _init_schema_pg).
 They are used ONLY by Alembic for `alembic revision --autogenerate` to detect schema changes.

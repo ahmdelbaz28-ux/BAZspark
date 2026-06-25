@@ -21,8 +21,7 @@ def create_document():
             "ezdxf library is required for DXF document creation. "
             "Install with: pip install ezdxf"
         )
-    doc = ezdxf.new("R2000")
-    return doc
+    return ezdxf.new("R2000")
 
 
 def setup_layers(doc):

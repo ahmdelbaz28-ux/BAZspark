@@ -1,4 +1,5 @@
-"""fireai/core/tests/test_regression.py — Regression Tests for Known Bugs.
+"""
+fireai/core/tests/test_regression.py — Regression Tests for Known Bugs.
 ======================================================================
 Task 2.19: Add regression tests for known bugs that were fixed.
 
@@ -67,7 +68,8 @@ def _make_element(element_id: str) -> UniversalElement:
 
 
 class TestV79NaNInfBypass:
-    """V79 FIX: NaN and Infinity values must not bypass comparison checks.
+    """
+    V79 FIX: NaN and Infinity values must not bypass comparison checks.
 
     ORIGINAL BUG:
         In IEEE-754 arithmetic, NaN < 2.0 evaluates to False and
@@ -153,7 +155,8 @@ class TestV79NaNInfBypass:
 
 
 class TestV83JSONInjection:
-    """V83 FIX (C-3): update_element validates keys against a whitelist.
+    """
+    V83 FIX (C-3): update_element validates keys against a whitelist.
 
     ORIGINAL BUG:
         update_element() accepted arbitrary keys in the updates dict.
@@ -256,7 +259,8 @@ class TestV83JSONInjection:
 
 
 class TestV114NaNBypassGuards:
-    """V114 FIX: All NFPA 72 calculation functions reject NaN/Inf inputs.
+    """
+    V114 FIX: All NFPA 72 calculation functions reject NaN/Inf inputs.
 
     ORIGINAL BUG:
         Several NFPA 72 calculation functions did not validate inputs
@@ -356,7 +360,8 @@ class TestV114NaNBypassGuards:
 
 
 class TestV130SmokeFlatSpacing:
-    """V130 FIX: Smoke detector spacing is FLAT 9.1m per NFPA 72 §17.7.3.2.3.
+    """
+    V130 FIX: Smoke detector spacing is FLAT 9.1m per NFPA 72 §17.7.3.2.3.
 
     ORIGINAL BUG:
         Previous code applied the 1%/ft height reduction from NFPA 72
@@ -432,7 +437,8 @@ class TestV130SmokeFlatSpacing:
         assert heat.max_spacing_m > 0
 
     def test_v130_no_over_densification_at_high_ceiling(self) -> None:
-        """Smoke spacing at 12m ceiling should NOT be drastically reduced.
+        """
+        Smoke spacing at 12m ceiling should NOT be drastically reduced.
 
         Previous bug: spacing at 12m would be ~3.7m (heat table value).
         Correct: spacing should be 9.1m (flat per §17.7.3.2.3).

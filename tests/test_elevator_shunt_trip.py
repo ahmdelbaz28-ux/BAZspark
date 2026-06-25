@@ -61,25 +61,27 @@ class TestConstants:
 
     def test_safety_gap_11_1c(self):
         """NFPA 72 §21.4.2: 20°F = 11.1°C gap required."""
-        assert SAFETY_GAP_C == pytest.approx(11.1)
+        assert pytest.approx(11.1) == SAFETY_GAP_C
 
     def test_max_hd_sprinkler_distance_0_6m(self):
         """NFPA 72 §21.4.2: Max 2 ft = 0.6m between HD and sprinkler."""
-        assert MAX_HD_SPRINKLER_DISTANCE_M == pytest.approx(0.6, abs=0.01)
+        assert pytest.approx(0.6, abs=0.01) == MAX_HD_SPRINKLER_DISTANCE_M
 
     def test_default_sprinkler_rti_50(self):
         """Quick-response sprinkler RTI = 50 (m·s)^0.5 per NFPA 13 §8.3.3.1."""
-        assert DEFAULT_SPRINKLER_RTI == pytest.approx(50.0)
+        assert pytest.approx(50.0) == DEFAULT_SPRINKLER_RTI
 
     def test_default_hd_rti_100(self):
-        """V20.2 FIX: Standard-response HD RTI = 100 (m·s)^0.5.
+        """
+        V20.2 FIX: Standard-response HD RTI = 100 (m·s)^0.5.
         Previous value of 50.0 was WRONG — matched sprinkler RTI,
-        making the RTI check always pass."""
-        assert DEFAULT_HD_RTI == pytest.approx(100.0)
+        making the RTI check always pass.
+        """
+        assert pytest.approx(100.0) == DEFAULT_HD_RTI
 
     def test_rti_ratio_limit_1_0(self):
         """HD RTI must not exceed sprinkler RTI (ratio ≤ 1.0)."""
-        assert RTI_RATIO_LIMIT == pytest.approx(1.0)
+        assert pytest.approx(1.0) == RTI_RATIO_LIMIT
 
     def test_standard_sprinkler_temps(self):
         assert STANDARD_SPRINKLER_TEMPS_C["ordinary"] == pytest.approx(68.3)
@@ -243,8 +245,10 @@ class TestTemperatureGapViolation:
         assert any(d["temp_violation"] for d in detailed)
 
     def test_exact_11_1c_gap_compliant(self):
-        """HD temp exactly 11.1°C below sprinkler → just barely compliant.
-        required_hd_temp = sprinkler_temp - 11.1°C; HD must be ≤ required_hd_temp."""
+        """
+        HD temp exactly 11.1°C below sprinkler → just barely compliant.
+        required_hd_temp = sprinkler_temp - 11.1°C; HD must be ≤ required_hd_temp.
+        """
         auditor = ElevatorShuntTripAuditor()
         spk_temp = 68.3
         required_hd = spk_temp - SAFETY_GAP_C  # 57.2

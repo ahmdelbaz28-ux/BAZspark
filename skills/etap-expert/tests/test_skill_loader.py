@@ -1,4 +1,5 @@
-"""Gate 2: Runtime Validation Tests.
+"""
+Gate 2: Runtime Validation Tests.
 =================================
 Validates that the skill loads and executes cleanly at runtime.
 

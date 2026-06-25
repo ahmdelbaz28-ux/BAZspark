@@ -1,4 +1,5 @@
-"""test_api_endpoints.py — API endpoint integration tests covering edge cases,
+"""
+test_api_endpoints.py — API endpoint integration tests covering edge cases,
 validation, security, and cross-router workflows.
 
 Tests focus on:

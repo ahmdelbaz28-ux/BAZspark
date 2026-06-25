@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""生成出题 prompt。
+"""
+生成出题 prompt。
 
 用法：python3 run_quiz.py <user_id> <document_id>
 

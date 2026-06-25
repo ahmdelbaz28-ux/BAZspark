@@ -1,6 +1,4 @@
-"""
-Audit Logging System for Distributed FACP System
-"""
+"""Audit Logging System for Distributed FACP System"""
 import hashlib
 import json
 import os
@@ -9,11 +7,12 @@ import time
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 class EventType(Enum):
     """Types of audit events in distributed system"""
+
     REQUEST_RECEIVED = "request_received"
     REQUEST_VALIDATED = "request_validated"
     AUTHENTICATION_ATTEMPT = "authentication_attempt"
@@ -28,9 +27,8 @@ class EventType(Enum):
 
 
 class DistributedEventLogger:
-    """
-    Event logging system for distributed environment
-    """
+    """Event logging system for distributed environment"""
+
     def __init__(self, log_file: str = "facp_distributed_events.log", max_log_size: int = 10 * 1024 * 1024):  # 10MB
         self.log_file = log_file
         self.max_log_size = max_log_size
@@ -43,7 +41,7 @@ class DistributedEventLogger:
         log_path = Path(self.log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
-    def log_event(self, event_type: EventType, details: Dict[str, Any], severity: str = "INFO", source_node: str = None):
+    def log_event(self, event_type: EventType, details: Dict[str, Any], severity: str = "INFO", source_node: Optional[str] = None):
         """Log an event in distributed context"""
         with self.lock:
             event = {
@@ -81,7 +79,7 @@ class DistributedEventLogger:
     def read_recent_events(self, count: int = 10) -> List[Dict[str, Any]]:
         """Read recent events from log file"""
         try:
-            with open(self.log_file, "r", encoding="utf-8") as f:
+            with open(self.log_file, encoding="utf-8") as f:
                 lines = f.readlines()
                 events = []
                 for line in lines[-count:]:
@@ -95,9 +93,8 @@ class DistributedEventLogger:
 
 
 class AuditLogger:
-    """
-    Specialized audit logger for security and compliance in distributed system
-    """
+    """Specialized audit logger for security and compliance in distributed system"""
+
     def __init__(self, audit_file: str = "facp_distributed_audit.log"):
         self.event_logger = DistributedEventLogger(audit_file)
         self.session_tracking = {}  # track ongoing sessions
@@ -177,7 +174,7 @@ class AuditLogger:
         self.event_logger.log_event(event_type, details, severity, source_node)
 
     def log_node_communication(self, from_node: str, to_node: str, message_type: str,
-                             success: bool, latency: float, request_id: str = None):
+                             success: bool, latency: float, request_id: Optional[str] = None):
         """Log communication between nodes"""
         details = {
             "from_node": from_node,

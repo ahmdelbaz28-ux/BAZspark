@@ -493,7 +493,7 @@ class TestImportDetectors:
         assert report.successful == 2
 
     def test_empty_batch(self):
-        detectors, report = import_detectors_from_revit([])
+        detectors, _report = import_detectors_from_revit([])
         assert len(detectors) == 0
 
 
@@ -504,9 +504,11 @@ class TestImportDetectors:
 
 class TestEdgeCases:
     def test_substance_with_none_values(self):
-        """None numeric fields should be handled gracefully.
+        """
+        None numeric fields should be handled gracefully.
         Note: GAS hazard requires lfl_vol_pct in domain model, so this
-        returns None from to_domain (expected behavior)."""
+        returns None from to_domain (expected behavior).
+        """
         dto = RevitSubstanceDTO(
             name="Test",
             hazard_type="DUST",

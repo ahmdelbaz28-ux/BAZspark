@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import hashlib
 import math
-from typing import Optional, Tuple
 
 from qomn_conduit.bend import (
     MAX_CUMULATIVE_BEND_DEG,
@@ -66,7 +65,8 @@ def _deterministic_run_id(
     conduit_type: ConduitType,
     trade_size: TradeSize,
 ) -> str:
-    """Generate a deterministic run ID from path and conduit parameters.
+    """
+    Generate a deterministic run ID from path and conduit parameters.
 
     Uses SHA-256 of the path waypoints and conduit type/size to produce
     a unique but fully deterministic identifier. No randomness — same
@@ -120,8 +120,8 @@ def place_fittings(
     path: RoutePath,
     conduit_type: ConduitType,
     trade_size: TradeSize,
-    run_id: Optional[str] = None,
-) -> "Result[ConduitRun, PhysicsError | CodeViolationError]":
+    run_id: str | None = None,
+) -> Result[ConduitRun, PhysicsError | CodeViolationError]:
     """
     Place fittings along a routed path to produce a complete ConduitRun.
 
@@ -146,6 +146,7 @@ def place_fittings(
         Result.err(PhysicsError) — non-finite waypoint coordinates.
 
     Reference: NEC 358.26 / 352.26 / 344.26; NEC 358.120; NEC 110.3(B).
+
     """
     # ── Validate input path ───────────────────────────────────────────────────
 
@@ -257,7 +258,7 @@ def _is_direction_change(
     quantised to the dominant axis (orthogonal routing guarantees
     only one axis changes at a time).
     """
-    def dom_dir(a: Point3D, b: Point3D) -> Tuple[int, int, int]:
+    def dom_dir(a: Point3D, b: Point3D) -> tuple[int, int, int]:
         dx, dy, dz = b.x - a.x, b.y - a.y, b.z - a.z
         return (
             (1 if dx > 0 else -1 if dx < 0 else 0),
@@ -274,7 +275,7 @@ def _place_elbow(
     position: Point3D,
     conduit_type: ConduitType,
     trade_size: TradeSize,
-) -> "Result[PlacedFitting, CodeViolationError]":
+) -> Result[PlacedFitting, CodeViolationError]:
     """
     Look up and construct a PlacedFitting for a 90° elbow.
 

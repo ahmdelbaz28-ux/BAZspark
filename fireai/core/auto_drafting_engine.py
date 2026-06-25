@@ -1,4 +1,5 @@
-"""auto_drafting_engine.py — A* Wall-Aware Auto-Drafting for Fire Alarm Shop Drawings.
+"""
+auto_drafting_engine.py — A* Wall-Aware Auto-Drafting for Fire Alarm Shop Drawings.
 ===================================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -167,7 +168,8 @@ CAD_LAYERS: dict[str, dict[str, Any]] = {
 
 
 class _AStarRouter:
-    """A* pathfinding router that NEVER routes through walls.
+    """
+    A* pathfinding router that NEVER routes through walls.
 
     Walls are treated as impassable obstacles. The router finds the
     shortest wall-avoiding path between two points on a 2D grid.
@@ -182,7 +184,8 @@ class _AStarRouter:
         bounds: tuple[float, float, float, float],
         resolution: float = A_STAR_GRID_RESOLUTION_M,
     ) -> None:
-        """Initialise the A* router.
+        """
+        Initialise the A* router.
 
         Args:
             walls: List of wall dicts with 'start' and 'end' keys,
@@ -269,7 +272,8 @@ class _AStarRouter:
         start: tuple[float, float],
         end: tuple[float, float],
     ) -> list[tuple[float, float]]:
-        """Find wall-avoiding path from start to end using A*.
+        """
+        Find wall-avoiding path from start to end using A*.
 
         Args:
             start: (x, y) start position in metres.
@@ -384,7 +388,8 @@ class _AStarRouter:
 
 @dataclass(frozen=True)
 class WallSegment:
-    """A wall segment in the building model.
+    """
+    A wall segment in the building model.
 
     Attributes:
         start: (x, y) start point in metres.
@@ -402,7 +407,8 @@ class WallSegment:
 
 @dataclass(frozen=True)
 class DraftingDevice:
-    """A fire alarm device for shop drawing placement.
+    """
+    A fire alarm device for shop drawing placement.
 
     Attributes:
         device_id: Unique identifier.
@@ -424,7 +430,8 @@ class DraftingDevice:
 
 @dataclass(frozen=True)
 class FirestoppingCallout:
-    """Firestopping callout at a fire-rated wall penetration.
+    """
+    Firestopping callout at a fire-rated wall penetration.
 
     Per IBC §714, every penetration through a fire-rated assembly
     must be firestopped to maintain the fire resistance rating.
@@ -445,7 +452,8 @@ class FirestoppingCallout:
 
 @dataclass(frozen=True)
 class PlenumZone:
-    """A plenum space where cable routing requires special consideration.
+    """
+    A plenum space where cable routing requires special consideration.
 
     Plenum spaces (return-air cavities above suspended ceilings) require
     FPLP-rated cable per NEC Article 760.  Additionally, large ducts,
@@ -472,7 +480,8 @@ class PlenumZone:
 
 @dataclass(frozen=True)
 class SurvivabilityRouteConstraint:
-    """Cable routing constraint derived from pathway survivability classification.
+    """
+    Cable routing constraint derived from pathway survivability classification.
 
     When PathwaySurvivabilityEngine determines that a building requires
     Level 2 or Level 3 survivability, the cable router must enforce
@@ -500,7 +509,8 @@ class SurvivabilityRouteConstraint:
 
 @dataclass(frozen=True)
 class DraftingResult:
-    """Complete result of shop drawing generation.
+    """
+    Complete result of shop drawing generation.
 
     Attributes:
         output_path: Path to the generated DXF file.
@@ -528,7 +538,8 @@ class DraftingResult:
 
 
 class AutoDraftingEngine:
-    """Generates complete fire alarm shop drawings in DXF format.
+    """
+    Generates complete fire alarm shop drawings in DXF format.
 
     Features:
         - A* wall-aware routing (cables NEVER go through walls)
@@ -635,7 +646,8 @@ class AutoDraftingEngine:
         start: tuple[float, float],
         end: tuple[float, float],
     ) -> list[tuple[float, float]]:
-        """Route a cable between two points avoiding walls.
+        """
+        Route a cable between two points avoiding walls.
 
         Args:
             start: (x, y) start position.
@@ -652,7 +664,8 @@ class AutoDraftingEngine:
         self,
         outgoing_path: list[tuple[float, float]],
     ) -> list[tuple[float, float]]:
-        """Generate Class A return path with >=1 m separation.
+        """
+        Generate Class A return path with >=1 m separation.
 
         Per NFPA 72-2022 §12.2.2, the return path must be physically
         separated from the outgoing path by at least 1 metre. This
@@ -705,7 +718,8 @@ class AutoDraftingEngine:
         self,
         path: list[tuple[float, float]],
     ) -> list[FirestoppingCallout]:
-        """Identify firestopping callout points along a cable path.
+        """
+        Identify firestopping callout points along a cable path.
 
         Per IBC §714, every cable penetration through a fire-rated wall
         must be firestopped to maintain the fire resistance rating.
@@ -756,7 +770,8 @@ class AutoDraftingEngine:
         path: list[tuple[float, float]],
         plenum_zones: list[PlenumZone],
     ) -> list[dict[str, Any]]:
-        """Check if a cable path passes through plenum collision zones.
+        """
+        Check if a cable path passes through plenum collision zones.
 
         Plenum spaces contain ducts, sprinkler mains, and structural
         members that can physically block cable routing.  This function
@@ -823,7 +838,8 @@ class AutoDraftingEngine:
         constraint: SurvivabilityRouteConstraint,
         plenum_zones: list[PlenumZone] | None = None,
     ) -> tuple[list[tuple[float, float]], list[str]]:
-        """Apply pathway survivability constraints to a cable route.
+        """
+        Apply pathway survivability constraints to a cable route.
 
         Modifies the path and generates warnings based on the required
         survivability level:
@@ -884,7 +900,8 @@ class AutoDraftingEngine:
         self,
         output_path: str = "fire_alarm_shop_drawing.dxf",
     ) -> DraftingResult:
-        """Generate complete fire alarm shop drawing in DXF format.
+        """
+        Generate complete fire alarm shop drawing in DXF format.
 
         Creates a DXF file with:
             - CAD layers per CAD_LAYERS definition
@@ -1038,7 +1055,8 @@ class AutoDraftingEngine:
         )
 
     def _create_block_definitions(self, doc: Any) -> None:
-        """Create all DXF block definitions programmatically.
+        """
+        Create all DXF block definitions programmatically.
 
         This ensures NO undefined block references exist in the drawing.
         Each device type has a properly defined symbol.

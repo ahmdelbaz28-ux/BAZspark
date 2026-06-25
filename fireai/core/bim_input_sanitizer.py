@@ -1,4 +1,5 @@
-"""bim_input_sanitizer.py — Safety-Critical Input Sanitization for BIM Parameters.
+"""
+bim_input_sanitizer.py — Safety-Critical Input Sanitization for BIM Parameters.
 ================================================================================
 LIFE-SAFETY CRITICAL: Unsanitized inputs to BIM parameters can cause:
   1. Remote Code Execution (RCE) via eval()/exec() in MCP tool handlers
@@ -64,7 +65,8 @@ _INJECTION_PATTERNS = [
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def sanitize_bim_parameter(param_value: str) -> str:
-    """Sanitize a string value intended for writing to a BIM parameter.
+    """
+    Sanitize a string value intended for writing to a BIM parameter.
 
     SAFETY: BIM parameter values are written to Revit model elements.
     If these values contain injection payloads, they can:
@@ -126,7 +128,8 @@ def sanitize_bim_parameter(param_value: str) -> str:
 
 
 def sanitize_room_name(room_name: str) -> str:
-    """Sanitize a room name from BIM model or external input.
+    """
+    Sanitize a room name from BIM model or external input.
 
     SAFETY: Room names are used for:
       - Hazard classification (keyword matching)
@@ -173,7 +176,8 @@ def sanitize_room_name(room_name: str) -> str:
 
 
 def sanitize_file_path(file_path: str) -> str:
-    """Sanitize a file path to prevent path traversal attacks.
+    """
+    Sanitize a file path to prevent path traversal attacks.
 
     SAFETY: Path traversal (../../etc/passwd) can expose sensitive
     system files or write fire protection data to unauthorized locations.
@@ -223,7 +227,8 @@ def validate_numeric_parameter(
     max_value: float | None = None,
     param_name: str = "parameter",
 ) -> float:
-    """Validate and convert a string to a numeric parameter value.
+    """
+    Validate and convert a string to a numeric parameter value.
 
     SAFETY: Numeric parameters (pipe diameter, pressure, flow rate)
     MUST be validated before use in engineering calculations.

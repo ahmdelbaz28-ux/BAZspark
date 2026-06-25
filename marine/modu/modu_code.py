@@ -1,4 +1,5 @@
-"""marine/modu/modu_code.py — MODU Code Fire Safety for Offshore Units.
+"""
+marine/modu/modu_code.py — MODU Code Fire Safety for Offshore Units.
 
 Implements the fire-protection, detection, and extinction requirements for
 Mobile Offshore Drilling Units (MODU) per the MODU Code (1989/2009 amendments):
@@ -11,14 +12,13 @@ This module is the offshore counterpart to marine/solas/chapter_ii_2.py.
 from __future__ import annotations
 
 import math
-from typing import List, Optional
 
 from marine.core.constants import (
-    AFFF_APPLICATION_RATE_LPM_PER_M2, AFFF_DISCHARGE_TIME_MIN,
+    AFFF_APPLICATION_RATE_LPM_PER_M2,
+    AFFF_DISCHARGE_TIME_MIN,
     MAX_MAIN_VERTICAL_ZONE_LENGTH_M,
 )
 from marine.core.types import ComplianceResult, MarineZone, ShipProject, ShipType
-
 
 # MODU Code §6.2: main vertical zone length limit is the same as SOLAS (40 m).
 MODU_MAX_MVZ_LENGTH_M = MAX_MAIN_VERTICAL_ZONE_LENGTH_M
@@ -32,15 +32,16 @@ class _MODUError(Exception):
 
 
 def _m_to_frames(m: float) -> int:
-    return int(round(m / _MODU_FRAME_SPACING_M))
+    return round(m / _MODU_FRAME_SPACING_M)
 
 
 def divide_modu_into_main_vertical_zones(
     platform_length_m: float,
     ship: ShipProject,
     deck_count: int = 1,
-) -> List[MarineZone]:
-    """Divide a MODU platform into MODU Code §6.2 main vertical zones.
+) -> list[MarineZone]:
+    """
+    Divide a MODU platform into MODU Code §6.2 main vertical zones.
 
     MODU Code §6.2 requires the unit to be divided into main vertical zones
     by A-60 class divisions, with no zone exceeding 40 m in length.
@@ -55,6 +56,7 @@ def divide_modu_into_main_vertical_zones(
 
     Raises:
         _MODUError: If the ship type is not OFFSHORE.
+
     """
     if ship.ship_type != ShipType.OFFSHORE:
         raise _MODUError(
@@ -85,7 +87,7 @@ def divide_modu_into_main_vertical_zones(
         if n_zones > 1000:
             break
 
-    zones: List[MarineZone] = []
+    zones: list[MarineZone] = []
     beam_m = max(15.0, platform_length_m * 0.3)  # MODU platforms are much wider.
 
     for deck_idx in range(deck_count):
@@ -124,9 +126,10 @@ def divide_modu_into_main_vertical_zones(
 
 def required_helideck_afff(
     helideck_area_m2: float,
-    ship: Optional[ShipProject] = None,
+    ship: ShipProject | None = None,
 ) -> ComplianceResult:
-    """Size AFFF system for a MODU helicopter deck.
+    """
+    Size AFFF system for a MODU helicopter deck.
 
     MODU Code §10.3 + CAP 437: helidecks require a fixed AFFF system with
     an application rate of at least 2.5 L/min/m² for at least 5 minutes.
@@ -138,6 +141,7 @@ def required_helideck_afff(
 
     Returns:
         ComplianceResult with design details and any findings.
+
     """
     result = ComplianceResult(
         compliant=True, standard_reference="MODU Code §10.3 + CAP 437 §6.3"
@@ -165,10 +169,11 @@ def required_helideck_afff(
 
 
 def validate_gas_detection_requirement(
-    zones: List[MarineZone],
-    ship: Optional[ShipProject] = None,
+    zones: list[MarineZone],
+    ship: ShipProject | None = None,
 ) -> ComplianceResult:
-    """Validate mandatory gas detection for MODU hazardous zones.
+    """
+    Validate mandatory gas detection for MODU hazardous zones.
 
     MODU Code §9.8: fixed gas detection is required in enclosed spaces that
     may contain flammable gas or vapour (machinery spaces, tank spaces,
@@ -180,6 +185,7 @@ def validate_gas_detection_requirement(
 
     Returns:
         ComplianceResult listing any zones that lack required gas detection.
+
     """
     result = ComplianceResult(
         compliant=True, standard_reference="MODU Code §9.8"

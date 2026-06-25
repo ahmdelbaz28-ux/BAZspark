@@ -1,4 +1,5 @@
-"""fireai/bridges/ifc_headless_bridge.py.
+"""
+fireai/bridges/ifc_headless_bridge.py.
 =======================================
 ELITE IFC4 Headless BIM Integration (No COM, No active Revit required)
 Replaces unreliable COM/Windows bindings with pure, standard OpenBIM logic.
@@ -98,7 +99,8 @@ def _polygon_area_2d(pts: list[tuple[float, float, float]]) -> float:
 
 
 class HeadlessIFCBridge:
-    """Pure-Python IFC4 bridge for reading building geometry and writing
+    """
+    Pure-Python IFC4 bridge for reading building geometry and writing
     fire alarm devices back to the IFC model.
 
     This bridge operates entirely through ifcopenshell, without requiring
@@ -148,7 +150,8 @@ class HeadlessIFCBridge:
     # ══════════════════════════════════════════════════════════════
 
     def extract_spaces(self) -> list[dict[str, Any]]:
-        """Extract Room geometry for the engine using IfcSpace.
+        """
+        Extract Room geometry for the engine using IfcSpace.
 
         Reads all IfcSpace elements from the IFC model and resolves
         their hierarchical placement chains to get absolute (x, y, z)
@@ -181,7 +184,8 @@ class HeadlessIFCBridge:
         return rooms
 
     def push_fire_alarm_design(self, devices: list[dict[str, Any]], output_path: str) -> bool:
-        """Write optimal Fire Alarm devices natively back into the IFC building.
+        """
+        Write optimal Fire Alarm devices natively back into the IFC building.
 
         Creates `IfcSensor` elements representing the engineered fire alarm
         topology, with 3D placement and custom property sets for compliance
@@ -288,7 +292,8 @@ class HeadlessIFCBridge:
     # ══════════════════════════════════════════════════════════════
 
     def extract_storeys(self) -> list[dict[str, Any]]:
-        """Extract all IfcBuildingStorey entities with resolved absolute elevation.
+        """
+        Extract all IfcBuildingStorey entities with resolved absolute elevation.
 
         Returns list of dicts sorted by elevation (ascending) with keys:
             - guid: IfcBuildingStorey GlobalId
@@ -312,7 +317,8 @@ class HeadlessIFCBridge:
         return result
 
     def extract_spaces_enhanced(self) -> list[dict[str, Any]]:
-        """Extract IfcSpace entities with full geometry (polygon, volume, area).
+        """
+        Extract IfcSpace entities with full geometry (polygon, volume, area).
 
         Enhanced version of extract_spaces() that provides:
           - Floor polygon boundary (convex hull of floor-level vertices)
@@ -347,7 +353,8 @@ class HeadlessIFCBridge:
         return result
 
     def extract_obstructions(self) -> list[dict[str, Any]]:
-        """Extract walls, beams, columns, ducts as AABB obstructions.
+        """
+        Extract walls, beams, columns, ducts as AABB obstructions.
 
         Each AABB is in world (absolute) coordinates and can be consumed
         directly by the FlameDetectorAOCRayTrace engine as
@@ -380,7 +387,8 @@ class HeadlessIFCBridge:
     # ══════════════════════════════════════════════════════════════
 
     def _resolve_local_placement(self, placement) -> tuple:
-        """Traverse hierarchical IFC coordinate placement to get Absolute XYZ.
+        """
+        Traverse hierarchical IFC coordinate placement to get Absolute XYZ.
 
         V15 FIX: Previously only read the FIRST level of RelativePlacement,
         returning relative coordinates for nested placements. Now walks the
@@ -494,7 +502,8 @@ class HeadlessIFCBridge:
         }
 
     def _tessellate_space(self, space) -> tuple:
-        """Use ifcopenshell.geom to get tessellated mesh of a space.
+        """
+        Use ifcopenshell.geom to get tessellated mesh of a space.
         Returns (polygon_verts, center, height, area_m2, volume_m3).
         Falls back to (None, center, 3.0, 0.0, 0.0) on failure.
         """

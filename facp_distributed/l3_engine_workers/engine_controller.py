@@ -1,6 +1,4 @@
-"""
-Engine Controller for L3 in Distributed FACP System
-"""
+"""Engine Controller for L3 in Distributed FACP System"""
 import logging
 import threading
 import time
@@ -13,9 +11,8 @@ from .engine_pool import EnginePool
 
 
 class EngineController:
-    """
-    Controller for managing the engine pool and individual workers in distributed system
-    """
+    """Controller for managing the engine pool and individual workers in distributed system"""
+
     def __init__(self, pool_size: int = 3, max_pool_size: int = 10):
         self.controller_id = f"engine_controller_{int(time.time())}_{uuid.uuid4().hex[:8]}"
         self.pool_size = pool_size
@@ -46,9 +43,7 @@ class EngineController:
         self.last_health_check = time.time()
 
     def start(self):
-        """
-        Start the engine controller and initialize the pool
-        """
+        """Start the engine controller and initialize the pool"""
         with self.lock:
             if self.is_running:
                 return
@@ -66,9 +61,7 @@ class EngineController:
             self.logger.info("Engine Controller %s started", self.controller_id)
 
     def stop(self):
-        """
-        Stop the engine controller and shut down the pool
-        """
+        """Stop the engine controller and shut down the pool"""
         with self.lock:
             if not self.is_running:
                 return
@@ -78,10 +71,8 @@ class EngineController:
 
             self.logger.info("Engine Controller %s stopped", self.controller_id)
 
-    def process_request(self, request_data: Dict[str, Any], source_node: str = None) -> Dict[str, Any]:
-        """
-        Process an incoming request through the engine pool
-        """
+    def process_request(self, request_data: Dict[str, Any], source_node: Optional[str] = None) -> Dict[str, Any]:
+        """Process an incoming request through the engine pool"""
         request_id = request_data.get("id", str(uuid.uuid4()))
 
         # Validate request format
@@ -93,7 +84,7 @@ class EngineController:
                 status="error",
                 error={
                     "code": "INVALID_REQUEST_FORMAT",
-                    "message": f"Invalid request format: {str(e)}"
+                    "message": f"Invalid request format: {e!s}"
                 },
                 trace={
                     "execution_path": ["L3_EngineController"],
@@ -227,10 +218,8 @@ class EngineController:
 
         return True
 
-    def _track_task_start(self, task_id: str, request_data: Dict[str, Any], source_node: str = None):
-        """
-        Track the start of a task
-        """
+    def _track_task_start(self, task_id: str, request_data: Dict[str, Any], source_node: Optional[str] = None):
+        """Track the start of a task"""
         with self.lock:
             self.active_tasks[task_id] = {
                 "task_id": task_id,
@@ -241,9 +230,7 @@ class EngineController:
             }
 
     def _track_task_completion(self, task_id: str, result: Dict[str, Any]):
-        """
-        Track the completion of a task
-        """
+        """Track the completion of a task"""
         with self.lock:
             if task_id in self.active_tasks:
                 task_info = self.active_tasks[task_id]
@@ -263,9 +250,7 @@ class EngineController:
                     self.task_history = self.task_history[-self.max_task_history:]
 
     def get_controller_status(self) -> Dict[str, Any]:
-        """
-        Get the status of the engine controller
-        """
+        """Get the status of the engine controller"""
         with self.lock:
             pool_status = self.engine_pool.get_pool_status()
 
@@ -284,9 +269,7 @@ class EngineController:
             }
 
     def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get the status of a specific task
-        """
+        """Get the status of a specific task"""
         with self.lock:
             if task_id in self.active_tasks:
                 return self.active_tasks[task_id]
@@ -299,9 +282,7 @@ class EngineController:
         return None
 
     def get_statistics(self) -> Dict[str, Any]:
-        """
-        Get detailed statistics for the controller
-        """
+        """Get detailed statistics for the controller"""
         with self.lock:
             # Calculate stats from task history
             completed_tasks = [t for t in self.task_history if t.get("completed")]
@@ -327,9 +308,7 @@ class EngineController:
             }
 
     def _calculate_throughput(self) -> float:
-        """
-        Calculate tasks per minute
-        """
+        """Calculate tasks per minute"""
         # Look at last 5 minutes of completed tasks
         cutoff = time.time() - 300  # 5 minutes ago
         recent_completed = [t for t in self.task_history if t.get("end_time", 0) > cutoff]
@@ -341,9 +320,7 @@ class EngineController:
         return len(recent_completed) / max(time_span_minutes, 1)  # Avoid division by zero
 
     def _heartbeat_loop(self):
-        """
-        Background loop for sending heartbeats to cluster
-        """
+        """Background loop for sending heartbeats to cluster"""
         while self.is_running:
             try:
                 self._send_heartbeat()
@@ -353,9 +330,7 @@ class EngineController:
                 time.sleep(5)  # Wait before retrying
 
     def _health_check_loop(self):
-        """
-        Background loop for performing health checks
-        """
+        """Background loop for performing health checks"""
         while self.is_running:
             try:
                 self._perform_health_check()
@@ -365,9 +340,7 @@ class EngineController:
                 time.sleep(5)  # Wait before retrying
 
     def _send_heartbeat(self):
-        """
-        Send heartbeat to cluster
-        """
+        """Send heartbeat to cluster"""
         self.last_heartbeat = time.time()
 
         status = self.get_controller_status()
@@ -386,9 +359,7 @@ class EngineController:
                 self.logger.error("Failed to send heartbeat to cluster: %s", e)
 
     def _perform_health_check(self):
-        """
-        Perform health check on the engine pool and workers
-        """
+        """Perform health check on the engine pool and workers"""
         self.last_health_check = time.time()
 
         # Check pool health
@@ -410,9 +381,7 @@ class EngineController:
             self.logger.warning("Resources are exhausted, performance may be impacted")
 
     def _update_resource_usage(self):
-        """
-        Update current resource usage metrics
-        """
+        """Update current resource usage metrics"""
         # In a real implementation, this would query system metrics
         # For now, we'll simulate resource usage based on active tasks
         with self.lock:
@@ -422,23 +391,17 @@ class EngineController:
             # Disk usage would be updated based on actual file operations
 
     def set_cluster_sync_callback(self, callback):
-        """
-        Set callback for syncing with cluster
-        """
+        """Set callback for syncing with cluster"""
         self.cluster_sync_callback = callback
 
     def sync_with_cluster(self, cluster_state: Dict[str, Any]):
-        """
-        Sync controller state with cluster
-        """
+        """Sync controller state with cluster"""
         # In a real implementation, this would update controller based on cluster state
         # For now, we'll just log the sync
         self.logger.info("Received cluster sync update with %s entries", len(cluster_state))
 
     def update_worker_pool_size(self, new_size: int):
-        """
-        Dynamically update the worker pool size
-        """
+        """Dynamically update the worker pool size"""
         if new_size < 1:
             raise ValueError("Pool size must be at least 1")
 
@@ -458,29 +421,21 @@ class EngineController:
             # For now, we'll just note the change
 
     def get_queue_status(self) -> Dict[str, Any]:
-        """
-        Get the status of the task queue
-        """
+        """Get the status of the task queue"""
         return self.engine_pool.get_queue_status()
 
     def rebalance_load(self):
-        """
-        Rebalance load across the pool
-        """
+        """Rebalance load across the pool"""
         self.engine_pool.rebalance_load()
 
     def cleanup_completed_tasks(self):
-        """
-        Clean up completed tasks from memory
-        """
+        """Clean up completed tasks from memory"""
         time.time()
         # In a real implementation, we might have tasks with TTL
         # For now, this just ensures history size is maintained
 
     def get_resource_utilization(self) -> Dict[str, Any]:
-        """
-        Get resource utilization metrics
-        """
+        """Get resource utilization metrics"""
         with self.lock:
             return {
                 "resource_limits": self.resource_limits,
@@ -492,9 +447,7 @@ class EngineController:
             }
 
     def update_resource_limits(self, new_limits: Dict[str, float]):
-        """
-        Update resource limits for the controller
-        """
+        """Update resource limits for the controller"""
         with self.lock:
             for key, value in new_limits.items():
                 if key in self.resource_limits:
@@ -502,9 +455,7 @@ class EngineController:
             self.logger.info("Resource limits updated: %s", new_limits)
 
     def force_worker_restart(self, worker_id: str) -> bool:
-        """
-        Force restart a specific worker (for maintenance purposes)
-        """
+        """Force restart a specific worker (for maintenance purposes)"""
         pool_status = self.engine_pool.get_pool_status()
 
         if worker_id in pool_status.get("worker_statuses", {}):
@@ -516,9 +467,7 @@ class EngineController:
         return False
 
     def drain_controller(self) -> bool:
-        """
-        Drain the controller of all active tasks (for maintenance)
-        """
+        """Drain the controller of all active tasks (for maintenance)"""
         with self.lock:
             active_count = len(self.active_tasks)
             if active_count > 0:
@@ -532,9 +481,8 @@ class EngineController:
 
 
 class DistributedEngineController(EngineController):
-    """
-    Distributed engine controller with cluster awareness
-    """
+    """Distributed engine controller with cluster awareness"""
+
     def __init__(self, pool_size: int = 3, max_pool_size: int = 10, node_location: str = "primary"):
         super().__init__(pool_size, max_pool_size)
         self.node_location = node_location
@@ -543,42 +491,32 @@ class DistributedEngineController(EngineController):
         self.cross_node_communicator = None
 
     def set_cross_node_communicator(self, communicator):
-        """
-        Set the communicator for cross-node communication
-        """
+        """Set the communicator for cross-node communication"""
         self.cross_node_communicator = communicator
 
-    def process_request(self, request_data: Dict[str, Any], source_node: str = None) -> Dict[str, Any]:
-        """
-        Override to support distributed task processing
-        """
+    def process_request(self, request_data: Dict[str, Any], source_node: Optional[str] = None) -> Dict[str, Any]:
+        """Override to support distributed task processing"""
         # Check if this should be processed locally or forwarded to another node
         if self._should_process_locally(request_data):
             return super().process_request(request_data, source_node)
-        else:
-            # Forward to another node
-            return self._forward_request(request_data, source_node)
+        # Forward to another node
+        return self._forward_request(request_data, source_node)
 
     def _should_process_locally(self, request_data: Dict[str, Any]) -> bool:
-        """
-        Determine if request should be processed locally
-        """
+        """Determine if request should be processed locally"""
         if self.task_distribution_policy == "local_first":
             return True  # Always prefer local processing
-        elif self.task_distribution_policy == "balanced":
+        if self.task_distribution_policy == "balanced":
             # Check if local pool is overloaded compared to cluster
             local_load = len(self.active_tasks) / (self.pool_size * 5)  # Assuming 5 max concurrent per worker
             cluster_avg_load = self._get_cluster_average_load()
             return local_load <= cluster_avg_load
-        elif self.task_distribution_policy == "remote_only":
+        if self.task_distribution_policy == "remote_only":
             return False  # Always forward to other nodes
-        else:
-            return True
+        return True
 
     def _get_cluster_average_load(self) -> float:
-        """
-        Get the average load across all cluster members
-        """
+        """Get the average load across all cluster members"""
         if not self.cluster_members:
             return 0.0
 
@@ -592,10 +530,8 @@ class DistributedEngineController(EngineController):
 
         return total_load / count if count > 0 else 0.0
 
-    def _forward_request(self, request_data: Dict[str, Any], source_node: str = None) -> Dict[str, Any]:
-        """
-        Forward request to another node in the cluster
-        """
+    def _forward_request(self, request_data: Dict[str, Any], source_node: Optional[str] = None) -> Dict[str, Any]:
+        """Forward request to another node in the cluster"""
         if not self.cross_node_communicator:
             # If no cross-node communication available, process locally
             self.logger.warning("No cross-node communicator available, processing locally")
@@ -631,9 +567,7 @@ class DistributedEngineController(EngineController):
             return super().process_request(request_data, source_node)
 
     def _select_target_node(self) -> Optional[str]:
-        """
-        Select a target node for request forwarding
-        """
+        """Select a target node for request forwarding"""
         # Find the node with the lowest load
         best_node = None
         lowest_load = float('inf')
@@ -648,15 +582,11 @@ class DistributedEngineController(EngineController):
         return best_node
 
     def sync_cluster_membership(self, cluster_state: Dict[str, Any]):
-        """
-        Sync cluster membership information
-        """
+        """Sync cluster membership information"""
         self.cluster_members.update(cluster_state)
 
     def set_task_distribution_policy(self, policy: str):
-        """
-        Set the task distribution policy
-        """
+        """Set the task distribution policy"""
         if policy in ["local_first", "balanced", "remote_only"]:
             self.task_distribution_policy = policy
         else:

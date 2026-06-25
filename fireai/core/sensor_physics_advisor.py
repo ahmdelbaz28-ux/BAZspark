@@ -1,4 +1,5 @@
-"""sensor_physics_advisor.py — Advisory Layer for 3D Ceiling/Slope Effects.
+"""
+sensor_physics_advisor.py — Advisory Layer for 3D Ceiling/Slope Effects.
 ========================================================================
 
 VERIFICATION-ONLY advisory module. Does NOT modify coverage calculations.
@@ -49,7 +50,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SensorAdvisory:
-    """Advisory result for a room's ceiling/slope conditions.
+    """
+    Advisory result for a room's ceiling/slope conditions.
 
     This is NOT a compliance result — it is an advisory that flags
     conditions where the current point-type detector approach may
@@ -101,7 +103,8 @@ _HIGH_CEILING_WARNING_HEAT = 9.1
 
 
 class SensorPhysicsAdvisor:
-    """Advisory layer for 3D ceiling/slope effects on detector performance.
+    """
+    Advisory layer for 3D ceiling/slope effects on detector performance.
 
     This class does NOT modify coverage calculations. It provides advisory
     warnings and recommendations when ceiling conditions exceed the practical
@@ -134,7 +137,8 @@ class SensorPhysicsAdvisor:
         slope_degrees: float = 0.0,
         detector_type: str = "smoke",
     ) -> SensorAdvisory:
-        """Generate advisory for ceiling/slope conditions.
+        """
+        Generate advisory for ceiling/slope conditions.
 
         Args:
             room_id: Room identifier.
@@ -242,7 +246,8 @@ class SensorPhysicsAdvisor:
         )
 
     def advise_room_dict(self, room_dict: dict) -> SensorAdvisory:
-        """Convenience method: advise from room dict (as used in FloorAnalyser).
+        """
+        Convenience method: advise from room dict (as used in FloorAnalyser).
 
         Args:
             room_dict: Room dict with ceiling_height, room_id, etc.

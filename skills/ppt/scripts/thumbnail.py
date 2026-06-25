@@ -38,6 +38,7 @@ Examples:
 
     python thumbnail.py template.pptx analysis --outline-placeholders
     # Creates thumbnail grids with red outlines around text placeholders
+
 """
 
 import argparse
@@ -151,7 +152,8 @@ def create_hidden_slide_placeholder(size):
 
 
 def get_placeholder_regions(pptx_path):
-    """Extract ALL text regions from the presentation.
+    """
+    Extract ALL text regions from the presentation.
 
     Returns a tuple of (placeholder_regions, slide_dimensions).
     text_regions is a dict mapping slide indices to lists of text regions.

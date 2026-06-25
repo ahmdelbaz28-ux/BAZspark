@@ -1,4 +1,5 @@
-"""backend/routers/analyze.py - Project-level analyze endpoints.
+"""
+backend/routers/analyze.py - Project-level analyze endpoints.
 =============================================================
 Endpoints for running NFPA 72 / NEC calculations in the context of a
 project / room:
@@ -62,7 +63,8 @@ project_router = APIRouter(tags=["analyze"])
 # Request / response models
 # ----------------------------------------------------------------------------
 class BatteryRequest(BaseModel):
-    """Battery capacity calculation request.
+    """
+    Battery capacity calculation request.
 
     NFPA 72-2022 §10.6.7.2.1:
         Ah = (I_standby * T_standby + I_alarm * T_alarm_min/60)
@@ -80,7 +82,8 @@ class BatteryRequest(BaseModel):
 
 
 class VoltageRequest(BaseModel):
-    """Voltage drop calculation request.
+    """
+    Voltage drop calculation request.
 
     NEC Chapter 9 Table 8:
         V_drop = 2 * I * L * R_per_m
@@ -119,7 +122,8 @@ class RoomAnalyzeRequest(BaseModel):
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
 async def analyze_battery(req: BatteryRequest) -> dict[str, Any]:
-    """Compute NFPA 72 battery capacity.
+    """
+    Compute NFPA 72 battery capacity.
 
     Returns:
         Dict with required_ah, installed_ah, formula, computation_hash.
@@ -152,7 +156,8 @@ async def analyze_battery(req: BatteryRequest) -> dict[str, Any]:
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
 async def analyze_voltage(req: VoltageRequest) -> dict[str, Any]:
-    """Compute NEC voltage drop.
+    """
+    Compute NEC voltage drop.
 
     Returns:
         Dict with voltage_drop_v, actual_value, percentage_drop, compliant.
@@ -183,7 +188,8 @@ async def analyze_voltage(req: VoltageRequest) -> dict[str, Any]:
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
 async def analyze_project_room(project_id: str, req: RoomAnalyzeRequest) -> dict[str, Any]:
-    """Run the full FireAI pipeline for a room in a project.
+    """
+    Run the full FireAI pipeline for a room in a project.
 
     Returns the full PipelineResult.to_dict() output, augmented with
     project_id scoping.

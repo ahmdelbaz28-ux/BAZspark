@@ -1,4 +1,5 @@
-"""Gate 3: Behavioral Validation Tests.
+"""
+Gate 3: Behavioral Validation Tests.
 ====================================
 Validates the 6-step workflow routing logic and the 4 response templates.
 
@@ -160,7 +161,8 @@ class TestUnitsEnforcement:
         assert "INCLUDE units" in content or "units in ALL" in content
 
     def test_simulation_examples_have_units(self) -> None:
-        """Verify the 5 simulation examples in skill text have units.
+        """
+        Verify the 5 simulation examples in skill text have units.
 
         Skill content shows calculations like "VD = 200 × ... = 5.44V" — we
         verify the units-bearing result strings are present (not exact

@@ -1,4 +1,5 @@
-"""backend/response.py — Unified API response helpers.
+"""
+backend/response.py — Unified API response helpers.
 
 All API endpoints MUST use these helpers to return consistent response format.
 The frontend expects: {success, data?, error?, message?, timestamp}
@@ -42,7 +43,8 @@ def paginated(data: list, total: int, page: int, page_size: int, total_pages: in
 
 
 def safe_filename(name: str) -> str:
-    """Sanitize a filename to prevent path traversal attacks.
+    """
+    Sanitize a filename to prevent path traversal attacks.
 
     Prevents header injection by removing characters that could break
     the Content-Disposition header (quotes, semicolons, newlines, backslashes).

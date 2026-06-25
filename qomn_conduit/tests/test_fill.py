@@ -26,7 +26,7 @@ _GOLDEN_DIR = os.path.join(os.path.dirname(__file__), "golden")
 
 def _load_golden(filename: str) -> dict:
     """Load a golden test data file."""
-    with open(os.path.join(_GOLDEN_DIR, filename), "r") as f:
+    with open(os.path.join(_GOLDEN_DIR, filename)) as f:
         return json.load(f)
 
 
@@ -86,7 +86,7 @@ class TestFillCalculation:
         assert result.value.max_allowed_pct == 40.0
 
     def test_20_conductors_in_half_inch_emt_violation(self):
-        """20 × #14 THHN in ½\" EMT: 44.1% > 40% ✗ → is_compliant=False, recommend ¾\""""
+        r"""20 × #14 THHN in ½\" EMT: 44.1% > 40% ✗ → is_compliant=False, recommend ¾\""""
         result = calculate_fill(ConduitType.EMT, TradeSize.HALF_INCH, cable_diameters=[0.111] * 20)
         assert result.is_ok()
         assert result.value.is_compliant is False
@@ -129,7 +129,8 @@ class TestFillGoldenFiles:
     """Fill calculations verified against golden test data."""
 
     def test_nec_example_1(self):
-        """3×#14 THHN in ½" EMT — golden file verification.
+        """
+        3×#14 THHN in ½" EMT — golden file verification.
 
         NOTE: The golden file says 6.614% which uses NEC Table 5 tabulated
         areas (0.0067 in² per #14 THHN). Our calculate_fill uses the

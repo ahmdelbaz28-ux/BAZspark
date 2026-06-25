@@ -17,6 +17,7 @@ Usage:
 
 import platform
 from copy import copy
+from typing import Optional
 
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
@@ -128,6 +129,7 @@ def use_palette(prompt: str):
     Example:
         use_palette("帮我做一个温暖的销售月报")  # Chinese prompt example
         # → 'warm' palette applied
+
     """
     from templates.palettes import resolve_palette_with_info
     palette, style = resolve_palette_with_info(prompt)
@@ -142,6 +144,7 @@ def use_palette_explicit(style: str = "professional"):
 
     Example:
         use_palette_explicit("warm")
+
     """
     from templates.palettes import get_palette
     palette = get_palette(style)
@@ -256,7 +259,7 @@ def font_kpi_label():
 
 
 def make_chart_title(text, size_pt=12, bold=True, axis=False, max_line_chars=6):
-    """
+    r"""
     Build a chart Title with font baked into <tx><rich><defRPr>/<rPr>.
     Ensures WPS and Office render identical font name and size.
     Uses FONT_NAME and HEADER_BOLD from §1 — no hardcoded font names.
@@ -273,6 +276,7 @@ def make_chart_title(text, size_pt=12, bold=True, axis=False, max_line_chars=6):
     them as stacked overlapping text boxes. Instead, we use a SINGLE <r> run
     with \\n line breaks inside the text, which both Office and WPS render
     as line breaks within the same text box.
+
     """
     import re
     from copy import deepcopy
@@ -298,12 +302,11 @@ def make_chart_title(text, size_pt=12, bold=True, axis=False, max_line_chars=6):
     )
 
     def _insert_breaks(text, max_chars):
-        """Insert \\n before parentheses when text exceeds max_chars."""
+        r"""Insert \\n before parentheses when text exceeds max_chars."""
         if not max_chars or len(text) <= max_chars:
             return text
         # Insert \n before '(' or '（'
-        result = re.sub(r'(?=[（(])', '\n', text, count=1)
-        return result
+        return re.sub(r'(?=[（(])', '\n', text, count=1)
 
     # For axis titles, insert line breaks to prevent overlap
     display_text = text
@@ -385,13 +388,13 @@ ROW_HEIGHTS = {
 }
 
 
-def setup_sheet(ws, title: str = None, last_col: int = None):
+def setup_sheet(ws, title: Optional[str] = None, last_col: Optional[int] = None):
     """
     Apply standard sheet setup:
-      - hide grid lines
-      - set margin column A width
-      - set row 1/2/3 heights
-      - optionally write & style title at B2
+    - hide grid lines
+    - set margin column A width
+    - set row 1/2/3 heights
+    - optionally write & style title at B2
     """
     ws.sheet_view.showGridLines = False
     ws.column_dimensions["A"].width = COLUMN_WIDTHS["margin"]
@@ -501,6 +504,7 @@ def setup_chart_titles(chart, title=None, y_title=None, x_title=None,
         x_title: X-axis title (optional)
         title_size: font size for main title (default 12)
         axis_size: font size for axis titles (default 10)
+
     """
     if title is not None:
         chart.title = make_chart_title(title, size_pt=title_size, bold=True)
@@ -518,6 +522,7 @@ def apply_chart_colors(chart, colors=None):
     Args:
         chart: openpyxl chart object (BarChart, LineChart, etc.)
         colors: list of hex color strings (default: CHART_COLORS)
+
     """
     if colors is None:
         colors = CHART_COLORS
@@ -538,6 +543,7 @@ def apply_pie_colors(chart, count, colors=None):
         chart: openpyxl PieChart
         count: number of data points (slices)
         colors: list of hex color strings (default: CHART_COLORS)
+
     """
     from openpyxl.chart.series import DataPoint
     if colors is None:
@@ -583,6 +589,7 @@ def auto_fit_columns(ws, min_width=8, max_width=28, header_row=None, data_start_
         max_width: maximum column width (default 28)
         header_row: row number of the header (auto-detected if None)
         data_start_row: first data row (auto-detected as header_row + 1 if None)
+
     """
     import unicodedata
 

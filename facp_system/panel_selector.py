@@ -96,6 +96,7 @@ class SelectionEngine:
 
         Returns:
             Tuple of (battery_ah: float, derating_details: dict)
+
         """
         # V54 FIX F6: Realistic per-device currents
         standby_load = (device_count * STANDBY_MA_PER_DEVICE / 1000.0) + panel.standby_current_amps

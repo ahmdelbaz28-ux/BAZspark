@@ -36,7 +36,8 @@ _APP_PATH = _PROJECT_ROOT / "backend" / "app.py"
 
 
 def _load_build_csp_in_isolation():
-    """Load _build_csp() from backend/app.py without the rest of app.py.
+    """
+    Load _build_csp() from backend/app.py without the rest of app.py.
 
     Uses ast to extract the function and its module-level constants
     (logger, etc.). This avoids the 700+ lines of router imports.
@@ -81,11 +82,13 @@ class TestCSPEnvironmentAwareDefaults:
         """Each test starts with NO CSP_UNSAFE_EVAL env var set."""
         monkeypatch.delenv("CSP_UNSAFE_EVAL", raising=False)
         # Also reset FIREAI_ENV between tests
-        yield
+        return
 
     def test_production_defaults_to_no_unsafe_eval(self, monkeypatch):
-        """V119 FIX: With FIREAI_ENV=production and CSP_UNSAFE_EVAL unset,
-        the CSP must NOT include 'unsafe-eval' (secure-by-default)."""
+        """
+        V119 FIX: With FIREAI_ENV=production and CSP_UNSAFE_EVAL unset,
+        the CSP must NOT include 'unsafe-eval' (secure-by-default).
+        """
         monkeypatch.setenv("FIREAI_ENV", "production")
         csp = _build_csp()
         assert "'unsafe-eval'" not in csp, (
@@ -103,8 +106,10 @@ class TestCSPEnvironmentAwareDefaults:
         assert "'unsafe-eval'" not in csp
 
     def test_development_defaults_to_unsafe_eval_allowed(self, monkeypatch):
-        """V119: Development environment preserves DX (Vite/HMR needs eval).
-        With FIREAI_ENV=development and CSP_UNSAFE_EVAL unset, eval IS allowed."""
+        """
+        V119: Development environment preserves DX (Vite/HMR needs eval).
+        With FIREAI_ENV=development and CSP_UNSAFE_EVAL unset, eval IS allowed.
+        """
         monkeypatch.setenv("FIREAI_ENV", "development")
         csp = _build_csp()
         assert "'unsafe-eval'" in csp, (
@@ -118,19 +123,23 @@ class TestCSPExplicitOverrides:
     @pytest.fixture(autouse=True)
     def _clean_env(self, monkeypatch):
         monkeypatch.delenv("CSP_UNSAFE_EVAL", raising=False)
-        yield
+        return
 
     def test_production_can_opt_in_to_unsafe_eval(self, monkeypatch):
-        """V119: Operator may explicitly enable unsafe-eval in production
-        (accepting the documented risk)."""
+        """
+        V119: Operator may explicitly enable unsafe-eval in production
+        (accepting the documented risk).
+        """
         monkeypatch.setenv("FIREAI_ENV", "production")
         monkeypatch.setenv("CSP_UNSAFE_EVAL", "true")
         csp = _build_csp()
         assert "'unsafe-eval'" in csp
 
     def test_development_can_opt_out_of_unsafe_eval(self, monkeypatch):
-        """V119: Operator may explicitly disable unsafe-eval even in dev
-        (for testing production CSP locally)."""
+        """
+        V119: Operator may explicitly disable unsafe-eval even in dev
+        (for testing production CSP locally).
+        """
         monkeypatch.setenv("FIREAI_ENV", "development")
         monkeypatch.setenv("CSP_UNSAFE_EVAL", "false")
         csp = _build_csp()
@@ -159,11 +168,13 @@ class TestCSPLoggingEscalation:
     @pytest.fixture(autouse=True)
     def _clean_env(self, monkeypatch):
         monkeypatch.delenv("CSP_UNSAFE_EVAL", raising=False)
-        yield
+        return
 
     def test_production_unsafe_eval_logs_at_error_level(self, monkeypatch, caplog):
-        """V119 FIX: Escalated from WARNING → ERROR.
-        Misconfiguration must not hide in log noise."""
+        """
+        V119 FIX: Escalated from WARNING → ERROR.
+        Misconfiguration must not hide in log noise.
+        """
         monkeypatch.setenv("FIREAI_ENV", "production")
         monkeypatch.setenv("CSP_UNSAFE_EVAL", "true")
         with caplog.at_level(logging.ERROR, logger="backend.app"):
@@ -203,7 +214,7 @@ class TestCSPStructuralIntegrity:
     def _clean_env(self, monkeypatch):
         monkeypatch.delenv("CSP_UNSAFE_EVAL", raising=False)
         monkeypatch.delenv("CSP_CONNECT_SRC", raising=False)
-        yield
+        return
 
     def test_csp_has_default_src(self, monkeypatch):
         monkeypatch.setenv("FIREAI_ENV", "production")

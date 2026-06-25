@@ -1,4 +1,5 @@
-"""test_bim_provider.py — Tests for Provider-Agnostic BIM Abstraction Layer.
+"""
+test_bim_provider.py — Tests for Provider-Agnostic BIM Abstraction Layer.
 
 MISSION TASK 1.2 — Validates the BIMProvider Protocol, Registry, and
 3 concrete providers (LocalRevitProvider, IfcFileProvider, AutodeskForgeProvider).
@@ -9,9 +10,6 @@ real code with real assertions.
 """
 
 from __future__ import annotations
-
-import os
-from typing import Tuple
 
 import pytest
 
@@ -25,7 +23,6 @@ from fireai.bridges.bim_provider import (
     LocalRevitProvider,
     get_provider,
 )
-
 
 # ---------------------------------------------------------------------------
 # Protocol Conformance Tests
@@ -78,7 +75,7 @@ class TestProtocolConformance:
         AutodeskForgeProvider,
     ])
     def test_capabilities_returns_tuple(self, provider_class):
-        """capabilities must return a tuple of BIMProviderCapability."""
+        """Capabilities must return a tuple of BIMProviderCapability."""
         instance = provider_class()
         caps = instance.capabilities
         assert isinstance(caps, tuple), f"capabilities must be tuple, got {type(caps)}"
@@ -390,7 +387,8 @@ class TestAuditSafety:
     """Verify safety invariants per agent.md Rule 12 (Safety-First)."""
 
     def test_local_revit_sets_source_field(self):
-        """LocalRevitProvider.extract_rooms must set source on every room.
+        """
+        LocalRevitProvider.extract_rooms must set source on every room.
 
         This is critical for audit chain traceability — without source,
         we cannot tell which BIM system produced the data used in
@@ -413,7 +411,8 @@ class TestAuditSafety:
         assert 'source="ifc_file"' in source_code
 
     def test_providers_never_raise_on_no_data(self):
-        """All providers must return [] (not raise) on 'no data' condition.
+        """
+        All providers must return [] (not raise) on 'no data' condition.
 
         Per Protocol docstring: empty input is valid, not an error.
         """

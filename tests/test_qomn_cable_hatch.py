@@ -22,6 +22,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 os.environ.setdefault("FIREAI_ENV", "testing")
 os.environ.setdefault("DIGITAL_TWIN_DB_PATH", ":memory:")
 
+import pytest
+
 from fireai.core.qomn_integration_engine import (
     CableHatchIntegrator,
     CableRouter,
@@ -175,7 +177,7 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
 
         integrator = CableHatchIntegrator(grid)
 
-        with self.assertRaises(NECViolationError):
+        with pytest.raises(NECViolationError):
             integrator.place_cable_with_hatch(
                 run_id="RUN_NEC_FAIL",
                 start=Point3D(0.0, 0.0, 0.0),
@@ -191,7 +193,7 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
         Expected: Throw HatchPlacementError
         """
         integrator = CableHatchIntegrator(self.grid_map)
-        with self.assertRaises(HatchPlacementError):
+        with pytest.raises(HatchPlacementError):
             integrator.place_cable_with_hatch(
                 run_id="RUN_SCALE_FAIL",
                 start=Point3D(0.0, 0.0, 0.0),
@@ -272,7 +274,7 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
         self.assertEqual(pt.z, 3.5556)
 
         # Immutability test
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             pt.x = 5.0
 
     def test_point3d_to_dict(self):
@@ -284,24 +286,24 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
     def test_negative_radius_rejected(self):
         """Negative smoke detector radius must be rejected."""
         integrator = CableHatchIntegrator(self.grid_map)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             integrator.add_smoke_detector("BAD", Point3D(0, 0, 0), radius=-1.0)
 
     def test_zero_step_size_rejected(self):
         """Grid step size of zero must be rejected."""
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             GridMap3D(step_size=0.0)
 
     def test_negative_hatch_width_rejected(self):
         """Negative corridor width must be rejected."""
-        with self.assertRaises(HatchPlacementError):
+        with pytest.raises(HatchPlacementError):
             HatchPlacementEngine.generate_conduit_corridors(
                 [Point3D(0, 0, 0), Point3D(5, 0, 0)], width=-0.1
             )
 
     def test_negative_detector_boundary_radius_rejected(self):
         """Negative boundary radius must be rejected."""
-        with self.assertRaises(HatchPlacementError):
+        with pytest.raises(HatchPlacementError):
             HatchPlacementEngine.generate_smoke_detector_boundary(
                 Point3D(0, 0, 0), radius=-1.0
             )
@@ -311,7 +313,7 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
         grid = GridMap3D(step_size=1.0)
         grid.add_obstacle(Point3D(0.0, 0.0, 0.0))
         integrator = CableHatchIntegrator(grid)
-        with self.assertRaises(CableRoutingError):
+        with pytest.raises(CableRoutingError):
             integrator.place_cable_with_hatch(
                 run_id="BLOCKED",
                 start=Point3D(0.0, 0.0, 0.0),

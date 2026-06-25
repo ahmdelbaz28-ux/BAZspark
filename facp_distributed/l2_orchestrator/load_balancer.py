@@ -1,6 +1,4 @@
-"""
-Load Balancer for L2 Orchestrator in Distributed FACP System
-"""
+"""Load Balancer for L2 Orchestrator in Distributed FACP System"""
 import logging
 import random
 import threading
@@ -18,9 +16,8 @@ class LoadBalancingStrategy(Enum):
 
 
 class EngineWorker:
-    """
-    Represents an engine worker node in the distributed system
-    """
+    """Represents an engine worker node in the distributed system"""
+
     def __init__(self, worker_id: str, capabilities: List[str],
                  max_concurrent_tasks: int = 10, current_load: float = 0.0):
         self.worker_id = worker_id
@@ -83,9 +80,8 @@ class EngineWorker:
 
 
 class LoadBalancer:
-    """
-    Load balancer for distributing tasks to engine workers in distributed system
-    """
+    """Load balancer for distributing tasks to engine workers in distributed system"""
+
     def __init__(self, strategy: LoadBalancingStrategy = LoadBalancingStrategy.LEAST_CONNECTIONS):
         self.workers: Dict[str, EngineWorker] = {}
         self.strategy = strategy
@@ -100,9 +96,7 @@ class LoadBalancer:
 
     def register_engine_worker(self, worker_id: str, capabilities: List[str],
                               max_concurrent_tasks: int = 10, location: str = "unknown"):
-        """
-        Register a new engine worker with the load balancer
-        """
+        """Register a new engine worker with the load balancer"""
         with self.lock:
             worker = EngineWorker(
                 worker_id=worker_id,
@@ -114,19 +108,15 @@ class LoadBalancer:
             self.worker_selection_history[worker_id] = 0
 
     def unregister_engine_worker(self, worker_id: str):
-        """
-        Unregister an engine worker from the load balancer
-        """
+        """Unregister an engine worker from the load balancer"""
         with self.lock:
             if worker_id in self.workers:
                 del self.workers[worker_id]
             if worker_id in self.worker_selection_history:
                 del self.worker_selection_history[worker_id]
 
-    def select_engine_worker(self, method: str, request_data: Dict[str, Any] = None) -> Optional[str]:
-        """
-        Select an appropriate engine worker for a method
-        """
+    def select_engine_worker(self, method: str, request_data: Optional[Dict[str, Any]] = None) -> Optional[str]:
+        """Select an appropriate engine worker for a method"""
         with self.lock:
             # First, filter workers that can handle this method
             eligible_workers = []
@@ -159,9 +149,7 @@ class LoadBalancer:
             return None
 
     def _worker_can_handle_method(self, worker: EngineWorker, method: str) -> bool:
-        """
-        Check if a worker can handle a specific method
-        """
+        """Check if a worker can handle a specific method"""
         # Check for exact capability match
         if method in worker.capabilities:
             return True
@@ -174,9 +162,7 @@ class LoadBalancer:
         return False
 
     def _round_robin_selection(self, workers: List[EngineWorker]) -> Optional[EngineWorker]:
-        """
-        Round-robin selection of workers
-        """
+        """Round-robin selection of workers"""
         if not workers:
             return None
 
@@ -186,9 +172,7 @@ class LoadBalancer:
         return selected
 
     def _least_connections_selection(self, workers: List[EngineWorker]) -> Optional[EngineWorker]:
-        """
-        Select worker with least connections
-        """
+        """Select worker with least connections"""
         if not workers:
             return None
 
@@ -197,9 +181,7 @@ class LoadBalancer:
         return sorted_workers[0]
 
     def _weighted_round_robin_selection(self, workers: List[EngineWorker]) -> Optional[EngineWorker]:
-        """
-        Weighted round-robin selection
-        """
+        """Weighted round-robin selection"""
         if not workers:
             return None
 
@@ -222,9 +204,7 @@ class LoadBalancer:
         return workers[-1]
 
     def _resource_based_selection(self, workers: List[EngineWorker], request_data: Dict[str, Any]) -> Optional[EngineWorker]:
-        """
-        Select worker based on resource availability and request requirements
-        """
+        """Select worker based on resource availability and request requirements"""
         if not workers:
             return None
 
@@ -255,18 +235,14 @@ class LoadBalancer:
         return self._least_connections_selection(workers)
 
     def update_worker_status(self, worker_id: str, status: str):
-        """
-        Update the status of a worker
-        """
+        """Update the status of a worker"""
         with self.lock:
             if worker_id in self.workers:
                 self.workers[worker_id].status = status
 
-    def update_worker_resources(self, worker_id: str, cpu_usage: float = None,
-                               memory_usage: float = None, network_latency: float = None):
-        """
-        Update resource usage information for a worker
-        """
+    def update_worker_resources(self, worker_id: str, cpu_usage: Optional[float] = None,
+                               memory_usage: Optional[float] = None, network_latency: Optional[float] = None):
+        """Update resource usage information for a worker"""
         with self.lock:
             if worker_id in self.workers:
                 worker = self.workers[worker_id]
@@ -278,16 +254,12 @@ class LoadBalancer:
                     worker.network_latency = network_latency
 
     def record_task_assignment(self, task_id: str, worker_id: str):
-        """
-        Record that a task was assigned to a worker
-        """
+        """Record that a task was assigned to a worker"""
         with self.lock:
             self.task_assignment_history[task_id] = worker_id
 
     def record_task_completion(self, task_id: str, worker_id: str):
-        """
-        Record that a task completed on a worker
-        """
+        """Record that a task completed on a worker"""
         with self.lock:
             if worker_id in self.workers:
                 self.workers[worker_id].register_task_completion()
@@ -298,25 +270,19 @@ class LoadBalancer:
                 pass
 
     def get_worker_status(self, worker_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get status of a specific worker
-        """
+        """Get status of a specific worker"""
         with self.lock:
             if worker_id in self.workers:
                 return self.workers[worker_id].get_status()
         return None
 
     def get_all_worker_status(self) -> Dict[str, Dict[str, Any]]:
-        """
-        Get status of all workers
-        """
+        """Get status of all workers"""
         with self.lock:
             return {wid: worker.get_status() for wid, worker in self.workers.items()}
 
     def get_load_balancer_status(self) -> Dict[str, Any]:
-        """
-        Get overall load balancer status
-        """
+        """Get overall load balancer status"""
         with self.lock:
             online_workers = [w for w in self.workers.values() if w.is_healthy()]
             offline_workers = [w for w in self.workers.values() if not w.is_healthy()]
@@ -336,7 +302,7 @@ class LoadBalancer:
     def perform_health_check(self):
         """
         Perform health check on all workers.
-        
+
         When a worker is detected as unhealthy:
         1. Mark it as offline
         2. Redistribute its in-flight tasks to healthy workers
@@ -377,7 +343,7 @@ class LoadBalancer:
     def _redistribute_failed_worker_tasks(self, failed_worker_id: str):
         """
         Redistribute tasks that were assigned to a failed worker.
-        
+
         Finds all task assignments for the failed worker and attempts
         to reassign them to healthy workers that can handle the same
         methods. If no healthy worker is available, tasks are queued
@@ -434,9 +400,7 @@ class LoadBalancer:
     _pending_redistribution: Dict[str, str] = {}
 
     def get_statistics(self) -> Dict[str, Any]:
-        """
-        Get load balancing statistics
-        """
+        """Get load balancing statistics"""
         with self.lock:
             online_workers = [w for w in self.workers.values() if w.is_healthy()]
 
@@ -460,17 +424,13 @@ class LoadBalancer:
             }
 
     def update_worker_weight(self, worker_id: str, new_weight: float):
-        """
-        Update the weight of a worker (for weighted algorithms)
-        """
+        """Update the weight of a worker (for weighted algorithms)"""
         with self.lock:
             if worker_id in self.workers:
                 self.workers[worker_id].weight = max(0.1, new_weight)  # Minimum weight of 0.1
 
     def get_eligible_workers_for_method(self, method: str) -> List[Dict[str, Any]]:
-        """
-        Get all workers eligible for a specific method
-        """
+        """Get all workers eligible for a specific method"""
         with self.lock:
             eligible_workers = []
             for _worker_id, worker in self.workers.items():
@@ -479,9 +439,7 @@ class LoadBalancer:
             return eligible_workers
 
     def handle_worker_failure(self, worker_id: str):
-        """
-        Handle the failure of a worker
-        """
+        """Handle the failure of a worker"""
         with self.lock:
             if worker_id in self.workers:
                 worker = self.workers[worker_id]
@@ -498,7 +456,7 @@ class LoadBalancer:
     def handle_worker_recovery(self, worker_id: str):
         """
         Handle the recovery of a previously failed worker.
-        
+
         Restores the worker to online status, resets its weight,
         refreshes its heartbeat, and redistributes any pending tasks
         that were queued during its failure.
@@ -520,7 +478,7 @@ class LoadBalancer:
                 # Redistribute pending tasks that were queued during failure
                 if self._pending_redistribution:
                     pending_count = len(self._pending_redistribution)
-                    for task_id, original_worker_id in list(self._pending_redistribution.items()):
+                    for task_id, _original_worker_id in list(self._pending_redistribution.items()):
                         if worker.can_accept_task():
                             worker.register_task_start()
                             self.task_assignment_history[task_id] = worker_id
@@ -533,9 +491,7 @@ class LoadBalancer:
                     )
 
     def cleanup_old_assignments(self, max_age_minutes: int = 60):
-        """
-        Clean up old task assignment records
-        """
+        """Clean up old task assignment records"""
         current_time = time.time()
         current_time - (max_age_minutes * 60)
 
@@ -548,9 +504,7 @@ class LoadBalancer:
                 self.task_assignment_history = dict(items[-5000:])  # Keep last 5000
 
     def sync_with_cluster(self, cluster_worker_state: Dict[str, Any]):
-        """
-        Sync load balancer with cluster-wide worker information
-        """
+        """Sync load balancer with cluster-wide worker information"""
         with self.lock:
             # Update cluster workers information
             self.cluster_workers.update(cluster_worker_state)
@@ -560,28 +514,23 @@ class LoadBalancer:
 
 
 class AdaptiveLoadBalancer(LoadBalancer):
-    """
-    Adaptive load balancer that adjusts strategy based on system conditions
-    """
+    """Adaptive load balancer that adjusts strategy based on system conditions"""
+
     def __init__(self):
         super().__init__(LoadBalancingStrategy.LEAST_CONNECTIONS)
         self.performance_history = {}  # worker_id -> [response_times]
         self.adaptation_threshold = 0.1  # Threshold for changing strategy
         self.monitoring_window = 100  # Number of requests to consider for adaptation
 
-    def select_engine_worker(self, method: str, request_data: Dict[str, Any] = None) -> Optional[str]:
-        """
-        Select worker with adaptive strategy selection
-        """
+    def select_engine_worker(self, method: str, request_data: Optional[Dict[str, Any]] = None) -> Optional[str]:
+        """Select worker with adaptive strategy selection"""
         # Periodically evaluate if we should change strategy
         self._evaluate_strategy()
 
         return super().select_engine_worker(method, request_data)
 
     def _evaluate_strategy(self):
-        """
-        Evaluate current strategy effectiveness and adapt if needed
-        """
+        """Evaluate current strategy effectiveness and adapt if needed"""
         # Calculate performance metrics for each worker
         worker_performance = {}
         for worker_id, times in self.performance_history.items():
@@ -596,10 +545,8 @@ class AdaptiveLoadBalancer(LoadBalancer):
                 # Switch to resource-based strategy for better optimization
                 self.strategy = LoadBalancingStrategy.RESOURCE_BASED
 
-    def record_task_completion(self, task_id: str, worker_id: str, response_time: float = None):
-        """
-        Override to record performance metrics
-        """
+    def record_task_completion(self, task_id: str, worker_id: str, response_time: Optional[float] = None):
+        """Override to record performance metrics"""
         super().record_task_completion(task_id, worker_id)
 
         if response_time is not None:

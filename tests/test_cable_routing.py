@@ -97,7 +97,8 @@ def simple_nac_class_b() -> CircuitTopology:
 
 
 class TestWireGauge:
-    """Wire gauge resistance values — NEC Chapter 9, Table 8.
+    """
+    Wire gauge resistance values — NEC Chapter 9, Table 8.
 
     V58 FIX: Resistance values updated from 20°C to 75°C per NEC Chapter 9
     Table 8 (copper, stranded, DC resistance at 75°C). Previous values at
@@ -829,13 +830,13 @@ class TestIntegrationScenarios:
             result.is_compliant = True
 
     def test_violations_tuple_not_list(self, engine, simple_slc_class_b):
-        """violations and warnings must be tuples (immutable)."""
+        """Violations and warnings must be tuples (immutable)."""
         result = engine.route_circuit(simple_slc_class_b)
         assert isinstance(result.violations, tuple)
         assert isinstance(result.warnings, tuple)
 
     def test_segments_tuple_not_list(self, engine, simple_slc_class_b):
-        """segments must be tuple (immutable)."""
+        """Segments must be tuple (immutable)."""
         result = engine.route_circuit(simple_slc_class_b)
         assert isinstance(result.segments, tuple)
 

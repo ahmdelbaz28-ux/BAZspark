@@ -1,4 +1,5 @@
-"""Room Validator - Strict validation for FireAI V10
+"""
+Room Validator - Strict validation for FireAI V10
 Validates RoomSpec before analysis to prevent crashes and ensure data integrity.
 """
 
@@ -37,7 +38,8 @@ VALID_OCCUPANCY_TYPES: set[str] = {
 
 
 def validate_room_spec(room_spec: RoomSpec) -> None:
-    """Validate RoomSpec before analysis.
+    """
+    Validate RoomSpec before analysis.
 
     Args:
         room_spec: RoomSpec to validate

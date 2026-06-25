@@ -1,22 +1,20 @@
-"""
-L2 Orchestrator for Distributed FACP System
-"""
-from typing import Dict, Any, Optional, Tuple, List
+"""L2 Orchestrator for Distributed FACP System"""
+import logging
 import time
 import uuid
-import logging
-from ..protocol.message_schema import FACPRequest, FACPResponse
+from typing import Any, Dict, List, Optional, Tuple
+
+from ..protocol.message_schema import FACPResponse
 from ..security.rbac import PermissionChecker
 from .agent_manager import AgentManager
-from .task_scheduler import TaskScheduler
-from .load_balancer import LoadBalancer
 from .agent_registry import AgentRegistry
+from .load_balancer import LoadBalancer
+from .task_scheduler import TaskScheduler
 
 
 class Orchestrator:
-    """
-    L2 Orchestrator - Routes tasks, manages agents, and enforces policies in distributed system
-    """
+    """L2 Orchestrator - Routes tasks, manages agents, and enforces policies in distributed system"""
+
     def __init__(self,
                  agent_manager: AgentManager,
                  task_scheduler: TaskScheduler,
@@ -65,7 +63,7 @@ class Orchestrator:
             "node_affinity": None
         })
 
-    def process_request(self, request_data: Dict[str, Any], source_node: str = None) -> Tuple[bool, Dict[str, Any]]:
+    def process_request(self, request_data: Dict[str, Any], source_node: Optional[str] = None) -> Tuple[bool, Dict[str, Any]]:
         """
         Process a request from L1 through the orchestrator
         :param request_data: Request data that passed validation
@@ -148,7 +146,7 @@ class Orchestrator:
                     return False, error_response
 
                 # Schedule task to engine worker
-                scheduled_task = self.task_scheduler.schedule_task(
+                self.task_scheduler.schedule_task(
                     method, request_data, target_worker, source_node
                 )
 
@@ -177,97 +175,96 @@ class Orchestrator:
 
                 return True, response
 
-            else:
-                # Handle with an agent
-                self.logger.info("Orchestrator[%s]: Processing request %s with agent for method %s", self.node_id, request_id, method)
+            # Handle with an agent
+            self.logger.info("Orchestrator[%s]: Processing request %s with agent for method %s", self.node_id, request_id, method)
 
-                # Find appropriate agent
-                agent = self.agent_manager.find_appropriate_agent(method)
-                if not agent:
-                    # Try to find agent through registry
-                    agent_info = self.agent_registry.find_agent_for_method(method)
-                    if not agent_info:
-                        error_response = FACPResponse(
-                            id=request_id,
-                            status="error",
-                            error={
-                                "code": "NO_SUITABLE_AGENT",
-                                "message": f"No suitable agent found for method: {method}"
-                            },
-                            trace={
-                                "execution_path": ["L1", "L2_orchestrator"],
-                                "latency_ms": (time.time() - self.active_tasks[request_id]["received_at"]) * 1000,
-                                "node_id": self.node_id,
-                                "engine_version": "FACP/1.1"
-                            }
-                        ).to_dict()
-
-                        self.active_tasks[request_id]["status"] = "failed_no_agent"
-                        self._record_task_completion(request_id, "failed_no_agent")
-
-                        return False, error_response
-
-                    # Use the agent info to process the request
-                    agent_result = self._process_with_agent_info(agent_info, request_data)
-
-                    response = FACPResponse(
-                        id=request_id,
-                        status="success",
-                        result=agent_result,
-                        trace={
-                            "execution_path": ["L1", "L2_orchestrator", f"agent_{agent_info['id']}"],
-                            "latency_ms": (time.time() - self.active_tasks[request_id]["received_at"]) * 1000,
-                            "node_id": self.node_id,
-                            "engine_version": "FACP/1.1"
-                        }
-                    ).to_dict()
-
-                    self.active_tasks[request_id]["status"] = "completed_agent"
-                    self._record_task_completion(request_id, "completed_agent")
-
-                    return True, response
-
-                # Execute with agent
-                try:
-                    agent_result = agent.execute_task(request_data)
-
-                    response = FACPResponse(
-                        id=request_id,
-                        status="success",
-                        result=agent_result,
-                        trace={
-                            "execution_path": ["L1", "L2_orchestrator", f"agent_{agent.id}"],
-                            "latency_ms": (time.time() - self.active_tasks[request_id]["received_at"]) * 1000,
-                            "node_id": self.node_id,
-                            "engine_version": "FACP/1.1"
-                        }
-                    ).to_dict()
-
-                    self.active_tasks[request_id]["status"] = "completed_agent"
-                    self._record_task_completion(request_id, "completed_agent")
-
-                    return True, response
-
-                except Exception as e:
+            # Find appropriate agent
+            agent = self.agent_manager.find_appropriate_agent(method)
+            if not agent:
+                # Try to find agent through registry
+                agent_info = self.agent_registry.find_agent_for_method(method)
+                if not agent_info:
                     error_response = FACPResponse(
                         id=request_id,
                         status="error",
                         error={
-                            "code": "AGENT_EXECUTION_ERROR",
-                            "message": f"Agent execution failed: {str(e)}"
+                            "code": "NO_SUITABLE_AGENT",
+                            "message": f"No suitable agent found for method: {method}"
                         },
                         trace={
-                            "execution_path": ["L1", "L2_orchestrator", f"agent_{agent.id}"],
+                            "execution_path": ["L1", "L2_orchestrator"],
                             "latency_ms": (time.time() - self.active_tasks[request_id]["received_at"]) * 1000,
                             "node_id": self.node_id,
                             "engine_version": "FACP/1.1"
                         }
                     ).to_dict()
 
-                    self.active_tasks[request_id]["status"] = "failed_agent"
-                    self._record_task_completion(request_id, "failed_agent")
+                    self.active_tasks[request_id]["status"] = "failed_no_agent"
+                    self._record_task_completion(request_id, "failed_no_agent")
 
                     return False, error_response
+
+                # Use the agent info to process the request
+                agent_result = self._process_with_agent_info(agent_info, request_data)
+
+                response = FACPResponse(
+                    id=request_id,
+                    status="success",
+                    result=agent_result,
+                    trace={
+                        "execution_path": ["L1", "L2_orchestrator", f"agent_{agent_info['id']}"],
+                        "latency_ms": (time.time() - self.active_tasks[request_id]["received_at"]) * 1000,
+                        "node_id": self.node_id,
+                        "engine_version": "FACP/1.1"
+                    }
+                ).to_dict()
+
+                self.active_tasks[request_id]["status"] = "completed_agent"
+                self._record_task_completion(request_id, "completed_agent")
+
+                return True, response
+
+            # Execute with agent
+            try:
+                agent_result = agent.execute_task(request_data)
+
+                response = FACPResponse(
+                    id=request_id,
+                    status="success",
+                    result=agent_result,
+                    trace={
+                        "execution_path": ["L1", "L2_orchestrator", f"agent_{agent.id}"],
+                        "latency_ms": (time.time() - self.active_tasks[request_id]["received_at"]) * 1000,
+                        "node_id": self.node_id,
+                        "engine_version": "FACP/1.1"
+                    }
+                ).to_dict()
+
+                self.active_tasks[request_id]["status"] = "completed_agent"
+                self._record_task_completion(request_id, "completed_agent")
+
+                return True, response
+
+            except Exception as e:
+                error_response = FACPResponse(
+                    id=request_id,
+                    status="error",
+                    error={
+                        "code": "AGENT_EXECUTION_ERROR",
+                        "message": f"Agent execution failed: {e!s}"
+                    },
+                    trace={
+                        "execution_path": ["L1", "L2_orchestrator", f"agent_{agent.id}"],
+                        "latency_ms": (time.time() - self.active_tasks[request_id]["received_at"]) * 1000,
+                        "node_id": self.node_id,
+                        "engine_version": "FACP/1.1"
+                    }
+                ).to_dict()
+
+                self.active_tasks[request_id]["status"] = "failed_agent"
+                self._record_task_completion(request_id, "failed_agent")
+
+                return False, error_response
 
         except Exception as e:
             self.logger.error("Orchestrator[%s]: Unexpected error processing request %s: %s", self.node_id, request_id, str(e))
@@ -277,7 +274,7 @@ class Orchestrator:
                 status="error",
                 error={
                     "code": "ORCHESTRATOR_ERROR",
-                    "message": f"Orchestrator processing failed: {str(e)}"
+                    "message": f"Orchestrator processing failed: {e!s}"
                 },
                 trace={
                     "execution_path": ["L1", "L2_orchestrator"],
@@ -293,9 +290,7 @@ class Orchestrator:
             return False, error_response
 
     def _should_route_to_engine(self, method: str) -> bool:
-        """
-        Determine if a method should be routed to L3 engine
-        """
+        """Determine if a method should be routed to L3 engine"""
         # Engine methods typically involve calculations, validations, transformations
         engine_indicators = [
             "engine.", "calculate", "compute", "analyze", "validate", "transform",
@@ -312,9 +307,7 @@ class Orchestrator:
         return True
 
     def _simulate_engine_forwarding(self, request_data: Dict[str, Any], target_worker: str) -> Dict[str, Any]:
-        """
-        Simulate forwarding to engine worker (in real system, this would be actual transport)
-        """
+        """Simulate forwarding to engine worker (in real system, this would be actual transport)"""
         # In a real implementation, this would send the request to the target worker
         # via the message bus or other transport mechanism
         # For simulation, we'll return a successful response
@@ -337,9 +330,7 @@ class Orchestrator:
         }
 
     def _process_with_agent_info(self, agent_info: Dict[str, Any], request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Process request using agent information from registry
-        """
+        """Process request using agent information from registry"""
         # In a real implementation, this would create or locate the actual agent
         # For simulation, we'll return a result indicating the agent would process it
         return {
@@ -351,9 +342,7 @@ class Orchestrator:
         }
 
     def _record_task_completion(self, task_id: str, status: str):
-        """
-        Record task completion and manage history
-        """
+        """Record task completion and manage history"""
         if task_id in self.active_tasks:
             task_info = self.active_tasks[task_id].copy()
             task_info["status"] = status
@@ -471,9 +460,7 @@ class Orchestrator:
         return self.active_tasks.get(request_id)
 
     def enforce_distributed_idempotency(self, request_data: Dict[str, Any]) -> Tuple[bool, Optional[Dict[str, Any]]]:
-        """
-        Enforce idempotency across distributed cluster
-        """
+        """Enforce idempotency across distributed cluster"""
         idempotency_key = request_data.get("security", {}).get("idempotency_key")
         if not idempotency_key:
             return True, None  # No idempotency requirement

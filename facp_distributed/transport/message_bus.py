@@ -1,13 +1,11 @@
-"""
-Message Bus Transport for Distributed FACP System
-"""
+"""Message Bus Transport for Distributed FACP System"""
 import asyncio
 import json
 import logging
 import threading
 import time
 from abc import abstractmethod
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +13,8 @@ from .http_transport import TransportLayer
 
 
 class MessageBusTransport(TransportLayer):
-    """
-    Abstract base class for message bus transports
-    """
+    """Abstract base class for message bus transports"""
+
     def __init__(self, node_type: str = "l2_orchestrator"):
         super().__init__()
         self.node_type = node_type
@@ -46,7 +43,7 @@ class MessageBusTransport(TransportLayer):
         """Subscribe to a topic with a handler"""
         raise NotImplementedError("Subclasses must implement subscribe()")
 
-    def send_request(self, request_data: Dict[str, Any], target_node: str = None) -> Dict[str, Any]:
+    def send_request(self, request_data: Dict[str, Any], target_node: Optional[str] = None) -> Dict[str, Any]:
         """
         Send request via message bus
         target_node can specify routing information
@@ -100,9 +97,8 @@ class MessageBusTransport(TransportLayer):
 
 
 class RedisMessageBus(MessageBusTransport):
-    """
-    Redis-based message bus implementation
-    """
+    """Redis-based message bus implementation"""
+
     def __init__(self, host: str = "localhost", port: int = 6379, node_type: str = "l2_orchestrator"):
         super().__init__(node_type)
         self.host = host
@@ -195,10 +191,9 @@ class RedisMessageBus(MessageBusTransport):
 
 
 class NATSMessageBus(MessageBusTransport):
-    """
-    NATS-based message bus implementation
-    """
-    def __init__(self, servers: list = None, node_type: str = "l2_orchestrator"):
+    """NATS-based message bus implementation"""
+
+    def __init__(self, servers: Optional[list] = None, node_type: str = "l2_orchestrator"):
         super().__init__(node_type)
         self.servers = servers or ["nats://localhost:4222"]
         self.nc = None  # NATS connection
@@ -296,9 +291,8 @@ class NATSMessageBus(MessageBusTransport):
 
 
 class InMemoryMessageBus(MessageBusTransport):
-    """
-    In-memory message bus for testing and development
-    """
+    """In-memory message bus for testing and development"""
+
     def __init__(self, node_type: str = "l2_orchestrator"):
         super().__init__(node_type)
         self.channels = {}  # topic -> queue of messages

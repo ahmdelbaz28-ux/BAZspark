@@ -1,4 +1,5 @@
-"""backend/services/autocad_service.py — AutoCAD Integration Service.
+"""
+backend/services/autocad_service.py — AutoCAD Integration Service.
 ================================================================
 
 Complete AutoCAD integration service with COM API integration.
@@ -48,7 +49,8 @@ else:
 
 
 class AutoCADService:
-    """AutoCAD integration service with COM API.
+    """
+    AutoCAD integration service with COM API.
 
     Handles connecting to AutoCAD, reading/writing DWG files, and drawing operations.
     """
@@ -61,7 +63,8 @@ class AutoCADService:
         self.active_entities = {}
 
     def connect(self) -> bool:
-        """Connect to a running AutoCAD instance or launch a new one.
+        """
+        Connect to a running AutoCAD instance or launch a new one.
 
         Returns:
             bool: True if connection successful, False otherwise
@@ -109,7 +112,8 @@ class AutoCADService:
             return False
 
     def disconnect(self) -> bool:
-        """Disconnect from AutoCAD application.
+        """
+        Disconnect from AutoCAD application.
 
         Returns:
             bool: True if disconnection successful, False otherwise
@@ -137,7 +141,8 @@ class AutoCADService:
             return False
 
     def initialize(self) -> bool:
-        """Initialize the AutoCAD service by attempting to connect.
+        """
+        Initialize the AutoCAD service by attempting to connect.
 
         Returns:
             bool: True if initialization successful, False otherwise
@@ -146,7 +151,8 @@ class AutoCADService:
         return self.connect()
 
     def _extract_entity_data(self, entity) -> Dict[str, Any]:
-        """Extract detailed data from an AutoCAD entity.
+        """
+        Extract detailed data from an AutoCAD entity.
 
         Args:
             entity: AutoCAD entity object
@@ -276,7 +282,8 @@ class AutoCADService:
             }
 
     def read_dwg(self, filepath: str) -> Dict[str, Any]:
-        """Read entities from a DWG file.
+        """
+        Read entities from a DWG file.
 
         Args:
             filepath: Path to the DWG file to read
@@ -346,7 +353,8 @@ class AutoCADService:
             }
 
     def write_dwg(self, filepath: str, entities: List[Dict[str, Any]]) -> bool:
-        """Write entities to a DWG file.
+        """
+        Write entities to a DWG file.
 
         Args:
             filepath: Path to save the DWG file
@@ -482,7 +490,8 @@ class AutoCADService:
 
     def draw_line(self, start_point: List[float], end_point: List[float],
                   layer: str = "0", color: int = 0) -> Optional[Any]:
-        """Draw a line in the active AutoCAD document.
+        """
+        Draw a line in the active AutoCAD document.
 
         Args:
             start_point: Starting coordinates [x, y, z]
@@ -515,7 +524,8 @@ class AutoCADService:
 
     def draw_polyline(self, vertices: List[List[float]],
                       layer: str = "0", color: int = 0, closed: bool = False) -> Optional[Any]:
-        """Draw a polyline in the active AutoCAD document.
+        """
+        Draw a polyline in the active AutoCAD document.
 
         Args:
             vertices: List of vertex coordinates [[x, y, z], [x, y, z], ...]
@@ -555,7 +565,8 @@ class AutoCADService:
 
     def draw_circle(self, center: List[float], radius: float,
                     layer: str = "0", color: int = 0) -> Optional[Any]:
-        """Draw a circle in the active AutoCAD document.
+        """
+        Draw a circle in the active AutoCAD document.
 
         Args:
             center: Center coordinates [x, y, z]
@@ -588,7 +599,8 @@ class AutoCADService:
 
     def draw_text(self, text: str, insertion_point: List[float], height: float = 0.2,
                   layer: str = "0", color: int = 0) -> Optional[Any]:
-        """Draw text in the active AutoCAD document.
+        """
+        Draw text in the active AutoCAD document.
 
         Args:
             text: Text string to draw
@@ -621,7 +633,8 @@ class AutoCADService:
             return None
 
     def get_document_info(self) -> Dict[str, Any]:
-        """Get information about the active AutoCAD document.
+        """
+        Get information about the active AutoCAD document.
 
         Returns:
             Dictionary containing document information
@@ -653,7 +666,8 @@ class AutoCADService:
             return {}
 
     def save(self, filepath: str) -> bool:
-        """Save the active document to a file.
+        """
+        Save the active document to a file.
 
         Args:
             filepath: Path to save the document

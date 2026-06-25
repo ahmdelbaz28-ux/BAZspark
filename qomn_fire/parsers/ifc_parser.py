@@ -98,11 +98,11 @@ class IfcParser:
         filepath = str(safe_path)
 
         try:
-            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            with open(filepath, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
         except Exception as e:
             return Result(error=GeometryError(
-                message=f"Could not read IFC file content stream: {str(e)}",
+                message=f"Could not read IFC file content stream: {e!s}",
                 code_ref="IO Reader Exception",
                 remedy="Check disk health and file permissions."
             ))

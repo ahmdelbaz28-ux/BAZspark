@@ -269,7 +269,7 @@ class TestConstants:
 
     def test_conduit_diameter(self):
         """¾" EMT = 19.05mm."""
-        assert CONDUIT_DIAMETER_M == pytest.approx(0.01905)
+        assert pytest.approx(0.01905) == CONDUIT_DIAMETER_M
 
     def test_bend_fitting(self):
         assert BEND_FITTING == "ConduitElbow-90"

@@ -1,4 +1,5 @@
-"""fireai.conduit.output — Revit, AutoCAD, and Schedule Output Generators.
+"""
+fireai.conduit.output — Revit, AutoCAD, and Schedule Output Generators.
 =======================================================================
 
 Converts a completed ConduitRun into:
@@ -57,7 +58,8 @@ _M_TO_FT: float = 1.0 / 0.3048
 
 
 def generate_revit_conduit(run: ConduitRun) -> dict[str, Any]:
-    """Generate Revit-compatible JSON for a complete ConduitRun.
+    """
+    Generate Revit-compatible JSON for a complete ConduitRun.
 
     Produces a structure importable by Dynamo or the Revit API Python shell
     to create Conduit and ConduitFitting elements in a Revit model.
@@ -124,7 +126,8 @@ def generate_revit_conduit(run: ConduitRun) -> dict[str, Any]:
 
 
 def generate_autocad_entities(run: ConduitRun) -> list[dict[str, Any]]:
-    """Generate DXF entity descriptions for a ConduitRun.
+    """
+    Generate DXF entity descriptions for a ConduitRun.
 
     Each straight segment becomes a LINE entity.
     Each elbow becomes an ARC entity.
@@ -190,7 +193,8 @@ def generate_autocad_entities(run: ConduitRun) -> list[dict[str, Any]]:
 
 
 def generate_schedules(run: ConduitRun) -> dict[str, Any]:
-    """Generate material, fitting, and summary schedules for procurement.
+    """
+    Generate material, fitting, and summary schedules for procurement.
 
     Produces three sub-schedules:
       conduit_schedule:  Trade size, type, total metres/feet, stick count.
@@ -316,7 +320,8 @@ def _dxf_color(ct: ConduitType) -> int:
 
 
 def _sha256(payload: dict[str, Any]) -> str:
-    """Compute deterministic SHA-256 of a JSON-serialisable payload.
+    """
+    Compute deterministic SHA-256 of a JSON-serialisable payload.
 
     Keys sorted, floats rounded to 9 dp for cross-platform stability.
     Excludes the 'sha256' key itself to avoid circular dependency.

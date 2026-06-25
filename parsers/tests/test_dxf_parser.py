@@ -56,7 +56,8 @@ def custom_parser():
 
 
 def _make_dxf_file(units_code=6, entities_section=""):
-    """Create a minimal DXF file with specified INSUNITS and entities.
+    """
+    Create a minimal DXF file with specified INSUNITS and entities.
 
     Args:
         units_code: $INSUNITS value (default 6 = meters)
@@ -64,6 +65,7 @@ def _make_dxf_file(units_code=6, entities_section=""):
 
     Returns:
         Path to the created temp file.
+
     """
     content = (
         f"0\nSECTION\n2\nHEADER\n"
@@ -199,7 +201,8 @@ class TestParsedRoom:
 
 
 class TestINSUNITSMapping:
-    """V76 CRIT-03: Corrected INSUNITS mapping per AutoCAD DXF specification.
+    """
+    V76 CRIT-03: Corrected INSUNITS mapping per AutoCAD DXF specification.
 
     Wrong unit mapping produces catastrophically wrong room areas →
     wrong detector count → building unprotected.
@@ -302,7 +305,8 @@ class TestUnitDetection:
 
 
 class TestRoomAreaValidation:
-    """Safety-critical: room areas must be validated before use.
+    """
+    Safety-critical: room areas must be validated before use.
 
     NaN areas corrupt total_area. Negative areas mean zero protection.
     Oversized areas indicate unit conversion errors.
@@ -595,7 +599,8 @@ class TestDXFParserErrorHandling:
             os.unlink(p)
 
     def test_unknown_units_code_rejected_in_parse(self, parser):
-        """Unknown INSUNITS code (e.g. 99) is rejected during parse().
+        """
+        Unknown INSUNITS code (e.g. 99) is rejected during parse().
 
         _detect_units returns any non-zero value directly, but parse()
         checks if the value is in INSUNITS_TO_METERS and raises ValueError.

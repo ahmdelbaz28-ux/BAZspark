@@ -1,4 +1,5 @@
-"""hazard_override.py — Mandatory Safety Override for AI/ML Hazard Classifications.
+"""
+hazard_override.py — Mandatory Safety Override for AI/ML Hazard Classifications.
 ================================================================================
 LIFE-SAFETY CRITICAL: Machine learning classifiers and AI models can
 misclassify high-risk occupancy rooms, applying weaker fire protection
@@ -40,7 +41,8 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class HazardClassification(str, Enum):
-    """NFPA 13-2022 Chapter 11 hazard classifications.
+    """
+    NFPA 13-2022 Chapter 11 hazard classifications.
 
     Ordered from least severe (LIGHT) to most severe (EXTRA_HAZARD_2).
     The override system NEVER lowers a classification — only raises it.
@@ -64,7 +66,8 @@ _HAZARD_SEVERITY: dict[str, int] = {
 
 
 def is_more_severe(classification_a: str, classification_b: str) -> bool:
-    """Check if classification_a is MORE severe than classification_b.
+    """
+    Check if classification_a is MORE severe than classification_b.
 
     SAFETY: Used to determine whether an override should be applied.
     An override is only applied when the mandatory classification is
@@ -170,7 +173,8 @@ class OverrideResult:
 
 
 class HazardOverrideVerifier:
-    """Non-bypassable deterministic safety override for AI hazard classifications.
+    """
+    Non-bypassable deterministic safety override for AI hazard classifications.
 
     SAFETY: This class intercepts ALL automated hazard classifications and
     enforces mandatory minimums based on room name keywords. It is the
@@ -197,7 +201,8 @@ class HazardOverrideVerifier:
         custom_overrides: dict[str, str] | None = None,
         minimum_default: str = "ordinary_hazard_1",
     ) -> None:
-        """Initialize the override verifier.
+        """
+        Initialize the override verifier.
 
         Args:
             custom_overrides: Additional keyword→hazard mappings to add
@@ -227,7 +232,8 @@ class HazardOverrideVerifier:
         room_name: str,
         ml_predicted_hazard: str,
     ) -> OverrideResult:
-        """Verify and potentially override an AI/ML hazard classification.
+        """
+        Verify and potentially override an AI/ML hazard classification.
 
         SAFETY: This method applies the MOST SEVERE classification from:
           1. The mandatory override dictionary (keyword match)

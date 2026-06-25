@@ -183,7 +183,7 @@ class TestImageSourceReflection:
         assert math.isfinite(reflected), "Reflected SPL must be finite"
 
     def test_perfect_absorber_no_reflection(self):
-        """alpha = 1.0 (perfect absorber) → zero reflection."""
+        """Alpha = 1.0 (perfect absorber) → zero reflection."""
         reflected = _image_source_reflection_spl(
             leak_point=(5.0, 5.0, 1.5),
             sensor_point=(10.0, 10.0, 1.5),

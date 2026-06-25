@@ -1,4 +1,5 @@
-"""backend/services/memory_service.py — Mem0-based Memory Layer for FireAI (V76).
+"""
+backend/services/memory_service.py — Mem0-based Memory Layer for FireAI (V76).
 
 PROFESSIONAL NOTE:
   This module provides a long-term memory layer for the FireAI platform,
@@ -196,7 +197,8 @@ class MemoryServiceStatus(BaseModel):
 # ── Memory Service ─────────────────────────────────────────────────────────────
 
 class MemoryService:
-    """FireAI Memory Service — Long-term memory layer for engineering context.
+    """
+    FireAI Memory Service — Long-term memory layer for engineering context.
 
     This service wraps Mem0 (mem0ai) and provides:
     - Structured memory storage scoped by user/project/agent
@@ -218,7 +220,8 @@ class MemoryService:
         self._initialize()
 
     def _initialize(self) -> None:
-        """Initialize the Mem0 memory instance with FireAI-specific configuration.
+        """
+        Initialize the Mem0 memory instance with FireAI-specific configuration.
 
         V76 Configuration (OpenAI Primary):
         - LLM: OpenAI gpt-4o (PRIMARY — best engineering accuracy)
@@ -395,7 +398,8 @@ class MemoryService:
         return self._status.initialized and self._memory is not None
 
     def add_memory(self, request: MemoryAddRequest) -> dict[str, Any]:
-        """Add a memory to the FireAI memory store.
+        """
+        Add a memory to the FireAI memory store.
 
         SAFETY: Memory addition is non-blocking. Failure NEVER prevents calculations.
         """
@@ -445,7 +449,8 @@ class MemoryService:
             }
 
     def search_memories(self, request: MemorySearchRequest) -> MemorySearchResponse:
-        """Search memories using hybrid search (semantic + BM25 + entity boosting).
+        """
+        Search memories using hybrid search (semantic + BM25 + entity boosting).
 
         SAFETY: Results are ADVISORY CONTEXT only.
         Memory search failure NEVER blocks calculations — returns empty results.
@@ -529,7 +534,8 @@ class MemoryService:
         agent_id: str | None = None,
         run_id: str | None = None,
     ) -> dict[str, Any]:
-        """Get all memories for a given scope.
+        """
+        Get all memories for a given scope.
 
         V113 FIX: mem0 v2 API compatibility.
         In mem0 v1, get_all() accepted user_id/agent_id/run_id kwargs.
@@ -674,7 +680,8 @@ class MemoryService:
             }
 
     def get_memory_history(self, memory_id: str) -> dict[str, Any]:
-        """Get the history of a specific memory (all changes over time).
+        """
+        Get the history of a specific memory (all changes over time).
 
         Supports agent.md's traceability requirement (Priority 7).
         """

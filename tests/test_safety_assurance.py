@@ -196,8 +196,10 @@ class TestClassifySafetyTier:
         assert result == SafetyTier.REJECTED
 
     def test_rule8_coverage_exactly_95_no_fallback_no_violations(self):
-        """Coverage 95, no fallback, no violations — not >= 99, so not PROOF_VALID.
-        Not fallback_used, so not rule 7. Rule 8: coverage >= 95 → FALLBACK_USED."""
+        """
+        Coverage 95, no fallback, no violations — not >= 99, so not PROOF_VALID.
+        Not fallback_used, so not rule 7. Rule 8: coverage >= 95 → FALLBACK_USED.
+        """
         result = classify_safety_tier(95.0, False, False, 0)
         assert result == SafetyTier.FALLBACK_USED
 

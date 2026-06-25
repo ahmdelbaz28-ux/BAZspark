@@ -1,4 +1,5 @@
-"""fireai.core.egress_calculator — Egress Time Calculation per NFPA 101.
+"""
+fireai.core.egress_calculator — Egress Time Calculation per NFPA 101.
 =====================================================================
 
 Implements egress time calculation for occupant evacuation:
@@ -60,7 +61,8 @@ _PREMOVEMENT_MAX_S = 180.0  # Sleeping occupants
 
 @dataclass(frozen=True)
 class EgressResult:
-    """Result from egress time calculation.
+    """
+    Result from egress time calculation.
 
     ASET/RSET Analysis:
       RSET = Detection Time + Pre-movement Time + Travel Time
@@ -101,7 +103,8 @@ def calculate_egress_time(
     premovement_time_s: float = 60.0,
     is_stair: bool = False,
 ) -> EgressResult:
-    """Calculate Required Safe Egress Time (RSET) per NFPA 101 §7.3.
+    """
+    Calculate Required Safe Egress Time (RSET) per NFPA 101 §7.3.
 
     NFPA 101 Chapter 7 — Egress Time Components:
       1. Travel Time: distance / walking speed
@@ -193,7 +196,8 @@ def minimum_exit_width(
     premovement_time_s: float = 60.0,
     is_stair: bool = False,
 ) -> dict[str, Any]:
-    """Calculate minimum exit width for a given RSET requirement.
+    """
+    Calculate minimum exit width for a given RSET requirement.
 
     NFPA 101 §7.3 — Egress capacity:
       Required flow = occupants / (RSET - premovement)

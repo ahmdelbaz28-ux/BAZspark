@@ -6,7 +6,8 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
-from hypothesis import Phase, given, settings, strategies as st
+from hypothesis import Phase, given, settings
+from hypothesis import strategies as st
 from hypothesis.stateful import RuleBasedStateMachine, invariant, rule
 from pydantic import ValidationError
 

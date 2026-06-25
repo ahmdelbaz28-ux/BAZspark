@@ -1,4 +1,5 @@
-"""fireai.core.circuit_topology — NFPA 72 Circuit Topology Classes.
+"""
+fireai.core.circuit_topology — NFPA 72 Circuit Topology Classes.
 ===============================================================
 
 Implements circuit topology models for fire alarm system wiring:
@@ -38,7 +39,8 @@ from typing import Any
 
 
 class CircuitClass(enum.Enum):
-    """NFPA 72 circuit class designations.
+    """
+    NFPA 72 circuit class designations.
 
     NFPA 72 §12.2 defines two primary circuit styles:
 
@@ -64,7 +66,8 @@ class CircuitClass(enum.Enum):
 
 
 class CircuitType(enum.Enum):
-    """Fire alarm circuit functional types.
+    """
+    Fire alarm circuit functional types.
 
     NFPA 72 §3.3 defines:
     - SLC (Signaling Line Circuit): Carries data between the control unit
@@ -102,7 +105,8 @@ MAX_NAC_DEVICES_DEFAULT = 99
 
 @dataclass(frozen=True)
 class CircuitDevice:
-    """A device connected to a fire alarm circuit.
+    """
+    A device connected to a fire alarm circuit.
 
     Represents any addressable or conventional device on an SLC or NAC.
     For SLC circuits, the device_type must include 'isolator' for fault
@@ -136,7 +140,8 @@ class CircuitDevice:
 
 @dataclass
 class CircuitTopology:
-    """NFPA 72 circuit topology representation.
+    """
+    NFPA 72 circuit topology representation.
 
     Models a fire alarm circuit with its class designation (A or B),
     functional type (SLC or NAC), connected devices, and total cable
@@ -178,7 +183,8 @@ class CircuitTopology:
     # ─── Device management ─────────────────────────────────────────────────
 
     def add_device(self, device: CircuitDevice) -> None:
-        """Add a device to this circuit.
+        """
+        Add a device to this circuit.
 
         Args:
             device: CircuitDevice to add.
@@ -191,7 +197,8 @@ class CircuitTopology:
         self.devices.append(device)
 
     def remove_device(self, device_id: str) -> bool:
-        """Remove a device by its ID.
+        """
+        Remove a device by its ID.
 
         Args:
             device_id: The device_id to remove.
@@ -207,7 +214,8 @@ class CircuitTopology:
         return False
 
     def get_isolator_indices(self) -> list[int]:
-        """Return indices of fault isolator devices in the device list.
+        """
+        Return indices of fault isolator devices in the device list.
 
         Per NFPA 72 §12.3, fault isolators must be placed on SLC circuits
         to limit the number of devices disabled by a single fault.
@@ -219,7 +227,8 @@ class CircuitTopology:
         return [i for i, dev in enumerate(self.devices) if "isolator" in dev.device_type.lower()]
 
     def get_device_count_between_isolators(self) -> list[int]:
-        """Calculate device counts between consecutive isolators.
+        """
+        Calculate device counts between consecutive isolators.
 
         NFPA 72 §12.3.1: No more than 32 addressable devices shall be
         connected between isolators on an SLC.
@@ -259,7 +268,8 @@ class CircuitTopology:
     # ─── Length tracking ───────────────────────────────────────────────────
 
     def total_cable_length_m(self) -> float:
-        """Calculate total cable length for this circuit.
+        """
+        Calculate total cable length for this circuit.
 
         For Class A circuits (NFPA 72 §12.2.2), the total cable length
         includes both the outgoing AND return conductors. The return
@@ -282,7 +292,8 @@ class CircuitTopology:
     # ─── Validation ────────────────────────────────────────────────────────
 
     def validate(self) -> dict[str, Any]:
-        """Validate this circuit topology against NFPA 72 requirements.
+        """
+        Validate this circuit topology against NFPA 72 requirements.
 
         Checks:
           1. Device count between isolators ≤ 32 (NFPA 72 §12.3.1)
@@ -490,7 +501,8 @@ class CircuitTopology:
 
     @staticmethod
     def _validate_device_coordinates(device: CircuitDevice) -> None:
-        """Validate that device coordinates are finite numbers.
+        """
+        Validate that device coordinates are finite numbers.
 
         SAFETY CRITICAL: NaN/Inf coordinates indicate data corruption
         and MUST be rejected. A device with NaN coordinates cannot be

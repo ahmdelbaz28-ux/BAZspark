@@ -69,21 +69,21 @@ class TestExactConversionFactors:
         assert FEET_TO_METRES == 0.3048
 
     def test_metres_to_feet_inverse(self):
-        assert METRES_TO_FEET == pytest.approx(1.0 / 0.3048)
+        assert pytest.approx(1.0 / 0.3048) == METRES_TO_FEET
 
     def test_inches_to_mm_exact(self):
         """1 in = 25.4 mm exactly (since 1959)."""
         assert INCHES_TO_MM == 25.4
 
     def test_mm_to_inches_inverse(self):
-        assert MM_TO_INCHES == pytest.approx(1.0 / 25.4)
+        assert pytest.approx(1.0 / 25.4) == MM_TO_INCHES
 
     def test_feet_to_mm_composition(self):
         """FEET_TO_MM = FEET_TO_METRES × 1000."""
         assert FEET_TO_MM == FEET_TO_METRES * 1000.0
 
     def test_mm_to_feet_inverse(self):
-        assert MM_TO_FEET == pytest.approx(1.0 / FEET_TO_MM)
+        assert pytest.approx(1.0 / FEET_TO_MM) == MM_TO_FEET
 
     def test_sqft_to_sqm_exact(self):
         """1 ft² = 0.3048² = 0.09290304 m² exactly."""
@@ -91,7 +91,7 @@ class TestExactConversionFactors:
         assert SQFT_TO_SQM == FEET_TO_METRES ** 2
 
     def test_sqm_to_sqft_inverse(self):
-        assert SQM_TO_SQFT == pytest.approx(1.0 / 0.09290304)
+        assert pytest.approx(1.0 / 0.09290304) == SQM_TO_SQFT
 
     def test_sqin_to_sqmm_exact(self):
         """1 in² = 25.4² = 645.16 mm² exactly."""
@@ -100,25 +100,25 @@ class TestExactConversionFactors:
 
     def test_cubic_ft_to_cubic_m_exact(self):
         """1 ft³ = 0.3048³ = 0.028316846592 m³ exactly."""
-        assert CUBIC_FT_TO_CUBIC_M == pytest.approx(0.3048 ** 3)
+        assert pytest.approx(0.3048 ** 3) == CUBIC_FT_TO_CUBIC_M
 
     def test_gallons_to_litres_exact(self):
         """1 US gal = 3.785411784 L exactly."""
         assert GALLONS_US_TO_LITRES == 3.785411784
 
     def test_litres_to_gallons_inverse(self):
-        assert LITRES_TO_GALLONS_US == pytest.approx(1.0 / 3.785411784)
+        assert pytest.approx(1.0 / 3.785411784) == LITRES_TO_GALLONS_US
 
     def test_psi_to_bar_approx(self):
         """1 psi ≈ 0.0689476 bar."""
-        assert PSI_TO_BAR == pytest.approx(0.0689476, rel=1e-6)
+        assert pytest.approx(0.0689476, rel=1e-6) == PSI_TO_BAR
 
     def test_bar_to_psi_inverse(self):
-        assert BAR_TO_PSI == pytest.approx(1.0 / 0.0689476, rel=1e-6)
+        assert pytest.approx(1.0 / 0.0689476, rel=1e-6) == BAR_TO_PSI
 
     def test_psi_to_kpa_approx(self):
         """1 psi ≈ 6.89476 kPa."""
-        assert PSI_TO_KPA == pytest.approx(6.89476, rel=1e-6)
+        assert pytest.approx(6.89476, rel=1e-6) == PSI_TO_KPA
 
     def test_psf_to_psi_exact(self):
         """1 psi = 144 psf."""
@@ -130,11 +130,11 @@ class TestExactConversionFactors:
         assert GPM_TO_LPM == GALLONS_US_TO_LITRES
 
     def test_lpm_to_gpm_inverse(self):
-        assert LPM_TO_GPM == pytest.approx(1.0 / 3.785411784)
+        assert pytest.approx(1.0 / 3.785411784) == LPM_TO_GPM
 
     def test_fahrenheit_constants(self):
         assert FAHRENHEIT_OFFSET == 32.0
-        assert FAHRENHEIT_SCALE == pytest.approx(5.0 / 9.0)
+        assert pytest.approx(5.0 / 9.0) == FAHRENHEIT_SCALE
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -232,7 +232,7 @@ class TestRevitInternalMMConversions:
             mm_to_revit_internal(float("inf"))
 
     def test_round_trip_mm(self):
-        """mm → ft → mm must return original."""
+        """Mm → ft → mm must return original."""
         original_mm = 1500.0  # 1.5 m
         result = revit_internal_to_mm(mm_to_revit_internal(original_mm))
         assert result == pytest.approx(original_mm, rel=1e-6)

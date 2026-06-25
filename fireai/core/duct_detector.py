@@ -1,4 +1,5 @@
-"""duct_detector.py — NFPA 72 §17.7.5 Duct Detector Placement.
+"""
+duct_detector.py — NFPA 72 §17.7.5 Duct Detector Placement.
 ============================================================
 Computes required duct smoke detector positions per NFPA 72-2022 §17.7.5.
 
@@ -60,7 +61,8 @@ _LENGTH_MISMATCH_TOLERANCE: float = 0.10  # 10 cm
 
 @dataclass(frozen=True)
 class DuctSpec:
-    """Immutable specification of one air duct.
+    """
+    Immutable specification of one air duct.
 
     Args:
         duct_id:      Unique identifier for this duct.
@@ -133,7 +135,8 @@ class DuctSpec:
 
 @dataclass(frozen=True)
 class DuctDetectorPosition:
-    """Position of one duct smoke detector.
+    """
+    Position of one duct smoke detector.
 
     nfpa_ref cites the requirement for duct detectors (NFPA 72 §17.7.5).
     spacing_ref cites the maximum inter-detector spacing (NFPA 90A §6.4.2.2).
@@ -150,7 +153,8 @@ class DuctDetectorPosition:
 
 @dataclass(frozen=True)
 class DuctAnalysisResult:
-    """Complete analysis result for one duct.
+    """
+    Complete analysis result for one duct.
 
     nfpa_ref cites the requirement for duct detectors (NFPA 72 §17.7.5).
     spacing_ref cites the maximum inter-detector spacing (NFPA 90A §6.4.2.2).
@@ -184,7 +188,8 @@ class DuctAnalysisResult:
 
 
 def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
-    """Compute required duct detector positions per NFPA 72 §17.7.5.
+    """
+    Compute required duct detector positions per NFPA 72 §17.7.5.
 
     Placement algorithm:
       1. Check exemptions (width, length, duct type).

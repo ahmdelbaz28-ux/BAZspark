@@ -1,4 +1,5 @@
-"""Authentication and authorization dependencies for FastAPI.
+"""
+Authentication and authorization dependencies for FastAPI.
 
 Provides FastAPI dependencies for extracting the current user's role
 from the request and enforcing permission checks on endpoints.
@@ -12,7 +13,8 @@ from backend.rbac import Permission, Role, has_permission
 
 
 def get_current_role(request: Request) -> Role:
-    """Extract the current user's role from the request.
+    """
+    Extract the current user's role from the request.
 
     The role is set by the ApiKeyMiddleware on request.state.fireai_role
     and also stored in request.scope["fireai_role"] as a fallback.
@@ -32,7 +34,8 @@ def get_current_role(request: Request) -> Role:
 
 
 def require_permission(permission: Permission):
-    """FastAPI dependency factory that requires a specific permission.
+    """
+    FastAPI dependency factory that requires a specific permission.
 
     Usage:
         @router.post("", dependencies=[Depends(require_permission(Permission.PROJECT_CREATE))])

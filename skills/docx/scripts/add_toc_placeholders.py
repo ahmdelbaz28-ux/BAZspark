@@ -24,6 +24,7 @@ Example:
     python add_toc_placeholders.py document.docx
     python add_toc_placeholders.py document.docx --auto
     python add_toc_placeholders.py document.docx --entries '[{"level":1,"text":"Introduction","page":"1"}]'
+
 """
 
 import argparse
@@ -34,10 +35,12 @@ import sys
 import tempfile
 import zipfile
 from pathlib import Path
+from typing import Optional
 
 
 def _extract_headings_from_docx(docx_path: str, max_level: int = 3) -> list:
-    """Extract headings from a DOCX file for auto-mode TOC generation.
+    """
+    Extract headings from a DOCX file for auto-mode TOC generation.
 
     Args:
         docx_path: Path to DOCX file
@@ -45,6 +48,7 @@ def _extract_headings_from_docx(docx_path: str, max_level: int = 3) -> list:
 
     Returns:
         List of dicts with 'level', 'text', 'page' keys
+
     """
     from docx import Document
 
@@ -79,13 +83,15 @@ def _extract_headings_from_docx(docx_path: str, max_level: int = 3) -> list:
     return entries
 
 
-def add_toc_placeholders(docx_path: str, entries: list = None) -> None:
-    """Add placeholder TOC entries to a DOCX file (in-place replacement).
+def add_toc_placeholders(docx_path: str, entries: Optional[list] = None) -> None:
+    """
+    Add placeholder TOC entries to a DOCX file (in-place replacement).
 
     Args:
         docx_path: Path to DOCX file (will be modified in-place)
         entries: Optional list of placeholder entries. Each entry should be a dict
                  with 'level' (1-3), 'text', and 'page' keys.
+
     """
     docx_path = Path(docx_path)
 
@@ -141,7 +147,8 @@ def add_toc_placeholders(docx_path: str, entries: list = None) -> None:
 
 
 def _fix_update_fields(settings_xml_path: Path) -> None:
-    """Fix settings.xml to ensure <w:updateFields w:val="true"/> is present.
+    """
+    Fix settings.xml to ensure <w:updateFields w:val="true"/> is present.
 
     The docx npm library generates <w:updateFields/> without val="true",
     which Word/WPS interprets as false, preventing TOC auto-update on open.
@@ -176,7 +183,8 @@ def _fix_update_fields(settings_xml_path: Path) -> None:
 
 
 def _fix_heading_outline_levels(styles_xml_path: Path) -> None:
-    """Fix Heading styles to include outlineLvl in pPr.
+    """
+    Fix Heading styles to include outlineLvl in pPr.
 
     The docx npm library creates Heading styles but sometimes doesn't set outlineLvl
     in the style definition. Without outlineLvl, Word's TOC field update won't find
@@ -237,7 +245,8 @@ def _fix_heading_outline_levels(styles_xml_path: Path) -> None:
 
 
 def _fix_fld_char_structure(xml_content: str) -> str:
-    """Fix malformed fldChar structure where begin+instrText+separate are in one <w:r>.
+    """
+    Fix malformed fldChar structure where begin+instrText+separate are in one <w:r>.
 
     The docx npm library generates:
         <w:r><w:fldChar begin/><w:instrText>TOC...</w:instrText><w:fldChar separate/></w:r>
@@ -281,13 +290,15 @@ def _fix_fld_char_structure(xml_content: str) -> str:
 
 
 def _detect_toc_styles(styles_xml_path: Path) -> dict:
-    """Detect TOC style IDs from styles.xml.
+    """
+    Detect TOC style IDs from styles.xml.
 
     Args:
         styles_xml_path: Path to styles.xml
 
     Returns:
         Dictionary mapping level (1-3) to style ID string
+
     """
     if not styles_xml_path.exists():
         return {}
@@ -320,10 +331,12 @@ def _detect_toc_styles(styles_xml_path: Path) -> dict:
 
 
 def _ensure_toc_styles(styles_xml_path: Path) -> dict:
-    """Ensure TOC styles exist in styles.xml, adding them if necessary.
+    """
+    Ensure TOC styles exist in styles.xml, adding them if necessary.
 
     Returns:
         Dictionary mapping level (1-3) to style ID string
+
     """
     if not styles_xml_path.exists():
         return {1: "9", 2: "11", 3: "12"}
@@ -429,8 +442,9 @@ def _ensure_hyperlink_style(styles_xml_path: Path) -> None:
         print("Added Hyperlink character style")
 
 
-def _insert_toc_placeholders(xml_content: str, entries: list = None, toc_style_mapping: dict = None) -> str:
-    """Insert placeholder TOC entries and heading bookmarks into XML content.
+def _insert_toc_placeholders(xml_content: str, entries: Optional[list] = None, toc_style_mapping: Optional[dict] = None) -> str:
+    """
+    Insert placeholder TOC entries and heading bookmarks into XML content.
 
     Uses lxml ElementTree for robust XML manipulation instead of fragile regex.
 
@@ -448,6 +462,7 @@ def _insert_toc_placeholders(xml_content: str, entries: list = None, toc_style_m
 
     Raises:
         RuntimeError: If TOC structure cannot be found or is malformed
+
     """
     from lxml import etree
 
@@ -574,16 +589,15 @@ def _insert_toc_placeholders(xml_content: str, entries: list = None, toc_style_m
                 "TOC FAILED: No field structure found in document. "
                 "Ensure the code includes a TableOfContents element."
             )
-        elif not has_separate:
+        if not has_separate:
             raise RuntimeError(
                 "TOC FAILED: TOC field has 'begin' but no 'separate' fldChar. "
                 "Run _fix_fld_char_structure() first or check the docx-js version."
             )
-        else:
-            raise RuntimeError(
-                "TOC FAILED: Field structure found but no TOC instrText detected. "
-                "Ensure TableOfContents element generates a TOC \\o field code."
-            )
+        raise RuntimeError(
+            "TOC FAILED: Field structure found but no TOC instrText detected. "
+            "Ensure TableOfContents element generates a TOC \\o field code."
+        )
 
     # ── Step 3: Remove everything between separate-para and end-para ──
     # The TOC paragraphs may be direct children of <w:body> or wrapped in <w:sdt><w:sdtContent>
@@ -719,7 +733,7 @@ def main():
         except json.JSONDecodeError as e:
             print(f"Error parsing entries JSON: {e}", file=sys.stderr)
             sys.exit(1)
-    elif args.auto or True:
+    elif True:
         # Default to auto mode — always extract from document headings
         entries = _extract_headings_from_docx(args.docx_file)
         if entries:

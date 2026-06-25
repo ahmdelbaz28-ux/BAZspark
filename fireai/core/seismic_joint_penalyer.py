@@ -1,4 +1,5 @@
-"""fireai/core/seismic_joint_penalyer.py.
+"""
+fireai/core/seismic_joint_penalyer.py.
 ======================================
 Seismic / Building Expansion Joint Routing Penalty Engine.
 
@@ -145,7 +146,8 @@ def _compute_approach_angle(
     joint_start: tuple[float, float],
     joint_end: tuple[float, float],
 ) -> float:
-    """Compute the crossing angle between the path and the joint line.
+    """
+    Compute the crossing angle between the path and the joint line.
 
     Returns the angle in degrees.  90° means perfectly orthogonal
     (path crosses joint at right angle).  0° means parallel
@@ -187,7 +189,8 @@ def _compute_approach_angle(
 
 
 class SeismicJointPenalyer:
-    """Detects and enforces orthogonal crossing of structural joints
+    """
+    Detects and enforces orthogonal crossing of structural joints
     by fire-alarm routing paths.
 
     V19.1 ENHANCEMENT: Joint crossings are now ALLOWED but must be
@@ -224,7 +227,8 @@ class SeismicJointPenalyer:
         path: list[tuple[float, float]],
         seismic_joints: list[StructuralJoint],
     ) -> Any:
-        """Analyse a routing path for structural joint crossings.
+        """
+        Analyse a routing path for structural joint crossings.
 
         V19.1: Crossings are permitted but must be orthogonal.
         Non-orthogonal crossings generate violations.  All crossings

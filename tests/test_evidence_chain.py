@@ -370,7 +370,7 @@ class TestSignMethod:
         """V59 FIX: Namespace is included in HMAC input."""
         sig = chain._sign("test_hash")
         # Manually compute expected signature
-        message = f"{chain._namespace}:test_hash".encode("utf-8")
+        message = f"{chain._namespace}:test_hash".encode()
         expected = hmac.new(
             chain._secret_key, message, hashlib.sha256
         ).hexdigest()

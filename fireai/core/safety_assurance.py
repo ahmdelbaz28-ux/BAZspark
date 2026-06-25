@@ -1,4 +1,5 @@
-"""safety_assurance.py — FireAI Safety Assurance Module.
+"""
+safety_assurance.py — FireAI Safety Assurance Module.
 =====================================================
 
 Adopted from the external consultant's Safety Assurance Architecture,
@@ -49,7 +50,8 @@ logger = logging.getLogger(__name__)
 
 
 class SafetyTier(enum.Enum):
-    """4-tier confidence scoring for fire safety designs.
+    """
+    4-tier confidence scoring for fire safety designs.
 
     Adopted from consultant's Safety Assurance Architecture.
     Extends our existing 3-tier (VERIFIED/WARNING/FAIL) with a top
@@ -97,7 +99,8 @@ def classify_safety_tier(
     fallback_used: bool = False,
     wall_violations: int = 0,
 ) -> SafetyTier:
-    """Classify a design into one of 4 safety tiers.
+    """
+    Classify a design into one of 4 safety tiers.
 
     This is the PRIMARY safety gate for all FireAI designs.
     No design should be submitted for AHJ review without
@@ -176,7 +179,8 @@ def tier_can_submit(tier: SafetyTier) -> bool:
 
 
 class FailSafeRule:
-    """Fail-safe rules for the FireAI system.
+    """
+    Fail-safe rules for the FireAI system.
 
     Principle: "When in doubt, reject. When broken, stop. When unsure, escalate."
 
@@ -233,7 +237,8 @@ def apply_fail_safe(
     wall_violations: int = 0,
     fallback_used: bool = False,  # V52 FIX: Was hardcoded False — heuristic designs classified as submittable
 ) -> dict[str, Any]:
-    """Apply fail-safe rules and return a safety decision.
+    """
+    Apply fail-safe rules and return a safety decision.
 
     This is the gate that ALL designs must pass before being submitted.
     It checks the most critical safety conditions first and fails fast.
@@ -405,7 +410,8 @@ def apply_fail_safe(
 
 
 class OverrideRole(enum.Enum):
-    """Roles that can override safety decisions.
+    """
+    Roles that can override safety decisions.
 
     V109 FIX: Restored AHJ and QA_AUDITOR roles (test contract requires them).
     These are critical safety roles:
@@ -453,7 +459,8 @@ OVERRIDE_PERMISSIONS = {
 
 @dataclass(frozen=True)
 class OverrideRecord:
-    """Record of a safety override for audit trail.
+    """
+    Record of a safety override for audit trail.
 
     V109 FIX: Restored backward-compatible fields from test contract.
     All overrides must be documented with:
@@ -543,7 +550,8 @@ def check_review_triggers(
     total_rooms: int = 0,
     flagged_rooms: int = -1,
 ) -> list[dict[str, Any]]:
-    """Check if any mandatory review triggers are activated.
+    """
+    Check if any mandatory review triggers are activated.
 
     Args:
         coverage_pct: Room coverage percentage.
@@ -644,7 +652,8 @@ def check_review_triggers(
 
 @dataclass
 class EngineeringEvidencePackage:
-    """Engineering evidence package for AHJ submission.
+    """
+    Engineering evidence package for AHJ submission.
 
     Adopted from consultant's architecture. This structure ensures
     that all necessary information is captured for regulatory review.
@@ -697,7 +706,8 @@ class EngineeringEvidencePackage:
     algorithm_version: str = "V20.2"
 
     def __post_init__(self):
-        """V60 FIX (P1-3): Auto-compute integrity hash on construction.
+        """
+        V60 FIX (P1-3): Auto-compute integrity hash on construction.
 
         Previously, `compute_integrity_hash()` existed but was NEVER called.
         The `proof_hash` field remained None, meaning any SafetyProofPackage
@@ -712,7 +722,8 @@ class EngineeringEvidencePackage:
             object.__setattr__(self, "proof_hash", self.compute_integrity_hash())
 
     def compute_integrity_hash(self) -> str:
-        """Compute SHA-256 hash of the entire evidence package for integrity.
+        """
+        Compute SHA-256 hash of the entire evidence package for integrity.
 
         V43 FIX: Previously only hashed 7 of 20+ fields, allowing undetected
         tampering with room geometry, ceiling height, spacing, etc. An attacker

@@ -1,4 +1,5 @@
-"""audit_integrity_helper.py — Signed Audit Trail for DB Writes.
+"""
+audit_integrity_helper.py — Signed Audit Trail for DB Writes.
 ===============================================================
 
 MISSION PHASE 1.3 — Audit Integrity with Correlation-ID
@@ -61,7 +62,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_correlation_id() -> str | None:
-    """Extract the Correlation-ID from the current request context.
+    """
+    Extract the Correlation-ID from the current request context.
 
     The CorrelationIdMiddleware (backend/request_context.py) stores the
     correlation ID in a contextvar. This function retrieves it for
@@ -93,7 +95,8 @@ def record_audit_write(
     success: bool = True,
     error: str | None = None,
 ) -> str | None:
-    """Record a signed audit entry for a database write operation.
+    """
+    Record a signed audit entry for a database write operation.
 
     Per PHASE 1.3: every DB write MUST trigger a signed AuditStore entry
     including the Correlation-ID for traceability.
@@ -153,7 +156,8 @@ def audit_db_write(
     table: str,
     record_id_arg: str | None = None,
 ) -> Callable:
-    """Decorator that wraps a database write function with audit logging.
+    """
+    Decorator that wraps a database write function with audit logging.
 
     Usage:
         @audit_db_write("create_project", "projects", record_id_arg="project_id")
@@ -286,7 +290,8 @@ def audit_write_context(
     record_id: str | None = None,
     details: dict[str, Any] | None = None,
 ):
-    """Context manager for auditing database writes.
+    """
+    Context manager for auditing database writes.
 
     Usage:
         with audit_write_context("update_device", "devices", record_id="DEV-001"):

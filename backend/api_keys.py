@@ -1,4 +1,5 @@
-"""API Key management with role-based access control.
+"""
+API Key management with role-based access control.
 
 Each API key is associated with a role (admin, engineer, viewer).
 Keys are stored as SHA-256 hashes (never plaintext).
@@ -48,7 +49,8 @@ _BCRYPT_MAX_INPUT = 72  # bcrypt's hard limit
 
 
 def _normalize_key_for_bcrypt(key: str) -> bytes:
-    """Normalize a key for bcrypt input.
+    """
+    Normalize a key for bcrypt input.
 
     bcrypt has a 72-byte limit. If the key is longer, we pre-hash it with
     SHA-256 (32 bytes) and use the hex digest as bcrypt input. This is
@@ -77,7 +79,8 @@ _DUMMY_BCRYPT_HASH_REAL: str = ""
 
 
 def _get_dummy_bcrypt_hash() -> str:
-    """Get (or lazily create) a real bcrypt hash for timing equalization.
+    """
+    Get (or lazily create) a real bcrypt hash for timing equalization.
 
     We hash a random string once at first use, then reuse the hash for all
     dummy verifications. bcrypt.checkpw is constant-time for the same hash.
@@ -95,7 +98,8 @@ def _get_dummy_bcrypt_hash() -> str:
 
 
 def _timing_safe_dummy_verify(key: str) -> None:
-    """Run a dummy bcrypt verification to equalize response timing.
+    """
+    Run a dummy bcrypt verification to equalize response timing.
 
     Called when validate_api_key would otherwise return None immediately.
     This makes valid and invalid key responses take the same time (~250ms),
@@ -153,7 +157,8 @@ _VALIDATED_KEY_CACHE_TTL = float(os.getenv("FIREAI_KEY_CACHE_TTL", "300"))
 
 
 def _load_server_secret() -> bytes:
-    """Load or create the per-server HMAC secret used for fast key lookup.
+    """
+    Load or create the per-server HMAC secret used for fast key lookup.
 
     STRICT FIX D: Use O_CREAT|O_EXCL to prevent TOCTOU race on first run.
     If two processes start simultaneously and both try to create the secret
@@ -200,7 +205,8 @@ def _load_server_secret() -> bytes:
 
 
 def _lookup_key(key: str) -> str:
-    """Compute the deterministic lookup key (HMAC-SHA256) for an API key.
+    """
+    Compute the deterministic lookup key (HMAC-SHA256) for an API key.
 
     This is the O(1) index into the keys dict. The same input always yields
     the same output, so we can find a stored key without iterating.
@@ -210,7 +216,8 @@ def _lookup_key(key: str) -> str:
 
 
 def _hash_key(key: str) -> str:
-    """Hash an API key using bcrypt if available, otherwise HMAC-SHA256 with salt.
+    """
+    Hash an API key using bcrypt if available, otherwise HMAC-SHA256 with salt.
 
     FIX #30: Previously the SHA-256 fallback had no salt, making all
     identical keys produce the same hash (vulnerable to rainbow tables).
@@ -235,7 +242,8 @@ def _hash_key(key: str) -> str:
 
 
 def _verify_key(key: str, hashed_key: str) -> bool:
-    """Verify an API key against its stored hash.
+    """
+    Verify an API key against its stored hash.
 
     STRESS-TEST FIX #1: This is the ONLY correct way to verify a key against
     a stored bcrypt hash. Re-hashing the input (as the old validate_api_key
@@ -284,7 +292,8 @@ def _load_keys() -> dict:
 
 
 def _save_keys(keys: dict) -> None:
-    """Save API keys to the JSON file.
+    """
+    Save API keys to the JSON file.
 
     STRESS-TEST FIX #4: Atomic write — write to a temp file in the same
     directory, fsync, then atomically rename. Prevents corruption from
@@ -311,7 +320,8 @@ def _save_keys(keys: dict) -> None:
 
 
 def _ensure_default_admin_key() -> None:
-    """Ensure at least one admin key exists (from env var on first run).
+    """
+    Ensure at least one admin key exists (from env var on first run).
 
     STRESS-TEST FIX #1: Uses the new add_api_key() which stores both the
     HMAC lookup key and the bcrypt hash, so the key is actually usable.
@@ -335,7 +345,8 @@ def _ensure_default_admin_key() -> None:
 
 
 def add_api_key(key: str, role: Role, description: str = "") -> str:
-    """Add a new API key. Returns the key hash.
+    """
+    Add a new API key. Returns the key hash.
 
     STRESS-TEST FIX #1: We now store BOTH a deterministic lookup key (HMAC)
     AND a bcrypt hash of the key. The lookup key is the dict key for O(1)
@@ -368,7 +379,8 @@ def add_api_key(key: str, role: Role, description: str = "") -> str:
 
 
 def validate_api_key(key: str) -> APIKeyInfo | None:
-    """Validate an API key and return its info including role.
+    """
+    Validate an API key and return its info including role.
 
     Returns None if the key is invalid or empty.
 
@@ -471,7 +483,8 @@ def validate_api_key(key: str) -> APIKeyInfo | None:
 
 
 def validate_api_key_by_hash(key_hash: str) -> APIKeyInfo | None:
-    """Validate an API key by its hash (for internal lookups).
+    """
+    Validate an API key by its hash (for internal lookups).
 
     Returns None if the hash is not found.
 
@@ -502,7 +515,8 @@ def validate_api_key_by_hash(key_hash: str) -> APIKeyInfo | None:
 
 
 def generate_api_key(role: Role, description: str = "") -> str:
-    """Generate a new random API key with the given role.
+    """
+    Generate a new random API key with the given role.
 
     Returns the plaintext key (show once!).
     """
@@ -526,7 +540,8 @@ def list_api_keys() -> list:
 
 
 def delete_api_key(key_hash: str) -> bool:
-    """Delete an API key by its hash (or lookup key).
+    """
+    Delete an API key by its hash (or lookup key).
 
     STRESS-TEST FIX #1: Accepts both old (bcrypt hash) and new (HMAC lookup)
     key identifiers for backward compatibility.

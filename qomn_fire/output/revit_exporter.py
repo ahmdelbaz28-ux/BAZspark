@@ -1,6 +1,4 @@
-"""
-QOMN-FIRE BIM EXCHANGE SCHEMA EXPORTER
-"""
+"""QOMN-FIRE BIM EXCHANGE SCHEMA EXPORTER"""
 
 import json
 from typing import List

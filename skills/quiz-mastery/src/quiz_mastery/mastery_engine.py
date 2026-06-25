@@ -20,7 +20,8 @@ class MasteryEngine:
         questions: list[Question],
         results: list[AnswerResult],
     ) -> dict[str, MasteryRecord]:
-        """Update mastery records based on quiz results.
+        """
+        Update mastery records based on quiz results.
 
         - Correct answer at current level → level up (max 3)
         - Wrong answer → level down (min 1)
@@ -81,7 +82,8 @@ class MasteryEngine:
         return existing_records
 
     def _update_weak_status(self, record: MasteryRecord) -> None:
-        """Mark or unmark a knowledge point as weak.
+        """
+        Mark or unmark a knowledge point as weak.
 
         Weak if: accuracy < 0.5 OR last 2 attempts both wrong
         Recover if: accuracy >= 0.8 for last 2 consecutive attempts
@@ -105,7 +107,8 @@ class MasteryEngine:
     def _update_review_schedule(
         self, record: MasteryRecord, is_correct: bool, today_str: str
     ) -> None:
-        """Update Ebbinghaus spaced repetition schedule.
+        """
+        Update Ebbinghaus spaced repetition schedule.
 
         Correct → advance review_stage (max 4)
         Wrong → reset review_stage to 0
@@ -125,7 +128,8 @@ class MasteryEngine:
         records: dict[str, MasteryRecord],
         today_str: str,
     ) -> list[str]:
-        """Return knowledge point IDs that need review.
+        """
+        Return knowledge point IDs that need review.
 
         Criteria:
         - next_review_at <= today (due for review)

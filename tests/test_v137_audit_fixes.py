@@ -1,14 +1,12 @@
-"""test_v137_audit_fixes.py — Regression tests for V137 AUDIT findings (F-1 to F-9).
+"""
+test_v137_audit_fixes.py — Regression tests for V137 AUDIT findings (F-1 to F-9).
 
 Per agent.md Rule 10 + Rule 19.
 """
 
 from __future__ import annotations
 
-import math
-
 import pytest
-
 
 # F-1: AuditStore thread safety
 
@@ -27,8 +25,9 @@ class TestAuditChainThreadSafety:
         audit_store._DEV_KEY_WARNED = False
         audit_store._db_initialized = False
 
-        from fireai.core.audit_store import AuditStore, verify_chain
         import threading
+
+        from fireai.core.audit_store import AuditStore
 
         errors = []
 
@@ -66,6 +65,7 @@ class TestWebSocketOriginEnforcement:
     def test_csrf_middleware_has_websocket_handling(self):
         """CSRF middleware should have WebSocket scope handling."""
         import inspect
+
         from backend.security_csrf import CSRFMiddleware
         source = inspect.getsource(CSRFMiddleware.__call__)
         # V137 F-2: Must contain rejection code (not just logging)
@@ -83,6 +83,7 @@ class TestWebhookAsyncTimeout:
     def test_publish_uses_as_completed(self):
         """publish_event should use as_completed for proper timeout."""
         import inspect
+
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
         source = inspect.getsource(WebhookDeliveryService.publish_event)
         # V137 F-3: Must use as_completed (not concurrent.futures.wait)
@@ -99,6 +100,7 @@ class TestFailedResultAudit:
     def test_failed_result_records_audit(self):
         """_failed_result should call AuditStore.add_event."""
         import inspect
+
         from fireai.core.pipeline import _failed_result
         source = inspect.getsource(_failed_result)
         assert "ROOM_ANALYSIS_FAILED" in source, (
@@ -115,6 +117,7 @@ class TestBIMExtractRoomsSSRF:
     def test_extract_rooms_validates_source(self):
         """extract_rooms endpoint should validate source path."""
         import inspect
+
         from backend.routers.v2 import extract_rooms
         source = inspect.getsource(extract_rooms)
         assert "path traversal" in source.lower() or "allowed_directories" in source.lower() or "null byte" in source.lower(), (

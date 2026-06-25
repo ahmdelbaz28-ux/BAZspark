@@ -34,7 +34,8 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # ============================================================================
 
 class TestSSoTViolations:
-    """Verify that NFPA 72 constants exist in ONE place only.
+    """
+    Verify that NFPA 72 constants exist in ONE place only.
 
     CRITICAL: Five parallel implementations of smoke detector spacing
     existed across the codebase. These tests verify they are now unified.
@@ -50,7 +51,8 @@ class TestSSoTViolations:
         assert hasattr(qomn_kernel, 'NFPA72_COVERAGE_RADIUS_FACTOR')
 
     def test_no_duplicate_smoke_spacing_table_in_qomn_kernel(self):
-        """qomn_kernel.py must NOT define its own SMOKE_SPACING_TABLE.
+        """
+        qomn_kernel.py must NOT define its own SMOKE_SPACING_TABLE.
 
         The old code had NFPA72_SMOKE_SPACING_TABLE defined locally with
         wrong values (1%/ft reduction applied on top of table values).
@@ -107,7 +109,8 @@ class TestSSoTViolations:
 # ============================================================================
 
 class TestSmokeDetectorSpacingCompliance:
-    """Verify smoke detector spacing matches NFPA 72-2022 §17.7.3.2.3.
+    """
+    Verify smoke detector spacing matches NFPA 72-2022 §17.7.3.2.3.
 
     NFPA 72 §17.7.3.2.3 states: "Spot-type smoke detectors shall be spaced
     not more than 30 ft (9.1 m) apart on smooth ceilings."
@@ -142,7 +145,8 @@ class TestSmokeDetectorSpacingCompliance:
         )
 
     def test_qomn_kernel_smoke_no_double_reduction(self):
-        """V127 Phase C: No additional 1%/ft reduction on top of table values.
+        """
+        V127 Phase C: No additional 1%/ft reduction on top of table values.
 
         The V120 bug applied 1%/ft reduction ON TOP of already-reduced
         table values, causing double-reduction. At h=60ft (18.288m),
@@ -166,7 +170,8 @@ class TestSmokeDetectorSpacingCompliance:
         )
 
     def test_smoke_spacing_table_values_are_conservative(self):
-        """All height-adjusted smoke spacing values must be <= 9.1m (flat spacing).
+        """
+        All height-adjusted smoke spacing values must be <= 9.1m (flat spacing).
 
         The table values should DECREASE as ceiling height increases.
         They are CONSERVATIVE (more detectors) per NFPA 72 §17.7.3.2.3
@@ -208,7 +213,8 @@ class TestSmokeDetectorSpacingCompliance:
 # ============================================================================
 
 class TestCeilingHeightLimits:
-    """Verify ceiling height limits are correct per detector type.
+    """
+    Verify ceiling height limits are correct per detector type.
 
     NFPA 72-2022 specifies DIFFERENT limits for smoke vs heat:
       - Smoke: 60ft (18.288m) per §17.7.3.2.4
@@ -237,8 +243,10 @@ class TestCeilingHeightLimits:
         )
 
     def test_hard_limit_matches_smoke(self):
-        """The hard ceiling height limit (for guard_ceiling_height_m) must
-        be 18.288m — the smoke detector absolute maximum."""
+        """
+        The hard ceiling height limit (for guard_ceiling_height_m) must
+        be 18.288m — the smoke detector absolute maximum.
+        """
         from fireai.constants.nfpa72 import CEILING_HEIGHT_HARD_LIMIT_M
 
         assert CEILING_HEIGHT_HARD_LIMIT_M == 18.288, (
@@ -247,7 +255,8 @@ class TestCeilingHeightLimits:
         )
 
     def test_guard_accepts_smoke_at_17m(self):
-        """guard_ceiling_height_m must accept h=17m (within 18.288m limit).
+        """
+        guard_ceiling_height_m must accept h=17m (within 18.288m limit).
 
         The old code rejected heights > 15.24m, which would incorrectly
         block valid smoke detector placements between 15.24m and 18.288m.
@@ -292,7 +301,8 @@ class TestCeilingHeightLimits:
 # ============================================================================
 
 class TestCrossModuleConsistency:
-    """Verify that NFPA 72 values are consistent across all modules.
+    """
+    Verify that NFPA 72 values are consistent across all modules.
 
     This is the HEART of the audit: five parallel implementations had
     DIFFERENT values for the same NFPA 72 constant. These tests verify
@@ -400,7 +410,8 @@ class TestCrossModuleConsistency:
 # ============================================================================
 
 class TestImportChainIntegrity:
-    """Verify all NFPA 72 constants trace to the canonical source.
+    """
+    Verify all NFPA 72 constants trace to the canonical source.
 
     Per agent.md Rule #17 (No Half-Solutions), all constants must
     come from fireai/constants/nfpa72.py. No module may define
@@ -415,7 +426,7 @@ class TestImportChainIntegrity:
 
         # Read source file directly (inspect.getsource fails on __init__)
         init_path = os.path.dirname(fireai.constants.__file__) + '/__init__.py'
-        with open(init_path, 'r') as f:
+        with open(init_path) as f:
             source = f.read()
 
         # Check that it imports from canonical source
@@ -424,7 +435,8 @@ class TestImportChainIntegrity:
         )
 
     def test_qomn_kernel_no_local_constant_definitions(self):
-        """qomn_kernel.py must NOT define NFPA 72 constants with literal numeric values.
+        """
+        qomn_kernel.py must NOT define NFPA 72 constants with literal numeric values.
 
         Backward-compatible aliases like `NFPA72_SMOKE_MAX_SPACING_M = NFPA72_SMOKE_MAX_SPACING_M`
         are OK because they just re-assign the imported value. The test checks for
@@ -471,7 +483,8 @@ class TestImportChainIntegrity:
 # ============================================================================
 
 class TestNECConstants:
-    """Verify NEC constants are correct and V20 Bug #20 is fixed.
+    """
+    Verify NEC constants are correct and V20 Bug #20 is fixed.
 
     V20 Bug #20: The original dict had "40%" appearing twice — the second
     "40%" was meant to be "53%" (1_conductor value).
@@ -547,7 +560,8 @@ class TestNECConstants:
 # ============================================================================
 
 class TestArchitectureCompliance:
-    """Verify the actual code structure matches ARCHITECTURE.md.
+    """
+    Verify the actual code structure matches ARCHITECTURE.md.
 
     The audit found that ARCHITECTURE.md described a src/ directory
     structure that doesn't exist. The actual structure uses fireai/.
@@ -576,8 +590,10 @@ class TestArchitectureCompliance:
         )
 
     def test_no_src_directory(self):
-        """The src/ directory described in old ARCHITECTURE.md should NOT exist.
-        The actual code uses fireai/ as the root package."""
+        """
+        The src/ directory described in old ARCHITECTURE.md should NOT exist.
+        The actual code uses fireai/ as the root package.
+        """
         import os
         # src/ should not exist as a code directory
         assert not os.path.isdir(os.path.join(REPO_ROOT, 'src')), (
@@ -607,7 +623,8 @@ class TestArchitectureCompliance:
 # ============================================================================
 
 class TestPESignoffRequirements:
-    """Verify that regulatory data carries proper PE sign-off notices.
+    """
+    Verify that regulatory data carries proper PE sign-off notices.
 
     Per agent.md Rule #22: Any change to regulatory data values MUST
     be accompanied by PE sign-off or verbatim standard quotation.
@@ -655,7 +672,8 @@ class TestPESignoffRequirements:
         )
 
     def test_smoke_spacing_table_has_regulatory_warning(self):
-        """V130 FIX: SMOKE_HEIGHT_SPACING_TABLE now has flat 9.1m at ALL
+        """
+        V130 FIX: SMOKE_HEIGHT_SPACING_TABLE now has flat 9.1m at ALL
         heights per NFPA 72 §17.7.3.2.3. The table must carry a comment
         explaining that the previous height-reduced values were INCORRECTLY
         derived from heat detector table (Table 17.6.3.5.1).
@@ -688,7 +706,8 @@ class TestPESignoffRequirements:
 # ============================================================================
 
 class TestNaNInfSafety:
-    """Verify all life-safety computations reject NaN and Inf inputs.
+    """
+    Verify all life-safety computations reject NaN and Inf inputs.
 
     Per agent.md Rule #5: Every input must be validated before computation.
     NaN and Inf can bypass comparison guards and produce "valid-looking"
@@ -779,7 +798,8 @@ class TestNaNInfSafety:
 # ============================================================================
 
 class TestCoverageRadiusConsistency:
-    """Verify R = 0.7 × S is applied consistently across all modules.
+    """
+    Verify R = 0.7 × S is applied consistently across all modules.
 
     This was a recurring bug: some modules used R = S/2 instead of
     R = 0.7 × S. NFPA 72 §17.7.4.2.3.1 defines R = 0.7 × S.
@@ -814,7 +834,8 @@ class TestCoverageRadiusConsistency:
         )
 
     def test_calculations_wall_distance_is_half_spacing(self):
-        """Wall distance must be S/2, NOT R = 0.7 × S.
+        """
+        Wall distance must be S/2, NOT R = 0.7 × S.
 
         Previous code confused coverage radius with wall distance.
         Wall distance = S/2 per NFPA 72 §17.6.3.1.1.
@@ -960,7 +981,8 @@ class TestBatteryCalculationConsistency:
 # ============================================================================
 
 class TestHighCeilingAuditNotices:
-    """Verify that high-ceiling smoke detection includes proper warnings.
+    """
+    Verify that high-ceiling smoke detection includes proper warnings.
 
     Per NFPA 72 §17.7.1.11, spot-type smoke detection is unreliable
     above 20ft (6.096m) due to stratification. The system must warn users.
@@ -995,7 +1017,8 @@ class TestHighCeilingAuditNotices:
 # ============================================================================
 
 class TestRegressionProtection:
-    """Ensure critical computations produce expected values.
+    """
+    Ensure critical computations produce expected values.
 
     These tests protect against accidental regressions during refactoring.
     If any of these fail, the refactoring introduced a bug.
@@ -1050,7 +1073,8 @@ class TestRegressionProtection:
 # ============================================================================
 
 class TestLaunchReadinessGate:
-    """These tests represent HARD BLOCKERS for production launch.
+    """
+    These tests represent HARD BLOCKERS for production launch.
 
     If ANY of these fail, the system MUST NOT be deployed in production
     because it would produce engineering-incorrect results that could
@@ -1058,8 +1082,10 @@ class TestLaunchReadinessGate:
     """
 
     def test_all_nec_conduit_fill_values_match_standard(self):
-        """NEC Chapter 9 Table 1 values must match the published standard.
-        1 conductor = 53%, 2 conductors = 31%, 3+ conductors = 40%."""
+        """
+        NEC Chapter 9 Table 1 values must match the published standard.
+        1 conductor = 53%, 2 conductors = 31%, 3+ conductors = 40%.
+        """
         from fireai.constants.nec import MAX_CONDUCTOR_FILL_PCT
 
         assert MAX_CONDUCTOR_FILL_PCT == {
@@ -1089,8 +1115,10 @@ class TestLaunchReadinessGate:
         )
 
     def test_no_stale_9_144_smoke_spacing_anywhere(self):
-        """The old SMOKE_MAX_SPACING_M = 9.144 (30ft × 0.3048) must not
-        appear anywhere in the codebase. NFPA 72 states 9.1m, not 9.144m."""
+        """
+        The old SMOKE_MAX_SPACING_M = 9.144 (30ft × 0.3048) must not
+        appear anywhere in the codebase. NFPA 72 states 9.1m, not 9.144m.
+        """
         import fireai.constants
         import fireai.constants.nfpa72
         import fireai.core.qomn_kernel
@@ -1105,8 +1133,10 @@ class TestLaunchReadinessGate:
         )
 
     def test_no_stale_15_24_heat_spacing_anywhere(self):
-        """The old HEAT_MAX_SPACING_M = 15.24m was wrong — that's the
-        absolute max (50ft), not the standard spacing (20ft = 6.1m)."""
+        """
+        The old HEAT_MAX_SPACING_M = 15.24m was wrong — that's the
+        absolute max (50ft), not the standard spacing (20ft = 6.1m).
+        """
         import fireai.constants
         import fireai.constants.nfpa72
 

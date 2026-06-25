@@ -15,31 +15,41 @@ systems per:
 from __future__ import annotations
 
 import math
-from typing import List
 
 from marine.core.constants import (
-    AFFF_APPLICATION_RATE_LPM_PER_M2, AFFF_DISCHARGE_TIME_MIN,
-    CO2_DESIGN_CONCENTRATION_PCT, CO2_GAS_DENSITY_KG_PER_M3,
-    CO2_MAX_DISCHARGE_TIME_MIN, CO2_MIN_HOLD_TIME_MIN,
-    FOAM_HIGH_DISCHARGE_RATE_M3_PER_MIN, FOAM_HIGH_EXPANSION_RATIO,
-    FOAM_HIGH_MIN_FILL_TIME_MIN, FOAM_LOW_APPLICATION_RATE_LPM_PER_M2,
-    FOAM_LOW_EXPANSION_RATIO, FOAM_LOW_MIN_DISCHARGE_TIME_MIN,
-    INERT_GAS_CAPACITY_FACTOR, INERT_GAS_MAX_O2_PCT,
-    SPRINKLER_DESIGN_DENSITY_MM_PER_MIN, SPRINKLER_MAX_COVERAGE_M2,
-    SPRINKLER_RATED_TEMP_C, WATER_MIST_DESIGN_DENSITY_MM_PER_MIN,
-    WATER_MIST_MAX_DROPLET_MICRONS, WATER_MIST_MIN_DISCHARGE_TIME_MIN,
-)
-from marine.core.types import (
-    ComplianceResult, ExtinguishingDesign, ExtinguishingSystem,
-    FireHazardClass, MarineZone, ShipProject, SpaceCategory,
+    AFFF_APPLICATION_RATE_LPM_PER_M2,
+    AFFF_DISCHARGE_TIME_MIN,
+    CO2_DESIGN_CONCENTRATION_PCT,
+    CO2_GAS_DENSITY_KG_PER_M3,
+    CO2_MAX_DISCHARGE_TIME_MIN,
+    CO2_MIN_HOLD_TIME_MIN,
+    FOAM_HIGH_EXPANSION_RATIO,
+    FOAM_HIGH_MIN_FILL_TIME_MIN,
+    FOAM_LOW_APPLICATION_RATE_LPM_PER_M2,
+    FOAM_LOW_MIN_DISCHARGE_TIME_MIN,
+    INERT_GAS_CAPACITY_FACTOR,
+    INERT_GAS_MAX_O2_PCT,
+    SPRINKLER_DESIGN_DENSITY_MM_PER_MIN,
+    SPRINKLER_MAX_COVERAGE_M2,
+    WATER_MIST_DESIGN_DENSITY_MM_PER_MIN,
+    WATER_MIST_MIN_DISCHARGE_TIME_MIN,
 )
 from marine.core.errors import ExtinguishingDesignError
+from marine.core.types import (
+    ComplianceResult,
+    ExtinguishingDesign,
+    ExtinguishingSystem,
+    MarineZone,
+    ShipProject,
+    SpaceCategory,
+)
 
 
 def select_system_for_zone(
     zone: MarineZone, ship: ShipProject,
 ) -> ComplianceResult:
-    """Select the optimal extinguishing system for a marine zone.
+    """
+    Select the optimal extinguishing system for a marine zone.
 
     Decision matrix (per SOLAS II-2/10):
       - Machinery A → water_mist OR co2_total (operator choice)
@@ -79,7 +89,8 @@ def select_system_for_zone(
 
 
 def size_water_mist(zone: MarineZone) -> ExtinguishingDesign:
-    """Size a water-mist system per IMO MSC.1/Circ.1165.
+    """
+    Size a water-mist system per IMO MSC.1/Circ.1165.
 
     Design:
       - Application density: 5 mm/min (engine rooms)
@@ -118,7 +129,8 @@ def size_water_mist(zone: MarineZone) -> ExtinguishingDesign:
 def size_co2_total_flooding(
     zone: MarineZone, hazard_key: str = "engine_room",
 ) -> ExtinguishingDesign:
-    """Size a CO2 total-flooding system per IMO MSC.1/Circ.1316.
+    """
+    Size a CO2 total-flooding system per IMO MSC.1/Circ.1316.
 
     Design:
       - Concentration: 35% (engine rooms), 30% (cargo), 45% (dangerous)
@@ -169,7 +181,7 @@ def size_co2_total_flooding(
     nozzles = max(2, math.ceil(zone.area_m2 / 25.0))
     pipe_length_m = nozzles * 8.0  # avg 8 m pipe per nozzle (overhead distribution)
 
-    design = ExtinguishingDesign(
+    return ExtinguishingDesign(
         system_type=ExtinguishingSystem.CO2_TOTAL,
         protected_zone=zone.zone_id,
         protected_volume_m3=round(volume_m3, 1),
@@ -181,7 +193,6 @@ def size_co2_total_flooding(
         pipe_length_m=round(pipe_length_m, 1),
         standard_reference=f"IMO MSC.1/Circ.1316 ({method_used} method, SF={SAFETY_FACTOR})",
     )
-    return design
 
 
 def size_foam_low_expansion(zone: MarineZone) -> ExtinguishingDesign:
@@ -213,7 +224,8 @@ def size_foam_low_expansion(zone: MarineZone) -> ExtinguishingDesign:
 
 
 def size_foam_high_expansion(zone: MarineZone) -> ExtinguishingDesign:
-    """Size high-expansion foam for engine rooms per SOLAS II-2/10.7.
+    """
+    Size high-expansion foam for engine rooms per SOLAS II-2/10.7.
 
     High-expansion foam (1000:1 expansion ratio) totally floods the machinery
     space via foam generators suspended from the deck head. Design rules per
@@ -257,7 +269,8 @@ def size_foam_high_expansion(zone: MarineZone) -> ExtinguishingDesign:
 
 
 def size_afff(zone: MarineZone) -> ExtinguishingDesign:
-    """Size AFFF system for helidecks per CAP 437 + ICAO Annex 14.
+    """
+    Size AFFF system for helidecks per CAP 437 + ICAO Annex 14.
 
     AFFF (Aqueous Film-Forming Foam) is the standard extinguishing agent for
     helidecks on offshore installations and ships with helicopter operations.
@@ -315,7 +328,8 @@ def size_inert_gas(
     cargo_discharge_rate_m3_per_hr: float = 250.0,
     inert_gas_o2_pct: float = 4.0,
 ) -> ExtinguishingDesign:
-    """Size inert-gas system per SOLAS II-2/4.5.5 + FSS Ch. 15.
+    """
+    Size inert-gas system per SOLAS II-2/4.5.5 + FSS Ch. 15.
 
     Two distinct engineering quantities must be computed:
 
@@ -347,6 +361,7 @@ def size_inert_gas(
 
     Returns:
         ExtinguishingDesign with capacity-derived discharge time.
+
     """
     if zone.area_m2 <= 0 or zone.height_m <= 0:
         raise ExtinguishingDesignError(
@@ -397,7 +412,8 @@ def size_inert_gas(
 def size_system(
     zone: MarineZone, ship: ShipProject,
 ) -> ExtinguishingDesign:
-    """Top-level: select + size the appropriate extinguishing system.
+    """
+    Top-level: select + size the appropriate extinguishing system.
 
     Routes to the correct sizer based on the auto-selected system. Raises
     ExtinguishingDesignError if no fixed system is required for the zone.
@@ -440,7 +456,13 @@ def size_system(
 
 
 __all__ = [
-    "select_system_for_zone", "size_water_mist", "size_co2_total_flooding",
-    "size_foam_low_expansion", "size_foam_high_expansion", "size_afff",
-    "size_sprinkler", "size_inert_gas", "size_system",
+    "select_system_for_zone",
+    "size_afff",
+    "size_co2_total_flooding",
+    "size_foam_high_expansion",
+    "size_foam_low_expansion",
+    "size_inert_gas",
+    "size_sprinkler",
+    "size_system",
+    "size_water_mist",
 ]

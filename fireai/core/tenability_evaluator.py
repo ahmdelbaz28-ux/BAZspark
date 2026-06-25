@@ -1,4 +1,5 @@
-"""fireai.core.tenability_evaluator — Tenability Assessment for Egress.
+"""
+fireai.core.tenability_evaluator — Tenability Assessment for Egress.
 ===================================================================
 
 Implements tenability criteria for occupant egress during fire:
@@ -58,7 +59,8 @@ _TENABILITY_SAFETY_MARGIN = 0.20  # 20% margin
 
 @dataclass(frozen=True)
 class TenabilityResult:
-    """Result from tenability assessment.
+    """
+    Result from tenability assessment.
 
     Tenability is the ability of occupants to remain in or safely
     traverse a space during a fire. ALL criteria must be met for
@@ -84,7 +86,8 @@ def evaluate_tenability(
     co2_ppm: float = 0.0,
     radiant_flux_kw_m2: float = 0.0,
 ) -> TenabilityResult:
-    """Evaluate tenability conditions for occupant egress.
+    """
+    Evaluate tenability conditions for occupant egress.
 
     NFPA 101 / SFPE — A space is tenable only if ALL of the following
     are simultaneously satisfied:

@@ -89,7 +89,8 @@ logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(
 
 
 class SecurityError(Exception):
-    """Raised when a security policy violation prevents continuation.
+    """
+    Raised when a security policy violation prevents continuation.
 
     Used by audit subsystem to reject operations that would compromise
     audit log integrity (e.g., missing HMAC key in production).
@@ -99,7 +100,8 @@ class SecurityError(Exception):
 
 
 class ErrorSeverity(Enum):
-    """Classification of error severity for weighted circuit breaker scoring.
+    """
+    Classification of error severity for weighted circuit breaker scoring.
 
     Weighted scoring ensures critical errors trip the circuit breaker faster
     than transient ones -- a ZeroDivisionError in a pressure calculation is
@@ -119,7 +121,8 @@ StatusType = Literal["NOMINAL", "HEALED", "CRITICAL_CIRCUIT_OPEN", "HALF_OPEN", 
 
 
 class SystemStatus:
-    """Allowed status values for SafetyResult and system state reporting.
+    """
+    Allowed status values for SafetyResult and system state reporting.
 
     Uses string constants (NOT Enum) for backward compatibility:
     SystemStatus.HEALED == "HEALED" returns True, so existing code
@@ -148,7 +151,8 @@ VALID_STATUSES = (
 
 @dataclass(frozen=True)
 class SafetyResult:
-    """An immutable, type-safe representation of safety-critical output values.
+    """
+    An immutable, type-safe representation of safety-critical output values.
     Every healed result is explicitly marked with its healing classification.
 
     V53 FIX (BUG 3): status validated at construction time to prevent
@@ -193,7 +197,8 @@ class PhysicsGuardViolation(Exception):
 
 
 class SafetyCriticalFailure(Exception):
-    """Raised when a safety-critical operation cannot produce a valid result.
+    """
+    Raised when a safety-critical operation cannot produce a valid result.
 
     This is distinct from PhysicsGuardViolation -- it indicates a systemic
     failure (e.g., all healing tiers exhausted) rather than a value-level
@@ -206,7 +211,8 @@ class SafetyCriticalFailure(Exception):
 
 
 class LLMUnavailableError(Exception):
-    """Raised when the local LLM (Ollama) service is unreachable.
+    """
+    Raised when the local LLM (Ollama) service is unreachable.
 
     Used by the LLM Rate Limiter to signal that the LLM tier is
     temporarily unavailable, not that it has permanently failed.
@@ -222,7 +228,8 @@ class LLMUnavailableError(Exception):
 # =====================================================================
 
 class Config:
-    """Environment-variable-backed configuration for the self-healing engine.
+    """
+    Environment-variable-backed configuration for the self-healing engine.
 
     All parameters can be overridden via environment variables, enabling
     deployment-specific tuning without code changes.
@@ -232,7 +239,8 @@ class Config:
 
     @staticmethod
     def _safe_float(env_var: str, default: float, min_val: float = 0.0) -> float:
-        """V71 FIX: Parse float from env var with validation. Falls back to
+        """
+        V71 FIX: Parse float from env var with validation. Falls back to
         default on invalid values instead of crashing the module import.
 
         V76 FIX (CRITICAL): Reject NaN/Inf from environment variables.
@@ -354,7 +362,8 @@ ERROR_WEIGHTS: dict[str, ErrorSeverity] = {
 # =====================================================================
 
 class AsyncAuditLogger:
-    """Thread-safe, append-only JSON Lines logger with HMAC-SHA256 signatures,
+    """
+    Thread-safe, append-only JSON Lines logger with HMAC-SHA256 signatures,
     file rotation, and batch statistics.
 
     SAFETY DESIGN DECISION: Despite the name "Async", log_event() writes
@@ -453,7 +462,8 @@ class AsyncAuditLogger:
         self._bytes_written: int = 0
 
     def _rotate_if_needed(self) -> None:
-        """Rotate audit log file if it exceeds max_bytes.
+        """
+        Rotate audit log file if it exceeds max_bytes.
 
         Rotation strategy:
         - qomn_fire_healing_audit.jsonl -> .jsonl.1
@@ -488,7 +498,8 @@ class AsyncAuditLogger:
             logging.warning(f"[AUDIT ROTATION FAILED] {e}. Continuing without rotation.")
 
     def log_event(self, event_data: dict[str, Any]) -> bool:
-        """Serializes, signs, and appends the healing event to the audit ledger.
+        """
+        Serializes, signs, and appends the healing event to the audit ledger.
         Returns True if logging succeeded, False if it failed (I/O error).
 
         V53 FIX (BUG 7): Catches OSError to prevent crash on I/O failure.
@@ -583,7 +594,8 @@ class AsyncAuditLogger:
             }
 
     def verify_chain(self, filepath: str | None = None) -> dict[str, Any]:
-        """V76 FIX: Verify the hash chain integrity of an audit log file.
+        """
+        V76 FIX: Verify the hash chain integrity of an audit log file.
 
         Reads the entire file and checks that each entry's previous_hash
         matches the SHA-256 hash of the previous entry. Returns a report
@@ -642,7 +654,8 @@ class AsyncAuditLogger:
         }
 
     def flush(self) -> bool:
-        """Explicit flush -- with immediate write mode, this is a no-op.
+        """
+        Explicit flush -- with immediate write mode, this is a no-op.
 
         Provided for API compatibility with buffered logger implementations.
         Always returns True because events are already persisted.
@@ -659,7 +672,8 @@ AuditLogger = AsyncAuditLogger
 # =====================================================================
 
 class LruCache:
-    """Thread-safe storage of Last Known Good (LKG) values for critical systems.
+    """
+    Thread-safe storage of Last Known Good (LKG) values for critical systems.
     Reference: ISO/IEC 15408 fallback recovery patterns.
 
     V53 FIX (BUG 1): Now uses OrderedDict with move_to_end() for TRUE LRU eviction.
@@ -680,7 +694,8 @@ class LruCache:
         self._evictions: int = 0
 
     def update(self, key: str, value: Any) -> None:
-        """Insert or update a key, marking it as most-recently-used.
+        """
+        Insert or update a key, marking it as most-recently-used.
 
         V58 FIX (BUG #11): Deep-copies value on insert to prevent caller from
         corrupting cached data. Without this, mutating the original object
@@ -697,7 +712,8 @@ class LruCache:
             self.cache[key] = copy.deepcopy(value)  # V58 FIX: deep copy on insert
 
     def get(self, key: str) -> Any | None:
-        """Retrieve a cached value, marking it as most-recently-used.
+        """
+        Retrieve a cached value, marking it as most-recently-used.
         V53 FIX (BUG 6): Returns a deep copy to prevent caller from corrupting cache.
         V53 FIX (BUG 1): Moves accessed key to end (most recently used position).
         """
@@ -728,7 +744,8 @@ class LruCache:
 # =====================================================================
 
 class WeightedCircuitBreaker:
-    """Thread-safe weighted circuit breaker with O(1) deque and half-open recovery.
+    """
+    Thread-safe weighted circuit breaker with O(1) deque and half-open recovery.
 
     V2.0 FEATURES (from consultant):
     - Weighted scoring: errors contribute severity-based weight to the threshold,
@@ -770,7 +787,8 @@ class WeightedCircuitBreaker:
         self.lock = threading.Lock()
 
     def _prune_expired(self, now: float) -> float:
-        """Remove events outside the sliding window. O(1) amortized per event.
+        """
+        Remove events outside the sliding window. O(1) amortized per event.
 
         Returns the current weighted sum within the window.
         Thread safety: Must be called with self.lock held.
@@ -780,7 +798,8 @@ class WeightedCircuitBreaker:
         return sum(weight for _, weight in self._events)
 
     def register_healing_event(self, error_type: str = "default") -> bool:
-        """Registers a healing incident with severity-weighted scoring.
+        """
+        Registers a healing incident with severity-weighted scoring.
         Returns True if the circuit breaker remains CLOSED, False if it TRIPS (OPENS).
 
         Error severity is looked up from ERROR_WEIGHTS. Critical errors
@@ -811,7 +830,8 @@ class WeightedCircuitBreaker:
             return True
 
     def record_success(self) -> None:
-        """Record a successful operation. In HALF_OPEN state, consecutive successes
+        """
+        Record a successful operation. In HALF_OPEN state, consecutive successes
         transition the breaker back to CLOSED after half_open_max successes.
 
         This is called ONLY when the wrapped function completes WITHOUT
@@ -832,7 +852,8 @@ class WeightedCircuitBreaker:
                     )
 
     def record_probe_failure(self) -> None:
-        """Record a probe failure in HALF_OPEN state, transitioning back to OPEN.
+        """
+        Record a probe failure in HALF_OPEN state, transitioning back to OPEN.
 
         In a safety-critical system, a "healed" call does NOT count as a
         success for half-open recovery. The circuit breaker is testing whether
@@ -851,14 +872,16 @@ class WeightedCircuitBreaker:
                 )
 
     def is_open(self) -> bool:
-        """Pure query: checks if circuit breaker is currently OPEN.
+        """
+        Pure query: checks if circuit breaker is currently OPEN.
         V53 FIX (BUG 2): This method does not mutate state. Use try_cooldown() for that.
         """
         with self.lock:
             return self.state == self.OPEN
 
     def try_cooldown(self) -> bool:
-        """Attempts auto-cooldown if the cooldown period has elapsed.
+        """
+        Attempts auto-cooldown if the cooldown period has elapsed.
         Returns True if the breaker transitioned from OPEN to HALF_OPEN.
         V53 FIX (BUG 2): Separated from is_open() for Command-Query Separation.
         V2.0 EXTENSION: Cooldown transitions to HALF_OPEN (not CLOSED directly).
@@ -876,7 +899,8 @@ class WeightedCircuitBreaker:
             return False
 
     def check_and_cooldown(self) -> tuple[bool, str]:
-        """Combined check: returns (is_fully_open, state_at_check) tuple.
+        """
+        Combined check: returns (is_fully_open, state_at_check) tuple.
 
         V58 FIX (BUG #6): Acquires lock ONCE instead of twice. The original
         code called try_cooldown() then is_open(), which released and
@@ -917,7 +941,8 @@ class WeightedCircuitBreaker:
             return (False, self.CLOSED)  # CLOSED
 
     def is_half_open_and_available(self) -> bool:
-        """Check if the breaker is in HALF_OPEN state and has probe capacity.
+        """
+        Check if the breaker is in HALF_OPEN state and has probe capacity.
         Returns True if a probe request can be allowed through.
         """
         with self.lock:
@@ -927,7 +952,8 @@ class WeightedCircuitBreaker:
             )
 
     def health(self) -> dict[str, Any]:
-        """V53 FIX (BUG 9): Returns health metrics for proactive monitoring.
+        """
+        V53 FIX (BUG 9): Returns health metrics for proactive monitoring.
         Allows operators to detect approaching threshold before breaker trips.
         V2.0 EXTENSION: Includes weighted metrics and half-open status.
         """
@@ -970,7 +996,8 @@ CircuitBreaker = WeightedCircuitBreaker
 # =====================================================================
 
 class LLMCircuitBreaker:
-    """Rate limiter for local Ollama LLM calls.
+    """
+    Rate limiter for local Ollama LLM calls.
 
     Prevents overwhelming the LLM service with too many requests.
     Uses a sliding window counter to enforce max requests per second.
@@ -986,7 +1013,8 @@ class LLMCircuitBreaker:
         self.lock = threading.Lock()
 
     def allow_request(self) -> bool:
-        """Check if an LLM request is allowed within the rate limit.
+        """
+        Check if an LLM request is allowed within the rate limit.
         Returns True if the request is allowed, False if rate limited.
 
         V74 FIX: Only consumes a rate limit slot when the request is actually
@@ -1008,7 +1036,8 @@ class LLMCircuitBreaker:
             return False
 
     def peek(self) -> bool:
-        """V74 FIX: Pure query -- check if a request WOULD be allowed without
+        """
+        V74 FIX: Pure query -- check if a request WOULD be allowed without
         consuming a rate limit slot. This allows callers to check
         availability without side effects.
         """
@@ -1061,7 +1090,8 @@ global_llm_breaker = LLMCircuitBreaker(
 
 
 def compute_hash(data: Any) -> str:
-    """Computes deterministic SHA-256 hash representation of values.
+    """
+    Computes deterministic SHA-256 hash representation of values.
 
     V73 FIX: Handles non-serializable objects (functions, memory addresses)
     by replacing them with deterministic representations before hashing.
@@ -1104,7 +1134,8 @@ def self_healing(
     physics_validator: Callable[[Any], bool] | None = None,
     force_mock_ollama: bool = False
 ):
-    """Self-healing decorator enforcing three tiers of system healing.
+    """
+    Self-healing decorator enforcing three tiers of system healing.
 
     V2.0 EXTENSIONS:
     - Weighted circuit breaker: errors contribute severity-based weight
@@ -1643,7 +1674,8 @@ def query_local_ollama_engine(
     default_fallback: Any,
     timeout: float = 2.0,
 ) -> Any:
-    """Connects to the local Ollama instance (llama3) to generate a patch.
+    """
+    Connects to the local Ollama instance (llama3) to generate a patch.
     This process is contained locally and does not leak telemetry data externally.
 
     V58 FIX (BUG #12): NaN/Inf detection uses math module, not fragile string comparison.
@@ -1715,7 +1747,8 @@ def query_local_ollama_engine(
 # =====================================================================
 
 def validate_sprinkler_pressure(val: Any) -> bool:
-    """Sprinkler operating pressure must be positive, non-zero, and finite.
+    """
+    Sprinkler operating pressure must be positive, non-zero, and finite.
 
     V FIX: Removed `or val == float('inf')` clause. Per the QOMN kernel
     safety principle, float('inf') must NEVER be accepted as a valid
@@ -1740,7 +1773,8 @@ def validate_sprinkler_pressure(val: Any) -> bool:
 
 @self_healing(safe_minimum=7.0, default_value=7.0, physics_validator=validate_sprinkler_pressure)
 def calculate_sprinkler_pressure(flow_gpm: float, k_factor: float) -> float:
-    """Computes required operating pressure: P = (Q / K)^2
+    """
+    Computes required operating pressure: P = (Q / K)^2
     Citing: NFPA 13 Section 23.4.4.
     """
     if k_factor == 0.0:
@@ -1760,7 +1794,8 @@ def validate_sequence_block(val: Any) -> bool:
     force_mock_ollama=True  # Demonstrates Tier 2 fallback processing
 )
 def fetch_emergency_audio_sequence(sequence_list: list[str], index: int) -> str:
-    """Fetches scheduled audio tone file.
+    """
+    Fetches scheduled audio tone file.
     Citing: NFPA 72 Section 18.4.
     """
     if index >= len(sequence_list):

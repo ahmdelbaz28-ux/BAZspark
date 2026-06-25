@@ -95,7 +95,7 @@ class TestFullPipelineIntegration:
     """End-to-end test: fill → bend → route → fittings → output."""
 
     def test_example_1_fill_calculation(self):
-        """Example 1 from spec: Calculate conduit fill for 3×#14 THHN in ½\" EMT."""
+        r"""Example 1 from spec: Calculate conduit fill for 3×#14 THHN in ½\" EMT."""
         result = calculate_fill(
             conduit_type=ConduitType.EMT,
             trade_size=TradeSize.HALF_INCH,
@@ -108,7 +108,7 @@ class TestFullPipelineIntegration:
         assert result.value.status == "COMPLIANT"
 
     def test_example_2_bend_verification(self):
-        """Example 2 from spec: Verify bend radius for ½\" EMT R=4.0\"."""
+        r"""Example 2 from spec: Verify bend radius for ½\" EMT R=4.0\"."""
         result = verify_bend_radius(
             conduit_type=ConduitType.EMT,
             trade_size=TradeSize.HALF_INCH,

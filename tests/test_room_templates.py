@@ -78,10 +78,12 @@ class TestOfficeTemplate:
 
 class TestWarehouseTemplate:
     def test_defaults(self):
-        """Warehouse template uses 'warehouse' occupancy which maps to 'storage'
+        """
+        Warehouse template uses 'warehouse' occupancy which maps to 'storage'
         in nfpa72_models valid set. NOTE: room_templates.py uses 'warehouse'
         which is NOT in nfpa72_models valid_types — this is a known issue.
-        The template currently raises ValueError when creating a RoomSpec."""
+        The template currently raises ValueError when creating a RoomSpec.
+        """
         with pytest.raises(ValueError, match="not in valid set"):
             warehouse()
 
@@ -289,8 +291,10 @@ class TestGetTemplate:
             get_template("nonexistent")
 
     def test_all_registered_templates_work(self):
-        """Every template in TEMPLATES dict must produce a valid RoomSpec.
-        NOTE: 'warehouse' template is broken (uses invalid occupancy 'warehouse')."""
+        """
+        Every template in TEMPLATES dict must produce a valid RoomSpec.
+        NOTE: 'warehouse' template is broken (uses invalid occupancy 'warehouse').
+        """
         broken = {"warehouse"}
         for name in TEMPLATES:
             if name in broken:

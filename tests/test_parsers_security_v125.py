@@ -105,10 +105,12 @@ class TestImageParserSecurity:
             os.unlink(p)
 
     def test_supported_extensions_accept(self):
-        """All supported image formats reach the parser proper (where
+        """
+        All supported image formats reach the parser proper (where
         they'll fail at the image-decode step since the file isn't a
         real image — but security validation MUST not reject them).
-        V127: Updated to match actual _ALLOWED_EXTENSIONS in image_parser.py."""
+        V127: Updated to match actual _ALLOWED_EXTENSIONS in image_parser.py.
+        """
         for ext in (".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif",
                     ".webp"):
             p = _make_temp(ext)
@@ -185,8 +187,10 @@ class TestWordParserSecurity:
         assert any("SECURITY" in e for e in r.errors)
 
     def test_txt_extension_rejected(self):
-        """V127: WordParser now accepts both .docx and .doc.
-        Test that .txt is still rejected."""
+        """
+        V127: WordParser now accepts both .docx and .doc.
+        Test that .txt is still rejected.
+        """
         p = _make_temp(".txt")
         try:
             r = self.parser.parse(p)
@@ -233,9 +237,11 @@ class TestIFCParserSecurity:
 
 
 class TestV125SingleSourceOfTruth:
-    """Programmatic enforcement of agent.md Rule #23: every modified
+    """
+    Programmatic enforcement of agent.md Rule #23: every modified
     parser MUST import from parsers._path_security. If a future refactor
-    removes the import (or replaces it with inline code), this fails."""
+    removes the import (or replaces it with inline code), this fails.
+    """
 
     @pytest.mark.parametrize("parser_file", [
         "parsers/pdf_parser.py",
@@ -265,10 +271,12 @@ class TestV125SingleSourceOfTruth:
 
 
 class TestV125DoSCapConsistency:
-    """Every parser MUST advertise its file-size cap via env var
-    (operators must be able to tune per deployment without forking)."""
+    """
+    Every parser MUST advertise its file-size cap via env var
+    (operators must be able to tune per deployment without forking).
+    """
 
-    @pytest.mark.parametrize("parser_file, env_var", [
+    @pytest.mark.parametrize(("parser_file", "env_var"), [
         ("parsers/pdf_parser.py",   "FIREAI_PDF_MAX_FILE_SIZE_BYTES"),
         ("parsers/image_parser.py", "FIREAI_IMAGE_MAX_FILE_SIZE_BYTES"),
         ("parsers/excel_parser.py", "FIREAI_EXCEL_MAX_FILE_SIZE_BYTES"),

@@ -1,4 +1,5 @@
-"""fireai/core/project_learner.py  V1.0.
+"""
+fireai/core/project_learner.py  V1.0.
 =====================================
 Standalone ProjectLearner -- pure Python, no external deps.
 Designed to be imported by BuildingEngine and its output
@@ -76,7 +77,8 @@ class RoomCluster:
 
 @dataclass
 class BuildingProjectProfile:
-    """Attached as BuildingReport.project_profile after BuildingEngine finishes.
+    """
+    Attached as BuildingReport.project_profile after BuildingEngine finishes.
     Purely statistical -- no design decisions are made from this data.
     """
 
@@ -94,7 +96,8 @@ class BuildingProjectProfile:
 
 
 class ProjectLearner:
-    """Learns room-pattern clusters for one building.
+    """
+    Learns room-pattern clusters for one building.
 
     Algorithm: k-means++ on (width, length) space.
     k chosen automatically via elbow method (max k=5).
@@ -137,13 +140,15 @@ class ProjectLearner:
             self._save()
 
     def profile(self) -> BuildingProjectProfile:
-        """Compute and return the building profile.
+        """
+        Compute and return the building profile.
         Always recomputed from raw records -- no stale state.
         """
         return self._build_profile()
 
     def hint_for(self, width: float, length: float) -> str | None:
-        """Return the dominant strategy of the nearest cluster.
+        """
+        Return the dominant strategy of the nearest cluster.
         Returns None if fewer than 3 rooms recorded.
         For engineer information only -- not called during automated design.
         """

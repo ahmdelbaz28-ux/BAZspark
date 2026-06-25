@@ -1,4 +1,5 @@
-"""FireAI Digital Twin - Pydantic V2 API Schemas.
+"""
+FireAI Digital Twin - Pydantic V2 API Schemas.
 =============================================
 Maps to core/models.py dataclasses for REST API request/response validation.
 """
@@ -14,7 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 def _validate_json_size_and_depth(
     value: Any, field_name: str, max_bytes: int = 10240, max_depth: int = 5
 ) -> Any:
-    """Validate JSON dict size and nesting depth.
+    """
+    Validate JSON dict size and nesting depth.
 
     Prevents denial-of-service via deeply nested or oversized JSON payloads.
     - max_bytes: Maximum serialized JSON size in bytes (default 10KB)
@@ -368,7 +370,8 @@ class ConnectionCreate(BaseModel):
     @field_validator("to_element_id")
     @classmethod
     def validate_different_endpoints(cls, v: str, info) -> str:
-        """A connection must connect two different elements.
+        """
+        A connection must connect two different elements.
 
         A self-connection is meaningless in fire alarm wiring and
         could indicate a data entry error. This mirrors the same

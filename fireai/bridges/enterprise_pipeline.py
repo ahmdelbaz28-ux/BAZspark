@@ -1,4 +1,5 @@
-"""enterprise_pipeline.py — V17 Enterprise Orchestrator.
+"""
+enterprise_pipeline.py — V17 Enterprise Orchestrator.
 =====================================================
 Connects all V17 Critical Trilogy modules into a unified pipeline
 for AHJ submittal. This replaces the disconnected checks that could
@@ -43,7 +44,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class V17SystemResult:
-    """Result of the full V17 enterprise pipeline check.
+    """
+    Result of the full V17 enterprise pipeline check.
 
     Attributes:
         acoustic_compliant: Whether audibility check passed.
@@ -76,7 +78,8 @@ class V17SystemResult:
 
 
 class EnterpriseOrchestrator:
-    """V17 Enterprise Orchestrator — unified life-safety pipeline.
+    """
+    V17 Enterprise Orchestrator — unified life-safety pipeline.
 
     Connects the V17 Critical Trilogy (Acoustics, Battery, ASET/RSET)
     with V15 modules (FACP Auditor, As-Built Reconciliator) and the
@@ -102,7 +105,8 @@ class EnterpriseOrchestrator:
         tenability_walking_speed_mps: float = 1.0,
         tenability_pre_movement_delay_s: float = 60.0,
     ) -> None:
-        """Initialize the orchestrator with default parameters.
+        """
+        Initialize the orchestrator with default parameters.
 
         Args:
             acoustic_ambient_noise: Default ambient noise levels by occupancy type.
@@ -154,7 +158,8 @@ class EnterpriseOrchestrator:
         mode: str = "public",
         room_absorption_m2: float | None = None,
     ) -> Any:
-        """Run acoustic SPL compliance check.
+        """
+        Run acoustic SPL compliance check.
 
         Args:
             room_id: Room identifier.
@@ -187,7 +192,8 @@ class EnterpriseOrchestrator:
         installed_battery_ah: float | None = None,
         battery_cells: int = 6,
     ) -> Any:
-        """Run battery aging and temperature derating check.
+        """
+        Run battery aging and temperature derating check.
 
         Args:
             quiescent_ma: Standby current in mA.
@@ -217,7 +223,8 @@ class EnterpriseOrchestrator:
         room_height_m: float = 3.0,
         is_sprinklered: bool = True,
     ) -> Any:
-        """Run ASET vs RSET tenability check.
+        """
+        Run ASET vs RSET tenability check.
 
         Args:
             longest_travel_dist_m: Maximum travel distance to exit.
@@ -246,7 +253,8 @@ class EnterpriseOrchestrator:
         battery_params: dict[str, Any] | None = None,
         tenability_params: dict[str, Any] | None = None,
     ) -> V17SystemResult:
-        """Run all three V17 critical checks and integrate results.
+        """
+        Run all three V17 critical checks and integrate results.
 
         This is the main entry point for the enterprise pipeline.
         It runs all three checks, collects violations, and evaluates

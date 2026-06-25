@@ -1,4 +1,5 @@
-"""fireai.conduit.types — Type Definitions for Conduit Fitting System.
+"""
+fireai.conduit.types — Type Definitions for Conduit Fitting System.
 ===================================================================
 
 All types used throughout the conduit fitting engine.
@@ -35,7 +36,8 @@ E = TypeVar("E")
 
 
 class Result(Generic[T, E]):
-    """Explicit success/failure container.
+    """
+    Explicit success/failure container.
 
     Computation functions NEVER raise; they return Result.
     Callers must check is_ok() before accessing value.
@@ -99,7 +101,8 @@ class Result(Generic[T, E]):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class ConduitType(enum.Enum):
-    """NEC conduit type designations.
+    """
+    NEC conduit type designations.
 
     EMT      — Electrical Metallic Tubing (NEC Article 358)
                 Thin-wall steel, set-screw or compression fittings.
@@ -132,7 +135,8 @@ class ConduitType(enum.Enum):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TradeSize(enum.Enum):
-    """Nominal conduit trade sizes.
+    """
+    Nominal conduit trade sizes.
 
     These are nominal (marketing) sizes — not actual measurements.
     Actual OD values are defined per conduit type in the catalog.
@@ -157,7 +161,8 @@ class TradeSize(enum.Enum):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class FittingType(enum.Enum):
-    """Conduit fitting types supported by this engine.
+    """
+    Conduit fitting types supported by this engine.
 
     ELBOW_90  — Standard 90° elbow (NEC 358.24 / 352.24 / 344.24)
     ELBOW_45  — 45° elbow (developed length = π × R × 45/180)
@@ -183,7 +188,8 @@ class FittingType(enum.Enum):
 
 @dataclass(frozen=True)
 class Point3D:
-    """Immutable 3D point in the building coordinate system.
+    """
+    Immutable 3D point in the building coordinate system.
 
     All coordinates are in METRES (SI) for consistency with IFC and
     BIM coordinate systems. Conversion to inches is performed at
@@ -233,7 +239,8 @@ class Point3D:
 
 @dataclass(frozen=True)
 class PlacedFitting:
-    """A catalog fitting placed at a specific location in the conduit run.
+    """
+    A catalog fitting placed at a specific location in the conduit run.
 
     Attributes:
         fitting_type:    Type of fitting (ELBOW_90, COUPLING, etc.).
@@ -269,7 +276,8 @@ class PlacedFitting:
 
 @dataclass(frozen=True)
 class ConduitSegment:
-    """A straight conduit stick between two points.
+    """
+    A straight conduit stick between two points.
 
     Attributes:
         start:       Start point (metres).
@@ -304,7 +312,8 @@ class ConduitSegment:
 
 @dataclass
 class ConduitRun:
-    """A complete conduit run from one pull point to the next.
+    """
+    A complete conduit run from one pull point to the next.
 
     Contains all segments and fittings. The run is bounded by pull points
     (pull boxes or panel knockouts). NEC 358.26/352.26/344.26 limit the
@@ -364,7 +373,8 @@ class ConduitRun:
 
 @dataclass(frozen=True)
 class FillResult:
-    """Result of a NEC Chapter 9, Table 1 conduit fill calculation.
+    """
+    Result of a NEC Chapter 9, Table 1 conduit fill calculation.
 
     Attributes:
         conduit_type:         Conduit material.
@@ -405,7 +415,8 @@ class FillResult:
 
 @dataclass(frozen=True)
 class BendResult:
-    """Result of NEC bend radius verification.
+    """
+    Result of NEC bend radius verification.
 
     Attributes:
         conduit_type:        Conduit material.
@@ -445,7 +456,8 @@ class BendResult:
 
 @dataclass(frozen=True)
 class RoutePath:
-    """Output of the orthogonal A* pathfinding algorithm.
+    """
+    Output of the orthogonal A* pathfinding algorithm.
 
     Attributes:
         waypoints:        Ordered list of Point3D nodes on the path.

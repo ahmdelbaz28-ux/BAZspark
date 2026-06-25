@@ -220,7 +220,7 @@ class DxfParser:
         and no one would know why. Now logs a warning on read failure.
         """
         try:
-            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            with open(filepath, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
         except Exception as e:
             # BUG-26 FIX: Log the error instead of silently returning
@@ -397,7 +397,8 @@ class DxfParser:
 
     @staticmethod
     def _extract_height_from_dxf(doc, filepath: str) -> float:
-        """BUG-DP2 FIX: Attempt to extract building/room height from DXF metadata.
+        """
+        BUG-DP2 FIX: Attempt to extract building/room height from DXF metadata.
 
         Tries multiple sources in order of reliability:
         1. EXTMIN/EXTMAX Z values in the HEADER section (bounding box height)
@@ -488,14 +489,15 @@ class DxfParser:
 
     @staticmethod
     def _extract_height_from_text(filepath: str) -> float:
-        """BUG-DP2 FIX: Attempt to extract height from DXF text-based metadata.
+        """
+        BUG-DP2 FIX: Attempt to extract height from DXF text-based metadata.
 
         Used as fallback when ezdxf is not available. Parses HEADER section
         for EXTMIN/EXTMAX Z values. Raises ValueError if height cannot be
         determined — no hardcoded defaults in safety-critical code.
         """
         try:
-            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            with open(filepath, encoding="utf-8", errors="ignore") as f:
                 content = f.read(50000)  # Read enough for HEADER section
         except Exception as e:
             raise ValueError(
@@ -574,7 +576,8 @@ class DxfParser:
 
     @staticmethod
     def _detect_dxf_version(filepath: str) -> str:
-        """BUG-39 FIX: Detect DXF version from $ACADVER header variable.
+        """
+        BUG-39 FIX: Detect DXF version from $ACADVER header variable.
 
         Returns the DXF version string (e.g., 'DXF R2000', 'DXF R2018')
         instead of hardcoding 'DXF R2000'. If version cannot be detected,
@@ -590,7 +593,7 @@ class DxfParser:
             "AC1032": "DXF R2018",
         }
         try:
-            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            with open(filepath, encoding="utf-8", errors="ignore") as f:
                 # Read first 2000 chars — $ACADVER is in HEADER section near start
                 header = f.read(2000)
             ver_match = re.search(r"\$ACADVER\s*\n\s*1\s*\n\s*(AC\d+)", header)

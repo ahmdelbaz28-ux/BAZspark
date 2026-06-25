@@ -1,4 +1,5 @@
-"""semi_cfast_engine.py — Physics-based smoke layer and tenability engine for ASET/RSET calculations.
+"""
+semi_cfast_engine.py — Physics-based smoke layer and tenability engine for ASET/RSET calculations.
 
 This module implements a simplified two-zone fire model inspired by CFAST (Consolidated Model
 of Fire Growth and Smoke Transport) for engineering-level ASET (Available Safe Egress Time)
@@ -129,7 +130,8 @@ OCCUPANCY_TRAVEL_SPEEDS: dict[str, float] = {
 # ---------------------------------------------------------------------------
 @dataclass
 class FireScenario:
-    """Defines a fire scenario for ASET calculation.
+    """
+    Defines a fire scenario for ASET calculation.
 
     Attributes:
         fire_load_MJ: Total fire load in megajoules (MJ). Used to determine
@@ -188,7 +190,8 @@ class FireScenario:
 
 @dataclass
 class TenabilityCriteria:
-    """Defines tenability limits for occupant safety assessment.
+    """
+    Defines tenability limits for occupant safety assessment.
 
     All values are conservative per SFPE and NFPA guidance.
 
@@ -243,7 +246,8 @@ class TenabilityCriteria:
 
 @dataclass
 class ASETResult:
-    """Result of an ASET (Available Safe Egress Time) calculation.
+    """
+    Result of an ASET (Available Safe Egress Time) calculation.
 
     Attributes:
         aset_seconds: Available Safe Egress Time in seconds — the time at
@@ -274,7 +278,8 @@ class ASETResult:
 
 
 def calculate_fire_hrr(growth_rate: str, time_seconds: float) -> float:
-    """Calculate Heat Release Rate (HRR) using the NFPA t² fire growth model.
+    """
+    Calculate Heat Release Rate (HRR) using the NFPA t² fire growth model.
 
     The t² model is defined as:
 
@@ -315,7 +320,8 @@ def calculate_smoke_layer_height(
     time_seconds: float,
     ceiling_type: str = "FLAT",
 ) -> float:
-    """Calculate smoke layer interface height using a simplified two-zone model.
+    """
+    Calculate smoke layer interface height using a simplified two-zone model.
 
     The smoke layer descends as the fire plume entrains air and fills the upper
     zone. This uses the simplified zone-model equation:
@@ -440,7 +446,8 @@ def calculate_smoke_layer_temp(
     ceiling_type: str = "FLAT",
     ambient_temp_c: float = 20.0,
 ) -> float:
-    """Calculate ceiling jet / smoke layer temperature using the Alpert correlation.
+    """
+    Calculate ceiling jet / smoke layer temperature using the Alpert correlation.
 
     The Alpert ceiling jet temperature correlation:
 
@@ -508,7 +515,8 @@ def calculate_smoke_layer_temp(
 
 
 def calculate_visibility(smoke_optical_density_per_m: float) -> float:
-    """Calculate visibility through smoke using the Bouguer-Beer-Lambert law.
+    """
+    Calculate visibility through smoke using the Bouguer-Beer-Lambert law.
 
     Visibility is inversely proportional to the optical density (extinction
     coefficient) of the smoke:
@@ -560,7 +568,8 @@ def _compute_optical_density(
     room_area_m2: float,
     room_height_m: float,
 ) -> float:
-    """Estimate smoke optical density in the upper layer.
+    """
+    Estimate smoke optical density in the upper layer.
 
     Uses the soot yield method:
         1. Compute mass loss rate from HRR: m_dot = Q / Delta_H_c
@@ -652,7 +661,8 @@ def estimate_co_concentration(
     ventilation_opening_m2: float,
     time_seconds: float,
 ) -> float:
-    """Estimate CO concentration in the compartment using a simplified well-mixed model.
+    """
+    Estimate CO concentration in the compartment using a simplified well-mixed model.
 
     The simplified CO estimation model:
 
@@ -763,7 +773,8 @@ def calculate_aset(
     time_step_s: float = 5.0,
     max_time_s: float = 3600.0,
 ) -> ASETResult:
-    """Calculate Available Safe Egress Time (ASET) for a fire scenario.
+    """
+    Calculate Available Safe Egress Time (ASET) for a fire scenario.
 
     Steps through time at the specified resolution until ANY tenability criterion
     is violated. Returns the time at which conditions first become untenable.
@@ -1001,7 +1012,8 @@ def _estimate_o2_depletion(
     ventilation_opening_m2: float,
     time_seconds: float,
 ) -> float:
-    """Estimate O₂ concentration depletion in the compartment.
+    """
+    Estimate O₂ concentration depletion in the compartment.
 
     Simplified model: O₂ is consumed proportionally to HRR, and replenished
     through ventilation openings.
@@ -1083,7 +1095,8 @@ def calculate_rset(
     pre_movement_s: float = 60.0,
     mobility_factor: float = 1.0,
 ) -> dict[str, Any]:
-    """Calculate Required Safe Egress Time (RSET).
+    """
+    Calculate Required Safe Egress Time (RSET).
 
     RSET is the time required for all occupants to reach a place of safety:
 
@@ -1211,7 +1224,8 @@ def verify_aset_rset(
     rset_seconds: float,
     safety_factor: float = 1.5,
 ) -> dict[str, Any]:
-    """Verify ASET/RSET compliance with required safety factor.
+    """
+    Verify ASET/RSET compliance with required safety factor.
 
     The fundamental criterion for life safety is:
 

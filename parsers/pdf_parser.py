@@ -29,6 +29,7 @@ logger = logging.getLogger("fireai.pdf_parser")
 @dataclass
 class PDFDevice:
     """Single fire device from PDF."""
+
     device_type: str      # SMOKE_DETECTOR, HEAT_DETECTOR, PULL_STATION, etc.
     location: str         # Room/area description
     page: int
@@ -47,6 +48,7 @@ class PDFDevice:
 @dataclass
 class PDFParseResult:
     """Result of parsing PDF floor plan."""
+
     source_file: str
     success: bool
     page_count: int = 0
@@ -127,7 +129,8 @@ class PDFParser:
     def __init__(self, min_confidence: float = 0.5):
         """
         Args:
-            min_confidence: Minimum confidence threshold (0-1)
+        min_confidence: Minimum confidence threshold (0-1)
+
         """
         self.min_confidence = min_confidence
         self._device_cache: Dict[str, str] = {}
@@ -142,6 +145,7 @@ class PDFParser:
 
         Returns:
             PDFParseResult with detected devices
+
         """
         # V126: Path security + file-size cap
         from parsers._path_security import (
@@ -287,12 +291,11 @@ class PDFParser:
             pil_img = img.original
 
             # Run OCR
-            result = pytesseract.image_to_string(
+            return pytesseract.image_to_string(
                 pil_img,
                 lang='eng',
                 config='--tessdata-dir /usr/share/tesseract-ocr/5/tessdata'
             )
-            return result
 
         except ImportError:
             logger.warning("pytesseract not installed")
@@ -401,6 +404,7 @@ class PDFReportGenerator:
 
         Returns:
             dict with report data
+
         """
         result = self.parser.parse(pdf_path)
 
@@ -410,7 +414,7 @@ class PDFReportGenerator:
             device_counts[d.device_type] = device_counts.get(d.device_type, 0) + 1
 
         # Build report
-        report = {
+        return {
             "source": result.source_file,
             "success": result.success,
             "page_count": result.page_count,
@@ -431,7 +435,6 @@ class PDFReportGenerator:
             ),
         }
 
-        return report
 
     def print_report(self, pdf_path: str) -> str:
         """Generate and return formatted report."""

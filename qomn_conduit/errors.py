@@ -20,6 +20,7 @@ import enum
 
 class Severity(enum.Enum):
     """Error severity classification."""
+
     FATAL   = "FATAL"    # Abort — calculation result cannot be trusted
     WARNING = "WARNING"  # Log and continue — result is still usable
 
@@ -35,6 +36,7 @@ class ConduitError(Exception):
         code_reference: NEC/NFPA article citation.
         remediation:    Actionable guidance to resolve.
         severity:       FATAL or WARNING.
+
     """
 
     def __init__(

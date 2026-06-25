@@ -1,4 +1,5 @@
-"""v17_core/battery_calculator.py — NFPA 72 §10.6.7 Battery Aging & Temperature Derating.
+"""
+v17_core/battery_calculator.py — NFPA 72 §10.6.7 Battery Aging & Temperature Derating.
 ======================================================================================
 CRITICAL LIFE-SAFETY MODULE — Part of the V17 Critical Trilogy
 
@@ -72,7 +73,8 @@ from fireai.core.battery_aging_derating import (
 
 
 class StrictBatterySizer:
-    """V17 Strict Battery Sizer with DecisionProvenance audit trail.
+    """
+    V17 Strict Battery Sizer with DecisionProvenance audit trail.
 
     Calculates battery capacity per NFPA 72 §10.6.7 with:
       - IEEE 485 temperature derating (non-linear, not flat 1.5%/°C)
@@ -108,7 +110,8 @@ class StrictBatterySizer:
         service_life_years: float = DEFAULT_SERVICE_LIFE_YEARS,
         safety_margin_pct: float = 0.0,
     ) -> None:
-        """Initialize the battery sizer.
+        """
+        Initialize the battery sizer.
 
         Args:
             standby_hours: Required standby duration per NFPA 72 §10.6.7.2.1.
@@ -134,7 +137,8 @@ class StrictBatterySizer:
         installed_battery_ah: float | None = None,
         battery_cells: int = 6,
     ) -> Any:
-        """Calculate minimum required battery capacity with full derating.
+        """
+        Calculate minimum required battery capacity with full derating.
 
         Converts the consultant's mA interface to the core module's A interface,
         then delegates to the physics-correct size_battery() function.
@@ -299,7 +303,8 @@ class StrictBatterySizer:
         battery_cells: int = 6,
         panel_ambient_temp_c: float = 25.0,
     ) -> Any:
-        """Convenience method: audit an installed battery for adequacy.
+        """
+        Convenience method: audit an installed battery for adequacy.
 
         Args:
             quiescent_ma: Total standby current (mA).

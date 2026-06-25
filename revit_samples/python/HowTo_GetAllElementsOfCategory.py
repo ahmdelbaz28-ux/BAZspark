@@ -12,7 +12,7 @@ License: http://github.com/gtalarico/revitapidocs/blob/master/LICENSE.md
 """
 
 #Imports.
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
+from Autodesk.Revit.DB import BuiltInCategory, FilteredElementCollector
 
 doc = __revit__.ActiveUIDocument.Document
 

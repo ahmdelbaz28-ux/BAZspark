@@ -28,7 +28,8 @@ import pytest
 
 
 class _LpSumResult:
-    """Mock for a pulp.lpSum() result that supports ``>=`` with int.
+    """
+    Mock for a pulp.lpSum() result that supports ``>=`` with int.
 
     Python 3.13's ``MagicMock`` no longer auto-defines comparison dunder
     methods, so we need a plain object that can appear on the LHS of ``>= 1``
@@ -572,7 +573,7 @@ class TestSolveSetCoveringMIPFormulation:
         )
 
     def test_variables_created_as_binary(self):
-        mock_pulp, _, variables = TestSolveSetCoveringMIPNormal._make_optimal_mock(4, [0])
+        mock_pulp, _, _variables = TestSolveSetCoveringMIPNormal._make_optimal_mock(4, [0])
         with patch.object(_mod_ms, "PULP_AVAILABLE", True):
             with patch.object(_mod_ms, "pulp", mock_pulp, create=True):
                 solve_set_covering_mip(2.0, 2.0, candidate_step=1.0)

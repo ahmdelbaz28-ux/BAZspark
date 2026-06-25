@@ -466,7 +466,7 @@ class TestDeltaCacheLegacyAPI:
             analysis_count[0] += 1
             return {"detector_count": 3, "compliant": True}
 
-        results, stats = cache.process_incremental([room_dict], analyze)
+        results, _stats = cache.process_incremental([room_dict], analyze)
         assert len(results) == 1
         assert analysis_count[0] == 1
         assert results[0]["_cache_hit"] is False
@@ -480,7 +480,7 @@ class TestDeltaCacheLegacyAPI:
             return {"detector_count": 3}
 
         cache.process_incremental([room_dict], analyze)
-        results, stats = cache.process_incremental([room_dict], analyze)
+        results, _stats = cache.process_incremental([room_dict], analyze)
         assert analyze_count[0] == 1  # Only ran once
         assert results[0]["_cache_hit"] is True
 
@@ -494,7 +494,7 @@ class TestDeltaCacheLegacyAPI:
 
         cache.process_incremental([room_dict], analyze)
         # Force re-analysis of room
-        results, stats = cache.process_incremental(
+        _results, _stats = cache.process_incremental(
             [room_dict], analyze, changed_room_ids=["R-101"],
         )
         assert analyze_count[0] == 2  # Re-ran due to change hint

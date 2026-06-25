@@ -1,4 +1,5 @@
-"""hydraulic_solver.py — Hazen-Williams Friction Loss & Hydraulic Calculation Engine.
+"""
+hydraulic_solver.py — Hazen-Williams Friction Loss & Hydraulic Calculation Engine.
 =================================================================================
 LIFE-SAFETY CRITICAL: Incorrect hydraulic calculations cause undersized fire
 suppression piping. If friction loss is underestimated, the residual pressure
@@ -127,7 +128,8 @@ def calculate_friction_loss(
     internal_diameter_inches: float,
     pipe_length_feet: float,
 ) -> float:
-    """Calculate total friction loss in a pipe segment using Hazen-Williams.
+    """
+    Calculate total friction loss in a pipe segment using Hazen-Williams.
 
     NFPA 13-2022 Chapter 23, Hazen-Williams Equation:
       p = 4.52 × Q^1.85 / (C^1.85 × d^4.87)
@@ -261,7 +263,8 @@ def calculate_sprinkler_discharge(
     k_factor: float,
     pressure_psi: float,
 ) -> float:
-    """Calculate sprinkler discharge flow using the K-factor formula.
+    """
+    Calculate sprinkler discharge flow using the K-factor formula.
 
     NFPA 13-2022 §23.4.4: Q = K × √P
 
@@ -373,7 +376,8 @@ def validate_sprinkler_compliance(
     hazard_class: str,
     sprinkler_area_sqft: float | None = None,
 ) -> SprinklerComplianceResult:
-    """Validate sprinkler design against NFPA 13 / SBC 801 limits.
+    """
+    Validate sprinkler design against NFPA 13 / SBC 801 limits.
 
     SAFETY: This is the PRIMARY compliance gate for sprinkler systems.
     A sprinkler design that fails this validation CANNOT be approved
@@ -472,7 +476,8 @@ def validate_roughness_factor(
     material: str,
     c_factor: float,
 ) -> float:
-    """Validate C-factor value against NFPA 13 standard ranges.
+    """
+    Validate C-factor value against NFPA 13 standard ranges.
 
     SAFETY: An incorrect C-factor directly affects friction loss calculations.
     A C-factor that is too high makes friction loss appear too low, causing

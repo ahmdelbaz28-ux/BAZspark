@@ -970,18 +970,16 @@ def generate_generative_svg(svg_type="flow", w=720, h=960, color="#8a8a8a"):
     """Route to the appropriate SVG generator."""
     if svg_type == "flow":
         return generate_flow_svg(w, h, color)
-    elif svg_type == "grid":
+    if svg_type == "grid":
         return generate_grid_svg(w, h, color)
-    elif svg_type == "noise":
+    if svg_type == "noise":
         return generate_noise_svg(w, h)
-    elif svg_type == "supergraphic":
+    if svg_type == "supergraphic":
         return generate_supergraphic_svg(w, h, color)
-    elif svg_type == "ordered_texture":
+    if svg_type == "ordered_texture":
         return generate_ordered_texture_svg(w, h, color)
-    else:
-        # Default: flow + noise layered
-        flow = generate_flow_svg(w, h, color)
-        return flow
+    # Default: flow + noise layered
+    return generate_flow_svg(w, h, color)
 
 
 def generate_continuous_flow_svg(w, h, total_pages, color="#8a8a8a", curves=4, stroke_width=80, opacity=0.05):
@@ -1092,7 +1090,7 @@ def generate_unified_svg(w, h, total_pages, svg_type, color="#8a8a8a", curves=4,
         svg += '\n</svg>'
         return svg
 
-    elif svg_type == "grid":
+    if svg_type == "grid":
         # Grid pattern spanning full height
         svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" width="{w}" height="{total_h}">'
         spacing = 60
@@ -1103,7 +1101,7 @@ def generate_unified_svg(w, h, total_pages, svg_type, color="#8a8a8a", curves=4,
         svg += '\n</svg>'
         return svg
 
-    elif svg_type == "noise":
+    if svg_type == "noise":
         # Noise dots spanning full height
         svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" width="{w}" height="{total_h}">'
         num_dots = int(200 * total_pages)
@@ -1139,6 +1137,7 @@ def calculate_layout(elements, w=720, h=960, style="offset"):
 
     Returns:
         dict mapping element names to {x, y, w, h, rotation} in pixels
+
     """
     # Safe area (15% breathing margin on all sides)
     safe_x = w * BREATHING_MARGIN
@@ -1231,7 +1230,7 @@ def audit_palette(palette):
         if not hex_val.startswith("#"):
             continue
         r, g, b = (int(hex_val[i:i+2], 16) / 255.0 for i in (1, 3, 5))
-        h, l, s = colorsys.rgb_to_hls(r, g, b)
+        _h, l, s = colorsys.rgb_to_hls(r, g, b)
 
         # Tight bg/mid saturation limits per mode
         if key in ("bg", "mid"):
@@ -1482,7 +1481,7 @@ Examples:
                 for v in violations: print(f"   - {v}")
 
         except Exception as e:
-            print(f"❌ Failed to compile blueprint: {str(e)}")
+            print(f"❌ Failed to compile blueprint: {e!s}")
             sys.exit(1)
     else:
         parser.print_help()
@@ -1927,8 +1926,7 @@ def _prevent_orphan_chars(text):
     # Match: (CJK char)(optional space)(CJK char) at end of string (before tags)
     text = re.sub(r'([\u4e00-\u9fff\u3400-\u4dbf])[\s]+([\u4e00-\u9fff\u3400-\u4dbf])(?=\s*(?:<[^>]*>)*\s*$)', '\\g<1>\u2060\\g<2>', text)
     # Latin orphan: bind last two words
-    text = re.sub(r'(\S+)\s+(\S+)\s*$', r'\1&nbsp;\2', text)
-    return text
+    return re.sub(r'(\S+)\s+(\S+)\s*$', r'\1&nbsp;\2', text)
 
 
 def simple_markdown_to_html(md_text):
@@ -1958,8 +1956,7 @@ def simple_markdown_to_html(md_text):
         """Apply bold, italic, inline code."""
         text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
         text = re.sub(r'\*(.*?)\*', r'<em>\1</em>', text)
-        text = re.sub(r'`(.*?)`', r'<code style="background:var(--c-surface);padding:2px 6px;border-radius:3px;font-size:max(12px, 0.9em)">\1</code>', text)
-        return text
+        return re.sub(r'`(.*?)`', r'<code style="background:var(--c-surface);padding:2px 6px;border-radius:3px;font-size:max(12px, 0.9em)">\1</code>', text)
 
     for line in lines:
         stripped = line.strip()
@@ -2522,9 +2519,8 @@ def render_component(comp):
         body = comp.get("body", "") or comp.get("markdown_content", "")
         html_body = simple_markdown_to_html(body)
         label_html = f'<span class="sidenote-label">{label}</span>' if label else ""
-        inner = f'<div class="sidenote">{label_html}{html_body}</div>\n'
+        return f'<div class="sidenote">{label_html}{html_body}</div>\n'
         # Sidenotes bypass grid-item wrapping for Tufte layout — returned raw
-        return inner
 
     elif ctype == "Delta_Widget":
         metric = comp.get("metric", "")
@@ -2558,7 +2554,7 @@ def render_component(comp):
 
 def compile_blueprint(json_path, output_html_path):
     """Reads the LLM JSON blueprint and generates the final poster.html"""
-    with open(json_path, 'r', encoding='utf-8') as f:
+    with open(json_path, encoding='utf-8') as f:
         blueprint = json.load(f)
 
     art = blueprint.get("art_direction", {})

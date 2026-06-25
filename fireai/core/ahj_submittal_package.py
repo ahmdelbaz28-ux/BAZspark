@@ -1,4 +1,5 @@
-"""ahj_submittal_package.py — AHJ Submittal Package Generator.
+"""
+ahj_submittal_package.py — AHJ Submittal Package Generator.
 ================================================================
 
 Assembles a complete Authority Having Jurisdiction (AHJ) submittal
@@ -48,7 +49,8 @@ __all__ = [
 
 @dataclass(frozen=True)
 class SubmittalSection:
-    """A section of the AHJ submittal package.
+    """
+    A section of the AHJ submittal package.
 
     Attributes:
         title:     Section title.
@@ -70,7 +72,8 @@ class SubmittalSection:
 
 @dataclass
 class SubmittalPackage:
-    """Complete AHJ submittal package.
+    """
+    Complete AHJ submittal package.
 
     Attributes:
         project_name:     Project identifier.
@@ -98,7 +101,8 @@ class SubmittalPackage:
 
 @dataclass
 class SubmittalResult:
-    """Result of submittal package generation.
+    """
+    Result of submittal package generation.
 
     Attributes:
         output_path: Path to the generated package index.
@@ -124,7 +128,8 @@ class SubmittalResult:
 
 
 class AHJSubmittalGenerator:
-    """Generate an AHJ submittal package from FireAI outputs.
+    """
+    Generate an AHJ submittal package from FireAI outputs.
 
     Collects all engineering outputs (placement results, BOQ, voltage
     drop calculations, survivability classification, drawings) into a
@@ -172,7 +177,8 @@ class AHJSubmittalGenerator:
         battery_result: dict | None = None,
         building_report: Any | None = None,
     ) -> SubmittalPackage:
-        """Assemble a submittal package from engineering outputs.
+        """
+        Assemble a submittal package from engineering outputs.
 
         Args:
             project_name:          Project name.
@@ -321,7 +327,8 @@ class AHJSubmittalGenerator:
         package: SubmittalPackage,
         output_dir: str = ".",
     ) -> SubmittalResult:
-        """Generate a text index file listing all submittal sections.
+        """
+        Generate a text index file listing all submittal sections.
 
         Args:
             package: Assembled submittal package.

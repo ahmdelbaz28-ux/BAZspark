@@ -337,7 +337,8 @@ class TestMatrixRow:
 
 
 class TestCauseEffectRules:
-    """Every device type in CAUSE_EFFECT_RULES has the correct output list.
+    """
+    Every device type in CAUSE_EFFECT_RULES has the correct output list.
 
     V18 bug regression: verify NAC activation is included, DUCT_DETECTOR
     does NOT produce ALARM, ELEVATOR_PHASE_II exists, FIRE_PUMP_START exists.
@@ -596,7 +597,8 @@ class TestNFPAReferences:
     def test_all_references_are_non_empty_strings(self):
         for _dev_type, refs in NFPA_REFERENCES.items():
             for ref in refs:
-                assert isinstance(ref, str) and len(ref) > 0
+                assert isinstance(ref, str)
+                assert len(ref) > 0
 
     def test_sections_contain_standard_prefix(self):
         for _dev_type, refs in NFPA_REFERENCES.items():
@@ -733,8 +735,10 @@ class TestGenerateMatrix:
     # ── V18 bug regression: NAC activation ───────────────────────────────
 
     def test_nac_activation_included_in_alarm_devices(self, matrix):
-        """V18 bug: NAC activation was MISSING entirely.
-        Every alarm-producing device must include NAC_ZONE or NAC_ALL."""
+        """
+        V18 bug: NAC activation was MISSING entirely.
+        Every alarm-producing device must include NAC_ZONE or NAC_ALL.
+        """
         nac_types = [
             DeviceInputType.SMOKE_GENERAL,
             DeviceInputType.SMOKE_ELEVATOR_LOBBY,

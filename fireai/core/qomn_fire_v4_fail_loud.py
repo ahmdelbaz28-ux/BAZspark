@@ -43,7 +43,8 @@ from typing import Any, Callable
 # CONFIGURATION: آمن — يرفض العمل بدون مفتاح في الإنتاج
 # =====================================================================
 class Config:
-    """كل القيم قابلة للتعديل بدون تغيير الكود.
+    """
+    كل القيم قابلة للتعديل بدون تغيير الكود.
     في الإنتاج: يرفض العمل بدون QOMN_AUDIT_SECRET.
     """
 
@@ -63,7 +64,8 @@ class Config:
 
     @classmethod
     def verify_ready(cls) -> None:
-        """يرفض العمل إذا كان المفتاح السري مفقوداً و REFUSE_ON_MISSING_SECRET=True.
+        """
+        يرفض العمل إذا كان المفتاح السري مفقوداً و REFUSE_ON_MISSING_SECRET=True.
         هذا يمنع تشغيل النظام بدون توقيعات HMAC في الإنتاج.
         """
         if cls.REFUSE_ON_MISSING_SECRET and not cls.SECRET_KEY:
@@ -87,7 +89,8 @@ class SystemStatus(Enum):
 
 @dataclass(frozen=True)
 class SafetyResult:
-    """نتيجة آمنة — لا قيمة بدون حالة.
+    """
+    نتيجة آمنة — لا قيمة بدون حالة.
     كل قيمة "مُعالجة" تحتاج مراجعة بشرية.
     كل قيمة "مرفوضة" تُوقف الـ pipeline.
     """
@@ -112,7 +115,8 @@ class SafetyResult:
         return self.status == SystemStatus.REJECTED
 
     def is_safe_to_use(self) -> bool:
-        """القيمة آمنة للاستخدام فقط إذا:
+        """
+        القيمة آمنة للاستخدام فقط إذا:
         - NOMINAL (حساب حقيقي)
         - HEALED (استُبدلت لكن ما زالت فيزيائياً صحيحة)
         لا تعني أن القيمة صحيحة — تعني فقط أنها ليست مستحيلة فيزيائياً.
@@ -120,7 +124,8 @@ class SafetyResult:
         return self.status in (SystemStatus.NOMINAL, SystemStatus.HEALED)
 
     def requires_human_review(self) -> bool:
-        """هل يجب أن يراجع إنسان هذه النتيجة قبل الاعتماد عليها؟
+        """
+        هل يجب أن يراجع إنسان هذه النتيجة قبل الاعتماد عليها؟
         REJECTED دائماً يحتاج مراجعة بشرية — يجب أن يعرف إنسان أن النظام رفض الحساب.
         """
         return self.human_review_required or self.is_healed() or self.is_rejected()
@@ -150,7 +155,8 @@ RECOVERABLE_ERRORS: tuple[type, ...] = (
 
 
 def classify_error(exc: Exception) -> str:
-    """يُصنّف الخطأ: FATAL أو RECOVERABLE أو UNKNOWN.
+    """
+    يُصنّف الخطأ: FATAL أو RECOVERABLE أو UNKNOWN.
     هذا القرار يحدد مصير الحساب بأكمله.
     """
     for fatal_type in FATAL_ERRORS:
@@ -166,7 +172,8 @@ def classify_error(exc: Exception) -> str:
 # AUDIT LOGGER: Singleton + Thread-Safe + HMAC + Rotation
 # =====================================================================
 class AsyncAuditLogger:
-    """Non-blocking audit logger.
+    """
+    Non-blocking audit logger.
     SINGLETON: مثيل واحد فقط — لا تسرب خيوط.
     Thread-safe: كل الوصول محمي بأقفال.
     HMAC: كل سجل موقّع.
@@ -277,7 +284,8 @@ class AsyncAuditLogger:
             sys.stderr.write(f"[AUDIT-CRITICAL] {len(lines)} audit entries LOST!\n")
 
     def flush(self, timeout: float = 2.0) -> bool:
-        """ينتظر حتى تُكتب كل الإدخالات أو تنتهي المهلة.
+        """
+        ينتظر حتى تُكتب كل الإدخالات أو تنتهي المهلة.
         يُرجع True إذا نجح، False إذا انتهت المهلة.
         """
         self._flush_event.set()
@@ -301,7 +309,8 @@ class AsyncAuditLogger:
 # CIRCUIT BREAKER: Weighted + Half-Open + Error History Retention
 # =====================================================================
 class WeightedCircuitBreaker:
-    """Thread-safe circuit breaker with weighted errors.
+    """
+    Thread-safe circuit breaker with weighted errors.
     v4.0 CHANGES:
     - يحتفظ بتاريخ الأخطاء حتى بعد العودة من Half-Open
     - يُعلم عن كل انتقال حالة
@@ -411,7 +420,8 @@ def fail_loud_v4(
     unit: str = "",  # [v4.0 NEW] وحدة القياس
     allow_healing: bool = True,  # [v4.0 NEW] هل يُسمح بالشفاء أصلاً؟
 ):
-    """Fail-Loud Self-Healing Decorator v4.0.
+    """
+    Fail-Loud Self-Healing Decorator v4.0.
 
     الفلسفة:
     - أخطاء قاتلة (FATAL) → REJECTED → توقف الـ pipeline فوراً
@@ -754,7 +764,8 @@ def _compute_healed_value(
     safe_minimum: float | None,
     default_value: Any,
 ) -> Any:
-    """يحسب القيمة المُعالجة بناءً على نوع الخطأ.
+    """
+    يحسب القيمة المُعالجة بناءً على نوع الخطأ.
     فقط للأخطاء القابلة للشفاء (RECOVERABLE).
     """
     if err_type == "IndexError":
@@ -895,7 +906,8 @@ class OpenFireAdapter:
         unit="meters",
     )
     def calculate_smoke_layer_height(temp_k: float, mass_flow: float) -> float:
-        """حساب مبسط لارتفاع طبقة الدخان.
+        """
+        حساب مبسط لارتفاع طبقة الدخان.
         الـ ZeroDivisionError هنا = فيزياء مستحيلة = FATAL = REJECTED.
         """
         if temp_k <= 0.0 or mass_flow <= 0.0:
@@ -942,7 +954,8 @@ class EmergencyEvacuationAdapter:
 
 # 5. SafeGuard AI: Edge Inference — FAIL-SAFE = False (لا إنذار خاطئ)
 class SafeGuardAiAdapter:
-    """في نظام إنذار الحرائق:
+    """
+    في نظام إنذار الحرائق:
     - إنذار خاطئ (False Positive) = إزعاج لكنه آمن
     - تفويت إنذار (False Negative) = كارثة
     لذلك في حالة الفشل، نُعيد False (لا إنذار) بدلاً من True (إنذار خاطئ)
@@ -1080,7 +1093,8 @@ def _validate_spray_flow(val: float) -> bool:
     return val >= _SPRAY_MIN_PSI
 
 class SprayHydraulicAdapter:
-    """حساب ضغط رأس الرشاش — NFPA 13.
+    """
+    حساب ضغط رأس الرشاش — NFPA 13.
     في v3.1 كان default_value=float('inf') = كارثة.
     في v4.0: أعلى ضغط واقعي أو REJECTED.
     """
@@ -1101,7 +1115,8 @@ class SprayHydraulicAdapter:
         allow_healing=False,  # [v4.0] حساب الرشاش حرج — لا شفاء، بيانات خاطئة = إيقاف
     )
     def calculate_discharge_pressure(flow_gpm: float, k_factor: float) -> float:
-        """P = (Q/K)^2 — NFPA 13 sprinkler discharge formula.
+        """
+        P = (Q/K)^2 — NFPA 13 sprinkler discharge formula.
         إذا K=0، الرشاش لا يعمل = REJECTED وليس inf.
         """
         if k_factor == 0.0:
@@ -1129,7 +1144,8 @@ class SprayHydraulicAdapter:
 # =====================================================================
 
 def execute_hospital_scenario(sim_runs: int, node_elevation: float, water_demand: float) -> dict[str, Any]:
-    """سيناريو المستشفى.
+    """
+    سيناريو المستشفى.
     إذا فشل أي حساب حرج، الـ pipeline يتوقف بالكامل.
     """
     sim_res = AamksAdapter.run_monte_carlo(sim_runs)

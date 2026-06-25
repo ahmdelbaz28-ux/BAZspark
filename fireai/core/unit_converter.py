@@ -1,4 +1,5 @@
-"""unit_converter.py — Safety-Critical Unit Conversion Utility.
+"""
+unit_converter.py — Safety-Critical Unit Conversion Utility.
 ============================================================
 LIFE-SAFETY CRITICAL: Incorrect unit conversions in BIM/Revit integration
 lead to catastrophic engineering errors. A pipe sized in feet instead of
@@ -81,7 +82,8 @@ FAHRENHEIT_SCALE     = 5.0 / 9.0  # °C = (°F - 32) × 5/9
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def revit_internal_to_metres(internal_feet: float) -> float:
-    """Convert Revit internal decimal feet to metres.
+    """
+    Convert Revit internal decimal feet to metres.
 
     SAFETY: This is the MOST CRITICAL conversion in the system.
     Revit stores ALL length measurements internally as decimal feet.
@@ -110,7 +112,8 @@ def revit_internal_to_metres(internal_feet: float) -> float:
 
 
 def metres_to_revit_internal(metres: float) -> float:
-    """Convert metres to Revit internal decimal feet.
+    """
+    Convert metres to Revit internal decimal feet.
 
     SAFETY: Reverse conversion for writing back to Revit model.
     An incorrect conversion here writes wrong pipe sizes into the BIM model.
@@ -139,7 +142,8 @@ def metres_to_revit_internal(metres: float) -> float:
 
 
 def revit_internal_to_mm(internal_feet: float) -> float:
-    """Convert Revit internal decimal feet to millimetres.
+    """
+    Convert Revit internal decimal feet to millimetres.
 
     SAFETY: Used for pipe diameter display and specification.
     Confusing mm with inches causes 25.4x errors in pipe sizing.
@@ -163,7 +167,8 @@ def revit_internal_to_mm(internal_feet: float) -> float:
 
 
 def mm_to_revit_internal(mm: float) -> float:
-    """Convert millimetres to Revit internal decimal feet.
+    """
+    Convert millimetres to Revit internal decimal feet.
 
     Args:
         mm: Length in millimetres.
@@ -181,7 +186,8 @@ def mm_to_revit_internal(mm: float) -> float:
 
 
 def inches_to_mm(inches: float) -> float:
-    """Convert inches to millimetres.
+    """
+    Convert inches to millimetres.
 
     SAFETY: Used for pipe diameter conversion in NFPA 13 hydraulic
     calculations. Internal pipe diameters in inches (e.g., 2.067" for
@@ -202,7 +208,8 @@ def inches_to_mm(inches: float) -> float:
 
 
 def psi_to_bar(psi: float) -> float:
-    """Convert psi to bar.
+    """
+    Convert psi to bar.
 
     SAFETY: Used when converting NFPA 13 (US customary) pressure values
     to SBC 801 / Egyptian Fire Code (SI) pressure values.
@@ -220,7 +227,8 @@ def psi_to_bar(psi: float) -> float:
 
 
 def bar_to_psi(bar: float) -> float:
-    """Convert bar to psi.
+    """
+    Convert bar to psi.
 
     Args:
         bar: Pressure in bar.
@@ -235,7 +243,8 @@ def bar_to_psi(bar: float) -> float:
 
 
 def gpm_to_lpm(gpm: float) -> float:
-    """Convert US gallons per minute to litres per minute.
+    """
+    Convert US gallons per minute to litres per minute.
 
     SAFETY: NFPA 13 uses gpm; SBC 801 / Egyptian Code may use L/min.
     Incorrect conversion causes undersized or oversized pipe networks.
@@ -255,7 +264,8 @@ def gpm_to_lpm(gpm: float) -> float:
 
 
 def sqft_to_sqm(sqft: float) -> float:
-    """Convert square feet to square metres.
+    """
+    Convert square feet to square metres.
 
     SAFETY: NFPA 13 design density is in gpm/sq.ft.; SBC 801 may use
     mm/min/m². Area conversion errors propagate into sprinkler count
@@ -276,7 +286,8 @@ def sqft_to_sqm(sqft: float) -> float:
 
 
 def fahrenheit_to_celsius(f: float) -> float:
-    """Convert Fahrenheit to Celsius.
+    """
+    Convert Fahrenheit to Celsius.
 
     SAFETY: Used for ambient temperature in Burgess-Wheeler LFL correction
     and battery temperature derating. An incorrect temperature conversion
@@ -295,7 +306,8 @@ def fahrenheit_to_celsius(f: float) -> float:
 
 
 def celsius_to_fahrenheit(c: float) -> float:
-    """Convert Celsius to Fahrenheit.
+    """
+    Convert Celsius to Fahrenheit.
 
     Args:
         c: Temperature in degrees Celsius.
@@ -316,7 +328,8 @@ def celsius_to_fahrenheit(c: float) -> float:
 def convert_polygon_revit_to_metres(
     polygon_revit: list[tuple[float, float]]
 ) -> list[tuple[float, float]]:
-    """Convert an entire polygon from Revit internal feet to metres.
+    """
+    Convert an entire polygon from Revit internal feet to metres.
 
     SAFETY: Room boundary polygons extracted from Revit are in decimal feet.
     ALL FireAI calculations (detector spacing, coverage, egress) expect metres.

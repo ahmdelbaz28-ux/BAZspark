@@ -424,7 +424,8 @@ def extract_text_inventory(
     prs: Optional[Any] = None,
     issues_only: bool = False,
 ) -> InventoryData:
-    """Extract text from all slides.
+    """
+    Extract text from all slides.
 
     Returns {slide-N: {shape-N: ShapeData}}, shapes sorted by visual position.
     Pass an existing Presentation object via `prs` to avoid re-loading.

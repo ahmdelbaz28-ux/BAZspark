@@ -1,4 +1,5 @@
-"""fireai/core/parameter_optimizer.py  V1.0.
+"""
+fireai/core/parameter_optimizer.py  V1.0.
 =========================================
 Grid-searches verify_step on benchmark rooms.
 Results saved to JSON for manual engineer review.
@@ -85,14 +86,16 @@ class ParameterOptimizationResult:
 
 
 class ParameterOptimizer:
-    """Finds the Pareto-optimal verify_step for fireai's DensityOptimizer.
+    """
+    Finds the Pareto-optimal verify_step for fireai's DensityOptimizer.
 
     Only configurations where ALL benchmark rooms return proof_valid=True
     are considered. Results are written to JSON for manual engineer review.
     """
 
     def __init__(self, coverage_radius: float = DETECTOR_RADIUS) -> None:
-        """Args:
+        """
+        Args:
         coverage_radius: Coverage radius in metres (default DETECTOR_RADIUS = 6.37m
                          per NFPA 72 §17.7.4.2.3.1: R = 0.7 × S = 0.7 × 9.1m at h≤3.0m).
                          Passed to DensityOptimizer.optimize().
@@ -105,7 +108,8 @@ class ParameterOptimizer:
         rooms: list[Room],
         steps: list[float] | None = None,
     ) -> ParameterOptimizationResult:
-        """Run grid search over verify_step values.
+        """
+        Run grid search over verify_step values.
 
         Args:
             rooms: List of Room objects to benchmark against.

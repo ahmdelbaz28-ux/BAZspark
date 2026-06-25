@@ -32,9 +32,9 @@ class GridMap3D:
 
     def to_grid(self, p: Point3D) -> Tuple[int, int, int]:
         return (
-            int(round(p.x / self.step_m)),
-            int(round(p.y / self.step_m)),
-            int(round(p.z / self.step_m))
+            round(p.x / self.step_m),
+            round(p.y / self.step_m),
+            round(p.z / self.step_m)
         )
 
     def to_physical(self, gp: Tuple[int, int, int]) -> Point3D:

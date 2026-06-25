@@ -49,14 +49,14 @@ class TestConstants:
 
     def test_slope_ridge_zone_threshold(self):
         """1 in 8 pitch ≈ 7.125°."""
-        assert _SLOPE_RIDGE_ZONE_THRESHOLD_DEG == pytest.approx(7.125, abs=0.001)
+        assert pytest.approx(7.125, abs=0.001) == _SLOPE_RIDGE_ZONE_THRESHOLD_DEG
 
     def test_steep_slope_threshold(self):
         assert _STEEP_SLOPE_THRESHOLD_DEG == 30.0
 
     def test_beam_spacing(self):
         """Standard beam spacing ≈ 60ft = 18.3m."""
-        assert _BEAM_SPACING_M == pytest.approx(18.3, abs=0.1)
+        assert pytest.approx(18.3, abs=0.1) == _BEAM_SPACING_M
 
     def test_smoke_spacing_table_entries(self):
         """NFPA 72 Table 17.6.3.1.1 has 9 height/spacing pairs."""
@@ -182,19 +182,19 @@ class TestSelectTechnology:
         assert d.fallback_technology == DetectorTechnology.BEAM_SMOKE
 
     def test_steep_slope_asd(self):
-        """slope > 30° → ASD with PE design warning."""
+        """Slope > 30° → ASD with PE design warning."""
         d = EliteTechnologyDispatcher.select_technology(5.0, slope_degrees=35.0)
         assert d.technology == DetectorTechnology.ASD
         assert any("PERFORMANCE_BASED" in w for w in d.warnings)
 
     def test_moderate_slope_ridge_zone(self):
-        """slope > 7.125° → ridge zone required."""
+        """Slope > 7.125° → ridge zone required."""
         d = EliteTechnologyDispatcher.select_technology(3.0, slope_degrees=10.0)
         assert d.ridge_zone_required is True
         assert any("RIDGE_ZONE" in w for w in d.warnings)
 
     def test_flat_slope_no_ridge_zone(self):
-        """slope = 5° (< 7.125°) → no ridge zone required."""
+        """Slope = 5° (< 7.125°) → no ridge zone required."""
         d = EliteTechnologyDispatcher.select_technology(3.0, slope_degrees=5.0)
         assert d.ridge_zone_required is False
 
@@ -308,27 +308,27 @@ class TestEdgeCases:
         assert d.technology == DetectorTechnology.POINT_SMOKE
 
     def test_just_below_steep_slope(self):
-        """slope = 29.9° → point detectors, not ASD."""
+        """Slope = 29.9° → point detectors, not ASD."""
         d = EliteTechnologyDispatcher.select_technology(3.0, slope_degrees=29.9)
         assert d.technology == DetectorTechnology.POINT_SMOKE
 
     def test_just_at_steep_slope(self):
-        """slope = 30.0° → point detectors (threshold is > 30)."""
+        """Slope = 30.0° → point detectors (threshold is > 30)."""
         d = EliteTechnologyDispatcher.select_technology(3.0, slope_degrees=30.0)
         assert d.technology == DetectorTechnology.POINT_SMOKE
 
     def test_just_above_steep_slope(self):
-        """slope = 30.1° → ASD."""
+        """Slope = 30.1° → ASD."""
         d = EliteTechnologyDispatcher.select_technology(3.0, slope_degrees=30.1)
         assert d.technology == DetectorTechnology.ASD
 
     def test_just_at_beam_max(self):
-        """h = 25.0m → BEAM_SMOKE (threshold is > 25)."""
+        """H = 25.0m → BEAM_SMOKE (threshold is > 25)."""
         d = EliteTechnologyDispatcher.select_technology(25.0)
         assert d.technology == DetectorTechnology.BEAM_SMOKE
 
     def test_just_above_beam_max(self):
-        """h = 25.1m → ASD."""
+        """H = 25.1m → ASD."""
         d = EliteTechnologyDispatcher.select_technology(25.1)
         assert d.technology == DetectorTechnology.ASD
 

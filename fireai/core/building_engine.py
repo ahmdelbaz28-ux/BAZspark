@@ -1,4 +1,5 @@
-"""fireai/core/building_engine.py  V0.2.
+"""
+fireai/core/building_engine.py  V0.2.
 =====================================
 Building-level fire alarm design analyser.
 
@@ -88,7 +89,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class BuildingReport:
-    """Complete analysis report for an entire building.
+    """
+    Complete analysis report for an entire building.
 
     Attributes:
         building_id: Unique building identifier (e.g. "BLDG-001").
@@ -142,7 +144,8 @@ class BuildingReport:
 
 
 class BuildingEngine:
-    """Building-level fire alarm design analyser.
+    """
+    Building-level fire alarm design analyser.
 
     Uses FloorAnalyser V2.1 as a component (composition, not reimplementation).
     Each floor is analysed by an independent FloorAnalyser instance.
@@ -217,7 +220,8 @@ class BuildingEngine:
     # ─── public ──────────────────────────────────────────────────────
 
     def analyse(self, floors: dict[str, list]) -> BuildingReport:
-        """Analyse all floors in the building and return a BuildingReport.
+        """
+        Analyse all floors in the building and return a BuildingReport.
 
         Each floor is processed sequentially by an independent FloorAnalyser.
         The same audit_trail and audit_store are passed to each FloorAnalyser

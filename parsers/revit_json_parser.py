@@ -20,6 +20,7 @@ from typing import Dict, List, Optional
 @dataclass
 class RevitProject:
     """Parsed Revit project."""
+
     name: str
     version: str
     units: str
@@ -38,7 +39,7 @@ class RevitJSONParser:
 
     def _load_json(self) -> Dict:
         """Load JSON file."""
-        with open(self.json_path, 'r') as f:
+        with open(self.json_path) as f:
             return json.load(f)
 
     def parse(self) -> Optional[RevitProject]:

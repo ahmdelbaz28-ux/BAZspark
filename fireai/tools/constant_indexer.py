@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""FireAI — Constants Usage Index Generator.
+"""
+FireAI — Constants Usage Index Generator.
 
 This script scans the codebase and generates a comprehensive index of:
 1. Where each constant is DEFINED (canonical source)

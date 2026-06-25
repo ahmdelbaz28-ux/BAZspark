@@ -30,9 +30,7 @@ from fireai.core.egress_calculator import (
 
 
 class TestCalculateEgressTime:
-    """
-    NFPA 101 Chapter 7 — RSET = Pre-movement + max(Travel, Flow)
-    """
+    """NFPA 101 Chapter 7 — RSET = Pre-movement + max(Travel, Flow)"""
 
     def test_basic_egress(self):
         """50 occupants, 30m travel, 0.91m exit, 600s ASET."""
@@ -49,7 +47,8 @@ class TestCalculateEgressTime:
         assert result.nfpa_section == "NFPA 101 §7.3"
 
     def test_travel_time_calculation(self):
-        """Travel time = distance / speed.
+        """
+        Travel time = distance / speed.
         30m / 1.0 m/s = 30s for travel.
         Flow time = 50 / (0.91 × 1.1) = 49.95s.
         max(30, 49.95) = 49.95s.
@@ -236,7 +235,8 @@ class TestEgressResultFrozen:
 
 class TestMinimumExitWidth:
     def test_basic_calculation(self):
-        """100 occupants, 300s RSET, 60s premovement.
+        """
+        100 occupants, 300s RSET, 60s premovement.
         Available time = 240s.
         Required flow = 100/240 ≈ 0.417 p/s.
         Min width = 0.417/1.1 ≈ 0.379m → floored to 0.71m minimum.

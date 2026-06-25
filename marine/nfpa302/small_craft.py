@@ -1,12 +1,17 @@
-"""marine/nfpa302/small_craft.py — NFPA 302 Fire Protection for Small Craft.
+"""
+marine/nfpa302/small_craft.py — NFPA 302 Fire Protection for Small Craft.
 NFPA 302-2020 applies to craft <24m (65 ft) load line, including yachts,
-workboats, and small commercial vessels. Replaces SOLAS for these craft."""
+workboats, and small commercial vessels. Replaces SOLAS for these craft.
+"""
 from __future__ import annotations
+
 from marine.core.constants import (
-    NFPA302_GALLEY_FIXED_AGENT, NFPA302_GALLEY_FIXED_SYSTEM_REQUIRED,
+    NFPA302_GALLEY_FIXED_AGENT,
+    NFPA302_GALLEY_FIXED_SYSTEM_REQUIRED,
     NFPA302_PORTABLE_EXTINGUISHERS,
 )
 from marine.core.types import ComplianceResult, ShipProject
+
 
 def required_portable_extinguishers(length_ft: float) -> ComplianceResult:
     """Return required portable extinguishers per NFPA 302 §6.2."""
@@ -34,6 +39,7 @@ def is_in_scope(ship: ShipProject) -> bool:
     return ship.is_small_craft
 
 __all__ = [
-    "required_portable_extinguishers", "validate_galley_fixed_system",
     "is_in_scope",
+    "required_portable_extinguishers",
+    "validate_galley_fixed_system",
 ]

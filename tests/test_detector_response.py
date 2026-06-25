@@ -60,7 +60,8 @@ class TestCalculateHeatDetectorResponse:
         assert result.nfpa_section == "NFPA 72 §17.7.3"
 
     def test_near_plume_model(self):
-        """r/H ≤ 0.2 uses near-plume formula.
+        """
+        r/H ≤ 0.2 uses near-plume formula.
         r=0.5m, H=3m → r/H = 0.167 ≤ 0.2
         """
         result = calculate_heat_detector_response(
@@ -72,7 +73,8 @@ class TestCalculateHeatDetectorResponse:
         assert result.activation_possible is True
 
     def test_far_from_plume_model(self):
-        """r/H > 0.2 uses far-from-plume formula.
+        """
+        r/H > 0.2 uses far-from-plume formula.
         r=3m, H=3m → r/H = 1.0 > 0.2
         """
         result = calculate_heat_detector_response(
@@ -141,7 +143,8 @@ class TestCalculateHeatDetectorResponse:
         assert r_high.activation_time_s >= r_low.activation_time_s
 
     def test_non_activating_detector(self):
-        """V96 FIX: When gas temp never reaches activation temp.
+        """
+        V96 FIX: When gas temp never reaches activation temp.
         Very small fire, high ceiling → gas temperature < 57°C.
         """
         result = calculate_heat_detector_response(
@@ -250,9 +253,7 @@ class TestCalculateHeatDetectorResponse:
 
 
 class TestCalculateSmokeDetectorResponse:
-    """
-    NFPA 72 §17.7.4 — Smoke detector activation using plume transport model.
-    """
+    """NFPA 72 §17.7.4 — Smoke detector activation using plume transport model."""
 
     def test_basic_smoke_detector(self):
         result = calculate_smoke_detector_response(
@@ -399,7 +400,7 @@ class TestConstants:
         assert _AMBIENT_TEMP_C == 30.0
 
     def test_gravity_constant(self):
-        assert _G == pytest.approx(9.81)
+        assert pytest.approx(9.81) == _G
 
 
 if __name__ == "__main__":

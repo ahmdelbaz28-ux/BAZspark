@@ -1,4 +1,5 @@
-"""backend/routers/facp.py — FACP Selection & Compliance REST API.
+"""
+backend/routers/facp.py — FACP Selection & Compliance REST API.
 ================================================================
 REST endpoints for the Fire Alarm Control Panel selection engine.
 
@@ -45,7 +46,8 @@ router = APIRouter(tags=["facp"])
 # ── Request/Response Models ──────────────────────────────────────────────────
 
 class FACPSelectionRequest(BaseModel):
-    """Input for FACP panel selection.
+    """
+    Input for FACP panel selection.
 
     All fields map to facp_system.panel_selector.ProjectRequirements.
     """
@@ -93,7 +95,8 @@ class FACPSelectionRequest(BaseModel):
 
 
 class FACPVerificationRequest(BaseModel):
-    """Input for FACP compliance verification.
+    """
+    Input for FACP compliance verification.
 
     Accepts the same ProjectRequirements plus a PanelRecommendation
     to verify compliance against UL/FDNY/NFPA rules.
@@ -163,7 +166,8 @@ _facp_available: bool | None = None
 
 
 def _check_facp_available() -> bool:
-    """Check if facp_system package is available.
+    """
+    Check if facp_system package is available.
 
     SAFETY: If the FACP module is not available, endpoints must return 503
     (Service Unavailable) rather than 500 (Internal Server Error).
@@ -212,7 +216,8 @@ def _require_facp() -> None:
 
 @router.post("/facp/select", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
 async def select_facp(req: FACPSelectionRequest):
-    """Select optimal FACP for project requirements.
+    """
+    Select optimal FACP for project requirements.
 
     Runs the deterministic selection algorithm from
     facp_system.panel_selector.SelectionEngine with:
@@ -292,7 +297,8 @@ async def select_facp(req: FACPSelectionRequest):
 
 @router.post("/facp/verify", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
 async def verify_facp(req: FACPVerificationRequest):
-    """Verify compliance of a panel recommendation.
+    """
+    Verify compliance of a panel recommendation.
 
     Runs programmatic compliance checks from
     facp_system.panel_verifier.ComplianceVerifier:
@@ -369,7 +375,8 @@ async def verify_facp(req: FACPVerificationRequest):
 
 @router.post("/facp/schedule", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
 async def generate_facp_schedule(req: FACPScheduleRequest):
-    """Generate DXF schedule table for the selected FACP.
+    """
+    Generate DXF schedule table for the selected FACP.
 
     Produces a formatted text table suitable for CAD viewport placement
     in the fire alarm plan drawings. Includes:
@@ -428,7 +435,8 @@ async def generate_facp_schedule(req: FACPScheduleRequest):
 
 @router.post("/facp/spec", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
 async def generate_facp_spec(req: FACPSpecRequest):
-    """Generate CSI specification (Section 28 31 11) for the selected FACP.
+    """
+    Generate CSI specification (Section 28 31 11) for the selected FACP.
 
     Produces a ready-to-print specification paragraph for fire protection
     construction bids, including:
@@ -500,7 +508,8 @@ async def generate_facp_spec(req: FACPSpecRequest):
 
 @router.get("/facp/panels", dependencies=[Depends(require_permission(Permission.FACP_READ))])
 async def list_available_panels():
-    """List all FACP panels in the database with full specifications.
+    """
+    List all FACP panels in the database with full specifications.
 
     Returns the complete panel database for manual review and
     engineering judgment. Each panel includes:

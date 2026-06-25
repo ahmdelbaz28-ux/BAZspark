@@ -310,7 +310,8 @@ class TestArbitrateV21:
         assert _TEMP_CLASS_MAP.get(tc.value, 999) < 200.0
 
     def test_nan_autoignition_fail_safe_v57(self, arbiter):
-        """V57 FIX: NaN autoignition is detected and warned about.
+        """
+        V57 FIX: NaN autoignition is detected and warned about.
 
         V78 FIX: NaN autoignition now correctly defaults to T6 (most
         conservative, 85°C max) instead of T4. Previous code had a bug
@@ -327,7 +328,8 @@ class TestArbitrateV21:
         assert result.equipment_spec.temp_class == TemperatureClass.T6
 
     def test_inf_autoignition_fail_safe_v57(self, arbiter):
-        """V57 FIX: Inf autoignition is detected and warned about.
+        """
+        V57 FIX: Inf autoignition is detected and warned about.
 
         V78 FIX: Inf autoignition now correctly defaults to T6 (most
         conservative) instead of T4. Previous code overrode T6 with T4.
@@ -492,7 +494,7 @@ class TestValidateEquipment:
         assert result.is_epl_sufficient is True
 
     def test_wrong_protection_type(self, arbiter):
-        """nA protection not permitted in Zone 0."""
+        """NA protection not permitted in Zone 0."""
         result = arbiter.validate_equipment(
             equipment_id="EQ-4",
             zone=ATEXZone.ZONE_0,
@@ -502,7 +504,7 @@ class TestValidateEquipment:
         assert result.is_permitted is False
 
     def test_ia_permitted_in_zone0(self, arbiter):
-        """ia is permitted in Zone 0."""
+        """Ia is permitted in Zone 0."""
         result = arbiter.validate_equipment(
             equipment_id="EQ-5",
             zone=ATEXZone.ZONE_0,

@@ -1,4 +1,5 @@
-"""core/tests/test_database.py — Comprehensive unit tests for core/database.py.
+"""
+core/tests/test_database.py — Comprehensive unit tests for core/database.py.
 
 Tests the UniversalDataModel SQLite store covering:
 - Database initialization (in-memory and file-based)
@@ -138,7 +139,8 @@ class TestUniversalDataModelInit:
         os.unlink(db_file)
 
     def test_wal_mode_enabled(self, tmp_path) -> None:
-        """Test that WAL journal mode is set for file-based databases.
+        """
+        Test that WAL journal mode is set for file-based databases.
 
         Note: In-memory databases use 'memory' mode, so we test with a file.
         """

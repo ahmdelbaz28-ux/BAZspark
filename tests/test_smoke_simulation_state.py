@@ -1,4 +1,5 @@
-"""test_smoke_simulation_state.py — Tests for Smoke Simulation Hooks.
+"""
+test_smoke_simulation_state.py — Tests for Smoke Simulation Hooks.
 
 MISSION TASK 4.1 — Validates placeholder smoke density and visibility
 gradient data structures for future FDS integration.
@@ -15,18 +16,15 @@ import pytest
 from fireai.core.smoke_simulation_state import (
     DEFAULT_VISIBILITY_HEIGHTS_M,
     EYE_LEVEL_ADULT_M,
+    SMOKE_DENSITY_TENABILITY_THRESHOLD_KG_M3,
+    SOURCE_FDS,
+    VISIBILITY_TENABILITY_THRESHOLD_M,
     FDSIntegrationConfig,
-    PLACEHOLDER_VALIDATION_WARNING,
     SimulationStatus,
     SmokeDensityPoint,
     SmokeSimulationState,
-    SOURCE_FDS,
-    SOURCE_PLACEHOLDER,
     VisibilityGradient,
-    VISIBILITY_TENABILITY_THRESHOLD_M,
-    SMOKE_DENSITY_TENABILITY_THRESHOLD_KG_M3,
 )
-
 
 # ---------------------------------------------------------------------------
 # Placeholder Creation Tests

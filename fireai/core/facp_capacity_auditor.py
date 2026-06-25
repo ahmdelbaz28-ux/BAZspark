@@ -1,4 +1,5 @@
-"""fireai/core/facp_capacity_auditor.py.
+"""
+fireai/core/facp_capacity_auditor.py.
 ====================================
 FACP (Fire Alarm Control Panel) Global Capacity Auditor.
 
@@ -92,7 +93,8 @@ _MODULE_KEYWORDS: frozenset[str] = frozenset(
 # ============================================================================
 @dataclass(frozen=True)
 class FACP_Profile:
-    """Manufacturer-specific FACP protocol limits.
+    """
+    Manufacturer-specific FACP protocol limits.
 
     Attributes:
         manufacturer:  Human-readable manufacturer name (e.g. "Notifier FlashScan").
@@ -154,7 +156,8 @@ _MANUFACTURER_PROFILES: dict[str, FACP_Profile] = {
 
 
 def get_default_profile(manufacturer: str) -> FACP_Profile:
-    """Return a pre-defined FACP profile for a known manufacturer.
+    """
+    Return a pre-defined FACP profile for a known manufacturer.
 
     Args:
         manufacturer: Case-insensitive manufacturer key
@@ -182,7 +185,8 @@ def _build_violation(
     message: str,
     severity: str = "CRITICAL",
 ) -> dict[str, Any]:
-    """Return a violation record as a plain dict.
+    """
+    Return a violation record as a plain dict.
 
     If the ``Violation`` provenance class is available the dict also
     includes a ``provenance`` key with a ``Violation`` instance; otherwise
@@ -214,7 +218,8 @@ def _build_rule_applied(
     rule_id: str,
     description: str,
 ) -> dict[str, Any]:
-    """Return a rule-applied record as a plain dict.
+    """
+    Return a rule-applied record as a plain dict.
 
     Provenance ``RuleApplied`` fields: ``citation``, ``constant_id``,
     ``value_used``, ``unit``.
@@ -243,7 +248,8 @@ def _build_rule_applied(
 # Device classification
 # ============================================================================
 def _classify_device(device_type: str) -> str:
-    """Classify a device as ``"detector"`` or ``"module"``.
+    """
+    Classify a device as ``"detector"`` or ``"module"``.
 
     Classification rules:
       1. If *device_type* is in ``DETECTOR_DEVICE_TYPES`` → detector.
@@ -273,7 +279,8 @@ def _classify_device(device_type: str) -> str:
 # Main auditor class
 # ============================================================================
 class FACPCapacityAuditor:
-    """Audits a FACP against its manufacturer profile for power-supply
+    """
+    Audits a FACP against its manufacturer profile for power-supply
     overloads and SLC protocol limit violations.
 
     Usage::
@@ -291,7 +298,8 @@ class FACPCapacityAuditor:
     # Audit 1: Global inrush / NAC current
     # ------------------------------------------------------------------
     def audit_global_inrush(self, nac_circuits: list[dict[str, Any]]) -> dict[str, Any]:
-        """Audit all NAC circuits for per-circuit and aggregate current limits.
+        """
+        Audit all NAC circuits for per-circuit and aggregate current limits.
 
         Each element of *nac_circuits* must be a dict with at minimum:
 
@@ -423,7 +431,8 @@ class FACPCapacityAuditor:
         self,
         slc_loops: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        """Audit each SLC loop for detector and module address limits.
+        """
+        Audit each SLC loop for detector and module address limits.
 
         Each element of *slc_loops* must be a dict with:
 

@@ -1,6 +1,4 @@
-"""
-FireAI RVT Parser - Revit RVT file parser
-"""
+"""FireAI RVT Parser - Revit RVT file parser"""
 
 import logging
 from typing import List, Optional
@@ -11,9 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class RVTParser:
-    """
-    محلل ملفات Revit RVT
-    """
+    """محلل ملفات Revit RVT"""
 
     def __init__(self):
         logger.info("RVT Parser initialized")

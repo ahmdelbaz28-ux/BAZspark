@@ -46,6 +46,7 @@ class Point3D:
 @dataclass(frozen=True, slots=True)
 class Wall:
     """Structural wall element extracted from IFC/DXF parsing."""
+
     id: str
     start: Point3D
     end: Point3D
@@ -55,6 +56,7 @@ class Wall:
 @dataclass(frozen=True, slots=True)
 class Opening:
     """Door or window opening in a wall."""
+
     id: str
     opening_type: str  # "DOOR" or "WINDOW"
     location: Point3D
@@ -64,6 +66,7 @@ class Opening:
 @dataclass(frozen=True, slots=True)
 class Room:
     """Enclosed room/space with boundary polygon."""
+
     id: str
     name: str
     boundary: Tuple[Point3D, ...]
@@ -79,6 +82,7 @@ class Room:
 @dataclass(frozen=True, slots=True)
 class Building:
     """Top-level building model containing all parsed geometric elements."""
+
     file_hash: str
     format_detected: str
     version_detected: str

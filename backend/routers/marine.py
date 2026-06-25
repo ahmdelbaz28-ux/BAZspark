@@ -1,4 +1,5 @@
-"""backend/routers/marine.py — Marine Fire-Safety REST API.
+"""
+backend/routers/marine.py — Marine Fire-Safety REST API.
 =========================================================
 REST endpoints for the marine fire-safety module.
 
@@ -35,6 +36,7 @@ from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.services.marine_service import get_marine_service
 from marine.core.types import (
+    DetectorPlacement,  # V140: Fix F821 undefined-name
     DetectorType,
     FireClass,
     MarineZone,
@@ -248,7 +250,8 @@ async def validate_ship(request: Request, body: DesignRequest) -> dict[str, Any]
 )
 @limiter.limit("10/minute")
 async def design_full(request: Request, body: DesignRequest) -> dict[str, Any]:
-    """Run the full marine fire-safety design pipeline.
+    """
+    Run the full marine fire-safety design pipeline.
 
     Returns: zones, detectors, divisions, extinguishing systems, alarm
     logic tree, power spec, SCADA/ETAP/Revit/DXF integrations, and

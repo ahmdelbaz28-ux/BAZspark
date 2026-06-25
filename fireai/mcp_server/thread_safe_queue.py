@@ -1,4 +1,5 @@
-"""thread_safe_queue.py — Thread-Safe Model Update Queue for Revit API.
+"""
+thread_safe_queue.py — Thread-Safe Model Update Queue for Revit API.
 ===================================================================
 LIFE-SAFETY CRITICAL: The Revit API is SINGLE-THREADED — all model
 modifications MUST occur on the Revit UI thread. Any attempt to modify
@@ -49,7 +50,8 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class ModelUpdateType(str, Enum):
-    """Types of model updates that can be queued.
+    """
+    Types of model updates that can be queued.
 
     SAFETY: Each type maps to a specific Revit API operation.
     Unknown types are REJECTED — no dynamic dispatch.
@@ -82,7 +84,8 @@ class ModelUpdateStatus(str, Enum):
 
 @dataclass
 class ModelUpdateAction:
-    """A single model update action to be executed on the Revit UI thread.
+    """
+    A single model update action to be executed on the Revit UI thread.
 
     SAFETY: All string fields must be sanitized BEFORE creating this object.
     The queue handler does NOT re-sanitize — it trusts that the MCP handler
@@ -125,7 +128,8 @@ class ModelUpdateAction:
 
 @dataclass
 class ModelUpdateResult:
-    """Result of executing a model update action.
+    """
+    Result of executing a model update action.
 
     Attributes:
         action_id: Matches the submitted ModelUpdateAction.action_id.
@@ -150,7 +154,8 @@ class ModelUpdateResult:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class ThreadSafeModelUpdateQueue:
-    """Thread-safe queue for Revit model updates.
+    """
+    Thread-safe queue for Revit model updates.
 
     SAFETY: This is the ONLY approved way to modify the Revit model from
     external sources (MCP, API, etc.). Direct Revit API calls from
@@ -183,7 +188,8 @@ class ThreadSafeModelUpdateQueue:
     """
 
     def __init__(self, max_size: int = 1000) -> None:
-        """Initialize the thread-safe queue.
+        """
+        Initialize the thread-safe queue.
 
         Args:
             max_size: Maximum number of pending actions. Prevents
@@ -205,7 +211,8 @@ class ThreadSafeModelUpdateQueue:
         self._stats_lock = threading.Lock()
 
     def enqueue(self, action: ModelUpdateAction) -> str:
-        """Enqueue a model update action for safe execution on Revit UI thread.
+        """
+        Enqueue a model update action for safe execution on Revit UI thread.
 
         SAFETY: This method is thread-safe and can be called from any
         background thread (MCP handler, API handler, etc.).
@@ -280,7 +287,8 @@ class ThreadSafeModelUpdateQueue:
         return action.action_id
 
     def dequeue(self, timeout: float = 1.0) -> ModelUpdateAction | None:
-        """Dequeue the next action for execution.
+        """
+        Dequeue the next action for execution.
 
         SAFETY: This should ONLY be called by the C# IExternalEventHandler
         bridge code running on the Revit UI thread.
@@ -299,7 +307,8 @@ class ThreadSafeModelUpdateQueue:
             return None
 
     def report_result(self, result: ModelUpdateResult) -> None:
-        """Report the result of executing a model update action.
+        """
+        Report the result of executing a model update action.
 
         SAFETY: Called by the C# bridge after Transaction commit/rollback.
 
@@ -335,7 +344,8 @@ class ThreadSafeModelUpdateQueue:
         action_id: str,
         timeout: float = 30.0,
     ) -> ModelUpdateResult:
-        """Wait for a model update action to complete.
+        """
+        Wait for a model update action to complete.
 
         SAFETY: Blocks the calling thread until the C# bridge reports
         the result. Use with caution in MCP handlers — long timeouts
@@ -394,7 +404,8 @@ class ThreadSafeModelUpdateQueue:
             return list(self._action_log[-last_n:])
 
     def cleanup_old_results(self, max_age_seconds: float = 300.0) -> int:
-        """Remove old results to prevent memory leaks.
+        """
+        Remove old results to prevent memory leaks.
 
         Args:
             max_age_seconds: Remove results older than this.

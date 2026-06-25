@@ -1,4 +1,5 @@
-"""Gate 6: Integration Tests — ETAP Skill ↔ FireAI Modules.
+"""
+Gate 6: Integration Tests — ETAP Skill ↔ FireAI Modules.
 =========================================================
 Validates that the ETAP skill's calculation methods produce results
 compatible with FireAI's existing engineering modules.
@@ -327,7 +328,8 @@ class TestCrossModuleNumericalConsistency:
     """Verify numerical values are consistent across modules."""
 
     def test_awg_4_0_resistance_consistent_across_modules(self) -> None:
-        """4/0 AWG resistance must be consistent between ETAP and FireAI.
+        """
+        4/0 AWG resistance must be consistent between ETAP and FireAI.
 
         ETAP skill Example 1 uses:
             3/0 AWG: R = 0.077 Ω/1000ft, X = 0.048 Ω/1000ft
@@ -387,7 +389,8 @@ class TestCrossModuleNumericalConsistency:
         )
 
     def test_flisr_ohms_law_consistent_with_fireai_voltage_drop(self) -> None:
-        """Both FLISR (V=I×Z) and FireAI voltage_drop (V=I×R) use Ohm's law.
+        """
+        Both FLISR (V=I×Z) and FireAI voltage_drop (V=I×R) use Ohm's law.
 
         This is a fundamental physics consistency check — both modules
         must agree on V = I × Z (or V = I × R for DC).

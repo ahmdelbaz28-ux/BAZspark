@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""FireAI — Module Dependency Index Generator.
+"""
+FireAI — Module Dependency Index Generator.
 
 Scans the codebase and generates a dependency graph to identify:
 - Module layers and their dependencies

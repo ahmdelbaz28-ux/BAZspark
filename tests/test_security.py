@@ -99,7 +99,8 @@ _DEFAULT_RATE_LIMIT = (120, 60)
 
 
 def _find_rate_limit(path: str) -> tuple:
-    """Find the rate limit for a path (longest-prefix match).
+    """
+    Find the rate limit for a path (longest-prefix match).
     Mirrors backend_app.PerPathRateLimitMiddleware._find_limit.
     """
     best_match = None
@@ -125,7 +126,8 @@ _DEVELOPMENT_ORIGINS = [
 
 
 def _get_cors_origins() -> list:
-    """Resolve CORS origins based on deployment environment.
+    """
+    Resolve CORS origins based on deployment environment.
     Mirrors backend_app._get_cors_origins.
     """
     env = os.getenv("FIREAI_ENV", "production")
@@ -221,7 +223,8 @@ class TestKeyRotatorTimingAttackResistance:
 
 
 class TestKeyRotatorLifecycle:
-    """Test the full key rotation lifecycle:
+    """
+    Test the full key rotation lifecycle:
     register → validate → rotate → validate old/new → grace period expiry.
     """
 
@@ -445,7 +448,8 @@ class TestPlaceholderKeyDetection:
         assert any("entropy" in i.lower() for i in issues)
 
     def test_strong_key_passes(self):
-        """A strong, random-looking key should pass validation.
+        """
+        A strong, random-looking key should pass validation.
 
         V105 FIX: Use token_hex() instead of token_urlsafe() to avoid
         false positives from weak-pattern detection. token_urlsafe()
@@ -568,7 +572,8 @@ class TestSecurityAuditLoggerThreadSafety:
         )
 
     def test_concurrent_log_events_no_exceptions(self, temp_log_dir):
-        """Many concurrent log_event calls should not raise exceptions.
+        """
+        Many concurrent log_event calls should not raise exceptions.
 
         Note: The SensitiveDataFilter may mask chain hash values in the log file,
         so file-based chain verification may not work. This test verifies that
@@ -641,7 +646,8 @@ class TestSecurityAuditLoggerThreadSafety:
 
 
 class TestSecurityAuditLoggerChainIntegrity:
-    """Verify that chain hash changes between events.
+    """
+    Verify that chain hash changes between events.
 
     Note: The SensitiveDataFilter in the logging pipeline may mask 32-char hex
     values (including chain hashes) written to the log file. This means
@@ -733,7 +739,8 @@ class TestSecurityAuditLoggerChainIntegrity:
         assert result["entries_checked"] == 0
 
     def test_tamper_detection_via_json_comparison(self, temp_log_dir):
-        """Verify tamper detection by comparing recomputed hashes against stored ones.
+        """
+        Verify tamper detection by comparing recomputed hashes against stored ones.
 
         Since the SensitiveDataFilter may alter file content, we test tamper
         detection by directly comparing the JSON structure. If any field is
@@ -773,7 +780,8 @@ class TestSecurityAuditLoggerChainIntegrity:
 
 
 class TestPerPathRateLimitPathMatching:
-    """Verify that PerPathRateLimitMiddleware uses longest-prefix match.
+    """
+    Verify that PerPathRateLimitMiddleware uses longest-prefix match.
 
     Tests use a local reproduction of the _find_limit algorithm from
     backend_app.PerPathRateLimitMiddleware, since backend_app cannot be
@@ -904,7 +912,8 @@ class TestPerPathRateLimitPathMatching:
 
 
 class TestCorsWildcardRejection:
-    """Verify that wildcard origins are rejected in production mode.
+    """
+    Verify that wildcard origins are rejected in production mode.
 
     Tests use a local reproduction of the _get_cors_origins algorithm from
     backend_app, since backend_app cannot be imported in the test environment.
@@ -1040,7 +1049,8 @@ class TestSensitiveDataMasking:
         assert "REDACTED" in masked
 
     def test_mask_long_hex_string(self):
-        """V105 FIX: Long bare hex strings are NO LONGER masked.
+        """
+        V105 FIX: Long bare hex strings are NO LONGER masked.
 
         The hex-regex pattern was removed because it corrupted
         cryptographic hash values in audit trail logs (chain_hash,
@@ -1105,7 +1115,7 @@ class TestSensitiveDataMasking:
         assert "my_auth_key_value_12345" not in masked
 
     def test_mask_credential_pattern(self):
-        """credential values should be masked."""
+        """Credential values should be masked."""
         text = 'credential="my_credential_value_123456"'
         masked = mask_sensitive(text)
         assert "my_credential_value_123456" not in masked

@@ -1,4 +1,5 @@
-"""bim_unit_detector.py — Automated BIM Unit Detection.
+"""
+bim_unit_detector.py — Automated BIM Unit Detection.
 =======================================================
 
 MISSION PHASE 4.2 — Fix the Hardcoded Scale Bug
@@ -56,7 +57,8 @@ logger = logging.getLogger(__name__)
 
 
 class UnitSystem(str, Enum):
-    """Supported BIM unit systems with their scale-to-metres factors.
+    """
+    Supported BIM unit systems with their scale-to-metres factors.
 
     The ``scale_to_metres`` property gives the multiplier to convert a
     coordinate in this unit system to metres.
@@ -71,7 +73,8 @@ class UnitSystem(str, Enum):
 
     @property
     def scale_to_metres(self) -> float:
-        """Multiplier to convert this unit to metres.
+        """
+        Multiplier to convert this unit to metres.
 
         Per NIST SP 1038 (International System of Units):
             1 m = 100 cm = 1000 mm = 3.28084 ft = 39.3701 in
@@ -126,7 +129,8 @@ _DXF_INSUNITS_MAP: dict[int, UnitSystem] = {
 
 @dataclass
 class UnitDetectionResult:
-    """Result of BIM unit detection.
+    """
+    Result of BIM unit detection.
 
     Attributes:
         unit: Detected UnitSystem.
@@ -160,7 +164,8 @@ class UnitDetectionResult:
 
 
 def detect_bim_unit(filepath: str) -> UnitDetectionResult:
-    """Detect the unit system used in a BIM file.
+    """
+    Detect the unit system used in a BIM file.
 
     Tries multiple detection strategies in order of confidence:
     1. IFC header unit declaration (most reliable)
@@ -210,7 +215,8 @@ def detect_bim_unit(filepath: str) -> UnitDetectionResult:
 
 
 def _detect_from_ifc(filepath: str) -> UnitDetectionResult | None:
-    """Detect unit from IFC file header.
+    """
+    Detect unit from IFC file header.
 
     IFC files declare units in the HEADER section:
         FILE_DESCRIPTION(...);
@@ -285,7 +291,8 @@ def _detect_from_ifc(filepath: str) -> UnitDetectionResult | None:
 
 
 def _detect_from_dxf(filepath: str) -> UnitDetectionResult | None:
-    """Detect unit from DXF $INSUNITS system variable.
+    """
+    Detect unit from DXF $INSUNITS system variable.
 
     DXF files are text-based (ASCII). The $INSUNITS variable is in the
     HEADER section:
@@ -350,7 +357,8 @@ def _detect_from_dxf(filepath: str) -> UnitDetectionResult | None:
 
 
 def _detect_from_heuristic(filepath: str) -> UnitDetectionResult | None:
-    """Detect unit heuristically based on coordinate magnitudes.
+    """
+    Detect unit heuristically based on coordinate magnitudes.
 
     Strategy:
     - Read a sample of coordinates from the file
@@ -429,7 +437,8 @@ def _detect_from_heuristic(filepath: str) -> UnitDetectionResult | None:
 
 
 def _sample_coordinates(filepath: str, max_points: int = 1000) -> list:
-    """Sample coordinate pairs from a BIM file (any format).
+    """
+    Sample coordinate pairs from a BIM file (any format).
 
     For IFC: looks for IfcCartesianPoint instances.
     For DXF: looks for LINE entity coordinates.

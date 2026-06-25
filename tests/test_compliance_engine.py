@@ -175,7 +175,8 @@ class TestBranchVoltageDropRule:
 # ============================================================================
 
 class TestTotalVoltageDropRule:
-    """Test total voltage drop per NEC §215.2(A)(2).
+    """
+    Test total voltage drop per NEC §215.2(A)(2).
 
     Note: The engine uses v_drop_total_percent if provided,
     otherwise falls back to v_drop_percent.
@@ -235,7 +236,8 @@ class TestTerminalVoltageRule:
 # ============================================================================
 
 class TestStairwellMaxPressureRule:
-    """Test maximum stairwell pressure per NFPA 92 §6.4.2.
+    """
+    Test maximum stairwell pressure per NFPA 92 §6.4.2.
 
     Note: The engine uses design_pressure_pa, NOT stairwell_pressure_pa.
     """
@@ -266,7 +268,8 @@ class TestStairwellMaxPressureRule:
 # ============================================================================
 
 class TestStairwellMinPressureRule:
-    """Test minimum stairwell pressure per NFPA 92 §6.4.
+    """
+    Test minimum stairwell pressure per NFPA 92 §6.4.
 
     Note: This rule only applies when pressurization_required=True.
     """

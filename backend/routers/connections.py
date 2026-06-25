@@ -1,4 +1,5 @@
-"""backend/routers/connections.py — Connections CRUD endpoints.
+"""
+backend/routers/connections.py — Connections CRUD endpoints.
 
 LIFE-SAFETY NOTE: Connections represent cable wiring between fire alarm
 devices. The cable size and length parameters are used in voltage drop
@@ -39,7 +40,8 @@ _SORT_MAP = {
 
 
 def _normalize_sort(sort: str) -> str:
-    """Convert camelCase sort fields to snake_case for database.
+    """
+    Convert camelCase sort fields to snake_case for database.
 
     SECURITY FIX (BUG-32): Strict whitelist — rejects unknown sort fields.
     """
@@ -108,7 +110,8 @@ async def update_connection(
     length: float | None = None,
     connection_type: str | None = None,  # FIX #14: Renamed 'type' to 'connection_type' — 'type' shadows built-in
 ):
-    """Update an existing connection in a project.
+    """
+    Update an existing connection in a project.
 
     Allows updating cable size, length, and connection type.
     These parameters affect voltage drop calculations per NFPA 72.

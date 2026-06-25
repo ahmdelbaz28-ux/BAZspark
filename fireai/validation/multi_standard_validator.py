@@ -1,4 +1,5 @@
-"""fireai/validation/multi_standard_validator.py — Advanced Multi-Standard Validation.
+"""
+fireai/validation/multi_standard_validator.py — Advanced Multi-Standard Validation.
 
 Composite pattern: each standard is a StandardValidator subclass.
 Supports cross-system conflict detection between standards.
@@ -200,7 +201,8 @@ class StandardValidator(ABC):
         ...
 
     def validate(self, design: DesignData) -> StandardReport:
-        """Validate a design against all rules defined by this standard.
+        """
+        Validate a design against all rules defined by this standard.
 
         Returns a StandardReport with per-rule traceability.
         """
@@ -792,7 +794,8 @@ def get_validator(standard: ValidationStandard) -> StandardValidator:
 # ════════════════════════════════════════════════════════════════════════════
 
 class MultiStandardValidator:
-    """Composite validator that runs validation against multiple standards.
+    """
+    Composite validator that runs validation against multiple standards.
 
     Features:
       - Runs each StandardValidator independently
@@ -807,7 +810,8 @@ class MultiStandardValidator:
     def validate(
         self, design: DesignData, standards: list[ValidationStandard]
     ) -> ValidationReport:
-        """Validate a design against the specified set of standards.
+        """
+        Validate a design against the specified set of standards.
 
         Args:
             design: The design data to validate.
@@ -854,7 +858,8 @@ class MultiStandardValidator:
         return report
 
     def cross_validate(self, design: DesignData) -> CrossSystemReport:
-        """Run cross-system conflict detection across ALL standards.
+        """
+        Run cross-system conflict detection across ALL standards.
 
         This checks for conflicting requirements between different
         standards that apply to the same design parameter.

@@ -1,6 +1,4 @@
-"""
-Engine Pool for L3 in Distributed FACP System
-"""
+"""Engine Pool for L3 in Distributed FACP System"""
 import logging
 import threading
 import time
@@ -11,9 +9,8 @@ from .engine_worker import EngineWorker
 
 
 class EnginePool:
-    """
-    Pool of engine workers for load distribution and redundancy in distributed system
-    """
+    """Pool of engine workers for load distribution and redundancy in distributed system"""
+
     def __init__(self, initial_size: int = 3, max_size: int = 10):
         self.pool_id = f"engine_pool_{int(time.time())}_{uuid.uuid4().hex[:8]}"
         self.initial_size = initial_size
@@ -31,9 +28,7 @@ class EnginePool:
         self.current_size = 0
 
     def initialize(self):
-        """
-        Initialize the engine pool with initial workers
-        """
+        """Initialize the engine pool with initial workers"""
         with self.lock:
             if self.is_initialized:
                 return
@@ -50,10 +45,8 @@ class EnginePool:
             self.logger.info("Engine Pool %s initialized with %s workers", self.pool_id, self.current_size)
 
     def _create_worker(self, worker_name: str) -> EngineWorker:
-        """
-        Create a new engine worker
-        """
-        worker = EngineWorker(
+        """Create a new engine worker"""
+        return EngineWorker(
             worker_id=worker_name,
             capabilities=[
                 "engine.calculate", "engine.validate", "engine.transform",
@@ -61,12 +54,9 @@ class EnginePool:
             ],
             max_concurrent_tasks=5
         )
-        return worker
 
     def get_available_worker(self) -> Optional[EngineWorker]:
-        """
-        Get an available worker from the pool
-        """
+        """Get an available worker from the pool"""
         with self.lock:
             for _worker_id, worker in self.active_workers.items():
                 status = worker.get_worker_status()
@@ -88,9 +78,7 @@ class EnginePool:
             return least_busy
 
     def execute_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute a request using an available worker from the pool
-        """
+        """Execute a request using an available worker from the pool"""
         worker = self.get_available_worker()
 
         if not worker:
@@ -132,9 +120,7 @@ class EnginePool:
         return result
 
     def _scale_up(self):
-        """
-        Scale up the pool by adding more workers
-        """
+        """Scale up the pool by adding more workers"""
         if self.current_size >= self.max_size:
             return
 
@@ -152,9 +138,7 @@ class EnginePool:
             self.logger.info("Engine Pool scaled up to %s workers", self.current_size)
 
     def _scale_down(self):
-        """
-        Scale down the pool by removing idle workers
-        """
+        """Scale down the pool by removing idle workers"""
         if self.current_size <= self.initial_size:
             return
 
@@ -184,9 +168,7 @@ class EnginePool:
                 self.logger.info("Engine Pool scaled down to %s workers", self.current_size)
 
     def perform_scaling_decision(self):
-        """
-        Make a scaling decision based on current load
-        """
+        """Make a scaling decision based on current load"""
         current_time = time.time()
         if current_time - self.last_scaling_decision < self.scaling_interval:
             return
@@ -219,9 +201,7 @@ class EnginePool:
             self.last_scaling_decision = current_time
 
     def get_pool_status(self) -> Dict[str, Any]:
-        """
-        Get the status of the entire pool
-        """
+        """Get the status of the entire pool"""
         with self.lock:
             worker_statuses = {}
             for worker_id, worker in self.active_workers.items():
@@ -246,9 +226,7 @@ class EnginePool:
             }
 
     def get_worker_statistics(self) -> Dict[str, Any]:
-        """
-        Get statistics for all workers in the pool
-        """
+        """Get statistics for all workers in the pool"""
         with self.lock:
             stats = {}
             for worker_id, worker in self.active_workers.items():
@@ -256,17 +234,13 @@ class EnginePool:
             return stats
 
     def cleanup_idle_workers(self):
-        """
-        Clean up any idle workers if needed
-        """
+        """Clean up any idle workers if needed"""
         with self.lock:
             for worker in self.active_workers.values():
                 worker.cleanup_idle_sandboxes()
 
     def graceful_shutdown(self):
-        """
-        Gracefully shut down all workers in the pool
-        """
+        """Gracefully shut down all workers in the pool"""
         self.logger.info("Starting graceful shutdown of Engine Pool %s", self.pool_id)
 
         with self.lock:
@@ -282,9 +256,7 @@ class EnginePool:
         self.logger.info("Engine Pool %s shutdown complete", self.pool_id)
 
     def get_queue_status(self) -> Dict[str, Any]:
-        """
-        Get the combined queue status of all workers in the pool
-        """
+        """Get the combined queue status of all workers in the pool"""
         with self.lock:
             total_queue_size = 0
             total_max_queue_size = 0
@@ -306,34 +278,26 @@ class EnginePool:
             }
 
     def add_worker_capability(self, capability: str):
-        """
-        Add a capability to all workers in the pool
-        """
+        """Add a capability to all workers in the pool"""
         with self.lock:
             for worker in self.active_workers.values():
                 worker.add_capability(capability)
 
     def remove_worker_capability(self, capability: str):
-        """
-        Remove a capability from all workers in the pool
-        """
+        """Remove a capability from all workers in the pool"""
         with self.lock:
             for worker in self.active_workers.values():
                 worker.remove_capability(capability)
 
     def update_resource_usage(self, worker_id: str, cpu_usage: float, memory_usage: float):
-        """
-        Update resource usage for a specific worker
-        """
+        """Update resource usage for a specific worker"""
         with self.lock:
             if worker_id in self.active_workers:
                 self.active_workers[worker_id].update_resource_usage(cpu_usage, memory_usage)
                 self.worker_status[worker_id] = self.active_workers[worker_id].get_worker_status()
 
     def get_load_distribution(self) -> Dict[str, Any]:
-        """
-        Get load distribution across all workers
-        """
+        """Get load distribution across all workers"""
         with self.lock:
             loads = {}
             for worker_id, worker in self.active_workers.items():
@@ -351,19 +315,16 @@ class EnginePool:
                     "avg_load": sum(loads.values()) / len(loads),
                     "std_dev_load": (sum((load - sum(loads.values())/len(loads))**2 for load in loads.values()) / len(loads))**0.5 if loads else 0
                 }
-            else:
-                return {
-                    "loads": {},
-                    "min_load": 0,
-                    "max_load": 0,
-                    "avg_load": 0,
-                    "std_dev_load": 0
-                }
+            return {
+                "loads": {},
+                "min_load": 0,
+                "max_load": 0,
+                "avg_load": 0,
+                "std_dev_load": 0
+            }
 
     def rebalance_load(self):
-        """
-        Rebalance load across workers if there's significant imbalance
-        """
+        """Rebalance load across workers if there's significant imbalance"""
         load_stats = self.get_load_distribution()
 
         if load_stats["std_dev_load"] > 0.3:  # If there's significant load imbalance
@@ -374,9 +335,8 @@ class EnginePool:
 
 
 class AdaptiveEnginePool(EnginePool):
-    """
-    Adaptive engine pool that automatically scales based on demand
-    """
+    """Adaptive engine pool that automatically scales based on demand"""
+
     def __init__(self, initial_size: int = 3, max_size: int = 10):
         super().__init__(initial_size, max_size)
         self.adaptive_scaling_enabled = True
@@ -384,24 +344,18 @@ class AdaptiveEnginePool(EnginePool):
         self.scale_check_interval = 30  # seconds
 
     def start_auto_scaling(self):
-        """
-        Start the auto-scaling background thread
-        """
+        """Start the auto-scaling background thread"""
         if not self.auto_scale_thread or not self.auto_scale_thread.is_alive():
             self.auto_scale_thread = threading.Thread(target=self._auto_scale_loop, daemon=True)
             self.auto_scale_thread.start()
 
     def stop_auto_scaling(self):
-        """
-        Stop the auto-scaling background thread
-        """
+        """Stop the auto-scaling background thread"""
         # The thread is daemon, so it will stop when main program exits
         pass
 
     def _auto_scale_loop(self):
-        """
-        Background loop for auto-scaling
-        """
+        """Background loop for auto-scaling"""
         while True:
             if self.adaptive_scaling_enabled and self.is_initialized:
                 self.perform_scaling_decision()
@@ -409,9 +363,7 @@ class AdaptiveEnginePool(EnginePool):
             time.sleep(self.scale_check_interval)
 
     def execute_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Override to include auto-scaling considerations
-        """
+        """Override to include auto-scaling considerations"""
         # Check if we need to scale before executing
         if self.adaptive_scaling_enabled:
             self.perform_scaling_decision()
@@ -419,9 +371,7 @@ class AdaptiveEnginePool(EnginePool):
         return super().execute_request(request_data)
 
     def set_scaling_parameters(self, high_threshold: float, low_threshold: float, interval: int):
-        """
-        Set parameters for adaptive scaling
-        """
+        """Set parameters for adaptive scaling"""
         with self.lock:
             self.load_threshold_high = high_threshold
             self.load_threshold_low = low_threshold

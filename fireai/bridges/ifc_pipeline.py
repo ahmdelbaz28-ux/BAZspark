@@ -1,4 +1,5 @@
-"""fireai/bridges/ifc_pipeline.py.
+"""
+fireai/bridges/ifc_pipeline.py.
 ================================
 Full IFC → L1 → L2 → L3 → L5 → V23 → L7 → IFC pipeline.
 
@@ -102,7 +103,8 @@ class PipelineReport:
 
 
 class IfcFirePipeline:
-    """Orchestrates the full FireAI V24 pipeline on an IFC building model.
+    """
+    Orchestrates the full FireAI V24 pipeline on an IFC building model.
 
     Flow:
     IFC → extract_spaces_enhanced() → extract_obstructions()
@@ -120,7 +122,8 @@ class IfcFirePipeline:
         self._warnings: list[str] = []
 
     def run(self) -> PipelineReport:
-        """Execute the full IFC → L1→L7 → IFC pipeline.
+        """
+        Execute the full IFC → L1→L7 → IFC pipeline.
 
         Returns a PipelineReport with per-space results and aggregate stats.
         """
@@ -389,7 +392,8 @@ class IfcFirePipeline:
     # ── L3: ATEX Arbitration ──────────────────────────────────────
 
     def _run_l3(self, l2: dict, space: dict, warnings: list[str]) -> dict:
-        """L3 using the REAL ATEXHazardousArbiter.arbitrate_v21() API.
+        """
+        L3 using the REAL ATEXHazardousArbiter.arbitrate_v21() API.
         Parameters: zone, hazard_type, autoignition_c, ...
         """
         try:
@@ -436,7 +440,8 @@ class IfcFirePipeline:
         obstructions: list[Any],
         warnings: list[str],
     ) -> tuple[float, Any]:
-        """L5 using the REAL FlameDetectorAOCRayTrace.analyse_multi_v21() API.
+        """
+        L5 using the REAL FlameDetectorAOCRayTrace.analyse_multi_v21() API.
         FlameDetectorSpec(position=[x,y,z], orientation_vector=[...], ...).
         """
         try:
@@ -488,7 +493,8 @@ class IfcFirePipeline:
         sensor_positions: dict[str, tuple],
         warnings: list[str],
     ) -> tuple[dict, Any]:
-        """L7 using the REAL HybridSurvivabilityEngine.analyse() API.
+        """
+        L7 using the REAL HybridSurvivabilityEngine.analyse() API.
         Parameters: optical_result, grid, ugld_sensors, sensor_positions, ...
         """
         try:
@@ -604,7 +610,8 @@ class IfcFirePipeline:
         return dets
 
     def _place_ugld_sensors(self, space: dict) -> tuple[list[dict], dict[str, tuple]]:
-        """Place UGLD sensors at 1 m above floor per ISA-TR 84.00.07.
+        """
+        Place UGLD sensors at 1 m above floor per ISA-TR 84.00.07.
         Returns (sensor_specs, sensor_positions) — positions are separate
         per the Separation of Concerns design in hybrid_survivability.py.
         """
@@ -675,7 +682,8 @@ class IfcFirePipeline:
     # ── Substance lookup ─────────────────────────────────────────
 
     def _get_substance(self) -> Any:
-        """Return SubstanceProperties for the configured CAS number.
+        """
+        Return SubstanceProperties for the configured CAS number.
 
         V79 FIX: Previously, all physical properties were hardcoded to propane
         regardless of CAS number. Only the substance name was updated from the

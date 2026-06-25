@@ -88,7 +88,8 @@ def validate_wall_distances(
     min_distance_m: float = NFPA_MIN_WALL_DISTANCE_M,
     room_polygon: Polygon = None,
 ) -> list[dict]:
-    """V9: Validates that all detectors maintain minimum wall distance.
+    """
+    V9: Validates that all detectors maintain minimum wall distance.
 
     Per NFPA 72 §17.6.3.1.1: Detectors shall not be located closer than
     4 inches (100 mm) from a sidewall or end wall.
@@ -182,7 +183,8 @@ def validate_hvac_exclusion_zones(
     hvac_diffuser_positions: list[tuple[float, float]],
     exclusion_radius_m: float = NFPA_HVAC_EXCLUSION_RADIUS_M,
 ) -> list[dict]:
-    """V15: Validates that no detector is within the HVAC supply air diffuser
+    """
+    V15: Validates that no detector is within the HVAC supply air diffuser
     exclusion zone per NFPA 72 §17.7.4.1.
 
     Airflow from HVAC supply diffusers prevents smoke from reaching detectors.
@@ -233,7 +235,8 @@ def compute_hvac_safe_zone(
     hvac_diffuser_positions: list[tuple[float, float]],
     exclusion_radius_m: float = NFPA_HVAC_EXCLUSION_RADIUS_M,
 ):
-    """V15: Compute the safe placement zone by subtracting HVAC diffuser
+    """
+    V15: Compute the safe placement zone by subtracting HVAC diffuser
     exclusion circles from the room polygon.
 
     NFPA 72 §17.7.4.1: Detectors shall not be installed within 3 ft (0.914m)
@@ -283,7 +286,8 @@ def suggest_duct_detectors(room: RoomSpec, detector_type: str = "smoke") -> list
 
 
 def create_room_polygon(room_spec: RoomSpec) -> Polygon:
-    """Create Shapely polygon from room specification.
+    """
+    Create Shapely polygon from room specification.
     Handles rectangular, L-shaped, and rooms with interior holes (columns, shafts).
 
     SAFETY FIX: Interior holes (columns, elevator shafts, mechanical chases) are
@@ -307,7 +311,8 @@ def create_room_polygon(room_spec: RoomSpec) -> Polygon:
 
 
 def is_point_in_room(point: tuple[float, float], room_polygon: Polygon) -> bool:
-    """Check if point is inside room polygon.
+    """
+    Check if point is inside room polygon.
     Uses Polygon.contains() instead of Bounding Box.
 
     Args:
@@ -341,7 +346,8 @@ def check_coverage_polygon(
     ceiling_spec: CeilingSpec,
     detector_type: DetectorType = DetectorType.SMOKE,
 ) -> CoverageResult:
-    """Check coverage using Polygon containment.
+    """
+    Check coverage using Polygon containment.
     This replaces the incorrect Bounding Box method.
     For L-shaped rooms, this correctly identifies uncovered areas.
     FIXED: 2026-05-14
@@ -513,7 +519,8 @@ def check_coverage_polygon(
 # VORONOI COVERAGE (Advanced)
 # ============================================================================
 def calculate_voronoi_coverage(detector_positions: list[tuple[float, float]], room_polygon: Polygon) -> list[Polygon]:
-    """Calculate Voronoi regions for detector coverage areas.
+    """
+    Calculate Voronoi regions for detector coverage areas.
 
     Args:
         detector_positions: List of detector positions
@@ -561,7 +568,8 @@ def check_voronoi_coverage(
     ceiling_spec: CeilingSpec,
     detector_type: DetectorType = DetectorType.SMOKE,
 ) -> CoverageResult:
-    """Check coverage using Voronoi diagram (advanced method).
+    """
+    Check coverage using Voronoi diagram (advanced method).
 
     V49 FIX: Added detector_type parameter — previous version always passed
     DetectorType.SMOKE to check_coverage_polygon regardless of actual detector
@@ -602,7 +610,8 @@ def check_ridge_zone_compliance(
     standard_spacing: float | None = None,
     detector_type: DetectorType = DetectorType.SMOKE,
 ) -> NFPAComplianceResult:
-    """Check if sloped ceiling has a ROW of detectors in the ridge zone.
+    """
+    Check if sloped ceiling has a ROW of detectors in the ridge zone.
 
     Per NFPA 72 §17.6.3.4, for ceilings with slope > 25 % (approx 14°),
     detectors must be located within 0.9 m (3 ft) of the ridge AND
@@ -694,7 +703,8 @@ def check_ridge_zone_compliance(
 # L-SHAPED ROOM HANDLING
 # ============================================================================
 def create_l_shaped_polygon(dimensions: list[tuple[float, float]]) -> Polygon:
-    """Create polygon for L-shaped room.
+    """
+    Create polygon for L-shaped room.
 
     Args:
         dimensions: List of [(x1,y1), (x2,y2), ...] corner points
@@ -714,7 +724,8 @@ def check_l_shaped_coverage(
     detector_type: DetectorType = DetectorType.SMOKE,
     listed_spacing_m: float | None = None,
 ) -> CoverageResult:
-    """Check coverage for L-shaped room.
+    """
+    Check coverage for L-shaped room.
     This is the critical test case - Bounding Box fails here.
 
     V13 Fix: Uses area-based coverage calculation as primary method,
@@ -831,7 +842,8 @@ def check_nfpa72_compliance(
     detector_type: DetectorType = DetectorType.SMOKE,
     ridge_line: tuple[float, float, float, float] | None = None,
 ) -> NFPAComplianceResult:
-    """Full NFPA 72 compliance check.
+    """
+    Full NFPA 72 compliance check.
 
     Args:
         room_spec: Room specification
@@ -889,7 +901,8 @@ def verify_full_coverage(
     grid_resolution_m: float = 0.25,
     detector_type: DetectorType = DetectorType.SMOKE,
 ) -> dict:
-    """Verify that all points in the room are covered by detectors.
+    """
+    Verify that all points in the room are covered by detectors.
 
     V13 Fix — Area-based coverage (replaces point-counting):
     Previous code used (covered_points / total_points) which produces
@@ -1031,7 +1044,8 @@ def get_sloped_ceiling_constraints(
     ceiling_spec,
     detector_type,
 ) -> dict:
-    """Get sloped ceiling constraints for NFPA 72 compliance.
+    """
+    Get sloped ceiling constraints for NFPA 72 compliance.
 
     Args:
         polygon: Room polygon
@@ -1103,7 +1117,8 @@ def adjust_coverage_for_beams(
     beam_depth_m: float,
     ceiling_height_m: float,
 ) -> float:
-    """Adjusts detector coverage radius based on beam obstruction.
+    """
+    Adjusts detector coverage radius based on beam obstruction.
 
     Per NFPA 72 Section 17.6.3.1:
     - Beam depth > 10% of ceiling height: treat as separate compartments

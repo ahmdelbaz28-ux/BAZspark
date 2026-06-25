@@ -1,4 +1,5 @@
-"""hybrid_survivability.py — Layer 7: Hybrid Survivability Index Engine.
+"""
+hybrid_survivability.py — Layer 7: Hybrid Survivability Index Engine.
 ====================================================================
 V24 — Intersection of Optical (Layer 5) and Acoustic (V23) coverage.
 
@@ -74,7 +75,8 @@ logger = logging.getLogger(__name__)
 
 
 class SurvivabilityClass(str, Enum):
-    """Per-point hybrid survivability classification.
+    """
+    Per-point hybrid survivability classification.
 
     The classification is the Cartesian product of {optical, no_optical}
     x {acoustic, no_acoustic}, yielding 4 exhaustive and mutually exclusive
@@ -135,7 +137,8 @@ class SurvivabilityClass(str, Enum):
 
 
 class AcousticCoverageDetail(BaseModel):
-    """Per-point acoustic coverage detail from UGLD analysis.
+    """
+    Per-point acoustic coverage detail from UGLD analysis.
 
     This is an OUTPUT model — it stores the result of running V23's
     trace_acoustic_ray for a specific (grid_point, sensor) pair. It does
@@ -163,7 +166,8 @@ class AcousticCoverageDetail(BaseModel):
 
 
 class HybridPointResult(BaseModel):
-    """Per-point hybrid survivability result.
+    """
+    Per-point hybrid survivability result.
 
     The atomic unit of the hybrid map. Each grid point gets one of these,
     combining optical and acoustic data into a single classification.
@@ -189,7 +193,8 @@ class HybridPointResult(BaseModel):
 
 
 class HybridSurvivabilityMap(BaseModel):
-    """Layer 7 output: complete hybrid survivability analysis.
+    """
+    Layer 7 output: complete hybrid survivability analysis.
 
     Intersects Layer 5 optical coverage with V23 acoustic coverage on a
     shared spatial grid. Each point is classified into one of 4 states.
@@ -252,7 +257,8 @@ class HybridSurvivabilityMap(BaseModel):
 
     @property
     def redundant_hybrid_pct(self) -> float:
-        """V60 FIX (P3-1): Coverage percentage without masking 100%.
+        """
+        V60 FIX (P3-1): Coverage percentage without masking 100%.
 
         Previously, `round(fraction * 100, 2)` could produce 100.00 when actual
         coverage was < 100%, masking NFPA 72 §17.8.3.4 compliance gaps.
@@ -279,7 +285,8 @@ class HybridSurvivabilityMap(BaseModel):
 
     @property
     def blind_spot_pct(self) -> float:
-        """V60 FIX (P3-3): Blind spot percentage — no rounding to zero.
+        """
+        V60 FIX (P3-3): Blind spot percentage — no rounding to zero.
 
         Previously, `round(0.00005 * 100, 2) = 0.00` could hide actual blind spots.
         Now returns 4 decimal places when rounding would mask non-zero blind spots.
@@ -299,7 +306,8 @@ class HybridSurvivabilityMap(BaseModel):
 
     @property
     def is_nfpa72_compliant(self) -> bool:
-        """True if every point is REDUNDANT_HYBRID.
+        """
+        True if every point is REDUNDANT_HYBRID.
 
         NFPA 72-2022 §17.8.3.4: For critical applications, detector
         redundancy is required. While the standard does not explicitly
@@ -320,7 +328,8 @@ class HybridSurvivabilityMap(BaseModel):
 
 
 class HybridSurvivabilityEngine:
-    """Layer 7: Intersects optical and acoustic coverage on a shared grid.
+    """
+    Layer 7: Intersects optical and acoustic coverage on a shared grid.
 
     Algorithm:
       1. Take Layer 5 CoverageResult (optical) — redundancy_map gives
@@ -352,7 +361,8 @@ class HybridSurvivabilityEngine:
         temp_c: float = 40.0,
         relative_humidity_pct: float = 50.0,
     ) -> None:
-        """Initialize with UGLD acoustic parameters.
+        """
+        Initialize with UGLD acoustic parameters.
 
         Args:
             leak_spl_at_1m: Reference SPL of a gas leak at 1m distance (dB).
@@ -377,7 +387,8 @@ class HybridSurvivabilityEngine:
         sensor_positions: dict[str, tuple[float, float, float]],
         acoustic_obstacles: list[AcousticObstacle] | None = None,
     ) -> HybridSurvivabilityMap:
-        """Run hybrid survivability analysis.
+        """
+        Run hybrid survivability analysis.
 
         Intersects Layer 5 optical coverage with V23 acoustic coverage
         on the same spatial grid, classifying each point into one of
@@ -550,7 +561,8 @@ class HybridSurvivabilityEngine:
         hybrid_map: HybridSurvivabilityMap,
         output_path: str,
     ) -> str:
-        """Export HybridSurvivabilityMap to a JSON file consumable by the
+        """
+        Export HybridSurvivabilityMap to a JSON file consumable by the
         WebGL heatmap viewer (heatmap_viewer.html).
 
         The JSON schema matches the HybridSurvivabilityMap model exactly:

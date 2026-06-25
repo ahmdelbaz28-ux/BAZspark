@@ -17,10 +17,10 @@ Topics/tags follow the unified schema:
 Supports PyScada (Python/Django), Scada-LTS (Java), and JSON-SCADA (Go).
 """
 from __future__ import annotations
-import json
-from dataclasses import dataclass, field
+
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 import yaml
 
@@ -28,6 +28,7 @@ import yaml
 @dataclass
 class SCADATag:
     """One SCADA tag (MQTT topic / OPC-UA node / Modbus register)."""
+
     tag_id: str
     zone_id: str
     tag_type: str               # "alarm", "extinguish", "power", "diagnostic"
@@ -38,9 +39,9 @@ class SCADATag:
     unit: str = ""              # Engineering unit
 
 
-def build_mqtt_topics(imo: str, zone_ids: List[str]) -> List[SCADATag]:
+def build_mqtt_topics(imo: str, zone_ids: list[str]) -> list[SCADATag]:
     """Generate the canonical MQTT topic tree for a ship."""
-    tags: List[SCADATag] = []
+    tags: list[SCADATag] = []
     for zid in zone_ids:
         tags.append(SCADATag(
             tag_id=f"alarm_{zid}", zone_id=zid, tag_type="alarm",
@@ -68,7 +69,7 @@ def build_mqtt_topics(imo: str, zone_ids: List[str]) -> List[SCADATag]:
     return tags
 
 
-def build_pyscada_yaml(tags: List[SCADATag], broker: str = "mqtt://localhost:1883") -> str:
+def build_pyscada_yaml(tags: list[SCADATag], broker: str = "mqtt://localhost:1883") -> str:
     """Generate a PyScada-compatible YAML configuration using yaml.safe_dump."""
     mqtt_topics = [t.address for t in tags if t.protocol == "mqtt"]
     tag_list = [
@@ -92,7 +93,7 @@ def build_pyscada_yaml(tags: List[SCADATag], broker: str = "mqtt://localhost:188
     return header + cast(str, yaml.safe_dump(config, sort_keys=False, default_flow_style=False))
 
 
-def build_opcua_node_ids(tags: List[SCADATag], ns: int = 2) -> List[Dict[str, Any]]:
+def build_opcua_node_ids(tags: list[SCADATag], ns: int = 2) -> list[dict[str, Any]]:
     """Generate OPC-UA node IDs (namespace 2 = vendor-specific)."""
     return [
         {
@@ -105,8 +106,9 @@ def build_opcua_node_ids(tags: List[SCADATag], ns: int = 2) -> List[Dict[str, An
     ]
 
 
-def build_modbus_registers(tags: List[SCADATag], start_addr: int = 40001) -> List[Dict[str, Any]]:
-    """Map tags to Modbus holding registers (FC=03).
+def build_modbus_registers(tags: list[SCADATag], start_addr: int = 40001) -> list[dict[str, Any]]:
+    """
+    Map tags to Modbus holding registers (FC=03).
 
     BUGFIX v2: previously assigned a uniform 2 registers per non-BOOL tag,
     which is wrong for INT (1 register, 16-bit) and far too few for STRING
@@ -143,10 +145,11 @@ def build_modbus_registers(tags: List[SCADATag], start_addr: int = 40001) -> Lis
 
 def dashboard_payload(
     imo: str,
-    zones_status: Dict[str, str],
-    timestamp: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Build a JSON payload for the safety dashboard.
+    zones_status: dict[str, str],
+    timestamp: str | None = None,
+) -> dict[str, Any]:
+    """
+    Build a JSON payload for the safety dashboard.
 
     BUGFIX v2: previously hardcoded `"timestamp": "2026-06-18T00:00:00Z"`
     with a comment "caller fills actual" but no parameter existed — every
@@ -172,6 +175,10 @@ def dashboard_payload(
 
 
 __all__ = [
-    "SCADATag", "build_mqtt_topics", "build_pyscada_yaml",
-    "build_opcua_node_ids", "build_modbus_registers", "dashboard_payload",
+    "SCADATag",
+    "build_modbus_registers",
+    "build_mqtt_topics",
+    "build_opcua_node_ids",
+    "build_pyscada_yaml",
+    "dashboard_payload",
 ]

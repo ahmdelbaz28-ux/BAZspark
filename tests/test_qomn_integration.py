@@ -114,10 +114,12 @@ class TestQOMNKernelLayer2Computation:
     """Layer 2 — Computation Engine (IEEE-754 deterministic)."""
 
     def test_smoke_spacing_h3m_golden(self, kernel):
-        """V127 GOLDEN TEST: h=3.0m → S=9.10m (30ft per NFPA 72 §17.7.3.2.3.1).
+        """
+        V127 GOLDEN TEST: h=3.0m → S=9.10m (30ft per NFPA 72 §17.7.3.2.3.1).
         V127 corrected: was 9.144m (30ft exact ft→m conversion) but NFPA 72-2022
         §17.7.3.2.3.1 verbatim states "30 ft (9.1 m)", matching the canonical
-        fireai/constants/__init__.py:SMOKE_MAX_SPACING_M = 9.10."""
+        fireai/constants/__init__.py:SMOKE_MAX_SPACING_M = 9.10.
+        """
         r = kernel.smoke_detector_spacing(3.0)
         assert abs(r["listed_spacing_m"] - 9.10) < 1e-3, \
             f"Expected 9.10m per NFPA 72 §17.7.3.2.3.1, got {r['listed_spacing_m']}"
@@ -149,7 +151,8 @@ class TestQOMNKernelLayer2Computation:
         assert r.get("installed_ah", r["required_ah"]) >= r["required_ah"]
 
     def test_voltage_drop_golden(self, kernel):
-        """GOLDEN TEST: V_drop = 2 × I × L × R per NEC Chapter 9, Table 8.
+        """
+        GOLDEN TEST: V_drop = 2 × I × L × R per NEC Chapter 9, Table 8.
 
         R_20 = 4.263 Ω/km at 20°C per NEC Table 8 (stranded copper)
         R_T = R_20 × [1 + α×(T-20)] = 4.263 × 1.21615 = 5.184 Ω/km at 75°C
@@ -277,7 +280,7 @@ class TestDevicePlacement:
         assert len(result.pull_stations) >= 1
 
     def test_pull_station_height_nfpa(self):
-        """Pull station height = 48\" AFF per NFPA 72 §17.15.7."""
+        r"""Pull station height = 48\" AFF per NFPA 72 §17.15.7."""
         from fireai.core.device_placement import (
             NFPA72_PULL_STATION_HEIGHT_M,
             DetectorPlacementEngine,
@@ -458,18 +461,22 @@ class TestGoldenOutputs:
     """Known inputs → known outputs. Any change = regression."""
 
     def test_golden_smoke_h10ft(self, kernel):
-        """V130 FIX: h=3.048m (10ft) → S=9.10m FLAT per §17.7.3.2.3.
+        """
+        V130 FIX: h=3.048m (10ft) → S=9.10m FLAT per §17.7.3.2.3.
         Previous versions used height-reduced spacing (8.70m), but NFPA 72
         §17.7.3.2.3 requires FLAT 30ft (9.1m) spacing for smoke detectors
-        at ALL ceiling heights."""
+        at ALL ceiling heights.
+        """
         r = kernel.smoke_detector_spacing(3.048)
         assert abs(r["listed_spacing_m"] - 9.10) < 1e-3
 
     def test_golden_smoke_h15ft(self, kernel):
-        """V130 FIX: h=4.572m (15ft) → S=9.10m FLAT per §17.7.3.2.3.
+        """
+        V130 FIX: h=4.572m (15ft) → S=9.10m FLAT per §17.7.3.2.3.
         Previous versions used height-reduced spacing (8.20m), but NFPA 72
         §17.7.3.2.3 requires FLAT 30ft (9.1m) spacing for smoke detectors
-        at ALL ceiling heights."""
+        at ALL ceiling heights.
+        """
         r = kernel.smoke_detector_spacing(4.572)
         assert abs(r["listed_spacing_m"] - 9.10) < 1e-3, \
             f"Expected 9.10m flat per §17.7.3.2.3, got {r['listed_spacing_m']}"
@@ -481,7 +488,8 @@ class TestGoldenOutputs:
         assert abs(r["required_ah"] - expected) < 1e-4
 
     def test_golden_vdrop_awg14_100m(self, kernel):
-        """V_drop = 2 × 2.5A × 100m × 5.184e-3 Ω/m = 2.592V.
+        """
+        V_drop = 2 × 2.5A × 100m × 5.184e-3 Ω/m = 2.592V.
 
         R_20 = 4.263 Ω/km at 20°C per NEC Table 8 (stranded copper)
         R_T = R_20 × [1 + α×(T-20)] = 4.263 × 1.21615 = 5.184 Ω/km at 75°C

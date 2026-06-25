@@ -1,4 +1,5 @@
-"""fireai.core.secret_rotation — Secret Rotation & Key Management.
+"""
+fireai.core.secret_rotation — Secret Rotation & Key Management.
 ===============================================================
 
 Provides a mechanism for rotating security-sensitive keys without
@@ -52,7 +53,8 @@ class _KeyRecord:
 
 
 class KeyRotator:
-    """Manages hot rotation of security keys.
+    """
+    Manages hot rotation of security keys.
 
     Thread-safe key rotation that allows old keys to remain valid
     during a configurable grace period. This prevents service disruption
@@ -61,7 +63,8 @@ class KeyRotator:
     """
 
     def __init__(self, default_grace_period_s: float = 300.0) -> None:
-        """Initialize the key rotator.
+        """
+        Initialize the key rotator.
 
         Args:
             default_grace_period_s: Default grace period in seconds
@@ -76,7 +79,8 @@ class KeyRotator:
 
     @staticmethod
     def _fingerprint(key: str) -> str:
-        """Compute SHA-256 fingerprint of a key (first 32 hex chars = 128 bits).
+        """
+        Compute SHA-256 fingerprint of a key (first 32 hex chars = 128 bits).
 
         SECURITY NOTE (V102): Previous version truncated to 16 hex chars
         (64 bits), which is vulnerable to birthday collisions (2^32 effort).
@@ -85,7 +89,8 @@ class KeyRotator:
         return hashlib.sha256(key.encode("utf-8")).hexdigest()[:32]
 
     def register(self, key_name: str, key_value: str) -> None:
-        """Register a key for rotation management.
+        """
+        Register a key for rotation management.
 
         This is called at startup to register the initial key value.
 
@@ -104,7 +109,8 @@ class KeyRotator:
         new_key: str,
         grace_period_s: float | None = None,
     ) -> tuple[bool, str]:
-        """Rotate a security key.
+        """
+        Rotate a security key.
 
         The old key must match the current key for rotation to succeed.
         After rotation, both old and new keys are valid during the grace
@@ -166,7 +172,8 @@ class KeyRotator:
             return True, f"Key '{key_name}' rotated successfully. Grace period: {grace}s"
 
     def validate(self, key_name: str, provided_key: str) -> bool:
-        """Validate a key against current or previous (grace period) value.
+        """
+        Validate a key against current or previous (grace period) value.
 
         Args:
             key_name: The name of the key to validate.
@@ -210,7 +217,8 @@ class KeyRotator:
 
     @staticmethod
     def generate_key(length: int = 32) -> str:
-        """Generate a cryptographically secure random key.
+        """
+        Generate a cryptographically secure random key.
 
         Args:
             length: Number of bytes of randomness (default 32 = 256 bits).
@@ -223,7 +231,8 @@ class KeyRotator:
 
     @staticmethod
     def validate_key_strength(key: str, min_length: int = 16) -> tuple[bool, list[str]]:
-        """Validate that a key meets minimum security requirements.
+        """
+        Validate that a key meets minimum security requirements.
 
         Args:
             key: The key to validate.

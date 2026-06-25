@@ -1,4 +1,5 @@
-"""Gate 1: Static Validation Tests.
+"""
+Gate 1: Static Validation Tests.
 ================================
 Validates the structural integrity of the etap-expert SKILL.md file.
 

@@ -1,4 +1,5 @@
-"""test_v135_high_fixes.py — Regression tests for V135 HIGH findings (F-7 to F-17).
+"""
+test_v135_high_fixes.py — Regression tests for V135 HIGH findings (F-7 to F-17).
 
 Per agent.md Rule 10: tests run after every modification.
 Per agent.md Rule 19: each cycle must be MORE THOROUGH than the previous.
@@ -10,7 +11,6 @@ import math
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # F-7: SAFETY_MAXIMIZED cap uses _remove_redundant (not truncation)
 # ---------------------------------------------------------------------------
@@ -21,11 +21,11 @@ class TestSafetyMaximizedCap:
 
     def test_safety_maximized_does_not_truncate_arbitrarily(self):
         """SAFETY_MAXIMIZED should preserve coverage when capping."""
+        from fireai.core.spatial_engine.density_optimizer import Room
         from fireai.core.spatial_engine.generative_layout_agent import (
             GenerativeLayoutAgent,
             LayoutVariant,
         )
-        from fireai.core.spatial_engine.density_optimizer import Room
 
         agent = GenerativeLayoutAgent(use_multiprocessing=False)
         room = Room(name="TestCap", width=20.0, length=15.0, ceiling_height=3.0)
@@ -102,11 +102,11 @@ class TestRecommendationLogic:
 
     def test_low_hazard_can_get_cost_minimized(self):
         """Storage occupancy should be eligible for COST_MINIMIZED."""
+        from fireai.core.spatial_engine.density_optimizer import Room
         from fireai.core.spatial_engine.generative_layout_agent import (
             GenerativeLayoutAgent,
             LayoutVariant,
         )
-        from fireai.core.spatial_engine.density_optimizer import Room
 
         agent = GenerativeLayoutAgent(use_multiprocessing=False)
         room = Room(name="Storage", width=10.0, length=8.0, ceiling_height=3.0)
@@ -121,11 +121,11 @@ class TestRecommendationLogic:
 
     def test_high_hazard_never_gets_cost_minimized(self):
         """Healthcare must NEVER get COST_MINIMIZED."""
+        from fireai.core.spatial_engine.density_optimizer import Room
         from fireai.core.spatial_engine.generative_layout_agent import (
             GenerativeLayoutAgent,
             LayoutVariant,
         )
-        from fireai.core.spatial_engine.density_optimizer import Room
 
         agent = GenerativeLayoutAgent(use_multiprocessing=False)
         room = Room(name="Hospital", width=10.0, length=8.0, ceiling_height=3.0)
@@ -147,8 +147,8 @@ class TestIfcFileProviderCapabilities:
     def test_device_write_not_in_capabilities(self):
         """IfcFileProvider must NOT declare DEVICE_WRITE capability."""
         from fireai.bridges.bim_provider import (
-            IfcFileProvider,
             BIMProviderCapability,
+            IfcFileProvider,
         )
         p = IfcFileProvider()
         assert BIMProviderCapability.DEVICE_WRITE not in p.capabilities
@@ -172,6 +172,7 @@ class TestAsyncWebhookDelivery:
     def test_publish_event_returns_quickly_with_failing_subscriber(self):
         """publish_event should not block for 31s on a failing subscriber."""
         import time
+
         from fireai.infrastructure.webhook_service import (
             WebhookDeliveryService,
             WebhookSubscription,
@@ -226,7 +227,6 @@ class TestDeadLetterReplay:
         """Replay with invalid index should return False."""
         from fireai.infrastructure.webhook_service import (
             WebhookDeliveryService,
-            get_webhook_service,
         )
         service = WebhookDeliveryService(allow_http=True)
         assert service.replay_dead_letter(999) is False
@@ -246,6 +246,7 @@ class TestCSRFDevAllowHttp:
         monkeypatch.delenv("FIREAI_DEV_ALLOW_HTTP_COOKIES", raising=False)
         # Need to reimport to pick up env change
         import importlib
+
         import backend.security_csrf
         importlib.reload(backend.security_csrf)
         from backend.security_csrf import _DEV_ALLOW_HTTP_COOKIES
@@ -255,6 +256,7 @@ class TestCSRFDevAllowHttp:
         """With env var set to true, _DEV_ALLOW_HTTP_COOKIES should be True."""
         monkeypatch.setenv("FIREAI_DEV_ALLOW_HTTP_COOKIES", "true")
         import importlib
+
         import backend.security_csrf
         importlib.reload(backend.security_csrf)
         from backend.security_csrf import _DEV_ALLOW_HTTP_COOKIES
@@ -289,8 +291,8 @@ class TestDarcyWeisbachNaNGuard:
     def test_extreme_reynolds_does_not_return_nan(self):
         """Very high Reynolds should not produce NaN."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         # Extreme flow rate → very high Re
         result = calculate_darcy_weisbach_friction_loss(
@@ -300,7 +302,7 @@ class TestDarcyWeisbachNaNGuard:
             fluid_type=FluidType.WATER,
         )
         assert math.isfinite(result.friction_factor), (
-            f"Friction factor is NaN/Inf — V135 F-15 guard failed"
+            "Friction factor is NaN/Inf — V135 F-15 guard failed"
         )
         assert math.isfinite(result.pressure_loss_pa)
         assert math.isfinite(result.head_loss_m)
@@ -308,8 +310,8 @@ class TestDarcyWeisbachNaNGuard:
     def test_very_low_reynolds_does_not_return_nan(self):
         """Very low Reynolds (near laminar transition) should not produce NaN."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=10.0,

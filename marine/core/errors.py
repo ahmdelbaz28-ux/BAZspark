@@ -29,8 +29,10 @@ class InsufficientDataError(MarineError):
 
 
 class ExtinguishingDesignError(MarineError):
-    """Raised when extinguishing-system sizing fails (insufficient data,
-    impossible geometry, etc.)."""
+    """
+    Raised when extinguishing-system sizing fails (insufficient data,
+    impossible geometry, etc.).
+    """
 
 
 class FireClassAssignmentError(MarineError):

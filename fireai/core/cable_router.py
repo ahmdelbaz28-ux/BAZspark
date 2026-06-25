@@ -1,4 +1,5 @@
-"""fireai.core.cable_router — Deterministic Orthogonal A* Cable Router.
+"""
+fireai.core.cable_router — Deterministic Orthogonal A* Cable Router.
 ====================================================================
 
 Cable routing engine for Fire Alarm systems using Orthogonal A*
@@ -87,7 +88,8 @@ DIRECTIONS_6 = [
 
 @dataclass(frozen=True)
 class RouteWaypoint:
-    """A single waypoint in a cable route.
+    """
+    A single waypoint in a cable route.
 
     Attributes:
         x, y, z: World coordinates in meters.
@@ -111,7 +113,8 @@ class RouteWaypoint:
 
 @dataclass(frozen=True)
 class CableRoute:
-    """Complete cable route result from the A* router.
+    """
+    Complete cable route result from the A* router.
 
     Contains the full path, constraint verification, and
     audit information.
@@ -180,7 +183,8 @@ class CableRoute:
 
 @dataclass(frozen=True)
 class RoutingSchedule:
-    """Cable schedule for a complete fire alarm system.
+    """
+    Cable schedule for a complete fire alarm system.
 
     Attributes:
         project_name: Project identifier.
@@ -225,7 +229,8 @@ class RoutingSchedule:
 
 
 class _AStarNode:
-    """Node in the A* search space.
+    """
+    Node in the A* search space.
 
     Uses __lt__ for heapq priority queue ordering.
     Tie-breaking by (f, h, counter) ensures deterministic ordering.
@@ -265,7 +270,8 @@ class _AStarNode:
 
 
 class CableRouter:
-    """Deterministic cable router using Orthogonal A* pathfinding.
+    """
+    Deterministic cable router using Orthogonal A* pathfinding.
 
     Routes fire alarm cables through a 3D building model using
     6-directional orthogonal movement (no diagonals).
@@ -301,7 +307,8 @@ class CableRouter:
         model: BuildingModel,
         constraint_engine: ConstraintEngine | None = None,
     ) -> None:
-        """Initialize the cable router.
+        """
+        Initialize the cable router.
 
         Args:
             model: BuildingModel with occupancy grid.
@@ -325,7 +332,8 @@ class CableRouter:
         self._precompute_electrical_zones()
 
     def _precompute_electrical_zones(self) -> None:
-        """Identify cells near electrical conduits.
+        """
+        Identify cells near electrical conduits.
 
         NEC 760.24 / Project Spec: 300mm separation required.
         We expand electrical element bounding boxes by 300mm
@@ -434,7 +442,8 @@ class CableRouter:
         num_current_carrying: int = 2,
         conductor_temp_rating_c: float = 90,
     ) -> CableRoute:
-        """Route a cable from start to end using Orthogonal A*.
+        """
+        Route a cable from start to end using Orthogonal A*.
 
         The algorithm guarantees:
         1. Same input → same output, always (deterministic)
@@ -658,7 +667,8 @@ class CableRouter:
         start: tuple[int, int, int],
         goal: tuple[int, int, int],
     ) -> tuple[list[tuple[int, int, int]] | None, list[tuple[str, str]]]:
-        """Orthogonal A* pathfinding on the 3D occupancy grid.
+        """
+        Orthogonal A* pathfinding on the 3D occupancy grid.
 
         6-directional movement only: X±, Y±, Z±.
         NO diagonal movement — real conduits don't go diagonal.
@@ -793,7 +803,8 @@ class CableRouter:
         return None, decision_log
 
     def _get_grid_cell(self, cell: tuple[int, int, int]) -> CellState:
-        """Get cell state from grid indices.
+        """
+        Get cell state from grid indices.
 
         Args:
             cell: (ix, iy, iz) grid indices.
@@ -816,7 +827,8 @@ class CableRouter:
 
     @staticmethod
     def _reconstruct_path(node: _AStarNode) -> list[tuple[int, int, int]]:
-        """Reconstruct path from A* goal node to start.
+        """
+        Reconstruct path from A* goal node to start.
 
         Args:
             node: Goal node with parent chain.
@@ -837,7 +849,8 @@ class CableRouter:
         self,
         path: list[tuple[int, int, int]],
     ) -> list[RouteWaypoint]:
-        """Build waypoints from A* path, detecting bends.
+        """
+        Build waypoints from A* path, detecting bends.
 
         Bends are points where the movement direction changes.
         Only start, end, and bend points are included as waypoints
@@ -901,7 +914,8 @@ class CableRouter:
     def _calculate_metrics(
         waypoints: list[RouteWaypoint],
     ) -> tuple[float, float, int, int]:
-        """Calculate route metrics from waypoints.
+        """
+        Calculate route metrics from waypoints.
 
         Args:
             waypoints: List of route waypoints.
@@ -965,7 +979,8 @@ class CableRouter:
         conductor_temp_rating_c: float = 90,
         conductor_operating_temp_c: float | None = None,
     ) -> RoutingSchedule:
-        """Route all cable connections and produce a complete schedule.
+        """
+        Route all cable connections and produce a complete schedule.
 
         V63 FIX: Added conductor_operating_temp_c parameter. Previously,
         route_all() did NOT pass this to route(), meaning the V62 fix

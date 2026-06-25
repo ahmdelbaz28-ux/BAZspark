@@ -55,7 +55,8 @@ class VoronoiResult:
 
 
 class VoronoiVerifier:
-    """Voronoi-based coverage verifier — gap analysis approach.
+    """
+    Voronoi-based coverage verifier — gap analysis approach.
 
     Uses Voronoi tessellation to find the largest gap between detectors.
     Each Voronoi cell contains the region closest to one detector.
@@ -70,7 +71,8 @@ class VoronoiVerifier:
     """
 
     def __init__(self, coverage_radius: float, tolerance: float = 0.05) -> None:
-        """Initialize Voronoi verifier.
+        """
+        Initialize Voronoi verifier.
 
         Args:
             coverage_radius: Coverage radius R in meters.
@@ -87,7 +89,8 @@ class VoronoiVerifier:
         length: float,
         detectors: list[tuple[float, float]],
     ) -> VoronoiResult:
-        """Verify coverage using Voronoi gap analysis.
+        """
+        Verify coverage using Voronoi gap analysis.
 
         Args:
             width: Room width in meters.
@@ -205,7 +208,8 @@ class VoronoiVerifier:
         length: float,
         detectors: list[tuple[float, float]],
     ) -> VoronoiResult:
-        """Brute-force verification using critical point sampling.
+        """
+        Brute-force verification using critical point sampling.
 
         Used as fallback when Shapely Voronoi is unavailable or fails.
         Tests: room corners, center, edge midpoints, and detector midpoints.

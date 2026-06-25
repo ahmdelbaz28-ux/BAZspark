@@ -1,4 +1,5 @@
-"""Comprehensive tests for the multi_floor_orchestrator module.
+"""
+Comprehensive tests for the multi_floor_orchestrator module.
 
 Covers:
   - All enum values (SLCLoopClass, OccupancyType, ElevatorRecallPhase, SmokeSpreadPathway)

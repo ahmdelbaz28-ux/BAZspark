@@ -170,8 +170,8 @@ def calculate_conduit_fill(
         wire_gauge: Wire/cable type (e.g., "14 AWG", "FPLP 14", "THHN 12")
         wire_count: Number of conductors in the conduit
         conduit_type: Conduit type ("EMT", "RMC", or "FMC") -- default EMT per NEC 760
-    """
 
+    """
     if wire_count <= 0:
         return Result(error=ConduitFillError(
             message="Wire count must be a positive integer.",

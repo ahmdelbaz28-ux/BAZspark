@@ -1,16 +1,14 @@
-"""marine/output/test_procedures.py — Factory Acceptance Test (FAT) procedures.
+"""
+marine/output/test_procedures.py — Factory Acceptance Test (FAT) procedures.
 
 Generates test procedures for marine fire-detection and extinguishing systems
 prior to installation on board.
 """
 from __future__ import annotations
 
-from typing import Dict, List
-
 from marine.core.types import DetectorType, ExtinguishingSystem
 
-
-FAT_PROCEDURES: Dict[str, List[Dict[str, str]]] = {
+FAT_PROCEDURES: dict[str, list[dict[str, str]]] = {
     "heat_fixed": [
         {"step": "1", "action": "Verify rated temperature marking (e.g. 54 °C / 78 °C)."},
         {"step": "2", "action": "Apply controlled heat source; confirm alarm within rated tolerance."},
@@ -39,9 +37,9 @@ FAT_PROCEDURES: Dict[str, List[Dict[str, str]]] = {
 }
 
 
-def generate_detector_fat(detector_types: List[DetectorType]) -> Dict[str, List[Dict[str, str]]]:
+def generate_detector_fat(detector_types: list[DetectorType]) -> dict[str, list[dict[str, str]]]:
     """Return FAT procedures for the selected detector types."""
-    result: Dict[str, List[Dict[str, str]]] = {}
+    result: dict[str, list[dict[str, str]]] = {}
     for dt in detector_types:
         result[dt.value] = FAT_PROCEDURES.get(dt.value, [
             {"step": "1", "action": f"Verify detector type {dt.value} per manufacturer data sheet."},
@@ -51,10 +49,10 @@ def generate_detector_fat(detector_types: List[DetectorType]) -> Dict[str, List[
 
 
 def generate_extinguishing_fat(
-    systems: List[ExtinguishingSystem],
-) -> Dict[str, List[Dict[str, str]]]:
+    systems: list[ExtinguishingSystem],
+) -> dict[str, list[dict[str, str]]]:
     """Return FAT procedures for the selected extinguishing systems."""
-    result: Dict[str, List[Dict[str, str]]] = {}
+    result: dict[str, list[dict[str, str]]] = {}
     for sys in systems:
         result[sys.value] = FAT_PROCEDURES.get(sys.value, [
             {"step": "1", "action": f"Inspect system {sys.value} components and certifications."},

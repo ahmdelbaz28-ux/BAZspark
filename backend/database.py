@@ -1,4 +1,5 @@
-"""backend/database.py — Lightweight database layer for the Digital Twin API.
+"""
+backend/database.py — Lightweight database layer for the Digital Twin API.
 
 Supports two backends:
   - SQLite (default) — for single-instance development/deployment
@@ -42,7 +43,8 @@ _USE_POSTGRES = _DATABASE_URL.startswith(("postgres://", "postgresql://"))
 
 
 class Database:
-    """Thread-safe database for the Digital Twin REST API.
+    """
+    Thread-safe database for the Digital Twin REST API.
 
     Supports two backends:
       - SQLite (default) — for single-instance development/deployment
@@ -145,7 +147,8 @@ class Database:
 
     @contextmanager
     def _transaction(self):
-        """Yield a cursor inside a locked, auto-committing transaction.
+        """
+        Yield a cursor inside a locked, auto-committing transaction.
 
         Returns a SQLite cursor or PostgreSQL cursor depending on the backend.
         """
@@ -163,7 +166,8 @@ class Database:
                     raise
 
     def _init_schema_pg(self) -> None:
-        """Create all tables in PostgreSQL — schema MUST match _init_schema() (SQLite) exactly.
+        """
+        Create all tables in PostgreSQL — schema MUST match _init_schema() (SQLite) exactly.
 
         CRITICAL: The PostgreSQL schema must be identical to the SQLite schema in column
         names, types, constraints, and indexes. Any drift will cause runtime errors when
@@ -554,7 +558,8 @@ class Database:
             return cur.rowcount > 0
 
     def get_global_counts(self) -> dict:
-        """Get total counts of devices, connections, and active projects.
+        """
+        Get total counts of devices, connections, and active projects.
 
         Uses efficient SQL COUNT queries instead of loading all projects
         into memory. O(1) memory regardless of project count.
@@ -722,7 +727,8 @@ class Database:
         return self.get_device(project_id, device_id)
 
     def delete_device(self, project_id: str, device_id: str) -> bool:
-        """Delete a device and its associated connections.
+        """
+        Delete a device and its associated connections.
 
         SAFETY NOTE: Connections referencing a deleted device become orphans
         that can corrupt voltage drop calculations, UI display, and BIM exports.
@@ -761,7 +767,8 @@ class Database:
     # ========================================================================
 
     def create_connection(self, project_id: str, conn_data: dict) -> dict:
-        """Insert a new connection and return it.
+        """
+        Insert a new connection and return it.
 
         SAFETY NOTE: Validates that both from_id and to_id reference existing
         devices in the same project. Without this check, connections to
@@ -874,7 +881,8 @@ class Database:
             return cur.rowcount > 0
 
     def update_connection(self, project_id: str, connection_id: str, updates: dict) -> dict | None:
-        """Update specific fields of a connection.
+        """
+        Update specific fields of a connection.
 
         Args:
             project_id: Project the connection belongs to.
@@ -1122,7 +1130,8 @@ class Database:
         status: str,
         error: str | None = None,
     ) -> int:
-        """Record a sync operation status.
+        """
+        Record a sync operation status.
 
         Inserts a new row or updates an existing pending row for the same
         entity_type + entity_id + target_db combination.
@@ -1176,7 +1185,8 @@ class Database:
         return row_id
 
     def get_pending_syncs(self, max_retries: int = 3) -> list:
-        """Get sync operations that need to be retried.
+        """
+        Get sync operations that need to be retried.
 
         Returns all operations with status "pending" or "error" where
         retry_count has not exceeded max_retries.

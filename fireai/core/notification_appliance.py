@@ -1,4 +1,5 @@
-"""fireai.core.notification_appliance — NFPA 72 Notification Appliance Calculations.
+"""
+fireai.core.notification_appliance — NFPA 72 Notification Appliance Calculations.
 =================================================================================
 
 Implements NFPA 72 Chapter 18 notification appliance engineering:
@@ -49,7 +50,8 @@ _STANDARD_NAC_RATINGS = [1.0, 2.0, 3.0, 4.0]
 
 @dataclass(frozen=True)
 class NACLoadResult:
-    """Result from NAC circuit load calculation.
+    """
+    Result from NAC circuit load calculation.
 
     NFPA 72 §10.6.4.2:
       Total alarm current on a NAC must not exceed 80% of the
@@ -75,7 +77,8 @@ class NACLoadResult:
 
 @dataclass(frozen=True)
 class NotificationDevice:
-    """A notification appliance on a NAC circuit.
+    """
+    A notification appliance on a NAC circuit.
 
     Common current draws (typical values from manufacturer data):
       - Horn: 0.030–0.100 A per unit
@@ -98,7 +101,8 @@ def calculate_nac_load(
     devices: list[NotificationDevice],
     nac_rating_a: float = 2.0,
 ) -> NACLoadResult:
-    """Calculate total NAC circuit load and verify compliance.
+    """
+    Calculate total NAC circuit load and verify compliance.
 
     NFPA 72 §10.6.4.2 and NEC 760:
       Total NAC current must not exceed 80% of the NAC power supply
@@ -171,7 +175,8 @@ _SPEED_OF_SOUND_M_S = 343.0
 
 @dataclass(frozen=True)
 class SPLResult:
-    """Result from SPL calculation.
+    """
+    Result from SPL calculation.
 
     NFPA 72 §18.4.3:
       - Sound Pressure Level at any point must be ≥15 dBA above
@@ -203,7 +208,8 @@ def calculate_spl(
     ambient_dba: float = 45.0,
     is_mechanical_room: bool = False,
 ) -> SPLResult:
-    """Calculate Sound Pressure Level at a distance from a notification appliance.
+    """
+    Calculate Sound Pressure Level at a distance from a notification appliance.
 
     NFPA 72 §18.4.3 — Inverse Square Law:
       SPL_at_distance = SPL_at_ref - 20 × log10(d / d_ref)
@@ -284,7 +290,8 @@ def min_horn_rating_for_room(
     ambient_dba: float = 45.0,
     is_mechanical_room: bool = False,
 ) -> dict[str, Any]:
-    """Calculate minimum horn rating needed to cover a room.
+    """
+    Calculate minimum horn rating needed to cover a room.
 
     Uses the worst-case distance (room diagonal from corner to horn
     on opposite wall) to determine the minimum horn rating.
@@ -368,7 +375,8 @@ _SQFT_PER_SQM = 10.764
 
 @dataclass(frozen=True)
 class StrobeResult:
-    """Result from strobe candela calculation.
+    """
+    Result from strobe candela calculation.
 
     NFPA 72 §18.5.5:
       Visible appliances must produce sufficient candela to be visible
@@ -406,7 +414,8 @@ def calculate_strobe_candela(
     strobe_count: int = 1,
     installed_candela: float | None = None,
 ) -> StrobeResult:
-    """Calculate required strobe candela per NFPA 72 §18.5.5.
+    """
+    Calculate required strobe candela per NFPA 72 §18.5.5.
 
     NFPA 72 §18.5.5.1 — Table method:
       1. Convert room area to square feet
@@ -518,7 +527,8 @@ _MAX_END_OF_CORRIDOR_DISTANCE_M = 7.62
 
 @dataclass(frozen=True)
 class CorridorStrobeResult:
-    """Result from corridor strobe spacing calculation.
+    """
+    Result from corridor strobe spacing calculation.
 
     NFPA 72 §18.5.5.4:
       - Strobes in corridors must be spaced no more than 50 ft (15.24m) apart
@@ -541,7 +551,8 @@ def calculate_corridor_strobes(
     corridor_length_m: float,
     strobe_count: int | None = None,
 ) -> CorridorStrobeResult:
-    """Calculate strobe placement in a corridor.
+    """
+    Calculate strobe placement in a corridor.
 
     NFPA 72 §18.5.5.4:
       Strobes in corridors must be spaced no more than 50 ft (15.24m)
@@ -628,7 +639,8 @@ def calculate_corridor_strobes(
 
 @dataclass
 class NotificationAssessment:
-    """Combined assessment of notification appliance coverage for a room.
+    """
+    Combined assessment of notification appliance coverage for a room.
 
     This brings together all notification calculations into a single
     assessment result that can be used by the release gate system.

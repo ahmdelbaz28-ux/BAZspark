@@ -1,4 +1,5 @@
-"""fireai.core.revit_exporter — IFC & Revit Output Generation.
+"""
+fireai.core.revit_exporter — IFC & Revit Output Generation.
 ===========================================================
 
 Generates output files from cable routing results:
@@ -50,7 +51,8 @@ from fireai.core.cable_router import RoutingSchedule
 
 @dataclass(frozen=True)
 class ScheduleRow:
-    """Single row in the cable schedule.
+    """
+    Single row in the cable schedule.
 
     Attributes:
         device_id: Route/circuit identifier.
@@ -80,7 +82,8 @@ class ScheduleRow:
 
 @dataclass(frozen=True)
 class IFCElement:
-    """IFC element for cable output.
+    """
+    IFC element for cable output.
 
     Attributes:
         global_id: IFC GlobalId (UUID format).
@@ -108,7 +111,8 @@ class IFCElement:
 
 @dataclass(frozen=True)
 class ReportSummary:
-    """Summary report for cable routing.
+    """
+    Summary report for cable routing.
 
     Attributes:
         project_name: Project name.
@@ -160,7 +164,8 @@ BEND_FITTING = "ConduitElbow-90"
 
 
 class RevitExporter:
-    """Export cable routing results to IFC, Revit, Schedule, and Report.
+    """
+    Export cable routing results to IFC, Revit, Schedule, and Report.
 
     Every output element is tagged with:
     - IFC class (IfcPipeSegment / IfcPipeFitting)
@@ -182,7 +187,8 @@ class RevitExporter:
         return self._workset
 
     def __init__(self, workset: str = FA_WORKSET) -> None:
-        """Initialize the exporter.
+        """
+        Initialize the exporter.
 
         Args:
             workset: Dedicated workset name for fire alarm cables.
@@ -196,7 +202,8 @@ class RevitExporter:
         self,
         schedule: RoutingSchedule,
     ) -> list[ScheduleRow]:
-        """Generate cable schedule from routing results.
+        """
+        Generate cable schedule from routing results.
 
         Schedule format per specification:
           Device_ID, From_Location, To_Location, Length, Type, Voltage_Drop
@@ -243,7 +250,8 @@ class RevitExporter:
         self,
         schedule: RoutingSchedule,
     ) -> str:
-        """Export cable schedule as CSV string.
+        """
+        Export cable schedule as CSV string.
 
         Args:
             schedule: RoutingSchedule with all routes.
@@ -297,7 +305,8 @@ class RevitExporter:
         self,
         schedule: RoutingSchedule,
     ) -> list[IFCElement]:
-        """Generate IFC elements from cable routes.
+        """
+        Generate IFC elements from cable routes.
 
         Output format per specification:
           - IfcPipeSegment for straight runs
@@ -386,7 +395,8 @@ class RevitExporter:
         self,
         schedule: RoutingSchedule,
     ) -> str:
-        """Generate IFC-like JSON representation of cable elements.
+        """
+        Generate IFC-like JSON representation of cable elements.
 
         This is a simplified JSON output for interoperability.
         For full IFC file generation, use IfcOpenShell's writer.
@@ -429,7 +439,8 @@ class RevitExporter:
         self,
         schedule: RoutingSchedule,
     ) -> list[dict[str, Any]]:
-        """Generate Revit Model Line definitions.
+        """
+        Generate Revit Model Line definitions.
 
         Model Lines are placed on the dedicated workset "FA-CABLES".
         Each line segment represents a cable run between waypoints.
@@ -479,7 +490,8 @@ class RevitExporter:
         schedule: RoutingSchedule,
         project_name: str = "",
     ) -> ReportSummary:
-        """Generate summary report from cable routing results.
+        """
+        Generate summary report from cable routing results.
 
         Report includes:
         - Total cable length
@@ -541,7 +553,8 @@ class RevitExporter:
         schedule: RoutingSchedule,
         project_name: str = "",
     ) -> str:
-        """Generate human-readable text report.
+        """
+        Generate human-readable text report.
 
         Args:
             schedule: RoutingSchedule with all routes.

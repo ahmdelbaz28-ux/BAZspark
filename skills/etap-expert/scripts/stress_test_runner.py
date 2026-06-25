@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""ETAP Expert Skill — Stress Test Runner (Orchestrator).
+"""
+ETAP Expert Skill — Stress Test Runner (Orchestrator).
 =======================================================
 Runs all 5 gates of verification per FireAI agent.md VERIFICATION GATES:
 

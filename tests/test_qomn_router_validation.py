@@ -97,16 +97,20 @@ class TestAWGNormalization:
 
 
 class TestHistoricFalseAcceptsRejected:
-    """V118: These values were silently accepted by the V65 router regex
-    but rejected by the kernel — a deceptive HTTP API contract."""
+    """
+    V118: These values were silently accepted by the V65 router regex
+    but rejected by the kernel — a deceptive HTTP API contract.
+    """
 
     @pytest.mark.parametrize("bad_awg", ["250", "300", "350", "400", "500"])
     def test_kernel_unsupported_awg_now_rejected_at_router(self, bad_awg):
-        """V118 FIX: These 5 sizes exist in NEC for power circuits but
+        """
+        V118 FIX: These 5 sizes exist in NEC for power circuits but
         are not in our fire-alarm-relevant NEC_TABLE8_RESISTANCE_OHM_PER_KM.
         Router previously accepted them, then kernel raised ValueError →
         user got an opaque error. Now the router rejects them upfront with
-        a clear list of valid options."""
+        a clear list of valid options.
+        """
         # Sanity: confirm the kernel really does NOT have these
         assert bad_awg not in NEC_TABLE8_RESISTANCE_OHM_PER_KM, (
             f"Test premise wrong: kernel actually supports {bad_awg}; "
@@ -152,8 +156,10 @@ class TestRouterKernelContract:
     """The router's accepted AWG set MUST equal the kernel's table keys."""
 
     def test_router_set_equals_kernel_table_keys(self):
-        """V118 FIX: This was the root cause — the regex and the table
-        diverged. They must now be a single source of truth."""
+        """
+        V118 FIX: This was the root cause — the regex and the table
+        diverged. They must now be a single source of truth.
+        """
         kernel_keys = set(NEC_TABLE8_RESISTANCE_OHM_PER_KM.keys())
         router_keys = set(_NEC_TABLE8_VALID_AWG)
         assert router_keys == kernel_keys, (
@@ -163,8 +169,10 @@ class TestRouterKernelContract:
         )
 
     def test_every_router_accepted_value_works_in_kernel(self):
-        """Belt-and-braces: independently verify each accepted value
-        actually returns a valid voltage drop computation."""
+        """
+        Belt-and-braces: independently verify each accepted value
+        actually returns a valid voltage drop computation.
+        """
         from fireai.core.qomn_kernel import compute_voltage_drop
         for awg in sorted(_NEC_TABLE8_VALID_AWG):
             r = VoltageDropRequest(current_a=1.0, length_m=100.0, awg_gauge=awg)

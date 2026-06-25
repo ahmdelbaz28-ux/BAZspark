@@ -1,4 +1,5 @@
-"""csrf_middleware.py — Production-Grade CSRF Protection (Double Submit Cookie).
+"""
+csrf_middleware.py — Production-Grade CSRF Protection (Double Submit Cookie).
 ==============================================================================
 
 MISSION PHASE 1.1 — Cybersecurity Hardening (The Shield)
@@ -115,7 +116,8 @@ _DEV_ALLOW_HTTP_COOKIES = _os.environ.get("FIREAI_DEV_ALLOW_HTTP_COOKIES", "").l
 
 
 def generate_csrf_token() -> str:
-    """Generate a cryptographically secure CSRF token.
+    """
+    Generate a cryptographically secure CSRF token.
 
     Uses `secrets.token_urlsafe(32)` which produces a 43-character URL-safe
     base64 string from 32 bytes (256 bits) of entropy.
@@ -128,7 +130,8 @@ def generate_csrf_token() -> str:
 
 
 def validate_csrf_token(token: str) -> bool:
-    """Validate a CSRF token format (not its correctness — that's done via comparison).
+    """
+    Validate a CSRF token format (not its correctness — that's done via comparison).
 
     A valid token:
     - Is a string
@@ -156,7 +159,8 @@ def validate_csrf_token(token: str) -> bool:
 
 
 def tokens_match(cookie_token: str, header_token: str) -> bool:
-    """Constant-time comparison of cookie and header tokens.
+    """
+    Constant-time comparison of cookie and header tokens.
 
     Per OWASP: must use constant-time comparison to prevent timing attacks
     that could progressively guess the token byte-by-byte.
@@ -182,7 +186,8 @@ def tokens_match(cookie_token: str, header_token: str) -> bool:
 
 
 class CSRFMiddleware:
-    """Pure ASGI middleware implementing Double Submit Cookie CSRF protection.
+    """
+    Pure ASGI middleware implementing Double Submit Cookie CSRF protection.
 
     Usage in backend/app.py:
         from backend.security_csrf import CSRFMiddleware
@@ -204,7 +209,8 @@ class CSRFMiddleware:
         exempt_paths: frozenset[str] | None = None,
         dev_allow_http: bool = False,
     ) -> None:
-        """Initialize CSRF middleware.
+        """
+        Initialize CSRF middleware.
 
         Args:
             app: ASGI application to wrap.
@@ -226,7 +232,8 @@ class CSRFMiddleware:
         receive: Callable,
         send: Callable,
     ) -> None:
-        """ASGI entry point.
+        """
+        ASGI entry point.
 
         Args:
             scope: ASGI scope dict.
@@ -348,7 +355,8 @@ class CSRFMiddleware:
 
     @staticmethod
     def _extract_cookie_token(headers: list) -> str | None:
-        """Extract CSRF token from Cookie header.
+        """
+        Extract CSRF token from Cookie header.
 
         Args:
             headers: List of (name_bytes, value_bytes) tuples from ASGI scope.
@@ -371,7 +379,8 @@ class CSRFMiddleware:
 
     @staticmethod
     def _extract_header_token(headers: list) -> str | None:
-        """Extract CSRF token from X-CSRF-Token header.
+        """
+        Extract CSRF token from X-CSRF-Token header.
 
         Args:
             headers: List of (name_bytes, value_bytes) tuples.
@@ -401,7 +410,8 @@ class CSRFMiddleware:
 
     @staticmethod
     async def _send_403(scope: MutableMapping, send: Callable, detail: str) -> None:
-        """Send a 403 Forbidden response with JSON error body.
+        """
+        Send a 403 Forbidden response with JSON error body.
 
         Per OWASP: never reveal whether the token existed but was wrong,
         vs. was missing entirely. Always return the same generic message.
@@ -436,7 +446,8 @@ class CSRFMiddleware:
 
 
 def build_csrf_cookie_header(token: str, is_https: bool = True) -> str:
-    """Build the Set-Cookie header value for the CSRF token.
+    """
+    Build the Set-Cookie header value for the CSRF token.
 
     V137 F-9 FIX: The __Host- prefix (V135 F-14) REQUIRES the Secure
     attribute. If _DEV_ALLOW_HTTP_COOKIES=True and is_https=False, the

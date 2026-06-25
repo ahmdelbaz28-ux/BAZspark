@@ -22,7 +22,6 @@ from __future__ import annotations
 import heapq
 import math
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
 
 from qomn_conduit.errors import PhysicsError, RoutingError
 from qomn_conduit.types import (
@@ -70,7 +69,9 @@ class BoundingBox:
         x_max, y_max, z_max: Upper corner.
         is_electrical:        If True, applies _ELECTRICAL_CLEARANCE_M.
         label:                Human-readable identifier for debugging.
+
     """
+
     x_min: float
     y_min: float
     z_min: float
@@ -92,7 +93,7 @@ class BoundingBox:
         """Required clearance from this obstacle surface in metres."""
         return _ELECTRICAL_CLEARANCE_M if self.is_electrical else _OBSTACLE_CLEARANCE_M
 
-    def expanded(self) -> "BoundingBox":
+    def expanded(self) -> BoundingBox:
         """Return box expanded by clearance_m on all sides."""
         c = self.clearance_m
         return BoundingBox(
@@ -125,14 +126,15 @@ class BoundingBox:
 @dataclass(order=False)
 class _AStarNode:
     """Priority queue node for A* search."""
+
     f_cost: float         # g + h
     g_cost: float         # cost from start
     point: Point3D        # current grid position
-    parent: Optional["_AStarNode"]
-    direction: Optional[Tuple[int, int, int]]  # last move direction
+    parent: _AStarNode | None
+    direction: tuple[int, int, int] | None  # last move direction
     bend_count: int       # bends accumulated from start
 
-    def __lt__(self, other: "_AStarNode") -> bool:
+    def __lt__(self, other: _AStarNode) -> bool:
         return self.f_cost < other.f_cost
 
     def __repr__(self) -> str:
@@ -158,7 +160,7 @@ class ConduitRouter:
 
     def __init__(
         self,
-        obstacles: Optional[List[BoundingBox]] = None,
+        obstacles: list[BoundingBox] | None = None,
         grid_resolution: float = 0.10,
     ) -> None:
         """
@@ -167,14 +169,15 @@ class ConduitRouter:
         Args:
             obstacles:       List of bounding boxes to avoid.
             grid_resolution: Grid step size in metres. Default 100mm.
+
         """
         if not math.isfinite(grid_resolution) or grid_resolution <= 0.0:
             raise ValueError(
                 f"grid_resolution={grid_resolution} must be positive finite. "
                 "Typical value: 0.10 (100mm = conduit fitting precision)."
             )
-        self._obstacles: List[BoundingBox] = list(obstacles or [])
-        self._expanded: List[BoundingBox] = [o.expanded() for o in self._obstacles]
+        self._obstacles: list[BoundingBox] = list(obstacles or [])
+        self._expanded: list[BoundingBox] = [o.expanded() for o in self._obstacles]
         self._res = grid_resolution
 
     def add_obstacle(self, obstacle: BoundingBox) -> None:
@@ -195,7 +198,7 @@ class ConduitRouter:
             z=round(p.z / r) * r,
         )
 
-    def _point_key(self, p: Point3D) -> Tuple[int, int, int]:
+    def _point_key(self, p: Point3D) -> tuple[int, int, int]:
         """Convert point to integer grid coordinates for dict keys."""
         r = self._res
         return (
@@ -205,7 +208,7 @@ class ConduitRouter:
         )
 
     # Six orthogonal directions: ±X, ±Y, ±Z
-    _DIRECTIONS: List[Tuple[int, int, int]] = [
+    _DIRECTIONS: list[tuple[int, int, int]] = [
         (1, 0, 0), (-1, 0, 0),
         (0, 1, 0), (0, -1, 0),
         (0, 0, 1), (0, 0, -1),
@@ -217,7 +220,7 @@ class ConduitRouter:
         end: Point3D,
         conduit_type: ConduitType = ConduitType.EMT,
         trade_size: TradeSize = TradeSize.HALF_INCH,
-    ) -> "Result[RoutePath, RoutingError | PhysicsError]":
+    ) -> Result[RoutePath, RoutingError | PhysicsError]:
         """
         Find shortest NEC-compliant conduit path from start to end.
 
@@ -237,6 +240,7 @@ class ConduitRouter:
             Result.err(PhysicsError) — non-finite coordinates.
 
         Reference: NEC 300.4 (clearance), 358.26 (bend limit).
+
         """
         # ── Input validation ─────────────────────────────────────────────────
 
@@ -280,8 +284,8 @@ class ConduitRouter:
 
         # ── A* search ────────────────────────────────────────────────────────
 
-        open_heap: List[_AStarNode] = []
-        g_costs: Dict[Tuple[int, int, int], float] = {}
+        open_heap: list[_AStarNode] = []
+        g_costs: dict[tuple[int, int, int], float] = {}
 
         start_node = _AStarNode(
             f_cost=s.manhattan_to(e),
@@ -295,7 +299,7 @@ class ConduitRouter:
         g_costs[self._point_key(s)] = 0.0
 
         iterations = 0
-        found: Optional[_AStarNode] = None
+        found: _AStarNode | None = None
 
         while open_heap and iterations < _MAX_ITERATIONS:
             iterations += 1
@@ -367,8 +371,8 @@ class ConduitRouter:
 
         # ── Reconstruct path ─────────────────────────────────────────────────
 
-        waypoints: List[Point3D] = []
-        cur: Optional[_AStarNode] = found
+        waypoints: list[Point3D] = []
+        cur: _AStarNode | None = found
         while cur is not None:
             waypoints.append(cur.point)
             cur = cur.parent
@@ -392,7 +396,7 @@ class ConduitRouter:
         ))
 
 
-def _simplify_waypoints(waypoints: List[Point3D]) -> List[Point3D]:
+def _simplify_waypoints(waypoints: list[Point3D]) -> list[Point3D]:
     """
     Merge consecutive collinear points into straight segments.
 
@@ -401,7 +405,7 @@ def _simplify_waypoints(waypoints: List[Point3D]) -> List[Point3D]:
     if len(waypoints) <= 2:
         return list(waypoints)
 
-    result: List[Point3D] = [waypoints[0]]
+    result: list[Point3D] = [waypoints[0]]
 
     for i in range(1, len(waypoints) - 1):
         prev = result[-1]
@@ -442,11 +446,11 @@ def _sign(x: float) -> int:
 def orthogonal_astar(
     start: Point3D,
     end: Point3D,
-    obstacles: Optional[List[BoundingBox]] = None,
+    obstacles: list[BoundingBox] | None = None,
     grid_resolution: float = 0.10,
     conduit_type: ConduitType = ConduitType.EMT,
     trade_size: TradeSize = TradeSize.HALF_INCH,
-) -> "Result[RoutePath, RoutingError | PhysicsError]":
+) -> Result[RoutePath, RoutingError | PhysicsError]:
     """
     Route a conduit run using orthogonal A* pathfinding.
 
@@ -466,6 +470,7 @@ def orthogonal_astar(
         Result.err(PhysicsError) — invalid coordinates.
 
     Reference: NEC 300.4 (physical protection), 358.26 (bend limit).
+
     """
     router = ConduitRouter(
         obstacles=obstacles or [],

@@ -1,4 +1,5 @@
-"""kernel_v30_integration.py — V30 Real Integration Engine.
+"""
+kernel_v30_integration.py — V30 Real Integration Engine.
 ========================================================
 SURGICAL FIX: fireai_kernel_v30.py exists as reference design only.
 SIMD/lock-free/mmap were theoretical. This file wires them INTO the pipeline.
@@ -80,7 +81,8 @@ def _compute_coverage_mask_avx2(
     det_y: Any,  # np.ndarray float32
     r_sq: float,
 ) -> Any:  # np.ndarray bool
-    """Vectorised coverage mask: which grid points are covered by any detector.
+    """
+    Vectorised coverage mask: which grid points are covered by any detector.
     Uses NumPy broadcasting — numpy internally uses SIMD (AVX2/SSE4/NEON).
 
     Real implementation that was missing from V30 reference design.
@@ -128,7 +130,8 @@ class _WorkResult:
 
 
 class MPSCWorkerPool:
-    """Real multi-producer single-consumer worker pool.
+    """
+    Real multi-producer single-consumer worker pool.
 
     V30 defined this class but never called start() from the pipeline.
     This implementation:
@@ -261,7 +264,8 @@ class MPSCWorkerPool:
 
 
 class MmapResultCache:
-    """Memory-mapped shared result cache.
+    """
+    Memory-mapped shared result cache.
 
     V30 opened mmap but never wrote to/read from it systematically.
 
@@ -428,7 +432,8 @@ class MmapResultCache:
 
 
 class KernelV30Dispatcher:
-    """V30 kernel dispatcher that actually integrates into the pipeline.
+    """
+    V30 kernel dispatcher that actually integrates into the pipeline.
 
     V30 reference design existed as fireai_kernel_v30.py but was never
     connected to DensityOptimizer, FloorAnalyser, or BuildingEngine.
@@ -483,7 +488,8 @@ class KernelV30Dispatcher:
         return self._fallback
 
     def optimize(self, room: Any, coverage_radius: float | None = None) -> Any:
-        """Drop-in replacement for DensityOptimizer.optimize().
+        """
+        Drop-in replacement for DensityOptimizer.optimize().
 
         Route:
           1. Check mmap cache (fastest: O(1))
@@ -541,7 +547,8 @@ class KernelV30Dispatcher:
         rooms: list[Any],
         timeout: float = 30.0,
     ) -> list[Any]:
-        """Async batch processing via MPSC worker pool.
+        """
+        Async batch processing via MPSC worker pool.
         Submits all rooms, collects results.
         """
         room_dicts = []
@@ -581,7 +588,8 @@ class KernelV30Dispatcher:
         return layouts
 
     def _optimize_simd(self, room: Any, R: float) -> Any:
-        """SIMD-accelerated placement using NumPy broadcasting.
+        """
+        SIMD-accelerated placement using NumPy broadcasting.
         Uses the same multi-strategy approach as DensityOptimizer:
         hexagonal grid with correct spacing + SIMD verification.
 

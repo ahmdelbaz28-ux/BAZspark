@@ -49,8 +49,10 @@ from fireai.core.qomn_kernel import (
 
 
 class TestV130FlatSpacing:
-    """V130: Smoke detector spacing is FLAT 9.1m at ALL ceiling heights.
-    Per NFPA 72-2022 §17.7.3.2.3: 30 ft (9.1 m) — NO height reduction."""
+    """
+    V130: Smoke detector spacing is FLAT 9.1m at ALL ceiling heights.
+    Per NFPA 72-2022 §17.7.3.2.3: 30 ft (9.1 m) — NO height reduction.
+    """
 
     @pytest.mark.parametrize("height", [
         3.0,    # 10 ft — standard ceiling
@@ -166,7 +168,7 @@ class TestPhysicsGuards:
             compute_smoke_detector_spacing(-1.0)
 
     def test_height_above_hard_limit_rejected(self):
-        """h > 18.288m must be rejected by guard."""
+        """H > 18.288m must be rejected by guard."""
         with pytest.raises(Exception):
             compute_smoke_detector_spacing(19.0)
 

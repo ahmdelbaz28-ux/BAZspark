@@ -1,6 +1,4 @@
-"""
-Deterministic Engine for L3 in Distributed FACP System
-"""
+"""Deterministic Engine for L3 in Distributed FACP System"""
 import math
 import time
 from decimal import Decimal, getcontext
@@ -12,6 +10,7 @@ class DeterministicEngine:
     Deterministic engine that performs calculations, validations, and transformations
     with guaranteed reproducible results
     """
+
     def __init__(self):
         # Set precision for decimal operations to ensure consistency
         getcontext().prec = 28
@@ -45,9 +44,7 @@ class DeterministicEngine:
         self.deterministic_mode = True
 
     def execute_calculation(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute a calculation based on parameters
-        """
+        """Execute a calculation based on parameters"""
         start_time = time.time()
 
         try:
@@ -82,7 +79,7 @@ class DeterministicEngine:
         except Exception as e:
             self.execution_stats["failed_executions"] += 1
             return {
-                "error": f"Calculation failed: {str(e)}",
+                "error": f"Calculation failed: {e!s}",
                 "calculation_type": params.get("type", "unknown"),
                 "execution_time_ms": (time.time() - start_time) * 1000,
                 "success": False,
@@ -90,9 +87,7 @@ class DeterministicEngine:
             }
 
     def execute_validation(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute a validation based on parameters
-        """
+        """Execute a validation based on parameters"""
         start_time = time.time()
 
         try:
@@ -127,7 +122,7 @@ class DeterministicEngine:
         except Exception as e:
             self.execution_stats["failed_executions"] += 1
             return {
-                "error": f"Validation failed: {str(e)}",
+                "error": f"Validation failed: {e!s}",
                 "validation_type": params.get("type", "unknown"),
                 "execution_time_ms": (time.time() - start_time) * 1000,
                 "success": False,
@@ -135,9 +130,7 @@ class DeterministicEngine:
             }
 
     def execute_transformation(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute a transformation based on parameters
-        """
+        """Execute a transformation based on parameters"""
         start_time = time.time()
 
         try:
@@ -172,7 +165,7 @@ class DeterministicEngine:
         except Exception as e:
             self.execution_stats["failed_executions"] += 1
             return {
-                "error": f"Transformation failed: {str(e)}",
+                "error": f"Transformation failed: {e!s}",
                 "transform_type": params.get("type", "unknown"),
                 "execution_time_ms": (time.time() - start_time) * 1000,
                 "success": False,
@@ -180,56 +173,45 @@ class DeterministicEngine:
             }
 
     def _get_calculation_module_name(self, calc_type: str) -> str:
-        """
-        Determine which calculation module to use based on type
-        """
+        """Determine which calculation module to use based on type"""
         if "electrical" in calc_type or "voltage" in calc_type or "current" in calc_type:
             return "electrical"
-        elif "structural" in calc_type or "load" in calc_type or "stress" in calc_type:
+        if "structural" in calc_type or "load" in calc_type or "stress" in calc_type:
             return "structural"
-        elif "thermal" in calc_type or "heat" in calc_type or "temperature" in calc_type:
+        if "thermal" in calc_type or "heat" in calc_type or "temperature" in calc_type:
             return "thermal"
-        elif "fluid" in calc_type or "flow" in calc_type or "pressure" in calc_type:
+        if "fluid" in calc_type or "flow" in calc_type or "pressure" in calc_type:
             return "fluid"
-        elif "fire" in calc_type or "safety" in calc_type:
+        if "fire" in calc_type or "safety" in calc_type:
             return "fire_safety"
-        else:
-            return "electrical"  # Default to electrical
+        return "electrical"  # Default to electrical
 
     def _get_validation_module_name(self, validation_type: str) -> str:
-        """
-        Determine which validation module to use based on type
-        """
+        """Determine which validation module to use based on type"""
         if "nfpa" in validation_type.lower():
             return "nfpa"
-        elif "iec" in validation_type.lower():
+        if "iec" in validation_type.lower():
             return "iec"
-        elif "egyptian" in validation_type.lower():
+        if "egyptian" in validation_type.lower():
             return "egyptian"
-        elif "saudi" in validation_type.lower():
+        if "saudi" in validation_type.lower():
             return "saudi"
-        else:
-            return "general"
+        return "general"
 
     def _get_transformation_module_name(self, transform_type: str) -> str:
-        """
-        Determine which transformation module to use based on type
-        """
+        """Determine which transformation module to use based on type"""
         if "dwg" in transform_type and "bim" in transform_type:
             return "dwg_bim"
-        elif "bim" in transform_type and "dwg" in transform_type:
+        if "bim" in transform_type and "dwg" in transform_type:
             return "bim_dwg"
-        elif "format" in transform_type:
+        if "format" in transform_type:
             return "format"
-        elif "unit" in transform_type:
+        if "unit" in transform_type:
             return "unit"
-        else:
-            return "format"
+        return "format"
 
     def _generic_calculation(self, params: Dict[str, Any]) -> Any:
-        """
-        Perform a generic calculation
-        """
+        """Perform a generic calculation"""
         operation = params.get("operation", "add")
         operands = params.get("operands", [])
 
@@ -255,16 +237,14 @@ class DeterministicEngine:
         return result
 
     def _generic_transformation(self, params: Dict[str, Any]) -> Any:
-        """
-        Perform a generic transformation
-        """
+        """Perform a generic transformation"""
         operation = params.get("operation", "identity")
         data = params.get("data", {})
 
         if operation == "uppercase":
             if isinstance(data, str):
                 return data.upper()
-            elif isinstance(data, dict):
+            if isinstance(data, dict):
                 return {k.upper(): v for k, v in data.items()}
         elif operation == "normalize":
             # Normalize numeric values
@@ -295,17 +275,14 @@ class DeterministicEngine:
             return value * factor
         else:
             return data  # Identity transform
+        return None
 
     def get_execution_stats(self) -> Dict[str, Any]:
-        """
-        Get execution statistics for the engine
-        """
+        """Get execution statistics for the engine"""
         return self.execution_stats.copy()
 
     def reset_stats(self):
-        """
-        Reset execution statistics
-        """
+        """Reset execution statistics"""
         self.execution_stats = {
             "total_calculations": 0,
             "total_validations": 0,
@@ -326,31 +303,25 @@ class DeterministicEngine:
 
 
 class ElectricalCalculator:
-    """
-    Electrical calculations with deterministic results
-    """
+    """Electrical calculations with deterministic results"""
+
     def calculate(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Perform electrical calculations
-        """
+        """Perform electrical calculations"""
         calc_type = params.get("calculation_type", "voltage_drop")
 
         if calc_type == "voltage_drop":
             return self._calculate_voltage_drop(params)
-        elif calc_type == "cable_sizing":
+        if calc_type == "cable_sizing":
             return self._calculate_cable_sizing(params)
-        elif calc_type == "load_calculation":
+        if calc_type == "load_calculation":
             return self._calculate_load(params)
-        elif calc_type == "short_circuit":
+        if calc_type == "short_circuit":
             return self._calculate_short_circuit(params)
-        else:
-            # Default to voltage drop calculation
-            return self._calculate_voltage_drop(params)
+        # Default to voltage drop calculation
+        return self._calculate_voltage_drop(params)
 
     def _calculate_voltage_drop(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate voltage drop in electrical circuits
-        """
+        """Calculate voltage drop in electrical circuits"""
         current = Decimal(str(params.get("current", 0)))
         length = Decimal(str(params.get("length", 0)))
         resistance = Decimal(str(params.get("resistance", 0.01)))  # Ohms per meter
@@ -379,9 +350,7 @@ class ElectricalCalculator:
         }
 
     def _calculate_cable_sizing(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate appropriate cable size
-        """
+        """Calculate appropriate cable size"""
         current = Decimal(str(params.get("current", 0)))
         material = params.get("material", "copper")  # copper or aluminum
         ambient_temp = params.get("ambient_temperature", 30)  # degrees Celsius
@@ -436,9 +405,7 @@ class ElectricalCalculator:
         }
 
     def _calculate_load(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate electrical load
-        """
+        """Calculate electrical load"""
         connected_load = Decimal(str(params.get("connected_load", 0)))  # kW
         diversity_factor = Decimal(str(params.get("diversity_factor", 1.0)))
         power_factor = Decimal(str(params.get("power_factor", 0.8)))
@@ -467,9 +434,7 @@ class ElectricalCalculator:
         }
 
     def _calculate_short_circuit(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate short circuit current
-        """
+        """Calculate short circuit current"""
         source_voltage = Decimal(str(params.get("source_voltage", 400)))  # V
         source_impedance = Decimal(str(params.get("source_impedance", 0.01)))  # Ohms
         fault_impedance = Decimal(str(params.get("fault_impedance", 0.005)))  # Ohms
@@ -492,29 +457,23 @@ class ElectricalCalculator:
 
 
 class StructuralCalculator:
-    """
-    Structural calculations with deterministic results
-    """
+    """Structural calculations with deterministic results"""
+
     def calculate(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Perform structural calculations
-        """
+        """Perform structural calculations"""
         calc_type = params.get("calculation_type", "beam_deflection")
 
         if calc_type == "beam_deflection":
             return self._calculate_beam_deflection(params)
-        elif calc_type == "column_buckling":
+        if calc_type == "column_buckling":
             return self._calculate_column_buckling(params)
-        elif calc_type == "load_bearing":
+        if calc_type == "load_bearing":
             return self._calculate_load_bearing(params)
-        else:
-            # Default to beam deflection
-            return self._calculate_beam_deflection(params)
+        # Default to beam deflection
+        return self._calculate_beam_deflection(params)
 
     def _calculate_beam_deflection(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate beam deflection under load
-        """
+        """Calculate beam deflection under load"""
         load = Decimal(str(params.get("load", 1000)))  # N
         length = Decimal(str(params.get("length", 5)))  # m
         elastic_modulus = Decimal(str(params.get("elastic_modulus", 200e9)))  # Pa (steel)
@@ -535,9 +494,7 @@ class StructuralCalculator:
         }
 
     def _calculate_column_buckling(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate column buckling load
-        """
+        """Calculate column buckling load"""
         elastic_modulus = Decimal(str(params.get("elastic_modulus", 200e9)))  # Pa
         moment_of_inertia = Decimal(str(params.get("moment_of_inertia", 1e-5)))  # m^4
         unsupported_length = Decimal(str(params.get("unsupported_length", 3)))  # m
@@ -561,9 +518,7 @@ class StructuralCalculator:
         }
 
     def _calculate_load_bearing(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate load bearing capacity
-        """
+        """Calculate load bearing capacity"""
         area = Decimal(str(params.get("area", 0.1)))  # m²
         allowable_stress = Decimal(str(params.get("allowable_stress", 150e6)))  # Pa
 
@@ -580,29 +535,23 @@ class StructuralCalculator:
 
 
 class ThermalCalculator:
-    """
-    Thermal calculations with deterministic results
-    """
+    """Thermal calculations with deterministic results"""
+
     def calculate(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Perform thermal calculations
-        """
+        """Perform thermal calculations"""
         calc_type = params.get("calculation_type", "heat_transfer")
 
         if calc_type == "heat_transfer":
             return self._calculate_heat_transfer(params)
-        elif calc_type == "temperature_rise":
+        if calc_type == "temperature_rise":
             return self._calculate_temperature_rise(params)
-        elif calc_type == "thermal_resistance":
+        if calc_type == "thermal_resistance":
             return self._calculate_thermal_resistance(params)
-        else:
-            # Default to heat transfer
-            return self._calculate_heat_transfer(params)
+        # Default to heat transfer
+        return self._calculate_heat_transfer(params)
 
     def _calculate_heat_transfer(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate heat transfer through conduction
-        """
+        """Calculate heat transfer through conduction"""
         thermal_conductivity = Decimal(str(params.get("thermal_conductivity", 400)))  # W/(m·K) for copper
         area = Decimal(str(params.get("area", 1)))  # m²
         thickness = Decimal(str(params.get("thickness", 0.01)))  # m
@@ -623,9 +572,7 @@ class ThermalCalculator:
         }
 
     def _calculate_temperature_rise(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate temperature rise due to heat dissipation
-        """
+        """Calculate temperature rise due to heat dissipation"""
         heat_dissipated = Decimal(str(params.get("heat_dissipated", 100)))  # W
         mass = Decimal(str(params.get("mass", 1)))  # kg
         specific_heat = Decimal(str(params.get("specific_heat", 4186)))  # J/(kg·K) for water
@@ -648,9 +595,7 @@ class ThermalCalculator:
         }
 
     def _calculate_thermal_resistance(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate thermal resistance
-        """
+        """Calculate thermal resistance"""
         thickness = Decimal(str(params.get("thickness", 0.01)))  # m
         thermal_conductivity = Decimal(str(params.get("thermal_conductivity", 0.04)))  # W/(m·K) for insulation
         area = Decimal(str(params.get("area", 1)))  # m²
@@ -670,29 +615,23 @@ class ThermalCalculator:
 
 
 class FluidCalculator:
-    """
-    Fluid mechanics calculations with deterministic results
-    """
+    """Fluid mechanics calculations with deterministic results"""
+
     def calculate(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Perform fluid mechanics calculations
-        """
+        """Perform fluid mechanics calculations"""
         calc_type = params.get("calculation_type", "pipe_flow")
 
         if calc_type == "pipe_flow":
             return self._calculate_pipe_flow(params)
-        elif calc_type == "pressure_drop":
+        if calc_type == "pressure_drop":
             return self._calculate_pressure_drop(params)
-        elif calc_type == "velocity":
+        if calc_type == "velocity":
             return self._calculate_velocity(params)
-        else:
-            # Default to pipe flow
-            return self._calculate_pipe_flow(params)
+        # Default to pipe flow
+        return self._calculate_pipe_flow(params)
 
     def _calculate_pipe_flow(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate flow rate in a pipe
-        """
+        """Calculate flow rate in a pipe"""
         diameter = Decimal(str(params.get("diameter", 0.1)))  # m
         velocity = Decimal(str(params.get("velocity", 1)))  # m/s
 
@@ -713,9 +652,7 @@ class FluidCalculator:
         }
 
     def _calculate_pressure_drop(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate pressure drop in a pipe (Darcy-Weisbach equation)
-        """
+        """Calculate pressure drop in a pipe (Darcy-Weisbach equation)"""
         friction_factor = Decimal(str(params.get("friction_factor", 0.02)))
         length = Decimal(str(params.get("length", 100)))  # m
         diameter = Decimal(str(params.get("diameter", 0.1)))  # m
@@ -738,9 +675,7 @@ class FluidCalculator:
         }
 
     def _calculate_velocity(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate fluid velocity
-        """
+        """Calculate fluid velocity"""
         flow_rate = Decimal(str(params.get("flow_rate", 0.01)))  # m³/s
         diameter = Decimal(str(params.get("diameter", 0.1)))  # m
 
@@ -763,29 +698,23 @@ class FluidCalculator:
 
 
 class FireSafetyCalculator:
-    """
-    Fire safety calculations with deterministic results
-    """
+    """Fire safety calculations with deterministic results"""
+
     def calculate(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Perform fire safety calculations
-        """
+        """Perform fire safety calculations"""
         calc_type = params.get("calculation_type", "smoke_extraction")
 
         if calc_type == "smoke_extraction":
             return self._calculate_smoke_extraction(params)
-        elif calc_type == "escape_time":
+        if calc_type == "escape_time":
             return self._calculate_escape_time(params)
-        elif calc_type == "fire_resistance":
+        if calc_type == "fire_resistance":
             return self._calculate_fire_resistance(params)
-        else:
-            # Default to smoke extraction
-            return self._calculate_smoke_extraction(params)
+        # Default to smoke extraction
+        return self._calculate_smoke_extraction(params)
 
     def _calculate_smoke_extraction(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate required smoke extraction rate
-        """
+        """Calculate required smoke extraction rate"""
         compartment_volume = Decimal(str(params.get("compartment_volume", 1000)))  # m³
         required_air_changes = Decimal(str(params.get("required_air_changes", 6)))  # per hour
         safety_factor = Decimal(str(params.get("safety_factor", 1.2)))
@@ -804,9 +733,7 @@ class FireSafetyCalculator:
         }
 
     def _calculate_escape_time(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate available safe egress time
-        """
+        """Calculate available safe egress time"""
         travel_distance = Decimal(str(params.get("travel_distance", 30)))  # m
         walking_speed = Decimal(str(params.get("walking_speed", 1.2)))  # m/s
         safety_margin = Decimal(str(params.get("safety_margin", 0.5)))  # factor
@@ -828,9 +755,7 @@ class FireSafetyCalculator:
         }
 
     def _calculate_fire_resistance(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calculate fire resistance of a construction element
-        """
+        """Calculate fire resistance of a construction element"""
         thickness = Decimal(str(params.get("thickness", 0.2)))  # m
         material_type = params.get("material_type", "concrete")
 
@@ -860,6 +785,7 @@ class FireSafetyCalculator:
 
 class _BaseValidator:
     """Base class for code-standard validators."""
+
     def validate(self, params: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError(
             f"{self.__class__.__name__} validator is not yet implemented"
@@ -892,6 +818,7 @@ class GeneralValidator(_BaseValidator):
 
 class _BaseTransformer:
     """Base class for format / unit transformers."""
+
     def transform(self, params: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError(
             f"{self.__class__.__name__} transformer is not yet implemented"

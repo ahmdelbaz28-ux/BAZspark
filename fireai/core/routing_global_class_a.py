@@ -1,4 +1,5 @@
-"""fireai/core/routing_global_class_a.py.
+"""
+fireai/core/routing_global_class_a.py.
 =====================================
 WRAPPER — Delegates to EliteClassARouter (routing_engine_v10.py).
 
@@ -30,7 +31,8 @@ from fireai.core.routing_engine_v10 import EliteClassARouter
 
 
 class EliteGlobalRouter:
-    """Backward-compatible wrapper around EliteClassARouter.
+    """
+    Backward-compatible wrapper around EliteClassARouter.
 
     Converts the canonical RouteSegment output to DecisionProvenance
     format for audit trail compatibility.
@@ -55,7 +57,8 @@ class EliteGlobalRouter:
         self._min_y = min_y
 
     def apply_class_a_separation(self, outgoing_path: list[tuple[float, float]], min_sep_m: float = 1.0) -> None:
-        """No-op for backward compatibility. Separation is applied internally
+        """
+        No-op for backward compatibility. Separation is applied internally
         by EliteClassARouter.generate_class_a_loop().
         """
         pass  # Delegated to EliteClassARouter internally
@@ -63,7 +66,8 @@ class EliteGlobalRouter:
     def route_class_a_loop(
         self, panel: tuple[float, float], terminal_device: tuple[float, float]
     ) -> DecisionProvenance:
-        """Compute a full Class A loop via EliteClassARouter and wrap
+        """
+        Compute a full Class A loop via EliteClassARouter and wrap
         the result in a DecisionProvenance for audit trail compatibility.
 
         Parameters

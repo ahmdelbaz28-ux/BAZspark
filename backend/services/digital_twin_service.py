@@ -1,4 +1,5 @@
-"""backend/services/digital_twin_service.py — Digital Twin Engine.
+"""
+backend/services/digital_twin_service.py — Digital Twin Engine.
 ================================================================
 
 COMPLETE Digital Twin implementation including:
@@ -180,7 +181,8 @@ class VersionInfo:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class SemanticMapper:
-    """Maps AutoCAD entities to Revit elements and vice versa.
+    """
+    Maps AutoCAD entities to Revit elements and vice versa.
 
     Conversion Rules:
     - Lines on "Walls" layer → Revit Walls
@@ -193,7 +195,8 @@ class SemanticMapper:
         self.config = config
 
     def map_autocad_to_revit(self, autocad_entity: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Map a single AutoCAD entity to Revit element specification.
+        """
+        Map a single AutoCAD entity to Revit element specification.
 
         Args:
             autocad_entity: AutoCAD entity data from DWGReader
@@ -396,7 +399,8 @@ class SemanticMapper:
         }
 
     def map_revit_to_autocad(self, revit_element: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Map a single Revit element to AutoCAD entity specification.
+        """
+        Map a single Revit element to AutoCAD entity specification.
 
         Args:
             revit_element: Revit element data from RVTReader
@@ -543,7 +547,8 @@ class SemanticMapper:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class DigitalTwinEngine:
-    """Core conversion engine for AutoCAD ↔ Revit.
+    """
+    Core conversion engine for AutoCAD ↔ Revit.
 
     Workflow:
     1. Read source file
@@ -561,7 +566,8 @@ class DigitalTwinEngine:
 
     def convert_autocad_to_revit(self, dwg_filepath: str, rvt_filepath: str,
                                   template_path: Optional[str] = None) -> ConversionResult:
-        """Convert AutoCAD DWG to Revit RVT.
+        """
+        Convert AutoCAD DWG to Revit RVT.
 
         Args:
             dwg_filepath: Path to input DWG file
@@ -659,7 +665,8 @@ class DigitalTwinEngine:
             )
 
     def convert_revit_to_autocad(self, rvt_filepath: str, dwg_filepath: str) -> ConversionResult:
-        """Convert Revit RVT to AutoCAD DWG.
+        """
+        Convert Revit RVT to AutoCAD DWG.
 
         Args:
             rvt_filepath: Path to input RVT file
@@ -811,7 +818,8 @@ class VersionManager:
         return self._load_history()
 
     def rollback(self, version_id: str, target_file: str) -> bool:
-        """Rollback to a specific version.
+        """
+        Rollback to a specific version.
 
         Restores the target file from backup.
         """
@@ -863,7 +871,8 @@ class VersionManager:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class DigitalTwinService:
-    """Main Digital Twin service — orchestrates bidirectional conversion.
+    """
+    Main Digital Twin service — orchestrates bidirectional conversion.
 
     Usage:
         service = DigitalTwinService()
@@ -944,7 +953,8 @@ class ConversionConfigManager:
             return ConversionConfig()
 
     def update_mapping(self, layer: str, category: str, direction: str = "autocad_to_revit") -> bool:
-        """Update a single mapping rule.
+        """
+        Update a single mapping rule.
 
         Args:
             layer: AutoCAD layer name or Revit category

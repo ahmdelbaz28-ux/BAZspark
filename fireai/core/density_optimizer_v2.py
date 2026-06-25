@@ -1,4 +1,5 @@
-"""fireai/core/density_optimizer_v2.py.
+"""
+fireai/core/density_optimizer_v2.py.
 ===================================
 Multiprocessing batch API for DensityOptimizer.
 
@@ -96,7 +97,8 @@ Point3D = None  # type: ignore[assignment,misc]  # NOT IMPLEMENTED
 
 @dataclass
 class BatchResult:
-    """Result of a batch optimization operation.
+    """
+    Result of a batch optimization operation.
 
     Attributes
     ----------
@@ -135,7 +137,8 @@ class BatchResult:
 
 
 def _optimize_room_worker(args: tuple) -> tuple[str, Any]:
-    """Worker function for multiprocessing batch optimization.
+    """
+    Worker function for multiprocessing batch optimization.
 
     Must be at module level for pickle serialization.
 
@@ -201,7 +204,8 @@ def _optimize_room_worker(args: tuple) -> tuple[str, Any]:
 
 
 class DensityOptimizerV2:
-    """Multiprocessing batch API for DensityOptimizer.
+    """
+    Multiprocessing batch API for DensityOptimizer.
 
     Designed for large buildings (10K+ rooms) where sequential
     processing would take minutes instead of seconds.
@@ -257,7 +261,8 @@ class DensityOptimizerV2:
             log.warning("DensityOptimizer not available — batch optimization will return errors for all rooms")
 
     def optimize_batch(self, room_specs: dict[str, Any], detector_type: str = "smoke", **kwargs) -> BatchResult:
-        """Optimize detector placement for a batch of rooms.
+        """
+        Optimize detector placement for a batch of rooms.
 
         Parameters
         ----------
@@ -439,7 +444,8 @@ class DensityOptimizerV2:
         )
 
     def optimize_single(self, room_id: str, room_spec: Any, detector_type: str = "smoke", **kwargs) -> Any:
-        """Optimize a single room (convenience wrapper).
+        """
+        Optimize a single room (convenience wrapper).
 
         Parameters
         ----------

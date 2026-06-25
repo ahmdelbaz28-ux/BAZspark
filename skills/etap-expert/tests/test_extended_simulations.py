@@ -1,4 +1,5 @@
-"""Gate 4 Extension: Tests for Extended Simulations + LLM Classifier (V131 Phase 3).
+"""
+Gate 4 Extension: Tests for Extended Simulations + LLM Classifier (V131 Phase 3).
 =================================================================================
 Validates the 3 new simulations + LLM classifier added in V131 Phase 3:
     8. Motor Starting (IEEE 399)

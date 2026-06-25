@@ -231,7 +231,7 @@ class TestOptimise:
         import fireai.core.spatial_engine.density_optimizer as _dm
         original = _dm.VERIFY_STEP
         optimizer.optimise(small_benchmark, steps=[0.15, 0.25])
-        assert _dm.VERIFY_STEP == original
+        assert original == _dm.VERIFY_STEP
 
 
 # ─────────────────────────────────────────────────────────────────────────────

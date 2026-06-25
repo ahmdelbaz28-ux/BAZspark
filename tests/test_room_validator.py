@@ -35,7 +35,8 @@ from fireai.core.room_validator import (
 
 
 def _make_valid_room_spec(**overrides) -> RoomSpec:
-    """Create a valid RoomSpec with sensible defaults.
+    """
+    Create a valid RoomSpec with sensible defaults.
 
     The RoomSpec.__post_init__ does strict validation, so we must
     provide valid data to construct one successfully.
@@ -53,7 +54,8 @@ def _make_valid_room_spec(**overrides) -> RoomSpec:
 
 
 def _make_valid_room_spec_no_polygon(**overrides) -> RoomSpec:
-    """Create a valid RoomSpec without custom_polygon.
+    """
+    Create a valid RoomSpec without custom_polygon.
 
     Uses width/depth dimensions only (polygon will be set by __post_init__).
     """
@@ -203,8 +205,10 @@ class TestOccupancyTypeValidation:
             validate_room_spec(spec)  # Should not raise
 
     def test_empty_occupancy_type_raises(self):
-        """Empty occupancy_type should fail validation.
-        Note: RoomSpec.__post_init__ may catch this first."""
+        """
+        Empty occupancy_type should fail validation.
+        Note: RoomSpec.__post_init__ may catch this first.
+        """
         # We need to create a spec with empty occupancy_type
         # RoomSpec __post_init__ validates occupancy_type, so this
         # may raise during construction. We test the validator directly
@@ -251,9 +255,11 @@ class TestRoomIdValidation:
     """room_id must not be empty."""
 
     def test_empty_room_id_raises(self):
-        """Empty room_id should fail validation.
+        """
+        Empty room_id should fail validation.
         Note: RoomSpec.__post_init__ also validates room_id, so
-        we modify the attribute after construction."""
+        we modify the attribute after construction.
+        """
         spec = _make_valid_room_spec()
         spec.room_id = ""
         with pytest.raises(ValueError, match="room_id"):

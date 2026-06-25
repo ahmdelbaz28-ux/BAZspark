@@ -1,4 +1,5 @@
-"""backend/services/revit_service.py — Revit Integration Service.
+"""
+backend/services/revit_service.py — Revit Integration Service.
 =============================================================
 
 Complete Revit integration service with full Revit API support.
@@ -126,7 +127,8 @@ if IS_WINDOWS and HAS_PYTHONNET:
 # ============================================================================
 
 class RevitService:
-    """Complete Revit integration service.
+    """
+    Complete Revit integration service.
 
     Handles:
     - Multiple connection methods (API, Macro, Simulation)
@@ -230,7 +232,8 @@ class RevitService:
             return False
 
     def _extract_element_data(self, element) -> Dict[str, Any]:
-        """Extract detailed data from a Revit element.
+        """
+        Extract detailed data from a Revit element.
         In a real implementation, this would extract actual element properties.
 
         Args:
@@ -325,7 +328,8 @@ class RevitService:
             }
 
     def read_rvt(self, filepath: str) -> Dict[str, Any]:
-        """Read elements from an RVT file.
+        """
+        Read elements from an RVT file.
 
         Args:
             filepath: Path to the RVT file to read
@@ -405,7 +409,8 @@ class RevitService:
             }
 
     def write_rvt(self, filepath: str, elements: List[Dict[str, Any]]) -> bool:
-        """Write elements to an RVT file.
+        """
+        Write elements to an RVT file.
 
         Args:
             filepath: Path to save the RVT file
@@ -457,7 +462,8 @@ class RevitService:
 
     def create_wall(self, start_point: List[float], end_point: List[float],
                    height: float = 3000.0, level: str = "Level 1") -> Optional[str]:
-        """Create a wall in the active Revit document.
+        """
+        Create a wall in the active Revit document.
 
         Args:
             start_point: Starting coordinates [x, y, z]
@@ -486,7 +492,8 @@ class RevitService:
             return None
 
     def create_floor(self, boundary: List[List[float]], level: str = "Level 1") -> Optional[str]:
-        """Create a floor in the active Revit document.
+        """
+        Create a floor in the active Revit document.
 
         Args:
             boundary: List of boundary points [[x, y, z], ...]
@@ -514,7 +521,8 @@ class RevitService:
 
     def create_column(self, location: List[float], height: float = 3000.0,
                      level: str = "Level 1") -> Optional[str]:
-        """Create a column in the active Revit document.
+        """
+        Create a column in the active Revit document.
 
         Args:
             location: Location point [x, y, z]
@@ -542,7 +550,8 @@ class RevitService:
             return None
 
     def get_document_info(self) -> Dict[str, Any]:
-        """Get information about the active Revit document.
+        """
+        Get information about the active Revit document.
 
         Returns:
             Dictionary containing document information
@@ -573,7 +582,8 @@ class RevitService:
             return {}
 
     def save(self, filepath: str) -> bool:
-        """Save the active document to a file.
+        """
+        Save the active document to a file.
 
         Args:
             filepath: Path to save the document

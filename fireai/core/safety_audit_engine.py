@@ -1,4 +1,5 @@
-"""safety_audit_engine.py – FireAI V21.2 Automated Safety Audit Engine.
+"""
+safety_audit_engine.py – FireAI V21.2 Automated Safety Audit Engine.
 ====================================================================
 Post-calculation compliance validation engine. Runs as the final step
 after all 5 layers complete. Validates design outputs against IEC/NFPA
@@ -49,7 +50,8 @@ from fireai.core.models_v21 import (
 
 
 class AuditSeverity(str):
-    """Violation severity levels.
+    """
+    Violation severity levels.
 
     Use as: AuditSeverity.CRITICAL (str subclass, value='CRITICAL').
     AuditViolation.severity is validated against these values.
@@ -91,7 +93,8 @@ class AuditViolation(BaseModel):
 
 
 class AuditInput(BaseModel):
-    """Immutable, strict input for safety audit engine.
+    """
+    Immutable, strict input for safety audit engine.
 
     All fields are validated at construction time. No loose types,
     no extra fields, no mutation after creation. This is the
@@ -181,7 +184,8 @@ class AuditResult(BaseModel):
 
 
 def elevation_tier_from_detector_z(z_position: float, ceiling_height_m: float = 6.0) -> ElevationTier:
-    """Infer the elevation tier of a detector from its Z position.
+    """
+    Infer the elevation tier of a detector from its Z position.
 
     This is a heuristic mapping. In practice, the engineer should specify
     the intended elevation tier directly. This function provides a reasonable
@@ -231,7 +235,8 @@ def _get_required_redundancy(
     zone: ZoneType,
     jurisdiction: Jurisdiction,
 ) -> int:
-    """Get minimum required detector redundancy per zone and jurisdiction.
+    """
+    Get minimum required detector redundancy per zone and jurisdiction.
 
     For GLOBAL_IEC / EGYPTIAN_FIRE_CODE / USA_NFPA: uses MIN_REDUNDANCY_BY_ZONE
     These jurisdictions follow base IEC/NFPA standards which allow
@@ -267,7 +272,8 @@ def _get_required_redundancy(
 
 
 class SafetyAuditEngine:
-    """Automated safety audit engine for FireAI design outputs.
+    """
+    Automated safety audit engine for FireAI design outputs.
 
     Runs as the FINAL step in the design pipeline (after Layer 5).
     Validates design outputs against IEC/NFPA rules and jurisdiction-specific
@@ -315,7 +321,8 @@ class SafetyAuditEngine:
         ceiling_height_m: float = 6.0,
         audit_input: AuditInput | None = None,
     ) -> AuditResult:
-        """Run all audit gates and return combined AuditResult.
+        """
+        Run all audit gates and return combined AuditResult.
 
         Args:
             zone: Zone classification from Layer 2
@@ -452,7 +459,8 @@ class SafetyAuditEngine:
         )
 
     def _run_audit_from_input(self, audit_input: AuditInput) -> AuditResult:
-        """Run audit from a structured AuditInput object.
+        """
+        Run audit from a structured AuditInput object.
 
         This method uses the simplified AuditInput API where the caller
         provides a single immutable object with all audit parameters.
@@ -572,7 +580,8 @@ class SafetyAuditEngine:
         self,
         audit_input: AuditInput,
     ) -> tuple:
-        """Check detector elevation vs gas buoyancy using ratio-based classification.
+        """
+        Check detector elevation vs gas buoyancy using ratio-based classification.
 
         Uses vapor_density_tier() from models_v21 for precise density-ratio
         classification (0.97/1.03 of AIR_MW thresholds).
@@ -981,7 +990,8 @@ class SafetyAuditEngine:
         detector_z_positions: list[float] | None,
         ceiling_height_m: float,
     ) -> tuple:
-        """Check detector elevation against gas buoyancy behavior.
+        """
+        Check detector elevation against gas buoyancy behavior.
 
         Gas buoyancy determines WHERE a gas accumulates, classified by
         density ratio (MW_gas / MW_air) using ±3% band:
@@ -1139,7 +1149,8 @@ class SafetyAuditEngine:
         zone: ZoneType,
         env_context: EnvironmentalContext,
     ) -> tuple:
-        """Check MENA region-specific advisory rules.
+        """
+        Check MENA region-specific advisory rules.
 
         These are advisory (WARNING/INFO) — NOT forced. The engineer
         always has the final say. The audit merely highlights conditions

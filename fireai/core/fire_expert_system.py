@@ -1,4 +1,5 @@
-"""fire_expert_system.py.
+"""
+fire_expert_system.py.
 =====================
 Fire-detection expert system – rectangular rooms, NFPA 72 compliance.
 
@@ -22,7 +23,8 @@ from fireai.core.spatial_engine.density_optimizer import (
 
 
 class FireExpertSystem:
-    """Main expert system class.
+    """
+    Main expert system class.
 
     Usage
     -----
@@ -37,7 +39,8 @@ class FireExpertSystem:
     # ── public API ──────────────────────────────────────────────────────────────
 
     def analyse_room(self, name: str, width: float, length: float, ceiling_height: float = 3.0) -> AnalysisResult:
-        """Perform full NFPA-72 analysis for a rectangular room.
+        """
+        Perform full NFPA-72 analysis for a rectangular room.
 
         Parameters
         ----------

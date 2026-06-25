@@ -1,4 +1,5 @@
-"""backend/routers/api_keys.py — API Key management endpoints (admin only).
+"""
+backend/routers/api_keys.py — API Key management endpoints (admin only).
 
 Provides CRUD operations for API keys with role-based access control:
   GET    /api/admin/keys        → List all API keys
@@ -55,7 +56,8 @@ async def create_key(
     request: GenerateKeyRequest,
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),
 ):
-    """Generate a new API key with the specified role (admin only).
+    """
+    Generate a new API key with the specified role (admin only).
 
     SECURITY: The plaintext key is returned ONLY on creation.
     It cannot be retrieved later — store it securely.

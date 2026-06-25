@@ -1,4 +1,5 @@
-"""fireai/analytics/predictive_analytics.py — Forecasting Engine.
+"""
+fireai/analytics/predictive_analytics.py — Forecasting Engine.
 ================================================================
 Holt-Winters exponential smoothing for time-series forecasting with
 moving-average fallback. Produces JSON-serialisable forecast reports
@@ -233,7 +234,8 @@ def _trend_from_forecast(forecast: list[float]) -> str:
 
 
 class PredictiveAnalyticsEngine:
-    """Forecasting engine for:
+    """
+    Forecasting engine for:
     - Detector failure prediction (time-to-failure estimation)
     - Coverage degradation prediction
     - Capacity prediction (battery, circuit load)

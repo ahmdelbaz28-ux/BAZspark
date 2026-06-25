@@ -1,4 +1,5 @@
-"""fire_zone_engine.py — NFPA 72 Fire Zone Clustering Engine.
+"""
+fire_zone_engine.py — NFPA 72 Fire Zone Clustering Engine.
 =========================================================
 
 Groups rooms into fire alarm zones per NFPA 72 §21.3.3 and
@@ -51,7 +52,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ZoneConstraints:
-    """Constraints for fire zone grouping.
+    """
+    Constraints for fire zone grouping.
 
     NFPA 72 does NOT specify a maximum zone area — it specifies a
     maximum number of devices per zone (implied by §21.2.2 panel limit).
@@ -93,7 +95,8 @@ class ZoneConstraints:
 
 @dataclass
 class FireZone:
-    """A fire alarm zone grouping rooms on the same FACP circuit.
+    """
+    A fire alarm zone grouping rooms on the same FACP circuit.
 
     Attributes:
         zone_id: Zone identifier (e.g., "Z-01").
@@ -122,7 +125,8 @@ class FireZone:
 
 @dataclass
 class ZoneReport:
-    """Report of zone assignments for a floor.
+    """
+    Report of zone assignments for a floor.
 
     Attributes:
         floor_id: Floor identifier.
@@ -150,7 +154,8 @@ class ZoneReport:
 
 
 class FireZoneEngine:
-    """NFPA 72 fire zone clustering engine.
+    """
+    NFPA 72 fire zone clustering engine.
 
     Groups rooms into fire alarm zones respecting constraints on area,
     detector count, and occupancy type separation.
@@ -187,7 +192,8 @@ class FireZoneEngine:
         rooms: list[dict],
         adjacency: dict[str, set[str]] | None = None,
     ) -> ZoneReport:
-        """Cluster rooms into fire zones for a single floor.
+        """
+        Cluster rooms into fire zones for a single floor.
 
         Args:
             floor_id: Floor identifier.
@@ -316,7 +322,8 @@ class FireZoneEngine:
         rooms: list[dict],
         adjacency: dict[str, set[str]],
     ) -> list[list[dict]]:
-        """Cluster rooms using adjacency information (BFS-based).
+        """
+        Cluster rooms using adjacency information (BFS-based).
 
         Groups connected rooms (sharing walls/corridors) together,
         then splits if area/detector constraints exceeded.
@@ -360,7 +367,8 @@ class FireZoneEngine:
         return clusters
 
     def _cluster_by_area(self, rooms: list[dict]) -> list[list[dict]]:
-        """Fallback: group rooms by area (largest first).
+        """
+        Fallback: group rooms by area (largest first).
 
         This is the consultant's approach (greedy bin packing).
         Used when no adjacency info is available.
@@ -382,7 +390,8 @@ class FireZoneEngine:
         zone_counter: int,
         floor_id: str = "",
     ) -> list[FireZone]:
-        """Split a cluster into zones respecting constraints.
+        """
+        Split a cluster into zones respecting constraints.
 
         Args:
             cluster: List of room dicts.
@@ -442,7 +451,8 @@ class FireZoneEngine:
         return zones
 
     def build_zone_map(self, report: ZoneReport) -> dict[str, str]:
-        """Build a zone_map dict from a ZoneReport for fault isolator injection.
+        """
+        Build a zone_map dict from a ZoneReport for fault isolator injection.
 
         The returned dict maps room_id -> zone_id, suitable for passing to
         :func:`fireai.core.fault_isolator_injector.inject_fault_isolators`

@@ -142,7 +142,8 @@ class TestPanelDatabase:
         """Every panel must have all mandatory fields populated."""
         for panel in MASTER_PANEL_DATABASE:
             assert isinstance(panel.model, str) and len(panel.model) > 0, f"Empty model in {panel}"
-            assert isinstance(panel.manufacturer, str) and len(panel.manufacturer) > 0
+            assert isinstance(panel.manufacturer, str)
+            assert len(panel.manufacturer) > 0
             assert panel.points_capacity > 0, f"Non-positive points_capacity in {panel.model}"
             assert panel.nac_capacity > 0, f"Non-positive nac_capacity in {panel.model}"
             assert panel.standby_current_amps > 0, f"Non-positive standby_current in {panel.model}"

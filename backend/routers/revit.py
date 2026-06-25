@@ -1,4 +1,5 @@
-"""backend/routers/revit.py — Revit Integration Endpoints.
+"""
+backend/routers/revit.py — Revit Integration Endpoints.
 =====================================================
 
 REST API endpoints for Revit integration with full AI agent support.
@@ -107,7 +108,8 @@ _ALLOWED_EXTENSIONS = frozenset({".rvt", ".rfa", ".ifc", ".dwg", ".dxf"})
 
 
 def _validate_file_path(filepath: str) -> str:
-    """Validate that a file path is within allowed directories.
+    """
+    Validate that a file path is within allowed directories.
 
     Prevents path traversal attacks (e.g., ../../etc/passwd) and
     argument-injection attacks (e.g. leading "-"). Uses the shared
@@ -152,7 +154,8 @@ _MAX_UPLOAD_SIZE = 50 * 1024 * 1024
 # =============================================================================
 
 class ConnectRequest(BaseModel):
-    """Request model for Revit connection.
+    """
+    Request model for Revit connection.
 
     Attributes:
         method: Connection method - 'api' (Revit API), 'macro' (Revit Macro),
@@ -210,7 +213,8 @@ class DocumentCloseRequest(BaseModel):
 # =============================================================================
 
 class CreateWallRequest(BaseModel):
-    """Request to create a wall.
+    """
+    Request to create a wall.
 
     Attributes:
         start_point: Start coordinates [x, y, z] in mm
@@ -229,7 +233,8 @@ class CreateWallRequest(BaseModel):
 
 
 class CreateFloorRequest(BaseModel):
-    """Request to create a floor.
+    """
+    Request to create a floor.
 
     Attributes:
         boundary_points: List of [x, y, z] points forming closed boundary
@@ -247,7 +252,8 @@ class CreateFloorRequest(BaseModel):
 
 
 class CreateDoorRequest(BaseModel):
-    """Request to create a door in a wall.
+    """
+    Request to create a door in a wall.
 
     Attributes:
         host_wall_id: Wall element ID to place door in
@@ -273,7 +279,8 @@ class CreateWindowRequest(BaseModel):
 
 
 class CreateColumnRequest(BaseModel):
-    """Request to create a structural column.
+    """
+    Request to create a structural column.
 
     Attributes:
         location_point: Base location [x, y, z]
@@ -299,7 +306,8 @@ class CreateBeamRequest(BaseModel):
 
 
 class CreateFamilyRequest(BaseModel):
-    """Request to create a generic family instance.
+    """
+    Request to create a generic family instance.
 
     Attributes:
         family_name: Family type name (e.g., "M_Single-Flush")
@@ -393,7 +401,8 @@ class LoadFamilyRequest(BaseModel):
 
 @router.post("/connect", response_model=ConnectResponse, tags=["revit"])
 async def connect_to_revit(request: ConnectRequest = None) -> ConnectResponse:
-    """Connect to Revit application.
+    """
+    Connect to Revit application.
 
     Connection Methods:
     - **api**: Direct Revit API via pythonnet (best performance, requires Revit)
@@ -552,7 +561,8 @@ async def write_rvt_file(filepath: str, elements: List[Dict[str, Any]]) -> Dict[
 @router.post("/upload_rvt", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("10/minute")
 async def upload_and_read_rvt(request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:
-    """Upload an RVT file and read its contents.
+    """
+    Upload an RVT file and read its contents.
 
     FIX: Path traversal prevention, upload size limit, guaranteed cleanup.
     """
@@ -886,7 +896,8 @@ async def get_worksets() -> ElementsResponse:
 
 @router.get("/families/{category}/symbols", tags=["revit"])
 async def get_family_symbols(category: str) -> Dict[str, Any]:
-    """Get all family symbols for a category.
+    """
+    Get all family symbols for a category.
 
     Categories: Doors, Windows, Columns, Furniture, etc.
     """
@@ -917,7 +928,8 @@ async def load_family(request: LoadFamilyRequest) -> Dict[str, Any]:
 
 @router.post("/search/api/load", tags=["revit"])
 async def load_api_data(request: LoadAPIDataRequest) -> Dict[str, Any]:
-    """Load Revit API data from JSON file.
+    """
+    Load Revit API data from JSON file.
 
     Load revit_data/RevitAPI2022.json or revit_data/RevitAPI2023.json first.
     """
@@ -930,7 +942,8 @@ async def load_api_data(request: LoadAPIDataRequest) -> Dict[str, Any]:
 
 @router.post("/search/api", response_model=APIResultResponse, tags=["revit"])
 async def search_api_data(request: SearchAPIRequest) -> APIResultResponse:
-    """Search loaded API data locally.
+    """
+    Search loaded API data locally.
 
     Requires loading API data first via /search/api/load.
     """
@@ -984,7 +997,8 @@ async def search_online(
 
 @router.post("/execute", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def execute_ai_command(request: AICommandRequest) -> Dict[str, Any]:
-    """Execute a natural language command from AI agent.
+    """
+    Execute a natural language command from AI agent.
 
     Examples:
     - "Create a wall from 0,0,0 to 5000,0,0"

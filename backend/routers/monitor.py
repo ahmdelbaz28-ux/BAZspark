@@ -1,4 +1,5 @@
-"""backend/routers/monitor.py — Real-time Monitoring Dashboard API.
+"""
+backend/routers/monitor.py — Real-time Monitoring Dashboard API.
 
 Endpoints:
   GET /api/v1/monitor/health          → Aggregated health status
@@ -260,7 +261,8 @@ class MonitorState:
             return list(self._active_alerts)
 
     def evaluate_alert_rules(self) -> list[dict[str, Any]]:
-        """Evaluate all enabled alert rules against current engine state.
+        """
+        Evaluate all enabled alert rules against current engine state.
 
         Returns list of currently firing alerts.
         """
@@ -487,7 +489,8 @@ _monitor = MonitorState()
 # ════════════════════════════════════════════════════════════════════════════
 
 class DashboardRateLimiter:
-    """Per-IP rate limiter specifically for dashboard endpoints.
+    """
+    Per-IP rate limiter specifically for dashboard endpoints.
 
     Dashboard endpoints are polled frequently by the frontend,
     so they get a higher limit than general API endpoints.
@@ -529,7 +532,8 @@ def _check_rate_limit(request: Request) -> None:
 
 @router.get("/api/v1/monitor/health", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_health(request: Request):
-    """GET /api/v1/monitor/health — Aggregated system health status.
+    """
+    GET /api/v1/monitor/health — Aggregated system health status.
 
     Returns real health data from all monitored subsystems including
     engine statuses, database connectivity, and uptime.
@@ -553,7 +557,8 @@ async def get_health(request: Request):
 
 @router.get("/api/v1/monitor/metrics", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_metrics(request: Request):
-    """GET /api/v1/monitor/metrics — Prometheus-format metrics.
+    """
+    GET /api/v1/monitor/metrics — Prometheus-format metrics.
 
     Returns engine metrics, security alert counts, and system
     performance data in Prometheus exposition format.
@@ -571,7 +576,8 @@ async def get_engine_status(
     request: Request,
     engine_id: str | None = Query(None, description="Filter by engine ID"),
 ):
-    """GET /api/v1/monitor/engine-status — Per-engine status and health.
+    """
+    GET /api/v1/monitor/engine-status — Per-engine status and health.
 
     Returns detailed status for each registered engine including
     CPU, memory, uptime, and version information.
@@ -612,7 +618,8 @@ async def get_agent_activity(
     agent_id: str | None = Query(None, description="Filter by agent ID"),
     activity_type: str | None = Query(None, description="Filter by activity type"),
 ):
-    """GET /api/v1/monitor/agent-activity — Agent activity log.
+    """
+    GET /api/v1/monitor/agent-activity — Agent activity log.
 
     Returns recent agent actions including design operations,
     validation runs, and export activities.
@@ -642,7 +649,8 @@ async def get_security_alerts(
     severity: str | None = Query(None, pattern="^(low|medium|high|critical)$"),
     resolved: bool | None = Query(None, description="Filter by resolved state"),
 ):
-    """GET /api/v1/monitor/security-alerts — Active and historical security alerts.
+    """
+    GET /api/v1/monitor/security-alerts — Active and historical security alerts.
 
     Returns security events from the audit logging system including
     unauthorized access attempts, API key violations, and suspicious activity.
@@ -691,7 +699,8 @@ async def get_security_alerts(
 
 @router.get("/api/v1/monitor/alerts", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_alerts(request: Request):
-    """GET /api/v1/monitor/alerts — Current alert state.
+    """
+    GET /api/v1/monitor/alerts — Current alert state.
 
     Evaluates all alert rules against current system state and
     returns currently firing alerts with severity and details.
@@ -724,7 +733,8 @@ async def get_alerts(request: Request):
 # ════════════════════════════════════════════════════════════════════════════
 
 async def start_metric_collector(interval_seconds: int = 15) -> None:
-    """Start background task to update engine metrics.
+    """
+    Start background task to update engine metrics.
 
     In production, this would read from /proc, Prometheus, or
     container orchestration APIs.

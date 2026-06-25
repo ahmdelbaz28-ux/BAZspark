@@ -1,4 +1,5 @@
-"""fireai.api — Cloud-Native API Layer (Decoupled from Engineering Kernel).
+"""
+fireai.api — Cloud-Native API Layer (Decoupled from Engineering Kernel).
 =========================================================================
 
 MISSION TASK 1.1 — Architectural Decoupling: Extract FireAI Kernel

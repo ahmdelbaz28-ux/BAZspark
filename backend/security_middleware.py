@@ -1,4 +1,5 @@
-"""backend/security_middleware.py — Security Headers & Correlation Middleware.
+"""
+backend/security_middleware.py — Security Headers & Correlation Middleware.
 ==========================================================================
 
 Centralizes security-critical HTTP middleware for the FireAI backend:
@@ -97,7 +98,8 @@ _HSTS_HEADER = "max-age=31536000; includeSubDomains"
 
 
 def _should_emit_hsts(scope: Scope) -> bool:
-    """Decide whether to emit HSTS on this response.
+    """
+    Decide whether to emit HSTS on this response.
 
     Always returns True — for a safety-critical system, the safer default
     is to emit HSTS on every response (including plain HTTP). If a reverse
@@ -143,7 +145,8 @@ def _is_production_env() -> bool:
 
 
 def _build_csp(scope: Scope) -> str:
-    """Build the Content-Security-Policy header value.
+    """
+    Build the Content-Security-Policy header value.
 
     Environment-aware:
       - production: locked-down CSP (no unsafe-eval, self-only connect-src)
@@ -155,7 +158,8 @@ def _build_csp(scope: Scope) -> str:
 
 
 class SecurityHeadersMiddleware:
-    """Pure ASGI middleware that adds security headers to every HTTP response.
+    """
+    Pure ASGI middleware that adds security headers to every HTTP response.
 
     WHY PURE ASGI (not BaseHTTPMiddleware):
       BaseHTTPMiddleware reads the ENTIRE response body into memory before
@@ -302,7 +306,8 @@ _PUBLIC_PATH_PREFIXES = (
 
 
 def _is_public_path(path: str) -> bool:
-    """Check if a path is public (no auth required).
+    """
+    Check if a path is public (no auth required).
 
     STRICT FIX B/E: Use exact-match for known public endpoints, plus a
     small prefix list for documented sub-paths (e.g. /docs/static/*).
@@ -329,7 +334,8 @@ def _is_public_path(path: str) -> bool:
 
 
 class ApiKeyMiddleware:
-    """Pure ASGI middleware that validates X-API-Key and sets fireai_role.
+    """
+    Pure ASGI middleware that validates X-API-Key and sets fireai_role.
 
     DESIGN NOTES:
       - Pure ASGI (not BaseHTTPMiddleware) — no body buffering, safe for
@@ -406,7 +412,8 @@ class ApiKeyMiddleware:
 
     @staticmethod
     async def _send_401(scope: Scope, send: Send) -> None:
-        """Send a 401 Unauthorized response with WWW-Authenticate header.
+        """
+        Send a 401 Unauthorized response with WWW-Authenticate header.
 
         STRESS-TEST FIX #2: Include security headers (X-Frame-Options,
         X-Content-Type-Options, CSP, HSTS, etc.) on 401 responses too.

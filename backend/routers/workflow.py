@@ -1,4 +1,5 @@
-"""backend/routers/workflow.py — Workflow API endpoints for FireAI.
+"""
+backend/routers/workflow.py — Workflow API endpoints for FireAI.
 
 Provides REST API for the LangGraph-based workflow engine:
   - POST /api/workflow/start     — Start a new analysis workflow
@@ -63,7 +64,8 @@ ALLOWED_FILE_EXTENSIONS = frozenset({".dxf", ".dwg", ".pdf", ".ifc", ".rvt"})
 
 
 def _validate_file_path(file_path: str) -> str:
-    """Validate file_path against path traversal and extension whitelist.
+    """
+    Validate file_path against path traversal and extension whitelist.
 
     SECURITY: This is the FIRST line of defense at the router layer.
     The service layer (node_initialize) provides a SECOND check.
@@ -127,7 +129,8 @@ router = APIRouter(prefix="/workflow", tags=["workflow"])
 
 @router.get("/status", dependencies=[Depends(require_permission(Permission.WORKFLOW_READ))])
 async def get_workflow_engine_status():
-    """Get overall workflow engine status.
+    """
+    Get overall workflow engine status.
 
     Returns summary counts of workflows by status, plus service health.
     Does not require authentication (read-only monitoring endpoint).
@@ -177,7 +180,8 @@ async def start_workflow(
         description="Skip human review gate (DEVELOPMENT ONLY — never use in production)",
     ),
 ):
-    """Start a new FireAI NFPA 72 analysis workflow.
+    """
+    Start a new FireAI NFPA 72 analysis workflow.
 
     The workflow follows this state machine:
       Upload → Parse → Validate → NFPA Analysis → Conflict Detection
@@ -231,7 +235,8 @@ async def start_workflow(
 async def get_workflow_status(
     workflow_id: str,
 ):
-    """Get the current status of a workflow.
+    """
+    Get the current status of a workflow.
 
     Returns workflow status, review requirements, and summary statistics.
     Does NOT include the full report (use /audit for full details).
@@ -259,7 +264,8 @@ async def approve_workflow(
         description="Reviewer comments (optional but recommended)",
     ),
 ):
-    """Approve a workflow at the human review gate.
+    """
+    Approve a workflow at the human review gate.
 
     After approval, the workflow resumes and generates the final report.
     The approval is logged with timestamp and comments in the audit trail.
@@ -299,7 +305,8 @@ async def reject_workflow(
         description="Reviewer comments (required for rejection — explain why)",
     ),
 ):
-    """Reject a workflow at the human review gate.
+    """
+    Reject a workflow at the human review gate.
 
     Rejected workflows do NOT generate reports (fail-safe).
     The rejection is logged with timestamp and comments in the audit trail.
@@ -334,7 +341,8 @@ async def reject_workflow(
 async def get_audit_trail(
     workflow_id: str,
 ):
-    """Get the full audit trail for a workflow.
+    """
+    Get the full audit trail for a workflow.
 
     Returns every state transition with:
     - Timestamp (ISO 8601 UTC)

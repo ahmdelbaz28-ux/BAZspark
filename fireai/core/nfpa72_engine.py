@@ -1,4 +1,5 @@
-"""fireai.core.nfpa72_engine — Core NFPA 72 Engineering Calculations.
+"""
+fireai.core.nfpa72_engine — Core NFPA 72 Engineering Calculations.
 =================================================================
 
 Implements the fundamental NFPA 72 fire alarm engineering calculations:
@@ -230,7 +231,8 @@ class SpacingResult:
 
 @dataclass(frozen=True)
 class BatteryResult:
-    """Result from NFPA 72 battery sizing calculation.
+    """
+    Result from NFPA 72 battery sizing calculation.
 
     NFPA 72 §10.6.7 requires secondary supply capacity:
       - 24 hours of standby current
@@ -250,7 +252,8 @@ class BatteryResult:
 
 @dataclass(frozen=True)
 class VoltageDropResult:
-    """Result from NFPA 72 voltage drop calculation.
+    """
+    Result from NFPA 72 voltage drop calculation.
 
     NEC 760 and NFPA 72 §10.6.4:
       V_drop = I × 2 × R_wire(T) × L
@@ -270,7 +273,8 @@ class VoltageDropResult:
 
 @dataclass(frozen=True)
 class AmpacityResult:
-    """Result from NEC 310.16 ampacity verification.
+    """
+    Result from NEC 310.16 ampacity verification.
 
     NEC 310.16 provides maximum allowable ampacities for copper
     conductors. This result includes:
@@ -304,7 +308,8 @@ def get_detector_spacing(
     ceiling_height_m: float,
     detector_type: str,
 ) -> SpacingResult:
-    """Determine NFPA 72 listed spacing for a given ceiling height.
+    """
+    Determine NFPA 72 listed spacing for a given ceiling height.
 
     Reference: NFPA 72-2022 §17.6.3.1, Table 17.6.3.1
 
@@ -355,7 +360,8 @@ def estimate_detector_count(
     ceiling_height_m: float,
     detector_type: str,
 ) -> dict[str, Any]:
-    """Estimate minimum number of detectors for a room.
+    """
+    Estimate minimum number of detectors for a room.
 
     Reference: NFPA 72 §17.6.3.1, §17.7.4.2.3.1
 
@@ -460,7 +466,8 @@ def calculate_battery(
     safety_margin: float = 0.20,
     ps_voltage: float = 24.0,
 ) -> BatteryResult:
-    """Calculate required battery capacity per NFPA 72 §10.6.7.
+    """
+    Calculate required battery capacity per NFPA 72 §10.6.7.
 
     NFPA 72 §10.6.7 requires the secondary supply to have sufficient
     capacity to operate the system under normal load for 24 hours and
@@ -560,7 +567,8 @@ def temperature_corrected_resistance(
     r_at_20c: float,
     operating_temp_c: float = DEFAULT_OPERATING_TEMP_C,
 ) -> float:
-    """Calculate temperature-corrected wire resistance.
+    """
+    Calculate temperature-corrected wire resistance.
 
     NEC Chapter 9, Table 8 provides resistance at 20 degC reference.
     However, conductors operate at higher temperatures in practice.
@@ -620,7 +628,8 @@ def calculate_voltage_drop(
     max_drop_pct: float = _MAX_VOLTAGE_DROP_PCT,
     ambient_temperature_c: float = DEFAULT_OPERATING_TEMP_C,
 ) -> VoltageDropResult:
-    """Calculate voltage drop on a fire alarm circuit.
+    """
+    Calculate voltage drop on a fire alarm circuit.
 
     NFPA 72 §10.6.4 and NEC Chapter 9, Table 8:
       V_drop = I × 2 × R_wire(T) × L
@@ -740,7 +749,8 @@ def get_ambient_derating_factor(
     ambient_temp_c: float,
     conductor_temp_rating_c: float = 90,
 ) -> float:
-    """Get ambient temperature derating factor per NEC 310.15(B)(2)(A).
+    """
+    Get ambient temperature derating factor per NEC 310.15(B)(2)(A).
 
     When the ambient temperature differs from 30 degC (the baseline for
     NEC 310.16), the ampacity must be corrected by a factor from
@@ -801,7 +811,8 @@ def get_ambient_derating_factor(
 def get_conductor_count_derating(
     num_current_carrying: int,
 ) -> float:
-    """Get conductor count derating factor per NEC 310.15(B)(3)(a).
+    """
+    Get conductor count derating factor per NEC 310.15(B)(3)(a).
 
     When more than 3 current-carrying conductors are installed in a
     raceway or cable, the ampacity must be reduced per NEC 310.15(B)(3)(a).
@@ -851,7 +862,8 @@ def check_ampacity(
     ambient_temp_c: float = 30.0,
     num_current_carrying: int = 2,
 ) -> AmpacityResult:
-    """Verify wire ampacity per NEC 310.16 with all required deratings.
+    """
+    Verify wire ampacity per NEC 310.16 with all required deratings.
 
     NEC 310.16 provides base ampacity values for copper conductors
     at 30 degC ambient with <=3 current-carrying conductors in raceway.
@@ -971,7 +983,8 @@ _MAX_DEVICES_BETWEEN_ISOLATORS = 32
 
 
 def verify_fault_isolator_placement(devices: list[dict[str, Any]]) -> dict[str, Any]:
-    """Verify fault isolator placement on SLC circuits.
+    """
+    Verify fault isolator placement on SLC circuits.
 
     NFPA 72 §12.3 requires that a single fault (short or open) on a
     Signaling Line Circuit (SLC) must not disable more than one

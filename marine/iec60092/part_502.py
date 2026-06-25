@@ -18,32 +18,26 @@ References:
     [IEC502] IEC 60092-502:1999 §4 (detectors) + §6 (alarm circuits)
     [FSS]    IMO FSS Code Ch. 9 (detector spacing tables)
     [LR]     Lloyd's Register Rules Part 6 §2.4 (detection)
+
 """
 
 from __future__ import annotations
 
 import math
-from typing import List, Tuple
 
 from marine.core.constants import (
-    CO2_DESIGN_CONCENTRATION_PCT,
     DETECTOR_COVERAGE_M2,
     HEAT_DETECTOR_RATED_TEMPS_C,
     MAX_DETECTOR_CEILING_HEIGHT_M,
     MAX_DETECTOR_SPACING_M,
-    MAX_DISTANCE_FROM_BULKHEAD_M,
 )
 from marine.core.types import (
-    AlarmLevel,
     ComplianceResult,
     DetectorPlacement,
     DetectorType,
     MarineZone,
-    ShipProject,
     SpaceCategory,
 )
-
-
 from marine.engine.detector_selector import (  # noqa: F401  # M4 refactor
     calculate_detector_count,
     select_detector_type,
@@ -53,9 +47,10 @@ from marine.engine.detector_selector import (  # noqa: F401  # M4 refactor
 def place_detectors_grid(
     zone: MarineZone,
     detector_type: DetectorType,
-    origin_xyz_mm: Tuple[float, float, float] = (0.0, 0.0, 0.0),
-) -> List[DetectorPlacement]:
-    """Place detectors in a square grid within a zone.
+    origin_xyz_mm: tuple[float, float, float] = (0.0, 0.0, 0.0),
+) -> list[DetectorPlacement]:
+    """
+    Place detectors in a square grid within a zone.
 
     Per FSS Code Ch. 9 §2.4:
       - Max spacing between detectors: 10.6 m (smoke)
@@ -74,6 +69,7 @@ def place_detectors_grid(
 
     Returns:
         List of DetectorPlacement objects with absolute ship coordinates.
+
     """
     coverage = DETECTOR_COVERAGE_M2.get(detector_type.value, 74.0)
     if coverage is None or coverage <= 0:
@@ -105,8 +101,8 @@ def place_detectors_grid(
         suffix: str,
         start_index: int,
         standard_ref: str,
-    ) -> List[DetectorPlacement]:
-        layer: List[DetectorPlacement] = []
+    ) -> list[DetectorPlacement]:
+        layer: list[DetectorPlacement] = []
         detector_index = start_index
         for r in range(rows):
             for c in range(cols):
@@ -141,7 +137,7 @@ def place_detectors_grid(
                 detector_index += 1
         return layer
 
-    placements: List[DetectorPlacement] = []
+    placements: list[DetectorPlacement] = []
     base_count = rows * cols
     placements.extend(
         _build_layer(
@@ -174,7 +170,8 @@ def validate_alarm_circuit_redundancy(
     detector_count: int,
     actual_circuits: int = 0,
 ) -> ComplianceResult:
-    """Validate alarm-circuit redundancy per IEC 60092-502 §6.3.
+    """
+    Validate alarm-circuit redundancy per IEC 60092-502 §6.3.
 
     Requirements:
       - Each main vertical zone shall have ≥2 independent detector circuits.
@@ -198,6 +195,7 @@ def validate_alarm_circuit_redundancy(
 
     Returns:
         ComplianceResult.
+
     """
     result = ComplianceResult(
         compliant=True,
@@ -230,8 +228,8 @@ def validate_alarm_circuit_redundancy(
 
 
 __all__ = [
-    "select_detector_type",
     "calculate_detector_count",
     "place_detectors_grid",
+    "select_detector_type",
     "validate_alarm_circuit_redundancy",
 ]

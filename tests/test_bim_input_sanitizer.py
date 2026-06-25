@@ -155,7 +155,7 @@ class TestSanitizeBIMParameter:
         assert result == ""
 
     def test_subprocess_injection_blocked(self):
-        """subprocess injection must be blocked."""
+        """Subprocess injection must be blocked."""
         with pytest.raises(ValueError, match="[Ii]njection"):
             sanitize_bim_parameter("; import subprocess; subprocess.run(['ls'])")
 

@@ -17,13 +17,13 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import FrozenSet, Optional
 
 logger = logging.getLogger("fireai.parsers.security")
 
 
 class UnsafePathError(ValueError):
-    """Raised when an input path fails a security check.
+    """
+    Raised when an input path fails a security check.
 
     This is a hard rejection — the parser MUST NOT proceed with the
     file. It is distinct from FileNotFoundError because a missing file
@@ -33,7 +33,8 @@ class UnsafePathError(ValueError):
 
 
 def _resolve_allowed_bases() -> list[Path]:
-    """Compute the allow-list of directories from environment + temp dir.
+    """
+    Compute the allow-list of directories from environment + temp dir.
 
     Returns a list of resolved Path objects. Allowed bases:
       - $FIREAI_ALLOWED_UPLOAD_DIRS (comma-separated)
@@ -85,10 +86,11 @@ def _resolve_allowed_bases() -> list[Path]:
 def validate_input_path(
     input_path: str,
     *,
-    allowed_extensions: Optional[FrozenSet[str]] = None,
+    allowed_extensions: frozenset[str] | None = None,
     parser_name: str = "parser",
 ) -> Path:
-    """Validate a user-supplied file path before passing it to a binary.
+    """
+    Validate a user-supplied file path before passing it to a binary.
 
     Checks performed (in order):
       1. Path exists
@@ -115,6 +117,7 @@ def validate_input_path(
     Raises:
         FileNotFoundError: Path does not exist (benign).
         UnsafePathError: Any security check failed (hard rejection).
+
     """
     if input_path is None or not isinstance(input_path, str):
         raise UnsafePathError(
@@ -197,7 +200,8 @@ def validate_file_size(
     max_size_bytes: int,
     parser_name: str = "parser",
 ) -> int:
-    """Reject files larger than a configured maximum.
+    """
+    Reject files larger than a configured maximum.
 
     Defense against DoS via massive input files (decompression bombs,
     zip-bomb-equivalents for binary CAD formats, etc.). The check is
@@ -215,6 +219,7 @@ def validate_file_size(
 
     Raises:
         UnsafePathError: File exceeds the configured limit.
+
     """
     try:
         size = safe_path.stat().st_size

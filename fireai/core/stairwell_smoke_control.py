@@ -1,4 +1,5 @@
-"""fireai.core.stairwell_smoke_control — Stairwell Smoke Control Integrator.
+"""
+fireai.core.stairwell_smoke_control — Stairwell Smoke Control Integrator.
 =========================================================================
 
 V20 CRITICAL LIFE-SAFETY MODULE — Extended per QOMN-FIRE principles.
@@ -128,7 +129,8 @@ _CITE_NFPA72_21_6 = "NFPA 72-2022 §21.6"
 
 
 class FanStatus(str, Enum):
-    """Pressurization fan operational status per NFPA 72 supervisory signal.
+    """
+    Pressurization fan operational status per NFPA 72 supervisory signal.
 
     NFPA 72 §21.5.2 requires that the FACP display the operational status
     of each smoke control element, including pressurization fans.
@@ -148,7 +150,8 @@ class FanStatus(str, Enum):
 
 
 class FailSafeState(str, Enum):
-    """Fail-safe state for stairwell pressurization on power loss.
+    """
+    Fail-safe state for stairwell pressurization on power loss.
 
     NFPA 92 §6.1 and NFPA 72 §21.5 require that stairwell pressurization
     systems maintain a safe state upon loss of power or communication.
@@ -171,7 +174,8 @@ class FailSafeState(str, Enum):
 
 
 class VestibuleType(str, Enum):
-    """Vestibule classification for smoke-proof enclosures.
+    """
+    Vestibule classification for smoke-proof enclosures.
 
     NFPA 101 §7.2.3.8 and IBC §403.5.4 define smoke-proof enclosures
     as having either a vestibule or an exterior balcony providing
@@ -199,7 +203,8 @@ class VestibuleType(str, Enum):
 
 @dataclass(frozen=True)
 class StairwellZone:
-    """Represents a stairwell zone in the building.
+    """
+    Represents a stairwell zone in the building.
 
     A stairwell zone is a single enclosed stairway serving one or more
     floors.  Each zone has independent pressurization control and
@@ -255,7 +260,8 @@ class StairwellZone:
 
 @dataclass(frozen=True)
 class PressurizationInjection:
-    """A device injection for stairwell pressurization control.
+    """
+    A device injection for stairwell pressurization control.
 
     Represents a control or monitoring device that must be added to the
     fire alarm system's Sequence of Operations matrix for stairwell
@@ -282,7 +288,8 @@ class PressurizationInjection:
 
 @dataclass(frozen=True)
 class FanStatusResult:
-    """Result of pressurization fan status evaluation.
+    """
+    Result of pressurization fan status evaluation.
 
     NFPA 72 §21.5.2 requires that the FACP supervise the operational
     status of smoke control equipment, including pressurization fans.
@@ -308,7 +315,8 @@ class FanStatusResult:
 
 @dataclass(frozen=True)
 class FireAlarmActivationResult:
-    """Result of fire alarm automatic activation assessment.
+    """
+    Result of fire alarm automatic activation assessment.
 
     NFPA 72 §21.5 requires that stairwell pressurization systems activate
     automatically upon fire alarm.  The activation must occur before
@@ -340,7 +348,8 @@ class FireAlarmActivationResult:
 
 @dataclass(frozen=True)
 class VestibulePressurizationResult:
-    """Result of vestibule pressurization assessment.
+    """
+    Result of vestibule pressurization assessment.
 
     NFPA 101 §7.2.3.8 and IBC §403.5.4 require smoke-proof enclosures
     for stairwells in high-rise buildings.  A pressurized vestibule is
@@ -367,7 +376,8 @@ class VestibulePressurizationResult:
 
 @dataclass(frozen=True)
 class FailSafeAssessment:
-    """Assessment of fail-safe capability for a stairwell zone.
+    """
+    Assessment of fail-safe capability for a stairwell zone.
 
     NFPA 92 §6.1 and NFPA 72 §21.5 require that stairwell pressurization
     systems maintain pressurization or fail to a safe state upon loss of
@@ -397,7 +407,8 @@ class FailSafeAssessment:
 
 @dataclass(frozen=True)
 class StairwellSmokeControlResult:
-    """Comprehensive result from stairwell smoke control integration.
+    """
+    Comprehensive result from stairwell smoke control integration.
 
     Aggregates all assessment results for a stairwell zone into a single
     frozen result object.  This is the primary output of the
@@ -443,7 +454,8 @@ class StairwellSmokeControlResult:
 
 
 def _validate_finite(value: float, name: str) -> float:
-    """Validate that a numeric value is finite (not NaN, not Inf).
+    """
+    Validate that a numeric value is finite (not NaN, not Inf).
 
     QOMN-FIRE principle: NaN and Inf inputs are REJECTED with ValueError.
     NaN comparisons silently return False, which can bypass all safety
@@ -473,7 +485,8 @@ def _validate_finite(value: float, name: str) -> float:
 
 
 def _validate_non_negative_finite(value: float, name: str) -> float:
-    """Validate that a numeric value is non-negative and finite.
+    """
+    Validate that a numeric value is non-negative and finite.
 
     Extends _validate_finite to also reject negative values.  Negative
     pressure in stairwell pressurization draws smoke INTO the egress
@@ -501,7 +514,8 @@ def _validate_non_negative_finite(value: float, name: str) -> float:
 
 
 def _validate_non_empty_str(value: str, name: str) -> str:
-    """Validate that a string value is not empty or whitespace-only.
+    """
+    Validate that a string value is not empty or whitespace-only.
 
     QOMN-FIRE principle: empty identifiers make violations untraceable.
 
@@ -529,7 +543,8 @@ def _validate_non_empty_str(value: str, name: str) -> str:
 
 
 class StairwellSmokeControlIntegrator:
-    """Analyses building stairwell zones and generates active smoke
+    """
+    Analyses building stairwell zones and generates active smoke
     control device injections for the Sequence of Operations matrix.
 
     Integrates stairwell smoke control with the fire alarm system per
@@ -580,7 +595,8 @@ class StairwellSmokeControlIntegrator:
         building_height_m: float = 0.0,
         min_height_for_pressurization_m: float = MIN_HEIGHT_FOR_PRESSURIZATION_M,
     ) -> None:
-        """Initialize the stairwell smoke control integrator.
+        """
+        Initialize the stairwell smoke control integrator.
 
         Args:
             building_height_m: Building height in metres.  Must be finite.
@@ -634,7 +650,8 @@ class StairwellSmokeControlIntegrator:
         stairwells: list[dict[str, Any]],
         building_height_m: float | None = None,
     ) -> Any:
-        """Generate active smoke control device injections for stairwells.
+        """
+        Generate active smoke control device injections for stairwells.
 
         Each element of *stairwells* must be a dict with at least:
         - ``zone_id`` (str): Stairwell zone identifier.
@@ -1007,7 +1024,8 @@ class StairwellSmokeControlIntegrator:
         zone_id: str,
         name: str,
     ) -> SmokeControlResult | None:
-        """Delegate smoke control assessment to evaluate_smoke_control().
+        """
+        Delegate smoke control assessment to evaluate_smoke_control().
 
         Uses the ``evaluate_smoke_control`` function from
         ``building_systems_integration`` to validate the stairwell zone
@@ -1068,7 +1086,8 @@ class StairwellSmokeControlIntegrator:
         zone_id: str,
         name: str,
     ) -> FanStatusResult:
-        """Assess pressurization fan status monitoring.
+        """
+        Assess pressurization fan status monitoring.
 
         NFPA 72 §21.5.2 requires that the FACP supervise the operational
         status of smoke control equipment, including pressurization fans.
@@ -1148,7 +1167,8 @@ class StairwellSmokeControlIntegrator:
         zone_id: str,
         name: str,
     ) -> FireAlarmActivationResult:
-        """Assess fire alarm automatic activation per NFPA 72 §21.5.
+        """
+        Assess fire alarm automatic activation per NFPA 72 §21.5.
 
         NFPA 72 §21.5 requires that stairwell pressurization systems
         activate automatically upon fire alarm.  The activation must
@@ -1226,7 +1246,8 @@ class StairwellSmokeControlIntegrator:
         zone_id: str,
         name: str,
     ) -> VestibulePressurizationResult:
-        """Assess vestibule pressurization for smoke-proof enclosures.
+        """
+        Assess vestibule pressurization for smoke-proof enclosures.
 
         NFPA 101 §7.2.3.8 and IBC §403.5.4 require smoke-proof
         enclosures for stairwells in high-rise buildings.  A pressurized
@@ -1342,7 +1363,8 @@ class StairwellSmokeControlIntegrator:
         zone_id: str,
         name: str,
     ) -> FailSafeAssessment:
-        """Assess fail-safe capability on loss of power.
+        """
+        Assess fail-safe capability on loss of power.
 
         NFPA 92 §6.1 and NFPA 72 §21.5 require that stairwell
         pressurization systems maintain pressurization or fail to a safe
@@ -1451,7 +1473,8 @@ class StairwellSmokeControlIntegrator:
         name: str,
         floors_served: list[str],
     ) -> list[PressurizationInjection]:
-        """Generate device injections for the Sequence of Operations.
+        """
+        Generate device injections for the Sequence of Operations.
 
         Creates control and monitoring device entries for:
           - Pressurization fan control at roof level

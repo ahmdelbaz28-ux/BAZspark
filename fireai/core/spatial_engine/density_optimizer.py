@@ -90,7 +90,8 @@ COVERAGE_SAFETY_FACTOR = 0.98
 
 
 def _hex_s_guarded(R: float, wm: float) -> float:
-    """Max S s.t. side-wall boundary worst point ≤ R (analytical).
+    """
+    Max S s.t. side-wall boundary worst point ≤ R (analytical).
 
     V49 FIX: Added discriminant guard — when wm >= R, the quadratic has
     no real solutions (the wall minimum distance already exceeds coverage
@@ -114,7 +115,8 @@ def _hex_s_guarded(R: float, wm: float) -> float:
 
 
 def _predict_strategy_order(width: float, length: float) -> list[str]:
-    """Deterministic strategy ordering based on room geometry.
+    """
+    Deterministic strategy ordering based on room geometry.
 
     STATELESS — no global memory, no side effects, fully deterministic.
     Same inputs always produce same output.
@@ -196,7 +198,8 @@ class DetectorLayout:
 
     @property
     def theoretical_lower_bound(self) -> int:
-        """Estimative lower bound for detector count (NOT proven minimum).
+        """
+        Estimative lower bound for detector count (NOT proven minimum).
 
         This is a geometric estimate: ceil(room_area / coverage_area_per_detector).
         It does NOT guarantee that this count is achievable — it is a lower
@@ -213,7 +216,8 @@ class DetectorLayout:
 
     @property
     def efficiency_ratio(self) -> float:
-        """Ratio of theoretical_lower_bound to actual detector count.
+        """
+        Ratio of theoretical_lower_bound to actual detector count.
 
         Values closer to 1.0 indicate more efficient placement.
         Values below 1.0 indicate the placement uses more detectors
@@ -234,7 +238,8 @@ class DensityOptimizer:
         max_iterations: int = DEFAULT_MAX_ITERATIONS,
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
     ) -> None:
-        """Initialize DensityOptimizer with convergence guarantees.
+        """
+        Initialize DensityOptimizer with convergence guarantees.
 
         Args:
             max_spacing: Maximum detector spacing per NFPA 72 Table 17.6.3.1.1
@@ -267,7 +272,8 @@ class DensityOptimizer:
     # ── public ──────────────────────────────────────────────────────────────────
 
     def optimize(self, room: Room, coverage_radius: float | None = None) -> DetectorLayout:
-        """Find the best detector placement for a room.
+        """
+        Find the best detector placement for a room.
 
         Args:
             room: Room with width, length, ceiling_height.
@@ -390,7 +396,8 @@ class DensityOptimizer:
     # ── A: Hex-Guarded ──────────────────────────────────────────────────────────
 
     def _calculate_rows(self, L: float) -> list[float]:
-        """Returns y-coordinates of rows.
+        """
+        Returns y-coordinates of rows.
         - First and last rows are within R_place of the walls.
         - Inner rows are evenly spaced such that gap <= Ry.
 
@@ -424,7 +431,8 @@ class DensityOptimizer:
         return [round(y, 3) for y in rows]
 
     def _distribute_rows(self, L: float, n_rows: int) -> list[float]:
-        """Evenly distribute row centers in [wm, L-wm].
+        """
+        Evenly distribute row centers in [wm, L-wm].
         Guarantees wall distance <= S/2 for first and last rows.
         """
         if n_rows == 1:
@@ -434,7 +442,8 @@ class DensityOptimizer:
         return [self.wm + i * gap for i in range(n_rows)]
 
     def _calculate_columns(self, W: float) -> tuple[int, float]:
-        """Returns (n_cols, step_x) for horizontal placement.
+        """
+        Returns (n_cols, step_x) for horizontal placement.
         Guarantees step_x <= max_spacing.
 
         V7.4: Uses R_place instead of R to align with verification.
@@ -499,7 +508,8 @@ class DensityOptimizer:
     # ── B: Hex-Adaptive ──────────────────────────────────────────────────────────
 
     def _hex_adaptive(self, room: Room, along_x: bool) -> DetectorLayout:
-        """Uses calculated row distribution for NFPA compliance.
+        """
+        Uses calculated row distribution for NFPA compliance.
 
         V7.4: Uses R_place instead of R for placement decisions.
         """
@@ -647,7 +657,8 @@ class DensityOptimizer:
     # ═══════════════════════════════════════════════════════════════════════════
 
     def _remove_redundant(self, layout: DetectorLayout) -> None:
-        """Remove detectors whose coverage is fully contained in others.
+        """
+        Remove detectors whose coverage is fully contained in others.
 
         For each detector, check if ALL grid points it covers are also covered
         by at least one other detector. If so, remove it. Repeat until no more
@@ -786,7 +797,8 @@ class DensityOptimizer:
     # ═══════════════════════════════════════════════════════════════════════════
 
     def _verify_fast(self, layout: DetectorLayout) -> None:
-        """Hierarchical grid verification with NumPy vectorization.
+        """
+        Hierarchical grid verification with NumPy vectorization.
 
         Uses CORNER-BASED verification (convexity argument):
           For each grid cell, ALL FOUR CORNERS must be within R of some
@@ -997,7 +1009,8 @@ class DensityOptimizer:
     # ── original pure-Python verify (kept as fallback) ──────────────────────────
 
     def _verify(self, layout: DetectorLayout) -> None:
-        """Conservative grid verification using same-detector corner check.
+        """
+        Conservative grid verification using same-detector corner check.
 
         For each grid cell, checks ALL FOUR CORNERS against all detectors.
         A cell is accepted ONLY if there exists a SINGLE detector that
@@ -1098,7 +1111,8 @@ class DensityOptimizer:
     # ═══════════════════════════════════════════════════════════════════════════
 
     def _audit_nfpa(self, layout: DetectorLayout) -> bool:
-        """NFPA compliance audit with exact wall coverage verification.
+        """
+        NFPA compliance audit with exact wall coverage verification.
 
         Uses interval merging to mathematically prove that every point on
         every wall is within R of at least one detector.  O(n log n) per wall.
@@ -1200,7 +1214,8 @@ class DensityOptimizer:
         wall_name: str,
         violations: list[str],
     ) -> None:
-        """Check that an entire wall is covered by detector projections.
+        """
+        Check that an entire wall is covered by detector projections.
 
         Each detector within coverage_limit of the wall projects a coverage
         interval on the wall.  We compute all intervals, merge them, and
@@ -1264,7 +1279,8 @@ class DensityOptimizer:
                 violations.append(f"{wall_name} wall gap: [{gap_start:.3f}, {gap_end:.3f}]")
 
     def _verify_vectorized(self, layout: DetectorLayout) -> None:
-        """Vectorised coverage verification using NumPy.
+        """
+        Vectorised coverage verification using NumPy.
         Same logic as _verify, but O(n*k) with broadcasting for speed.
         Falls back silently to _verify if NumPy is unavailable.
         """
@@ -1316,7 +1332,8 @@ class DensityOptimizer:
 
     @staticmethod
     def theoretical_lower_bound(room: Room, coverage_radius: float = DETECTOR_RADIUS) -> int:
-        """Estimative lower bound for detector count (NOT proven minimum).
+        """
+        Estimative lower bound for detector count (NOT proven minimum).
 
         Same calculation as DetectorLayout.theoretical_lower_bound property.
         Provided as a static convenience method.
@@ -1334,7 +1351,8 @@ class DensityOptimizer:
     # See TECHNICAL_HONESTY.md §5: theoretical_lower_bound ≠ theoretical_minimum.
     @staticmethod
     def _theoretical_minimum(room: Room, coverage_radius: float = DETECTOR_RADIUS) -> int:
-        """DEPRECATED: Use theoretical_lower_bound instead.
+        """
+        DEPRECATED: Use theoretical_lower_bound instead.
         Private method — do not call from outside this module.
         The name 'theoretical_minimum' creates a precision illusion.
         """

@@ -1,4 +1,5 @@
-"""fireai.core.contracts_validation — Input Contract Validation.
+"""
+fireai.core.contracts_validation — Input Contract Validation.
 =============================================================
 
 Validates room input payloads BEFORE they enter the pipeline.
@@ -25,7 +26,8 @@ from typing import Any
 
 
 class ContractViolation(Exception):
-    """Raised when input data violates the engineering contract.
+    """
+    Raised when input data violates the engineering contract.
 
     This is a FATAL error — the pipeline MUST NOT proceed with
     invalid data. The caller must fix the input and resubmit.
@@ -133,7 +135,8 @@ def _validate_polygon(polygon: Any) -> list[str]:
 
 
 def _compute_area_from_polygon(polygon: list) -> float:
-    """Compute polygon area using the Shoelace formula.
+    """
+    Compute polygon area using the Shoelace formula.
 
     Returns signed area - positive if vertices are counterclockwise.
     We take abs() since we only care about magnitude.
@@ -155,7 +158,8 @@ def _compute_area_from_polygon(polygon: list) -> float:
 
 
 def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:
-    """Validate room input payload against the engineering contract.
+    """
+    Validate room input payload against the engineering contract.
 
     Args:
         payload: Raw room input dict.
@@ -349,7 +353,8 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_voltage(value_v: float, field_name: str = "voltage") -> float:
-    """Validate that a voltage value is within standard FA system range.
+    """
+    Validate that a voltage value is within standard FA system range.
 
     QOMN-FIRE Layer 0 Physics Guard:
     - Voltage < 12V: below standard FA system minimum (NEC 760)
@@ -396,7 +401,8 @@ def validate_voltage(value_v: float, field_name: str = "voltage") -> float:
 
 
 def validate_current(value_a: float, field_name: str = "current") -> float:
-    """Validate that a current value is physically reasonable for FA circuits.
+    """
+    Validate that a current value is physically reasonable for FA circuits.
 
     QOMN-FIRE Layer 0 Physics Guard:
     - Current < 0: physically impossible (NEC 760)
@@ -438,7 +444,8 @@ def validate_current(value_a: float, field_name: str = "current") -> float:
 
 
 def validate_temperature(value_c: float, field_name: str = "temperature") -> float:
-    """Validate that a temperature value is physically reasonable.
+    """
+    Validate that a temperature value is physically reasonable.
 
     QOMN-FIRE Layer 0 Physics Guard:
     - Temperature < -50°C: physically unreasonable for building environments
@@ -487,7 +494,8 @@ def validate_battery_params(
     derating: float = 0.85,
     safety_margin: float = 0.20,
 ) -> dict[str, float]:
-    """Validate all battery calculation parameters against QOMN-FIRE Layer 0 guards.
+    """
+    Validate all battery calculation parameters against QOMN-FIRE Layer 0 guards.
 
     NFPA 72 §10.6.7 — Battery capacity calculation:
     - standby_load_a and alarm_load_a must be non-negative and finite
