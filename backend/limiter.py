@@ -1,4 +1,5 @@
-"""backend/limiter.py — Rate Limiter Configuration.
+"""
+backend/limiter.py — Rate Limiter Configuration.
 ===============================================
 
 Centralized rate limiter configuration to avoid circular imports.

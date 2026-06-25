@@ -1,4 +1,5 @@
-"""backend/routers/projects.py — Projects CRUD endpoints.
+"""
+backend/routers/projects.py — Projects CRUD endpoints.
 
 LIFE-SAFETY NOTE: Projects are the top-level container for all fire alarm
 engineering data. Deletion cascades to all child devices, connections,
@@ -37,7 +38,8 @@ _SORT_MAP = {
 
 
 def _normalize_sort(sort: str) -> str:
-    """Convert camelCase sort fields to snake_case for database.
+    """
+    Convert camelCase sort fields to snake_case for database.
 
     SECURITY FIX (BUG-32): Strict whitelist — if the sort field isn't
     in _SORT_MAP, default to 'created_at'. Previously, raw user input

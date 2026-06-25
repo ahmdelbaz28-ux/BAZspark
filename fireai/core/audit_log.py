@@ -1,4 +1,5 @@
-"""fireai.core.audit_log — QOMN-FIRE Layer 4: Audit Log (Immutable Record).
+"""
+fireai.core.audit_log — QOMN-FIRE Layer 4: Audit Log (Immutable Record).
 ========================================================================
 
 Creates permanent, tamper-evident record of every computation.
@@ -69,7 +70,8 @@ SELECT entry_hash FROM audit_entries ORDER BY rowid DESC LIMIT 1;
 
 
 def compute_entry_hash(entry: AuditEntry) -> str:
-    """Compute SHA-256 hash of all entry fields *except* entry_hash and hmac_signature.
+    """
+    Compute SHA-256 hash of all entry fields *except* entry_hash and hmac_signature.
 
     The hash is calculated over a canonical JSON representation of the field
     values in field-declaration order, excluding ``entry_hash`` and
@@ -103,7 +105,8 @@ def create_audit_entry(
     entry_id: str | None = None,
     timestamp: str | None = None,
 ) -> AuditEntry:
-    """Factory function to create an :class:`AuditEntry` with auto-computed hashes.
+    """
+    Factory function to create an :class:`AuditEntry` with auto-computed hashes.
 
     Parameters
     ----------
@@ -195,7 +198,8 @@ class AuditEntry:
 
 
 class AuditLog:
-    """Append-only, tamper-evident audit log backed by SQLite.
+    """
+    Append-only, tamper-evident audit log backed by SQLite.
 
     Parameters
     ----------
@@ -230,7 +234,8 @@ class AuditLog:
             raise RuntimeError("AuditLog is closed")
 
     def append(self, entry: AuditEntry) -> str:
-        """Append an entry to the audit log.
+        """
+        Append an entry to the audit log.
 
         The method automatically patches the entry's ``prev_entry_hash``
         to the correct chain link value and recomputes ``entry_hash`` so
@@ -303,7 +308,8 @@ class AuditLog:
             return entry.entry_id
 
     def verify_chain(self) -> tuple[bool, list[str]]:
-        """Verify the integrity of the entire hash chain.
+        """
+        Verify the integrity of the entire hash chain.
 
         Returns
         -------
@@ -371,7 +377,8 @@ class AuditLog:
         return is_valid, errors
 
     def get_entry(self, entry_id: str) -> AuditEntry | None:
-        """Retrieve a single entry by its ``entry_id``.
+        """
+        Retrieve a single entry by its ``entry_id``.
 
         Returns ``None`` if the entry does not exist.
 
@@ -391,7 +398,8 @@ class AuditLog:
             return self._row_to_entry(dict(zip(col_names, row, strict=False)))
 
     def get_analysis(self, analysis_id: str) -> list[AuditEntry]:
-        """Retrieve all entries belonging to an analysis, in insertion order.
+        """
+        Retrieve all entries belonging to an analysis, in insertion order.
 
         Raises
         ------
@@ -409,7 +417,8 @@ class AuditLog:
             return [self._row_to_entry(dict(zip(col_names, row, strict=False))) for row in cur.fetchall()]
 
     def export_json(self, analysis_id: str) -> str:
-        """Export an analysis audit trail as a signed JSON string.
+        """
+        Export an analysis audit trail as a signed JSON string.
 
         The exported object contains a ``entries`` list and an
         ``export_hmac`` field which is the HMAC-SHA256 of the canonical
@@ -443,7 +452,8 @@ class AuditLog:
         return json.dumps(export_obj, indent=2, sort_keys=True)
 
     def verify_export(self, json_str: str) -> tuple[bool, str]:
-        """Verify the integrity of an exported JSON string.
+        """
+        Verify the integrity of an exported JSON string.
 
         Returns
         -------
@@ -494,7 +504,8 @@ class AuditLog:
         return True, ""
 
     def count(self) -> int:
-        """Return the total number of entries in the log.
+        """
+        Return the total number of entries in the log.
 
         Raises
         ------
@@ -508,7 +519,8 @@ class AuditLog:
             return cur.fetchone()[0]
 
     def close(self) -> None:
-        """Close the database connection.
+        """
+        Close the database connection.
 
         V96 FIX: close() now acquires ``_lock`` to prevent a race where
         one thread closes the DB while another is mid-query.  All public

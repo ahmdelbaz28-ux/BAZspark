@@ -1,4 +1,5 @@
-"""nfpa72_technology_dispatcher.py — Automatic Detector Technology Selection.
+"""
+nfpa72_technology_dispatcher.py — Automatic Detector Technology Selection.
 =========================================================================
 
 Automatically selects the appropriate detector TECHNOLOGY (not just radius)
@@ -66,7 +67,8 @@ class DetectorTechnology(Enum):
 
 @dataclass
 class TechnologyDecision:
-    """Structured decision from the Technology Dispatcher.
+    """
+    Structured decision from the Technology Dispatcher.
 
     Attributes:
         technology: Selected detector technology.
@@ -130,7 +132,8 @@ _NFPA72_SMOKE_SPACING_TABLE = list(_CANONICAL_SMOKE_TABLE)
 
 
 class EliteTechnologyDispatcher:
-    """Automatic detector technology selection per NFPA 72-2022.
+    """
+    Automatic detector technology selection per NFPA 72-2022.
 
     Selects the appropriate detector TECHNOLOGY (not just spacing)
     based on ceiling height and slope conditions.
@@ -169,7 +172,8 @@ class EliteTechnologyDispatcher:
         slope_degrees: float = 0.0,
         detector_category: str = "smoke",
     ) -> TechnologyDecision:
-        """Select detector technology based on ceiling conditions.
+        """
+        Select detector technology based on ceiling conditions.
 
         Args:
             ceiling_height_m: Ceiling height at the LOW point (meters).
@@ -328,7 +332,8 @@ class EliteTechnologyDispatcher:
 
     @staticmethod
     def _get_smoke_spacing(ceiling_height_m: float) -> float:
-        """Get smoke detector spacing — FLAT 9.1m per NFPA 72 §17.7.3.2.3.
+        """
+        Get smoke detector spacing — FLAT 9.1m per NFPA 72 §17.7.3.2.3.
 
         V130 FIX: Smoke detector spacing is flat 9.1m at ALL ceiling heights.
         There is NO height-based reduction for smoke detectors.
@@ -358,7 +363,8 @@ class EliteTechnologyDispatcher:
 
 
 def dispatch_detector_technology(room_dict: dict) -> TechnologyDecision:
-    """Convenience function for FloorAnalyser integration.
+    """
+    Convenience function for FloorAnalyser integration.
 
     Extracts ceiling height and slope from room dict and dispatches
     the appropriate detector technology.

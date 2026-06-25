@@ -1,25 +1,34 @@
-"""marine/tests/test_marine_module.py — Tests for the marine fire-safety module.
+"""
+marine/tests/test_marine_module.py — Tests for the marine fire-safety module.
 Covers: SOLAS compliance, IEC 60092 detector selection, fire-resistance
 classification, extinguishment sizing, alarm-logic generation, and SCADA
-integration. Follows property-based + unit-test patterns per agent.md Rule 10."""
+integration. Follows property-based + unit-test patterns per agent.md Rule 10.
+"""
 from __future__ import annotations
+
 import pytest
+
 from marine.core.types import (
-    DetectorType, ExtinguishingSystem, FireClass, MarineZone, ShipProject,
-    ShipType, SpaceCategory,
+    DetectorType,
+    ExtinguishingSystem,
+    FireClass,
+    MarineZone,
+    ShipProject,
+    ShipType,
+    SpaceCategory,
 )
-from marine.engine.extinguishment import size_system, size_water_mist, size_co2_total_flooding
+from marine.engine.alarm_logic import export_to_plc_script, generate_logic_tree
+from marine.engine.extinguishment import size_system
 from marine.engine.fire_resistance import generate_division_specs
 from marine.engine.zone_mapper import divide_into_main_vertical_zones
-from marine.engine.alarm_logic import generate_logic_tree, export_to_plc_script
-from marine.iec60092.part_502 import select_detector_type, calculate_detector_count
+from marine.iec60092.part_502 import calculate_detector_count, select_detector_type
 from marine.iec60092.part_504 import classify_hazardous_zone
-from marine.solas.chapter_ii_2 import (
-    required_fire_class_between, validate_main_vertical_zones,
-    validate_escape_routes,
-)
 from marine.integration.scada_bridge import build_mqtt_topics
-
+from marine.solas.chapter_ii_2 import (
+    required_fire_class_between,
+    validate_escape_routes,
+    validate_main_vertical_zones,
+)
 
 # ─── Fixtures ───────────────────────────────────────────────────────────────
 
@@ -305,7 +314,8 @@ class TestPropertyBased:
         reason="hypothesis not installed",
     )
     def test_mvz_count_always_within_limit(self, cargo_ship):
-        from hypothesis import given, strategies as st
+        from hypothesis import given
+        from hypothesis import strategies as st
 
         @given(length_m=st.floats(min_value=20.0, max_value=400.0))
         def _inner(length_m):

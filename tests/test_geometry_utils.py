@@ -493,13 +493,13 @@ class TestBoundingRectDimensions:
 
     def test_l_shape(self):
         poly = l_shape_polygon(6, 4, 2, 2)
-        w, h, ox, oy = bounding_rect_dimensions(poly)
+        w, h, _ox, _oy = bounding_rect_dimensions(poly)
         assert w == pytest.approx(6.0)
         assert h == pytest.approx(4.0)
 
     def test_offset_polygon(self):
         poly = [(5, 5), (15, 5), (15, 15), (5, 15)]
-        w, h, ox, oy = bounding_rect_dimensions(poly)
+        _w, _h, ox, oy = bounding_rect_dimensions(poly)
         assert ox == pytest.approx(5.0)
         assert oy == pytest.approx(5.0)
 

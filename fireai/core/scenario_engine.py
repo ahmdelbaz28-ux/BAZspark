@@ -1,4 +1,5 @@
-"""scenario_engine.py — Fire Scenario Testing Engine (FireAI Integration).
+"""
+scenario_engine.py — Fire Scenario Testing Engine (FireAI Integration).
 ======================================================================
 NFPA 72-2022 §17.7.3 / §A.17.6 / NFPA 72 Annex B
 
@@ -135,7 +136,8 @@ class GrowthRate(Enum):
 
 
 class SmokeType(Enum):
-    """NFPA 72-2022 §17.7.3 distinguishes smouldering (visible, large particles)
+    """
+    NFPA 72-2022 §17.7.3 distinguishes smouldering (visible, large particles)
     from flaming (invisible, small particles). Detector sensitivity varies.
     """
 
@@ -158,7 +160,8 @@ class ScenarioVerdict(Enum):
 
 @dataclass(frozen=True)
 class FireScenario:
-    """Immutable definition of one fire scenario.
+    """
+    Immutable definition of one fire scenario.
 
     All fields map directly to NFPA 72 or physical parameters.
     No defaults that hide assumptions: caller must be explicit.
@@ -213,7 +216,8 @@ class BlindSpot:
 
 @dataclass
 class ScenarioResult:
-    """Complete result of running one FireScenario against a detector layout.
+    """
+    Complete result of running one FireScenario against a detector layout.
 
     All timing is in seconds from ignition.
     All positions are in metres from room origin.
@@ -257,7 +261,8 @@ class ScenarioResult:
 
 
 class ScenarioLibrary:
-    """Pre-defined scenarios based on NFPA 72-2022 Annex B and FPE practice.
+    """
+    Pre-defined scenarios based on NFPA 72-2022 Annex B and FPE practice.
     All scenarios use explicit fire physics — no default assumptions.
 
     Usage:
@@ -274,7 +279,8 @@ class ScenarioLibrary:
         ceiling_height: float,
         fire_load_mj_m2: float | None = None,
     ) -> FireScenario:
-        """Worst case: fastest growth (ultrafast), flaming, centroid ignition.
+        """
+        Worst case: fastest growth (ultrafast), flaming, centroid ignition.
         Centroid maximises average distance to wall-mounted detectors.
         NFPA 72 §B.2: ultrafast for high-hazard occupancies.
         """
@@ -297,7 +303,8 @@ class ScenarioLibrary:
         ceiling_height: float,
         fire_load_mj_m2: float = 400.0,
     ) -> FireScenario:
-        """Most probable office fire: medium growth, smouldering start.
+        """
+        Most probable office fire: medium growth, smouldering start.
         Fire load 400 MJ/m^2 — NFPA 557-2016 Table 5.1 (offices).
         """
         cx, cy = polygon_centroid(room_polygon)
@@ -319,7 +326,8 @@ class ScenarioLibrary:
         fire_load_mj_m2: float | None = None,
         corner_index: int = 0,
     ) -> FireScenario:
-        """Corner fire: fast growth from the specified polygon vertex.
+        """
+        Corner fire: fast growth from the specified polygon vertex.
         Corners are high-risk: furniture accumulates there and
         detectors are typically furthest from corners.
         NFPA 72-2022 §A.17.6.3.
@@ -349,7 +357,8 @@ class ScenarioLibrary:
         fire_load_mj_m2: float | None = None,
         wall_index: int = 0,
     ) -> FireScenario:
-        """Fire at midpoint of a wall segment.
+        """
+        Fire at midpoint of a wall segment.
         Important because detectors near walls may have reduced coverage
         due to wall distance constraints (NFPA 72 §17.6.3.1.1).
         """
@@ -398,7 +407,8 @@ class ScenarioLibrary:
         fire_load_mj_m2: float | None = None,
         grid_m: float = 1.0,
     ) -> list[FireScenario]:
-        """Grid scan: one scenario per grid point inside the polygon.
+        """
+        Grid scan: one scenario per grid point inside the polygon.
         Used to find blind spots not caught by corner/centroid tests.
         Uses geometry_utils.grid_points_in_polygon (no shapely).
         """
@@ -425,7 +435,8 @@ class ScenarioLibrary:
         ceiling_height: float,
         fire_load_mj_m2: float | None = None,
     ) -> list[FireScenario]:
-        """Standard battery: worst_case + most_probable + all_corners.
+        """
+        Standard battery: worst_case + most_probable + all_corners.
         Does NOT include blind_spot_scan (expensive — call separately).
         Deduplicates scenarios with identical ignition points.
         """
@@ -446,7 +457,8 @@ class ScenarioLibrary:
 
 
 class FirePhysics:
-    """NFPA 72 / Alpert ceiling jet fire physics.
+    """
+    NFPA 72 / Alpert ceiling jet fire physics.
 
     References:
       Alpert, R.L. (1972): Calculation of Response Time of Ceiling-Mounted
@@ -468,7 +480,8 @@ class FirePhysics:
 
     @staticmethod
     def hrr_at_time(alpha: float, t: float, q_max: float | None = None) -> float:
-        """Heat Release Rate [kW] at time t [s] using t-squared model.
+        """
+        Heat Release Rate [kW] at time t [s] using t-squared model.
         Q(t) = alpha * t^2   [NFPA 72-2022 §A.17.6.3]
         Capped at q_max if provided (fuel-limited phase).
         """
@@ -483,7 +496,8 @@ class FirePhysics:
         area_m2: float,
         occupancy: str = "default",
     ) -> float:
-        """Estimate peak HRR from fire load and room area.
+        """
+        Estimate peak HRR from fire load and room area.
         Q_max ~ fire_load [MJ] / t_burn [s]
         t_burn varies by occupancy — uses _BURN_DURATION table.
         Returns kW.
@@ -498,7 +512,8 @@ class FirePhysics:
         r_m: float,
         ceiling_h_m: float,
     ) -> float:
-        """Alpert (1972) ceiling jet temperature rise [deg C] above ambient
+        """
+        Alpert (1972) ceiling jet temperature rise [deg C] above ambient
         at horizontal distance r from fire axis, at ceiling height H.
 
         Uses module-level constants _ALPERT_DT_FAR and _ALPERT_DT_NEAR
@@ -524,7 +539,8 @@ class FirePhysics:
         r_m: float,
         ceiling_h_m: float,
     ) -> float:
-        """Alpert (1972) ceiling jet velocity [m/s] at distance r.
+        """
+        Alpert (1972) ceiling jet velocity [m/s] at distance r.
 
         V = 0.197 * (Q)^1/3 * (r/H)^-5/6 / H^1/3   if r/H > 0.15
         V = 0.962 * (Q/H)^1/3                        if r/H <= 0.15
@@ -545,7 +561,8 @@ class FirePhysics:
         ceiling_h_m: float,
         smoke_type: SmokeType,
     ) -> float:
-        """Estimate smoke obscuration [%/m] at detector position.
+        """
+        Estimate smoke obscuration [%/m] at detector position.
 
         Uses the Milke (2008) / NFPA Annex B engineering correlation for
         optical density at ceiling level. The model relates smoke OD to
@@ -658,7 +675,8 @@ class FirePhysics:
         max_t_s: float = 300.0,
         q_max: float | None = None,
     ) -> tuple[float, float, float]:
-        """Find time when smoke concentration at detector first exceeds
+        """
+        Find time when smoke concentration at detector first exceeds
         smoke_threshold.
 
         Strategy:
@@ -721,7 +739,8 @@ class FirePhysics:
 
 
 class ScenarioRunner:
-    """Runs FireScenario objects against detector layouts.
+    """
+    Runs FireScenario objects against detector layouts.
 
     Usage:
         runner  = ScenarioRunner()
@@ -742,7 +761,8 @@ class ScenarioRunner:
         room_polygon: list[tuple[float, float]],
         detector_type_str: str = "PHOTOELECTRIC",
     ) -> ScenarioResult:
-        """Run one scenario. Returns ScenarioResult. Never raises.
+        """
+        Run one scenario. Returns ScenarioResult. Never raises.
 
         Args:
             scenario:            FireScenario definition.
@@ -892,7 +912,8 @@ class ScenarioRunner:
         scenarios: list[FireScenario],
         detector_type_str: str = "PHOTOELECTRIC",
     ) -> ScenarioBatteryResult:
-        """Run all scenarios against one detector layout.
+        """
+        Run all scenarios against one detector layout.
         Returns ScenarioBatteryResult with per-scenario results + summary.
         """
         results = []
@@ -918,7 +939,8 @@ class ScenarioRunner:
         nfpa_limit_s: float,
         q_max: float | None,
     ) -> tuple[list[BlindSpot], int]:
-        """Scan a grid inside the polygon using geometry_utils.
+        """
+        Scan a grid inside the polygon using geometry_utils.
         A grid point is a blind spot if no detector detects it
         within nfpa_limit_s.
         Returns (blind_spots, total_grid_points).
@@ -1035,7 +1057,8 @@ class ScenarioBatteryResult:
 
 
 class ScenarioReporter:
-    """Formats ScenarioBatteryResult as:
+    """
+    Formats ScenarioBatteryResult as:
     - plain text (console)
     - JSON
     - CSV (for Excel / inspection).
@@ -1114,7 +1137,8 @@ def run_scenarios_for_room(
     scan_grid_m: float = 1.0,
     time_step_s: float = 0.5,
 ) -> ScenarioBatteryResult:
-    """One-call convenience: analyse room + run standard scenario battery.
+    """
+    One-call convenience: analyse room + run standard scenario battery.
 
     Args:
         room_polygon:       Room boundary as list of (x,y) tuples.
@@ -1157,7 +1181,8 @@ FIRE_LOAD_BY_OCCUPANCY: dict[str, float] = {
 
 
 def get_fire_load(occupancy: str) -> float:
-    """Get typical fire load [MJ/m^2] by occupancy type.
+    """
+    Get typical fire load [MJ/m^2] by occupancy type.
     Ref: NFPA 557-2016 Table 5.1.
     Returns default 400.0 if occupancy not found.
     """

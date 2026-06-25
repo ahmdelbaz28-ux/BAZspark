@@ -1,6 +1,4 @@
-"""
-Validator for tracked changes in Word documents.
-"""
+"""Validator for tracked changes in Word documents."""
 
 import subprocess
 import tempfile
@@ -252,7 +250,8 @@ class RedliningValidator:
                 parent.remove(del_elem)
 
     def _extract_text_content(self, root):
-        """Extract text content from Word XML, preserving paragraph structure.
+        """
+        Extract text content from Word XML, preserving paragraph structure.
 
         Empty paragraphs are skipped to avoid false positives when tracked
         insertions add only structural elements without text content.

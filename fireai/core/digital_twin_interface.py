@@ -1,4 +1,5 @@
-"""digital_twin_interface.py — FireAI Digital Twin Interface.
+"""
+digital_twin_interface.py — FireAI Digital Twin Interface.
 =========================================================
 Bidirectional synchronization layer between the FireAI placement
 engine and Building Information Models (BIM).  Prepares the system
@@ -76,7 +77,8 @@ logger = logging.getLogger(__name__)
 
 
 class DigitalTwinState(Enum):
-    """Synchronization state of the Digital Twin with the BIM model.
+    """
+    Synchronization state of the Digital Twin with the BIM model.
 
     State Transitions:
         DISCONNECTED → CONNECTED  (BIM connection established)
@@ -104,7 +106,8 @@ class DigitalTwinState(Enum):
 
 @dataclass(frozen=True)
 class TwinModelVersion:
-    """Immutable snapshot of the Digital Twin model at a point in time.
+    """
+    Immutable snapshot of the Digital Twin model at a point in time.
 
     Each version captures:
       - The number of rooms and detectors in the model
@@ -141,7 +144,8 @@ class TwinModelVersion:
 
 @dataclass(frozen=True)
 class ChangeRecord:
-    """Immutable record of a single change between two model versions.
+    """
+    Immutable record of a single change between two model versions.
 
     Change detection produces a list of ChangeRecords that describe
     exactly what was added, removed, modified, or repositioned between
@@ -188,7 +192,8 @@ class ChangeRecord:
 
 
 def _generate_ifc_guid() -> str:
-    """Generate an IFC-compatible GUID (22-character base64-like string).
+    """
+    Generate an IFC-compatible GUID (22-character base64-like string).
 
     IFC uses a compressed GUID format.  For simplicity and
     traceability, we use a hex UUID with the curly braces removed,
@@ -203,7 +208,8 @@ def _generate_ifc_guid() -> str:
 
 
 class DigitalTwinInterface:
-    """Bidirectional synchronization interface between FireAI and BIM.
+    """
+    Bidirectional synchronization interface between FireAI and BIM.
 
     Maintains versioned snapshots of detector placements, detects changes
     between versions, and exports IFC/gBXML payloads for downstream
@@ -226,7 +232,8 @@ class DigitalTwinInterface:
     """
 
     def __init__(self, event_bus: EventBus | None = None) -> None:
-        """Initialize the Digital Twin Interface.
+        """
+        Initialize the Digital Twin Interface.
 
         Args:
             event_bus: Optional EventBus instance. If not provided,
@@ -250,7 +257,8 @@ class DigitalTwinInterface:
 
     @state.setter
     def state(self, new_state: DigitalTwinState) -> None:
-        """Update the synchronization state.
+        """
+        Update the synchronization state.
 
         Args:
             new_state: The new DigitalTwinState to transition to.
@@ -273,7 +281,8 @@ class DigitalTwinInterface:
     # ── Snapshot ─────────────────────────────────────────────────────
 
     def snapshot(self, room_results: list[dict[str, Any]]) -> TwinModelVersion:
-        """Capture a versioned snapshot of the current detector model.
+        """
+        Capture a versioned snapshot of the current detector model.
 
         Creates a TwinModelVersion with a SHA-256 checksum of all
         detector positions, proof certificate hashes, and metadata.
@@ -368,7 +377,8 @@ class DigitalTwinInterface:
         old_version: TwinModelVersion,
         new_version: TwinModelVersion,
     ) -> list[ChangeRecord]:
-        """Detect changes between two model versions.
+        """
+        Detect changes between two model versions.
 
         Compares detector positions and room counts between the old
         and new versions by reconstructing the detector layouts from
@@ -557,7 +567,8 @@ class DigitalTwinInterface:
     # ── IFC Export ───────────────────────────────────────────────────
 
     def export_ifc_payload(self, room_results: list[dict[str, Any]]) -> dict[str, Any]:
-        """Export detector placements as an IFC4-compatible payload.
+        """
+        Export detector placements as an IFC4-compatible payload.
 
         This does NOT generate a full IFC file — it produces a
         structured dictionary that is ready for an IFC generator
@@ -721,7 +732,8 @@ class DigitalTwinInterface:
     # ── gBXML Export ─────────────────────────────────────────────────
 
     def export_gbxml_payload(self, room_results: list[dict[str, Any]]) -> dict[str, Any]:
-        """Export detector placements as a gBXML-compatible payload.
+        """
+        Export detector placements as a gBXML-compatible payload.
 
         Produces a structured dictionary that maps to the Green
         Building XML schema, suitable for integration with energy
@@ -852,7 +864,8 @@ class DigitalTwinInterface:
     # ── Query Methods ────────────────────────────────────────────────
 
     def get_current_version(self) -> TwinModelVersion | None:
-        """Return the most recent version from the version history.
+        """
+        Return the most recent version from the version history.
 
         Returns:
             The latest TwinModelVersion, or None if no snapshots exist.
@@ -864,7 +877,8 @@ class DigitalTwinInterface:
             return None
 
     def get_change_history(self) -> list[ChangeRecord]:
-        """Return a copy of the full change log.
+        """
+        Return a copy of the full change log.
 
         Returns:
             List of all ChangeRecord objects accumulated over time.
@@ -877,7 +891,8 @@ class DigitalTwinInterface:
 
     @staticmethod
     def compute_checksum(detector_positions: list[tuple[float, ...]]) -> str:
-        """Compute a SHA-256 checksum over all detector positions.
+        """
+        Compute a SHA-256 checksum over all detector positions.
 
         The checksum is computed by serializing the detector positions
         as a JSON array of coordinate tuples (sorted by x, y, z) and
@@ -903,7 +918,8 @@ class DigitalTwinInterface:
     # ── Validation ───────────────────────────────────────────────────
 
     def validate_synchronization(self) -> bool:
-        """Check if the current state matches the latest snapshot.
+        """
+        Check if the current state matches the latest snapshot.
 
         Re-computes the checksum from the current room results and
         compares it against the checksum of the latest version.  If
@@ -950,7 +966,8 @@ class DigitalTwinInterface:
     # ── Version History Access ───────────────────────────────────────
 
     def get_version_history(self) -> list[TwinModelVersion]:
-        """Return a copy of the full version history.
+        """
+        Return a copy of the full version history.
 
         Returns:
             List of all TwinModelVersion objects in chronological order.
@@ -960,7 +977,8 @@ class DigitalTwinInterface:
             return list(self._version_history)
 
     def get_version_by_id(self, version_id: str) -> TwinModelVersion | None:
-        """Look up a version by its UUID.
+        """
+        Look up a version by its UUID.
 
         Args:
             version_id: The version UUID to search for.
@@ -982,7 +1000,8 @@ class DigitalTwinInterface:
         version: TwinModelVersion,
         room_results: list[dict[str, Any]],
     ) -> dict[str, list[dict[str, Any]]]:
-        """Reconstruct a room→detectors map for a given version.
+        """
+        Reconstruct a room→detectors map for a given version.
 
         Since TwinModelVersion only stores aggregate counts and a
         checksum, we reconstruct the per-room detector layout from
@@ -1021,7 +1040,8 @@ class DigitalTwinInterface:
         new_det: dict[str, Any] | None,
         timestamp: str,
     ) -> ChangeRecord:
-        """Create a ChangeRecord from detector state transition.
+        """
+        Create a ChangeRecord from detector state transition.
 
         Args:
             change_type: One of "added", "removed", "modified", "repositioned".
@@ -1049,7 +1069,8 @@ class DigitalTwinInterface:
 
 
 def _describe_change(change_type: str, room_id: str, detector_index: int) -> str:
-    """Generate a human-readable reason string for a change.
+    """
+    Generate a human-readable reason string for a change.
 
     Args:
         change_type: The type of change.

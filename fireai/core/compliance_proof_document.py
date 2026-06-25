@@ -1,4 +1,5 @@
-"""D2: Compliance Proof Document Generator — AHJ-Ready Markdown.
+"""
+D2: Compliance Proof Document Generator — AHJ-Ready Markdown.
 =============================================================
 Generates a comprehensive NFPA 72 compliance proof document from
 verified placement results. This document is intended for submission
@@ -78,7 +79,8 @@ class RoomVerificationRecord:
 
 
 def _safe_fmt(value: float, fmt: str = ".1f") -> str:
-    """V57 FIX (Finding 15): Format a float for AHJ document, replacing
+    """
+    V57 FIX (Finding 15): Format a float for AHJ document, replacing
     NaN/Inf with '[INVALID DATA]'. NaN values produce 'nan%' in the
     AHJ submission document, which is unacceptable for regulatory filings.
     Non-finite data indicates a calculation error that must be flagged.
@@ -89,7 +91,8 @@ def _safe_fmt(value: float, fmt: str = ".1f") -> str:
 
 
 class ComplianceProofDocument:
-    """Generates AHJ-ready NFPA 72 compliance proof documents.
+    """
+    Generates AHJ-ready NFPA 72 compliance proof documents.
 
     The document is structured to satisfy typical AHJ requirements:
       - Project identification
@@ -142,7 +145,8 @@ class ComplianceProofDocument:
         )
 
     def generate(self) -> str:
-        """Generate the complete compliance proof document as Markdown.
+        """
+        Generate the complete compliance proof document as Markdown.
 
         Returns:
             Markdown-formatted string ready for AHJ submission.

@@ -1,4 +1,5 @@
-r"""evidence_chain.py — Chained Evidence Envelopes for FireAI.
+r"""
+evidence_chain.py — Chained Evidence Envelopes for FireAI.
 ==========================================================
 Adapted from Elite Platform V2 evidence_chain.py.
 
@@ -48,7 +49,8 @@ from typing import Any
 
 
 def _float_round_default(obj: Any) -> Any:
-    """V59 FIX (Finding 7): Round floats to 10 significant digits before JSON serialization.
+    """
+    V59 FIX (Finding 7): Round floats to 10 significant digits before JSON serialization.
 
     Python's float repr can produce different strings for the same mathematical
     value across platforms and Python versions:
@@ -78,7 +80,8 @@ def _float_round_default(obj: Any) -> Any:
 
 
 def _canonical_dumps(payload: Any) -> str:
-    """Deterministic JSON serialization for consistent hashing.
+    """
+    Deterministic JSON serialization for consistent hashing.
 
     V59 FIX (Finding 7): Added custom float serializer that rounds floats to
     deterministic precision. Without this, the same payload could produce
@@ -105,7 +108,8 @@ class EvidenceChainError(Exception):
 
 
 class EvidenceChain:
-    """Blockchain-style signed evidence envelope chain.
+    """
+    Blockchain-style signed evidence envelope chain.
 
     Each envelope contains:
       - snapshot_hash:  SHA-256 of the building snapshot (input).
@@ -206,7 +210,8 @@ class EvidenceChain:
         analysis_payload: dict[str, Any],
         previous_envelope: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Build a signed evidence envelope linking input to output.
+        """
+        Build a signed evidence envelope linking input to output.
 
         Args:
             snapshot_payload:  The building snapshot data (input).
@@ -239,7 +244,8 @@ class EvidenceChain:
         analysis_payload: dict[str, Any],
         previous_envelope: dict[str, Any] | None = None,
     ) -> bool:
-        """Verify an evidence envelope against its source data.
+        """
+        Verify an evidence envelope against its source data.
 
         Checks:
           1. snapshot_hash matches the provided snapshot.
@@ -315,7 +321,8 @@ class EvidenceChain:
         snapshot_payloads: list[dict[str, Any]],
         analysis_payloads: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        """Verify an entire chain of evidence envelopes.
+        """
+        Verify an entire chain of evidence envelopes.
 
         This detects:
           - Missing envelopes (chain gap)
@@ -388,7 +395,8 @@ class EvidenceChain:
         }
 
     def _sign(self, envelope_hash: str) -> str:
-        """Sign an envelope hash with HMAC-SHA256.
+        """
+        Sign an envelope hash with HMAC-SHA256.
 
         V59 FIX (Finding 4): Include namespace in HMAC input for domain separation.
         Without this, the same envelope_hash in different projects produces the

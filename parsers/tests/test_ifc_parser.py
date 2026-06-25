@@ -56,13 +56,15 @@ def _make_ifc_json(data: dict, suffix=".json") -> str:
 def _make_valid_ifc_json(
     num_spaces=2, num_devices=1, num_floors=2, negative_area=False
 ) -> dict:
-    """Create a valid IFC JSON data structure.
+    """
+    Create a valid IFC JSON data structure.
 
     Args:
         num_spaces: Number of IfcSpace instances
         num_devices: Number of fire protection devices
         num_floors: Number of IfcBuildingStorey instances
         negative_area: If True, first space has negative area (V79 test)
+
     """
     instances = []
 
@@ -443,7 +445,8 @@ class TestFloorCounting:
 
 
 class TestNegativeAreaRejection:
-    """V79 FIX: Negative area spaces are REJECTED, not set to 0.
+    """
+    V79 FIX: Negative area spaces are REJECTED, not set to 0.
 
     Setting to 0 means zero protection for a room with real geometry.
     """

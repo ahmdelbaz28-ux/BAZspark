@@ -1,4 +1,5 @@
-"""mem0_setup.py — Mem0 Memory Layer Setup for FireAI (V81 OpenCode Support).
+"""
+mem0_setup.py — Mem0 Memory Layer Setup for FireAI (V81 OpenCode Support).
 
 PURPOSE:
   Configures and initializes the Mem0 memory layer for the FireAI
@@ -132,7 +133,8 @@ MEM0_QDRANT_PATH.mkdir(parents=True, exist_ok=True)
 
 
 def _test_openai_connectivity(api_key: str) -> bool:
-    """Test if OpenAI API is reachable and not region-blocked.
+    """
+    Test if OpenAI API is reachable and not region-blocked.
 
     V78 FIX: OpenAI returns 403 "unsupported_country_region_territory" in
     certain regions (Egypt, UAE, etc.). We must detect this at startup
@@ -189,7 +191,8 @@ def _test_openai_connectivity(api_key: str) -> bool:
 
 
 def _test_gemini_connectivity(api_key: str) -> bool:
-    """Test if Gemini API is reachable and not rate-limited.
+    """
+    Test if Gemini API is reachable and not rate-limited.
 
     V87 FIX: Strategy 4 (Gemini) previously did NOT test connectivity before
     selecting Gemini as the provider. This meant a rate-limited or invalid
@@ -229,7 +232,8 @@ def _test_gemini_connectivity(api_key: str) -> bool:
 
 
 def _test_openai_compatible_connectivity(base_url: str, api_key: str) -> bool:
-    """Test if an OpenAI-compatible API endpoint is reachable.
+    """
+    Test if an OpenAI-compatible API endpoint is reachable.
 
     V79: Generalized from _test_openai_connectivity to support any
     OpenAI-compatible provider (OpenQuotta, local proxies, etc.).
@@ -278,7 +282,8 @@ _PROVIDER_CACHE_TTL_SECONDS = 300  # 5 minutes
 
 
 def _detect_provider() -> dict[str, Any]:
-    """Detect the best available LLM/embedding provider.
+    """
+    Detect the best available LLM/embedding provider.
 
     V83: Added caching with 5-minute TTL to avoid repeated connectivity
     tests (up to 40s+ blocking per call when all providers are slow).
@@ -306,7 +311,8 @@ def _detect_provider() -> dict[str, Any]:
 
 
 def _detect_provider_uncached() -> dict[str, Any]:
-    """Detect the best available LLM/embedding provider (uncached version).
+    """
+    Detect the best available LLM/embedding provider (uncached version).
 
     Strategy (V81 — 6-Strategy Failover with OpenCode):
     1. Try OpenAI API (if OPENAI_API_KEY available AND not region-blocked)
@@ -542,7 +548,8 @@ def _detect_provider_uncached() -> dict[str, Any]:
 
 
 def get_mem0_config() -> dict[str, Any]:
-    """Get the Mem0 configuration for FireAI.
+    """
+    Get the Mem0 configuration for FireAI.
 
     V80: Auto-detects the best available provider (6-strategy failover):
     - OpenAI (PRIMARY if key set — best engineering accuracy, native Mem0 support)
@@ -632,7 +639,8 @@ def get_mem0_config() -> dict[str, Any]:
 
 
 def create_mem0_instance() -> Any:
-    """Create and return a configured Mem0 Memory instance.
+    """
+    Create and return a configured Mem0 Memory instance.
 
     This is the PRIMARY entry point for all FireAI memory operations.
 
@@ -665,7 +673,8 @@ def create_mem0_instance() -> Any:
 
 
 class FireAIMemory:
-    """High-level FireAI memory interface.
+    """
+    High-level FireAI memory interface.
 
     Wraps Mem0 with domain-specific operations for fire protection engineering.
 

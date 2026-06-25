@@ -1,4 +1,5 @@
-"""fireai/core/polygon_optimizer.py  V1.0.
+"""
+fireai/core/polygon_optimizer.py  V1.0.
 ======================================
 True polygon support for non-rectangular rooms.
 
@@ -48,7 +49,8 @@ from fireai.core.spatial_engine.density_optimizer import (
 
 @dataclass
 class PolygonRoom:
-    """Room model for polygon-based rooms (including rectangular).
+    """
+    Room model for polygon-based rooms (including rectangular).
 
     Attributes:
         room_id:        Unique room identifier.
@@ -148,7 +150,8 @@ class PolygonRoom:
 
 @dataclass
 class PolygonRoomSummary:
-    """Result summary for a polygon room analysis.
+    """
+    Result summary for a polygon room analysis.
 
     Attributes:
         room_id:        Room identifier.
@@ -223,7 +226,8 @@ def _greedy_set_cover(
     polygon: list[tuple[float, float]],
     radius: float,
 ) -> list[tuple[float, float]]:
-    """Greedy Set Cover placement on polygon interior.
+    """
+    Greedy Set Cover placement on polygon interior.
 
     Candidate positions = interior_points.
     Each candidate covers all interior_points within *radius*.
@@ -284,7 +288,8 @@ def _audit_nfpa_spacing(
     detectors: list[tuple[float, float]],
     max_spacing: float = MAX_SPACING_M,
 ) -> list[str]:
-    """Check NFPA 72 spacing between adjacent detectors.
+    """
+    Check NFPA 72 spacing between adjacent detectors.
 
     For each detector, verify that the nearest neighbor is within
     max_spacing. Returns list of violation descriptions.
@@ -313,7 +318,8 @@ def _audit_nfpa_spacing(
 
 
 class PolygonDensityOptimizer:
-    """Polygon-aware detector placement optimizer.
+    """
+    Polygon-aware detector placement optimizer.
 
     Strategy:
         - Rectangular polygon -> delegate to DensityOptimizer V7.3 (proven).
@@ -351,7 +357,8 @@ class PolygonDensityOptimizer:
     # ------------------------------------------------------------------
 
     def optimize_polygon(self, room: PolygonRoom) -> PolygonRoomSummary:
-        """Optimise detector placement for a polygon room.
+        """
+        Optimise detector placement for a polygon room.
 
         Args:
             room: PolygonRoom with polygon, ceiling_height, detector_type.
@@ -432,7 +439,8 @@ class PolygonDensityOptimizer:
         radius: float,
         spec: CoverageSpec,
     ) -> PolygonRoomSummary:
-        """Greedy Set Cover placement for non-rectangular polygons.
+        """
+        Greedy Set Cover placement for non-rectangular polygons.
 
         1. Generate interior grid points within the polygon
         2. Run greedy set cover to select detector positions
@@ -479,7 +487,8 @@ class PolygonDensityOptimizer:
         room: PolygonRoom,
         summary: PolygonRoomSummary,
     ) -> None:
-        """Run duct detector analysis using the existing duct_detector module.
+        """
+        Run duct detector analysis using the existing duct_detector module.
 
         Uses the correct API: analyse_ducts(ducts: List[DuctSpec]).
         Converts dict entries to DuctSpec if needed.

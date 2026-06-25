@@ -25,6 +25,7 @@ from typing import Dict, List, Optional
 @dataclass
 class IFCAnalysis:
     """Analysis result from IFC file."""
+
     building_name: str
     floors: int
     spaces: List[Dict]
@@ -41,7 +42,7 @@ class IFCParser:
 
     def _load_json(self) -> Dict:
         """Load IFC JSON file."""
-        with open(self.ifc_path, 'r') as f:
+        with open(self.ifc_path) as f:
             return json.load(f)
 
     def _parse_instances(self, data: Dict) -> List[Dict]:
@@ -92,7 +93,8 @@ class IFCParser:
         return spaces
 
     def _extract_devices(self, instances: List[Dict]) -> List[Dict]:
-        """Extract fire protection devices from multiple IFC fire entity types.
+        """
+        Extract fire protection devices from multiple IFC fire entity types.
 
         Supports:
           - IfcFireSuppressionDevice_Type  (sprinklers, standpipes)
@@ -145,11 +147,13 @@ class IFCParser:
         return len(floors)
 
     def parse(self) -> IFCAnalysis:
-        """Main parsing method.
+        """
+        Main parsing method.
 
         Raises:
             ValueError: If the IFC file cannot be loaded or parsed,
                 including security validation failures (V125 hardening).
+
         """
         # V125/V126 SECURITY (Rule #23): validate self.ifc_path BEFORE opening.
         # The path was supplied at __init__ time; this is the last gate

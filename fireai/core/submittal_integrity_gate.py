@@ -1,4 +1,5 @@
-"""fireai/core/submittal_integrity_gate.py.
+"""
+fireai/core/submittal_integrity_gate.py.
 =======================================
 Post-draft SHA-256 hash verification for the DXF compilation pipeline.
 
@@ -90,7 +91,8 @@ _SHA256_CHUNK_SIZE = 8192  # 8 KB read buffer — matches parser_safe.py
 
 @dataclass(frozen=True)
 class HashRecord:
-    """Immutable record of a file's SHA-256 hash at a specific pipeline phase.
+    """
+    Immutable record of a file's SHA-256 hash at a specific pipeline phase.
 
     Attributes:
         file_path: Absolute or relative path to the file that was hashed.
@@ -110,7 +112,8 @@ class HashRecord:
 
 @dataclass
 class IntegrityCheckResult:
-    """Result of comparing pre-calculation and post-draft hashes.
+    """
+    Result of comparing pre-calculation and post-draft hashes.
 
     Attributes:
         source_file: Path of the file that was checked.
@@ -134,7 +137,8 @@ class IntegrityCheckResult:
 
 
 class SubmittalIntegrityGate:
-    """Post-draft SHA-256 hash verification gate for the DXF compilation
+    """
+    Post-draft SHA-256 hash verification gate for the DXF compilation
     pipeline.
 
     Records file hashes at key pipeline phases and verifies that source files
@@ -158,7 +162,8 @@ class SubmittalIntegrityGate:
     # ------------------------------------------------------------------
 
     def _compute_sha256(self, file_path: str) -> str:
-        """Compute the SHA-256 hex digest of a file.
+        """
+        Compute the SHA-256 hex digest of a file.
 
         Reads the file in 8 KB chunks to handle large CAD files without
         excessive memory usage. This matches the chunked-read approach
@@ -189,7 +194,8 @@ class SubmittalIntegrityGate:
     # ------------------------------------------------------------------
 
     def record_hash(self, file_path: str, phase: str) -> HashRecord:
-        """Compute and store the SHA-256 hash of *file_path* for *phase*.
+        """
+        Compute and store the SHA-256 hash of *file_path* for *phase*.
 
         The hash is computed from the current on-disk contents and stored
         internally so that it can be compared later via
@@ -230,7 +236,8 @@ class SubmittalIntegrityGate:
         source_file: str,
         pre_calculation_hash: str,
     ) -> Any:
-        """Verify that *source_file* has not changed since pre-calculation.
+        """
+        Verify that *source_file* has not changed since pre-calculation.
 
         Recomputes the SHA-256 hash of *source_file* and compares it against
         *pre_calculation_hash*. A mismatch indicates a TOCTOU vulnerability
@@ -391,7 +398,8 @@ class SubmittalIntegrityGate:
         return result
 
     def get_hash_history(self, file_path: str) -> list[HashRecord]:
-        """Return the recorded hash history for a file.
+        """
+        Return the recorded hash history for a file.
 
         Args:
             file_path: Path to the source file.

@@ -1,4 +1,5 @@
-"""fireai/core/cable_routing_engine.py.
+"""
+fireai/core/cable_routing_engine.py.
 ====================================
 LIFE-SAFETY CRITICAL: Cable routing engine for the FireAI fire alarm
 engineering platform.  Routes Class A (ring) and Class B (home-run)
@@ -53,7 +54,8 @@ logger = logging.getLogger(__name__)
 
 
 class _WireGaugeInstance:
-    """A single wire gauge instance with NEC Table 8 properties.
+    """
+    A single wire gauge instance with NEC Table 8 properties.
 
     Stores BOTH 20°C and 75°C NEC published resistance values to avoid
     the temperature-coefficient approximation error (~2% for AWG 14).
@@ -138,7 +140,8 @@ class _WireGaugeMeta(type):
 
 
 class WireGauge(metaclass=_WireGaugeMeta):
-    """NEC Article 760 / NEC Chapter 9 Table 8 — Fire alarm wire gauges.
+    """
+    NEC Article 760 / NEC Chapter 9 Table 8 — Fire alarm wire gauges.
 
     Standard fire alarm circuit wire gauges: AWG 12, 14, 16, 18.
     These are the gauges permitted by NEC 760.154 for PLFA circuits.
@@ -210,7 +213,8 @@ class ObstacleType(Enum):
 
 @dataclass(frozen=True)
 class RoutingObstacle3D:
-    """A 3D axis-aligned bounding box obstacle for cable routing.
+    """
+    A 3D axis-aligned bounding box obstacle for cable routing.
 
     Defined by two corner points (x1,y1,z1) and (x2,y2,z2) with
     optional firestop/rating metadata for fire-rated wall penetrations.
@@ -254,7 +258,8 @@ class RoutingObstacle3D:
         p1: tuple[float, float, float],
         p2: tuple[float, float, float],
     ) -> bool:
-        """Check if a line segment intersects this obstacle (AABB intersection).
+        """
+        Check if a line segment intersects this obstacle (AABB intersection).
 
         Uses the slab method for ray-AABB intersection.
         """
@@ -295,7 +300,8 @@ class RoutingObstacle3D:
 
 @dataclass(frozen=True)
 class VoltageDropSegment:
-    """Per-segment voltage drop result for NFPA 72 §10.6.4 verification.
+    """
+    Per-segment voltage drop result for NFPA 72 §10.6.4 verification.
 
     Attributes:
         segment_index: Zero-based index.
@@ -332,7 +338,8 @@ class VoltageDropSegment:
 
 @dataclass(frozen=True)
 class RouteResult:
-    """Immutable result of a cable routing operation.
+    """
+    Immutable result of a cable routing operation.
 
     Attributes:
         circuit_id: Unique circuit identifier.
@@ -368,7 +375,8 @@ class RouteResult:
 
 
 class CableRoutingEngine:
-    """LIFE-SAFETY CRITICAL cable routing engine for fire alarm circuits.
+    """
+    LIFE-SAFETY CRITICAL cable routing engine for fire alarm circuits.
 
     Implements voltage drop verification per NFPA 72 §10.6.4,
     auto gauge selection (AWG 18→12), and 3D Euclidean distance
@@ -386,7 +394,8 @@ class CableRoutingEngine:
         ps_voltage: float = NOMINAL_VOLTAGE_FA,
         max_voltage_drop_pct: float = MAX_VOLTAGE_DROP_PCT,
     ) -> None:
-        """Initialize the cable routing engine.
+        """
+        Initialize the cable routing engine.
 
         Args:
             obstacles: Initial list of routing obstacles.
@@ -429,7 +438,8 @@ class CableRoutingEngine:
         p1: tuple[float, float, float],
         p2: tuple[float, float, float],
     ) -> list[RoutingObstacle3D]:
-        """Check which obstacles a line segment intersects.
+        """
+        Check which obstacles a line segment intersects.
 
         Returns list of obstacles that the line from p1 to p2 passes through.
         """
@@ -446,7 +456,8 @@ class CableRoutingEngine:
         p1: tuple[float, float, float],
         p2: tuple[float, float, float],
     ) -> float:
-        """Calculate 3D Euclidean distance between two points.
+        """
+        Calculate 3D Euclidean distance between two points.
 
         Args:
             p1: Start point (x, y, z).
@@ -476,7 +487,8 @@ class CableRoutingEngine:
         wire_gauge: _WireGaugeInstance | None = None,
         ps_voltage: float | None = None,
     ) -> RouteResult:
-        """Route a circuit and verify voltage drop compliance.
+        """
+        Route a circuit and verify voltage drop compliance.
 
         Args:
             circuit: CircuitTopology instance from circuit_topology module.
@@ -594,7 +606,8 @@ class CableRoutingEngine:
         wire_gauge: _WireGaugeInstance,
         voltage: float,
     ) -> Any:
-        """Compute voltage drop along the circuit for a given wire gauge.
+        """
+        Compute voltage drop along the circuit for a given wire gauge.
 
         Uses the NFPA 72 §10.6.4 formula:
             V_drop = 2 × I_total × R_per_m × L

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Dispatcher for the 27 AMiner Open Platform functions exposed via the
+"""
+Dispatcher for the 27 AMiner Open Platform functions exposed via the
 z-ai gateway's /v1/functions/invoke endpoint.
 
 Each action maps 1:1 to an `aminer_*` function registered in the gateway.
@@ -338,7 +339,7 @@ def _cast(kind: str) -> Callable[[str], Any]:
     if kind == "float":
         return float
     if kind == "json":
-        return lambda s: json.loads(s)
+        return json.loads
     return str
 
 

@@ -1,4 +1,5 @@
-"""fireai.core.detector_response — NFPA 72 Detector Response Time Modeling.
+"""
+fireai.core.detector_response — NFPA 72 Detector Response Time Modeling.
 =======================================================================
 
 Implements detector response time estimation per NFPA 72 and fire
@@ -62,7 +63,8 @@ _G = 9.81  # m/s²
 
 @dataclass(frozen=True)
 class DetectorResponseResult:
-    """Result from detector response time calculation.
+    """
+    Result from detector response time calculation.
 
     This provides an ENGINEERING ESTIMATE of detector activation time.
     It must NOT be used as the sole basis for life safety decisions.
@@ -103,7 +105,8 @@ def calculate_heat_detector_response(
     ambient_temp_c: float = _AMBIENT_TEMP_C,
     fire_growth_rate: str = "medium",
 ) -> DetectorResponseResult:
-    """Estimate heat detector activation time using Alpert's ceiling jet model.
+    """
+    Estimate heat detector activation time using Alpert's ceiling jet model.
 
     NFPA 72 §17.7.3 — Heat detectors activate when the ceiling jet
     temperature exceeds the detector's rated activation temperature.
@@ -230,7 +233,8 @@ def calculate_smoke_detector_response(
     smoke_obscuration_pct_per_m: float = 1.0,
     ambient_temp_c: float = _AMBIENT_TEMP_C,
 ) -> DetectorResponseResult:
-    """Estimate smoke detector activation time using plume transport model.
+    """
+    Estimate smoke detector activation time using plume transport model.
 
     NFPA 72 §17.7.4 — Smoke detectors activate when smoke concentration
     exceeds the detector's sensitivity threshold. Most photoelectric

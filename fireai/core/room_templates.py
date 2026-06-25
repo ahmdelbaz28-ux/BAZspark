@@ -1,4 +1,5 @@
-"""room_templates.py — Ready-made RoomSpec templates.
+"""
+room_templates.py — Ready-made RoomSpec templates.
 =========================================
 Usage:
     from fireai.core.room_templates import office, warehouse, corridor

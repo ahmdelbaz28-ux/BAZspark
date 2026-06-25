@@ -1,4 +1,5 @@
-"""pathway_survivability_engine.py — NFPA 72-2022 §12.4 Pathway Survivability.
+"""
+pathway_survivability_engine.py — NFPA 72-2022 §12.4 Pathway Survivability.
 
 CRITICAL LIFE-SAFETY MODULE
 ============================
@@ -59,7 +60,8 @@ __all__ = [
 
 @dataclass(frozen=True)
 class BuildingSpec:
-    """Building specification for pathway survivability classification.
+    """
+    Building specification for pathway survivability classification.
 
     Attributes:
         occupancy:       Building occupancy category.
@@ -109,7 +111,8 @@ class BuildingSpec:
 
 @dataclass(frozen=True)
 class CableRequirement:
-    """Cable requirement for a specific zone/route.
+    """
+    Cable requirement for a specific zone/route.
 
     Attributes:
         route_type:      "riser", "horizontal", "plenum", or "general".
@@ -133,7 +136,8 @@ class CableRequirement:
 
 @dataclass
 class SurvivabilityResult:
-    """Complete pathway survivability classification result.
+    """
+    Complete pathway survivability classification result.
 
     Attributes:
         building_level:   Overall minimum survivability level for the building.
@@ -162,7 +166,8 @@ class SurvivabilityResult:
 
 
 class PathwaySurvivabilityEngine:
-    """NFPA 72-2022 §12.4 Pathway Survivability Classification Engine.
+    """
+    NFPA 72-2022 §12.4 Pathway Survivability Classification Engine.
 
     Classifies a building's fire alarm wiring requirements based on
     occupancy, height, sprinkler status, and evacuation strategy.
@@ -188,7 +193,8 @@ class PathwaySurvivabilityEngine:
     # Ordered from most to least restrictive for correct escalation.
 
     def classify(self, spec: BuildingSpec) -> SurvivabilityResult:
-        """Classify the pathway survivability requirements for a building.
+        """
+        Classify the pathway survivability requirements for a building.
 
         Args:
             spec: Building specification.
@@ -349,7 +355,8 @@ class PathwaySurvivabilityEngine:
         spec: BuildingSpec,
         level: PathwaySurvivabilityLevel,
     ) -> list[CableRequirement]:
-        """Generate per-route-type cable requirements based on survivability level.
+        """
+        Generate per-route-type cable requirements based on survivability level.
 
         Maps the survivability level to specific cable types and enclosure
         requirements for each route type (riser, horizontal, plenum, general).
@@ -518,7 +525,8 @@ class PathwaySurvivabilityEngine:
         spec: BuildingSpec,
         route_type: str = "general",
     ) -> CableType:
-        """Convenience: return the required cable type for a given route.
+        """
+        Convenience: return the required cable type for a given route.
 
         Args:
             spec: Building specification.

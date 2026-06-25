@@ -1,5 +1,5 @@
 """
-Set Parameter by Name 
+Set Parameter by Name
 Set one of element's parameters.
 
 TESTED REVIT API: 2016,2017
@@ -12,7 +12,7 @@ License: http://github.com/gtalarico/revitapidocs/blob/master/LICENSE.md
 """
 
 #Imports
-from Autodesk.Revit.DB import Element, Transaction
+from Autodesk.Revit.DB import Transaction
 
 doc = __revit__.ActiveUIDocument.Document
 uidoc = __revit__.ActiveUIDocument

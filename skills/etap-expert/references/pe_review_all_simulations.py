@@ -17,7 +17,8 @@
 #   4. Safety margins (conservative assumptions)
 #   5. Standard compliance (output meets code requirements)
 
-"""PE REVIEW REPORT — All 10 ETAP Expert Skill Simulations.
+"""
+PE REVIEW REPORT — All 10 ETAP Expert Skill Simulations.
 =======================================================
 
 EXECUTIVE SUMMARY

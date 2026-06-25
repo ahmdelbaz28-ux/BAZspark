@@ -1,4 +1,5 @@
-"""test_monte_carlo_pipeline.py — Comprehensive tests for the Monte Carlo pipeline.
+"""
+test_monte_carlo_pipeline.py — Comprehensive tests for the Monte Carlo pipeline.
 
 Covers:
   1. DetectorFailureModel dataclass (defaults, custom values, field access)

@@ -1,4 +1,5 @@
-"""fireai/core/sensitivity_analyzer.py  V1.0.
+"""
+fireai/core/sensitivity_analyzer.py  V1.0.
 ==========================================
 Standalone sensitivity tool for FireAI engineers.
 
@@ -101,7 +102,8 @@ class SensitivityReport:
 
 
 class SensitivityAnalyzer:
-    """Standalone sensitivity tool for FireAI engineers.
+    """
+    Standalone sensitivity tool for FireAI engineers.
 
     Sweeps a single parameter across a list of values, calls
     fireai's DensityOptimizer.optimize() for each value, and
@@ -125,7 +127,8 @@ class SensitivityAnalyzer:
         values: list[float] | None = None,
         baseline_value: float | None = None,
     ) -> SensitivityReport:
-        """Run a single-parameter sensitivity sweep.
+        """
+        Run a single-parameter sensitivity sweep.
 
         Parameters
         ----------

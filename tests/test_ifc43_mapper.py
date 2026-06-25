@@ -1,4 +1,5 @@
-"""test_ifc43_mapper.py — Tests for IFC 4.3 Schema Mapper.
+"""
+test_ifc43_mapper.py — Tests for IFC 4.3 Schema Mapper.
 
 MISSION TASK 1.3 — Validates the IFC 4.3 ADD2 schema mapper that
 transforms FireAI internal elements to standard IFC 4.3 representation.
@@ -9,21 +10,18 @@ Per agent.md Rule 1: no fabrication.
 
 from __future__ import annotations
 
-import math
-
 import pytest
 
 from fireai.bridges.ifc43_mapper import (
     FIREAI_TO_IFC43_MAP,
-    IFC43ElementType,
-    IFC43Mapper,
     IFC43_SCHEMA_VERSION,
-    PSET_FIREALARM_COMMON,
     PSET_FIREAI_AUDIT,
     PSET_FIREAI_DESIGN,
     PSET_FIREAI_SAFETY,
+    PSET_FIREALARM_COMMON,
+    IFC43ElementType,
+    IFC43Mapper,
 )
-
 
 # ---------------------------------------------------------------------------
 # Constants Tests

@@ -1,4 +1,5 @@
-"""fireai.conduit.router — Orthogonal A* Conduit Path Router.
+"""
+fireai.conduit.router — Orthogonal A* Conduit Path Router.
 ==========================================================
 
 Routes conduit runs between two points through a 3D building model,
@@ -75,7 +76,8 @@ _MAX_ITERATIONS: int = 500_000
 
 @dataclass(frozen=True)
 class BoundingBox:
-    """Axis-aligned bounding box for obstacle representation.
+    """
+    Axis-aligned bounding box for obstacle representation.
 
     All coordinates in metres. Inclusive bounds (a point exactly on
     the surface IS inside the box for clearance purposes).
@@ -162,7 +164,8 @@ class _AStarNode:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class ConduitRouter:
-    """Orthogonal A* router for physical conduit runs.
+    """
+    Orthogonal A* router for physical conduit runs.
 
     Finds the shortest NEC-compliant path between two points in a building,
     honouring obstacle clearances and bend count limits.
@@ -184,7 +187,8 @@ class ConduitRouter:
         obstacles: list[BoundingBox] | None = None,
         grid_resolution_m: float = 0.10,
     ) -> None:
-        """Initialise the router.
+        """
+        Initialise the router.
 
         Args:
             obstacles:          List of bounding boxes to avoid.
@@ -244,7 +248,8 @@ class ConduitRouter:
         conduit_type: ConduitType = ConduitType.EMT,
         trade_size: TradeSize = TradeSize.HALF,
     ) -> Result[RoutePath, RoutingError | PhysicsError]:
-        """Find shortest NEC-compliant conduit path from start to end.
+        """
+        Find shortest NEC-compliant conduit path from start to end.
 
         Uses orthogonal A* with Manhattan distance heuristic.
         Heuristic is ADMISSIBLE: Manhattan distance ≤ actual path length
@@ -429,7 +434,8 @@ class ConduitRouter:
 
 
 def _simplify_waypoints(waypoints: list[Point3D]) -> list[Point3D]:
-    """Merge consecutive collinear points into straight segments.
+    """
+    Merge consecutive collinear points into straight segments.
 
     Two points are collinear with a third if all lie on the same
     axis-aligned line. This reduces waypoint count, making the path
@@ -489,7 +495,8 @@ def orthogonal_astar(
     conduit_type: ConduitType = ConduitType.EMT,
     trade_size: TradeSize = TradeSize.HALF,
 ) -> Result[RoutePath, RoutingError | PhysicsError]:
-    """Route a conduit run using orthogonal A* pathfinding.
+    """
+    Route a conduit run using orthogonal A* pathfinding.
 
     Convenience wrapper around ConduitRouter.route().
 

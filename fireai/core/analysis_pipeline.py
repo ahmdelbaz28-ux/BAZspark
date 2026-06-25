@@ -94,7 +94,8 @@ logger = logging.getLogger("fireai.pipeline")
 
 
 class PipelineStage(enum.Enum):
-    """Stages of the fire safety analysis pipeline.
+    """
+    Stages of the fire safety analysis pipeline.
 
     Each stage represents a discrete step in the analysis workflow.
     The pipeline progresses sequentially through these stages.
@@ -118,7 +119,8 @@ class PipelineStage(enum.Enum):
 
 @dataclass
 class PipelineResult:
-    """Result of the complete analysis pipeline for a single room.
+    """
+    Result of the complete analysis pipeline for a single room.
 
     Contains all artifacts from every stage, plus timing, errors,
     and warnings. This is the authoritative output of the pipeline.
@@ -152,7 +154,8 @@ class PipelineResult:
     twin_checksum: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize to a dictionary (for JSON export / audit trail).
+        """
+        Serialize to a dictionary (for JSON export / audit trail).
 
         Handles non-serializable types gracefully:
           - PipelineStage → string value
@@ -226,7 +229,8 @@ class PipelineResult:
 
 
 class AnalysisPipeline:
-    """Complete analysis pipeline: Optimize → Verify → Certify → Sign → Store.
+    """
+    Complete analysis pipeline: Optimize → Verify → Certify → Sign → Store.
 
     This is the MAIN ENTRY POINT for fire safety analysis. It replaces
     the ad-hoc manual calling of individual components with a single,
@@ -263,7 +267,8 @@ class AnalysisPipeline:
         generate_certificate: bool = True,
         require_consensus: bool = True,
     ) -> None:
-        """Initialize the analysis pipeline.
+        """
+        Initialize the analysis pipeline.
 
         Args:
             coverage_radius: Detector coverage radius R in meters.
@@ -329,7 +334,8 @@ class AnalysisPipeline:
 
     @property
     def twin(self) -> DigitalTwin:
-        """Access the pipeline's DigitalTwin instance.
+        """
+        Access the pipeline's DigitalTwin instance.
 
         After running analyze_room() or analyze_building(), the twin
         contains all planned detectors with their positions, ready
@@ -345,7 +351,8 @@ class AnalysisPipeline:
         room_id: str = "",
         ceiling_height: float = 3.0,
     ) -> PipelineResult:
-        """Run complete analysis pipeline for a single room.
+        """
+        Run complete analysis pipeline for a single room.
 
         Stages:
           1. OPTIMIZATION: Run DensityOptimizer with 5 strategies
@@ -945,7 +952,8 @@ class AnalysisPipeline:
         self,
         rooms: list[tuple[Room, str, float]],
     ) -> list[PipelineResult]:
-        """Run pipeline for all rooms in a building.
+        """
+        Run pipeline for all rooms in a building.
 
         Error Resilience:
             - If one room fails, OTHER rooms continue (unlike old FloorOrchestrator)

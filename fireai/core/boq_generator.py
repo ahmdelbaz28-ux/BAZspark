@@ -1,4 +1,5 @@
-"""Bill of Quantities (BOQ) generator for fire alarm systems.
+"""
+Bill of Quantities (BOQ) generator for fire alarm systems.
 
 Produces a comprehensive, code-compliant BOQ from room and loop data,
 including detectors, fault isolators, cable, batteries, and notification
@@ -162,7 +163,8 @@ class BOQResult:
 
 
 def standard_battery_size(required_ah: float) -> float:
-    """Return the next standard battery size >= *required_ah*.
+    """
+    Return the next standard battery size >= *required_ah*.
 
     Standard sizes (Ah): 7, 12, 18, 26, 33, 40, 55, 75, 90, 100,
     120, 150, 180, 200.  If the required capacity exceeds the largest
@@ -191,7 +193,8 @@ def calculate_battery_for_panels(
     panel_count: int,
     spec: BatterySpec,
 ) -> dict[str, Any]:
-    """Calculate battery requirements for one or more fire alarm panels.
+    """
+    Calculate battery requirements for one or more fire alarm panels.
 
     Uses :func:`required_battery_capacity_ah` from *nfpa72_calculations*
     and enforces NFPA 72 §10.6.7 (two batteries for redundancy).
@@ -241,7 +244,8 @@ def generate_detector_boq(
     rooms: list[dict],
     ceiling_height_m: float = 3.0,
 ) -> list[BOQItem]:
-    """Generate BOQ line items for detectors from a list of rooms.
+    """
+    Generate BOQ line items for detectors from a list of rooms.
 
     NFPA 72 §17.6 – spot-type smoke detectors are spaced at 30 ft (9.1 m)
     nominal on flat ceilings.  Heat detectors per §17.9 at 50 ft (15.2 m).
@@ -326,7 +330,8 @@ def generate_detector_boq(
 
 
 def generate_isolator_boq(loops: list[dict]) -> list[BOQItem]:
-    """Generate BOQ line items for fault isolators using compliance verification.
+    """
+    Generate BOQ line items for fault isolators using compliance verification.
 
     For each loop, :func:`verify_isolator_compliance` is called to assess
     whether existing isolators are sufficient.  If not, the shortfall is
@@ -411,7 +416,8 @@ def generate_cable_boq(
     load_current_a: float = 0.5,
     require_rated_enclosure: bool = False,
 ) -> list[BOQItem]:
-    """Generate BOQ line items for cable and conduit from loop data.
+    """
+    Generate BOQ line items for cable and conduit from loop data.
 
     Cable length is taken from each loop's ``cable_length_m`` field.  A
     10 % waste factor is applied per industry practice.  Conduit is
@@ -582,7 +588,8 @@ def generate_full_boq(
     battery_spec: BatterySpec | None = None,
     include_notification: bool = True,
 ) -> BOQResult:
-    """Generate a complete Bill of Quantities for a fire alarm system.
+    """
+    Generate a complete Bill of Quantities for a fire alarm system.
 
     Aggregates detectors, fault isolators, cable, batteries, panels, and
     optional notification appliances into a single :class:`BOQResult`.
@@ -793,7 +800,8 @@ def generate_battery_result_for_release_gate(
     alarm_minutes: float = 5.0,
     safety_factor: float = 1.20,
 ) -> dict[str, Any]:
-    """Generate battery sizing result for release_gates.py Gate 8.
+    """
+    Generate battery sizing result for release_gates.py Gate 8.
 
     This is the output path that calls :func:`required_battery_capacity_ah`
     and returns a dict compatible with the ``battery_result`` parameter of

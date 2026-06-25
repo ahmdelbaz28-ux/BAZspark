@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""FireAI — Constants Cross-Reference Index Generator.
+"""
+FireAI — Constants Cross-Reference Index Generator.
 
 Tracks where each constant is used across the codebase.
 Generates impact analysis for constant changes.

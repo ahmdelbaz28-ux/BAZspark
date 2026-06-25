@@ -1,6 +1,4 @@
-"""
-Execution Isolation System for Distributed FACP System
-"""
+"""Execution Isolation System for Distributed FACP System"""
 import os
 import shutil
 import signal
@@ -10,11 +8,12 @@ import tempfile
 import threading
 import time
 from enum import Enum
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 
 class ExecutionEnvironment(Enum):
     """Types of execution environments"""
+
     SANDBOXED_SUBPROCESS = "sandboxed_subprocess"
     CONTAINERIZED = "containerized"  # Conceptual for now
     THREAD_ISOLATED = "thread_isolated"
@@ -26,6 +25,7 @@ class ExecutionIsolationManager:
     Manages execution isolation for distributed system
     Ensures L3 engine nodes remain stateless and isolated
     """
+
     def __init__(self):
         self.active_processes = {}  # pid -> process_info
         self.active_containers = {}  # container_id -> container_info
@@ -34,11 +34,9 @@ class ExecutionIsolationManager:
         self.lock = threading.Lock()
         self.sandbox_base_path = tempfile.mkdtemp(prefix="facp_sandbox_")
 
-    def create_sandboxed_execution(self, func: Callable, args: tuple = (), kwargs: dict = None,
+    def create_sandboxed_execution(self, func: Callable, args: tuple = (), kwargs: Optional[dict] = None,
                                    timeout: int = 8000, max_memory_mb: int = 512) -> Dict[str, Any]:
-        """
-        Create a sandboxed execution environment for a function
-        """
+        """Create a sandboxed execution environment for a function"""
         kwargs = kwargs or {}
 
         # Create temporary directory for this execution
@@ -160,15 +158,13 @@ except Exception as e:
 
             return {
                 "status": "error",
-                "result": f"Execution failed: {str(e)}",
+                "result": f"Execution failed: {e!s}",
                 "execution_time_ms": (time.time() - start_time) * 1000,
                 "sandbox_path": exec_dir
             }
 
     def enforce_resource_limits(self, pid: int, timeout_ms: int, max_memory_mb: int):
-        """
-        Enforce resource limits on a process
-        """
+        """Enforce resource limits on a process"""
         self.resource_limits[pid] = {
             "timeout_ms": timeout_ms,
             "max_memory_mb": max_memory_mb,
@@ -176,9 +172,7 @@ except Exception as e:
         }
 
     def check_resource_compliance(self, pid: int) -> bool:
-        """
-        Check if a process is within resource limits
-        """
+        """Check if a process is within resource limits"""
         if pid not in self.resource_limits:
             return True  # No limits set
 
@@ -194,9 +188,7 @@ except Exception as e:
         return True
 
     def terminate_process(self, pid: int, force: bool = False):
-        """
-        Safely terminate a process
-        """
+        """Safely terminate a process"""
         try:
             if force:
                 os.kill(pid, signal.SIGKILL)
@@ -208,9 +200,7 @@ except Exception as e:
             pass  # Insufficient permissions
 
     def cleanup_sandboxed_executions(self):
-        """
-        Clean up any remaining sandboxed executions
-        """
+        """Clean up any remaining sandboxed executions"""
         # In a real implementation, this would monitor and clean up processes
         # For now, just clean up the base path
         try:
@@ -220,9 +210,7 @@ except Exception as e:
             pass
 
     def get_execution_stats(self) -> Dict[str, Any]:
-        """
-        Get statistics about sandboxed executions
-        """
+        """Get statistics about sandboxed executions"""
         return {
             "total_executions": len(self.execution_logs),
             "successful_executions": len([log for log in self.execution_logs if log["status"] == "success"]),
@@ -236,9 +224,8 @@ except Exception as e:
 
 
 class SandboxController:
-    """
-    Controller for managing sandboxes across distributed nodes
-    """
+    """Controller for managing sandboxes across distributed nodes"""
+
     def __init__(self, node_id: str):
         self.node_id = node_id
         self.isolation_manager = ExecutionIsolationManager()
@@ -247,9 +234,7 @@ class SandboxController:
         self.lock = threading.Lock()
 
     def create_sandbox_template(self, name: str, config: Dict[str, Any]):
-        """
-        Create a template for sandboxes with specific configurations
-        """
+        """Create a template for sandboxes with specific configurations"""
         self.sandbox_templates[name] = {
             "timeout_ms": config.get("timeout_ms", 8000),
             "max_memory_mb": config.get("max_memory_mb", 512),
@@ -258,10 +243,8 @@ class SandboxController:
             "created_at": time.time()
         }
 
-    def provision_sandbox(self, template_name: str, task_id: str = None) -> str:
-        """
-        Provision a new sandbox based on a template
-        """
+    def provision_sandbox(self, template_name: str, task_id: Optional[str] = None) -> str:
+        """Provision a new sandbox based on a template"""
         if template_name not in self.sandbox_templates:
             raise ValueError(f"Sandbox template '{template_name}' not found")
 
@@ -290,10 +273,8 @@ class SandboxController:
         return sandbox_id
 
     def execute_in_sandbox(self, sandbox_id: str, func: Callable, args: tuple = (),
-                          kwargs: dict = None, custom_config: Dict[str, Any] = None) -> Dict[str, Any]:
-        """
-        Execute a function in a specific sandbox
-        """
+                          kwargs: Optional[dict] = None, custom_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Execute a function in a specific sandbox"""
         if sandbox_id not in self.active_sandboxes:
             raise ValueError(f"Sandbox '{sandbox_id}' not found")
 
@@ -318,9 +299,7 @@ class SandboxController:
         return result
 
     def destroy_sandbox(self, sandbox_id: str):
-        """
-        Destroy a sandbox and clean up resources
-        """
+        """Destroy a sandbox and clean up resources"""
         if sandbox_id not in self.active_sandboxes:
             return
 
@@ -337,9 +316,7 @@ class SandboxController:
             del self.active_sandboxes[sandbox_id]
 
     def enforce_execution_constraints(self, request_data: Dict[str, Any]) -> tuple[bool, str]:
-        """
-        Enforce execution constraints based on request data
-        """
+        """Enforce execution constraints based on request data"""
         constraints = request_data.get("constraints", {})
 
         # Check timeout constraint
@@ -360,9 +337,7 @@ class SandboxController:
         return True, "Constraints are valid"
 
     def validate_no_external_access(self, code: str) -> tuple[bool, list[str]]:
-        """
-        Validate that code doesn't attempt external access
-        """
+        """Validate that code doesn't attempt external access"""
         forbidden_patterns = [
             "import requests",
             "import urllib",
@@ -383,9 +358,7 @@ class SandboxController:
         return len(violations) == 0, violations
 
     def get_sandbox_health(self) -> Dict[str, Any]:
-        """
-        Get health status of all sandboxes
-        """
+        """Get health status of all sandboxes"""
         healthy_count = 0
         total_count = len(self.active_sandboxes)
 
@@ -403,9 +376,7 @@ class SandboxController:
         }
 
     def cleanup_unused_sandboxes(self, max_age_minutes: int = 60):
-        """
-        Clean up sandboxes that haven't been used recently
-        """
+        """Clean up sandboxes that haven't been used recently"""
         current_time = time.time()
         cutoff_time = current_time - (max_age_minutes * 60)
 
@@ -420,16 +391,14 @@ class SandboxController:
 
 
 def create_deterministic_execution_wrapper(func: Callable) -> Callable:
-    """
-    Create a wrapper that ensures deterministic execution
-    """
+    """Create a wrapper that ensures deterministic execution"""
     def wrapper(*args, **kwargs):
         # Set a fixed random seed based on input to ensure deterministic behavior
         import hashlib
         import random
 
         # Create deterministic seed from inputs
-        input_str = f"{repr(args)}{repr(kwargs)}{func.__name__}"
+        input_str = f"{args!r}{kwargs!r}{func.__name__}"
         seed = int(hashlib.sha256(input_str.encode()).hexdigest(), 16) % (2**32)
         random.seed(seed)
 
@@ -444,9 +413,8 @@ def create_deterministic_execution_wrapper(func: Callable) -> Callable:
 
 
 class StatelessExecutionValidator:
-    """
-    Validator to ensure L3 engine nodes remain stateless
-    """
+    """Validator to ensure L3 engine nodes remain stateless"""
+
     def __init__(self):
         self.stateful_patterns = [
             "global ",
@@ -462,9 +430,7 @@ class StatelessExecutionValidator:
         ]
 
     def validate_stateless_code(self, code: str) -> tuple[bool, list[str]]:
-        """
-        Validate that code doesn't maintain state
-        """
+        """Validate that code doesn't maintain state"""
         violations = []
         for pattern in self.stateful_patterns:
             if pattern in code:
@@ -473,9 +439,7 @@ class StatelessExecutionValidator:
         return len(violations) == 0, violations
 
     def validate_deterministic_function(self, func: Callable) -> tuple[bool, str]:
-        """
-        Validate that a function is deterministic
-        """
+        """Validate that a function is deterministic"""
         # Test the function with the same inputs multiple times
         # This is a basic check - more sophisticated validation would be needed for production
 

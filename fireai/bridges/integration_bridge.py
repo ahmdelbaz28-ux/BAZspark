@@ -1,4 +1,5 @@
-"""fireai/bridges/integration_bridge.py.
+"""
+fireai/bridges/integration_bridge.py.
 =====================================
 LIFE-SAFETY CRITICAL: Integration Bridge for the FireAI Fire Alarm
 Engineering Platform.  Wires together four core subsystems into a
@@ -167,7 +168,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class FloorData:
-    """Per-floor metadata required by the integration bridge.
+    """
+    Per-floor metadata required by the integration bridge.
 
     Captures the minimum information needed to route cables, check
     acoustics, and orchestrate multi-floor analysis for a single
@@ -215,7 +217,8 @@ class FloorData:
 
 @dataclass
 class AcousticConfig:
-    """Configuration for acoustic coverage analysis.
+    """
+    Configuration for acoustic coverage analysis.
 
     Encapsulates the parameters needed to run the AcousticsEngine
     check across all floors of a building.
@@ -257,7 +260,8 @@ class AcousticConfig:
 
 @dataclass
 class CableRoutingResult:
-    """Aggregated result from the Cable Routing Engine subsystem.
+    """
+    Aggregated result from the Cable Routing Engine subsystem.
 
     Wraps the per-circuit :class:`RouteResult` objects produced by
     :class:`CableRoutingEngine` into a single building-level result
@@ -296,7 +300,8 @@ class CableRoutingResult:
 
 @dataclass
 class IntegrationConfig:
-    """Configuration for a single integration bridge run.
+    """
+    Configuration for a single integration bridge run.
 
     Captures all the data required by the four subsystems:
     building geometry (floors), FACP locations, obstacles for cable
@@ -327,7 +332,8 @@ class IntegrationConfig:
     nfpa_year: int = 2022
 
     def __post_init__(self) -> None:
-        """Validate integration configuration.
+        """
+        Validate integration configuration.
 
         Life-Safety Rule: reject invalid configuration early rather
         than producing silently incorrect results.
@@ -386,7 +392,8 @@ class IntegrationConfig:
 
 @dataclass
 class IntegrationResult:
-    """Combined results from all four integration subsystems.
+    """
+    Combined results from all four integration subsystems.
 
     This is the primary output of :meth:`IntegrationBridge.run`.  It
     captures results, errors, and warnings from every subsystem that
@@ -437,7 +444,8 @@ class IntegrationResult:
 
 
 class IntegrationBridge:
-    """Unified pipeline that wires together four FireAI subsystems.
+    """
+    Unified pipeline that wires together four FireAI subsystems.
 
     The integration bridge executes the following subsystems **in
     sequence** with safe error handling so that a failure in any one
@@ -479,7 +487,8 @@ class IntegrationBridge:
     _SUB_MULTI_FLOOR = "Multi-Floor Orchestrator"
 
     def __init__(self, config: IntegrationConfig) -> None:
-        """Initialize the integration bridge.
+        """
+        Initialize the integration bridge.
 
         Args:
             config: Integration configuration containing building
@@ -538,7 +547,8 @@ class IntegrationBridge:
     # ──────────────────────────────────────────────────────────────────────
 
     def run(self) -> IntegrationResult:
-        """Execute all four subsystems in sequence with safe error handling.
+        """
+        Execute all four subsystems in sequence with safe error handling.
 
         Each subsystem is executed in its own ``try / except`` block.
         If one subsystem fails, its error is captured and the remaining
@@ -680,7 +690,8 @@ class IntegrationBridge:
     # ──────────────────────────────────────────────────────────────────────
 
     def _run_cable_routing(self) -> CableRoutingResult | None:
-        """Run cable routing for the building.
+        """
+        Run cable routing for the building.
 
         Creates a :class:`CableRoutingEngine` instance, loads obstacle
         polygons from the configuration, and routes cables from each
@@ -859,7 +870,8 @@ class IntegrationBridge:
     # ──────────────────────────────────────────────────────────────────────
 
     def _run_twin_sync(self) -> Any | None:
-        """Sync the current design to the digital twin.
+        """
+        Sync the current design to the digital twin.
 
         Creates a :class:`DigitalTwinSync` instance and synchronises
         the building design data, capturing a versioned snapshot for
@@ -946,7 +958,8 @@ class IntegrationBridge:
     # ──────────────────────────────────────────────────────────────────────
 
     def _run_acoustics(self) -> Any | None:
-        """Check acoustic coverage for the building.
+        """
+        Check acoustic coverage for the building.
 
         Runs the :class:`AcousticsEngine` to verify NFPA 72-2022 §18.4
         audible notification coverage across all floors.  For each floor
@@ -1122,7 +1135,8 @@ class IntegrationBridge:
     # ──────────────────────────────────────────────────────────────────────
 
     def _run_multi_floor(self) -> Any | None:
-        """Orchestrate multi-floor analysis for the building.
+        """
+        Orchestrate multi-floor analysis for the building.
 
         Creates a :class:`MultiFloorOrchestrator` instance and runs
         the full multi-floor analysis: SLC loop assignment, vertical
@@ -1213,7 +1227,8 @@ class IntegrationBridge:
 
     @staticmethod
     def _evaluate_overall_compliance(result: IntegrationResult) -> bool:
-        """Evaluate overall compliance across all available subsystems.
+        """
+        Evaluate overall compliance across all available subsystems.
 
         A subsystem contributes to the compliance gate ONLY if it
         produced a non-None result.  Subsystems that were unavailable

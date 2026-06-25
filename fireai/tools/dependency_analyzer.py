@@ -1,4 +1,5 @@
-"""D6: Dependency Analyzer — Circular Imports + Dead Code Detection.
+"""
+D6: Dependency Analyzer — Circular Imports + Dead Code Detection.
 ================================================================
 Static analysis tool that scans the FireAI codebase for:
   1. Circular import dependencies

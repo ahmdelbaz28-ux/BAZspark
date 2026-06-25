@@ -7,33 +7,33 @@ These factories provide easy ways to create valid test data for testing.
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, Optional
 import random
 import string
+from datetime import datetime
+from typing import Any
 
 from skills.skill_validator import (
-    SkillMetadata,
+    ExecutionError,
+    ExecutionResult,
     SkillDescription,
+    SkillManifest,
+    SkillMetadata,
     SkillPermissions,
     SkillRequirements,
-    SkillManifest,
-    ExecutionResult,
-    ExecutionError,
 )
 
 
 class SkillMetadataFactory:
     """Factory for creating SkillMetadata instances."""
-    
+
     @classmethod
     def create(
         cls,
-        name: Optional[str] = None,
-        version: Optional[str] = None,
-        author: Optional[str] = None,
-        created_at: Optional[datetime] = None,
-        updated_at: Optional[datetime] = None,
+        name: str | None = None,
+        version: str | None = None,
+        author: str | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
     ) -> SkillMetadata:
         """Create a SkillMetadata instance with default values."""
         if name is None:
@@ -42,7 +42,7 @@ class SkillMetadataFactory:
             version = f"{random.randint(0, 9)}.{random.randint(0, 9)}.{random.randint(0, 9)}"
         if author is None:
             author = f"test-author-{cls._random_suffix()}"
-        
+
         return SkillMetadata(
             name=name,
             version=version,
@@ -50,7 +50,7 @@ class SkillMetadataFactory:
             created_at=created_at or datetime.now(),
             updated_at=updated_at,
         )
-    
+
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
@@ -59,14 +59,14 @@ class SkillMetadataFactory:
 
 class SkillDescriptionFactory:
     """Factory for creating SkillDescription instances."""
-    
+
     @classmethod
     def create(
         cls,
-        short_description: Optional[str] = None,
-        long_description: Optional[str] = None,
-        trigger_words: Optional[list[str]] = None,
-        use_cases: Optional[list[str]] = None,
+        short_description: str | None = None,
+        long_description: str | None = None,
+        trigger_words: list[str] | None = None,
+        use_cases: list[str] | None = None,
     ) -> SkillDescription:
         """Create a SkillDescription instance with default values."""
         if short_description is None:
@@ -75,14 +75,14 @@ class SkillDescriptionFactory:
             trigger_words = [f"test{cls._random_suffix()[:3]}", f"skill{cls._random_suffix()[:3]}"]
         if use_cases is None:
             use_cases = [f"Use case for {cls._random_suffix()}"]
-        
+
         return SkillDescription(
             short_description=short_description,
             long_description=long_description,
             trigger_words=trigger_words,
             use_cases=use_cases,
         )
-    
+
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
@@ -91,15 +91,15 @@ class SkillDescriptionFactory:
 
 class SkillPermissionsFactory:
     """Factory for creating SkillPermissions instances."""
-    
+
     @classmethod
     def create(
         cls,
-        network: Optional[bool] = None,
-        filesystem_read: Optional[bool] = None,
-        filesystem_write: Optional[bool] = None,
-        subprocess: Optional[bool] = None,
-        env_vars: Optional[list[str]] = None,
+        network: bool | None = None,
+        filesystem_read: bool | None = None,
+        filesystem_write: bool | None = None,
+        subprocess: bool | None = None,
+        env_vars: list[str] | None = None,
     ) -> SkillPermissions:
         """Create a SkillPermissions instance with default values."""
         if network is None:
@@ -112,7 +112,7 @@ class SkillPermissionsFactory:
             subprocess = random.choice([True, False])
         if env_vars is None:
             env_vars = [f"ENV_VAR_{cls._random_suffix().upper()}"]
-        
+
         return SkillPermissions(
             network=network,
             filesystem_read=filesystem_read,
@@ -120,7 +120,7 @@ class SkillPermissionsFactory:
             subprocess=subprocess,
             env_vars=env_vars,
         )
-    
+
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
@@ -129,14 +129,14 @@ class SkillPermissionsFactory:
 
 class SkillRequirementsFactory:
     """Factory for creating SkillRequirements instances."""
-    
+
     @classmethod
     def create(
         cls,
-        python_version: Optional[str] = None,
-        dependencies: Optional[dict[str, str]] = None,
-        permissions: Optional[SkillPermissions] = None,
-        max_execution_time: Optional[int] = None,
+        python_version: str | None = None,
+        dependencies: dict[str, str] | None = None,
+        permissions: SkillPermissions | None = None,
+        max_execution_time: int | None = None,
     ) -> SkillRequirements:
         """Create a SkillRequirements instance with default values."""
         if python_version is None:
@@ -147,14 +147,14 @@ class SkillRequirementsFactory:
             permissions = SkillPermissionsFactory.create()
         if max_execution_time is None:
             max_execution_time = random.randint(60, 3600)
-        
+
         return SkillRequirements(
             python_version=python_version,
             dependencies=dependencies,
             permissions=permissions,
             max_execution_time=max_execution_time,
         )
-    
+
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
@@ -163,16 +163,16 @@ class SkillRequirementsFactory:
 
 class ExecutionErrorFactory:
     """Factory for creating ExecutionError instances."""
-    
+
     @classmethod
     def create(
         cls,
         error: bool = True,
-        type: Optional[str] = None,
-        message: Optional[str] = None,
-        action_required: Optional[str] = None,
-        can_retry: Optional[bool] = None,
-        details: Optional[dict[str, Any]] = None,
+        type: str | None = None,
+        message: str | None = None,
+        action_required: str | None = None,
+        can_retry: bool | None = None,
+        details: dict[str, Any] | None = None,
     ) -> ExecutionError:
         """Create an ExecutionError instance with default values."""
         if type is None:
@@ -181,7 +181,7 @@ class ExecutionErrorFactory:
             message = f"Error occurred: {cls._random_suffix()}"
         if can_retry is None:
             can_retry = random.choice([True, False])
-        
+
         return ExecutionError(
             error=error,
             type=type,
@@ -190,7 +190,7 @@ class ExecutionErrorFactory:
             can_retry=can_retry,
             details=details,
         )
-    
+
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
@@ -199,20 +199,20 @@ class ExecutionErrorFactory:
 
 class ExecutionResultFactory:
     """Factory for creating ExecutionResult instances."""
-    
+
     @classmethod
     def create(
         cls,
-        success: Optional[bool] = None,
-        data: Optional[Any] = None,
-        error: Optional[ExecutionError] = None,
-        timestamp: Optional[datetime] = None,
-        duration_ms: Optional[float] = None,
+        success: bool | None = None,
+        data: Any | None = None,
+        error: ExecutionError | None = None,
+        timestamp: datetime | None = None,
+        duration_ms: float | None = None,
     ) -> ExecutionResult:
         """Create an ExecutionResult instance with default values."""
         if success is None:
             success = random.choice([True, False])
-        
+
         # Ensure mutual exclusivity of data and error
         if success:
             if error is not None:
@@ -224,7 +224,7 @@ class ExecutionResultFactory:
                 data = None
             if error is None:
                 error = ExecutionErrorFactory.create()
-        
+
         return ExecutionResult(
             success=success,
             data=data,
@@ -232,7 +232,7 @@ class ExecutionResultFactory:
             timestamp=timestamp or datetime.now(),
             duration_ms=duration_ms,
         )
-    
+
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
@@ -241,15 +241,15 @@ class ExecutionResultFactory:
 
 class SkillManifestFactory:
     """Factory for creating SkillManifest instances."""
-    
+
     @classmethod
     def create(
         cls,
-        metadata: Optional[SkillMetadata] = None,
-        description: Optional[SkillDescription] = None,
-        requirements: Optional[SkillRequirements] = None,
-        version_compatibility: Optional[str] = None,
-        tags: Optional[list[str]] = None,
+        metadata: SkillMetadata | None = None,
+        description: SkillDescription | None = None,
+        requirements: SkillRequirements | None = None,
+        version_compatibility: str | None = None,
+        tags: list[str] | None = None,
     ) -> SkillManifest:
         """Create a SkillManifest instance with default values."""
         if metadata is None:
@@ -262,7 +262,7 @@ class SkillManifestFactory:
             version_compatibility = f"{random.randint(1, 2)}.{random.randint(0, 9)}"
         if tags is None:
             tags = [f"tag{cls._random_suffix()[:5]}", f"type{cls._random_suffix()[:5]}"]
-        
+
         return SkillManifest(
             metadata=metadata,
             description=description,
@@ -270,7 +270,7 @@ class SkillManifestFactory:
             version_compatibility=version_compatibility,
             tags=tags,
         )
-    
+
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""

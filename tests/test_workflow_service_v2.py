@@ -339,7 +339,7 @@ class TestNodeInitialize:
 
     @patch("os.environ.get")
     @patch("os.path.realpath")
-    @pytest.mark.parametrize("ext,expected_type", [
+    @pytest.mark.parametrize(("ext", "expected_type"), [
         ("test.pdf", "pdf"),
         ("test.dwg", "dwg"),
         ("test.dxf", "dxf"),

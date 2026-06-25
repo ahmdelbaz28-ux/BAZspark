@@ -1,11 +1,9 @@
-"""
-Engine Worker for L3 in Distributed FACP System
-"""
+"""Engine Worker for L3 in Distributed FACP System"""
 import logging
 import threading
 import time
 import uuid
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from ..protocol.message_schema import FACPResponse
 from ..security.isolation import SandboxController, StatelessExecutionValidator
@@ -17,7 +15,8 @@ class EngineWorker:
     Engine worker that executes tasks in a stateless, deterministic manner
     Runs as a separate node in the distributed system
     """
-    def __init__(self, worker_id: str = None, capabilities: list = None,
+
+    def __init__(self, worker_id: Optional[str] = None, capabilities: Optional[list] = None,
                  max_concurrent_tasks: int = 10):
         self.worker_id = worker_id or f"engine_worker_{int(time.time())}_{uuid.uuid4().hex[:8]}"
         self.capabilities = capabilities or [
@@ -80,9 +79,7 @@ class EngineWorker:
         self.logger.info("Engine Worker %s stopped", self.worker_id)
 
     def process_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Process an incoming request from the orchestrator
-        """
+        """Process an incoming request from the orchestrator"""
         request_id = request_data.get("id", str(uuid.uuid4()))
         method = request_data.get("method", "")
 
@@ -125,9 +122,7 @@ class EngineWorker:
         return self._execute_request(request_data)
 
     def can_handle_method(self, method: str) -> bool:
-        """
-        Check if this worker can handle a specific method
-        """
+        """Check if this worker can handle a specific method"""
         # Check for exact match
         if method in self.capabilities:
             return True
@@ -140,9 +135,7 @@ class EngineWorker:
         return False
 
     def _validate_constraints(self, request_data: Dict[str, Any]) -> tuple[bool, str]:
-        """
-        Validate request constraints
-        """
+        """Validate request constraints"""
         constraints = request_data.get("constraints", {})
 
         # Check timeout constraint
@@ -163,9 +156,7 @@ class EngineWorker:
         return True, ""
 
     def _execute_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute a request in a sandboxed environment
-        """
+        """Execute a request in a sandboxed environment"""
         request_id = request_data["id"]
         method = request_data["method"]
         params = request_data.get("params", {})
@@ -229,7 +220,7 @@ class EngineWorker:
                 status="error",
                 error={
                     "code": "EXECUTION_ERROR",
-                    "message": f"Execution failed: {str(e)}"
+                    "message": f"Execution failed: {e!s}"
                 },
                 trace={
                     "execution_path": ["L3_EngineWorker"],
@@ -252,23 +243,18 @@ class EngineWorker:
         return response
 
     def _get_sandbox_template(self, method: str) -> str:
-        """
-        Determine appropriate sandbox template based on method
-        """
+        """Determine appropriate sandbox template based on method"""
         if "calculate" in method or "calc" in method:
             return "calculation"
-        elif "validate" in method or "check" in method:
+        if "validate" in method or "check" in method:
             return "validation"
-        elif "transform" in method or "convert" in method:
+        if "transform" in method or "convert" in method:
             return "transformation"
-        else:
-            # Default to calculation
-            return "calculation"
+        # Default to calculation
+        return "calculation"
 
     def _execution_loop(self):
-        """
-        Main execution loop for processing queued tasks
-        """
+        """Main execution loop for processing queued tasks"""
         while self.is_running:
             # Check for tasks in the queue
             if self.task_queue:
@@ -282,16 +268,12 @@ class EngineWorker:
             time.sleep(0.01)
 
     def _process_queued_task(self, task: Dict[str, Any]):
-        """
-        Process a task from the queue
-        """
+        """Process a task from the queue"""
         # This is a simplified version - in a real system, we'd run this asynchronously
         self.process_request(task["request_data"])
 
     def get_worker_status(self) -> Dict[str, Any]:
-        """
-        Get the status of this engine worker
-        """
+        """Get the status of this engine worker"""
         return {
             "worker_id": self.worker_id,
             "capabilities": self.capabilities,
@@ -308,16 +290,12 @@ class EngineWorker:
         }
 
     def heartbeat(self) -> Dict[str, Any]:
-        """
-        Heartbeat method for cluster monitoring
-        """
+        """Heartbeat method for cluster monitoring"""
         self.heartbeat_timestamp = time.time()
         return self.get_worker_status()
 
     def get_statistics(self) -> Dict[str, Any]:
-        """
-        Get execution statistics for this worker
-        """
+        """Get execution statistics for this worker"""
         return {
             "worker_id": self.worker_id,
             "total_executions": getattr(self, '_total_executions', 0),
@@ -329,51 +307,37 @@ class EngineWorker:
         }
 
     def cleanup_idle_sandboxes(self):
-        """
-        Clean up any idle sandboxes
-        """
+        """Clean up any idle sandboxes"""
         self.sandbox_controller.cleanup_unused_sandboxes()
 
     def validate_no_external_access(self, code: str) -> tuple[bool, list]:
-        """
-        Validate that code doesn't attempt external access
-        """
+        """Validate that code doesn't attempt external access"""
         return self.sandbox_controller.validate_no_external_access(code)
 
     def validate_stateless_execution(self, code: str) -> tuple[bool, list]:
-        """
-        Validate that code maintains stateless execution
-        """
+        """Validate that code maintains stateless execution"""
         return self.stateless_validator.validate_stateless_code(code)
 
     def add_capability(self, capability: str):
-        """
-        Add a new capability to this worker
-        """
+        """Add a new capability to this worker"""
         with self.lock:
             if capability not in self.capabilities:
                 self.capabilities.append(capability)
 
     def remove_capability(self, capability: str):
-        """
-        Remove a capability from this worker
-        """
+        """Remove a capability from this worker"""
         with self.lock:
             if capability in self.capabilities:
                 self.capabilities.remove(capability)
 
     def update_resource_usage(self, cpu_usage: float, memory_usage: float):
-        """
-        Update resource usage metrics
-        """
+        """Update resource usage metrics"""
         with self.lock:
             self.cpu_usage = cpu_usage
             self.memory_usage = memory_usage
 
     def queue_task(self, request_data: Dict[str, Any]):
-        """
-        Queue a task for processing
-        """
+        """Queue a task for processing"""
         with self.lock:
             self.task_queue.append({
                 "request_data": request_data,
@@ -381,9 +345,7 @@ class EngineWorker:
             })
 
     def get_queue_status(self) -> Dict[str, Any]:
-        """
-        Get status of the task queue
-        """
+        """Get status of the task queue"""
         with self.lock:
             return {
                 "queue_size": len(self.task_queue),
@@ -393,7 +355,5 @@ class EngineWorker:
             }
 
     def enforce_execution_constraints(self, request_data: Dict[str, Any]) -> tuple[bool, str]:
-        """
-        Enforce execution constraints for this worker
-        """
+        """Enforce execution constraints for this worker"""
         return self.sandbox_controller.enforce_execution_constraints(request_data)

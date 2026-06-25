@@ -1,4 +1,5 @@
-"""darcy_weisbach_solver.py — Darcy-Weisbach Friction Loss for Non-Water Systems.
+"""
+darcy_weisbach_solver.py — Darcy-Weisbach Friction Loss for Non-Water Systems.
 ==============================================================================
 
 MISSION PHASE 4.3 — Hydraulic Logic Upgrade for CO2 and Clean Agent Systems
@@ -120,7 +121,8 @@ MAX_ROUGHNESS_M: float = 0.01            # 10mm — extremely rough
 
 
 class FluidType(str, Enum):
-    """Common fluids used in fire suppression systems.
+    """
+    Common fluids used in fire suppression systems.
 
     Properties from NFPA standards and NIST Chemistry WebBook.
     """
@@ -189,7 +191,8 @@ FLUID_PROPERTIES: dict[FluidType, dict[str, float]] = {
 
 @dataclass
 class DarcyWeisbachResult:
-    """Result of Darcy-Weisbach friction loss calculation.
+    """
+    Result of Darcy-Weisbach friction loss calculation.
 
     Attributes:
         head_loss_m: Head loss in metres of fluid column.
@@ -258,7 +261,8 @@ def calculate_darcy_weisbach_friction_loss(
     density_kg_m3: float | None = None,
     viscosity_pa_s: float | None = None,
 ) -> DarcyWeisbachResult:
-    """Calculate friction loss using the Darcy-Weisbach equation.
+    """
+    Calculate friction loss using the Darcy-Weisbach equation.
 
     Args:
         pipe_length_m: Pipe length in metres.
@@ -400,7 +404,8 @@ def _compute_friction_factor(
     diameter: float,
     flow_regime: str,
 ) -> float:
-    """Compute Darcy friction factor based on flow regime.
+    """
+    Compute Darcy friction factor based on flow regime.
 
     Args:
         reynolds: Reynolds number.
@@ -434,7 +439,8 @@ def _solve_colebrook_white(
     roughness: float,
     diameter: float,
 ) -> tuple[float, bool]:
-    """Solve the Colebrook-White equation for Darcy friction factor.
+    """
+    Solve the Colebrook-White equation for Darcy friction factor.
 
     V138 F-5: Returns (friction_factor, converged) tuple so callers
     can set the converged field on DarcyWeisbachResult.
@@ -569,7 +575,8 @@ def _validate_input(
     min_val: float | None = None,
     max_val: float | None = None,
 ) -> None:
-    """Validate a numeric input parameter.
+    """
+    Validate a numeric input parameter.
 
     Per agent.md V57: NaN/Inf must be rejected to prevent silent bypass
     of safety checks.
@@ -603,7 +610,8 @@ def compare_with_hazen_williams(
     flow_rate_kg_s: float,
     c_factor: float = 120.0,
 ) -> dict[str, Any]:
-    """Compare Darcy-Weisbach and Hazen-Williams results for the same pipe.
+    """
+    Compare Darcy-Weisbach and Hazen-Williams results for the same pipe.
 
     Useful for validation: for water at room temperature, the two methods
     should give similar results (within ~5%). Large discrepancies indicate

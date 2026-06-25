@@ -13,9 +13,7 @@ from facp_system.panel_selector import PanelRecommendation, ProjectRequirements
 class ComplianceVerifier:
     @staticmethod
     def verify_national_code_rules(req: ProjectRequirements, rec: PanelRecommendation) -> list:
-        """
-        Runs programmatic compliance validation checks.
-        """
+        """Runs programmatic compliance validation checks."""
         violations = []
 
         # 1. UL Listing validation

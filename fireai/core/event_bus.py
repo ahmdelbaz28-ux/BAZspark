@@ -1,4 +1,5 @@
-"""event_bus.py - FireAI Event Bus (Digital Twin Foundation).
+"""
+event_bus.py - FireAI Event Bus (Digital Twin Foundation).
 =========================================================
 
 Central pub/sub event bus for the FireAI engineering system.
@@ -47,7 +48,8 @@ from typing import Any, Callable, NoReturn
 
 @dataclass
 class Event:
-    """Immutable event object published on the bus.
+    """
+    Immutable event object published on the bus.
 
     Every event carries:
       - event_type: The category/name of the event (from Events constants)
@@ -90,7 +92,8 @@ class Event:
 
 
 class Events:
-    """Central registry of all event type strings in the FireAI system.
+    """
+    Central registry of all event type strings in the FireAI system.
 
     Using string constants (not enums) for maximum flexibility —
     external systems can publish custom event types without modifying
@@ -165,7 +168,8 @@ __all__ = [
 
 
 class EventRecorder:
-    """Records all events for forensic replay and debugging.
+    """
+    Records all events for forensic replay and debugging.
 
     Thread-safe. Stores events in memory (bounded) for audit trail
     reconstruction without requiring database access.
@@ -181,7 +185,8 @@ class EventRecorder:
         self._max_events = max_events
 
     def record(self, event: Event) -> None:
-        """Record an event (called automatically by EventBus).
+        """
+        Record an event (called automatically by EventBus).
 
         Uses collections.deque with maxlen for O(1) append
         and automatic oldest eviction — no manual slicing needed.
@@ -227,7 +232,8 @@ class EventRecorder:
 
 
 class EventBus:
-    """Central pub/sub event bus for the FireAI engineering system.
+    """
+    Central pub/sub event bus for the FireAI engineering system.
 
     Thread-safe. No external dependencies. Exception-safe.
 
@@ -272,7 +278,8 @@ class EventBus:
 
     @classmethod
     def instance(cls) -> EventBus:
-        """Get or create the singleton EventBus.
+        """
+        Get or create the singleton EventBus.
 
         Use this in production — ensures all modules share the same bus.
         """
@@ -284,7 +291,8 @@ class EventBus:
 
     @classmethod
     def reset(cls) -> None:
-        """Reset the singleton (for testing only).
+        """
+        Reset the singleton (for testing only).
 
         WARNING: Never call this in production. It disconnects
         all subscribers.
@@ -295,7 +303,8 @@ class EventBus:
     # ── Subscribe ────────────────────────────────────────────────────
 
     def subscribe(self, event_type: str, callback: EventCallback) -> None:
-        """Subscribe to events of a specific type.
+        """
+        Subscribe to events of a specific type.
 
         Args:
             event_type: The event type string (use Events.* constants).
@@ -314,7 +323,8 @@ class EventBus:
             self._listeners.setdefault(event_type, []).append(callback)
 
     def unsubscribe(self, event_type: str, callback: EventCallback) -> bool:
-        """Remove a specific callback from an event type.
+        """
+        Remove a specific callback from an event type.
 
         Returns:
             True if the callback was found and removed, False otherwise.
@@ -336,7 +346,8 @@ class EventBus:
         source: str = "",
         correlation_id: str = "",
     ) -> Event:
-        """Publish an event to all subscribers.
+        """
+        Publish an event to all subscribers.
 
         Args:
             event_type: The event type string (use Events.* constants).

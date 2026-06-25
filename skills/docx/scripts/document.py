@@ -45,7 +45,7 @@ from .utilities import XMLEditor
 
 def _condense_xml(xml_file):
     """Strip unnecessary whitespace from XML, preserving text content."""
-    with open(xml_file, "r", encoding="utf-8") as f:
+    with open(xml_file, encoding="utf-8") as f:
         dom = defusedxml.minidom.parse(f)
     for element in dom.getElementsByTagName("*"):
         if element.tagName.endswith(":t"):
@@ -82,7 +82,8 @@ TEMPLATE_DIR = Path(__file__).parent / "templates"
 
 
 class DocxXMLEditor(XMLEditor):
-    """XMLEditor that automatically applies RSID, author, and date to new elements.
+    """
+    XMLEditor that automatically applies RSID, author, and date to new elements.
 
     Automatically adds attributes to elements that support them when inserting new content:
     - w:rsidR, w:rsidRDefault, w:rsidP (for w:p and w:r elements)
@@ -91,18 +92,21 @@ class DocxXMLEditor(XMLEditor):
 
     Attributes:
         dom (defusedxml.minidom.Document): The DOM document for direct manipulation
+
     """
 
     def __init__(
         self, xml_path, rsid: str, author: str = "Z.AI", initials: str = "Z"
     ):
-        """Initialize with required RSID and optional author.
+        """
+        Initialize with required RSID and optional author.
 
         Args:
             xml_path: Path to XML file to edit
             rsid: RSID to automatically apply to new elements
             author: Author name for tracked changes and comments (default: "Z.AI")
             initials: Author initials (default: "C")
+
         """
         super().__init__(xml_path)
         self.rsid = rsid
@@ -151,7 +155,8 @@ class DocxXMLEditor(XMLEditor):
             )
 
     def _inject_attributes_to_nodes(self, nodes):
-        """Inject RSID, author, and date attributes into DOM nodes where applicable.
+        """
+        Inject RSID, author, and date attributes into DOM nodes where applicable.
 
         Adds attributes to elements that support them:
         - w:r: gets w:rsidR (or w:rsidDel if inside w:del)
@@ -163,6 +168,7 @@ class DocxXMLEditor(XMLEditor):
 
         Args:
             nodes: List of DOM nodes to process
+
         """
         from datetime import datetime, timezone
 
@@ -299,7 +305,8 @@ class DocxXMLEditor(XMLEditor):
         return nodes
 
     def revert_insertion(self, elem):
-        """Reject an insertion by wrapping its content in a deletion.
+        """
+        Reject an insertion by wrapping its content in a deletion.
 
         Wraps all runs inside w:ins in w:del, converting w:t to w:delText.
         Can process a single w:ins element or a container element with multiple w:ins.
@@ -321,6 +328,7 @@ class DocxXMLEditor(XMLEditor):
             # Reject all insertions in a paragraph
             para = doc["word/document.xml"].get_node(tag="w:p", line_number=42)
             doc["word/document.xml"].revert_insertion(para)
+
         """
         # Collect insertions
         ins_elements = []
@@ -377,7 +385,8 @@ class DocxXMLEditor(XMLEditor):
         return [elem]
 
     def revert_deletion(self, elem):
-        """Reject a deletion by re-inserting the deleted content.
+        """
+        Reject a deletion by re-inserting the deleted content.
 
         Creates w:ins elements after each w:del, copying deleted content and
         converting w:delText back to w:t.
@@ -400,6 +409,7 @@ class DocxXMLEditor(XMLEditor):
             # Reject all deletions in a paragraph - returns [para]
             para = doc["word/document.xml"].get_node(tag="w:p", line_number=42)
             nodes = doc["word/document.xml"].revert_deletion(para)
+
         """
         # Collect deletions FIRST - before we modify the DOM
         del_elements = []
@@ -464,12 +474,12 @@ class DocxXMLEditor(XMLEditor):
         # Return based on input type
         if is_single_del and created_insertion:
             return [elem, created_insertion]
-        else:
-            return [elem]
+        return [elem]
 
     @staticmethod
     def suggest_paragraph(xml_content: str) -> str:
-        """Transform paragraph XML to add tracked change wrapping for insertion.
+        """
+        Transform paragraph XML to add tracked change wrapping for insertion.
 
         Wraps runs in <w:ins> and adds <w:ins/> to w:rPr in w:pPr for numbered lists.
 
@@ -478,6 +488,7 @@ class DocxXMLEditor(XMLEditor):
 
         Returns:
             str: Transformed XML with tracked change wrapping
+
         """
         wrapper = f'<root xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">{xml_content}</root>'
         doc = minidom.parseString(wrapper)
@@ -517,7 +528,8 @@ class DocxXMLEditor(XMLEditor):
         return para.toxml()
 
     def suggest_deletion(self, elem):
-        """Mark a w:r or w:p element as deleted with tracked changes (in-place DOM manipulation).
+        """
+        Mark a w:r or w:p element as deleted with tracked changes (in-place DOM manipulation).
 
         For w:r: wraps in <w:del>, converts <w:t> to <w:delText>, preserves w:rPr
         For w:p (regular): wraps content in <w:del>, converts <w:t> to <w:delText>
@@ -531,6 +543,7 @@ class DocxXMLEditor(XMLEditor):
 
         Raises:
             ValueError: If element has existing tracked changes or invalid structure
+
         """
         if elem.nodeName == "w:r":
             # Check for existing w:delText
@@ -568,7 +581,7 @@ class DocxXMLEditor(XMLEditor):
 
             return del_wrapper
 
-        elif elem.nodeName == "w:p":
+        if elem.nodeName == "w:p":
             # Check for existing tracked changes
             if elem.getElementsByTagName("w:ins") or elem.getElementsByTagName("w:del"):
                 raise ValueError("w:p element already contains tracked changes")
@@ -626,12 +639,12 @@ class DocxXMLEditor(XMLEditor):
 
             return elem
 
-        else:
-            raise ValueError(f"Element must be w:r or w:p, got {elem.nodeName}")
+        raise ValueError(f"Element must be w:r or w:p, got {elem.nodeName}")
 
 
 def _generate_hex_id() -> str:
-    """Generate random 8-character hex ID for para/durable IDs.
+    """
+    Generate random 8-character hex ID for para/durable IDs.
 
     Values are constrained to be less than 0x7FFFFFFF per OOXML spec:
     - paraId must be < 0x80000000
@@ -667,6 +680,7 @@ class Document:
             track_revisions: If True, enables track revisions in settings.xml (default: False)
             author: Default author name for comments (default: "Z.AI")
             initials: Default author initials for comments (default: "C")
+
         """
         self.original_path = Path(unpacked_dir)
 
@@ -736,6 +750,7 @@ class Document:
 
             # Get node from comments.xml
             comment = doc["word/comments.xml"].get_node(tag="w:comment", attrs={"w:id": "0"})
+
         """
         if xml_path not in self._editors:
             file_path = self.unpacked_path / xml_path
@@ -763,6 +778,7 @@ class Document:
             start_node = cm.get_document_node(tag="w:del", id="1")
             end_node = cm.get_document_node(tag="w:ins", id="2")
             cm.add_comment(start=start_node, end=end_node, text="Explanation")
+
         """
         comment_id = self.next_comment_id
         para_id = _generate_hex_id()
@@ -816,6 +832,7 @@ class Document:
 
         Example:
             cm.reply_to_comment(parent_comment_id=0, text="I agree with this change")
+
         """
         if parent_comment_id not in self.existing_comments:
             raise ValueError(f"Parent comment with id={parent_comment_id} not found")
@@ -894,6 +911,7 @@ class Document:
         Args:
             destination: Optional path to save to. If None, saves back to original directory.
             validate: If True, validates document before saving (default: True).
+
         """
         # Only ensure comment relationships and content types if comment files exist
         if self.comments_path.exists():
@@ -960,10 +978,12 @@ class Document:
     # ==================== Private: Setup Methods ====================
 
     def _setup_tracking(self, track_revisions=False):
-        """Set up comment infrastructure in unpacked directory.
+        """
+        Set up comment infrastructure in unpacked directory.
 
         Args:
             track_revisions: If True, enables track revisions in settings.xml
+
         """
         # Create or update word/people.xml
         people_file = self.word_path / "people.xml"
@@ -1015,7 +1035,8 @@ class Document:
         editor.append_to(root, rel_xml)
 
     def _update_settings(self, path, track_revisions=False, update_fields=True):
-        """Add RSID and optionally enable track revisions and update fields in settings.xml.
+        """
+        Add RSID and optionally enable track revisions and update fields in settings.xml.
 
         Args:
             path: Path to settings.xml
@@ -1026,6 +1047,7 @@ class Document:
         - trackRevisions: early (before defaultTabStop)
         - updateFields: early (before defaultTabStop)
         - rsids: late (after compat)
+
         """
         editor = self["word/settings.xml"]
         root = editor.get_node(tag="w:settings")
@@ -1190,7 +1212,8 @@ class Document:
         return f'<w:commentRangeStart w:id="{comment_id}"/>'
 
     def _comment_range_end_xml(self, comment_id):
-        """Generate XML for comment range end with reference run.
+        """
+        Generate XML for comment range end with reference run.
 
         Note: w:rsidR is automatically added by DocxXMLEditor.
         """
@@ -1201,7 +1224,8 @@ class Document:
 </w:r>'''
 
     def _comment_ref_run_xml(self, comment_id):
-        """Generate XML for comment reference run.
+        """
+        Generate XML for comment reference run.
 
         Note: w:rsidR is automatically added by DocxXMLEditor.
         """

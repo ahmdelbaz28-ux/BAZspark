@@ -1,4 +1,5 @@
-"""backend/routers/devices.py — Devices CRUD endpoints.
+"""
+backend/routers/devices.py — Devices CRUD endpoints.
 
 LIFE-SAFETY NOTE: Devices represent fire alarm components (smoke detectors,
 heat detectors, manual pull stations, notification appliances, etc.).
@@ -48,7 +49,8 @@ _SORT_MAP = {
 
 
 def _normalize_sort(sort: str) -> str:
-    """Convert camelCase sort fields to snake_case for database.
+    """
+    Convert camelCase sort fields to snake_case for database.
 
     SECURITY FIX (BUG-32): Strict whitelist — rejects unknown sort fields.
     """
@@ -73,7 +75,8 @@ async def list_devices(
 
 @router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.DEVICE_CREATE))])
 async def create_device(project_id: str, input_data: CreateDeviceInput):
-    """Create a new device in a project.
+    """
+    Create a new device in a project.
 
     LIFE-SAFETY: The `load` field is converted to Amperes (A) before storage
     because NFPA 72 battery calculations in reports.py assume Amperes.
@@ -147,7 +150,8 @@ async def get_device(project_id: str, device_id: str):
 async def update_device(
     project_id: str, device_id: str, input_data: UpdateDeviceInput
 ):
-    """Update an existing device.
+    """
+    Update an existing device.
 
     LIFE-SAFETY: The load_unit field converts the load value to Amperes
     before storage, matching the create_device behavior. Without this
@@ -207,7 +211,8 @@ async def update_device(
 
 @router.delete("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_DELETE))])
 async def delete_device(project_id: str, device_id: str):
-    """Delete a device from a project.
+    """
+    Delete a device from a project.
 
     V114 FIX: Safety-critical device deletion now logs audit trail.
     Fire alarm devices (smoke detectors, pull stations, notification appliances)

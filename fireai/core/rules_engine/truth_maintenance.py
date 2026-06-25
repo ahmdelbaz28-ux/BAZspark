@@ -1,4 +1,5 @@
-"""FireAI Rules Engine — Truth Maintenance System (TMS).
+"""
+FireAI Rules Engine — Truth Maintenance System (TMS).
 =====================================================
 
 Ensures that when a base fact is retracted, ALL conclusions derived
@@ -34,7 +35,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DependencyRecord:
-    """Records the dependency of a derived fact on its supporting facts.
+    """
+    Records the dependency of a derived fact on its supporting facts.
 
     When any supporting fact is retracted, the derived fact must also
     be retracted and its producing rule must be re-evaluated.
@@ -56,7 +58,8 @@ class DependencyRecord:
 
 
 class TruthMaintenanceSystem:
-    """Manages fact dependencies and ensures consistency.
+    """
+    Manages fact dependencies and ensures consistency.
 
     WARNING: This standalone TMS is NOT thread-safe. The RulesEngine
     maintains its own internal TMS (_derived_from/_supports) which IS
@@ -89,7 +92,8 @@ class TruthMaintenanceSystem:
         supporting_fact_ids: list[str],
         producing_rule_id: str,
     ) -> None:
-        """Record that a derived fact depends on supporting facts.
+        """
+        Record that a derived fact depends on supporting facts.
 
         This is called when a rule fires and asserts a new derived fact.
         """
@@ -111,7 +115,8 @@ class TruthMaintenanceSystem:
         )
 
     def retract_support(self, retracted_fact_id: str) -> list[str]:
-        """Process the retraction of a supporting fact.
+        """
+        Process the retraction of a supporting fact.
 
         Returns a list of derived fact IDs that must also be retracted
         because they depended on the retracted fact.
@@ -204,7 +209,8 @@ class TruthMaintenanceSystem:
         return list(self._support_index.get(supporting_fact_id, set()))
 
     def get_dependency_chain(self, fact_id: str) -> list[DependencyRecord]:
-        """Get the full dependency chain for a fact.
+        """
+        Get the full dependency chain for a fact.
 
         Returns the direct dependency record plus all transitive
         dependencies (dependencies of dependencies).
@@ -226,7 +232,8 @@ class TruthMaintenanceSystem:
         return chain
 
     def explain_derivation(self, fact_id: str) -> dict:
-        """Explain how a derived fact was produced.
+        """
+        Explain how a derived fact was produced.
 
         Returns a structured explanation suitable for engineering reports
         and safety audits.
@@ -259,7 +266,8 @@ class TruthMaintenanceSystem:
         }
 
     def validate_consistency(self, existing_fact_ids: set[str]) -> list[str]:
-        """Check for stale dependencies — derived facts whose supports
+        """
+        Check for stale dependencies — derived facts whose supports
         no longer exist but weren't properly retracted.
 
         Returns a list of stale derived fact IDs.

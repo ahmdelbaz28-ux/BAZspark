@@ -149,7 +149,8 @@ class DXFParser:
         )
 
     def _detect_units(self, doc) -> int:
-        """Detect DXF units using heuristic for INSUNITS=0 files.
+        """
+        Detect DXF units using heuristic for INSUNITS=0 files.
 
         CRITICAL SAFETY: For unitless (0) DXF files, we must detect the actual unit
         by analyzing coordinate values. Wrong unit = wrong room areas = failed coverage
@@ -181,7 +182,8 @@ class DXFParser:
         )
 
     def _detect_unit_heuristic(self, doc) -> int:
-        """Detect actual unit by testing scale factors.
+        """
+        Detect actual unit by testing scale factors.
 
         CRITICAL SAFETY: We try multiple scales and check which produces valid
         NFPA 72-compliant room areas. Only accept if EXACTLY ONE scale works.

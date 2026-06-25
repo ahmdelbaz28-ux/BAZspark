@@ -1,4 +1,5 @@
-"""backend/services/air_quality_service.py — Air quality data for FireAI.
+"""
+backend/services/air_quality_service.py — Air quality data for FireAI.
 
 Provides real-time Air Quality Index (AQI) data from the World Air Quality
 Index (WAQI) project (https://waqi.info/) — a free API for global air quality.
@@ -64,7 +65,8 @@ DEFAULT_PM10_UG_M3 = 50.0  # WHO interim target-1 (conservative)
 
 @dataclass(frozen=True)
 class AirQualityData:
-    """Immutable air quality snapshot for engineering calculations.
+    """
+    Immutable air quality snapshot for engineering calculations.
 
     Attributes:
         aqi: Air Quality Index (0-500, EPA scale)
@@ -114,7 +116,8 @@ def aqi_to_level(aqi: int) -> str:
 
 
 class AirQualityService:
-    """Async air quality data provider with fail-safe defaults.
+    """
+    Async air quality data provider with fail-safe defaults.
 
     Primary source: WAQI (World Air Quality Index) — free, demo token
     Fallback: Conservative defaults (MODERATE AQI = 100)
@@ -197,7 +200,8 @@ class AirQualityService:
     async def _fetch_waqi(
         self, latitude: float, longitude: float
     ) -> AirQualityData:
-        """Fetch air quality from WAQI (World Air Quality Index) API.
+        """
+        Fetch air quality from WAQI (World Air Quality Index) API.
 
         API: https://api.waqi.info/feed/geo:LAT;LON/?token=demo
         Returns the nearest monitoring station data including AQI and
@@ -284,7 +288,8 @@ class AirQualityService:
 
     @staticmethod
     def _pm25_to_aqi(pm25: float) -> int:
-        """Convert PM2.5 concentration to EPA AQI.
+        """
+        Convert PM2.5 concentration to EPA AQI.
 
         Simplified EPA AQI formula:
         AQI = ((I_hi - I_lo) / (C_hi - C_lo)) * (C - C_lo) + I_lo
@@ -317,7 +322,8 @@ class AirQualityService:
 
     @staticmethod
     def _aqi_to_pm25(aqi_val: float) -> float:
-        """Convert AQI sub-index back to approximate PM2.5 concentration.
+        """
+        Convert AQI sub-index back to approximate PM2.5 concentration.
 
         Inverse of _pm25_to_aqi using EPA breakpoints.
         Uses the midpoint of each AQI range for the concentration.
@@ -346,7 +352,8 @@ class AirQualityService:
 
     @staticmethod
     def _aqi_to_pm10(aqi_val: float) -> float:
-        """Convert AQI sub-index back to approximate PM10 concentration.
+        """
+        Convert AQI sub-index back to approximate PM10 concentration.
 
         EPA PM10 breakpoints:
         PM10 (µg/m³) → AQI range
@@ -377,7 +384,8 @@ class AirQualityService:
         return 604.0
 
     def _get_default(self, latitude: float, longitude: float) -> AirQualityData:
-        """Return conservative default air quality data.
+        """
+        Return conservative default air quality data.
 
         MODERATE AQI (100) is conservative: it indicates that baseline
         air quality is not perfect, which adds a safety margin to
@@ -403,7 +411,8 @@ class AirQualityService:
         latitude: float,
         longitude: float,
     ) -> AirQualityData:
-        """Fetch air quality for engineering calculations.
+        """
+        Fetch air quality for engineering calculations.
 
         Strategy:
           1. Check cache — return if fresh (< 30-min TTL)

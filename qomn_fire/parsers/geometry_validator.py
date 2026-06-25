@@ -263,16 +263,15 @@ class GeometryValidator:
                             code_ref="BIM Quality Standard",
                             remedy="Remove overlapping or duplicate layers in CAD before exporting."
                         ))
-                    else:
-                        # Partial overlap — still an error but with different message
-                        overlap_pct = min(overlap_area / max(r1_area, r2_area, 0.001) * 100, 100.0)
-                        if overlap_pct > 50.0:
-                            return Result(error=GeometryError(
-                                message=f"Significant room overlap detected: '{r1.id}' and '{r2.id}' "
-                                        f"share {overlap_pct:.1f}% of their area on the same floor. "
-                                        f"This causes double-counting in NFPA coverage calculations.",
-                                code_ref="BIM Quality Standard",
-                                remedy="Remove overlapping or duplicate layers in CAD before exporting."
-                            ))
+                    # Partial overlap — still an error but with different message
+                    overlap_pct = min(overlap_area / max(r1_area, r2_area, 0.001) * 100, 100.0)
+                    if overlap_pct > 50.0:
+                        return Result(error=GeometryError(
+                            message=f"Significant room overlap detected: '{r1.id}' and '{r2.id}' "
+                                    f"share {overlap_pct:.1f}% of their area on the same floor. "
+                                    f"This causes double-counting in NFPA coverage calculations.",
+                            code_ref="BIM Quality Standard",
+                            remedy="Remove overlapping or duplicate layers in CAD before exporting."
+                        ))
 
         return Result(value=b)

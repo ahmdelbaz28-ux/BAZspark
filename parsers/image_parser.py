@@ -30,6 +30,7 @@ logger = logging.getLogger("fireai.image_parser")
 @dataclass
 class ImageRoom:
     """Room detected from image."""
+
     name: str
     x: int
     y: int
@@ -49,6 +50,7 @@ class ImageRoom:
 @dataclass
 class ImageParseResult:
     """Result of parsing image."""
+
     source_file: str
     success: bool
     room_count: int = 0
@@ -114,7 +116,8 @@ class ImageParser:
     def __init__(self, scale_factor: float = 0.1):
         """
         Args:
-            scale_factor: Meters per pixel (default 0.1 = 10cm/pixel)
+        scale_factor: Meters per pixel (default 0.1 = 10cm/pixel)
+
         """
         self.scale_factor = scale_factor
 
@@ -133,6 +136,7 @@ class ImageParser:
 
         Returns:
             ImageParseResult with detected rooms
+
         """
         # V126: Path security + file-size cap
         from parsers._path_security import (
@@ -173,7 +177,7 @@ class ImageParser:
             logger.info("Image loaded: %s", result.image_size)
 
             # Preprocess
-            gray, edges = self._preprocess(img)
+            _gray, edges = self._preprocess(img)
 
             # Find contours (potential rooms)
             contours = self._find_contours(edges)

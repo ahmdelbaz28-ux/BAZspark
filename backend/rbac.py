@@ -1,4 +1,5 @@
-"""Role-Based Access Control for FireAI Digital Twin Platform.
+"""
+Role-Based Access Control for FireAI Digital Twin Platform.
 
 Three-role RBAC system:
   - admin:    Full access to everything (CRUD all resources, manage users, system config)

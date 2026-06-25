@@ -1,13 +1,11 @@
-"""test_v133_phase2_3_ai.py — Tests for PHASE 2 (LangWatch) and PHASE 3 (Smithery MCP).
+"""
+test_v133_phase2_3_ai.py — Tests for PHASE 2 (LangWatch) and PHASE 3 (Smithery MCP).
 
 Validates LangWatch integration (in workflow_service context, NOT analysis_pipeline)
 and Smithery MCP (read-only + human-approved writes).
 """
 
 from __future__ import annotations
-
-import pytest
-
 
 # ---------------------------------------------------------------------------
 # LangWatch Integration Tests (PHASE 2 — Corrected Target)
@@ -102,8 +100,8 @@ class TestLangWatchIntegration:
     def test_nfpa72_constants_correct(self):
         """NFPA 72 spacing constants should match the code."""
         from fireai.infrastructure.langwatch_integration import (
-            NFPA72_MAX_SMOKE_SPACING_M,
             NFPA72_MAX_HEAT_SPACING_M,
+            NFPA72_MAX_SMOKE_SPACING_M,
         )
         assert NFPA72_MAX_SMOKE_SPACING_M == 9.1  # 30 ft
         assert NFPA72_MAX_HEAT_SPACING_M == 6.1   # 20 ft
@@ -141,9 +139,9 @@ class TestSmitheryMCP:
     def test_propose_create_detector_returns_proposed_action(self):
         """propose_create_detector should return a ProposedAction (NOT execute)."""
         from fireai.mcp_server.smithery_mcp_integration import (
-            SmitheryMCPClient,
-            ActionType,
             ActionStatus,
+            ActionType,
+            SmitheryMCPClient,
         )
         client = SmitheryMCPClient()
         action = client.propose_create_detector(
@@ -161,8 +159,8 @@ class TestSmitheryMCP:
     def test_propose_update_element_returns_proposed_action(self):
         """propose_update_element should return a ProposedAction (NOT execute)."""
         from fireai.mcp_server.smithery_mcp_integration import (
-            SmitheryMCPClient,
             ActionType,
+            SmitheryMCPClient,
         )
         client = SmitheryMCPClient()
         action = client.propose_update_element(
@@ -176,8 +174,8 @@ class TestSmitheryMCP:
     def test_propose_delete_element_includes_warning(self):
         """DELETE proposals should include a warning about human approval."""
         from fireai.mcp_server.smithery_mcp_integration import (
-            SmitheryMCPClient,
             ActionType,
+            SmitheryMCPClient,
         )
         client = SmitheryMCPClient()
         action = client.propose_delete_element(
@@ -221,8 +219,8 @@ class TestSmitheryMCP:
     def test_get_smithery_client_returns_singleton(self):
         """get_smithery_client should return the same instance."""
         from fireai.mcp_server.smithery_mcp_integration import (
-            get_smithery_client,
             SmitheryMCPClient,
+            get_smithery_client,
         )
         c1 = get_smithery_client()
         c2 = get_smithery_client()
@@ -241,8 +239,8 @@ class TestSafetyDesign:
     def test_proposed_action_status_is_proposed(self):
         """All AI-proposed actions must have status=PROPOSED (never APPROVED/EXECUTED)."""
         from fireai.mcp_server.smithery_mcp_integration import (
-            SmitheryMCPClient,
             ActionStatus,
+            SmitheryMCPClient,
         )
         client = SmitheryMCPClient()
         action = client.propose_create_detector("R-001", (1, 1, 1))

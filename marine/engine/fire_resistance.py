@@ -12,13 +12,13 @@ generation, and Revit family creation.
 
 from __future__ import annotations
 
-from typing import List, Tuple
-
 from marine.core.constants import INSULATION_THICKNESS_MM
-from marine.core.types import (
-    FireClass, FireResistanceSpec, MarineZone, SpaceCategory,
-)
 from marine.core.errors import FireClassAssignmentError
+from marine.core.types import (
+    FireClass,
+    FireResistanceSpec,
+    MarineZone,
+)
 from marine.solas.chapter_ii_2 import required_fire_class_between
 
 
@@ -28,7 +28,8 @@ from marine.solas.chapter_ii_2 import required_fire_class_between
 # Both code paths now share this single function.
 def _pick_insulation_material(fire_class: FireClass,
                               ambient_humidity_pct: float = 75.0) -> str | None:
-    """Pick insulation material for a fire class (single source of truth).
+    """
+    Pick insulation material for a fire class (single source of truth).
 
     Marine environments are high-humidity + salty — material must be
     moisture-resistant and non-combustible per SOLAS II-2/3.2.1.
@@ -46,9 +47,10 @@ def _pick_insulation_material(fire_class: FireClass,
 
 
 def generate_division_specs(
-    zones: List[MarineZone],
-) -> List[FireResistanceSpec]:
-    """Generate a FireResistanceSpec for every adjacent-zone pair.
+    zones: list[MarineZone],
+) -> list[FireResistanceSpec]:
+    """
+    Generate a FireResistanceSpec for every adjacent-zone pair.
 
     Iterates through all zone pairs where one zone's frame range is
     adjacent to another's, and computes the SOLAS-required FireClass.
@@ -58,8 +60,9 @@ def generate_division_specs(
 
     Returns:
         List of FireResistanceSpec — one per division (bulkhead or deck).
+
     """
-    specs: List[FireResistanceSpec] = []
+    specs: list[FireResistanceSpec] = []
     seen_pairs: set = set()
 
     for zone in zones:
@@ -118,7 +121,8 @@ def select_insulation_material(
     fire_class: FireClass,
     ambient_humidity_pct: float = 75.0,
 ) -> str:
-    """Select insulation material based on fire class and environment.
+    """
+    Select insulation material based on fire class and environment.
 
     Public wrapper around _pick_insulation_material that returns a friendly
     string instead of None for the "no insulation required" case.

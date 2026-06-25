@@ -540,7 +540,8 @@ class TestNotificationAssessment:
             assert assessment.is_compliant is False
 
     def test_no_results_fail_closed(self):
-        """No results provided → fail-closed (non-compliant).
+        """
+        No results provided → fail-closed (non-compliant).
 
         V78 FIX: Previously returned True when no results were evaluated,
         which is a fail-open design — a room with no notification appliance

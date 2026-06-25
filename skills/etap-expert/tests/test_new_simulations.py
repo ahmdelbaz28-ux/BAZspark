@@ -1,4 +1,5 @@
-"""Gate 4 Extension: Tests for New Simulations (Harmonic + Transient Stability).
+"""
+Gate 4 Extension: Tests for New Simulations (Harmonic + Transient Stability).
 =============================================================================
 Validates the 2 new simulations added in V131 Phase 2:
     6. Harmonic Analysis (IEEE 519-2014)

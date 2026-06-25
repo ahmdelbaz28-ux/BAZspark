@@ -1,4 +1,5 @@
-"""Gate 5: Adversarial Audit — Property-Based Tests.
+"""
+Gate 5: Adversarial Audit — Property-Based Tests.
 ==================================================
 Fuzz-tests the skill loader and simulation engine with random inputs
 to find hidden defects, edge cases, and unsafe assumptions.

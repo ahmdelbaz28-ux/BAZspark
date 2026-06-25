@@ -9,6 +9,8 @@ import tempfile
 import time
 import unittest
 
+import pytest
+
 # Import from the module
 from fireai.core.qomn_self_healing_engine import (
     ERROR_WEIGHTS,
@@ -105,7 +107,7 @@ class TestQomnFireSelfHealing(unittest.TestCase):
         calculate_sprinkler_pressure(100.0, 0.0)
 
         self.assertTrue(os.path.exists("qomn_fire_healing_audit.jsonl"))
-        with open("qomn_fire_healing_audit.jsonl", "r", encoding="utf-8") as f:
+        with open("qomn_fire_healing_audit.jsonl", encoding="utf-8") as f:
             lines = f.readlines()
 
         self.assertTrue(len(lines) >= 1)
@@ -221,7 +223,7 @@ class TestHalfOpenRecovery(unittest.TestCase):
         time.sleep(0.6)
 
         # V66 FIX: check_and_cooldown() now returns (bool, state) tuple
-        is_open, state = self.cb.check_and_cooldown()
+        is_open, _state = self.cb.check_and_cooldown()
         self.assertFalse(is_open)  # No longer fully OPEN
         self.assertEqual(self.cb.state, "HALF_OPEN")
 
@@ -345,7 +347,7 @@ class TestAsyncAuditLoggerRotation(unittest.TestCase):
         self.assertTrue(result)
 
         # Verify the entry is written
-        with open(self.log_path, "r") as f:
+        with open(self.log_path) as f:
             lines = f.readlines()
         self.assertEqual(len(lines), 1)
 
@@ -360,7 +362,7 @@ class TestAsyncAuditLoggerRotation(unittest.TestCase):
 
         logger.log_event({"action": "heal", "tier": 1})
 
-        with open(self.log_path, "r") as f:
+        with open(self.log_path) as f:
             entry = json.loads(f.readline())
 
         # Verify signature
@@ -471,7 +473,7 @@ class TestSystemStatus(unittest.TestCase):
 
     def test_safety_result_rejects_invalid_status(self):
         """V53 FIX (BUG 3) preserved: invalid status raises ValueError."""
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             SafetyResult(value=7.0, status="FAKE_NOMINAL", metadata={})
 
     def test_safety_result_audit_ref(self):
@@ -489,7 +491,7 @@ class TestSafetyCriticalFailure(unittest.TestCase):
 
     def test_exception_is_distinct(self):
         """SafetyCriticalFailure should be a distinct exception type."""
-        with self.assertRaises(SafetyCriticalFailure):
+        with pytest.raises(SafetyCriticalFailure):
             raise SafetyCriticalFailure("All tiers exhausted")
 
     def test_not_same_as_physics_guard(self):
@@ -720,7 +722,7 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
         def critical_func():
             raise SafetyCriticalFailure("All tiers exhausted")
 
-        with self.assertRaises(SafetyCriticalFailure):
+        with pytest.raises(SafetyCriticalFailure):
             critical_func()
 
     # V73: compute_hash is deterministic
@@ -839,7 +841,8 @@ class TestV76NominalPhysicsValidation(unittest.TestCase):
         self.assertEqual(result.value, 7.0)
 
     def test_v76_fix1_validation_before_cache(self):
-        """V76 FIX 1 (a): Invalid values must NOT be stored in LRU cache.
+        """
+        V76 FIX 1 (a): Invalid values must NOT be stored in LRU cache.
 
         If validation happens AFTER cache update, the invalid value is
         stored as 'Last Known Good' and recovered on MemoryError —
@@ -864,7 +867,8 @@ class TestV76NominalPhysicsValidation(unittest.TestCase):
             self.assertNotEqual(cached, -10.0)
 
     def test_v76_fix1_cb_event_registered(self):
-        """V76 FIX 1 (b): Nominal physics violations must register with circuit breaker.
+        """
+        V76 FIX 1 (b): Nominal physics violations must register with circuit breaker.
 
         Without CB registration, repeated physics violations in the nominal
         path don't accumulate toward the breaker threshold — the system
@@ -895,7 +899,8 @@ class TestV76NominalPhysicsValidation(unittest.TestCase):
         self.assertEqual(global_circuit_breaker.state, "OPEN")
 
     def test_v76_fix1_default_value_preferred_over_safe_minimum(self):
-        """V76 FIX 1 (c): default_value must be preferred over safe_minimum.
+        """
+        V76 FIX 1 (c): default_value must be preferred over safe_minimum.
 
         For non-pressure functions, safe_minimum might be inappropriate.
         Example: safe_minimum=0.0 for an audio tone means 'no alarm sound'
@@ -920,7 +925,8 @@ class TestV76NominalPhysicsValidation(unittest.TestCase):
         self.assertEqual(result.value, "DEFAULT_EVAC_TONE")
 
     def test_v76_fix1_validator_crash_uses_safe_minimum(self):
-        """V76 FIX 1: If the physics validator itself crashes, use safe_minimum.
+        """
+        V76 FIX 1: If the physics validator itself crashes, use safe_minimum.
 
         A crashing validator means we can't trust any value it might have
         passed. The safest choice is safe_minimum — the most conservative
@@ -1000,7 +1006,8 @@ class TestV76ConfigNaNInfGuard(unittest.TestCase):
             del os.environ["QOMN_CB_THRESHOLD"]
 
     def test_v76_fix2_circuit_breaker_with_nan_threshold(self):
-        """V76 FIX 2: Circuit breaker with NaN threshold must still function.
+        """
+        V76 FIX 2: Circuit breaker with NaN threshold must still function.
 
         This is the critical safety scenario: if NaN somehow reached the
         circuit breaker (e.g., through a different code path), the breaker
@@ -1085,7 +1092,7 @@ class TestV76AuditHashChain(unittest.TestCase):
         logger = AsyncAuditLogger(filepath=self.log_path, secret_key=b"TEST_KEY")
         logger.log_event({"test": "first"})
 
-        with open(self.log_path, "r") as f:
+        with open(self.log_path) as f:
             entry = json.loads(f.readline())
 
         self.assertEqual(
@@ -1101,7 +1108,7 @@ class TestV76AuditHashChain(unittest.TestCase):
         logger.log_event({"test": "second"})
         logger.log_event({"test": "third"})
 
-        with open(self.log_path, "r") as f:
+        with open(self.log_path) as f:
             lines = f.readlines()
 
         self.assertEqual(len(lines), 3)
@@ -1127,7 +1134,7 @@ class TestV76AuditHashChain(unittest.TestCase):
         logger.log_event({"test": "third"})
 
         # Read all entries
-        with open(self.log_path, "r") as f:
+        with open(self.log_path) as f:
             lines = f.readlines()
 
         # Delete the middle entry (simulate tampering)
@@ -1155,7 +1162,8 @@ class TestV76AuditHashChain(unittest.TestCase):
         self.assertEqual(len(report["break_points"]), 0)
 
     def test_v76_fix3_chain_survives_rotation(self):
-        """V76 FIX 3: Hash chain must survive file rotation.
+        """
+        V76 FIX 3: Hash chain must survive file rotation.
 
         When the audit log rotates, the _last_chain_hash is preserved
         and used as the genesis hash for the new file. This ensures
@@ -1188,7 +1196,7 @@ class TestV76AuditHashChain(unittest.TestCase):
         backup_path = f"{self.log_path}.1"
         if os.path.exists(backup_path) and os.path.exists(self.log_path):
             # Get the last entry's hash from the backup file
-            with open(backup_path, "r") as f:
+            with open(backup_path) as f:
                 backup_lines = f.readlines()
             if backup_lines:
                 last_backup_line = backup_lines[-1].strip()
@@ -1197,7 +1205,7 @@ class TestV76AuditHashChain(unittest.TestCase):
                 ).hexdigest()
 
                 # Read the first entry of the current file
-                with open(self.log_path, "r") as f:
+                with open(self.log_path) as f:
                     current_first_line = f.readline()
                 current_first_entry = json.loads(current_first_line.strip())
 
@@ -1213,7 +1221,7 @@ class TestV76AuditHashChain(unittest.TestCase):
         # Verify the current file's INTERNAL chain is intact
         # (skip the first entry which may reference the rotated file)
         if os.path.exists(self.log_path):
-            with open(self.log_path, "r") as f:
+            with open(self.log_path) as f:
                 lines = f.readlines()
             if len(lines) > 1:
                 # Verify chain from 2nd entry onward
@@ -1246,7 +1254,7 @@ class TestV76AuditHashChain(unittest.TestCase):
         logger = AsyncAuditLogger(filepath=self.log_path, secret_key=b"TEST_KEY")
         logger.log_event({"test": "event"})
 
-        with open(self.log_path, "r") as f:
+        with open(self.log_path) as f:
             entry = json.loads(f.readline())
 
         self.assertIn("previous_hash", entry["payload"],
@@ -1273,18 +1281,22 @@ if __name__ == '__main__':
 
 
 class TestV127HmacKeySecurity(unittest.TestCase):
-    """V127 SAFETY: Verify the b"QOMN_SECRET_KEY" hardcoded fallback was
+    """
+    V127 SAFETY: Verify the b"QOMN_SECRET_KEY" hardcoded fallback was
     removed. This was a CRITICAL vulnerability — in environments where
     pytest is importable (CI/CD with test deps), production code would
     silently use a known-default HMAC key, allowing attackers to forge
-    audit log entries."""
+    audit log entries.
+    """
 
     def test_no_hardcoded_default_key_when_pytest_importable(self):
-        """When pytest is importable + FIREAI_ENV=production + no env var,
+        """
+        When pytest is importable + FIREAI_ENV=production + no env var,
         AsyncAuditLogger MUST raise SecurityError, NOT use the hardcoded
-        b"QOMN_SECRET_KEY"."""
-        import sys
+        b"QOMN_SECRET_KEY".
+        """
         import os
+        import sys
         # Ensure pytest is in sys.modules (it is, since we're running under pytest)
         self.assertIn("pytest", sys.modules, "Test precondition: pytest must be in sys.modules")
 
@@ -1295,9 +1307,9 @@ class TestV127HmacKeySecurity(unittest.TestCase):
             os.environ["FIREAI_ENV"] = "production"
             os.environ.pop("QOMN_AUDIT_SECRET_KEY", None)
 
-            with self.assertRaises(Exception) as ctx:
+            with pytest.raises(Exception) as ctx:
                 AsyncAuditLogger(filepath=os.path.join(tempfile.gettempdir(), "v127_security_test.jsonl"))
-            self.assertIn("QOMN_AUDIT_SECRET_KEY", str(ctx.exception))
+            self.assertIn("QOMN_AUDIT_SECRET_KEY", str(ctx.value))
         finally:
             if saved_env is not None:
                 os.environ["FIREAI_ENV"] = saved_env

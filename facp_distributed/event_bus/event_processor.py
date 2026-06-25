@@ -1,6 +1,4 @@
-"""
-Event Processor for Event Bus in Distributed FACP System
-"""
+"""Event Processor for Event Bus in Distributed FACP System"""
 import threading
 import time
 import uuid
@@ -32,9 +30,8 @@ class ProcessingResult(Enum):
 
 
 class EventProcessor:
-    """
-    Processes events in the distributed FACP system with various stages
-    """
+    """Processes events in the distributed FACP system with various stages"""
+
     def __init__(self, name: str = "main_processor", max_workers: int = 5):
         self.name = name
         self.processor_id = f"processor_{name}_{uuid.uuid4().hex[:8]}"
@@ -270,7 +267,7 @@ class EventProcessor:
                 self.circuit_state = "half_open"
                 return False
             return True
-        elif self.circuit_state == "half_open":
+        if self.circuit_state == "half_open":
             # In half-open state, allow some requests through
             # For simplicity, we'll just return False here
             # A real implementation would have more sophisticated logic
@@ -306,7 +303,7 @@ class EventProcessor:
         """Log a processing failure"""
         print(f"Processing failure at stage {stage}: {event_data.get('event_type', 'unknown')}")
 
-    def _update_stats(self, stat_type: str, processing_time: float = None):
+    def _update_stats(self, stat_type: str, processing_time: Optional[float] = None):
         """Update processing statistics"""
         with self.lock:
             if stat_type == "processed":
@@ -441,8 +438,7 @@ class EventProcessor:
     def retry_dlq_messages(self):
         """Retry all messages in the dead letter queue"""
         # For now, just return a count of DLQ messages
-        dlq_size = self.dead_letter_queue.get_queue_size()
-        return dlq_size
+        return self.dead_letter_queue.get_queue_size()
 
     def cleanup_old_events(self, max_age_minutes: int = 60):
         """Clean up old events from history"""
@@ -457,11 +453,10 @@ class EventProcessor:
 
 
 class DistributedEventProcessor(EventProcessor):
-    """
-    Distributed event processor with cluster awareness
-    """
+    """Distributed event processor with cluster awareness"""
+
     def __init__(self, name: str = "distributed_processor", max_workers: int = 5,
-                 node_id: str = None, cluster_communicator: ClusterCommunicator = None):
+                 node_id: Optional[str] = None, cluster_communicator: ClusterCommunicator = None):
         super().__init__(name, max_workers)
         self.node_id = node_id or f"node_{uuid.uuid4().hex[:8]}"
         self.cluster_communicator = cluster_communicator
@@ -480,15 +475,12 @@ class DistributedEventProcessor(EventProcessor):
             self.cluster_communicator.register_message_handler("event_forward", self._handle_cluster_event)
 
     def submit_event(self, event_data: Dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL) -> str:
-        """
-        Override to support distributed event submission
-        """
+        """Override to support distributed event submission"""
         # Determine if this should be processed locally or distributed
         if self._should_process_locally(event_data):
             return super().submit_event(event_data, priority)
-        else:
-            # Forward to another node
-            return self._forward_to_cluster_node(event_data, priority)
+        # Forward to another node
+        return self._forward_to_cluster_node(event_data, priority)
 
     def _should_process_locally(self, event_data: Dict[str, Any]) -> bool:
         """Determine if an event should be processed locally"""
@@ -520,9 +512,8 @@ class DistributedEventProcessor(EventProcessor):
 
             success = self.cluster_communicator.send_message(target_node, forward_msg)
             return target_node if success else "forward_failed"
-        else:
-            # No suitable node found, process locally
-            return super().submit_event(event_data, priority)
+        # No suitable node found, process locally
+        return super().submit_event(event_data, priority)
 
     def _select_target_node(self, event_data: Dict[str, Any]) -> Optional[str]:
         """Select a target node for event processing"""
@@ -573,9 +564,8 @@ class DistributedEventProcessor(EventProcessor):
 
         if event_type in self.cluster_event_handlers:
             return self.cluster_event_handlers[event_type](event_data, source_node)
-        else:
-            # Default processing
-            return self.submit_event(event_data)
+        # Default processing
+        return self.submit_event(event_data)
 
     def distribute_processing_load(self, target_load: float):
         """Distribute processing load across the cluster"""
@@ -643,11 +633,10 @@ class DistributedEventProcessor(EventProcessor):
 
 
 class FACPEventProcessor(DistributedEventProcessor):
-    """
-    Specialized event processor for FACP messages in distributed system
-    """
+    """Specialized event processor for FACP messages in distributed system"""
+
     def __init__(self, name: str = "facp_processor", max_workers: int = 5,
-                 node_id: str = None, cluster_communicator: ClusterCommunicator = None):
+                 node_id: Optional[str] = None, cluster_communicator: ClusterCommunicator = None):
         super().__init__(name, max_workers, node_id, cluster_communicator)
         self.facp_request_handlers = {}
         self.facp_response_handlers = {}
@@ -667,9 +656,7 @@ class FACPEventProcessor(DistributedEventProcessor):
         self.facp_response_handlers[request_id] = handler
 
     def submit_facp_request(self, facp_request: Dict[str, Any]) -> str:
-        """
-        Override to handle FACP-specific processing
-        """
+        """Override to handle FACP-specific processing"""
         # Check for idempotency
         idempotency_key = facp_request.get("security", {}).get("idempotency_key")
         if idempotency_key and idempotency_key in self.idempotency_store:
@@ -697,9 +684,8 @@ class FACPEventProcessor(DistributedEventProcessor):
         self.register_stage_processor(ProcessingStage.ROUTED, self._route_facp_request)
         self.register_stage_processor(ProcessingStage.PROCESSING, self._process_facp_request)
 
-        event_id = super().submit_event(event_data, MessagePriority.HIGH)
+        return super().submit_event(event_data, MessagePriority.HIGH)
 
-        return event_id
 
     def _validate_facp_request(self, event_data: Dict[str, Any], stage: str) -> bool:
         """Validate FACP request"""

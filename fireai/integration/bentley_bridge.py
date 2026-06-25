@@ -1,4 +1,5 @@
-"""fireai/integration/bentley_bridge.py.
+"""
+fireai/integration/bentley_bridge.py.
 ======================================
 Bentley Systems Integration — OpenBuildings/STAAD integration via Bentley APIs.
 
@@ -122,7 +123,8 @@ class DesignData:
 
 
 class BentleyBridge:
-    """OpenBuildings/STAAD integration via Bentley APIs.
+    """
+    OpenBuildings/STAAD integration via Bentley APIs.
 
     Provides:
       - Import of Bentley models (OpenBuildings, STAAD, iTwin)
@@ -160,7 +162,8 @@ class BentleyBridge:
     # ── Import ──────────────────────────────────────────────────────────
 
     def import_bentley(self, path: str) -> DesignData:
-        """Import a Bentley model from file.
+        """
+        Import a Bentley model from file.
 
         Supports:
           - IFC files (recommended interchange format)
@@ -212,7 +215,8 @@ class BentleyBridge:
     # ── Synchronization ─────────────────────────────────────────────────
 
     def sync_design(self, design: DesignData) -> SyncStatus:
-        """Synchronize a FireAI design with the Bentley model.
+        """
+        Synchronize a FireAI design with the Bentley model.
 
         Two-way sync: updates from Bentley are incorporated into the
         FireAI design, and FireAI annotations (detector placements,
@@ -292,7 +296,8 @@ class BentleyBridge:
     def get_bentley_assets(
         self, project_id: str
     ) -> list[BentleyAsset]:
-        """Retrieve Bentley assets for a project.
+        """
+        Retrieve Bentley assets for a project.
 
         Args:
             project_id: Bentley project identifier.
@@ -306,7 +311,8 @@ class BentleyBridge:
     def get_fire_relevant_assets(
         self, project_id: str
     ) -> list[BentleyAsset]:
-        """Get assets relevant to fire alarm design.
+        """
+        Get assets relevant to fire alarm design.
 
         Filters to structural elements that affect detector placement
         and cable routing (walls, floors, ducts, openings, etc.).
@@ -328,7 +334,8 @@ class BentleyBridge:
     # ── Connection Management ───────────────────────────────────────────
 
     def connect_api(self, credentials: dict[str, str]) -> bool:
-        """Connect to the Bentley iTwin API.
+        """
+        Connect to the Bentley iTwin API.
 
         Args:
             credentials: Dict with 'client_id', 'client_secret',
@@ -366,7 +373,8 @@ class BentleyBridge:
         raw: bytes,
         file_hash: str,
     ) -> DesignData:
-        """Import an IFC file exported from Bentley.
+        """
+        Import an IFC file exported from Bentley.
 
         Delegates to fireai/bridges/ifc_headless_bridge.py when available.
         """
@@ -402,7 +410,8 @@ class BentleyBridge:
         raw: bytes,
         file_hash: str,
     ) -> DesignData:
-        """Import a Bentley DGN file.
+        """
+        Import a Bentley DGN file.
 
         Production Note:
           DGN is a proprietary Bentley format. Full parsing requires
@@ -427,7 +436,8 @@ class BentleyBridge:
         raw: bytes,
         file_hash: str,
     ) -> DesignData:
-        """Import a Bentley iModel snapshot.
+        """
+        Import a Bentley iModel snapshot.
 
         Production Note:
           iModel parsing requires the Bentley iTwin SDK.

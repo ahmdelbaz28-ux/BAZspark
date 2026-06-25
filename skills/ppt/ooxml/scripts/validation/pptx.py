@@ -1,6 +1,4 @@
-"""
-Validator for PowerPoint presentation XML files against XSD schemas.
-"""
+"""Validator for PowerPoint presentation XML files against XSD schemas."""
 
 import re
 
@@ -113,10 +111,9 @@ class PPTXSchemaValidator(BaseSchemaValidator):
             for error in errors:
                 print(error)
             return False
-        else:
-            if self.verbose:
-                print("PASSED - All UUID-like IDs contain valid hex values")
-            return True
+        if self.verbose:
+            print("PASSED - All UUID-like IDs contain valid hex values")
+        return True
 
     def _looks_like_uuid(self, value):
         """Check if a value has the general structure of a UUID."""
@@ -193,10 +190,9 @@ class PPTXSchemaValidator(BaseSchemaValidator):
                 "Remove invalid references or add missing slide layouts to the relationships file."
             )
             return False
-        else:
-            if self.verbose:
-                print("PASSED - All slide layout IDs reference valid slide layouts")
-            return True
+        if self.verbose:
+            print("PASSED - All slide layout IDs reference valid slide layouts")
+        return True
 
     def validate_no_duplicate_slide_layouts(self):
         """Validate that each slide has exactly one slideLayout reference."""
@@ -231,10 +227,9 @@ class PPTXSchemaValidator(BaseSchemaValidator):
             for error in errors:
                 print(error)
             return False
-        else:
-            if self.verbose:
-                print("PASSED - All slides have exactly one slideLayout reference")
-            return True
+        if self.verbose:
+            print("PASSED - All slides have exactly one slideLayout reference")
+        return True
 
     def validate_notes_slide_references(self):
         """Validate that each notesSlide file is referenced by only one slide."""
@@ -299,10 +294,9 @@ class PPTXSchemaValidator(BaseSchemaValidator):
                 print(error)
             print("Each slide may optionally have its own slide file.")
             return False
-        else:
-            if self.verbose:
-                print("PASSED - All notes slide references are unique")
-            return True
+        if self.verbose:
+            print("PASSED - All notes slide references are unique")
+        return True
 
 
 if __name__ == "__main__":

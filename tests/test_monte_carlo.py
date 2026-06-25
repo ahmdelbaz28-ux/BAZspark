@@ -70,14 +70,14 @@ class TestRunResilienceCheck:
 
     def test_zero_detectors_returns_not_resilient(self, square_room_poly):
         """0 detectors: treated like single → not resilient."""
-        pass_rate, min_cov, resilient = run_resilience_check(
+        _pass_rate, _min_cov, resilient = run_resilience_check(
             [], square_room_poly, radius=6.37,
         )
         assert resilient is False
 
     def test_two_detectors_resilient(self, square_room_poly):
         """2 detectors with overlapping coverage should be resilient."""
-        pass_rate, min_cov, resilient = run_resilience_check(
+        pass_rate, _min_cov, resilient = run_resilience_check(
             [(3.0, 5.0), (7.0, 5.0)], square_room_poly, radius=6.37,
             seed=42,
         )
@@ -150,7 +150,7 @@ class TestRunResilienceCheck:
 
 class TestRunResilienceCheckOriginal:
     def test_single_detector(self, square_room_poly):
-        pass_rate, min_cov, resilient = _run_resilience_check_original(
+        _pass_rate, _min_cov, resilient = _run_resilience_check_original(
             [(5.0, 5.0)], square_room_poly, radius=6.37,
         )
         assert resilient is False
@@ -206,7 +206,7 @@ class TestEdgeCases:
 
     def test_very_large_radius(self, square_room_poly):
         """Huge radius → one detector covers whole room."""
-        _, _, resilient = run_resilience_check(
+        _, _, _resilient = run_resilience_check(
             [(5.0, 5.0), (5.0, 5.0)], square_room_poly, radius=100.0,
             iterations=5, seed=42,
         )

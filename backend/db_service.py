@@ -1,4 +1,5 @@
-"""FireAI Digital Twin - Database Service.
+"""
+FireAI Digital Twin - Database Service.
 ======================================
 Thread-safe singleton wrapping UniversalDataModel (core/database.py)
 and adding project management with its own SQLite table.
@@ -76,7 +77,8 @@ _CAMEL_TO_SNAKE = {
 
 
 def _normalize_sort(sort_by: str) -> str:
-    r"""Convert camelCase sort parameter to snake_case WITH whitelist validation.
+    r"""
+    Convert camelCase sort parameter to snake_case WITH whitelist validation.
 
     V113 SECURITY FIX: Only allows known sort fields. Unknown fields
     are silently mapped to 'created_at' (safe default) instead of
@@ -106,7 +108,8 @@ def _normalize_sort(sort_by: str) -> str:
 
 
 class DatabaseService:
-    """Thread-safe singleton that wraps UniversalDataModel and adds project support.
+    """
+    Thread-safe singleton that wraps UniversalDataModel and adds project support.
 
     Provides methods that the routers can call, handling the conversion between
     Pydantic schemas and core dataclasses.
@@ -156,7 +159,8 @@ class DatabaseService:
     # ──────────────────────────────────────────────────────────────────────────
 
     def _safe_db_execute(self, sql: str, params: tuple = (), commit: bool = False) -> Any | None:
-        """Execute SQL on the UDM connection with proper lock acquisition.
+        """
+        Execute SQL on the UDM connection with proper lock acquisition.
 
         SAFETY FIX (BUG-36): All direct SQL access to self._data_model._conn
         MUST be wrapped with self._data_model._lock to prevent concurrent access
@@ -173,7 +177,8 @@ class DatabaseService:
 
     @property
     def _db_conn(self) -> sqlite3.Connection:
-        """Get database connection ONLY while holding the database lock.
+        """
+        Get database connection ONLY while holding the database lock.
 
         CRITICAL FIX: Previous code accessed self._data_model._conn directly
         without acquiring self._data_model._lock, creating a race condition
@@ -190,7 +195,8 @@ class DatabaseService:
 
     @property
     def _db_lock(self) -> threading.RLock:
-        """Get the database lock for multi-statement operations.
+        """
+        Get the database lock for multi-statement operations.
 
         Usage:
             with self._service_lock:        # Always acquire service lock first
@@ -695,7 +701,8 @@ class DatabaseService:
         return self._service_lock
 
     def bridge_sql(self, sql: str, params: tuple = (), commit: bool = False, fetch: bool = False):
-        """Execute raw SQL for bridge sync operations safely.
+        """
+        Execute raw SQL for bridge sync operations safely.
 
         Ensures proper lock ordering and connection safety.
         Used ONLY by project_bridge.py for cross-database synchronization.
@@ -719,7 +726,8 @@ class DatabaseService:
     # ──────────────────────────────────────────────────────────────────────────
 
     def _element_to_response(self, element: UniversalElement, project_id: str | None = None) -> ElementResponse:
-        """Convert UniversalElement to ElementResponse.
+        """
+        Convert UniversalElement to ElementResponse.
 
         V115 FIX: Now passes proper Pydantic model instances instead of raw dicts
         to ElementResponse. Previously, properties and geometry were passed as
@@ -786,7 +794,8 @@ class DatabaseService:
         return ""
 
     def _associate_element_with_project(self, element_id: str, project_id: str) -> None:
-        """Associate an element with a project.
+        """
+        Associate an element with a project.
 
         Acquires the service lock to prevent concurrent SQL operations
         on the same connection (thread safety).
@@ -985,7 +994,8 @@ class DatabaseService:
             return paginated, total
 
     def delete_connection(self, connection_id: str) -> bool:
-        """Delete a connection by ID.
+        """
+        Delete a connection by ID.
 
         Removes the relationship from both the SQL table AND the in-memory
         element.relationships lists. Also removes the reverse relationship
@@ -1075,7 +1085,8 @@ class DatabaseService:
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[ConflictResponse], int]:
-        """List conflicts with optional filtering and pagination.
+        """
+        List conflicts with optional filtering and pagination.
 
         V129 FIX: Uses detect_conflicts() method instead of accessing
         non-existent self._data_model.conflicts dict.
@@ -1119,7 +1130,8 @@ class DatabaseService:
             return responses, total
 
     def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> ConflictResponse | None:
-        """Resolve a conflict by ID.
+        """
+        Resolve a conflict by ID.
 
         V129 FIX: Uses resolve_conflict() on UniversalDataModel instead of
         accessing non-existent self._data_model.conflicts dict.
@@ -1290,7 +1302,8 @@ class DatabaseService:
 
 
 def get_db_service() -> DatabaseService:
-    """Dependency injection provider for DatabaseService.
+    """
+    Dependency injection provider for DatabaseService.
 
     Returns the singleton DatabaseService instance. Use with FastAPI's
     Depends() to inject it into route handlers instead of creating a

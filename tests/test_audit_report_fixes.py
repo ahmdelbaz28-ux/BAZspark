@@ -25,14 +25,16 @@ import pytest
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestHazenWilliamsFrictionLoss:
-    """Verify Hazen-Williams calculation against hand-verification baseline.
+    """
+    Verify Hazen-Williams calculation against hand-verification baseline.
 
     Baseline: Q=100 gpm, C=120, d=2.067 in (2" Sch 40), L=100 ft
     Expected: p = 0.094473 psi/ft, total = 9.4473 psi
     """
 
     def test_hand_verification_baseline(self):
-        """Verify Hazen-Williams calculation produces correct order of magnitude.
+        """
+        Verify Hazen-Williams calculation produces correct order of magnitude.
 
         Hand-calculation: Q=100, C=120, d=2.067", L=100 ft
         Formula: p = 4.52 × Q^1.85 / (C^1.85 × d^4.87)
@@ -258,7 +260,8 @@ class TestInputSanitization:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestBatterySizingSafetyFactor:
-    """Verify battery sizing uses mandatory safety factor >= 1.2 (NFPA 72).
+    """
+    Verify battery sizing uses mandatory safety factor >= 1.2 (NFPA 72).
 
     The existing code uses derating_factor=0.80, which means:
       required_ah = raw_ah / 0.80 = raw_ah × 1.25

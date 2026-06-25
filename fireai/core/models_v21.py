@@ -1,4 +1,5 @@
-"""models_v21.py – FireAI V21 Pydantic Models (Fast-Fail Validation).
+"""
+models_v21.py – FireAI V21 Pydantic Models (Fast-Fail Validation).
 ==================================================================
 Replaces dataclasses with Pydantic BaseModel for fail-fast validation.
 No dict/tuple passes through. No silent failures. Physics validators enforced.
@@ -91,7 +92,8 @@ class EPLMining(str, Enum):
 
 
 class TemperatureClass(str, Enum):
-    """Temperature classes per IEC 60079-0:2017 §7.3.
+    """
+    Temperature classes per IEC 60079-0:2017 §7.3.
     Includes extended subdivisions (T2A-T2D, T3A-T3C, T4A)
     for more granular equipment selection.
     """
@@ -150,7 +152,8 @@ class RegulatoryFramework(str, Enum):
 
 
 class PasquillStability(str, Enum):
-    """Pasquill-Gifford atmospheric stability classes.
+    """
+    Pasquill-Gifford atmospheric stability classes.
     A = extremely unstable (strong convection)
     F = moderately stable (worst case for dispersion = widest plume)
     Used by EnvironmentalContext for worst-case default.
@@ -165,7 +168,8 @@ class PasquillStability(str, Enum):
 
 
 class ThermalMarginRule(str, Enum):
-    """IEC 60079-14 thermal margin strategies.
+    """
+    IEC 60079-14 thermal margin strategies.
     STRICT_5PCT: 5% margin with minimum 10K (Zone 0/20)
     STANDARD_5PCT: 5% margin with minimum 5K (Zone 1/21)
     BASIC: just strictly below (Zone 2/22).
@@ -177,7 +181,8 @@ class ThermalMarginRule(str, Enum):
 
 
 class RegionProfile(str, Enum):
-    """Environmental region presets for HAC calculations.
+    """
+    Environmental region presets for HAC calculations.
 
     Each region triggers ADVISORY warnings when engineer inputs deviate
     from typical regional conditions. The system NEVER silently overwrites
@@ -209,7 +214,8 @@ class RegionProfile(str, Enum):
 
 
 class Jurisdiction(str, Enum):
-    """Regulatory jurisdiction for safety audit rules.
+    """
+    Regulatory jurisdiction for safety audit rules.
     Each jurisdiction may impose requirements BEYOND the base IEC/NFPA standards.
     Only jurisdictions with documented, verifiable additional requirements
     are included. Empty stubs are FORBIDDEN — they mislead engineers into
@@ -236,7 +242,8 @@ class Jurisdiction(str, Enum):
 
 
 class FoulingCategory(str, Enum):
-    """Categorical fouling environment classification.
+    """
+    Categorical fouling environment classification.
     Used for advisory generation when combined with region profiles.
     Maps to typical lens_fouling_factor ranges:
       CLEAN:    0.85-1.00 (laboratory / controlled indoor)
@@ -254,7 +261,8 @@ class FoulingCategory(str, Enum):
 
 
 class ElevationTier(str, Enum):
-    """Detector/gas elevation classification for Z-Axis audit.
+    """
+    Detector/gas elevation classification for Z-Axis audit.
     Based on vapor density ratio (MW_gas / MW_air) using ±3% band.
 
     Air MW ≈ 28.96 g/mol. Classification uses density ratio thresholds:
@@ -281,7 +289,8 @@ class ElevationTier(str, Enum):
 
 
 class SubstanceProperties(BaseModel):
-    """Physical properties of the hazardous substance.
+    """
+    Physical properties of the hazardous substance.
     ALL validators run at construction — no invalid object can exist.
     """
 
@@ -402,7 +411,8 @@ class HACResult(BaseModel):
 
 
 def _select_temp_class(autoignition_c: float) -> TemperatureClass:
-    """FIXED Fix #15: Select temperature class whose max surface temp
+    """
+    FIXED Fix #15: Select temperature class whose max surface temp
     is STRICTLY LESS THAN autoignition temperature.
     IEC 60079-0 §7.3.
 
@@ -445,7 +455,8 @@ def _select_temp_class(autoignition_c: float) -> TemperatureClass:
 
 
 class ATEXEquipmentSpec(BaseModel):
-    """ATEX equipment requirements derived from zone classification.
+    """
+    ATEX equipment requirements derived from zone classification.
     EPL hierarchy enforced — cannot construct an inconsistent spec.
     """
 
@@ -462,7 +473,8 @@ class ATEXEquipmentSpec(BaseModel):
 
     @model_validator(mode="after")
     def epl_category_consistency(self) -> ATEXEquipmentSpec:
-        """FIXED Fix #14: EPL hierarchy was inverted.
+        """
+        FIXED Fix #14: EPL hierarchy was inverted.
         Correct gas hierarchy: Ga > Gb > Gc (Ga = highest protection)
         Correct dust hierarchy: Da > Db > Dc.
         """
@@ -509,7 +521,8 @@ class ATEXEquipmentSpec(BaseModel):
 
     @model_validator(mode="after")
     def protection_mode_zone_fit(self) -> ATEXEquipmentSpec:
-        """FIXED Fix #17: 'ia' for Zone 2 is over-specified (costly, unnecessary).
+        """
+        FIXED Fix #17: 'ia' for Zone 2 is over-specified (costly, unnecessary).
         Zone 2 -> 'ic' is sufficient. Zone 1 -> 'ib' or 'ia'. Zone 0 -> 'ia' only.
         [IEC 60079-14].
         """
@@ -562,7 +575,8 @@ class ATEXEquipmentSpec(BaseModel):
 
     @model_validator(mode="after")
     def thermal_margin_check(self) -> ATEXEquipmentSpec:
-        """V54 FIX (V48 #6): Validate thermal margin per IEC 60079-14 §5.3.
+        """
+        V54 FIX (V48 #6): Validate thermal margin per IEC 60079-14 §5.3.
 
         When autoignition_c is provided, verify that the temperature class
         provides adequate margin. For Zone 0/1/20/21: requires 5% margin
@@ -614,7 +628,8 @@ class ATEXEquipmentSpec(BaseModel):
 
 
 class Obstruction(BaseModel):
-    """FIXED Q6: Spectral transparency replaces single boolean.
+    """
+    FIXED Q6: Spectral transparency replaces single boolean.
     Glass: UV=0.0 (opaque), IR=0.8 (mostly transparent).
     Polycarbonate: UV=0.0, VIS=0.9, IR=0.7.
     Steel: all 0.0.
@@ -641,7 +656,8 @@ class Obstruction(BaseModel):
         return self
 
     def is_transparent_for(self, band: WavelengthBand) -> bool:
-        """True if transmittance >= 0.70 for this spectral band.
+        """
+        True if transmittance >= 0.70 for this spectral band.
 
         V54 FIX (V48 #10): Threshold raised from 0.50 to 0.70 per FM Global DS 5-48 §3.2.1.
         At transmittance=0.50, a 10m optical path reduces signal to 0.50^10 ≈ 0.001
@@ -693,7 +709,8 @@ class FlameDetectorSpec(BaseModel):
         return [v / mag for v in self.orientation_vector]
 
     def is_facing_upward(self) -> bool:
-        """Detector pointing up (z > 0.9) won't cover floor.
+        """
+        Detector pointing up (z > 0.9) won't cover floor.
         Returns True if detector aims predominantly upward.
         """
         unit = self.orientation_unit
@@ -730,7 +747,8 @@ class RegSelectorResult(BaseModel):
 
 
 class EnvironmentalContext(BaseModel):
-    """Strict context for HAC calculations with environmental correction.
+    """
+    Strict context for HAC calculations with environmental correction.
     Defaults to worst-case indoor scenarios to guarantee fail-safe designs.
 
     If an engineer does NOT provide environmental data, the system assumes
@@ -826,7 +844,8 @@ class EnvironmentalContext(BaseModel):
 
     @property
     def advisories(self) -> list[str]:
-        """Generate advisory warnings based on region vs actual values.
+        """
+        Generate advisory warnings based on region vs actual values.
 
         The system NEVER silently overwrites engineer inputs. Instead,
         it generates advisory warnings when the selected region suggests
@@ -921,7 +940,8 @@ _MW_LOW_THRESHOLD: float = _MW_AIR * _VD_RATIO_LOW  # 29.8288
 
 
 def vapor_density_tier(molecular_weight: float) -> ElevationTier:
-    """Classify gas buoyancy behavior by molecular weight using density ratios.
+    """
+    Classify gas buoyancy behavior by molecular weight using density ratios.
 
     This function uses precise density ratios (MW_gas / MW_air) rather
     than fixed MW thresholds, providing a physically rigorous classification
@@ -983,7 +1003,8 @@ def room_purge_time(
     ach: float,
     target_fraction: float = 0.01,
 ) -> float:
-    """Calculate the time (seconds) for ventilation to reduce gas concentration
+    """
+    Calculate the time (seconds) for ventilation to reduce gas concentration
     to `target_fraction` of initial concentration.
 
     Based on IEC 60079-10-1:2015 Annex B §B.2 dilution model:
@@ -1026,7 +1047,8 @@ def room_concentration_at_time(
     ach: float,
     time_seconds: float,
 ) -> float:
-    """Calculate gas concentration at time t using exponential dilution.
+    """
+    Calculate gas concentration at time t using exponential dilution.
 
     C(t) = C_0 * exp(-ACH * t / 3600)
 
@@ -1060,7 +1082,8 @@ def burgess_wheeler_lfl(
     heat_of_combustion_kj_mol: float | None = None,
     lfl_floor_ratio: float | None = 0.5,
 ) -> float:
-    """Burgess-Wheeler LFL thermal correction.
+    """
+    Burgess-Wheeler LFL thermal correction.
 
     At elevated temperatures, gases expand and LFL decreases.
     This is NOT optional — IEC 60079-10-1 Annex B acknowledges that
@@ -1138,7 +1161,8 @@ def _select_temp_class_with_margin(
     autoignition_c: float,
     zone: ZoneType,
 ) -> TemperatureClass:
-    """V21.2: Select temperature class with IEC 60079-14 thermal margin.
+    """
+    V21.2: Select temperature class with IEC 60079-14 thermal margin.
 
     The previous _select_temp_class only required max_surface < autoignition.
     This left a 1C margin (e.g., autoignition=136C -> T4 max 135C) which is
@@ -1243,7 +1267,8 @@ _DEFAULT_MEDIUM_ALPHA: dict[str, dict[str, float]] = {
 
 
 class SpectralSignature(BaseModel):
-    """Spectral absorption coefficient per wavelength band for a substance.
+    """
+    Spectral absorption coefficient per wavelength band for a substance.
     Used by Layer 5 Beer-Lambert volumetric transmittance calculations.
 
     Decoupled from SubstanceProperties to keep the core model lightweight.
@@ -1274,7 +1299,8 @@ class SpectralSignature(BaseModel):
 
 
 class SpectralSignatureRegistry:
-    """Lazy-loaded registry of spectral signatures indexed by CAS number.
+    """
+    Lazy-loaded registry of spectral signatures indexed by CAS number.
 
     Design rationale: Spectral data is only needed in Layer 5 (optical).
     Loading it into SubstanceProperties would bloat Layers 1-4.
@@ -1886,7 +1912,8 @@ class SpectralSignatureRegistry:
 
 
 class VolumetricMedium(BaseModel):
-    """A gaseous or particulate medium in the optical path that absorbs
+    """
+    A gaseous or particulate medium in the optical path that absorbs
     spectral energy according to Beer-Lambert law.
 
     Unlike solid Obstructions (which block geometrically), VolumetricMedia
@@ -1933,7 +1960,8 @@ class VolumetricMedium(BaseModel):
 
     @model_validator(mode="after")
     def bbox_nonzero_volume(self) -> VolumetricMedium:
-        """GAP-07: A volumetric medium with zero volume has no physical meaning.
+        """
+        GAP-07: A volumetric medium with zero volume has no physical meaning.
         IEC 60079-10-1:2015 Annex B §B.3: minimum enclosure volume applies.
         """
         dx = self.bbox_max[0] - self.bbox_min[0]
@@ -1948,7 +1976,8 @@ class VolumetricMedium(BaseModel):
         return self
 
     def get_alpha(self, band: WavelengthBand) -> float:
-        """GAP-03: Return absorption coefficient (m^-1) for `band`.
+        """
+        GAP-03: Return absorption coefficient (m^-1) for `band`.
 
         Priority order:
         1. alpha_override[band]  — explicit user value, highest priority
@@ -1993,7 +2022,8 @@ class VolumetricMedium(BaseModel):
         return float(raw) * self.concentration_factor
 
     def get_alpha_with_registry(self, band: WavelengthBand, registry: SpectralSignatureRegistry) -> float:
-        """Get absorption coefficient using registry lookup.
+        """
+        Get absorption coefficient using registry lookup.
 
         Priority order:
         1. alpha_override[band] — explicit user value
@@ -2045,7 +2075,8 @@ def beer_lambert_transmittance(
     alpha_per_m: float,
     path_length_m: float,
 ) -> float:
-    """Calculate spectral transmittance through a volumetric medium
+    """
+    Calculate spectral transmittance through a volumetric medium
     using the Beer-Lambert law:
 
         T = exp(-alpha * d)
@@ -2086,7 +2117,8 @@ def volumetric_path_transmittance(
     band: WavelengthBand,
     registry: SpectralSignatureRegistry | None = None,
 ) -> float:
-    """Calculate total spectral transmittance along a ray path through
+    """
+    Calculate total spectral transmittance along a ray path through
     multiple volumetric media (smoke, gas clouds, steam).
 
     For each medium intersected, calculates:
@@ -2137,7 +2169,8 @@ def _ray_aabb_path_length(
     bbox_min: list[float],
     bbox_max: list[float],
 ) -> float:
-    """Calculate the path length of a ray segment through an AABB.
+    """
+    Calculate the path length of a ray segment through an AABB.
     Returns 0.0 if the ray doesn't intersect the box.
     Uses slab method for ray-box intersection.
     """

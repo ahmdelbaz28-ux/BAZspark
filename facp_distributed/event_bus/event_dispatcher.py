@@ -1,6 +1,4 @@
-"""
-Event Dispatcher for Event Bus in Distributed FACP System
-"""
+"""Event Dispatcher for Event Bus in Distributed FACP System"""
 import threading
 import time
 import uuid
@@ -10,11 +8,10 @@ from .message_queue import Message, MessagePriority, MessageQueue
 
 
 class EventListener:
-    """
-    Represents an event listener in the distributed system
-    """
+    """Represents an event listener in the distributed system"""
+
     def __init__(self, name: str, callback: Callable[[Dict[str, Any]], None],
-                 event_types: List[str] = None, node_filters: List[str] = None):
+                 event_types: Optional[List[str]] = None, node_filters: Optional[List[str]] = None):
         self.id = f"listener_{name}_{uuid.uuid4().hex[:8]}"
         self.name = name
         self.callback = callback
@@ -27,9 +24,7 @@ class EventListener:
         self.errors = 0
 
     def can_handle_event(self, event_data: Dict[str, Any]) -> bool:
-        """
-        Check if this listener can handle the given event
-        """
+        """Check if this listener can handle the given event"""
         if not self.is_active:
             return False
 
@@ -45,9 +40,7 @@ class EventListener:
         return type_match and node_match
 
     def invoke(self, event_data: Dict[str, Any]) -> bool:
-        """
-        Invoke the listener callback with event data
-        """
+        """Invoke the listener callback with event data"""
         try:
             self.callback(event_data)
             self.last_invoked = time.time()
@@ -60,9 +53,8 @@ class EventListener:
 
 
 class EventDispatcher:
-    """
-    Centralized event dispatcher for the distributed FACP system
-    """
+    """Centralized event dispatcher for the distributed FACP system"""
+
     def __init__(self, name: str = "main_dispatcher"):
         self.name = name
         self.dispatcher_id = f"dispatcher_{name}_{uuid.uuid4().hex[:8]}"
@@ -84,10 +76,8 @@ class EventDispatcher:
         self.broadcast_targets = set()  # Set of target identifiers for broadcasting
 
     def register_listener(self, name: str, callback: Callable[[Dict[str, Any]], None],
-                         event_types: List[str] = None, node_filters: List[str] = None) -> str:
-        """
-        Register a new event listener
-        """
+                         event_types: Optional[List[str]] = None, node_filters: Optional[List[str]] = None) -> str:
+        """Register a new event listener"""
         with self.lock:
             listener = EventListener(name, callback, event_types, node_filters)
             self.listeners[listener.id] = listener
@@ -102,9 +92,7 @@ class EventDispatcher:
             return listener.id
 
     def unregister_listener(self, listener_id: str) -> bool:
-        """
-        Unregister an event listener
-        """
+        """Unregister an event listener"""
         with self.lock:
             if listener_id in self.listeners:
                 self.listeners[listener_id]
@@ -119,9 +107,7 @@ class EventDispatcher:
             return False
 
     def dispatch_event(self, event_data: Dict[str, Any]) -> List[str]:
-        """
-        Dispatch an event to interested listeners
-        """
+        """Dispatch an event to interested listeners"""
         event_type = event_data.get("event_type", "unknown")
         event_data.get("source_node", "unknown")
 
@@ -165,9 +151,7 @@ class EventDispatcher:
         return invoked_listeners
 
     def dispatch_fcep_message(self, facp_message: Dict[str, Any]) -> List[str]:
-        """
-        Dispatch a FACP message as an event
-        """
+        """Dispatch a FACP message as an event"""
         # Convert FACP message to event format
         event_data = {
             "event_type": "facp_message",
@@ -181,10 +165,8 @@ class EventDispatcher:
 
         return self.dispatch_event(event_data)
 
-    def broadcast_event(self, event_data: Dict[str, Any], targets: List[str] = None) -> Dict[str, List[str]]:
-        """
-        Broadcast an event to multiple targets (simulated for distributed system)
-        """
+    def broadcast_event(self, event_data: Dict[str, Any], targets: Optional[List[str]] = None) -> Dict[str, List[str]]:
+        """Broadcast an event to multiple targets (simulated for distributed system)"""
         if targets is None:
             targets = list(self.broadcast_targets)
 
@@ -202,9 +184,7 @@ class EventDispatcher:
         return results
 
     def queue_event(self, event_data: Dict[str, Any], priority: MessagePriority = MessagePriority.NORMAL) -> bool:
-        """
-        Queue an event for later processing
-        """
+        """Queue an event for later processing"""
         message = Message(
             topic="events",
             data=event_data,
@@ -215,9 +195,7 @@ class EventDispatcher:
         return self.event_queue.publish(message)
 
     def start_processing_queue(self):
-        """
-        Start processing events from the queue
-        """
+        """Start processing events from the queue"""
         if self.running:
             return
 
@@ -232,17 +210,13 @@ class EventDispatcher:
             self.dispatch_workers.append(worker_thread)
 
     def stop_processing_queue(self):
-        """
-        Stop processing events from the queue
-        """
+        """Stop processing events from the queue"""
         self.running = False
         if self.dispatch_thread:
             self.dispatch_thread.join(timeout=2.0)  # Wait up to 2 seconds
 
     def _process_queue(self):
-        """
-        Internal method to process queued events
-        """
+        """Internal method to process queued events"""
         while self.running:
             try:
                 message = self.event_queue.dequeue()
@@ -260,9 +234,7 @@ class EventDispatcher:
                 time.sleep(0.1)
 
     def _dispatch_worker(self):
-        """
-        Internal worker method for dispatching events
-        """
+        """Internal worker method for dispatching events"""
         while self.running:
             try:
                 message = self.event_queue.dequeue()
@@ -278,23 +250,17 @@ class EventDispatcher:
                 time.sleep(0.1)
 
     def add_broadcast_target(self, target: str):
-        """
-        Add a target for event broadcasting
-        """
+        """Add a target for event broadcasting"""
         with self.lock:
             self.broadcast_targets.add(target)
 
     def remove_broadcast_target(self, target: str):
-        """
-        Remove a target from event broadcasting
-        """
+        """Remove a target from event broadcasting"""
         with self.lock:
             self.broadcast_targets.discard(target)
 
     def get_listener_status(self, listener_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get status of a specific listener
-        """
+        """Get status of a specific listener"""
         with self.lock:
             if listener_id in self.listeners:
                 listener = self.listeners[listener_id]
@@ -312,16 +278,12 @@ class EventDispatcher:
         return None
 
     def get_all_listeners_status(self) -> Dict[str, Dict[str, Any]]:
-        """
-        Get status of all listeners
-        """
+        """Get status of all listeners"""
         with self.lock:
-            return {lid: self.get_listener_status(lid) for lid in self.listeners.keys()}
+            return {lid: self.get_listener_status(lid) for lid in self.listeners}
 
     def get_dispatcher_status(self) -> Dict[str, Any]:
-        """
-        Get status of the event dispatcher
-        """
+        """Get status of the event dispatcher"""
         with self.lock:
             return {
                 "dispatcher_id": self.dispatcher_id,
@@ -336,9 +298,7 @@ class EventDispatcher:
             }
 
     def get_statistics(self) -> Dict[str, Any]:
-        """
-        Get detailed statistics for the dispatcher
-        """
+        """Get detailed statistics for the dispatcher"""
         with self.lock:
             listener_stats = {}
             for lid, listener in self.listeners.items():
@@ -364,9 +324,7 @@ class EventDispatcher:
             }
 
     def filter_event(self, event_data: Dict[str, Any]) -> bool:
-        """
-        Determine if an event should be filtered out
-        """
+        """Determine if an event should be filtered out"""
         # In a real system, this could implement complex filtering logic
         # For now, implement basic filtering based on event properties
         event_type = event_data.get("event_type", "")
@@ -381,9 +339,7 @@ class EventDispatcher:
         return False
 
     def enable_listener(self, listener_id: str) -> bool:
-        """
-        Enable a listener
-        """
+        """Enable a listener"""
         with self.lock:
             if listener_id in self.listeners:
                 self.listeners[listener_id].is_active = True
@@ -391,20 +347,16 @@ class EventDispatcher:
         return False
 
     def disable_listener(self, listener_id: str) -> bool:
-        """
-        Disable a listener
-        """
+        """Disable a listener"""
         with self.lock:
             if listener_id in self.listeners:
                 self.listeners[listener_id].is_active = False
                 return True
         return False
 
-    def update_listener_filters(self, listener_id: str, event_types: List[str] = None,
-                               node_filters: List[str] = None) -> bool:
-        """
-        Update filters for a listener
-        """
+    def update_listener_filters(self, listener_id: str, event_types: Optional[List[str]] = None,
+                               node_filters: Optional[List[str]] = None) -> bool:
+        """Update filters for a listener"""
         with self.lock:
             if listener_id in self.listeners:
                 listener = self.listeners[listener_id]
@@ -429,9 +381,7 @@ class EventDispatcher:
         return False
 
     def cleanup_inactive_listeners(self, min_uptime_minutes: int = 60):
-        """
-        Remove inactive listeners
-        """
+        """Remove inactive listeners"""
         current_time = time.time()
         cutoff_time = current_time - (min_uptime_minutes * 60)
 
@@ -446,10 +396,9 @@ class EventDispatcher:
 
 
 class DistributedEventDispatcher(EventDispatcher):
-    """
-    Distributed event dispatcher with cluster awareness
-    """
-    def __init__(self, name: str = "distributed_dispatcher", node_id: str = None):
+    """Distributed event dispatcher with cluster awareness"""
+
+    def __init__(self, name: str = "distributed_dispatcher", node_id: Optional[str] = None):
         super().__init__(name)
         self.node_id = node_id or f"node_{uuid.uuid4().hex[:8]}"
         self.cluster_sync_callback = None
@@ -459,15 +408,11 @@ class DistributedEventDispatcher(EventDispatcher):
         self.local_only_events = set()  # Events that should not be federated
 
     def set_cluster_sync_callback(self, callback):
-        """
-        Set callback for cluster synchronization
-        """
+        """Set callback for cluster synchronization"""
         self.cluster_sync_callback = callback
 
     def dispatch_event(self, event_data: Dict[str, Any]) -> List[str]:
-        """
-        Override to support distributed event dispatching
-        """
+        """Override to support distributed event dispatching"""
         # Check if this event should be federated
         event_type = event_data.get("event_type", "")
         if self.federation_enabled and event_type not in self.local_only_events:
@@ -488,9 +433,7 @@ class DistributedEventDispatcher(EventDispatcher):
         return super().dispatch_event(event_data)
 
     def receive_cluster_event(self, event_data: Dict[str, Any], source_node: str):
-        """
-        Receive an event from another cluster node
-        """
+        """Receive an event from another cluster node"""
         # Add source node information
         event_data["source_cluster_node"] = source_node
         event_data["received_at"] = time.time()
@@ -502,9 +445,7 @@ class DistributedEventDispatcher(EventDispatcher):
         return self.dispatch_event(event_data)
 
     def sync_with_cluster(self, cluster_state: Dict[str, Any]):
-        """
-        Sync dispatcher state with cluster
-        """
+        """Sync dispatcher state with cluster"""
         # Update cluster listeners
         cluster_listeners = cluster_state.get("listeners", {})
         self.cluster_listeners.update(cluster_listeners)
@@ -515,21 +456,15 @@ class DistributedEventDispatcher(EventDispatcher):
             self.dispatch_event(event)
 
     def add_local_only_event(self, event_type: str):
-        """
-        Add an event type that should not be federated to other nodes
-        """
+        """Add an event type that should not be federated to other nodes"""
         self.local_only_events.add(event_type)
 
     def remove_local_only_event(self, event_type: str):
-        """
-        Remove an event type from the local-only list
-        """
+        """Remove an event type from the local-only list"""
         self.local_only_events.discard(event_type)
 
     def get_cluster_aware_status(self) -> Dict[str, Any]:
-        """
-        Get status including cluster information
-        """
+        """Get status including cluster information"""
         base_status = self.get_dispatcher_status()
         base_status.update({
             "node_id": self.node_id,

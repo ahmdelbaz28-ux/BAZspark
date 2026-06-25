@@ -1,4 +1,5 @@
-"""fireai/core/firestop_annotator.py.
+"""
+fireai/core/firestop_annotator.py.
 =================================
 Checks spatial overlap of routing topologies against 2D wall objects,
 identifying fire-rated boundary penetrations per IBC Section 714.
@@ -34,7 +35,8 @@ except ImportError:
 
 
 class FirestoppingAnnotator:
-    """Detects and annotates fire-rated wall penetrations in cable routes.
+    """
+    Detects and annotates fire-rated wall penetrations in cable routes.
 
     Given a set of fire-rated wall line segments and a cable route,
     this class finds all intersection points and generates DXF callouts
@@ -54,7 +56,8 @@ class FirestoppingAnnotator:
         self.fire_lines = [LineString(fw) for fw in fire_rated_walls_lines] if SHAPELY_AVAILABLE else []
 
     def locate_penetrations(self, cable_route: list[tuple[float, float]]) -> list[tuple[float, float]]:
-        """Find all points where a cable route crosses fire-rated walls.
+        """
+        Find all points where a cable route crosses fire-rated walls.
 
         Uses Shapely LineString intersection testing for exact coordinate
         computation. Returns both single-point and multi-point intersections.
@@ -87,7 +90,8 @@ class FirestoppingAnnotator:
         return penetration_coords
 
     def draft_callouts_to_dxf(self, msp: Any, cable_route: list[tuple[float, float]]) -> int:
-        """Generate firestopping callouts on a DXF modelspace.
+        """
+        Generate firestopping callouts on a DXF modelspace.
 
         For each penetration point found, draws:
           1. A circle marker (radius 0.4 drawing units)

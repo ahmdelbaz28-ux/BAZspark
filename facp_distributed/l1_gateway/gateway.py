@@ -1,6 +1,4 @@
-"""
-L1 Gateway for Distributed FACP System
-"""
+"""L1 Gateway for Distributed FACP System"""
 import logging
 import time
 import uuid
@@ -16,6 +14,7 @@ class L1Gateway:
     L1 Gateway - Handles requests from external clients (IDEs, etc.) in distributed system
     This is the first layer that receives all external requests and forwards to orchestrator
     """
+
     def __init__(self, validation_firewall: ValidationFirewall, transport: HTTPTransport):
         self.validation_firewall = validation_firewall
         self.transport = transport
@@ -82,7 +81,7 @@ class L1Gateway:
         }
 
         # Forward to validation firewall (this is the critical security boundary)
-        is_valid, processed_data, validation_errors = \
+        is_valid, _processed_data, validation_errors = \
             self.validation_firewall.process_request(request_data, self.node_id)
 
         if not is_valid:
@@ -145,7 +144,7 @@ class L1Gateway:
                 status="error",
                 error={
                     "code": "FORWARDING_ERROR",
-                    "message": f"Failed to forward request to orchestrator: {str(e)}"
+                    "message": f"Failed to forward request to orchestrator: {e!s}"
                 },
                 trace={
                     "execution_path": ["L1"],
@@ -161,9 +160,7 @@ class L1Gateway:
             return False, error_response
 
     def handle_client_response(self, request_id: str, response_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Handle response from downstream services and prepare for client delivery
-        """
+        """Handle response from downstream services and prepare for client delivery"""
         self.logger.info("L1[%s]: Preparing response for client request %s", self.node_id, request_id)
 
         # Add L1-specific trace information
@@ -216,7 +213,7 @@ class L1Gateway:
             is_valid, errors = validator.validate_request(request)
             return is_valid, errors
         except Exception as e:
-            return False, [f"Request format validation failed: {str(e)}"]
+            return False, [f"Request format validation failed: {e!s}"]
 
     def get_security_stats(self) -> Dict[str, Any]:
         """Get security statistics from validation firewall"""

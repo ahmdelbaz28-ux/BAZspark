@@ -1,4 +1,5 @@
-"""Comprehensive tests for the fireai_core module.
+"""
+Comprehensive tests for the fireai_core module.
 
 Tests cover:
   - ConfidenceLevel enum: all members, value access
@@ -920,7 +921,8 @@ class TestGetMemorySummary:
 
 
 class TestRunIntegration:
-    """Tests for FireAISystem.run_integration (with mocked bridge).
+    """
+    Tests for FireAISystem.run_integration (with mocked bridge).
 
     Uses the real dataclasses from integration_bridge (FloorData,
     AcousticConfig, IntegrationConfig) so isinstance() checks pass,

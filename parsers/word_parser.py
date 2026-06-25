@@ -25,6 +25,7 @@ logger = logging.getLogger("fireai.word_parser")
 @dataclass
 class WordParseResult:
     """Result of parsing Word document."""
+
     source_file: str
     success: bool
     title: str = ""
@@ -93,6 +94,7 @@ class WordParser:
 
         Returns:
             WordParseResult with extracted info
+
         """
         # V126: Path security + file-size cap
         from parsers._path_security import (

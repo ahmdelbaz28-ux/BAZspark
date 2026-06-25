@@ -1,4 +1,5 @@
-"""sequence_of_operations.py — NFPA 72 §14.4 Cause & Effect Matrix Generator.
+"""
+sequence_of_operations.py — NFPA 72 §14.4 Cause & Effect Matrix Generator.
 ==========================================================================
 CRITICAL LIFE-SAFETY MODULE — V18
 
@@ -84,7 +85,8 @@ except ImportError:
 
 
 class LogicFunction(str, Enum):
-    """Output actions that a FACP can trigger per NFPA 72 §14.4.
+    """
+    Output actions that a FACP can trigger per NFPA 72 §14.4.
 
     Each function maps to a specific NFPA 72 requirement:
       - ALARM: General evacuation signal per §10.14
@@ -124,7 +126,8 @@ class LogicFunction(str, Enum):
 
 
 class DeviceInputType(str, Enum):
-    """Input device types for cause-effect mapping.
+    """
+    Input device types for cause-effect mapping.
 
     The consultant used string matching ("LOBBY" in loc_hint) which
     incorrectly matches "LOBBY STORAGE ROOM". This enum enforces
@@ -275,7 +278,8 @@ CAUSE_EFFECT_RULES: dict[DeviceInputType, list[LogicFunction]] = {
 
 @dataclass(frozen=True)
 class DeviceInput:
-    """A fire alarm input device for cause-effect matrix generation.
+    """
+    A fire alarm input device for cause-effect matrix generation.
 
     The consultant used raw dicts with string matching for location hints.
     This dataclass enforces proper typing and uses DeviceInputType enum
@@ -304,7 +308,8 @@ class DeviceInput:
 
 @dataclass(frozen=True)
 class MatrixRow:
-    """A single row in the cause-effect matrix.
+    """
+    A single row in the cause-effect matrix.
 
     Attributes:
         input_device_id: Device identifier.
@@ -376,7 +381,8 @@ NFPA_REFERENCES: dict[DeviceInputType, list[str]] = {
 
 
 class SequenceOfOperationsMatrix:
-    """Generates the NFPA 72 §14.4 Cause & Effect Matrix.
+    """
+    Generates the NFPA 72 §14.4 Cause & Effect Matrix.
 
     Maps every input device to its required output actions based on
     NFPA 72 code requirements. The matrix is the MOST CRITICAL document
@@ -407,7 +413,8 @@ class SequenceOfOperationsMatrix:
         devices: list[DeviceInput],
         occupancy_type: str = "business",
     ) -> Any:
-        """Generate the complete cause-effect matrix for all devices.
+        """
+        Generate the complete cause-effect matrix for all devices.
 
         Args:
             devices: List of DeviceInput objects with proper classification.
@@ -565,7 +572,8 @@ class SequenceOfOperationsMatrix:
         devices: list[dict],
         occupancy_type: str = "business",
     ) -> Any:
-        """Generate matrix from legacy dict-based devices (backward compat).
+        """
+        Generate matrix from legacy dict-based devices (backward compat).
 
         Converts consultant-style dicts to proper DeviceInput objects.
 
@@ -593,7 +601,8 @@ class SequenceOfOperationsMatrix:
         return self.generate_matrix(typed_devices, occupancy_type)
 
     def _classify_device(self, dev: dict) -> DeviceInputType:
-        """Classify a legacy dict device into DeviceInputType.
+        """
+        Classify a legacy dict device into DeviceInputType.
 
         Uses proper conditional logic, NOT the consultant's
         "LOBBY" in loc_hint string matching.

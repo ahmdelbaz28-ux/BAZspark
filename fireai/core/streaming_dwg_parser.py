@@ -1,4 +1,5 @@
-"""streaming_dwg_parser.py — Real-time DWG Streaming Parser.
+"""
+streaming_dwg_parser.py — Real-time DWG Streaming Parser.
 =========================================================
 Solves Section 11.1: "Process 100MB+ DWG files without loading entire
 file into memory."
@@ -76,7 +77,8 @@ class StreamingStats:
 
 
 def _shoelace_area(poly: list[tuple[float, float]]) -> float:
-    """Compute polygon area using the shoelace formula.
+    """
+    Compute polygon area using the shoelace formula.
 
     Returns NaN if any coordinate is NaN (the value propagates
     naturally through arithmetic), which downstream code must
@@ -102,7 +104,8 @@ def _assemble_closed_polygons_v29(
     tolerance: float = 0.01,
     return_consumed: bool = False,
 ) -> list | tuple[list, set]:
-    """V29 O(n) spatial grid index polygon assembler — BIDIRECTIONAL.
+    """
+    V29 O(n) spatial grid index polygon assembler — BIDIRECTIONAL.
 
     This is our algorithm from dwg_parser.py, which extends chains
     from BOTH ends (head + tail). This handles more DWG/DXF drawing
@@ -245,7 +248,8 @@ def _assemble_closed_polygons_v29(
 
 
 class StreamingDXFParser:
-    """Streaming DXF parser: yields rooms as polygon entities are assembled.
+    """
+    Streaming DXF parser: yields rooms as polygon entities are assembled.
     Reads DXF in text chunks without loading the full file.
 
     Section 11.1: handles 100MB+ DXF files with < 50MB peak RAM.
@@ -266,7 +270,8 @@ class StreamingDXFParser:
         self.floor_id = floor_id
 
     def stream_file(self, filepath: str) -> Generator[StreamedRoom, None, StreamingStats]:
-        """Generator: yield StreamedRoom objects as they are assembled.
+        """
+        Generator: yield StreamedRoom objects as they are assembled.
 
         Memory: only `chunk_lines` lines in memory at once.
         Never loads the full DXF file.
@@ -355,7 +360,8 @@ class StreamingDXFParser:
         self,
         lines: list[str],
     ) -> list[tuple[tuple[float, float], tuple[float, float]]]:
-        """Extract LINE entity endpoints from DXF text chunk.
+        """
+        Extract LINE entity endpoints from DXF text chunk.
         DXF format: group code on one line, value on next.
         Returns list of ((x1,y1),(x2,y2)) segments.
         """
@@ -439,7 +445,8 @@ class StreamingDXFParser:
 
 
 class ParallelRoomProcessor:
-    """Section 11.3: Embarrassingly parallel room optimization.
+    """
+    Section 11.3: Embarrassingly parallel room optimization.
     Uses multiprocessing.Pool for DensityOptimizer across rooms.
 
     Target: 8 cores × ~2 rooms/sec = ~16 rooms/sec (8× speedup).
@@ -459,7 +466,8 @@ class ParallelRoomProcessor:
         rooms: list[Any],
         optimize_fn: Any,  # DensityOptimizer instance or callable
     ) -> list[Any]:
-        """Process N rooms in parallel using multiprocessing.Pool.
+        """
+        Process N rooms in parallel using multiprocessing.Pool.
         Falls back to sequential if multiprocessing unavailable.
 
         rooms:       List of Room objects (or dicts)
@@ -491,7 +499,8 @@ class ParallelRoomProcessor:
         optimize_fn: Any,
         buffer_size: int = 100,
     ) -> Generator[Any, None, None]:
-        """Process streaming rooms: buffer buffer_size rooms, process in parallel,
+        """
+        Process streaming rooms: buffer buffer_size rooms, process in parallel,
         yield results. Combines Section 11.1 (streaming) + 11.3 (parallel).
         """
         buffer: list[Any] = []

@@ -11,7 +11,8 @@ SUPPORTED_EXTENSIONS = {".md", ".txt", ".text", ".docx", ".pdf", ".ppt", ".pptx"
 # ── .docx (zero-dep: zip + xml) ──────────────────────────────────
 
 def _parse_docx(file_path: Path) -> str:
-    """Extract text from .docx using stdlib only (zipfile + xml).
+    """
+    Extract text from .docx using stdlib only (zipfile + xml).
 
     .docx is a ZIP archive containing word/document.xml with paragraph data.
     """
@@ -38,7 +39,8 @@ def _parse_docx(file_path: Path) -> str:
 # ── .pptx (zero-dep: zip + xml) ──────────────────────────────────
 
 def _parse_pptx(file_path: Path) -> str:
-    """Extract text from .pptx using stdlib only (zipfile + xml).
+    """
+    Extract text from .pptx using stdlib only (zipfile + xml).
 
     .pptx is a ZIP archive; each slide is at ppt/slides/slideN.xml.
     """
@@ -73,7 +75,8 @@ def _parse_pptx(file_path: Path) -> str:
 # ── .ppt (legacy binary → textutil fallback) ─────────────────────
 
 def _parse_ppt(file_path: Path) -> str:
-    """Extract text from legacy .ppt format.
+    """
+    Extract text from legacy .ppt format.
 
     Tries macOS textutil first. If unavailable, raises a helpful error.
     """
@@ -109,7 +112,8 @@ def _parse_ppt(file_path: Path) -> str:
 # ── .pdf (macOS native or pymupdf fallback) ──────────────────────
 
 def _parse_pdf(file_path: Path) -> str:
-    """Extract text from .pdf.
+    """
+    Extract text from .pdf.
 
     Strategy:
     1. Try pymupdf (fitz) if installed — best quality
@@ -183,7 +187,8 @@ def _parse_pdf(file_path: Path) -> str:
 # ── Main entry ────────────────────────────────────────────────────
 
 def parse_file(file_path: str) -> str:
-    """Read a file and return its text content.
+    """
+    Read a file and return its text content.
 
     Supports: .md, .txt, .text, .docx, .pdf, .ppt, .pptx
 
@@ -194,6 +199,7 @@ def parse_file(file_path: str) -> str:
     Raises:
         FileNotFoundError: If file does not exist.
         ValueError: If file extension is not supported or extraction fails.
+
     """
     path = Path(file_path)
 
@@ -210,24 +216,26 @@ def parse_file(file_path: str) -> str:
 
     if suffix == ".docx":
         return _parse_docx(path)
-    elif suffix == ".pdf":
+    if suffix == ".pdf":
         return _parse_pdf(path)
-    elif suffix == ".pptx":
+    if suffix == ".pptx":
         return _parse_pptx(path)
-    elif suffix == ".ppt":
+    if suffix == ".ppt":
         return _parse_ppt(path)
 
     return path.read_text(encoding="utf-8")
 
 
 def build_extraction_prompt(content: str) -> dict:
-    """Build a prompt for LLM to extract knowledge points from study material.
+    """
+    Build a prompt for LLM to extract knowledge points from study material.
 
     Args:
         content: The text content of the study material.
 
     Returns:
         dict with 'system_prompt' and 'user_prompt' keys.
+
     """
     system_prompt = (
         "你是一个专业的知识点提取助手。从用户提供的学习资料中提取核心知识点。\n"

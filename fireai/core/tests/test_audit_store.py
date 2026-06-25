@@ -1,4 +1,5 @@
-"""Comprehensive tests for the audit_store module.
+"""
+Comprehensive tests for the audit_store module.
 
 Tests cover:
   - SecurityError exception

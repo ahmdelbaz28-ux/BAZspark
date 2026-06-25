@@ -1,4 +1,5 @@
-"""as_built_reconciliator.py — 3D As-Built Reconciliator for FireAI.
+"""
+as_built_reconciliator.py — 3D As-Built Reconciliator for FireAI.
 ================================================================
 
 Compares design-time device placement against as-built (field-verified)
@@ -97,7 +98,8 @@ REQUIRED_DEVICE_KEYS: tuple[str, ...] = ("id", "x", "y", "z", "device_type")
 
 
 def _get_tolerance(device_type: str) -> float:
-    """Return the position tolerance for *device_type*.
+    """
+    Return the position tolerance for *device_type*.
 
     Lookup is case-insensitive.  Returns ``DEFAULT_TOLERANCE`` when the
     device type is not in ``DEVICE_TOLERANCES``.
@@ -120,7 +122,8 @@ def _euclidean_distance_3d(
     y2: float,
     z2: float,
 ) -> float:
-    """Compute the 3D Euclidean distance between two points.
+    """
+    Compute the 3D Euclidean distance between two points.
 
     This is a FULL three-dimensional calculation — x, y, *and* z.
     A 2D comparison that ignores elevation would miss devices installed
@@ -139,7 +142,8 @@ def _euclidean_distance_3d(
 
 
 def _serialize_device(device: dict) -> str:
-    """Serialize a device dict to a canonical JSON string for hashing.
+    """
+    Serialize a device dict to a canonical JSON string for hashing.
 
     Keys are sorted to ensure deterministic output regardless of dict
     insertion order.
@@ -156,7 +160,8 @@ def _serialize_device(device: dict) -> str:
 
 
 def _validate_device_dict(device: dict, source: str) -> None:
-    """Validate that a device dict has all required keys.
+    """
+    Validate that a device dict has all required keys.
 
     Args:
         device: Device dict to validate.
@@ -178,7 +183,8 @@ def _validate_device_dict(device: dict, source: str) -> None:
 
 @dataclass
 class ReconciliationResult:
-    """Result of comparing as-built device positions against design.
+    """
+    Result of comparing as-built device positions against design.
 
     Attributes:
         status: ``"VERIFIED"`` if all devices match within tolerance;
@@ -218,7 +224,8 @@ class ReconciliationResult:
 
 
 class AsBuiltReconciliator:
-    """3D As-Built Reconciliator — compares design vs. field-verified data.
+    """
+    3D As-Built Reconciliator — compares design vs. field-verified data.
 
     This reconciliator performs a **three-dimensional** comparison of
     device positions between the design manifest and as-built survey
@@ -297,7 +304,8 @@ class AsBuiltReconciliator:
         self,
         as_built_devices: list[dict],
     ) -> ReconciliationResult:
-        """Compare as-built devices against the design manifest.
+        """
+        Compare as-built devices against the design manifest.
 
         For each as-built device, the reconciliator checks:
 
@@ -430,7 +438,8 @@ class AsBuiltReconciliator:
         total_design: int,
         total_as_built: int,
     ) -> str:
-        """Build a human-readable summary string.
+        """
+        Build a human-readable summary string.
 
         Args:
             status: Overall reconciliation status.

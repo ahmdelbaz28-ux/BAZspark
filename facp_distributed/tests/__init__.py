@@ -1,3 +1,1 @@
-"""
-Tests for Distributed FACP System
-"""
+"""Tests for Distributed FACP System"""

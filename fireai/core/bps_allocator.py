@@ -1,4 +1,5 @@
-"""fireai/core/bps_allocator.py.
+"""
+fireai/core/bps_allocator.py.
 =============================
 NAC Booster Power Supply (BPS) Auto-Allocator for Fire Alarm Systems.
 
@@ -89,7 +90,8 @@ logger = logging.getLogger(__name__)
 
 
 def _guard_finite(value: float, field_name: str) -> float:
-    """IEEE-754 guard: reject NaN and Inf before any computation.
+    """
+    IEEE-754 guard: reject NaN and Inf before any computation.
 
     Per QOMN-FIRE Layer 0 and IEEE-754-2008 §7:
     NaN and Inf are NEVER permitted in life-safety computations.
@@ -122,7 +124,8 @@ def _guard_finite(value: float, field_name: str) -> float:
 
 
 def _guard_positive_finite(value: float, field_name: str) -> float:
-    """Guard: value must be finite and strictly positive.
+    """
+    Guard: value must be finite and strictly positive.
 
     Args:
         value: Numeric value to validate.
@@ -142,7 +145,8 @@ def _guard_positive_finite(value: float, field_name: str) -> float:
 
 
 def _guard_non_negative_finite(value: float, field_name: str) -> float:
-    """Guard: value must be finite and >= 0.
+    """
+    Guard: value must be finite and >= 0.
 
     Args:
         value: Numeric value to validate.
@@ -290,7 +294,8 @@ _CITE_UL864 = "UL 864 10th Ed."
 
 
 def _f64_hash(*values: float) -> str:
-    """Compute deterministic IEEE-754 bit-level hash of float64 values.
+    """
+    Compute deterministic IEEE-754 bit-level hash of float64 values.
 
     Uses struct.pack to get exact binary representation, then SHA-256.
     Guarantees same hash on any platform for same input.
@@ -305,7 +310,8 @@ def _f64_hash(*values: float) -> str:
 
 
 def calculate_strobe_current(candela: float) -> float:
-    """Calculate strobe current draw per UL 1971.
+    """
+    Calculate strobe current draw per UL 1971.
 
     Uses lookup table for common candela ratings, falls back to
     linear approximation for non-standard ratings.
@@ -340,7 +346,8 @@ def calculate_device_current(
     candela: float | None = None,
     horn_current_a: float | None = None,
 ) -> float:
-    """Calculate total current draw for a notification appliance.
+    """
+    Calculate total current draw for a notification appliance.
 
     Per UL 1971/UL 2075, calculates the alarm current for a single
     notification device based on its type and rating.
@@ -390,7 +397,8 @@ def calculate_device_current(
 
 
 def calculate_nac_circuit_current(devices: list[dict[str, Any]]) -> float:
-    """Calculate total NAC circuit current for a list of notification devices.
+    """
+    Calculate total NAC circuit current for a list of notification devices.
 
     Per NFPA 72 §10.6.4.2 and NEC 760, the total alarm current on a NAC
     must not exceed the NAC power supply rating. This function sums the
@@ -439,7 +447,8 @@ def calculate_voltage_drop_vdc(
     awg: int = DEFAULT_AWG,
     nominal_voltage_vdc: float = NOMINAL_VOLTAGE_VDC,
 ) -> float:
-    """Calculate voltage drop for a NAC circuit segment.
+    """
+    Calculate voltage drop for a NAC circuit segment.
 
     Per NEC 760 and NEC Chapter 9 Table 8:
       V_drop = 2 × I × R_per_ft × L_ft
@@ -485,7 +494,8 @@ def calculate_eol_voltage(
     awg: int = DEFAULT_AWG,
     nominal_voltage_vdc: float = NOMINAL_VOLTAGE_VDC,
 ) -> float:
-    """Calculate end-of-line voltage for a NAC circuit.
+    """
+    Calculate end-of-line voltage for a NAC circuit.
 
     Per NFPA 72 §10.6.4, the end-of-line voltage must be >= 80%
     of nominal (19.2 VDC for 24 VDC systems).
@@ -527,7 +537,8 @@ def select_minimum_wire_gauge(
     nominal_voltage_vdc: float = NOMINAL_VOLTAGE_VDC,
     min_eol_voltage_vdc: float = MIN_EOL_VOLTAGE_VDC,
 ) -> int:
-    """Select the minimum wire gauge that maintains EOL voltage above minimum.
+    """
+    Select the minimum wire gauge that maintains EOL voltage above minimum.
 
     Per NFPA 72 §10.6.4 and NEC 760, the wire gauge must be sized such
     that the end-of-line voltage is at least 80% of nominal. This function
@@ -584,7 +595,8 @@ def calculate_max_circuit_length_ft(
     nominal_voltage_vdc: float = NOMINAL_VOLTAGE_VDC,
     min_eol_voltage_vdc: float = MIN_EOL_VOLTAGE_VDC,
 ) -> float:
-    """Calculate maximum one-way circuit length for acceptable voltage drop.
+    """
+    Calculate maximum one-way circuit length for acceptable voltage drop.
 
     Per NFPA 72 §10.6.4 and NEC 760:
       V_drop_max = V_nominal - V_min_eol
@@ -634,7 +646,8 @@ def calculate_max_circuit_length_ft(
 
 @dataclass(frozen=True)
 class NACDeviceSegment:
-    """A single notification device on a NAC circuit with voltage drop info.
+    """
+    A single notification device on a NAC circuit with voltage drop info.
 
     Represents one device along the circuit path from source to end-of-line,
     including the cumulative voltage at that point after wire resistance losses.
@@ -654,7 +667,8 @@ class NACDeviceSegment:
 
 @dataclass(frozen=True)
 class NACCircuitResult:
-    """Result from NAC circuit loading and voltage drop analysis.
+    """
+    Result from NAC circuit loading and voltage drop analysis.
 
     Per NFPA 72 §10.6.4 and NEC 760, each NAC circuit must satisfy:
     1. Total current <= NAC rating
@@ -678,7 +692,8 @@ class NACCircuitResult:
 
 @dataclass(frozen=True)
 class BPSPlacement:
-    """A deployed Booster Power Supply panel.
+    """
+    A deployed Booster Power Supply panel.
 
     Per NFPA 72 §10.6 and UL 864 10th Ed., a BPS provides additional
     NAC circuits when the FACP cannot serve all devices.
@@ -716,7 +731,8 @@ class BoosterAllocation:
 
 @dataclass(frozen=True)
 class AllocationResult:
-    """Complete result from NAC booster allocation.
+    """
+    Complete result from NAC booster allocation.
 
     Contains all BPS placements, NAC circuit assignments, voltage drop
     analysis, and compliance status per NFPA 72 Chapter 10 and NEC 760.
@@ -742,7 +758,8 @@ class AllocationResult:
 
 
 def _validate_nac_circuit_result(result: NACCircuitResult) -> NACCircuitResult:
-    """Validate a NAC circuit result against physical and code limits.
+    """
+    Validate a NAC circuit result against physical and code limits.
 
     Per QOMN-FIRE Layer 3, verify post-computation that all limits hold.
 
@@ -798,7 +815,8 @@ def _validate_nac_circuit_result(result: NACCircuitResult) -> NACCircuitResult:
 
 
 class NACBoosterAllocator:
-    """Automatically distributes NAC load across FACP and BPS panels
+    """
+    Automatically distributes NAC load across FACP and BPS panels
     for fire alarm systems per NFPA 72 Chapter 10 and NEC 760.
 
     Two-pass allocation:
@@ -841,7 +859,8 @@ class NACBoosterAllocator:
         min_eol_voltage_vdc: float = MIN_EOL_VOLTAGE_VDC,
         default_awg: int = DEFAULT_AWG,
     ) -> None:
-        """Initialize NACBoosterAllocator.
+        """
+        Initialize NACBoosterAllocator.
 
         Args:
             facp_nac_rating_a: FACP NAC circuit current rating (amps).
@@ -914,7 +933,8 @@ class NACBoosterAllocator:
         self,
         floor_data: list[dict[str, Any]],
     ) -> Any:
-        """Distribute NAC load across FACP and auto-deployed BPS panels.
+        """
+        Distribute NAC load across FACP and auto-deployed BPS panels.
 
         Pass 1: Current-capacity waterfall allocation.
         Pass 2: Voltage-drop validation (if devices_line provided).
@@ -1156,7 +1176,8 @@ class NACBoosterAllocator:
         max_cable_length_ft: float = 1000.0,
         source_location: tuple[float, float] | None = None,
     ) -> Any:
-        """Pass 2: Iterative segment-by-segment voltage drop validation.
+        """
+        Pass 2: Iterative segment-by-segment voltage drop validation.
 
         Processes a NAC circuit from source to end-of-line, tracking
         cumulative voltage drop. When terminal voltage falls below the
@@ -1426,7 +1447,8 @@ class NACBoosterAllocator:
         nac_rating_a: float | None = None,
         awg: int = DEFAULT_AWG,
     ) -> NACCircuitResult:
-        """Analyze a single NAC circuit for current and voltage compliance.
+        """
+        Analyze a single NAC circuit for current and voltage compliance.
 
         Per NFPA 72 §10.6.4.2 and NEC 760:
         - Total alarm current must not exceed NAC rating
@@ -1580,7 +1602,8 @@ class NACBoosterAllocator:
         total_current_a: float,
         one_way_length_ft: float,
     ) -> dict[str, Any]:
-        """Recommend minimum wire gauge for acceptable voltage drop.
+        """
+        Recommend minimum wire gauge for acceptable voltage drop.
 
         Per NFPA 72 §10.6.4 and NEC 760, the wire gauge must maintain
         end-of-line voltage at >= 80% of nominal.
@@ -1641,7 +1664,8 @@ class NACBoosterAllocator:
         total_current_a: float,
         awg: int = DEFAULT_AWG,
     ) -> float:
-        """Calculate maximum one-way circuit length for acceptable voltage drop.
+        """
+        Calculate maximum one-way circuit length for acceptable voltage drop.
 
         Per NFPA 72 §10.6.4 and NEC 760:
           L_max = V_drop_max / (2 × I × R_per_ft)
@@ -1669,7 +1693,8 @@ class NACBoosterAllocator:
     # ------------------------------------------------------------------
 
     def _validate_floor_data(self, floor_data: list[dict[str, Any]]) -> None:
-        """Validate floor data inputs per QOMN-FIRE Layer 0.
+        """
+        Validate floor data inputs per QOMN-FIRE Layer 0.
 
         Args:
             floor_data: List of floor dicts to validate.
@@ -1712,7 +1737,8 @@ class NACBoosterAllocator:
         citation: str,
         description: str,
     ) -> None:
-        """Add a violation to the list, using provenance Violation if available.
+        """
+        Add a violation to the list, using provenance Violation if available.
 
         Args:
             violations: List to append to.
@@ -1754,7 +1780,8 @@ def quick_voltage_check(
     one_way_length_ft: float,
     awg: int = DEFAULT_AWG,
 ) -> dict[str, Any]:
-    """Quick voltage drop check for a NAC circuit.
+    """
+    Quick voltage drop check for a NAC circuit.
 
     Convenience function that creates a NACBoosterAllocator with defaults
     and checks if the circuit meets NFPA 72 §10.6.4 voltage requirements.
@@ -1810,7 +1837,8 @@ def quick_nac_load_check(
     devices: list[dict[str, Any]],
     nac_rating_a: float = DEFAULT_FACP_NAC_RATING_A,
 ) -> dict[str, Any]:
-    """Quick NAC circuit loading check.
+    """
+    Quick NAC circuit loading check.
 
     Convenience function to verify NAC circuit current does not exceed
     the panel NAC rating per NFPA 72 §10.6.4.2 and NEC 760.

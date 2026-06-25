@@ -124,7 +124,8 @@ async def _run_with_timeout(coro, timeout: float = REQUEST_TIMEOUT_SECONDS):
 
 
 async def verify_api_key(x_api_key: str = Header(...)) -> str:
-    """Verify API key using timing-safe comparison.
+    """
+    Verify API key using timing-safe comparison.
     Security Fix (VULN-017): Use secrets.compare_digest instead of set membership.
     """
     raw = os.getenv("FIREAI_API_KEYS", "")
@@ -293,7 +294,7 @@ async def get_audit_trail() -> dict[str, Any]:
 # Rate-limited endpoints
 @app.post("/projects/", tags=["Projects"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("10/minute")
-async def upload_file(request: Request, file: UploadFile = File(...)) -> dict[str, Any]:  # noqa: B008
+async def upload_file(request: Request, file: UploadFile = File(...)) -> dict[str, Any]:
     content = await file.read()
     if len(content) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(status_code=413, detail=f"File too large. Maximum allowed size is {MAX_FILE_SIZE_MB} MB.")
@@ -382,7 +383,8 @@ _fireai_system = None
 
 
 def _get_fireai_system():
-    """Get or create FireAISystem instance.
+    """
+    Get or create FireAISystem instance.
     Security Fix (VULN-023): Use file-based database for persistent audit trail.
     """
     global _fireai_system
@@ -468,7 +470,8 @@ async def analyse_floor_async(
     body: AnalyseFloorRequestV10,
     background_tasks: BackgroundTasks,
 ):
-    """Analyze floor asynchronously - returns immediately with task_id.
+    """
+    Analyze floor asynchronously - returns immediately with task_id.
 
     For large floors (10+ rooms), use this endpoint for background processing.
     Poll GET /task/{task_id} for results.

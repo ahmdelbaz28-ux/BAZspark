@@ -393,7 +393,7 @@ class TestHMACKey:
         """Secret key is SHA-256 hashed to produce HMAC key."""
         store = HashChainAuditStore(db_path=":memory:", secret_key="my-secret")
         import hashlib
-        expected_key = hashlib.sha256("my-secret".encode()).digest()
+        expected_key = hashlib.sha256(b"my-secret").digest()
         assert store._hmac_key == expected_key
 
     def test_explicit_hmac_key(self):

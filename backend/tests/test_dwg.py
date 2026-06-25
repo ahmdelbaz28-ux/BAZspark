@@ -1,4 +1,5 @@
-"""test_dwg.py — DWG/DXF parser integration tests.
+"""
+test_dwg.py — DWG/DXF parser integration tests.
 
 Verifies DWG upload, parsing, path security, and element extraction.
 Tests both the /api/parse-dwg endpoint and the underlying parser module.

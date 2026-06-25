@@ -1,4 +1,5 @@
-"""ETAP Expert Skill — Request Classifier.
+"""
+ETAP Expert Skill — Request Classifier.
 =======================================
 Implements Step 1 (PARSE & CLASSIFY) of the 6-step expert workflow.
 
@@ -101,7 +102,8 @@ def _has_cable_info(text: str) -> bool:
 
 
 def classify_request(request: str) -> str:
-    """Classify a user request as A / B / C / D / DER.
+    """
+    Classify a user request as A / B / C / D / DER.
 
     Implements Step 1 (PARSE & CLASSIFY) of the 6-step workflow.
 

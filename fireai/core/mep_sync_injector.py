@@ -1,4 +1,5 @@
-"""mep_sync_injector.py — MEP Interface Module Synchronizer for Fire Alarm Integration.
+"""
+mep_sync_injector.py — MEP Interface Module Synchronizer for Fire Alarm Integration.
 ====================================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -113,7 +114,8 @@ class ElevatorPhase(str, Enum):
 
 @dataclass(frozen=True)
 class MEPElement:
-    """A single MEP element extracted from the building model.
+    """
+    A single MEP element extracted from the building model.
 
     Attributes:
         element_id: Unique identifier (from BIM/IFC).
@@ -147,7 +149,8 @@ class MEPElement:
 
 @dataclass(frozen=True)
 class ElevatorRecallSpec:
-    """Elevator recall specification per NFPA 72 §21.3.
+    """
+    Elevator recall specification per NFPA 72 §21.3.
 
     CRITICAL: Phase II (firefighter's service) is NOT auto-enabled.
     Per §21.3.8 and ASME A17.1, Phase II requires explicit PE verification.
@@ -173,7 +176,8 @@ class ElevatorRecallSpec:
 
 @dataclass(frozen=True)
 class HVACShutdownSpec:
-    """HVAC shutdown specification per NFPA 72 §21.7 / NFPA 90A §6.4.
+    """
+    HVAC shutdown specification per NFPA 72 §21.7 / NFPA 90A §6.4.
 
     Attributes:
         ahu_id: AHU identifier.
@@ -195,7 +199,8 @@ class HVACShutdownSpec:
 
 @dataclass(frozen=True)
 class MEPInterfaceModule:
-    """A fire alarm interface module for an MEP element.
+    """
+    A fire alarm interface module for an MEP element.
 
     Each module represents a physical device (monitor module, control module,
     relay, etc.) that connects the fire alarm system to an MEP subsystem.
@@ -222,7 +227,8 @@ class MEPInterfaceModule:
     description: str = ""
 
     def as_loop_device_dict(self) -> dict[str, Any]:
-        """Convert to device dict compatible with fault_isolator_injector.
+        """
+        Convert to device dict compatible with fault_isolator_injector.
 
         Returns:
             Dictionary with device_type, device_idx, position, zone_id
@@ -242,7 +248,8 @@ class MEPInterfaceModule:
 
 @dataclass(frozen=True)
 class MEPSyncResult:
-    """Complete result of MEP synchronisation.
+    """
+    Complete result of MEP synchronisation.
 
     Attributes:
         interface_modules: All generated interface modules.
@@ -272,7 +279,8 @@ class MEPSyncResult:
 
 
 def validate_mep_elements(elements: list[MEPElement]) -> list[str]:
-    """Validate MEP elements before synchronisation.
+    """
+    Validate MEP elements before synchronisation.
 
     Checks:
         1. No NaN or Inf values in numeric fields.
@@ -336,7 +344,8 @@ def validate_mep_elements(elements: list[MEPElement]) -> list[str]:
 def extend_boq_with_mep_modules(
     mep_result: MEPSyncResult,
 ) -> list[dict[str, Any]]:
-    """Generate BOQ line items for MEP interface modules.
+    """
+    Generate BOQ line items for MEP interface modules.
 
     Creates costed BOQ entries for each interface module generated during
     MEP synchronisation. Unit costs are from MEP_UNIT_COSTS table.
@@ -400,7 +409,8 @@ def extend_boq_with_mep_modules(
 
 
 class MEPSyncInjector:
-    """Synchronises fire alarm interfaces with MEP subsystems.
+    """
+    Synchronises fire alarm interfaces with MEP subsystems.
 
     For each MEP element that requires a fire alarm interface (elevator recall,
     HVAC shutdown, suppression monitoring, egress control), this module:
@@ -425,7 +435,8 @@ class MEPSyncInjector:
         self._default_address_type = default_address_type
 
     def sync(self) -> MEPSyncResult:
-        """Run full MEP synchronisation.
+        """
+        Run full MEP synchronisation.
 
         Returns:
             MEPSyncResult with all interface modules, specs, warnings, errors.
@@ -492,7 +503,8 @@ class MEPSyncInjector:
         elem: MEPElement,
         warnings: list[str],
     ) -> tuple[list[MEPInterfaceModule], ElevatorRecallSpec]:
-        """Process elevator element per NFPA 72 §21.3.
+        """
+        Process elevator element per NFPA 72 §21.3.
 
         Generates:
             - One elevator recall module (Phase I)
@@ -538,7 +550,8 @@ class MEPSyncInjector:
         elem: MEPElement,
         warnings: list[str],
     ) -> tuple[list[MEPInterfaceModule], HVACShutdownSpec]:
-        """Process HVAC (AHU/FCU) element per NFPA 72 §21.7 / NFPA 90A §6.4.
+        """
+        Process HVAC (AHU/FCU) element per NFPA 72 §21.7 / NFPA 90A §6.4.
 
         AHUs above AHU_CFM_THRESHOLD (2000 CFM) require:
             - Automatic shutdown on duct smoke detection

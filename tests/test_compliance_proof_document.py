@@ -387,11 +387,13 @@ class TestRadiusSource:
 
     def test_medium_ceiling_3_5m(self):
         result = ComplianceProofDocument._radius_source(3.5)
-        assert "3.0" in result and "3.7" in result
+        assert "3.0" in result
+        assert "3.7" in result
 
     def test_4m_ceiling(self):
         result = ComplianceProofDocument._radius_source(4.0)
-        assert "3.7" in result and "4.3" in result
+        assert "3.7" in result
+        assert "4.3" in result
 
     def test_high_ceiling_5m(self):
         result = ComplianceProofDocument._radius_source(5.0)
@@ -410,7 +412,8 @@ class TestRadiusSource:
     def test_just_above_3_0m(self):
         """Just above 3.0m — different row in Table 17.6.3.1.1."""
         result = ComplianceProofDocument._radius_source(3.01)
-        assert "3.0" in result and "3.7" in result
+        assert "3.0" in result
+        assert "3.7" in result
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -419,7 +422,8 @@ class TestRadiusSource:
 
 
 class TestV57SafeFmtInDocument:
-    """V57 FIX: NaN/Inf values in AHJ documents replaced with [INVALID DATA].
+    """
+    V57 FIX: NaN/Inf values in AHJ documents replaced with [INVALID DATA].
 
     NaN values produce 'nan%' in the AHJ submission document, which is
     unacceptable for regulatory filings. Non-finite data indicates a

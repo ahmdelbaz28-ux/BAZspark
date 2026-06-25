@@ -1,4 +1,5 @@
-"""ar_metadata_exporter.py — AR Metadata Export with Behind-the-Wall Visibility.
+"""
+ar_metadata_exporter.py — AR Metadata Export with Behind-the-Wall Visibility.
 ==============================================================================
 
 MISSION TASK 4.2 — AR Metadata Export for RealityKit/Unity
@@ -108,7 +109,8 @@ class ARVisibilityMode(str, Enum):
 
 @dataclass
 class ARSceneNode:
-    """AR-optimized scene node with behind-the-wall metadata.
+    """
+    AR-optimized scene node with behind-the-wall metadata.
 
     Attributes:
         id: Unique node identifier (matches DigitalTwin detector ID).
@@ -183,7 +185,8 @@ class ARSceneNode:
 
 @dataclass
 class ARSnapshot:
-    """Complete AR-ready scene snapshot.
+    """
+    Complete AR-ready scene snapshot.
 
     Contains all nodes + metadata needed for AR visualization.
     Can be exported to GLB or USDZ format.
@@ -241,7 +244,8 @@ class ARSnapshot:
 
 
 class ARMetadataExporter:
-    """Export DigitalTwin snapshots to AR-optimized formats.
+    """
+    Export DigitalTwin snapshots to AR-optimized formats.
 
     Usage:
         exporter = ARMetadataExporter()
@@ -257,7 +261,8 @@ class ARMetadataExporter:
     """
 
     def __init__(self, default_x_ray: bool = False) -> None:
-        """Initialize exporter.
+        """
+        Initialize exporter.
 
         Args:
             default_x_ray: Default x_ray_enabled value for nodes.
@@ -278,7 +283,8 @@ class ARMetadataExporter:
     # ------------------------------------------------------------------
 
     def from_digital_twin(self, twin: Any) -> ARSnapshot:
-        """Convert DigitalTwin to ARSnapshot.
+        """
+        Convert DigitalTwin to ARSnapshot.
 
         Args:
             twin: DigitalTwin instance (from fireai.core.digital_twin).
@@ -319,7 +325,8 @@ class ARMetadataExporter:
         return snapshot
 
     def _detector_to_node(self, det_id: str, det_state: Any) -> ARSceneNode:
-        """Convert a DetectorState to ARSceneNode.
+        """
+        Convert a DetectorState to ARSceneNode.
 
         V134 F-4 FIX: The previous code used ``getattr(det_state, "x_m", 0.0)``
         but the actual ``DetectorState`` dataclass (fireai/core/digital_twin.py:220)
@@ -411,7 +418,8 @@ class ARMetadataExporter:
     # ------------------------------------------------------------------
 
     def export_glb(self, snapshot: ARSnapshot) -> bytes:
-        """Export snapshot as GLB (binary glTF 2.0) bytes.
+        """
+        Export snapshot as GLB (binary glTF 2.0) bytes.
 
         Produces a minimal but valid GLB file with:
         - JSON chunk (scene structure + AR metadata as extras)
@@ -559,7 +567,8 @@ class ARMetadataExporter:
         }
 
     def _build_binary_buffer(self, snapshot: ARSnapshot) -> bytes:
-        """Build the binary buffer with REAL vertex data.
+        """
+        Build the binary buffer with REAL vertex data.
 
         V139: Generates actual box and cylinder geometry.
         - Box: 8 vertices (unit cube ±0.5), 36 indices (12 triangles)
@@ -645,7 +654,8 @@ class ARMetadataExporter:
     # ------------------------------------------------------------------
 
     def export_usdz(self, snapshot: ARSnapshot) -> bytes:
-        """Export snapshot as USDZ (real .usdz zip archive).
+        """
+        Export snapshot as USDZ (real .usdz zip archive).
 
         Produces a valid .usdz file: a zip archive containing a single
         USDA (USD ASCII) file with the scene structure.
@@ -731,7 +741,8 @@ class ARMetadataExporter:
         snapshot: ARSnapshot,
         fmt: ARExportFormat = ARExportFormat.BOTH,
     ) -> dict[str, bytes]:
-        """Export snapshot to one or more formats.
+        """
+        Export snapshot to one or more formats.
 
         Args:
             snapshot: ARSnapshot to export.

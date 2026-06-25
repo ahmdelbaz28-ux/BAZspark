@@ -1,6 +1,4 @@
-"""
-Cluster Communicator for Event Bus in Distributed FACP System
-"""
+"""Cluster Communicator for Event Bus in Distributed FACP System"""
 import json
 import socket
 import threading
@@ -30,9 +28,8 @@ class NodeStatus(Enum):
 
 
 class ClusterNode:
-    """
-    Represents a node in the cluster
-    """
+    """Represents a node in the cluster"""
+
     def __init__(self, node_id: str, host: str, port: int, node_type: str = "worker"):
         self.node_id = node_id
         self.host = host
@@ -82,9 +79,8 @@ class ClusterNode:
 
 
 class ClusterCommunicator:
-    """
-    Manages communication between nodes in the distributed FACP cluster
-    """
+    """Manages communication between nodes in the distributed FACP cluster"""
+
     def __init__(self, node_id: Optional[str] = None, host: str = "0.0.0.0", port: int = 9000,
                  node_type: str = "worker", location: str = "primary"):
         self.node_id = node_id or f"node_{int(time.time())}_{uuid.uuid4().hex[:8]}"
@@ -130,12 +126,11 @@ class ClusterCommunicator:
         """Get capabilities of this local node"""
         if self.node_type == "l1_gateway":
             return ["client.interface", "request.reception", "validation.basic"]
-        elif self.node_type == "l2_orchestrator":
+        if self.node_type == "l2_orchestrator":
             return ["task.orchestration", "agent.management", "scheduling", "policy.enforcement"]
-        elif self.node_type == "l3_engine":
+        if self.node_type == "l3_engine":
             return ["calculation", "validation", "transformation", "deterministic.execution"]
-        else:
-            return ["generic.node"]
+        return ["generic.node"]
 
     def start(self):
         """Start the cluster communicator"""
@@ -516,7 +511,7 @@ class ClusterCommunicator:
             print(f"Error sending message: {e}")
             return False
 
-    def broadcast_message(self, message: Dict[str, Any], exclude_node: str = None):
+    def broadcast_message(self, message: Dict[str, Any], exclude_node: Optional[str] = None):
         """Broadcast a message to all nodes in the cluster"""
         for node_id in list(self.nodes.keys()):
             if node_id != exclude_node and node_id != self.node_id:
@@ -665,7 +660,7 @@ class ClusterCommunicator:
         with self.lock:
             self.local_node.load = load
 
-    def update_local_resource_usage(self, cpu_percent: float = None, memory_mb: float = None, disk_gb: float = None):
+    def update_local_resource_usage(self, cpu_percent: Optional[float] = None, memory_mb: Optional[float] = None, disk_gb: Optional[float] = None):
         """Update resource usage of the local node"""
         with self.lock:
             if cpu_percent is not None:
@@ -677,9 +672,8 @@ class ClusterCommunicator:
 
 
 class DistributedClusterCommunicator(ClusterCommunicator):
-    """
-    Extended cluster communicator with additional distributed features
-    """
+    """Extended cluster communicator with additional distributed features"""
+
     def __init__(self, node_id: Optional[str] = None, host: str = "0.0.0.0", port: int = 9000,
                  node_type: str = "worker", location: str = "primary"):
         super().__init__(node_id, host, port, node_type, location)
@@ -728,8 +722,7 @@ class DistributedClusterCommunicator(ClusterCommunicator):
                 # Wait for response (simplified)
                 time.sleep(timeout)
                 return True  # Simplified implementation
-            else:
-                return False  # No leader available
+            return False  # No leader available
 
         # As leader, coordinate consensus
         # In a real implementation, this would follow Raft protocol

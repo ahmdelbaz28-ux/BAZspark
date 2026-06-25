@@ -1,4 +1,5 @@
-"""fireai/core/slc_capacitance.py.
+"""
+fireai/core/slc_capacitance.py.
 ================================
 SLC (Signaling Line Circuit) Data Attenuation & Capacitance Auditor.
 
@@ -111,7 +112,8 @@ _CITE_EIA_TIA = "EIA/TIA-568"
 
 @dataclass(frozen=True)
 class SLCLoopSpec:
-    """Specification for a single SLC loop.
+    """
+    Specification for a single SLC loop.
 
     Attributes:
         loop_id: Unique loop identifier (e.g. "SLC-01").
@@ -145,7 +147,8 @@ class SLCCapacitanceResult:
 
 
 class SLCCapacitanceAuditor:
-    """Audits SLC loops for data signalling integrity based on
+    """
+    Audits SLC loops for data signalling integrity based on
     total cable capacitance.
 
     Unlike DC voltage drop (which only affects power delivery), cable
@@ -166,7 +169,8 @@ class SLCCapacitanceAuditor:
         manufacturer: str = "generic",
         max_cap_uf: float | None = None,
     ) -> None:
-        """Initialise the auditor.
+        """
+        Initialise the auditor.
 
         Args:
             manufacturer: FACP manufacturer for protocol capacitance
@@ -188,7 +192,8 @@ class SLCCapacitanceAuditor:
         self,
         loops: list[dict[str, Any]],
     ) -> Any:
-        """Audit multiple SLC loops for capacitance compliance.
+        """
+        Audit multiple SLC loops for capacitance compliance.
 
         Each element of *loops* must be a dict with:
         - ``loop_id`` (str): Loop identifier.

@@ -1,11 +1,10 @@
-"""marine/output/bom_generator.py — Bill of Materials generator for marine fire systems.
+"""
+marine/output/bom_generator.py — Bill of Materials generator for marine fire systems.
 
 Generates a structured BOM from detector placements, extinguishing designs,
 and fire-division specs. Suitable for export to procurement / ERP systems.
 """
 from __future__ import annotations
-
-from typing import Dict, List
 
 from marine.core.types import DetectorPlacement, ExtinguishingDesign, FireResistanceSpec
 
@@ -27,7 +26,7 @@ class BOMItem:
         self.unit = unit
         self.standard_reference = standard_reference
 
-    def to_dict(self) -> Dict[str, str | float]:
+    def to_dict(self) -> dict[str, str | float]:
         return {
             "item_id": self.item_id,
             "description": self.description,
@@ -38,14 +37,14 @@ class BOMItem:
 
 
 def generate_bom_from_detectors(
-    placements: List[DetectorPlacement],
-) -> List[Dict[str, str | float]]:
+    placements: list[DetectorPlacement],
+) -> list[dict[str, str | float]]:
     """Generate BOM items grouped by detector type."""
-    counts: Dict[str, int] = {}
+    counts: dict[str, int] = {}
     for p in placements:
         counts[p.detector_type.value] = counts.get(p.detector_type.value, 0) + 1
 
-    bom: List[Dict[str, str | float]] = []
+    bom: list[dict[str, str | float]] = []
     for dtype, qty in counts.items():
         bom.append(
             BOMItem(
@@ -60,10 +59,10 @@ def generate_bom_from_detectors(
 
 
 def generate_bom_from_extinguishing(
-    designs: List[ExtinguishingDesign],
-) -> List[Dict[str, str | float]]:
+    designs: list[ExtinguishingDesign],
+) -> list[dict[str, str | float]]:
     """Generate BOM items for extinguishing systems."""
-    bom: List[Dict[str, str | float]] = []
+    bom: list[dict[str, str | float]] = []
     for d in designs:
         bom.append(
             BOMItem(
@@ -98,10 +97,10 @@ def generate_bom_from_extinguishing(
 
 
 def generate_bom_from_divisions(
-    specs: List[FireResistanceSpec],
-) -> List[Dict[str, str | float]]:
+    specs: list[FireResistanceSpec],
+) -> list[dict[str, str | float]]:
     """Generate BOM items for fire-division materials."""
-    bom: List[Dict[str, str | float]] = []
+    bom: list[dict[str, str | float]] = []
     for s in specs:
         if s.insulation_material and s.insulation_material != "none":
             bom.append(
@@ -117,10 +116,10 @@ def generate_bom_from_divisions(
 
 
 def generate_full_bom(
-    placements: List[DetectorPlacement],
-    designs: List[ExtinguishingDesign],
-    specs: List[FireResistanceSpec],
-) -> Dict[str, List[Dict[str, str | float]]]:
+    placements: list[DetectorPlacement],
+    designs: list[ExtinguishingDesign],
+    specs: list[FireResistanceSpec],
+) -> dict[str, list[dict[str, str | float]]]:
     """Generate the complete BOM for a marine fire-safety design."""
     return {
         "detectors": generate_bom_from_detectors(placements),
@@ -132,7 +131,7 @@ def generate_full_bom(
 __all__ = [
     "BOMItem",
     "generate_bom_from_detectors",
-    "generate_bom_from_extinguishing",
     "generate_bom_from_divisions",
+    "generate_bom_from_extinguishing",
     "generate_full_bom",
 ]

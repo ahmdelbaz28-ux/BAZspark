@@ -19,6 +19,7 @@ import _fitz_compat as fitz
 
 class SymbolType(Enum):
     """NFPA 170 device types."""
+
     SMOKE_DETECTOR = "SMOKE_DETECTOR"
     HEAT_DETECTOR = "HEAT_DETECTOR"
     PULL_STATION = "PULL_STATION"
@@ -35,6 +36,7 @@ class SymbolType(Enum):
 
 class ConfidenceLevel(Enum):
     """مستويات الثقة."""
+
     CERTAIN = "CERTAIN"
     HIGH = "HIGH"
     MODERATE = "MODERATE"
@@ -44,6 +46,7 @@ class ConfidenceLevel(Enum):
 @dataclass
 class SymbolElement:
     """رمز مستخلص من الرسم."""
+
     symbol_type: SymbolType
     bbox: Tuple[float, float, float, float]  # x0,y0,x1,y1
     confidence: ConfidenceLevel
@@ -182,6 +185,7 @@ def extract_symbols_from_pdf(pdf_path: str, page: int = 0) -> List[SymbolElement
 
     Returns:
         List of SymbolElement objects
+
     """
     extractor = SymbolExtractor(pdf_path, page)
     return extractor.extract_symbols()
@@ -193,6 +197,7 @@ def extract_devices_from_pdf(pdf_path: str, page: int = 0) -> Dict[str, List[Sym
 
     Returns:
         Dict mapping SymbolType to list of symbols
+
     """
     symbols = extract_symbols_from_pdf(pdf_path, page)
 

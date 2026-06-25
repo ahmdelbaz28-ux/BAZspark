@@ -1,4 +1,5 @@
-"""fireai/core/multi_floor_orchestrator.py.
+"""
+fireai/core/multi_floor_orchestrator.py.
 ========================================
 LIFE-SAFETY CRITICAL: Multi-Floor Building Orchestrator for FireAI.
 
@@ -188,7 +189,8 @@ class SmokeSpreadPathway(str, Enum):
 
 @dataclass
 class SLCLoop:
-    """SLC loop assignment result per NFPA 72 §21.2.2.
+    """
+    SLC loop assignment result per NFPA 72 §21.2.2.
 
     Attributes:
         loop_id: Unique loop identifier (e.g. "SLC-1").
@@ -233,7 +235,8 @@ class SLCLoop:
 
 @dataclass
 class VerticalZone:
-    """Vertical zone grouping result per NFPA 72 §21.3.3.
+    """
+    Vertical zone grouping result per NFPA 72 §21.3.3.
 
     A vertical zone groups one or more floors into a single alarm zone.
     Residential occupancies allow 1 floor per zone; other occupancies
@@ -271,7 +274,8 @@ class VerticalZone:
 
 @dataclass
 class FloorAssignment:
-    """Per-floor device assignment result.
+    """
+    Per-floor device assignment result.
 
     Attributes:
         floor_id: Floor identifier (e.g. "GF", "L1", "B1").
@@ -307,7 +311,8 @@ class FloorAssignment:
 
 @dataclass
 class SmokeSpreadResult:
-    """Result of smoke spread analysis through vertical shafts.
+    """
+    Result of smoke spread analysis through vertical shafts.
 
     Attributes:
         pathway: Type of smoke spread pathway.
@@ -337,7 +342,8 @@ class SmokeSpreadResult:
 
 @dataclass
 class ElevatorRecallResult:
-    """Elevator recall check result per NFPA 72 §21.3.2 / ASME A17.1.
+    """
+    Elevator recall check result per NFPA 72 §21.3.2 / ASME A17.1.
 
     Attributes:
         elevator_id: Elevator identifier (e.g. "ELEV-1").
@@ -371,7 +377,8 @@ class ElevatorRecallResult:
 
 @dataclass
 class RiserRoutingResult:
-    """Result of riser cable routing between floors.
+    """
+    Result of riser cable routing between floors.
 
     Attributes:
         from_floor: Source floor.
@@ -399,7 +406,8 @@ class RiserRoutingResult:
 
 @dataclass
 class BuildingAnalysis:
-    """Complete multi-floor building analysis result.
+    """
+    Complete multi-floor building analysis result.
 
     This is the top-level result container produced by
     :meth:`MultiFloorOrchestrator.orchestrate`.
@@ -454,7 +462,8 @@ class BuildingAnalysis:
 
 
 class MultiFloorOrchestrator:
-    """Orchestrates full multi-floor building fire alarm analysis.
+    """
+    Orchestrates full multi-floor building fire alarm analysis.
 
     Coordinates the following subsystems:
       1. Per-floor detector placement (via FloorOrchestrator)
@@ -551,7 +560,8 @@ class MultiFloorOrchestrator:
         project_name: str = "",
         source_dxf: str = "",
     ) -> BuildingAnalysis:
-        """Execute full multi-floor building analysis.
+        """
+        Execute full multi-floor building analysis.
 
         Coordinates all subsystems in sequence. Each subsystem is
         wrapped in try/except so that failures do not cascade.
@@ -737,7 +747,8 @@ class MultiFloorOrchestrator:
         project_name: str,
         source_dxf: str,
     ) -> None:
-        """Run FloorOrchestrator on each floor and build FloorAssignment objects.
+        """
+        Run FloorOrchestrator on each floor and build FloorAssignment objects.
 
         Args:
             analysis: BuildingAnalysis to populate.
@@ -826,7 +837,8 @@ class MultiFloorOrchestrator:
         self,
         floor_assignments: list[FloorAssignment],
     ) -> list[SLCLoop]:
-        """Assign devices to SLC loops respecting the 250-device limit.
+        """
+        Assign devices to SLC loops respecting the 250-device limit.
 
         Per NFPA 72 §21.2.2, a single SLC loop shall not have more than
         250 addressable devices. This method distributes devices across
@@ -947,7 +959,8 @@ class MultiFloorOrchestrator:
         loop: SLCLoop,
         floor_assignments: list[FloorAssignment],
     ) -> None:
-        """Estimate cable length for an SLC loop and verify voltage drop.
+        """
+        Estimate cable length for an SLC loop and verify voltage drop.
 
         For Class A (ring): total length ≈ 2 × one-way length.
         For Class B (home-run): total length ≈ one-way length.
@@ -1015,7 +1028,8 @@ class MultiFloorOrchestrator:
         occupancy_type: str,
         floor_areas: dict[str, float] | None = None,
     ) -> list[VerticalZone]:
-        """Design vertical zones grouping floors per NFPA 72 §21.3.3.
+        """
+        Design vertical zones grouping floors per NFPA 72 §21.3.3.
 
         Zone floor limits per §21.3.3:
           - Residential: 1 floor per zone
@@ -1137,7 +1151,8 @@ class MultiFloorOrchestrator:
         smoke_barriers: list[dict[str, Any]],
         building_height_m: float,
     ) -> list[SmokeSpreadResult]:
-        """Analyze smoke spread through vertical shafts and HVAC.
+        """
+        Analyze smoke spread through vertical shafts and HVAC.
 
         This method evaluates the potential for smoke to propagate between
         floors through:
@@ -1427,7 +1442,8 @@ class MultiFloorOrchestrator:
         elevators: list[dict[str, Any]],
         floor_assignments: list[FloorAssignment],
     ) -> list[ElevatorRecallResult]:
-        """Check elevator recall compliance per NFPA 72 §21.3.2 / ASME A17.1.
+        """
+        Check elevator recall compliance per NFPA 72 §21.3.2 / ASME A17.1.
 
         Per §21.3.2, elevator recall consists of two phases:
 
@@ -1626,7 +1642,8 @@ class MultiFloorOrchestrator:
         floor_assignments: list[FloorAssignment],
         slc_loops: list[SLCLoop],
     ) -> list[RiserRoutingResult]:
-        """Route riser cables between floors using CableRoutingEngine.
+        """
+        Route riser cables between floors using CableRoutingEngine.
 
         Riser cables are the vertical backbone of the fire alarm system,
         connecting the FACP on the ground floor to devices on upper floors.
@@ -1760,7 +1777,8 @@ class MultiFloorOrchestrator:
 
     @staticmethod
     def _evaluate_compliance(analysis: BuildingAnalysis) -> bool:
-        """Evaluate overall building compliance across all subsystems.
+        """
+        Evaluate overall building compliance across all subsystems.
 
         A building is compliant ONLY if:
           1. All SLC loops are within device limits (§21.2.2)

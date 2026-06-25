@@ -1,4 +1,5 @@
-"""test_v136_medium_low_fixes.py — Regression tests for V136 MEDIUM + LOW fixes.
+"""
+test_v136_medium_low_fixes.py — Regression tests for V136 MEDIUM + LOW fixes.
 
 Per agent.md Rule 10: tests run after every modification.
 Per agent.md Rule 19: each cycle must be MORE THOROUGH than the previous.
@@ -6,10 +7,7 @@ Per agent.md Rule 19: each cycle must be MORE THOROUGH than the previous.
 
 from __future__ import annotations
 
-import math
-
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # F-18: BIMProviderRegistry cache_key handles unhashable kwargs
@@ -111,8 +109,8 @@ class TestNegativePressureLoss:
     def test_negative_pressure_raises(self):
         """If calculation produces negative pressure, raise ValueError."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         # Normal call should work
         result = calculate_darcy_weisbach_friction_loss(
@@ -135,8 +133,8 @@ class TestConvergedField:
     def test_result_has_converged_field(self):
         """DarcyWeisbachResult must have converged field."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
@@ -150,8 +148,8 @@ class TestConvergedField:
     def test_result_to_dict_includes_converged(self):
         """to_dict should include converged field."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
@@ -203,8 +201,8 @@ class TestFlowVelocityBound:
     def test_extreme_velocity_emits_warning(self):
         """Velocity > 100 m/s should add a warning."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         # Extreme flow rate → very high velocity
         result = calculate_darcy_weisbach_friction_loss(

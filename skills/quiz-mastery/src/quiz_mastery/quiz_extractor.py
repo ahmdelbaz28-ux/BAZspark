@@ -6,13 +6,15 @@ from .models import Question
 
 
 def build_extraction_prompt(content: str) -> dict:
-    """Build a prompt for LLM to parse questions from a question file.
+    """
+    Build a prompt for LLM to parse questions from a question file.
 
     Args:
         content: Raw text content containing questions.
 
     Returns:
         dict with 'system_prompt' and 'user_prompt' keys.
+
     """
     system_prompt = (
         "你是一个专业的题目解析助手。从用户提供的题目文件中识别并解析所有题目。\n"
@@ -70,7 +72,8 @@ def build_extraction_prompt(content: str) -> dict:
 
 
 def parse_questions_json(json_str: str) -> list[Question]:
-    """Parse LLM-returned JSON string into a list of Question objects.
+    """
+    Parse LLM-returned JSON string into a list of Question objects.
 
     Args:
         json_str: JSON string containing a list of question dicts.
@@ -81,6 +84,7 @@ def parse_questions_json(json_str: str) -> list[Question]:
     Raises:
         json.JSONDecodeError: If json_str is not valid JSON.
         ValueError: If the parsed data is not a list.
+
     """
     # Try to extract JSON from possible markdown code blocks
     cleaned = json_str.strip()

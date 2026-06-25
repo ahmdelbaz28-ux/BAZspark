@@ -41,7 +41,6 @@ import sys
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 _PROJECT_ROOT = Path(__file__).parent.parent.resolve()
@@ -134,7 +133,8 @@ class TestSecurityHeadersMiddleware:
         assert "frame-ancestors 'none'" in csp
 
     def test_hsts_always_present(self, dev_client):
-        """Strict-Transport-Security must be on every response.
+        """
+        Strict-Transport-Security must be on every response.
 
         In 2026+, modern browsers ignore HSTS on localhost (Chrome v79+,
         Firefox v75+), so the developer-trap concern is moot. Emitting HSTS
@@ -164,7 +164,8 @@ class TestSecurityHeadersMiddleware:
         assert response.headers.get("x-correlation-id") == custom_cid
 
     def test_headers_on_error_responses(self, dev_client):
-        """Security headers must be present even on error responses.
+        """
+        Security headers must be present even on error responses.
 
         STRESS-TEST FIX #2: With ApiKeyMiddleware now installed, anonymous
         requests to non-public endpoints return 401 (must authenticate).
@@ -273,8 +274,7 @@ def _reload_backend_app(env_overrides: dict):
         else:
             os.environ[k] = v
     try:
-        backend_app = importlib.import_module("backend.app")
-        return backend_app
+        return importlib.import_module("backend.app")
     finally:
         for k, v in saved.items():
             if v is None:
@@ -290,7 +290,8 @@ class TestCacheEndpointAuth:
     """V129: Cache management endpoints must require SYSTEM_CONFIG permission."""
 
     def test_cache_clear_requires_auth(self, dev_client):
-        """POST /api/v1/cache/clear without auth → 401 (must authenticate).
+        """
+        POST /api/v1/cache/clear without auth → 401 (must authenticate).
 
         STRESS-TEST FIX #2: With ApiKeyMiddleware now installed, anonymous
         requests to non-public endpoints return 401 (must authenticate).
@@ -305,7 +306,8 @@ class TestCacheEndpointAuth:
         )
 
     def test_cache_stats_requires_auth(self, dev_client):
-        """GET /api/v1/cache/stats without auth → 401 (must authenticate).
+        """
+        GET /api/v1/cache/stats without auth → 401 (must authenticate).
 
         STRESS-TEST FIX #2: See test_cache_clear_requires_auth for rationale.
         """
@@ -344,7 +346,8 @@ class TestHealthRouterMounted:
 
 
 class TestBackendAppAlsoHasSecurityHeaders:
-    """V129 adversarial audit: backend_app.py (QOMN-FIRE API) must ALSO have
+    """
+    V129 adversarial audit: backend_app.py (QOMN-FIRE API) must ALSO have
     security headers. Initially I only added them to backend/app.py — but
     backend_app.py is the production QOMN-FIRE API and needs the same
     defense-in-depth protection.

@@ -1,4 +1,5 @@
-"""fireai/core/tests/test_helpers.py — Reusable Test Utilities.
+"""
+fireai/core/tests/test_helpers.py — Reusable Test Utilities.
 ============================================================
 Task 2.18: Improve test utilities
 
@@ -37,7 +38,8 @@ from core.models import (
 
 
 def make_square(side: float = 10.0, x0: float = 0.0, y0: float = 0.0) -> Geometry:
-    """Create a square polygon geometry.
+    """
+    Create a square polygon geometry.
 
     Args:
         side: Side length in metres.
@@ -58,7 +60,8 @@ def make_square(side: float = 10.0, x0: float = 0.0, y0: float = 0.0) -> Geometr
 
 
 def make_rectangle(width: float, length: float, x0: float = 0.0, y0: float = 0.0) -> Geometry:
-    """Create a rectangular polygon geometry.
+    """
+    Create a rectangular polygon geometry.
 
     Args:
         width: Width in metres (X direction).
@@ -93,7 +96,8 @@ def make_l_shape() -> Geometry:
 
 
 def make_circle_polygon(radius: float, num_points: int = 36) -> Geometry:
-    """Create a circular polygon approximation.
+    """
+    Create a circular polygon approximation.
 
     Args:
         radius: Radius in metres.
@@ -125,7 +129,8 @@ def make_element(
     geometry: Geometry | None = None,
     **kwargs,
 ) -> UniversalElement:
-    """Create a UniversalElement with sensible defaults.
+    """
+    Create a UniversalElement with sensible defaults.
 
     Args:
         element_id: Mandatory element ID.
@@ -156,7 +161,8 @@ def make_element(
 
 
 def make_elements_batch(count: int, prefix: str = "ELEM") -> list[UniversalElement]:
-    """Create a batch of UniversalElement objects.
+    """
+    Create a batch of UniversalElement objects.
 
     Args:
         count: Number of elements to create.
@@ -188,7 +194,8 @@ def make_room_dict(
     length: float = 8.0,
     ceiling_height: float = 3.0,
 ) -> dict:
-    """Create a room dict compatible with FloorAnalyser.
+    """
+    Create a room dict compatible with FloorAnalyser.
 
     Args:
         room_id: Room identifier.
@@ -216,7 +223,8 @@ def make_floor_rooms(
     room_length: float = 8.0,
     ceiling_height: float = 3.0,
 ) -> dict[str, list[dict]]:
-    """Create a floor dict for BuildingEngine.
+    """
+    Create a floor dict for BuildingEngine.
 
     Args:
         floor_id: Floor identifier.
@@ -266,7 +274,8 @@ def assert_valid_point3d(point: Point3D) -> None:
 
 
 def assert_compliant_spacing(result, detector_type: str = "smoke") -> None:
-    """Assert that a SpacingResult is NFPA 72 compliant.
+    """
+    Assert that a SpacingResult is NFPA 72 compliant.
 
     Args:
         result: SpacingResult from get_detector_spacing().

@@ -314,7 +314,7 @@ class TestSecureLoopStructure:
         """Each injected isolator should have required keys."""
         devices = [{"device_idx": "D1"}]
         result = inject_fault_isolators(loop_devices=devices)
-        isolator = [d for d in result.secure_loop if d.get("device_type") == ISOLATOR_DEVICE_TYPE][0]
+        isolator = next(d for d in result.secure_loop if d.get("device_type") == ISOLATOR_DEVICE_TYPE)
         assert "device_type" in isolator
         assert "device_idx" in isolator
         assert "position" in isolator
@@ -359,19 +359,19 @@ class TestPositionExtraction:
     """Test position extraction from device dicts."""
 
     def test_position_tuple(self):
-        """position key with tuple should be extracted."""
+        """Position key with tuple should be extracted."""
         devices = [{"device_idx": "D1", "position": (5.0, 10.0)}]
         result = inject_fault_isolators(loop_devices=devices)
         assert result.secure_loop[0]["position"] == (5.0, 10.0)
 
     def test_position_list(self):
-        """position key with list should be extracted."""
+        """Position key with list should be extracted."""
         devices = [{"device_idx": "D1", "position": [5.0, 10.0]}]
         result = inject_fault_isolators(loop_devices=devices)
         assert result.secure_loop[0]["position"] == (5.0, 10.0)
 
     def test_xy_keys(self):
-        """x and y keys should be extracted as fallback."""
+        """X and y keys should be extracted as fallback."""
         devices = [{"device_idx": "D1", "x": 5.0, "y": 10.0}]
         result = inject_fault_isolators(loop_devices=devices)
         assert result.secure_loop[0]["position"] == (5.0, 10.0)

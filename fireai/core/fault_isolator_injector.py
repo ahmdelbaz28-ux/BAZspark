@@ -1,4 +1,5 @@
-"""fault_isolator_injector.py — SLC Loop Fault Isolation per NFPA 72.
+"""
+fault_isolator_injector.py — SLC Loop Fault Isolation per NFPA 72.
 =================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -92,7 +93,8 @@ def inject_fault_isolators(
     max_devices_between_isolators: int = DEFAULT_MAX_DEVICES_BETWEEN_ISOLATORS,
     class_a: bool = False,
 ) -> IsolatorInjectionResult:
-    """Inject fault isolator modules into an SLC loop design.
+    """
+    Inject fault isolator modules into an SLC loop design.
 
     Algorithm:
         1. Walk the loop in physical order.
@@ -283,7 +285,8 @@ def verify_isolator_compliance(
     loop_devices: list[dict[str, Any]],
     max_devices_between_isolators: int = DEFAULT_MAX_DEVICES_BETWEEN_ISOLATORS,
 ) -> dict[str, Any]:
-    """Verify that an existing loop already has adequate fault isolation.
+    """
+    Verify that an existing loop already has adequate fault isolation.
 
     Useful for checking loops that were designed manually or by external tools.
 

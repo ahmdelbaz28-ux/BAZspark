@@ -476,7 +476,8 @@ class TestVoltageDropInputCompute:
         assert r_non["continuous_load_factor"] == 1.0
 
     def test_temperature_correction(self):
-        """NEC Table 310.15(B)(2)(a): temp above 75°C increases resistance.
+        """
+        NEC Table 310.15(B)(2)(a): temp above 75°C increases resistance.
 
         V78 FIX: Temperature correction now uses (T - 75) instead of (T - 30)
         because cable_resistance_ohm_per_m is specified at 75°C per NEC Table 8.
@@ -502,7 +503,8 @@ class TestVoltageDropInputCompute:
         assert r_80["temp_correction_factor"] > 1.0
 
     def test_bundling_derating(self):
-        """NEC Table 310.15(B)(3)(a): bundling factor is an ampacity derating,
+        """
+        NEC Table 310.15(B)(3)(a): bundling factor is an ampacity derating,
         NOT a resistance increase.
 
         V78 FIX: bundling_factor was incorrectly divided into voltage drop.

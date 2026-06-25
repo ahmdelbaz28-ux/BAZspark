@@ -1,4 +1,5 @@
-"""backend/app.py — FastAPI Application Entry Point.
+"""
+backend/app.py — FastAPI Application Entry Point.
 ===============================================
 
 Core FastAPI application with all CAD/BIM integration routes.
@@ -87,7 +88,8 @@ if not logger.handlers:
 # (recharts >=2.x, three.js >=0.150) work without it in production builds.
 
 def _build_csp() -> str:
-    """Build a Content-Security-Policy header value.
+    """
+    Build a Content-Security-Policy header value.
 
     Environment-aware:
       - FIREAI_ENV=production (default): 'unsafe-eval' is OFF unless explicitly enabled.
@@ -194,7 +196,8 @@ def _evict_expired_locked() -> int:
 
 
 def _evict_oldest_locked(n: int = 1) -> None:
-    """Evict the n oldest entries. MUST be called with _cache_lock held.
+    """
+    Evict the n oldest entries. MUST be called with _cache_lock held.
 
     Uses OrderedDict.popitem(last=False) which IS supported (unlike
     regular dict.popitem() in CPython).
@@ -257,7 +260,8 @@ async def cache_get(key: str):
 
 
 async def cache_set(key: str, value: str, expire: int = 300) -> None:
-    """Set value in cache with expiration in seconds.
+    """
+    Set value in cache with expiration in seconds.
 
     STRESS-TEST FIX #3: If cache is at capacity, expired entries are
     evicted first; if still at capacity, the oldest entry is evicted
@@ -312,7 +316,8 @@ async def cache_delete(key: str) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan events.
+    """
+    Application lifespan events.
     Used for startup and shutdown tasks.
     """
     logger.info("Starting CAD/BIM Integration Platform...")
@@ -501,7 +506,7 @@ for _router_name in (
 # Provides endpoints for IMO SOLAS II-2, IEC 60092-502, ship zone division,
 # detector selection, extinguishing sizing, alarm-logic generation, and
 # SCADA/ETAP/Revit/AutoCAD integrations for marine projects.
-from backend.routers import marine as marine_router_module  # noqa: E402
+from backend.routers import marine as marine_router_module
 
 app.include_router(marine_router_module.router, prefix="/api/v1", tags=["Marine"])
 
@@ -511,7 +516,7 @@ app.include_router(marine_router_module.router, prefix="/api/v1", tags=["Marine"
 # Auth is enforced INSIDE the router via require_permission(Permission.MONITOR_READ).
 # For unauthenticated /metrics scraping, deploy a sidecar that injects a
 # service-account API key, or expose /metrics via a separate internal port.
-from backend.routers import monitor as monitor_router_module  # noqa: E402
+from backend.routers import monitor as monitor_router_module
 
 app.include_router(monitor_router_module.router, prefix="/api/v1", tags=["Monitor"])
 
@@ -574,7 +579,8 @@ def _register_csrf_middleware() -> None:
 # Per RFC 7234 (HTTP Caching) and the HTTP Deprecation header draft.
 @app.middleware("http")
 async def add_deprecation_headers(request, call_next):
-    """Add Deprecation: true, Sunset, and Link headers to /api/v1/ responses.
+    """
+    Add Deprecation: true, Sunset, and Link headers to /api/v1/ responses.
 
     Per MISSION TASK 3.1: v1 endpoints are deprecated with a 1-year sunset
     window, pointing clients to their v2 successors.
@@ -661,7 +667,8 @@ async def general_exception_handler(request: Request, exc: Exception):
 async def clear_cache(
     _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
 ):
-    """Clear all cached data. Requires SYSTEM_CONFIG permission (admin only).
+    """
+    Clear all cached data. Requires SYSTEM_CONFIG permission (admin only).
 
     FIX #3: Count items BEFORE clearing so the response is accurate.
     Previously _cache.clear() ran before len(_cache), always returning 0.
@@ -682,7 +689,8 @@ async def clear_cache(
 async def cache_stats(
     _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
 ):
-    """Get cache statistics. Requires SYSTEM_CONFIG permission (admin only).
+    """
+    Get cache statistics. Requires SYSTEM_CONFIG permission (admin only).
 
     FIX #4: Also cleans up expired entries during stats check to prevent
     unbounded memory growth from expired-but-not-removed cache entries.

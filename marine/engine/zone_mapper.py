@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import dataclasses
 import math
-from typing import List, Tuple
 
 from marine.core.constants import (
     MAX_MAIN_VERTICAL_ZONE_LENGTH_M,
@@ -27,7 +26,10 @@ from marine.core.constants import (
     SHIP_FRAME_SPACING_M,
 )
 from marine.core.types import (
-    ComplianceResult, MarineZone, ShipProject, SpaceCategory,
+    ComplianceResult,
+    MarineZone,
+    ShipProject,
+    SpaceCategory,
 )
 
 # Frame spacing: typical merchant vessel has ~600 mm between frames.
@@ -39,8 +41,9 @@ def divide_into_main_vertical_zones(
     ship_length_m: float,
     ship: ShipProject,
     deck_count: int = 1,
-) -> List[MarineZone]:
-    """Divide a ship into SOLAS-compliant main vertical zones (MVZs).
+) -> list[MarineZone]:
+    """
+    Divide a ship into SOLAS-compliant main vertical zones (MVZs).
 
     SOLAS II-2/2.2.1: MVZ length ≤ 40 m. The ship is sliced longitudinally
     into N segments where N = ceil(length / 40).
@@ -52,6 +55,7 @@ def divide_into_main_vertical_zones(
 
     Returns:
         List of MarineZone objects — one per MVZ × deck.
+
     """
     if ship.is_small_craft:
         # NFPA 302 craft: single zone, no MVZ division.
@@ -92,7 +96,7 @@ def divide_into_main_vertical_zones(
     # rounding. This keeps every zone strictly ≤ mvz_max_m (no tolerance needed).
     # The extra zone(s) have less length, which is fine for SOLAS.
     def _m_to_frames(m: float) -> int:
-        return int(round(m / _FRAMES_PER_METER))
+        return round(m / _FRAMES_PER_METER)
 
     # Iteratively bump n_zones until all rounded zone lengths ≤ mvz_max_m.
     # This typically converges in 0-1 iterations.
@@ -116,7 +120,7 @@ def divide_into_main_vertical_zones(
         if n_zones > 1000:  # safety valve
             break
 
-    zones: List[MarineZone] = []
+    zones: list[MarineZone] = []
     for deck_idx in range(deck_count):
         deck_name = "main" if deck_idx == 0 else f"deck_{deck_idx + 1}"
         for mvz_idx in range(n_zones):
@@ -161,10 +165,11 @@ def divide_into_main_vertical_zones(
 
 
 def assign_space_categories(
-    zones: List[MarineZone],
+    zones: list[MarineZone],
     space_label_map: dict,
-) -> List[MarineZone]:
-    """Override auto-assigned categories with explicit labels from GA plan.
+) -> list[MarineZone]:
+    """
+    Override auto-assigned categories with explicit labels from GA plan.
 
     Args:
         zones: Pre-divided zones (output of divide_into_main_vertical_zones).
@@ -179,6 +184,7 @@ def assign_space_categories(
     would become True after reassignment — a safety-relevant data corruption.
     Now uses dataclasses.replace() to preserve every field not explicitly
     overridden.
+
     """
     updated = []
     for z in zones:
@@ -191,8 +197,9 @@ def assign_space_categories(
     return updated
 
 
-def compute_escape_route_adjacency(zones: List[MarineZone]) -> ComplianceResult:
-    """Ensure every non-open-deck zone has ≥1 adjacent zone for escape.
+def compute_escape_route_adjacency(zones: list[MarineZone]) -> ComplianceResult:
+    """
+    Ensure every non-open-deck zone has ≥1 adjacent zone for escape.
 
     Per SOLAS II-2/13.3.2: every space must have a means of escape to
     open deck. Adjacency is computed from frame ranges.
@@ -210,7 +217,7 @@ def compute_escape_route_adjacency(zones: List[MarineZone]) -> ComplianceResult:
 
 
 __all__ = [
-    "divide_into_main_vertical_zones",
     "assign_space_categories",
     "compute_escape_route_adjacency",
+    "divide_into_main_vertical_zones",
 ]

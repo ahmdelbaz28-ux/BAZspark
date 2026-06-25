@@ -28,14 +28,13 @@ Each test prints PASS/FAIL with detailed diagnostics.
 """
 from __future__ import annotations
 
+import asyncio
+import json
 import os
 import sys
-import json
-import time
 import tempfile
 import threading
 import traceback
-import asyncio
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -73,7 +72,7 @@ def record(name: str, status: str, details: str = "") -> None:
 def test_bcrypt_auth_determinism() -> None:
     print("\n[TEST 1] bcrypt Authentication Determinism (FIXED)")
     try:
-        from backend.api_keys import add_api_key, validate_api_key, _hash_key, HAS_BCRYPT
+        from backend.api_keys import HAS_BCRYPT, _hash_key, add_api_key, validate_api_key
         from backend.rbac import Role
 
         if not HAS_BCRYPT:
@@ -128,6 +127,7 @@ def test_api_key_middleware_wired() -> None:
 
         # Check it's wired in app.py
         import inspect
+
         from backend import app as app_mod
         src = inspect.getsource(app_mod)
         if "app.add_middleware(ApiKeyMiddleware)" in src:
@@ -138,8 +138,8 @@ def test_api_key_middleware_wired() -> None:
                    "ApiKeyMiddleware class exists but NOT wired in app.py")
 
         # Functional test: create a mock scope and verify role is set
-        from backend.rbac import Role
         from backend.api_keys import add_api_key
+        from backend.rbac import Role
         test_key = "middleware_test_key_v2"
         add_api_key(test_key, Role.ADMIN, "middleware test")
 
@@ -219,8 +219,10 @@ def test_cache_bounded_lru() -> None:
             if "backend.app" in mod:
                 del sys.modules[mod]
         from backend.app import (
-            cache_set, cache_get, _cache, _CACHE_MAX_ENTRIES,
-            _evict_oldest_locked, _evict_expired_locked, _cache_lock,
+            _CACHE_MAX_ENTRIES,
+            _cache,
+            cache_get,
+            cache_set,
         )
 
         # Verify cap is enforced
@@ -248,8 +250,7 @@ def test_cache_bounded_lru() -> None:
         # newest entries (stress_key_{cap*2-1}) should still be present.
         async def _check():
             # The most recent key should still be present
-            v = await cache_get(f"stress_key_{cap*2-1}")
-            return v
+            return await cache_get(f"stress_key_{cap*2-1}")
 
         v = asyncio.run(_check())
         if v is not None:
@@ -307,8 +308,9 @@ def test_rate_limiter_ip_spoofing() -> None:
                    f"XFF was honored: {ip_xff} — attacker can bypass rate limits")
 
         # Check if app configures proxy headers explicitly
-        from backend import app as app_mod
         import inspect
+
+        from backend import app as app_mod
         src = inspect.getsource(app_mod)
         if "ProxyHeadersMiddleware" in src or "forwarded_allow_ips" in src:
             record("rate_limit_proxy_config", "INFO", "Proxy trust config found")
@@ -328,8 +330,9 @@ def test_rate_limiter_ip_spoofing() -> None:
 def test_dwg_upload_hardened() -> None:
     print("\n[TEST 5] DWG Upload Hardening (FIXED)")
     try:
-        from backend.routers import dwg as dwg_router
         import inspect
+
+        from backend.routers import dwg as dwg_router
 
         src = inspect.getsource(dwg_router)
 
@@ -405,8 +408,9 @@ def test_path_traversal_filename() -> None:
 def test_api_keys_atomic_write() -> None:
     print("\n[TEST 7] API Keys File Atomic Write (FIXED)")
     try:
-        from backend import api_keys as ak_mod
         import inspect
+
+        from backend import api_keys as ak_mod
 
         src = inspect.getsource(ak_mod)
         if "os.replace" in src and "tmp_path" in src:
@@ -430,7 +434,7 @@ def test_api_keys_atomic_write() -> None:
                    "Secret file may have default (world-readable) permissions")
 
         # Functional test: write keys, verify file is valid JSON
-        from backend.api_keys import add_api_key, _load_keys
+        from backend.api_keys import _load_keys, add_api_key
         from backend.rbac import Role
         add_api_key("atomic_test_key", Role.ENGINEER, "atomic test")
         keys = _load_keys()
@@ -450,8 +454,9 @@ def test_api_keys_atomic_write() -> None:
 def test_health_endpoint_info_disclosure() -> None:
     print("\n[TEST 8] Health Endpoint Information Disclosure")
     try:
-        from backend.routers import health as health_router
         import inspect
+
+        from backend.routers import health as health_router
 
         src = inspect.getsource(health_router)
         if "Depends(require_permission(Permission.HEALTH_READ))" in src:
@@ -484,7 +489,7 @@ def test_cache_race_conditions() -> None:
         for mod in list(sys.modules.keys()):
             if "backend.app" in mod:
                 del sys.modules[mod]
-        from backend.app import _cache, cache_set, cache_delete, _cache_lock
+        from backend.app import _cache, _cache_lock, cache_delete, cache_set
 
         async def _race():
             await asyncio.gather(
@@ -516,11 +521,14 @@ def test_cache_race_conditions() -> None:
 def test_validate_api_key_o1_lookup() -> None:
     print("\n[TEST 10] validate_api_key O(1) Lookup (FIXED)")
     try:
+        import time
+
         from backend.api_keys import (
-            add_api_key, validate_api_key, _lookup_key, HAS_BCRYPT,
+            _lookup_key,
+            add_api_key,
+            validate_api_key,
         )
         from backend.rbac import Role
-        import time
 
         # Add 50 keys
         N = 50
@@ -619,7 +627,7 @@ def test_csp_unsafe_inline_prod() -> None:
         for mod in list(sys.modules.keys()):
             if "security_middleware" in mod:
                 del sys.modules[mod]
-        from backend.security_middleware import _CSP_PRODUCTION, _build_csp, _is_production_env
+        from backend.security_middleware import _build_csp
         csp = _build_csp({})
 
         # Production CSP allows unsafe-inline for SCRIPTS (legacy frontend),
@@ -717,8 +725,8 @@ def test_hsts_conditional() -> None:
 def test_ssrf_via_external_services() -> None:
     print("\n[TEST 14] SSRF Risk in External Service Calls")
     try:
-        from pathlib import Path
         import re
+        from pathlib import Path
 
         backend_dir = Path(PROJECT_ROOT) / "backend"
         ssrf_patterns = [
@@ -810,8 +818,9 @@ def test_error_handler_leak() -> None:
 def test_revit_upload_security() -> None:
     print("\n[TEST 16] revit.py Upload Path Security")
     try:
-        from backend.routers import revit as revit_router
         import inspect
+
+        from backend.routers import revit as revit_router
         src = inspect.getsource(revit_router)
 
         # Should have size limit
@@ -849,8 +858,9 @@ def test_revit_upload_security() -> None:
 def test_sync_websocket_auth() -> None:
     print("\n[TEST 17] WebSocket Sync Auth")
     try:
-        from backend.routers import sync as sync_router
         import inspect
+
+        from backend.routers import sync as sync_router
         src = inspect.getsource(sync_router)
 
         # Should validate API key on WebSocket connect
@@ -886,8 +896,9 @@ def test_production_mode_safety() -> None:
                 del sys.modules[mod]
 
         try:
-            from backend import app as app_mod
             import inspect
+
+            from backend import app as app_mod
             src = inspect.getsource(app_mod)
 
             # Docs should be disabled in production
@@ -936,7 +947,7 @@ def test_secret_file_permissions() -> None:
     print("\n[TEST 19] API Key Secret File Permissions")
     try:
         # Force secret generation
-        from backend.api_keys import _load_server_secret, _SERVER_SECRET_FILE
+        from backend.api_keys import _SERVER_SECRET_FILE, _load_server_secret
         secret = _load_server_secret()
         if len(secret) < 32:
             record("secret_length", "FAIL",
@@ -969,8 +980,9 @@ def test_secret_file_permissions() -> None:
 def test_correlation_id_log_injection() -> None:
     print("\n[TEST 20] CorrelationId Log Injection Defense")
     try:
-        from backend.request_context import CorrelationIdMiddleware
         import inspect
+
+        from backend.request_context import CorrelationIdMiddleware
         src = inspect.getsource(CorrelationIdMiddleware)
 
         # Should validate format — prevent log injection via control chars
@@ -1004,8 +1016,8 @@ def test_concurrency_stress() -> None:
         for mod in list(sys.modules.keys()):
             if "backend.app" in mod or "backend.api_keys" in mod:
                 del sys.modules[mod]
-        from backend.app import cache_set, cache_get, _cache, _CACHE_MAX_ENTRIES
         from backend.api_keys import add_api_key, validate_api_key
+        from backend.app import _CACHE_MAX_ENTRIES, _cache, cache_get, cache_set
         from backend.rbac import Role
 
         # Add 20 API keys
@@ -1061,8 +1073,11 @@ def test_bcrypt_fallback() -> None:
     print("\n[TEST 22] bcrypt Fallback (HMAC-SHA256 + salt)")
     try:
         # Verify HMAC fallback works (the _hash_key code path when HAS_BCRYPT=False)
+        import hashlib
+        import hmac
+        import secrets
+
         from backend.api_keys import _verify_key
-        import hmac, hashlib, secrets
 
         # Simulate a stored HMAC-SHA256 hash
         salt = secrets.token_hex(16)

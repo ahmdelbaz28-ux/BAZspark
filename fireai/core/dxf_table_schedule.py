@@ -1,4 +1,5 @@
-"""fireai/core/dxf_table_schedule.py.
+"""
+fireai/core/dxf_table_schedule.py.
 =================================
 Uses proper Autodesk CAD Data objects replacing plain MTEXT lines.
 Required functionality for enabling digital data link queries externally
@@ -31,7 +32,8 @@ except ImportError:
 
 
 class TrueAECDraftingTable:
-    """Generates proper DXF TABLE entities for fire alarm device schedules.
+    """
+    Generates proper DXF TABLE entities for fire alarm device schedules.
 
     Previous implementations used add_text() for each cell, which does not
     create queryable DXF TABLE entities. This class creates real TABLE
@@ -52,7 +54,8 @@ class TrueAECDraftingTable:
         self.position = table_position_xyz
 
     def draft_device_boq_table(self, msp, device_array: list, project_metadata: str = "Fire Alarm Device Log") -> bool:
-        """Create a DXF TABLE entity with device schedule data.
+        """
+        Create a DXF TABLE entity with device schedule data.
 
         The table includes columns: INDEX_ID, DEVICE_TYPE, CIRCUIT_GROUP,
         ZONE, LOCATION. Each device in the device_array is rendered as a

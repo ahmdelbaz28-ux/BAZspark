@@ -1,6 +1,4 @@
-"""
-Enhanced FACP Message Schema for Distributed System
-"""
+"""Enhanced FACP Message Schema for Distributed System"""
 import json
 import uuid
 from datetime import datetime
@@ -50,9 +48,8 @@ class MessageType(Enum):
 
 
 class FACPRequest:
-    """
-    Enhanced FACP Request Object - Implements FACP/1.1 specification for distributed system
-    """
+    """Enhanced FACP Request Object - Implements FACP/1.1 specification for distributed system"""
+
     def __init__(
         self,
         id: str,
@@ -114,9 +111,8 @@ class FACPRequest:
 
 
 class FACPResponse:
-    """
-    Enhanced FACP Response Object - Implements FACP/1.1 specification for distributed system
-    """
+    """Enhanced FACP Response Object - Implements FACP/1.1 specification for distributed system"""
+
     def __init__(
         self,
         id: str,
@@ -160,9 +156,7 @@ class FACPResponse:
 
 
 class FACPMessageValidator:
-    """
-    Validates FACP messages according to distributed system specification
-    """
+    """Validates FACP messages according to distributed system specification"""
 
     @staticmethod
     def validate_request(request: FACPRequest) -> tuple[bool, List[str]]:
@@ -264,4 +258,4 @@ class FACPMessageValidator:
                 return None, False, f"Payload exceeds maximum size of {max_size} bytes"
             return payload, True, ""
         except Exception as e:
-            return None, False, f"Failed to serialize payload: {str(e)}"
+            return None, False, f"Failed to serialize payload: {e!s}"

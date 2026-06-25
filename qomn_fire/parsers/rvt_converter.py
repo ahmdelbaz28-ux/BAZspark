@@ -93,7 +93,7 @@ class RvtConverter:
                 return Result(value=output_ifc_path)
             except Exception as e:
                 return Result(error=ConversionError(
-                    message=f"Fallback converter write failed: {str(e)}",
+                    message=f"Fallback converter write failed: {e!s}",
                     code_ref="IO Mock Converter",
                     remedy="Verify writing permissions."
                 ))
@@ -123,7 +123,7 @@ class RvtConverter:
             ))
         except subprocess.SubprocessError as e:
             return Result(error=ConversionError(
-                message=f"Revit CLI exporter crashed: {str(e)}",
+                message=f"Revit CLI exporter crashed: {e!s}",
                 code_ref="Revit Exporter CLI",
                 remedy="Open Revit project and export to IFC manually."
             ))

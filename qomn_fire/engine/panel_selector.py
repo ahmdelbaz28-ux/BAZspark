@@ -42,6 +42,7 @@ class SelectionEngine:
 
         Returns:
             Tuple of (battery_size_ah, derating_details_dict)
+
         """
         # V54 FIX F6: Per-device standby current = 0.0008 A (0.8 mA), NOT 0.001 A
         standby_load = (device_count * 0.0008) + panel.standby_current_amps

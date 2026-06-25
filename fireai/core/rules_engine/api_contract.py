@@ -1,4 +1,5 @@
-"""FireAI Type-Safe API Contract System.
+"""
+FireAI Type-Safe API Contract System.
 ======================================
 
 Inspired by tRPC's end-to-end type safety, this module provides:
@@ -49,7 +50,8 @@ class ContractSeverity(str, Enum):
 
 
 class APIContract(BaseModel, Generic[T]):
-    """Defines a typed API contract for an endpoint.
+    """
+    Defines a typed API contract for an endpoint.
 
     Each contract specifies:
     - The endpoint path and method
@@ -90,7 +92,8 @@ class ContractViolationDetail(BaseModel):
 
 
 class ContractValidator:
-    """Validates API responses against their declared contracts.
+    """
+    Validates API responses against their declared contracts.
 
     This replaces the manual validation in backend/contract.py with
     automatic Pydantic-based validation that generates TypeScript types
@@ -139,7 +142,8 @@ class ContractValidator:
         method: str,
         data: dict[str, Any],
     ) -> dict[str, Any]:
-        """Validate a response against its contract.
+        """
+        Validate a response against its contract.
 
         Returns the validated data. Raises on STRICT violations.
         Logs on LOG violations. Skips on DISABLED — EXCEPT for
@@ -238,7 +242,8 @@ class ContractValidator:
         data: dict[str, Any],
         request_model: type[BaseModel],
     ) -> dict[str, Any]:
-        """Validate a request body against its contract.
+        """
+        Validate a request body against its contract.
 
         For mutating endpoints (POST, PUT, PATCH, DELETE), request
         validation is mandatory in a safety-critical system to prevent
@@ -265,7 +270,8 @@ class ContractValidator:
         return list(self._violation_log)
 
     def get_openapi_components(self) -> dict[str, Any]:
-        """Generate OpenAPI schema components from registered contracts.
+        """
+        Generate OpenAPI schema components from registered contracts.
 
         This replaces manual schema definition and enables automatic
         TypeScript type generation for the frontend using:
@@ -310,7 +316,8 @@ class ContractValidator:
 def create_contract_aware_router(
     validator: ContractValidator,
 ) -> dict[str, Any]:
-    """Create router configuration that enforces contracts.
+    """
+    Create router configuration that enforces contracts.
 
     This replaces the manual contract.py approach with automatic
     validation using FastAPI's response_model parameter.
@@ -344,7 +351,8 @@ def generate_typescript_config(
     openapi_url: str = "http://localhost:8000/openapi.json",
     output_path: str = "src/types/api.d.ts",
 ) -> str:
-    """Generate a configuration for openapi-typescript.
+    """
+    Generate a configuration for openapi-typescript.
 
     This enables automatic TypeScript type generation from the
     FastAPI OpenAPI spec, giving us tRPC-like type safety

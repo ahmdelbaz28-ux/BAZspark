@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Generate and serve a review page for eval results.
+"""
+Generate and serve a review page for eval results.
 
 Reads the workspace directory, discovers runs (directories with outputs/),
 embeds all output data into a self-contained HTML page, and serves it via
@@ -161,7 +162,7 @@ def embed_file(path: Path) -> dict:
             "type": "text",
             "content": content,
         }
-    elif ext in IMAGE_EXTENSIONS:
+    if ext in IMAGE_EXTENSIONS:
         try:
             raw = path.read_bytes()
             b64 = base64.b64encode(raw).decode("ascii")
@@ -173,7 +174,7 @@ def embed_file(path: Path) -> dict:
             "mime": mime,
             "data_uri": f"data:{mime};base64,{b64}",
         }
-    elif ext == ".pdf":
+    if ext == ".pdf":
         try:
             raw = path.read_bytes()
             b64 = base64.b64encode(raw).decode("ascii")
@@ -184,7 +185,7 @@ def embed_file(path: Path) -> dict:
             "type": "pdf",
             "data_uri": f"data:{mime};base64,{b64}",
         }
-    elif ext == ".xlsx":
+    if ext == ".xlsx":
         try:
             raw = path.read_bytes()
             b64 = base64.b64encode(raw).decode("ascii")
@@ -195,23 +196,23 @@ def embed_file(path: Path) -> dict:
             "type": "xlsx",
             "data_b64": b64,
         }
-    else:
-        # Binary / unknown — base64 download link
-        try:
-            raw = path.read_bytes()
-            b64 = base64.b64encode(raw).decode("ascii")
-        except OSError:
-            return {"name": path.name, "type": "error", "content": "(Error reading file)"}
-        return {
-            "name": path.name,
-            "type": "binary",
-            "mime": mime,
-            "data_uri": f"data:{mime};base64,{b64}",
-        }
+    # Binary / unknown — base64 download link
+    try:
+        raw = path.read_bytes()
+        b64 = base64.b64encode(raw).decode("ascii")
+    except OSError:
+        return {"name": path.name, "type": "error", "content": "(Error reading file)"}
+    return {
+        "name": path.name,
+        "type": "binary",
+        "mime": mime,
+        "data_uri": f"data:{mime};base64,{b64}",
+    }
 
 
 def load_previous_iteration(workspace: Path) -> dict[str, dict]:
-    """Load previous iteration's feedback and outputs.
+    """
+    Load previous iteration's feedback and outputs.
 
     Returns a map of run_id -> {"feedback": str, "outputs": list[dict]}.
     """
@@ -306,7 +307,8 @@ def _kill_port(port: int) -> None:
         print("Note: lsof not found, cannot check if port is in use", file=sys.stderr)
 
 class ReviewHandler(BaseHTTPRequestHandler):
-    """Serves the review HTML and handles feedback saves.
+    """
+    Serves the review HTML and handles feedback saves.
 
     Regenerates the HTML on each page load so that refreshing the browser
     picks up new eval outputs without restarting the server.

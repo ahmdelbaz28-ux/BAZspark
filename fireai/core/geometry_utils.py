@@ -1,4 +1,5 @@
-"""geometry_utils.py — Computational Geometry for FireAI.
+"""
+geometry_utils.py — Computational Geometry for FireAI.
 =====================================================
 Point-in-polygon, polygon area, centroid, bounds, convex hull,
 grid generation, and polygon constructors.
@@ -34,7 +35,8 @@ def _ensure_closed(poly: Polygon) -> Polygon:
 
 
 def shoelace_area(poly: Polygon) -> float:
-    """Signed area via Shoelace formula.
+    """
+    Signed area via Shoelace formula.
     Positive -> CCW, Negative -> CW.
     """
     n = len(poly)
@@ -54,7 +56,8 @@ def polygon_area(poly: Polygon) -> float:
 
 
 def polygon_centroid(poly: Polygon) -> Point:
-    """True geometric centroid via Shoelace.
+    """
+    True geometric centroid via Shoelace.
     Falls back to arithmetic mean for degenerate polygons.
     """
     n = len(poly)
@@ -111,7 +114,8 @@ def point_in_polygon(
     include_boundary: bool = True,
     tolerance: float = 1e-9,
 ) -> bool:
-    """Ray casting algorithm with robust boundary handling.
+    """
+    Ray casting algorithm with robust boundary handling.
 
     Args:
         point:            (x, y) to test.
@@ -182,7 +186,8 @@ def points_in_polygon(
     poly: Polygon,
     include_boundary: bool = True,
 ) -> list[bool]:
-    """Test multiple points against the same polygon.
+    """
+    Test multiple points against the same polygon.
     Batch wrapper — not a NumPy-vectorised implementation.
     """
     closed = _ensure_closed(poly)
@@ -203,7 +208,8 @@ class ValidationResult:
 
 
 def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
-    """Validate polygon integrity: minimum vertices, no duplicates,
+    """
+    Validate polygon integrity: minimum vertices, no duplicates,
     no self-intersection, minimum area.
 
     V11 Enhancement (Consultant #5 Criticism #4 - partially accepted):
@@ -352,7 +358,8 @@ def ensure_ccw(poly: Polygon) -> Polygon:
 
 
 def rect_polygon(width: float, height: float, origin: Point = (0, 0)) -> Polygon:
-    """Create a rectangular polygon (CCW order).
+    """
+    Create a rectangular polygon (CCW order).
 
     Args:
         width:  Rectangle width (x-axis).
@@ -380,7 +387,8 @@ def rect_polygon(width: float, height: float, origin: Point = (0, 0)) -> Polygon
 
 
 def l_shape_polygon(width: float, height: float, cut_w: float, cut_h: float) -> Polygon:
-    """Create an L-shaped polygon (CCW order).
+    """
+    Create an L-shaped polygon (CCW order).
     Cutout is from the top-right corner.
 
     Args:
@@ -424,7 +432,8 @@ def grid_points_in_polygon(
     step: float = 0.5,
     margin: float = 0.0,
 ) -> list[Point]:
-    """Generate a regular grid of points inside the polygon, useful for
+    """
+    Generate a regular grid of points inside the polygon, useful for
     coverage verification and detector candidate generation.
 
     The grid starts at (min_x + margin, min_y + margin) and steps
@@ -480,7 +489,8 @@ def grid_points_in_polygon(
 
 
 def is_rectangular(poly: Polygon, tolerance: float = 0.05) -> bool:
-    """Check if a polygon is effectively rectangular (axis-aligned).
+    """
+    Check if a polygon is effectively rectangular (axis-aligned).
 
     A polygon is rectangular if:
       - It has exactly 4 vertices.
@@ -539,7 +549,8 @@ def is_rectangular(poly: Polygon, tolerance: float = 0.05) -> bool:
 
 
 def bounding_rect_dimensions(poly: Polygon) -> tuple[float, float, float, float]:
-    """Compute bounding rectangle dimensions and origin from a polygon.
+    """
+    Compute bounding rectangle dimensions and origin from a polygon.
 
     Returns the width, length (height), and origin (bottom-left corner)
     of the axis-aligned bounding rectangle that encloses the polygon.
@@ -569,7 +580,8 @@ def bounding_rect_dimensions(poly: Polygon) -> tuple[float, float, float, float]
 
 
 def convex_hull_2d(points: Sequence[Point]) -> Polygon:
-    """Compute the convex hull of a set of 2D points.
+    """
+    Compute the convex hull of a set of 2D points.
     Uses Andrew's Monotone Chain algorithm. O(n log n).
 
     Useful for:
@@ -635,7 +647,8 @@ class SanitizeResult:
 
 
 def sanitize_room_geometry(coords: list[Point], min_area: float = 1.0) -> SanitizeResult:
-    """Sanitize room geometry from Revit before processing.
+    """
+    Sanitize room geometry from Revit before processing.
 
     Revit models frequently contain geometry errors that, if passed
     directly to the coverage engine, produce incorrect results that

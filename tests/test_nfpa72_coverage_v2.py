@@ -91,11 +91,11 @@ class TestConstants:
 
     def test_min_wall_distance_m(self):
         """C2 FIX: 4 inches = 101.6mm per NFPA 72 §17.6.3.1.1."""
-        assert NFPA_MIN_WALL_DISTANCE_M == pytest.approx(0.1016, abs=0.0001)
+        assert pytest.approx(0.1016, abs=0.0001) == NFPA_MIN_WALL_DISTANCE_M
 
     def test_hvac_exclusion_radius_m(self):
         """C3 FIX: 3 ft = 0.9144m per NFPA 72 §17.7.4.1."""
-        assert NFPA_HVAC_EXCLUSION_RADIUS_M == pytest.approx(0.9144, abs=0.0001)
+        assert pytest.approx(0.9144, abs=0.0001) == NFPA_HVAC_EXCLUSION_RADIUS_M
 
 
 # ─────────────────────────────────────────────────────────────────────────────

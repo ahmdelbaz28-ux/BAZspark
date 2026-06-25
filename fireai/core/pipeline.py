@@ -1,4 +1,5 @@
-"""pipeline.py — FireAI Main Analysis Pipeline.
+"""
+pipeline.py — FireAI Main Analysis Pipeline.
 =============================================
 THE MISSING GLUE. Connects every module into one executable workflow.
 
@@ -101,7 +102,8 @@ class StageResult:
 
 @dataclass
 class PipelineResult:
-    """Complete result from the FireAI analysis pipeline.
+    """
+    Complete result from the FireAI analysis pipeline.
 
     All fields have safe defaults — never raises on access.
     Caller checks result.success and result.release_status before using values.
@@ -237,7 +239,8 @@ def _stage05_qomn_physics_guard(
     awg_gauge: str = "14",
     supply_voltage_v: float = 24.0,
 ) -> dict:
-    """Stage 0.5 — QOMN-FIRE deterministic physics guard + Layer 1/2/3/4 pipeline.
+    """
+    Stage 0.5 — QOMN-FIRE deterministic physics guard + Layer 1/2/3/4 pipeline.
 
     Runs BEFORE Stage 1 (nfpa_spacing) to:
       1. Apply Layer 0 physics guards (reject physically impossible inputs)
@@ -351,7 +354,8 @@ def _stage1_nfpa_spacing(
     detector_type: str,
     room_area_m2: float,
 ) -> dict:
-    """Compute NFPA 72 spacing and estimate detector count.
+    """
+    Compute NFPA 72 spacing and estimate detector count.
 
     M-3 FIX: Checks for error in estimate_detector_count result before
     using the values. Previously, if estimate["error"] was set (e.g.,
@@ -396,7 +400,8 @@ def _stage2_placement(
     validated_payload: dict,
     coverage_radius_m: float,
 ) -> dict:
-    """Run detector placement optimizer.
+    """
+    Run detector placement optimizer.
 
     Attempts to import DensityOptimizer from the existing codebase.
     Falls back to geometric estimate if optimizer is not available.
@@ -464,7 +469,8 @@ def _hex_grid_placement(
     polygon: list[tuple[float, float]],
     radius_m: float,
 ) -> list[tuple[float, float]]:
-    """Place detectors on a hexagonal grid inside polygon.
+    """
+    Place detectors on a hexagonal grid inside polygon.
 
     Conservative: uses 0.9×radius spacing (not full 1.0×) to ensure
     overlap at grid boundaries. Never violates 0.1m wall minimum.
@@ -512,7 +518,8 @@ def _hex_grid_placement(
 
 
 def _point_in_polygon(x: float, y: float, polygon: list[tuple[float, float]]) -> bool:
-    """Ray-casting point-in-polygon. O(n).
+    """
+    Ray-casting point-in-polygon. O(n).
 
     FIX: Removed the 1e-12 epsilon from the denominator. The old epsilon
     could cause incorrect ray-casting results at near-horizontal edges
@@ -539,7 +546,8 @@ def _estimate_coverage(
     radius_m: float,
     step: float = 0.0,
 ) -> float:
-    """Fast coverage estimate using grid sampling.
+    """
+    Fast coverage estimate using grid sampling.
     Returns percentage 0.0–100.0. Used when Shapely is not available.
 
     PERFORMANCE FIX (CRITICAL-1): Adaptive grid step based on polygon
@@ -661,7 +669,8 @@ def _stage35_rules_compliance(
     voltage_dict: dict | None = None,
     fault_isolation_dict: dict | None = None,
 ) -> dict:
-    """Run declarative NFPA 72 rules engine compliance check.
+    """
+    Run declarative NFPA 72 rules engine compliance check.
 
     This runs the Rete-inspired forward-chaining rules engine against
     the room data, producing structured compliance results with full
@@ -894,7 +903,8 @@ def analyze_room(
     cable_connections: list[dict[str, Any]] | None = None,
     building_model: Any | None = None,
 ) -> PipelineResult:
-    """Run the complete FireAI analysis pipeline for one room.
+    """
+    Run the complete FireAI analysis pipeline for one room.
 
     Args:
         payload:           Room input dict (room_polygon, ceiling_height_m, etc.)
@@ -1355,7 +1365,8 @@ def _stage7_cable_routing(
     positions: list[tuple[float, float]],
     room_z_m: float = 0.0,
 ) -> dict:
-    """Stage 7: Cable routing between detector positions.
+    """
+    Stage 7: Cable routing between detector positions.
 
     Uses CableRoutingEngine to route NAC/SLC circuits between
     detector positions. Returns routing schedule with voltage drop
@@ -1626,7 +1637,8 @@ def _stage8_conduit_fittings(
     positions: list,
     cable_routing_data: dict,
 ) -> dict:
-    """Stage 8: Conduit filling, bend verification, fitting placement.
+    """
+    Stage 8: Conduit filling, bend verification, fitting placement.
 
     Optional stage — does not block Stages 0-7 from completing.
     Reference: NEC 2022 Ch.9 Table 1; NEC 358.26; NFPA 72-2022 §12.2.2.
@@ -1746,7 +1758,8 @@ def _failed_result(
     t_total: float,
     room_id: str = "",
 ) -> PipelineResult:
-    """Build a failure result when a critical stage fails.
+    """
+    Build a failure result when a critical stage fails.
 
     V137 F-4 FIX: Added audit chain recording for FAILED analyses.
     The V132 P0 fix only recorded audits on SUCCESS paths (the normal
@@ -1821,7 +1834,8 @@ def analyze_building(
     max_workers: int = 4,
     **kwargs,
 ) -> dict[str, Any]:
-    """Analyze all rooms in a building concurrently.
+    """
+    Analyze all rooms in a building concurrently.
 
     Args:
         rooms:       List of room payload dicts.

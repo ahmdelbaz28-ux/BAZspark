@@ -1,4 +1,5 @@
-"""backend/routers/health.py — Health check endpoint.
+"""
+backend/routers/health.py — Health check endpoint.
 
 Provides system health information including:
   - API status
@@ -43,7 +44,8 @@ def set_core_modules_loaded(loaded: bool) -> None:
 
 @router.get("/health", dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
 async def health_check():
-    """Health check endpoint.
+    """
+    Health check endpoint.
 
     Returns honest system status including database connectivity.
     """
@@ -93,7 +95,8 @@ async def health_check():
 
 @router.get("/health/statistics", dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
 async def get_health_statistics():
-    """Health statistics endpoint.
+    """
+    Health statistics endpoint.
 
     Provides counts of projects, devices, and connections across all projects.
     Also includes UDM element counts when core modules are available.

@@ -1,12 +1,17 @@
-"""marine/lr_rules/fire_protection.py — Lloyd's Register Rules.
+"""
+marine/lr_rules/fire_protection.py — Lloyd's Register Rules.
 LR Rules Part 6: Fire Protection, Detection and Extinguishment.
-Supplements SOLAS with stricter response times and loop limits."""
+Supplements SOLAS with stricter response times and loop limits.
+"""
 from __future__ import annotations
+
 from marine.core.constants import (
-    LR_FIRE_MAIN_REDUNDANCY, LR_MAX_DETECTORS_PER_LOOP,
+    LR_FIRE_MAIN_REDUNDANCY,
     LR_MAX_DETECTOR_RESPONSE_S,
+    LR_MAX_DETECTORS_PER_LOOP,
 )
 from marine.core.types import ComplianceResult
+
 
 def validate_detector_response_time(actual_response_s: float) -> ComplianceResult:
     """LR: detector must respond within 30 s of fire start."""
@@ -38,6 +43,7 @@ def validate_fire_main_redundancy(pump_count: int) -> ComplianceResult:
     return result
 
 __all__ = [
-    "validate_detector_response_time", "validate_loop_capacity",
+    "validate_detector_response_time",
     "validate_fire_main_redundancy",
+    "validate_loop_capacity",
 ]

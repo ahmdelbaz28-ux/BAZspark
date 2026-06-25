@@ -1,4 +1,5 @@
-"""Gate 4: Regression Validation Tests.
+"""
+Gate 4: Regression Validation Tests.
 =====================================
 Validates numerical correctness of the 5 internal simulation examples.
 
@@ -48,7 +49,8 @@ from internal_simulation_engine import (  # noqa: E402
 
 
 class TestCableSizingRegression:
-    """Verify cable sizing matches skill example.
+    """
+    Verify cable sizing matches skill example.
 
     Skill example:
         Input: 200A load, 300ft, 480V, PF=0.85
@@ -111,7 +113,8 @@ class TestCableSizingRegression:
 
 
 class TestTransformerSizingRegression:
-    """Verify transformer sizing matches skill example.
+    """
+    Verify transformer sizing matches skill example.
 
     Skill example:
         Input: 800kW data center, 480V, PF=0.9
@@ -154,7 +157,8 @@ class TestTransformerSizingRegression:
 
 
 class TestProtectionCoordinationRegression:
-    """Verify 50/51 relay settings match skill example.
+    """
+    Verify 50/51 relay settings match skill example.
 
     Skill example:
         Input: 500HP motor, 4160V, PF=0.9, η=0.93
@@ -205,7 +209,8 @@ class TestProtectionCoordinationRegression:
 
 
 class TestArcFlashRegression:
-    """Verify arc flash calculation matches IEEE 1584-2018 formula.
+    """
+    Verify arc flash calculation matches IEEE 1584-2018 formula.
 
     Skill example:
         Input: 480V MCC, 50kA bolted fault, 0.1s clearing, 18in distance
@@ -276,7 +281,8 @@ class TestArcFlashRegression:
 
 
 class TestFLISRRegression:
-    """Verify FLISR simulation matches skill example.
+    """
+    Verify FLISR simulation matches skill example.
 
     Skill example:
         Input: 5000A fault, 13.8kV source, 0.4 Ω/mile line

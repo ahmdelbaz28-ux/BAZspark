@@ -1,4 +1,5 @@
-"""fireai/infrastructure/stream_processor.py — Stream Processor with
+"""
+fireai/infrastructure/stream_processor.py — Stream Processor with
 Transform/Filter/Sink Pipeline, Windowed Aggregations (1min, 5min, 1h),
 and Throttled Output (max 1 event per window per key).
 
@@ -63,7 +64,8 @@ class WindowSpec:
 
 
 class WindowedAggregation:
-    """Sliding window aggregation over event streams.
+    """
+    Sliding window aggregation over event streams.
 
     Supports count, sum, avg, min, max, and custom aggregators.
     Each window tracks events by a grouping key.
@@ -145,7 +147,8 @@ class WindowedAggregation:
 # ════════════════════════════════════════════════════════════════════════════
 
 class ThrottledOutput:
-    """Ensures at most 1 event per window per key is emitted.
+    """
+    Ensures at most 1 event per window per key is emitted.
 
     Used to prevent downstream systems from being overwhelmed by
     high-frequency events that all aggregate to the same key.
@@ -184,7 +187,8 @@ class ThrottledOutput:
 # ════════════════════════════════════════════════════════════════════════════
 
 class StreamProcessor:
-    """Configurable stream processing pipeline.
+    """
+    Configurable stream processing pipeline.
 
     Supports:
       - Transforms:     Map events (Event → Optional[Event])
@@ -213,7 +217,8 @@ class StreamProcessor:
     def add_transform(
         self, name: str, fn: Callable[[Event], Event | None]
     ) -> StreamProcessor:
-        """Add a transform function to the pipeline.
+        """
+        Add a transform function to the pipeline.
 
         The function receives an Event and returns either a transformed Event
         or None to drop the event from the pipeline.
@@ -223,7 +228,8 @@ class StreamProcessor:
         return self
 
     def add_filter(self, name: str, fn: Callable[[Event], bool]) -> StreamProcessor:
-        """Add a filter function to the pipeline.
+        """
+        Add a filter function to the pipeline.
 
         Events that return False are dropped from the pipeline.
         """
@@ -234,7 +240,8 @@ class StreamProcessor:
     def add_sink(
         self, name: str, fn: Callable[[Event], Awaitable[None]]
     ) -> StreamProcessor:
-        """Add an async sink function to the pipeline.
+        """
+        Add an async sink function to the pipeline.
 
         Each event that passes all transforms and filters is delivered
         to every sink. Sinks run concurrently.
@@ -244,7 +251,8 @@ class StreamProcessor:
         return self
 
     def add_aggregator(self, name: str, window_spec: WindowSpec) -> WindowedAggregation:
-        """Add a windowed aggregation to the pipeline.
+        """
+        Add a windowed aggregation to the pipeline.
 
         Returns the WindowedAggregation instance for extracting snapshots.
         """
@@ -259,7 +267,8 @@ class StreamProcessor:
     # ── Event processing ────────────────────────────────────────────────────
 
     async def process(self, event: Event) -> None:
-        """Run the full pipeline for a single event.
+        """
+        Run the full pipeline for a single event.
 
         1. Apply all transforms (in order, short-circuit on None).
         2. Apply all filters (short-circuit on False).
@@ -363,7 +372,8 @@ class StreamProcessor:
 
     @staticmethod
     def _extract_numeric_value(event: Event) -> float | None:
-        """Try to extract a numeric value from event data for aggregation.
+        """
+        Try to extract a numeric value from event data for aggregation.
 
         Looks for common numeric fields in the event data.
         """
@@ -406,7 +416,8 @@ class StreamProcessor:
         return results
 
     def should_throttle(self, key: str, window_name: str) -> bool:
-        """Check if an event should be throttled for the given key and window.
+        """
+        Check if an event should be throttled for the given key and window.
 
         Returns True if the event should be SUPPRESSED (already emitted
         in this window), False if it should be ALLOWED.

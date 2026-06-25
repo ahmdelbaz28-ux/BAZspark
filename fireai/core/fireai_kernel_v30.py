@@ -5,7 +5,8 @@
 # Safety-first: كل قرار يُدقَّق ثم يُدقَّق مرة أخرى
 # ═══════════════════════════════════════════════════════════════════════════════
 
-"""هذا الملف يحتوي على:
+"""
+هذا الملف يحتوي على:
 1. KernelCore         — نواة تنسيق صفرية مع event-driven architecture
 2. AtomicRoomStore    — تخزين lock-free للغرف (MPSC queue + mmap)
 3. VectorEngine       — محرك SIMD لحساب التغطية لملايين النقاط/ثانية
@@ -57,7 +58,8 @@ _SENTINEL = object()
 
 
 class NFPA72:
-    """NFPA 72-2022 constants — كل قيمة مُرتبطة بالمادة الأصلية.
+    """
+    NFPA 72-2022 constants — كل قيمة مُرتبطة بالمادة الأصلية.
     لا يُسمح بتغيير هذه القيم إلا بموجب مراجعة هندسية مكتوبة.
     """
 
@@ -131,7 +133,8 @@ class NFPA72:
 
 
 class VectorEngine:
-    """محرك تغطية مُعجَّل بـ NumPy SIMD.
+    """
+    محرك تغطية مُعجَّل بـ NumPy SIMD.
 
     الأداء المقيس:
       - 100K غرفة × 1600 نقطة × 4 كواشف: ~2.3 ثانية (كل الأنوية)
@@ -154,7 +157,8 @@ class VectorEngine:
         fine_step: float = NFPA72.GRID_FINE_M,
         coarse_step: float = NFPA72.GRID_COARSE_M,
     ) -> CoverageResult:
-        """Hierarchical two-pass coverage verification.
+        """
+        Hierarchical two-pass coverage verification.
 
         Pass 1 (coarse): 1m grid — identify suspect cells.
         Pass 2 (fine):   0.25m grid — verify suspect cells only.
@@ -232,7 +236,8 @@ class VectorEngine:
         rooms: list[tuple[NDArray, NDArray, float]],  # [(polygon, detectors, radius)]
         workers: int = 0,
     ) -> list[CoverageResult]:
-        """Vectorised batch verification across N rooms.
+        """
+        Vectorised batch verification across N rooms.
         workers=0 → use all logical CPUs.
         """
         n_workers = workers or os.cpu_count() or 1
@@ -251,7 +256,8 @@ class VectorEngine:
         detectors_xy: NDArray[np.float64],  # [D,2]
         radius: float,
     ) -> NDArray[np.bool_]:
-        """Returns bool mask [G] — True where point is within radius of any detector.
+        """
+        Returns bool mask [G] — True where point is within radius of any detector.
         Chunked to stay within L3 cache.
         """
         G = grid_xy.shape[0]
@@ -288,7 +294,8 @@ class VectorEngine:
         pts: NDArray[np.float64],  # [N,2]
         poly: NDArray[np.float64],  # [V,2] (closed polygon vertices)
     ) -> NDArray[np.bool_]:
-        """Vectorized even-odd ray-casting.
+        """
+        Vectorized even-odd ray-casting.
         Handles degenerate edges gracefully (horizontal edge bypass).
         """
         x, y = pts[:, 0], pts[:, 1]
@@ -332,7 +339,8 @@ class CoverageResult:
 
 
 class AtomicRoomStore:
-    """تخزين الغرف بدون قفل (lock-free MPSC).
+    """
+    تخزين الغرف بدون قفل (lock-free MPSC).
 
     الأداء:
       - Write: ~50 ns (deque append, no lock)
@@ -718,7 +726,8 @@ class AdaptivePipeline:
 
 
 class SafetyLedger:
-    """سجل سلامة لا يُمحى — كل قرار يُسجَّل ويُختم بـ SHA-256.
+    """
+    سجل سلامة لا يُمحى — كل قرار يُسجَّل ويُختم بـ SHA-256.
     NFPA 72 §10.6.1 compliance: audit trail متطلب.
     """
 
@@ -847,7 +856,8 @@ class LedgerEntry:
 
 
 class ConcurrentSolver:
-    """يُشغّل MIP optimization على عدة أنوية بالتوازي.
+    """
+    يُشغّل MIP optimization على عدة أنوية بالتوازي.
     Safety: إذا فشل MIP → نرجع للـ greedy conservative fallback.
     """
 

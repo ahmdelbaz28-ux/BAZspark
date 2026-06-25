@@ -32,6 +32,7 @@ The script supports two directory layouts:
             │   └── run-1/grading.json
             └── without_skill/
                 └── run-1/grading.json
+
 """
 
 import argparse
@@ -225,9 +226,7 @@ def aggregate_results(results: dict) -> dict:
 
 
 def generate_benchmark(benchmark_dir: Path, skill_name: str = "", skill_path: str = "") -> dict:
-    """
-    Generate complete benchmark.json from run results.
-    """
+    """Generate complete benchmark.json from run results."""
     results = load_run_results(benchmark_dir)
     run_summary = aggregate_results(results)
 
@@ -260,7 +259,7 @@ def generate_benchmark(benchmark_dir: Path, skill_name: str = "", skill_path: st
         for r in config
     })
 
-    benchmark = {
+    return {
         "metadata": {
             "skill_name": skill_name or "<skill-name>",
             "skill_path": skill_path or "<path/to/skill>",
@@ -275,7 +274,6 @@ def generate_benchmark(benchmark_dir: Path, skill_name: str = "", skill_path: st
         "notes": []  # To be filled by analyzer
     }
 
-    return benchmark
 
 
 def generate_markdown(benchmark: dict) -> str:

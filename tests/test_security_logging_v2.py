@@ -102,7 +102,8 @@ class TestMaskSensitive:
         assert result == text
 
     def test_sha256_hash_not_masked(self):
-        """V105 FIX: Bare hex strings (SHA-256 hashes) must NOT be masked.
+        """
+        V105 FIX: Bare hex strings (SHA-256 hashes) must NOT be masked.
 
         The previous hex-regex pattern corrupted audit chain hashes.
         """

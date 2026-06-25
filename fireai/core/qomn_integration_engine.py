@@ -1,4 +1,5 @@
-"""QOMN INTEGRATED ENGINE: CABLE ROUTING & HATCH PLACEMENT SUITE.
+"""
+QOMN INTEGRATED ENGINE: CABLE ROUTING & HATCH PLACEMENT SUITE.
 =============================================================
 LIFE-SAFETY CRITICAL: This module represents a complete, deterministic,
 safety-critical integration of the QOMN-HATCH (Hatch Placement Engine)
@@ -51,7 +52,8 @@ class HatchPlacementError(Exception):
 
 
 class NECViolationError(CableRoutingError):
-    """Raised when conduit bends exceed strict regulatory thresholds.
+    """
+    Raised when conduit bends exceed strict regulatory thresholds.
     Reference: NEC 2023 Article 358.26 (EMT) & Article 344.26 (RMC).
     """
 
@@ -64,7 +66,8 @@ class NECViolationError(CableRoutingError):
 
 @dataclass(frozen=True, slots=True)
 class Point3D:
-    """An immutable, hashable, deterministic 3D Coordinate Point structure.
+    """
+    An immutable, hashable, deterministic 3D Coordinate Point structure.
     Coordinates are rounded to 4 decimal places to prevent floating-point
     drifts across different operating systems and CPU architectures.
     """
@@ -93,7 +96,8 @@ class Point3D:
 # =====================================================================
 
 class ConduitType(Enum):
-    """NEC Chapter 9 Table 2 compliant conduit configurations.
+    """
+    NEC Chapter 9 Table 2 compliant conduit configurations.
     Enforces minimum bend radii according to material stiffness.
     """
 
@@ -112,7 +116,8 @@ class ConduitType(Enum):
 
 
 class HatchPattern(Enum):
-    """Cross-platform unified hatch pattern representations.
+    """
+    Cross-platform unified hatch pattern representations.
     Ensures absolute parity across AutoCAD, Revit, and IFC layers.
     """
 
@@ -126,7 +131,8 @@ class HatchPattern(Enum):
 # =====================================================================
 
 class GridMap3D:
-    """Represents a discretized 3D grid space for deterministic MEP routing.
+    """
+    Represents a discretized 3D grid space for deterministic MEP routing.
     Step size defaults to 0.5 meters to balance resolution with spatial memory.
     """
 
@@ -165,7 +171,8 @@ class GridMap3D:
 
 
 class CableRouter:
-    """Deterministic Orthogonal 3D Pathfinding Engine.
+    """
+    Deterministic Orthogonal 3D Pathfinding Engine.
     Employs the A* search algorithm using Manhattan distance heuristics.
 
     Reference:
@@ -180,7 +187,8 @@ class CableRouter:
 
     @classmethod
     def route(cls, grid_map: GridMap3D, start: Point3D, end: Point3D, conduit: ConduitType) -> list[Point3D]:
-        """Routes conduit orthogonal paths from Start to End point.
+        """
+        Routes conduit orthogonal paths from Start to End point.
         Checks for bend compliance according to NEC code standards.
 
         Args:
@@ -267,7 +275,8 @@ class CableRouter:
 
     @staticmethod
     def calculate_total_bends_degrees(path: list[Point3D]) -> float:
-        """Calculates total bend angles in degrees along the orthogonal segment run.
+        """
+        Calculates total bend angles in degrees along the orthogonal segment run.
         Changes in grid vectors represent discrete 90-degree bend sweeps.
 
         Reference: NEC Article 358.26 — maximum 360 degrees total bends
@@ -317,7 +326,8 @@ class CableRouter:
 # =====================================================================
 
 class HatchPlacementEngine:
-    """Generates deterministic boundary vectors for physical zone plans.
+    """
+    Generates deterministic boundary vectors for physical zone plans.
     Integrates directly with ezdxf to output robust architectural drawings.
     """
 
@@ -325,7 +335,8 @@ class HatchPlacementEngine:
     def generate_smoke_detector_boundary(
         center: Point3D, radius: float, num_sides: int = 16
     ) -> list[tuple[float, float]]:
-        """Constructs a deterministic multi-vertex circle polygon on the XY plane.
+        """
+        Constructs a deterministic multi-vertex circle polygon on the XY plane.
 
         Reference: NFPA 72 Section 17.7.3.2.3.1: Spacing limitation for
         standard smoke coverage. Default radius 9.144m (30ft).
@@ -360,7 +371,8 @@ class HatchPlacementEngine:
     def generate_conduit_corridors(
         path: list[Point3D], width: float = 0.1
     ) -> list[list[tuple[float, float]]]:
-        """Creates thin rectangular bounding polygons wrapping around orthogonal
+        """
+        Creates thin rectangular bounding polygons wrapping around orthogonal
         segments. Ensures perfect, non-overlapping hatch boundary rendering
         in CAD viewports.
 
@@ -412,7 +424,8 @@ class HatchPlacementEngine:
 # =====================================================================
 
 class CableHatchIntegrator:
-    """Bridges QOMN-CABLE and QOMN-HATCH engines dynamically.
+    """
+    Bridges QOMN-CABLE and QOMN-HATCH engines dynamically.
     Features geometric conflict resolution, warning logs, and unified output.
     """
 
@@ -424,7 +437,8 @@ class CableHatchIntegrator:
     def add_smoke_detector(
         self, detector_id: str, location: Point3D, radius: float = 9.144
     ) -> None:
-        """Adds a smoke detector to the map with a standard radius.
+        """
+        Adds a smoke detector to the map with a standard radius.
         Default: 30ft / 9.144m per NFPA 72 Section 17.7.3.2.3.1.
 
         Args:
@@ -453,7 +467,8 @@ class CableHatchIntegrator:
         conduit: ConduitType,
         hatch_scale: float,
     ) -> dict[str, Any]:
-        """Resolves routing and generates hatching metadata while checking
+        """
+        Resolves routing and generates hatching metadata while checking
         all geometric conflicts.
 
         Args:
@@ -547,7 +562,8 @@ class CableHatchIntegrator:
     def _segment_intersects_circle_2d(
         p1: Point3D, p2: Point3D, center: Point3D, radius: float
     ) -> bool:
-        """Determines if segment p1->p2 in 2D (XY projection) intersects
+        """
+        Determines if segment p1->p2 in 2D (XY projection) intersects
         or touches target circle.
         """
         dx, dy = p2.x - p1.x, p2.y - p1.y
@@ -568,7 +584,8 @@ class CableHatchIntegrator:
         poly1: list[tuple[float, float]],
         poly2: list[tuple[float, float]]
     ) -> bool:
-        """Robust AABB intersection check for spatial poly overlaps.
+        """
+        Robust AABB intersection check for spatial poly overlaps.
         Guarantees deterministic, fast collision detection.
         """
         min_x1 = min(p[0] for p in poly1)
@@ -586,7 +603,8 @@ class CableHatchIntegrator:
         )
 
     def export_revit_json(self) -> str:
-        """Generates canonical, beautifully structured Revit/IFC integration JSON.
+        """
+        Generates canonical, beautifully structured Revit/IFC integration JSON.
         Completely deterministic sort ordering prevents dynamic git merge conflicts.
         """
         revit_output: dict[str, Any] = {
@@ -637,7 +655,8 @@ class CableHatchIntegrator:
 # =====================================================================
 
 def compute_engine_signature(integrator: CableHatchIntegrator) -> str:
-    """Generates a cryptographic SHA-256 hash representation of the geometry data.
+    """
+    Generates a cryptographic SHA-256 hash representation of the geometry data.
     Ensures that identical inputs produce identical hash outputs across platforms.
 
     Args:

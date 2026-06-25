@@ -1,4 +1,5 @@
-"""core/tests/test_utilities.py — Comprehensive unit tests for core/models.py.
+"""
+core/tests/test_utilities.py — Comprehensive unit tests for core/models.py.
 
 Tests the core utility and model classes covering:
 - Point3D: creation, validation, immutability

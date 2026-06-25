@@ -1,4 +1,5 @@
-"""FireAI Service Contracts — Versioned JSON Schemas.
+"""
+FireAI Service Contracts — Versioned JSON Schemas.
 ==================================================
 Defines the data contracts between services.
 
@@ -25,7 +26,8 @@ CONTRACT_VERSION = "v1"
 
 
 class CeilingType(str, Enum):
-    """NFPA 72 ceiling classifications.
+    """
+    NFPA 72 ceiling classifications.
 
     CONSOLIDATED: This enum is the canonical source. nfpa72_models.py
     CeilingType re-exports from here for backward compatibility.
@@ -56,7 +58,8 @@ class ConfidenceLevel(str, Enum):
 
 
 class DetectorType(str, Enum):
-    """NFPA 72 detector types.
+    """
+    NFPA 72 detector types.
 
     CONSOLIDATED: Includes all types from both contracts.py and
     nfpa72_models.py to prevent enum drift between modules.
@@ -84,7 +87,8 @@ class DetectorType(str, Enum):
 
 @dataclass(frozen=True)
 class ParsedDrawingContract:
-    """Contract: Parser → Analyzer.
+    """
+    Contract: Parser → Analyzer.
 
     The parser service produces this from DXF/DWG/PDF/IFC files.
     The analyzer service consumes this as input.
@@ -119,7 +123,8 @@ class CeilingSpecContract:
 
 @dataclass(frozen=True)
 class RoomSpecificationContract:
-    """Contract: Analyzer Input.
+    """
+    Contract: Analyzer Input.
 
     The analyzer service receives this specification
     and produces a DetectorPlacementContract.
@@ -148,7 +153,8 @@ class RoomSpecificationContract:
 
 @dataclass(frozen=True)
 class DetectorPlacementContract:
-    """Contract: Analyzer → Compliance.
+    """
+    Contract: Analyzer → Compliance.
 
     The analyzer produces detector positions.
     The compliance service verifies they meet NFPA 72.
@@ -177,7 +183,8 @@ class DetectorPlacementContract:
 
 @dataclass(frozen=True)
 class ComplianceReportContract:
-    """Contract: Compliance → Reporting.
+    """
+    Contract: Compliance → Reporting.
 
     The compliance service verifies detector placements
     and produces a compliance report.
@@ -206,7 +213,8 @@ class ComplianceReportContract:
 
 @dataclass(frozen=True)
 class AuditEventContract:
-    """Contract: Any Service → Audit.
+    """
+    Contract: Any Service → Audit.
 
     Every significant action across all services
     must emit an audit event.
@@ -232,7 +240,8 @@ class AuditEventContract:
 
 
 class PathwaySurvivabilityLevel(str, Enum):
-    """NFPA 72-2022 §12.4 — Pathway Survivability Levels.
+    """
+    NFPA 72-2022 §12.4 — Pathway Survivability Levels.
 
     Determines the minimum fire-resistance rating for fire alarm wiring
     based on building occupancy and evacuation strategy.  Lives depend
@@ -254,7 +263,8 @@ class PathwaySurvivabilityLevel(str, Enum):
 
 
 class CableType(str, Enum):
-    """NEC Article 760 — Fire alarm cable ratings.
+    """
+    NEC Article 760 — Fire alarm cable ratings.
 
     FPL:  Fire Power Limited — general use, no fire rating.
     FPLR: Fire Power Limited Riser — vertical shafts between floors.
@@ -269,7 +279,8 @@ class CableType(str, Enum):
 
 
 class OccupancyCategory(str, Enum):
-    """Building occupancy classification for pathway survivability determination.
+    """
+    Building occupancy classification for pathway survivability determination.
 
     Derived from NFPA 101 Life Safety Code and IBC occupancy groups.
     Determines which PathwaySurvivabilityLevel is required.
@@ -288,7 +299,8 @@ class OccupancyCategory(str, Enum):
 
 
 class FeatureFlag(str, Enum):
-    """Feature flags for toggling functionality per service.
+    """
+    Feature flags for toggling functionality per service.
 
     Read from config service (or environment variables in monolithic mode).
     """
@@ -324,7 +336,8 @@ DEFAULT_FEATURE_FLAGS: dict[str, bool] = {
 
 
 def get_feature_flags() -> dict[str, bool]:
-    """Get current feature flag states.
+    """
+    Get current feature flag states.
 
     Reads from FIREAI_FEATURE_FLAGS env var (JSON) or uses defaults.
     Example: FIREAI_FEATURE_FLAGS='{"SMOKE_SIMULATION": true}'
@@ -394,7 +407,8 @@ class ContractViolation(ValueError):
 
 
 def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:
-    """Validate a room input payload before it enters the calculation pipeline.
+    """
+    Validate a room input payload before it enters the calculation pipeline.
 
     Checks:
       1. No forbidden derived fields are present (prevents data injection).
@@ -557,7 +571,8 @@ FORBIDDEN_LOOP_DERIVED_FIELDS: tuple = (
 
 
 def validate_loop_input(payload: dict[str, Any]) -> dict[str, Any]:
-    """Validate an SLC loop input payload before design.
+    """
+    Validate an SLC loop input payload before design.
 
     Checks:
       1. No forbidden derived fields (voltage_drop_v, is_compliant).

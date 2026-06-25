@@ -1,6 +1,4 @@
-"""
-FACP IMMUTABLE DATASHEETS
-"""
+"""FACP IMMUTABLE DATASHEETS"""
 
 from qomn_fire.core.types import FireAlarmPanel
 

@@ -1,4 +1,5 @@
-"""test_generative_layout_agent.py — Tests for Generative Design Engine.
+"""
+test_generative_layout_agent.py — Tests for Generative Design Engine.
 
 MISSION TASK 2 — Validates the GenerativeLayoutAgent that produces
 3 variants (Cost-Minimized, Standard-Compliant, Safety-Maximized)
@@ -19,15 +20,12 @@ from fireai.core.spatial_engine.generative_layout_agent import (
     COMPLIANCE_WEIGHT,
     COST_WEIGHT,
     COVERAGE_WEIGHT,
-    GenerativeLayoutAgent,
-    GenerativeResult,
     HIGH_HAZARD_OCCUPANCIES,
-    LayoutVariant,
     REDUNDANCY_WEIGHT,
     SAFETY_MAXIMIZED_SPACING_FACTOR,
-    VariantResult,
+    GenerativeLayoutAgent,
+    LayoutVariant,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

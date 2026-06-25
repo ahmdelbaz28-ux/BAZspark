@@ -1,4 +1,5 @@
-"""ConstraintSolver — Area-Based Greedy Fallback Coverage Solver.
+"""
+ConstraintSolver — Area-Based Greedy Fallback Coverage Solver.
 =============================================================
 When DensityOptimizer fails to achieve 99.9% coverage (typically for
 non-rectangular rooms — L-shape, U-shape, rooms with cutouts), this
@@ -80,7 +81,8 @@ CIRCLE_SEGMENTS = 16
 
 @dataclass
 class ConstraintSolverResult:
-    """Result from ConstraintSolver greedy area-based placement.
+    """
+    Result from ConstraintSolver greedy area-based placement.
 
     Attributes:
         coverage_percent: Area coverage percentage (with 2% safety factor).
@@ -105,7 +107,8 @@ class ConstraintSolverResult:
 
 
 class ConstraintSolver:
-    """Area-based greedy fallback coverage solver for non-rectangular rooms.
+    """
+    Area-based greedy fallback coverage solver for non-rectangular rooms.
 
     When DensityOptimizer fails to achieve NFPA 72 coverage for a room
     (typically non-rectangular geometries), this solver provides a fallback
@@ -135,7 +138,8 @@ class ConstraintSolver:
         coverage_safety_factor: float = COVERAGE_SAFETY_FACTOR,
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
     ) -> None:
-        """Initialize ConstraintSolver.
+        """
+        Initialize ConstraintSolver.
 
         Args:
             room_polygon: Shapely Polygon defining the room boundary.
@@ -196,7 +200,8 @@ class ConstraintSolver:
         self.room_area = room_polygon.area
 
     def find_optimal_placement(self, max_devices: int = 50) -> ConstraintSolverResult:
-        """Find detector placement using greedy area-based set cover.
+        """
+        Find detector placement using greedy area-based set cover.
 
         Iteratively places detectors at positions that maximize uncovered
         area gain, until coverage >= 99.9% or max_devices is reached.
@@ -364,7 +369,8 @@ class ConstraintSolver:
         )
 
     def _generate_candidates(self) -> list[tuple[float, float]]:
-        """Generate candidate placement positions on a grid within room bounds.
+        """
+        Generate candidate placement positions on a grid within room bounds.
 
         The grid step is adaptive based on room dimensions:
           - Larger rooms use coarser grids (faster)
@@ -405,7 +411,8 @@ class ConstraintSolver:
         return candidates
 
     def _emergency_candidates(self) -> list[tuple[float, float]]:
-        """Generate emergency candidate positions when grid fails.
+        """
+        Generate emergency candidate positions when grid fails.
 
         Uses polygon centroid and boundary sample points as last resort.
 

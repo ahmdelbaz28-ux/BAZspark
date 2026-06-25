@@ -100,7 +100,8 @@ class TestCircuitDeviceEdgeCases:
             d.device_id = "D2"
 
     def test_negative_coordinates_allowed_in_constructor(self):
-        """Coordinates can be negative (valid building coordinates).
+        """
+        Coordinates can be negative (valid building coordinates).
         NaN/Inf rejection happens in add_device validation.
         """
         d = CircuitDevice("D1", "detector", -5.0, -10.0, -3.0)
@@ -363,7 +364,8 @@ class TestValidateComprehensive:
         assert result["compliant"] is False
 
     def test_panel_at_origin_warning_v96(self):
-        """V96 FIX: Panel at (0,0,0) with devices → warning.
+        """
+        V96 FIX: Panel at (0,0,0) with devices → warning.
 
         A panel at origin likely means position was never set, causing
         catastrophic voltage drop errors.

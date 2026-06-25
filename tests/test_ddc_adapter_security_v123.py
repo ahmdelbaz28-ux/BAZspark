@@ -45,9 +45,11 @@ def _make_temp(suffix: str) -> str:
 
 
 class TestV123BackwardCompatibility:
-    """Pre-V123, ddc_adapter raised ValueError for path-traversal and
+    """
+    Pre-V123, ddc_adapter raised ValueError for path-traversal and
     extension violations. V123 preserves that contract by mapping the
-    new UnsafePathError → ValueError at the convert() boundary."""
+    new UnsafePathError → ValueError at the convert() boundary.
+    """
 
     def test_path_traversal_still_raises_ValueError(self, monkeypatch):
         """File outside FIREAI_ALLOWED_UPLOAD_DIRS → ValueError (not UnsafePathError)."""
@@ -96,12 +98,14 @@ class TestV123BackwardCompatibility:
 
 
 class TestV123NewDefenses:
-    """V123 inherits two new defenses from the V122 shared helper:
+    """
+    V123 inherits two new defenses from the V122 shared helper:
     null byte rejection and leading-dash argument-injection guard.
-    Pre-V123, ddc_adapter did NOT check these."""
+    Pre-V123, ddc_adapter did NOT check these.
+    """
 
     def test_null_byte_rejected(self):
-        """Path with \\x00 → ValueError (V123: previously not checked)."""
+        r"""Path with \\x00 → ValueError (V123: previously not checked)."""
         adapter = DDCAdapter()
         with pytest.raises(ValueError, match="null byte"):
             adapter.convert("/tmp/foo\x00.rvt")
@@ -124,10 +128,12 @@ class TestV123NewDefenses:
 
 
 class TestV123SingleSourceOfTruth:
-    """Per agent.md Rule #23: there must be exactly ONE source of truth
+    """
+    Per agent.md Rule #23: there must be exactly ONE source of truth
     for path-security validation. V123 made ddc_adapter delegate to the
     shared helper. We assert that programmatically: no other validation
-    code paths exist in ddc_adapter."""
+    code paths exist in ddc_adapter.
+    """
 
     def test_ddc_adapter_imports_shared_helper(self):
         """ddc_adapter MUST import from parsers._path_security."""
@@ -143,9 +149,11 @@ class TestV123SingleSourceOfTruth:
         )
 
     def test_ddc_adapter_no_inline_allowed_bases(self):
-        """V123: the inline 'allowed_bases' loop was removed. If it
+        """
+        V123: the inline 'allowed_bases' loop was removed. If it
         reappears, this test fails — guarding against re-introduction
-        of duplicate validation logic."""
+        of duplicate validation logic.
+        """
         src = (Path(_PROJECT_ROOT) / "parsers" / "ddc_adapter.py").read_text(
             encoding="utf-8"
         )
@@ -169,15 +177,19 @@ class TestV123SingleSourceOfTruth:
 
 
 class TestV123EndToEnd:
-    """End-to-end: a valid path reaches the post-validation code
+    """
+    End-to-end: a valid path reaches the post-validation code
     (which then fails at the DDC binary lookup since the converter
     isn't installed in test env — but we verify the path-validation
-    stage passes)."""
+    stage passes).
+    """
 
     def test_valid_extension_passes_validation(self):
-        """A valid .rvt file in /tmp passes validation. The convert()
+        """
+        A valid .rvt file in /tmp passes validation. The convert()
         call will later fail at the DDC binary check (not installed
-        in tests) — but that proves validation passed."""
+        in tests) — but that proves validation passed.
+        """
         path = _make_temp(suffix=".rvt")
         try:
             adapter = DDCAdapter()

@@ -1,17 +1,14 @@
-"""
-Agent Manager for L2 Orchestrator in Distributed FACP System
-"""
-from typing import Dict, Any, List, Optional, Type
-from abc import ABC, abstractmethod
+"""Agent Manager for L2 Orchestrator in Distributed FACP System"""
+import threading
 import time
 import uuid
-import threading
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Type
 
 
 class BaseAgent(ABC):
-    """
-    Base class for all agents in the distributed system
-    """
+    """Base class for all agents in the distributed system"""
+
     def __init__(self, agent_id: str, name: str, description: str = ""):
         self.id = agent_id
         self.name = name
@@ -27,27 +24,19 @@ class BaseAgent(ABC):
 
     @abstractmethod
     def execute_task(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute a task with this agent
-        """
+        """Execute a task with this agent"""
         pass
 
     def can_handle_method(self, method: str) -> bool:
-        """
-        Check if this agent can handle a specific method
-        """
+        """Check if this agent can handle a specific method"""
         return method in self.capabilities
 
     def update_config(self, new_config: Dict[str, Any]):
-        """
-        Update agent configuration
-        """
+        """Update agent configuration"""
         self.config.update(new_config)
 
     def get_status(self) -> Dict[str, Any]:
-        """
-        Get agent status information
-        """
+        """Get agent status information"""
         return {
             "id": self.id,
             "name": self.name,
@@ -64,18 +53,15 @@ class BaseAgent(ABC):
 
 
 class PlannerAgent(BaseAgent):
-    """
-    Agent for planning tasks
-    """
+    """Agent for planning tasks"""
+
     def __init__(self):
         super().__init__("planner_agent", "Planner Agent", "Handles planning and scheduling tasks")
         self.capabilities = ["plan.*", "schedule.*", "task.arrange", "resource.plan"]
         self.planning_strategies = ["greedy", "optimal", "heuristic"]
 
     def execute_task(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute planning task
-        """
+        """Execute planning task"""
         self.last_executed = time.time()
         self.execution_count += 1
         self.utilization = min(100, self.utilization + 10)  # Simple utilization tracking
@@ -104,7 +90,7 @@ class PlannerAgent(BaseAgent):
                 "method": method
             }
 
-        elif method.startswith("schedule."):
+        if method.startswith("schedule."):
             # Optimize a schedule
             schedule_params = params.get("payload", {}).get("schedule", {})
 
@@ -121,26 +107,22 @@ class PlannerAgent(BaseAgent):
                 "method": method
             }
 
-        else:
-            return {
-                "status": "error",
-                "error": f"Planner agent cannot handle method: {method}",
-                "agent_id": self.id
-            }
+        return {
+            "status": "error",
+            "error": f"Planner agent cannot handle method: {method}",
+            "agent_id": self.id
+        }
 
 
 class ExecutorAgent(BaseAgent):
-    """
-    Agent for executing tasks
-    """
+    """Agent for executing tasks"""
+
     def __init__(self):
         super().__init__("executor_agent", "Executor Agent", "Handles task execution")
         self.capabilities = ["execute.*", "task.run", "process.start", "action.perform"]
 
     def execute_task(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute a task
-        """
+        """Execute a task"""
         self.last_executed = time.time()
         self.execution_count += 1
         self.utilization = min(100, self.utilization + 15)  # Higher utilization for execution
@@ -170,26 +152,22 @@ class ExecutorAgent(BaseAgent):
                 "method": method
             }
 
-        else:
-            return {
-                "status": "error",
-                "error": f"Executor agent cannot handle method: {method}",
-                "agent_id": self.id
-            }
+        return {
+            "status": "error",
+            "error": f"Executor agent cannot handle method: {method}",
+            "agent_id": self.id
+        }
 
 
 class ValidatorAgent(BaseAgent):
-    """
-    Agent for validation tasks
-    """
+    """Agent for validation tasks"""
+
     def __init__(self):
         super().__init__("validator_agent", "Validator Agent", "Handles validation and verification tasks")
         self.capabilities = ["validate.*", "check.*", "verify.*", "confirm.*"]
 
     def execute_task(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute validation task
-        """
+        """Execute validation task"""
         self.last_executed = time.time()
         self.execution_count += 1
         self.utilization = min(100, self.utilization + 5)  # Lower utilization for validation
@@ -199,7 +177,7 @@ class ValidatorAgent(BaseAgent):
 
         if method.startswith("validate.") or method.startswith("check."):
             # Validate the provided data
-            validation_target = params.get("payload", {}).get("target", {})
+            params.get("payload", {}).get("target", {})
             validation_type = params.get("payload", {}).get("type", "generic")
 
             # Perform validation (simulated)
@@ -219,26 +197,22 @@ class ValidatorAgent(BaseAgent):
                 "method": method
             }
 
-        else:
-            return {
-                "status": "error",
-                "error": f"Validator agent cannot handle method: {method}",
-                "agent_id": self.id
-            }
+        return {
+            "status": "error",
+            "error": f"Validator agent cannot handle method: {method}",
+            "agent_id": self.id
+        }
 
 
 class OptimizerAgent(BaseAgent):
-    """
-    Agent for optimization tasks
-    """
+    """Agent for optimization tasks"""
+
     def __init__(self):
         super().__init__("optimizer_agent", "Optimizer Agent", "Handles optimization tasks")
         self.capabilities = ["optimize.*", "tune.*", "improve.*", "enhance.*"]
 
     def execute_task(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute optimization task
-        """
+        """Execute optimization task"""
         self.last_executed = time.time()
         self.execution_count += 1
         self.utilization = min(100, self.utilization + 12)  # Moderate utilization for optimization
@@ -249,7 +223,7 @@ class OptimizerAgent(BaseAgent):
         if method.startswith("optimize."):
             # Optimize performance parameters
             target = params.get("payload", {}).get("target", {})
-            optimization_goals = params.get("payload", {}).get("goals", [])
+            params.get("payload", {}).get("goals", [])
 
             result = {
                 "optimization_applied": True,
@@ -269,18 +243,16 @@ class OptimizerAgent(BaseAgent):
                 "method": method
             }
 
-        else:
-            return {
-                "status": "error",
-                "error": f"Optimizer agent cannot handle method: {method}",
-                "agent_id": self.id
-            }
+        return {
+            "status": "error",
+            "error": f"Optimizer agent cannot handle method: {method}",
+            "agent_id": self.id
+        }
 
 
 class AgentManager:
-    """
-    Manager for all agents in the orchestrator
-    """
+    """Manager for all agents in the orchestrator"""
+
     def __init__(self):
         self.agents: Dict[str, BaseAgent] = {}
         self.agent_types: Dict[str, Type[BaseAgent]] = {}
@@ -291,24 +263,18 @@ class AgentManager:
         self._register_default_agents()
 
     def _register_default_agents(self):
-        """
-        Register default agent types
-        """
+        """Register default agent types"""
         self.register_agent_type("planner", PlannerAgent)
         self.register_agent_type("executor", ExecutorAgent)
         self.register_agent_type("validator", ValidatorAgent)
         self.register_agent_type("optimizer", OptimizerAgent)
 
     def register_agent_type(self, agent_type: str, agent_class: Type[BaseAgent]):
-        """
-        Register a new agent type
-        """
+        """Register a new agent type"""
         self.agent_types[agent_type] = agent_class
 
-    def create_agent(self, agent_type: str, agent_id: str = None, **kwargs) -> Optional[BaseAgent]:
-        """
-        Create a new agent instance
-        """
+    def create_agent(self, agent_type: str, agent_id: Optional[str] = None, **kwargs) -> Optional[BaseAgent]:
+        """Create a new agent instance"""
         if agent_type not in self.agent_types:
             return None
 
@@ -327,16 +293,12 @@ class AgentManager:
             return None
 
     def register_agent(self, agent: BaseAgent):
-        """
-        Register an existing agent instance
-        """
+        """Register an existing agent instance"""
         with self.lock:
             self.agents[agent.id] = agent
 
     def get_agent(self, agent_id: str) -> Optional[BaseAgent]:
-        """
-        Get an agent by ID
-        """
+        """Get an agent by ID"""
         return self.agents.get(agent_id)
 
     def find_appropriate_agent(self, method: str) -> Optional[BaseAgent]:
@@ -357,9 +319,7 @@ class AgentManager:
             return min(suitable_agents, key=lambda a: a.utilization)
 
     def find_agents_by_capability(self, capability: str) -> List[BaseAgent]:
-        """
-        Find all agents with a specific capability
-        """
+        """Find all agents with a specific capability"""
         result = []
         with self.lock:
             for agent in self.agents.values():
@@ -368,9 +328,7 @@ class AgentManager:
         return result
 
     def execute_task_with_agent(self, method: str, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute a task using the appropriate agent
-        """
+        """Execute a task using the appropriate agent"""
         agent = self.find_appropriate_agent(method)
 
         if not agent:
@@ -381,28 +339,23 @@ class AgentManager:
             }
 
         try:
-            result = agent.execute_task(request_data)
-            return result
+            return agent.execute_task(request_data)
         except Exception as e:
             return {
                 "status": "error",
-                "error": f"Agent {agent.id} execution failed: {str(e)}",
+                "error": f"Agent {agent.id} execution failed: {e!s}",
                 "agent_id": agent.id
             }
 
     def get_agent_status(self, agent_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get status of a specific agent
-        """
+        """Get status of a specific agent"""
         agent = self.get_agent(agent_id)
         if agent:
             return agent.get_status()
         return None
 
     def get_all_agents_status(self) -> Dict[str, Dict[str, Any]]:
-        """
-        Get status of all agents
-        """
+        """Get status of all agents"""
         statuses = {}
         with self.lock:
             for agent_id, agent in self.agents.items():
@@ -410,9 +363,7 @@ class AgentManager:
         return statuses
 
     def deactivate_agent(self, agent_id: str) -> bool:
-        """
-        Deactivate an agent
-        """
+        """Deactivate an agent"""
         agent = self.get_agent(agent_id)
         if agent:
             agent.is_active = False
@@ -420,9 +371,7 @@ class AgentManager:
         return False
 
     def activate_agent(self, agent_id: str) -> bool:
-        """
-        Activate an agent
-        """
+        """Activate an agent"""
         agent = self.get_agent(agent_id)
         if agent:
             agent.is_active = True
@@ -430,9 +379,7 @@ class AgentManager:
         return False
 
     def remove_agent(self, agent_id: str) -> bool:
-        """
-        Remove an agent from the manager
-        """
+        """Remove an agent from the manager"""
         with self.lock:
             if agent_id in self.agents:
                 del self.agents[agent_id]
@@ -440,9 +387,7 @@ class AgentManager:
         return False
 
     def get_statistics(self) -> Dict[str, Any]:
-        """
-        Get agent manager statistics
-        """
+        """Get agent manager statistics"""
         all_statuses = self.get_all_agents_status()
 
         active_agents = [status for status in all_statuses.values() if status["is_active"]]
@@ -458,9 +403,7 @@ class AgentManager:
         }
 
     def cleanup_inactive_agents(self, min_uptime_hours: float = 24):
-        """
-        Remove agents that have been inactive for a specified time
-        """
+        """Remove agents that have been inactive for a specified time"""
         current_time = time.time()
         cutoff_time = current_time - (min_uptime_hours * 3600)
 
@@ -476,9 +419,7 @@ class AgentManager:
         return len(agents_to_remove)
 
     def get_utilization_stats(self) -> Dict[str, Any]:
-        """
-        Get utilization statistics for all agents
-        """
+        """Get utilization statistics for all agents"""
         with self.lock:
             total_utilization = sum(agent.utilization for agent in self.agents.values())
             active_agents = len([a for a in self.agents.values() if a.is_active])
@@ -493,18 +434,15 @@ class AgentManager:
             }
 
     def update_agent_utilization(self, agent_id: str, utilization_change: float):
-        """
-        Update agent utilization (positive for increased load, negative for decreased load)
-        """
+        """Update agent utilization (positive for increased load, negative for decreased load)"""
         agent = self.get_agent(agent_id)
         if agent:
             agent.utilization = max(0, min(100, agent.utilization + utilization_change))
 
 
 class DistributedAgentManager(AgentManager):
-    """
-    Agent manager that works in a distributed environment with cluster awareness
-    """
+    """Agent manager that works in a distributed environment with cluster awareness"""
+
     def __init__(self):
         super().__init__()
         self.cluster_agents = {}  # agent_id -> cluster_agent_info
@@ -517,9 +455,7 @@ class DistributedAgentManager(AgentManager):
         self.cluster_sync_callback = callback
 
     def register_agent(self, agent: BaseAgent, is_local: bool = True):
-        """
-        Register an agent, marking whether it's local or remote
-        """
+        """Register an agent, marking whether it's local or remote"""
         super().register_agent(agent)
         if is_local:
             self.local_agents.add(agent.id)
@@ -537,9 +473,7 @@ class DistributedAgentManager(AgentManager):
             })
 
     def find_appropriate_agent(self, method: str, prefer_local: bool = True) -> Optional[BaseAgent]:
-        """
-        Find an agent that can handle the specified method, with option to prefer local agents
-        """
+        """Find an agent that can handle the specified method, with option to prefer local agents"""
         if prefer_local:
             # First try to find a local agent
             with self.lock:
@@ -552,9 +486,7 @@ class DistributedAgentManager(AgentManager):
         return super().find_appropriate_agent(method)
 
     def get_available_agents_for_method(self, method: str) -> List[Dict[str, Any]]:
-        """
-        Get all available agents (local and remote) for a method
-        """
+        """Get all available agents (local and remote) for a method"""
         local_agents = []
         with self.lock:
             for agent_id in self.local_agents:
@@ -583,19 +515,15 @@ class DistributedAgentManager(AgentManager):
         return local_agents + cluster_agents
 
     def sync_with_cluster(self, cluster_agent_state: Dict[str, Any]):
-        """
-        Sync agent state with cluster
-        """
+        """Sync agent state with cluster"""
         # Update cluster agents information
         for agent_id, agent_info in cluster_agent_state.items():
             self.cluster_agents[agent_id] = agent_info
             # Track where this agent is located
             self.cluster_agent_locations[agent_id] = agent_info.get("node_id")
 
-    def notify_agent_status_change(self, agent_id: str, status: str, node_id: str = None):
-        """
-        Notify the cluster about an agent status change
-        """
+    def notify_agent_status_change(self, agent_id: str, status: str, node_id: Optional[str] = None):
+        """Notify the cluster about an agent status change"""
         if self.cluster_sync_callback:
             self.cluster_sync_callback({
                 "action": "agent_status_change",

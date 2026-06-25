@@ -1,4 +1,5 @@
-"""fireai/core/tests/test_performance.py — Performance Tests for Core Modules.
+"""
+fireai/core/tests/test_performance.py — Performance Tests for Core Modules.
 ===========================================================================
 Task 2.15: Add performance tests for core/
 

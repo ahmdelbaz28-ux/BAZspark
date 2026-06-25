@@ -54,7 +54,7 @@ class TestConstants:
 
     def test_public_mode_15db_above_ambient(self):
         """NFPA 72 §18.4.3: public mode requires 15 dB above ambient."""
-        above, absolute, section = AUDIBLE_REQUIREMENTS["public"]
+        above, _absolute, section = AUDIBLE_REQUIREMENTS["public"]
         assert above == 15
         assert section == "§18.4.3"
 
@@ -67,7 +67,7 @@ class TestConstants:
 
     def test_sleeping_mode_75dba_minimum(self):
         """NFPA 72 §18.4.2: sleeping areas require 75 dBA at pillow."""
-        above, absolute, section = AUDIBLE_REQUIREMENTS["sleeping"]
+        _above, absolute, section = AUDIBLE_REQUIREMENTS["sleeping"]
         assert absolute == 75
         assert section == "§18.4.2"
 

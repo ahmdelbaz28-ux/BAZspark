@@ -1,4 +1,5 @@
-"""test_v138_audit_fixes.py — Regression tests for V138 AUDIT findings.
+"""
+test_v138_audit_fixes.py — Regression tests for V138 AUDIT findings.
 
 V138 fixes: F-1 (generation_ms), F-2 (DLQ TOCTOU), F-3 (SSRF fail-closed),
 F-5 (converged), F-7 (path bypass), F-12 (SSRF fail-closed), F-13 (size limits),
@@ -16,10 +17,10 @@ class TestGenerationMsNotStale:
 
     def test_generation_ms_differs_per_variant(self):
         """Each variant should have its own generation_ms (not all same)."""
+        from fireai.core.spatial_engine.density_optimizer import Room
         from fireai.core.spatial_engine.generative_layout_agent import (
             GenerativeLayoutAgent,
         )
-        from fireai.core.spatial_engine.density_optimizer import Room
 
         agent = GenerativeLayoutAgent(use_multiprocessing=False)
         room = Room(name="TestStale", width=10.0, length=8.0, ceiling_height=3.0)
@@ -29,7 +30,7 @@ class TestGenerationMsNotStale:
         # (the OLD bug made them all the same — last variant's value)
         ms_values = [vr.generation_ms for vr in result.variants.values()]
         # At least 2 should be different (timing may coincidentally match)
-        unique_ms = set(round(ms, 3) for ms in ms_values)
+        unique_ms = {round(ms, 3) for ms in ms_values}
         assert len(unique_ms) >= 2 or all(ms == 0 for ms in ms_values), (
             f"All generation_ms values are identical ({ms_values}) — stale variable bug"
         )
@@ -52,6 +53,7 @@ class TestSSRFFailClosed:
     def test_ssrf_check_returns_error_on_exception(self):
         """_check_ssrf_url should return error string (not None) on exception."""
         import inspect
+
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
         source = inspect.getsource(WebhookDeliveryService._check_ssrf_url)
         assert "BLOCKING request" in source, (
@@ -65,8 +67,8 @@ class TestConvergedField:
     def test_normal_calculation_converged_true(self):
         """Normal water flow should report converged=True."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0, pipe_diameter_m=0.05,
@@ -77,8 +79,8 @@ class TestConvergedField:
     def test_converged_in_to_dict(self):
         """to_dict should include converged field."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=10.0, pipe_diameter_m=0.05,
@@ -93,6 +95,7 @@ class TestPathValidationBypass:
     def test_extract_rooms_uses_relative_to(self):
         """extract_rooms should use Path.relative_to (not startswith)."""
         import inspect
+
         from backend.routers.v2 import extract_rooms
         source = inspect.getsource(extract_rooms)
         assert "relative_to" in source or "_is_within" in source, (
@@ -129,8 +132,9 @@ class TestPydanticSmokePoints:
 
     def test_missing_z_raises_422(self):
         """Missing 'z' field should produce 422 (not 500 KeyError)."""
-        from backend.routers.v2 import SmokeDensityPointRequest
         from pydantic import ValidationError
+
+        from backend.routers.v2 import SmokeDensityPointRequest
         with pytest.raises(ValidationError):
             SmokeDensityPointRequest(x=1.0, y=2.0)  # missing z, density_kg_m3
 
@@ -152,6 +156,7 @@ class TestDoubleCheckedLocking:
     def test_init_code_inside_lock(self):
         """_init_database should have _db_initialized=True inside the lock block."""
         import inspect
+
         from fireai.core.audit_store import _init_database
         source = inspect.getsource(_init_database)
         # The _db_initialized = True should be inside the with _init_lock block
@@ -174,6 +179,7 @@ class TestViolationsRestore:
     def test_violations_restored_code_exists(self):
         """_remove_redundant should save and restore violations."""
         import inspect
+
         from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
         source = inspect.getsource(DensityOptimizer._remove_redundant)
         assert "old_violations" in source, (
@@ -187,9 +193,9 @@ class TestAuditSafeDict:
     def test_failed_state_returns_minimal_dict(self):
         """FAILED state should not persist full data."""
         from fireai.core.smoke_simulation_state import (
-            SmokeSimulationState,
             SimulationStatus,
             SmokeDensityPoint,
+            SmokeSimulationState,
         )
         state = SmokeSimulationState(
             room_id="R-001",
@@ -207,8 +213,8 @@ class TestAuditSafeDict:
     def test_validated_state_persists_full_data(self):
         """VALIDATED state should persist full data."""
         from fireai.core.smoke_simulation_state import (
-            SmokeSimulationState,
             SmokeDensityPoint,
+            SmokeSimulationState,
         )
         state = SmokeSimulationState.create_from_fds(
             room_id="R-001",

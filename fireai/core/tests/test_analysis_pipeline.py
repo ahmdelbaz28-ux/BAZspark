@@ -1,4 +1,5 @@
-"""Comprehensive tests for the analysis_pipeline module.
+"""
+Comprehensive tests for the analysis_pipeline module.
 
 Tests cover:
   - PipelineStage enum values and ordering
@@ -254,7 +255,8 @@ class TestPipelineResult:
         assert "certificate" not in d
 
     def test_to_dict_with_layout(self) -> None:
-        """to_dict() serializes DetectorLayout when present.
+        """
+        to_dict() serializes DetectorLayout when present.
 
         Note: DetectorLayout.count is a @property, so dataclasses.asdict()
         does NOT include it. We verify the detectors list length instead.
@@ -693,7 +695,8 @@ class TestAnalyzeRoomErrorHandling:
         assert any("GEOMETRY INVALID" in e for e in result.errors)
 
     def test_string_dimension_crashes_format(self, pipeline) -> None:
-        """String dimension causes ValueError in the logging format string.
+        """
+        String dimension causes ValueError in the logging format string.
 
         The pipeline logs room dimensions with f-string formatting before
         reaching the geometry validation guard. Setting width to a string
@@ -1062,7 +1065,8 @@ class TestEventPublishing:
         assert len(events) == 1
 
     def test_detector_placed_event(self, pipeline, simple_room, fresh_bus) -> None:
-        """detector.placed event is published after optimization.
+        """
+        detector.placed event is published after optimization.
 
         Note: The DigitalTwin also publishes detector.placed events for each
         detector during TWIN_SYNC, so total events = 1 (pipeline) + N (twin).

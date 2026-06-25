@@ -1,4 +1,5 @@
-"""FireAI — Pydantic Input Schemas for NFPA 72 Calculations.
+"""
+FireAI — Pydantic Input Schemas for NFPA 72 Calculations.
 
 PDF Audit Phase 2: Architectural Rigidity
 Per "From Prototype to Production-Grade" §Phase 2, Appendix A.2:
@@ -58,7 +59,8 @@ class DetectorTypePydantic(str, Enum):
 # ============================================================================
 
 class NFPA72Input(BaseModel):
-    """Validated input schema for smoke detector coverage radius calculation.
+    """
+    Validated input schema for smoke detector coverage radius calculation.
 
     Per NFPA 72 §17.6.3.1.2, the coverage radius R = 0.7 × S where S is
     the height-adjusted listed spacing. This schema enforces:
@@ -166,7 +168,8 @@ class NFPA72Input(BaseModel):
     @field_validator("spacing_m")
     @classmethod
     def validate_spacing_by_ceiling_type(cls, v: float) -> float:
-        """Sloped ceilings require reduced spacing per NFPA 72 Table 17.6.3.1.2(a).
+        """
+        Sloped ceilings require reduced spacing per NFPA 72 Table 17.6.3.1.2(a).
         Maximum spacing for sloped ceilings is typically 21ft (6.4m).
         """
         # This validator runs before ceiling_type is set, so we skip
@@ -175,7 +178,8 @@ class NFPA72Input(BaseModel):
 
     @model_validator(mode="after")
     def validate_sloped_ceiling_spacing(self) -> NFPA72Input:
-        """Cross-field validation: sloped ceiling requires reduced spacing.
+        """
+        Cross-field validation: sloped ceiling requires reduced spacing.
         Per NFPA 72 Table 17.6.3.1.2(a), maximum spacing for sloped
         ceilings is 21ft (6.4m) for smoke detectors.
         """
@@ -190,7 +194,8 @@ class NFPA72Input(BaseModel):
         return self
 
     def compute_coverage_radius(self) -> float:
-        """Calculate coverage radius R = 0.7 × S with correction factors.
+        """
+        Calculate coverage radius R = 0.7 × S with correction factors.
 
         Per NFPA 72 §17.7.4.2.3.1:
           R = 0.7 × S (base factor for flat ceilings)
@@ -232,7 +237,8 @@ class NFPA72Input(BaseModel):
 # ============================================================================
 
 class VoltageDropInput(BaseModel):
-    """Validated input schema for voltage drop calculations per NEC/NFPA 72.
+    """
+    Validated input schema for voltage drop calculations per NEC/NFPA 72.
 
     NFPA 72 §10.14 requires that the voltage at the most remote device
     must be within the device's listed voltage range. NEC §210.19(A)(1)
@@ -317,7 +323,8 @@ class VoltageDropInput(BaseModel):
         return v
 
     def compute_voltage_drop(self) -> dict:
-        """Calculate voltage drop per NFPA 72 §10.14 and NEC.
+        """
+        Calculate voltage drop per NFPA 72 §10.14 and NEC.
 
         Includes:
           - DC return path factor (2×) per NFPA 72 §10.14
@@ -403,7 +410,8 @@ class VoltageDropInput(BaseModel):
 # ============================================================================
 
 class ConvergenceConfig(BaseModel):
-    """Convergence configuration for the density optimizer.
+    """
+    Convergence configuration for the density optimizer.
 
     PDF Audit Phase 3: "The density optimizer must be refactored to include
     a formal termination condition. This involves adding a maximum iteration

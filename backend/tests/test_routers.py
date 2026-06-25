@@ -1,4 +1,5 @@
-"""test_routers.py — Comprehensive unit tests for all backend API routes.
+"""
+test_routers.py — Comprehensive unit tests for all backend API routes.
 
 Covers all 54+ API routes across all routers:
   - health: /api/health, /api/health/statistics, /api/reports/statistics

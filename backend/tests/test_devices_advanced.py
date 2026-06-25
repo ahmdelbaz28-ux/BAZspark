@@ -1,4 +1,5 @@
-"""test_devices_advanced.py — Advanced device CRUD integration tests covering
+"""
+test_devices_advanced.py — Advanced device CRUD integration tests covering
 load unit conversion, watt conversion edge cases, device update paths,
 and device deletion with audit trail.
 

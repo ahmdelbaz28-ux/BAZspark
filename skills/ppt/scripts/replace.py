@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Apply text replacements to PowerPoint presentation.
+"""
+Apply text replacements to PowerPoint presentation.
 
 Usage:
     python replace.py <input.pptx> <replacements.json> <output.pptx>

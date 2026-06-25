@@ -25,7 +25,7 @@ Usage:
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple
+from typing import Dict
 
 # ============================================================
 # §1  Palette Data Structure
@@ -297,7 +297,7 @@ ORIGINAL_BLUE = _make_palette(
 # §4  Registry
 # ============================================================
 
-PALETTE_REGISTRY: Dict[str, _Palette] = {
+PALETTE_REGISTRY: dict[str, _Palette] = {
     # Legacy (removed: fresh, vibrant)
     "professional": PROFESSIONAL,
     "warm": WARM,
@@ -332,7 +332,7 @@ PALETTE_REGISTRY["classic_blue"] = ORIGINAL_BLUE
 # ============================================================
 
 # Step 1: Explicit style keywords (highest priority)
-_STYLE_KEYWORDS: Dict[str, list[str]] = {
+_STYLE_KEYWORDS: dict[str, list[str]] = {
     "professional": [
         "正式", "商务", "专业", "沉稳", "稳重", "professional", "formal",
         "corporate", "business",
@@ -383,7 +383,7 @@ _STYLE_KEYWORDS: Dict[str, list[str]] = {
 }
 
 # Step 2: Scene keywords → infer style (lower priority)
-_SCENE_TO_STYLE: Dict[str, str] = {
+_SCENE_TO_STYLE: dict[str, str] = {
     # Sales / Marketing / Ops → warm
     "销售": "warm", "营销": "warm", "运营": "warm", "客户": "warm",
     "业绩": "warm", "KPI": "warm", "GMV": "warm", "转化": "warm",
@@ -419,7 +419,7 @@ _SCENE_TO_STYLE: Dict[str, str] = {
 }
 
 
-def _match_style_keywords(text: str) -> Optional[str]:
+def _match_style_keywords(text: str) -> str | None:
     """Step 1: Match explicit style keywords. Returns style name or None."""
     text_lower = text.lower()
     best_match = None
@@ -432,10 +432,10 @@ def _match_style_keywords(text: str) -> Optional[str]:
     return best_match if best_score > 0 else None
 
 
-def _infer_from_scene(text: str) -> Optional[str]:
+def _infer_from_scene(text: str) -> str | None:
     """Step 2: Infer style from scene/content keywords. Returns style name or None."""
     text_lower = text.lower()
-    votes: Dict[str, int] = {}
+    votes: dict[str, int] = {}
     for keyword, style in _SCENE_TO_STYLE.items():
         if keyword.lower() in text_lower:
             votes[style] = votes.get(style, 0) + 1
@@ -456,15 +456,15 @@ def get_palette(style: str = "professional") -> _Palette:
 def resolve_palette(prompt: str) -> _Palette:
     """
     Auto-detect style from user prompt (three-step):
-      1. Explicit style keywords → direct match
-      2. Scene/content keywords → infer style
-      3. No match → professional (safe default)
+    1. Explicit style keywords → direct match
+    2. Scene/content keywords → infer style
+    3. No match → professional (safe default)
     """
     style = detect_style(prompt)
     return get_palette(style)
 
 
-def resolve_palette_with_info(prompt: str) -> Tuple[_Palette, str]:
+def resolve_palette_with_info(prompt: str) -> tuple[_Palette, str]:
     """Same as resolve_palette but also returns the detected style name."""
     style = detect_style(prompt)
     return get_palette(style), style
@@ -473,9 +473,9 @@ def resolve_palette_with_info(prompt: str) -> Tuple[_Palette, str]:
 def detect_style(prompt: str) -> str:
     """
     Detect style from prompt. Three-step priority:
-      1. Explicit style keywords
-      2. Scene keywords → infer style
-      3. Default: professional
+    1. Explicit style keywords
+    2. Scene keywords → infer style
+    3. Default: professional
     """
     style = _match_style_keywords(prompt)
     if style:
@@ -489,12 +489,11 @@ def detect_style(prompt: str) -> str:
 def list_available() -> list[str]:
     """Return list of available style names (no aliases)."""
     # Return only canonical names, not aliases
-    canonical = [
+    return [
         "professional", "warm", "elegant", "creative",
         "muji", "aesop", "kinfolk", "celine", "bottega",
         "chanel", "bloomberg", "original_blue",
     ]
-    return canonical
 
 
 def apply_palette(palette: _Palette, module_globals: dict):

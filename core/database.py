@@ -1,4 +1,5 @@
-"""core/database.py — Universal Data Model (UDM) SQLite Store.
+"""
+core/database.py — Universal Data Model (UDM) SQLite Store.
 ===========================================================
 
 Thread-safe SQLite persistence layer for UniversalElement objects.
@@ -75,7 +76,8 @@ logger = logging.getLogger(__name__)
 
 @runtime_checkable
 class _ElementLike(Protocol):
-    """Protocol for objects that can be added to UniversalDataModel.
+    """
+    Protocol for objects that can be added to UniversalDataModel.
 
     Allows duck-typed objects (e.g., ci_benchmark's _El) without
     forcing a UniversalElement dependency.
@@ -87,7 +89,8 @@ class _ElementLike(Protocol):
 
 
 class UniversalDataModel:
-    """Thread-safe SQLite store for UniversalElement objects.
+    """
+    Thread-safe SQLite store for UniversalElement objects.
 
     Provides CRUD operations for BIM elements, relationships, and conflicts.
     Elements are stored as JSON blobs in the ``elements`` table, with
@@ -134,7 +137,8 @@ class UniversalDataModel:
         self.close()
 
     def close(self) -> None:
-        """Close the SQLite connection.
+        """
+        Close the SQLite connection.
 
         V83 FIX (H-6): Previous code never closed the connection, causing
         file descriptor leaks in long-running processes.
@@ -143,7 +147,8 @@ class UniversalDataModel:
             self._conn.close()
 
     def _init_tables(self) -> None:
-        """Create database tables if they don't exist.
+        """
+        Create database tables if they don't exist.
 
         V83 FIX (M-7): Added ``conflicts`` table — the Conflict model
         existed in models.py but had no persistence path.
@@ -226,7 +231,8 @@ class UniversalDataModel:
     # ── Element CRUD ──────────────────────────────────────────────────────
 
     def add_element(self, element: _ElementLike) -> bool:
-        """Add an element to the store.
+        """
+        Add an element to the store.
 
         Args:
             element: A UniversalElement or any object with ``element_id`` and ``to_dict()``.
@@ -268,7 +274,8 @@ class UniversalDataModel:
                 return False
 
     def add_elements_batch(self, elements: list[_ElementLike]) -> int:
-        """Add multiple elements in a single transaction.
+        """
+        Add multiple elements in a single transaction.
 
         Args:
             elements: Iterable of elements with ``element_id`` and ``to_dict()``.
@@ -306,7 +313,8 @@ class UniversalDataModel:
                 return count
 
     def get_element(self, element_id: str) -> UniversalElement | None:
-        """Retrieve an element by ID.
+        """
+        Retrieve an element by ID.
 
         Returns:
             UniversalElement if found, None otherwise.
@@ -332,7 +340,8 @@ class UniversalDataModel:
                 return None
 
     def get_all_elements(self, include_deleted: bool = True) -> list[UniversalElement]:
-        """Retrieve elements from the store.
+        """
+        Retrieve elements from the store.
 
         V83 FIX (M-8): Added ``include_deleted`` parameter. Previous code
         always included soft-deleted elements, which could cause NFPA
@@ -367,7 +376,8 @@ class UniversalDataModel:
                 return []
 
     def update_element(self, element_id: str, updates: dict[str, Any], source: ChangeSource | None = None) -> bool:
-        """Update an element with the given field values.
+        """
+        Update an element with the given field values.
 
         V83 FIX (C-3): Update keys are now validated against a whitelist.
         Arbitrary keys like ``evil_key`` are rejected. Keys ``element_id``,
@@ -433,7 +443,8 @@ class UniversalDataModel:
                 return False
 
     def delete_element(self, element_id: str, source: ChangeSource | None = None) -> bool:
-        """Soft-delete an element.
+        """
+        Soft-delete an element.
 
         Sets ``is_deleted = True`` rather than removing the row.
 
@@ -464,7 +475,8 @@ class UniversalDataModel:
     # ── Efficient indexed queries (V129 FIX) ─────────────────────────────
 
     def get_elements_by_type(self, element_type: str, include_deleted: bool = False) -> list[UniversalElement]:
-        """Retrieve elements by element_type using the indexed column.
+        """
+        Retrieve elements by element_type using the indexed column.
 
         V129 FIX: Uses the element_type column instead of scanning all JSON
         blobs, providing O(log n) lookup instead of O(n) full-table scan.
@@ -505,7 +517,8 @@ class UniversalDataModel:
                 return []
 
     def get_elements_by_project(self, project_id: str, include_deleted: bool = False) -> list[UniversalElement]:
-        """Retrieve elements by project_id using the indexed column.
+        """
+        Retrieve elements by project_id using the indexed column.
 
         V129 FIX: Uses the project_id column instead of scanning all JSON
         blobs or the element_projects join table.
@@ -546,7 +559,8 @@ class UniversalDataModel:
                 return []
 
     def detect_conflicts(self) -> list:
-        """Detect conflicts between elements from different sources.
+        """
+        Detect conflicts between elements from different sources.
 
         Returns a list of Conflict objects for elements that have
         overlapping geometry or conflicting properties from
@@ -608,7 +622,8 @@ class UniversalDataModel:
             return conflicts
 
     def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> Any | None:
-        """Resolve a conflict by ID with the given strategy.
+        """
+        Resolve a conflict by ID with the given strategy.
 
         Args:
             conflict_id: The conflict to resolve.
@@ -655,7 +670,8 @@ class UniversalDataModel:
                 return None
 
     def get_statistics(self) -> Any:
-        """Get database statistics for the health/statistics endpoint.
+        """
+        Get database statistics for the health/statistics endpoint.
 
         Returns an object with total_elements, active_elements, etc.
         """
@@ -712,7 +728,8 @@ class UniversalDataModel:
 
     @staticmethod
     def _dict_to_element(data: dict[str, Any], is_deleted: bool = False, version: int = 0) -> UniversalElement | None:
-        """Reconstruct a UniversalElement from its JSON dictionary.
+        """
+        Reconstruct a UniversalElement from its JSON dictionary.
 
         Args:
             data: The serialized element data.

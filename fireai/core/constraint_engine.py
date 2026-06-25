@@ -1,4 +1,5 @@
-"""fireai.core.constraint_engine — Code-Based Routing Constraints.
+"""
+fireai.core.constraint_engine — Code-Based Routing Constraints.
 ==============================================================
 
 Deterministic constraint engine for fire alarm cable routing.
@@ -37,7 +38,8 @@ from fireai.core.cable_routing_engine import WireGauge
 
 
 def _resolve_wire_gauge(wire_gauge):
-    """Resolve a wire_gauge string or instance to a _WireGaugeInstance.
+    """
+    Resolve a wire_gauge string or instance to a _WireGaugeInstance.
 
     V109 FIX: wire_gauge parameter can be either a string key (e.g. "14")
     or a _WireGaugeInstance. This helper normalizes both cases.
@@ -138,7 +140,8 @@ ELECTRICAL_PROXIMITY_PENALTY_M = 1.0  # Proximity to electrical = 1.0m penalty
 
 @dataclass(frozen=True)
 class ConstraintResult:
-    """Result of a constraint check.
+    """
+    Result of a constraint check.
 
     Every constraint check produces a traceable result that includes:
     - Whether the constraint passed or failed
@@ -173,7 +176,8 @@ class ConstraintResult:
 
 @dataclass(frozen=True)
 class RoutingConstraintSet:
-    """Complete set of constraint results for a routing operation.
+    """
+    Complete set of constraint results for a routing operation.
 
     Attributes:
         results: Individual constraint check results.
@@ -196,7 +200,8 @@ class RoutingConstraintSet:
 
 
 class ConstraintEngine:
-    """Deterministic constraint engine for fire alarm cable routing.
+    """
+    Deterministic constraint engine for fire alarm cable routing.
 
     Every constraint is traceable to a published code section.
     No approximations. No probabilistic decisions. Pure deterministic
@@ -229,7 +234,8 @@ class ConstraintEngine:
         bend_penalty_m: float = BEND_PENALTY_M,
         elevation_penalty_m: float = ELEVATION_PENALTY_M,
     ) -> None:
-        """Initialize the constraint engine with project specifications.
+        """
+        Initialize the constraint engine with project specifications.
 
         Args:
             min_conduit_inches: Minimum conduit size (default ¾" EMT).
@@ -255,7 +261,8 @@ class ConstraintEngine:
         wire_gauge: WireGauge,
         circuit_type: str = "NAC",
     ) -> ConstraintResult:
-        """Check NAC circuit maximum length per NFPA 72 §23.6.2.
+        """
+        Check NAC circuit maximum length per NFPA 72 §23.6.2.
 
         NFPA 72 §23.6.2 limits the maximum length of Notification
         Appliance Circuits based on wire gauge to ensure voltage
@@ -304,7 +311,8 @@ class ConstraintEngine:
         max_drop_pct: float = 10.0,
         conductor_operating_temp_c: float = 75.0,
     ) -> ConstraintResult:
-        """Check voltage drop compliance per NFPA 72 §10.6.4.
+        """
+        Check voltage drop compliance per NFPA 72 §10.6.4.
 
         NFPA 72 §10.6.4 requires that the voltage at end-of-line be
         sufficient to operate all devices under alarm conditions.
@@ -412,7 +420,8 @@ class ConstraintEngine:
         self,
         actual_separation_mm: float,
     ) -> ConstraintResult:
-        """Check separation from electrical conduits per project spec.
+        """
+        Check separation from electrical conduits per project spec.
 
         Project Specification requires ≥ 300mm separation between
         fire alarm cables and electrical power conduits.
@@ -458,7 +467,8 @@ class ConstraintEngine:
         conduit_diameter_mm: float = EMT_3_4_OUTER_DIAMETER_MM,
         num_bends: int = 0,
     ) -> ConstraintResult:
-        """Check bend radius compliance per project spec / NEC 344.24.
+        """
+        Check bend radius compliance per project spec / NEC 344.24.
 
         Project Specification: Maximum bend radius = 6 × conduit diameter.
         NEC 344.24: EMT bends shall have a radius not less than
@@ -540,7 +550,8 @@ class ConstraintEngine:
         self,
         conduit_inches: float = MIN_CONDUIT_INCHES,
     ) -> ConstraintResult:
-        """Check minimum conduit size per project specification.
+        """
+        Check minimum conduit size per project specification.
 
         Project Specification: Minimum conduit ¾" red painted EMT.
 
@@ -572,7 +583,8 @@ class ConstraintEngine:
         cable_length_m: float,
         num_fasteners: int,
     ) -> ConstraintResult:
-        """Check cable fastening interval per NEC 760.24(A).
+        """
+        Check cable fastening interval per NEC 760.24(A).
 
         NEC 760.24(A): Cables shall be fastened at intervals not
         exceeding 18 inches (457mm).
@@ -658,7 +670,8 @@ class ConstraintEngine:
         return_path: list[tuple[float, float, float]],
         min_separation_m: float = 0.3,
     ) -> ConstraintResult:
-        """Check Class A circuit outgoing/return path separation.
+        """
+        Check Class A circuit outgoing/return path separation.
 
         NFPA 72 §12.2.2: For Class A circuits, the outgoing and
         return conductors must not be routed through the same opening
@@ -717,7 +730,8 @@ class ConstraintEngine:
         num_current_carrying: int = 2,
         conductor_temp_rating_c: float = 90,
     ) -> ConstraintResult:
-        """Check wire ampacity per NEC 310.16 with deratings.
+        """
+        Check wire ampacity per NEC 310.16 with deratings.
 
         NEC 310.16 provides base ampacity values. Two additional
         deratings are REQUIRED by NEC:
@@ -775,7 +789,8 @@ class ConstraintEngine:
         ambient_temp_c: float,
         conductor_temp_rating_c: float = 90,
     ) -> ConstraintResult:
-        """Check ambient temperature derating per NEC 310.15(B)(2)(A).
+        """
+        Check ambient temperature derating per NEC 310.15(B)(2)(A).
 
         Reports the derating factor for the given ambient temperature.
         This is informational — the ampacity check applies the factor
@@ -821,7 +836,8 @@ class ConstraintEngine:
         self,
         num_current_carrying: int,
     ) -> ConstraintResult:
-        """Check conductor count derating per NEC 310.15(B)(3)(a).
+        """
+        Check conductor count derating per NEC 310.15(B)(3)(a).
 
         Reports the derating factor based on number of current-carrying
         conductors in the conduit.
@@ -860,7 +876,8 @@ class ConstraintEngine:
         num_cables: int,
         conduit_inner_diameter_mm: float = EMT_3_4_INNER_DIAMETER_MM,
     ) -> ConstraintResult:
-        """Check conduit fill per NEC Chapter 9, Table 4.
+        """
+        Check conduit fill per NEC Chapter 9, Table 4.
 
         NEC 760.154: Maximum 40% fill for PLFA circuits in conduit.
 
@@ -942,7 +959,8 @@ class ConstraintEngine:
         conductor_temp_rating_c: float = 90,
         conduit_size_inches: float | None = None,
     ) -> RoutingConstraintSet:
-        """Run ALL constraint checks and return combined result.
+        """
+        Run ALL constraint checks and return combined result.
 
         This is the primary API for constraint verification. Every
         check produces a traceable result with code reference.
@@ -1128,7 +1146,8 @@ class ConstraintEngine:
         is_near_electrical: bool = False,
         grid_resolution: float = 0.1,
     ) -> float:
-        """Compute the cost of moving from one cell to an adjacent cell.
+        """
+        Compute the cost of moving from one cell to an adjacent cell.
 
         Used by the A* pathfinding algorithm. Costs are based on:
         - Straight segment: length × 1.0
@@ -1179,7 +1198,8 @@ class ConstraintEngine:
         prev_dir: tuple[int, int, int] | None,
         curr_dir: tuple[int, int, int],
     ) -> float:
-        """Compute the cost of a direction change (bend).
+        """
+        Compute the cost of a direction change (bend).
 
         A 90° bend adds a penalty equivalent to 0.5m extra length.
         This is because bends require conduit fittings (elbows),
@@ -1213,7 +1233,8 @@ class ConstraintEngine:
         goal: tuple[int, int, int],
         grid_resolution: float = 0.1,
     ) -> float:
-        """Manhattan distance heuristic for A* pathfinding.
+        """
+        Manhattan distance heuristic for A* pathfinding.
 
         Admissible heuristic for 6-directional orthogonal movement.
         Never overestimates the actual cost because:

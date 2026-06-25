@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Run trigger evaluation for a skill description.
+"""
+Run trigger evaluation for a skill description.
 
 Tests whether a skill's description causes GLM to trigger (read the skill)
 for a set of queries. Outputs results as JSON.
@@ -20,7 +21,8 @@ from scripts.utils import parse_skill_md
 
 
 def find_project_root() -> Path:
-    """Find the project root by walking up from cwd looking for .glm/.
+    """
+    Find the project root by walking up from cwd looking for .glm/.
 
     Mimics how GLM Code discovers its project root, so the command file
     we create ends up where glm -p will look for it.
@@ -40,7 +42,8 @@ def run_single_query(
     project_root: str,
     model: str | None = None,
 ) -> bool:
-    """Run a single query and return whether the skill was triggered.
+    """
+    Run a single query and return whether the skill was triggered.
 
     Creates a command file in .glm/commands/ so it appears in GLM's
     available_skills list, then runs `glm -p` with the raw query.
@@ -161,9 +164,7 @@ def run_single_query(
                                 continue
                             tool_name = content_item.get("name", "")
                             tool_input = content_item.get("input", {})
-                            if tool_name == "Skill" and clean_name in tool_input.get("skill", ""):
-                                triggered = True
-                            elif tool_name == "Read" and clean_name in tool_input.get("file_path", ""):
+                            if (tool_name == "Skill" and clean_name in tool_input.get("skill", "")) or (tool_name == "Read" and clean_name in tool_input.get("file_path", "")):
                                 triggered = True
                             return triggered
 
@@ -276,7 +277,7 @@ def main():
         print(f"Error: No SKILL.md found at {skill_path}", file=sys.stderr)
         sys.exit(1)
 
-    name, original_description, content = parse_skill_md(skill_path)
+    name, original_description, _content = parse_skill_md(skill_path)
     description = args.description or original_description
     project_root = find_project_root()
 

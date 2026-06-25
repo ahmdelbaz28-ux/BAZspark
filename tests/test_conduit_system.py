@@ -56,12 +56,14 @@ from fireai.conduit import (
 class TestResult:
     def test_ok_is_ok(self):
         r = Result.ok(42)
-        assert r.is_ok() and not r.is_err()
+        assert r.is_ok()
+        assert not r.is_err()
         assert r.value == 42
 
     def test_err_is_err(self):
         r = Result.err("oops")
-        assert r.is_err() and not r.is_ok()
+        assert r.is_err()
+        assert not r.is_ok()
         assert r.error == "oops"
 
     def test_access_value_on_err_raises(self):
@@ -88,7 +90,9 @@ class TestResult:
 class TestPoint3D:
     def test_valid_construction(self):
         p = Point3D(1.0, 2.0, 3.0)
-        assert p.x == 1.0 and p.y == 2.0 and p.z == 3.0
+        assert p.x == 1.0
+        assert p.y == 2.0
+        assert p.z == 3.0
 
     def test_nan_x_raises(self):
         with pytest.raises(ValueError, match="finite"):
@@ -321,7 +325,8 @@ class TestConduitFill:
         """Sch 80 has smaller area → higher fill% than Sch 40 for same wires."""
         r40 = calculate_fill(ConduitType.UPVC_SCH40, TradeSize.HALF, [0.111])
         r80 = calculate_fill(ConduitType.UPVC_SCH80, TradeSize.HALF, [0.111])
-        assert r40.is_ok() and r80.is_ok()
+        assert r40.is_ok()
+        assert r80.is_ok()
         assert r80.value.fill_percentage > r40.value.fill_percentage
 
 
@@ -351,11 +356,13 @@ class TestBendRadius:
 
     def test_emt_three_qtr_compliant(self):
         r = verify_bend_radius(ConduitType.EMT, TradeSize.THREE_QTR, 4.5)
-        assert r.is_ok() and r.value.is_compliant
+        assert r.is_ok()
+        assert r.value.is_compliant
 
     def test_upvc_three_qtr_exact_min(self):
         r = verify_bend_radius(ConduitType.UPVC_SCH40, TradeSize.THREE_QTR, 5.25)
-        assert r.is_ok() and r.value.is_compliant
+        assert r.is_ok()
+        assert r.value.is_compliant
 
     def test_upvc_three_qtr_below_min(self):
         r = verify_bend_radius(ConduitType.UPVC_SCH40, TradeSize.THREE_QTR, 5.0)
@@ -495,10 +502,13 @@ class TestRouter:
         end = Point3D(4, 3, 3)
         r1 = orthogonal_astar(start, end)
         r2 = orthogonal_astar(start, end)
-        assert r1.is_ok() and r2.is_ok()
+        assert r1.is_ok()
+        assert r2.is_ok()
         assert len(r1.value.waypoints) == len(r2.value.waypoints)
         for p1, p2 in zip(r1.value.waypoints, r2.value.waypoints, strict=False):
-            assert p1.x == p2.x and p1.y == p2.y and p1.z == p2.z
+            assert p1.x == p2.x
+            assert p1.y == p2.y
+            assert p1.z == p2.z
 
     def test_manhattan_heuristic_admissible(self):
         """Path length ≥ Manhattan distance (heuristic never overestimates)."""
@@ -633,7 +643,8 @@ class TestFittingEngine:
         assert r.value.total_bend_deg == pytest.approx(180.0)
 
     def test_four_bends_360_no_pull_box(self):
-        """Exactly 4 × 90° = 360° is at the NEC limit — no pull box needed.
+        """
+        Exactly 4 × 90° = 360° is at the NEC limit — no pull box needed.
 
         Path: right→up→right→up→right = 4 turns at 90° each = 360° total.
         NEC 358.26 allows up to AND INCLUDING 360° before requiring pull box.

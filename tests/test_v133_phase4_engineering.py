@@ -1,4 +1,5 @@
-"""test_v133_phase4_engineering.py — Tests for PHASE 4 Engineering Upgrades.
+"""
+test_v133_phase4_engineering.py — Tests for PHASE 4 Engineering Upgrades.
 
 Validates beam obstruction, BIM unit detection, and Darcy-Weisbach solver.
 """
@@ -8,7 +9,6 @@ from __future__ import annotations
 import math
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Beam Obstruction Tests (PHASE 4.1)
@@ -42,7 +42,6 @@ class TestBeamObstruction:
         from fireai.core.spatial_engine.beam_obstruction import (
             Beam,
             calculate_beam_obstruction,
-            BEAM_DEPTH_THRESHOLD_RATIO,
         )
         # 3m ceiling → threshold = 0.3m. Beam depth 0.2m < 0.3m → no subdivision.
         beam = Beam(
@@ -145,7 +144,6 @@ class TestBeamObstruction:
         """Beam with NaN coordinates must be rejected."""
         from fireai.core.spatial_engine.beam_obstruction import (
             Beam,
-            calculate_beam_obstruction,
         )
         with pytest.raises(ValueError, match="non-finite"):
             Beam(
@@ -158,7 +156,6 @@ class TestBeamObstruction:
     def test_beam_with_negative_depth_rejected(self, simple_room):
         from fireai.core.spatial_engine.beam_obstruction import (
             Beam,
-            calculate_beam_obstruction,
         )
         with pytest.raises(ValueError, match="positive finite"):
             Beam(
@@ -173,7 +170,6 @@ class TestBeamObstruction:
         from fireai.core.spatial_engine.beam_obstruction import (
             Beam,
             calculate_beam_obstruction,
-            MIN_CEILING_HEIGHT_FOR_BEAM_LOGIC_M,
         )
         beam = Beam(id="B1", start=(0, 4), end=(10, 4), depth_m=0.3)
         # Ceiling 2.0m < 2.4m minimum → no subdivision
@@ -220,14 +216,14 @@ class TestBIMUnitDetection:
 
     def test_detect_nonexistent_file(self):
         """Non-existent file should return default (metres)."""
-        from fireai.bridges.bim_unit_detector import detect_bim_unit, UnitSystem
+        from fireai.bridges.bim_unit_detector import UnitSystem, detect_bim_unit
         result = detect_bim_unit("/nonexistent/file.ifc")
         assert result.unit == UnitSystem.UNKNOWN
         assert result.scale_to_metres == 1.0  # Default to metres
 
     def test_detect_dxf_with_insunits(self, tmp_path):
         """DXF file with $INSUNITS should be detected correctly."""
-        from fireai.bridges.bim_unit_detector import detect_bim_unit, UnitSystem
+        from fireai.bridges.bim_unit_detector import UnitSystem, detect_bim_unit
 
         # Create a minimal DXF file with $INSUNITS=4 (millimetres)
         dxf_content = """0
@@ -251,7 +247,7 @@ ENDSEC
 
     def test_detect_ifc_with_metre_unit(self, tmp_path):
         """IFC file with IFCSIUNIT(.METRE.) should be detected."""
-        from fireai.bridges.bim_unit_detector import detect_bim_unit, UnitSystem
+        from fireai.bridges.bim_unit_detector import UnitSystem, detect_bim_unit
 
         ifc_content = """ISO-10303-21;
 HEADER;
@@ -275,7 +271,7 @@ END-ISO-10303-21;
 
     def test_detect_ifc_with_millimetre_unit(self, tmp_path):
         """IFC file with IFCSIUNIT(.MILLI.,.METRE.) should be detected."""
-        from fireai.bridges.bim_unit_detector import detect_bim_unit, UnitSystem
+        from fireai.bridges.bim_unit_detector import UnitSystem, detect_bim_unit
 
         ifc_content = """ISO-10303-21;
 HEADER;
@@ -304,8 +300,8 @@ class TestDarcyWeisbach:
     def test_water_flow_returns_valid_result(self):
         """Water flow through a pipe should return a valid result."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
@@ -322,8 +318,8 @@ class TestDarcyWeisbach:
     def test_zero_flow_returns_zero_loss(self):
         """Zero flow rate should return zero friction loss."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,
@@ -338,8 +334,8 @@ class TestDarcyWeisbach:
     def test_nan_pipe_length_rejected(self):
         """NaN pipe length must be rejected (per V57)."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         with pytest.raises(ValueError, match="must be finite"):
             calculate_darcy_weisbach_friction_loss(
@@ -351,8 +347,8 @@ class TestDarcyWeisbach:
 
     def test_negative_pipe_diameter_rejected(self):
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         with pytest.raises(ValueError):
             calculate_darcy_weisbach_friction_loss(
@@ -365,8 +361,8 @@ class TestDarcyWeisbach:
     def test_co2_liquid_supported(self):
         """CO2 liquid should be supported (NFPA 12)."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=50.0,
@@ -380,8 +376,8 @@ class TestDarcyWeisbach:
     def test_clean_agent_supported(self):
         """FM-200 (clean agent) should be supported (NFPA 2001)."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=30.0,
@@ -394,8 +390,8 @@ class TestDarcyWeisbach:
     def test_laminar_flow_friction_factor(self):
         """Laminar flow (Re < 2300) should use f = 64/Re."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         # Very low flow → laminar
         result = calculate_darcy_weisbach_friction_loss(
@@ -412,8 +408,8 @@ class TestDarcyWeisbach:
     def test_turbulent_flow_friction_factor(self):
         """Turbulent flow (Re > 4000) should use Colebrook-White."""
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=10.0,
@@ -451,8 +447,8 @@ class TestDarcyWeisbach:
 
     def test_result_serializes_to_dict(self):
         from fireai.core.darcy_weisbach_solver import (
-            calculate_darcy_weisbach_friction_loss,
             FluidType,
+            calculate_darcy_weisbach_friction_loss,
         )
         result = calculate_darcy_weisbach_friction_loss(
             pipe_length_m=100.0,

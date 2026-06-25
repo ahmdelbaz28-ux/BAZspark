@@ -1,4 +1,5 @@
-"""backend/request_context.py — Request correlation and structured logging.
+"""
+backend/request_context.py — Request correlation and structured logging.
 
 Adds a unique correlation ID to every request for end-to-end tracing.
 In a life-safety system, being able to trace a request from frontend
@@ -20,7 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 class CorrelationIdMiddleware:
-    """Pure ASGI middleware that adds X-Correlation-ID to every request/response.
+    """
+    Pure ASGI middleware that adds X-Correlation-ID to every request/response.
 
     Unlike BaseHTTPMiddleware, this does NOT buffer the response body,
     making it safe for StreamingResponse (exports, reports, PDFs).

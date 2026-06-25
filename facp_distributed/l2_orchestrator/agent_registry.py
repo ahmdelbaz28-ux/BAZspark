@@ -1,6 +1,4 @@
-"""
-Agent Registry for L2 Orchestrator in Distributed FACP System
-"""
+"""Agent Registry for L2 Orchestrator in Distributed FACP System"""
 import threading
 import time
 import uuid
@@ -12,6 +10,7 @@ class AgentRegistry:
     Registry for agents across the distributed system
     Tracks agents across all orchestrator nodes
     """
+
     def __init__(self):
         self.agents = {}  # agent_id -> agent_info
         self.capability_index = {}  # capability -> [agent_ids]
@@ -66,9 +65,7 @@ class AgentRegistry:
             self.last_updated = time.time()
 
     def unregister_agent(self, agent_id: str):
-        """
-        Unregister an agent from the registry
-        """
+        """Unregister an agent from the registry"""
         with self.lock:
             if agent_id in self.agents:
                 agent_info = self.agents[agent_id]
@@ -95,9 +92,7 @@ class AgentRegistry:
                 self.last_updated = time.time()
 
     def find_agent_for_method(self, method: str) -> Optional[Dict[str, Any]]:
-        """
-        Find an appropriate agent for a specific method
-        """
+        """Find an appropriate agent for a specific method"""
         with self.lock:
             # First, look for exact match
             if method in self.capability_index:
@@ -128,9 +123,7 @@ class AgentRegistry:
             return None
 
     def find_agents_by_capability(self, capability: str) -> List[Dict[str, Any]]:
-        """
-        Find all agents with a specific capability
-        """
+        """Find all agents with a specific capability"""
         with self.lock:
             agent_ids = self.capability_index.get(capability, [])
             agents = []
@@ -148,9 +141,7 @@ class AgentRegistry:
             return agents
 
     def find_agents_by_type(self, agent_type: str) -> List[Dict[str, Any]]:
-        """
-        Find all agents of a specific type
-        """
+        """Find all agents of a specific type"""
         with self.lock:
             agent_ids = self.agent_types.get(agent_type, [])
             agents = []
@@ -168,18 +159,14 @@ class AgentRegistry:
             return agents
 
     def get_all_agents(self) -> List[Dict[str, Any]]:
-        """
-        Get all registered agents (local + cluster)
-        """
+        """Get all registered agents (local + cluster)"""
         with self.lock:
             all_agents = list(self.agents.values())
             all_agents.extend(list(self.cluster_agents.values()))
             return all_agents
 
     def update_agent_status(self, agent_id: str, status: str):
-        """
-        Update the status of an agent
-        """
+        """Update the status of an agent"""
         with self.lock:
             if agent_id in self.agents:
                 self.agents[agent_id]["status"] = status
@@ -187,27 +174,21 @@ class AgentRegistry:
                 self.last_updated = time.time()
 
     def update_agent_utilization(self, agent_id: str, utilization: float):
-        """
-        Update the utilization of an agent
-        """
+        """Update the utilization of an agent"""
         with self.lock:
             if agent_id in self.agents:
                 self.agents[agent_id]["utilization"] = utilization
                 self.last_updated = time.time()
 
     def heartbeat_agent(self, agent_id: str):
-        """
-        Update the last seen time for an agent (heartbeat)
-        """
+        """Update the last seen time for an agent (heartbeat)"""
         with self.lock:
             if agent_id in self.agents:
                 self.agents[agent_id]["last_seen"] = time.time()
                 self.last_updated = time.time()
 
     def cleanup_stale_agents(self, max_age_seconds: int = 300):  # 5 minutes
-        """
-        Remove agents that haven't been seen within the specified time
-        """
+        """Remove agents that haven't been seen within the specified time"""
         current_time = time.time()
         stale_agents = []
 
@@ -220,9 +201,7 @@ class AgentRegistry:
                 self.unregister_agent(agent_id)
 
     def sync_with_cluster(self, cluster_agents: Dict[str, Any]):
-        """
-        Sync agent registry with cluster-wide agent information
-        """
+        """Sync agent registry with cluster-wide agent information"""
         current_time = time.time()
 
         with self.lock:
@@ -245,9 +224,7 @@ class AgentRegistry:
                     self.agent_types[agent_type].append(agent_id)
 
     def get_status(self) -> Dict[str, Any]:
-        """
-        Get registry status information
-        """
+        """Get registry status information"""
         with self.lock:
             local_active_agents = len([a for a in self.agents.values() if a["status"] == "active"])
             cluster_active_agents = len([a for a in self.cluster_agents.values() if a.get("status") == "active"])
@@ -264,16 +241,12 @@ class AgentRegistry:
             }
 
     def get_registered_agent_types(self) -> List[str]:
-        """
-        Get list of registered agent types
-        """
+        """Get list of registered agent types"""
         with self.lock:
             return list(self.agent_types.keys())
 
     def get_agents_by_node(self, node_id: str) -> List[Dict[str, Any]]:
-        """
-        Get all agents associated with a specific node
-        """
+        """Get all agents associated with a specific node"""
         with self.lock:
             agent_ids = self.node_agents.get(node_id, [])
             agents = []
@@ -291,9 +264,7 @@ class AgentRegistry:
             return agents
 
     def get_agent_by_id(self, agent_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get agent information by ID
-        """
+        """Get agent information by ID"""
         with self.lock:
             agent = self.agents.get(agent_id)
             if agent:
@@ -302,9 +273,8 @@ class AgentRegistry:
 
 
 class DistributedAgentRegistry(AgentRegistry):
-    """
-    Distributed version of agent registry with cluster synchronization
-    """
+    """Distributed version of agent registry with cluster synchronization"""
+
     def __init__(self):
         super().__init__()
         self.cluster_sync_callback = None
@@ -312,21 +282,15 @@ class DistributedAgentRegistry(AgentRegistry):
         self.registration_callbacks = []  # Callbacks for when agents register
 
     def set_cluster_sync_callback(self, callback):
-        """
-        Set callback for syncing agent state with cluster
-        """
+        """Set callback for syncing agent state with cluster"""
         self.cluster_sync_callback = callback
 
     def add_registration_callback(self, callback):
-        """
-        Add a callback to be called when an agent registers
-        """
+        """Add a callback to be called when an agent registers"""
         self.registration_callbacks.append(callback)
 
     def register_agent(self, agent_id: str, agent_info: Dict[str, Any]):
-        """
-        Register an agent and notify cluster
-        """
+        """Register an agent and notify cluster"""
         super().register_agent(agent_id, agent_info)
 
         # Call registration callbacks
@@ -347,9 +311,7 @@ class DistributedAgentRegistry(AgentRegistry):
             })
 
     def unregister_agent(self, agent_id: str):
-        """
-        Unregister an agent and notify cluster
-        """
+        """Unregister an agent and notify cluster"""
         agent_info = self.agents.get(agent_id)
         super().unregister_agent(agent_id)
 
@@ -363,9 +325,7 @@ class DistributedAgentRegistry(AgentRegistry):
             })
 
     def update_agent_status(self, agent_id: str, status: str):
-        """
-        Update agent status and notify cluster
-        """
+        """Update agent status and notify cluster"""
         super().update_agent_status(agent_id, status)
 
         # Notify cluster if callback is available
@@ -379,17 +339,13 @@ class DistributedAgentRegistry(AgentRegistry):
             })
 
     def sync_with_cluster(self, cluster_agents: Dict[str, Any]):
-        """
-        Override to handle cluster synchronization with additional logic
-        """
+        """Override to handle cluster synchronization with additional logic"""
         super().sync_with_cluster(cluster_agents)
 
         # Could add additional cluster-specific logic here
 
     def get_cluster_wide_agents(self) -> Dict[str, Any]:
-        """
-        Get all agents known to the cluster (including local ones)
-        """
+        """Get all agents known to the cluster (including local ones)"""
         with self.lock:
             all_agents = {}
             all_agents.update(self.agents)

@@ -27,7 +27,7 @@ def main():
 
         print(f"Successfully generated: {os.path.abspath(filename)}")
     except Exception as e:
-        print(f"Error: {str(e)}", file=sys.stderr)
+        print(f"Error: {e!s}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":

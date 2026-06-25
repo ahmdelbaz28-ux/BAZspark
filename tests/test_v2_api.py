@@ -1,15 +1,13 @@
-"""test_v2_api.py — Tests for /api/v2/ Cloud-Native API Endpoints.
+"""
+test_v2_api.py — Tests for /api/v2/ Cloud-Native API Endpoints.
 
 MISSION TASK 3.1 — Validates v2 API endpoints and deprecation headers.
 """
 
 from __future__ import annotations
 
-import os
-
 import pytest
 from fastapi.testclient import TestClient
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

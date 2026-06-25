@@ -1,4 +1,5 @@
-"""backend/services/ — External API integration services for FireAI.
+"""
+backend/services/ — External API integration services for FireAI.
 
 These services provide real-world environmental data (weather, geolocation,
 regulatory context, elevation, air quality, severe weather, hazardous materials)

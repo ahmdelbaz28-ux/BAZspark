@@ -147,7 +147,8 @@ class TestCoordinateValidation:
 
 
 class TestAssembleClosedPolygons:
-    """DWGParser._assemble_closed_polygons chains LINE segments into rooms.
+    """
+    DWGParser._assemble_closed_polygons chains LINE segments into rooms.
 
     This is safety-critical: missing a room means zero fire protection.
     """
@@ -311,8 +312,10 @@ class TestDWGParserPathSecurity:
 
 
 class TestDXFFastPath:
-    """When input is .dxf, DWGParser delegates directly to DXFParser
-    without invoking LibreDWG tools."""
+    """
+    When input is .dxf, DWGParser delegates directly to DXFParser
+    without invoking LibreDWG tools.
+    """
 
     def test_dxf_input_skips_libredwg(self, parser):
         """DXF files should not invoke dxf-out conversion."""

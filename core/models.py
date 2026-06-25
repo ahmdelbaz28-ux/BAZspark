@@ -1,4 +1,5 @@
-"""core/models.py — Universal BIM Data Model (domain layer).
+"""
+core/models.py — Universal BIM Data Model (domain layer).
 =========================================================
 
 Frozen dataclass models for the Universal Data Model (UDM). These classes
@@ -110,7 +111,8 @@ except ImportError as _import_err:
 
 @dataclass(frozen=True)
 class Point3D:
-    """Immutable 3D point in the building coordinate system (SI metres).
+    """
+    Immutable 3D point in the building coordinate system (SI metres).
 
     SAFETY: NaN and Inf coordinates are REJECTED. In a fire-protection
     system, non-finite coordinates indicate data corruption and would
@@ -141,7 +143,8 @@ class Point3D:
 
 @dataclass(frozen=True)
 class Geometry:
-    """Immutable polyline geometry with cached area and perimeter.
+    """
+    Immutable polyline geometry with cached area and perimeter.
 
     Area and perimeter are computed on creation using the Shoelace formula
     (2D projection onto the XY plane). For open polylines, area is zero.
@@ -172,7 +175,8 @@ class Geometry:
             object.__setattr__(self, 'perimeter', self.calculate_perimeter())
 
     def calculate_area(self) -> float:
-        """Shoelace formula for polygon area (2D XY projection).
+        """
+        Shoelace formula for polygon area (2D XY projection).
 
         Returns 0.0 for open polylines or fewer than 3 points.
         Reference: https://en.wikipedia.org/wiki/Shoelace_formula
@@ -189,7 +193,8 @@ class Geometry:
         return abs(area) / 2.0
 
     def calculate_perimeter(self) -> float:
-        """Sum of edge lengths (Euclidean distance between consecutive points).
+        """
+        Sum of edge lengths (Euclidean distance between consecutive points).
 
         For closed polylines, includes the closing edge.
         V83 FIX: Closed polyline with exactly 2 points now includes the
@@ -219,7 +224,8 @@ class Geometry:
 
 @dataclass(frozen=True)
 class SemanticProperties:
-    """Semantic metadata for a BIM element.
+    """
+    Semantic metadata for a BIM element.
 
     V83 FIX: Now frozen=True. The old code was mutable "because db_service.py
     updates properties in-place" — this was a half-solution (Rule 17). The
@@ -291,7 +297,8 @@ class SemanticProperties:
 
 @dataclass(frozen=True)
 class Relationship:
-    """A directed relationship between two UniversalElements.
+    """
+    A directed relationship between two UniversalElements.
 
     V83 FIX: Now frozen=True. db_service must create new Relationship
     instances instead of mutating existing ones.
@@ -314,7 +321,8 @@ class Relationship:
     connection_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize to dictionary for JSON storage/API response.
+        """
+        Serialize to dictionary for JSON storage/API response.
 
         V83 FIX: Now includes connection_id (was missing — data loss on
         JSON round-trip).
@@ -335,7 +343,8 @@ class Relationship:
 
 @dataclass(frozen=True)
 class Conflict:
-    """A merge conflict between two data sources.
+    """
+    A merge conflict between two data sources.
 
     V83 FIX: Now frozen=True. conflict_type uses ConflictType enum
     (was Any — allowed arbitrary values like 42 or "typo").
@@ -379,7 +388,8 @@ _ELEMENT_UPDATABLE_KEYS = frozenset({
 
 @dataclass(frozen=True)
 class UniversalElement:
-    """A universal BIM element in the Digital Twin data model.
+    """
+    A universal BIM element in the Digital Twin data model.
 
     V83 FIX: Now frozen=True. element_id is MANDATORY (no uuid4 fallback).
     The old code used ``uuid.uuid4()`` in __post_init__ — non-deterministic,

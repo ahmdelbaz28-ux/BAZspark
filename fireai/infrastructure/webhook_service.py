@@ -1,4 +1,5 @@
-"""webhook_service.py — Webhook Event Delivery Service.
+"""
+webhook_service.py — Webhook Event Delivery Service.
 ======================================================
 
 MISSION TASK 3.3 — Webhook Event System for External Cloud Subscriptions
@@ -142,7 +143,8 @@ class DeliveryStatus(str, Enum):
 
 @dataclass(frozen=True)
 class WebhookSubscription:
-    """A webhook subscription — one external service's registration.
+    """
+    A webhook subscription — one external service's registration.
 
     V134 F-2 FIX: Made ``frozen=True`` to prevent post-validation mutation.
     Previously, an attacker could subscribe with HTTPS URL, then mutate
@@ -206,7 +208,8 @@ class WebhookDeliveryAttempt:
 
 @dataclass
 class DeadLetterEntry:
-    """An event that exceeded max retry attempts.
+    """
+    An event that exceeded max retry attempts.
 
     V135 F-12 FIX: Added ``payload`` and ``source`` fields to enable
     actual replay. The OLD code stored only event_id/type/url but not
@@ -234,7 +237,8 @@ class DeadLetterEntry:
 
 
 def compute_webhook_signature(payload: bytes, secret: str) -> str:
-    """Compute HMAC-SHA256 signature for webhook payload.
+    """
+    Compute HMAC-SHA256 signature for webhook payload.
 
     Args:
         payload: Raw bytes of the request body.
@@ -257,7 +261,8 @@ def compute_webhook_signature(payload: bytes, secret: str) -> str:
 
 
 class WebhookDeliveryService:
-    """Service that delivers EventBus events to external HTTP webhooks.
+    """
+    Service that delivers EventBus events to external HTTP webhooks.
 
     Thread-safe. Uses background thread for async delivery.
     Subscribes to the existing EventBus (if available) or can be
@@ -275,7 +280,8 @@ class WebhookDeliveryService:
         allowed_hosts: set[str] | None = None,
         history_max_size: int = 1000,
     ) -> None:
-        """Initialize the webhook delivery service.
+        """
+        Initialize the webhook delivery service.
 
         Args:
             timeout_seconds: HTTP POST timeout per attempt.
@@ -340,7 +346,8 @@ class WebhookDeliveryService:
     # ------------------------------------------------------------------
 
     def subscribe(self, subscription: WebhookSubscription) -> None:
-        """Register a new webhook subscription.
+        """
+        Register a new webhook subscription.
 
         Args:
             subscription: WebhookSubscription dataclass.
@@ -361,7 +368,8 @@ class WebhookDeliveryService:
         )
 
     def unsubscribe(self, subscription_id: str) -> bool:
-        """Remove a webhook subscription.
+        """
+        Remove a webhook subscription.
 
         Returns:
             True if subscription was found and removed, False otherwise.
@@ -385,7 +393,8 @@ class WebhookDeliveryService:
             return self._subscriptions.get(subscription_id)
 
     def _validate_subscription(self, sub: WebhookSubscription) -> None:
-        """Validate a subscription before registering.
+        """
+        Validate a subscription before registering.
 
         Per agent.md Rule 12 (Safety-First): reject insecure configs.
         """
@@ -451,7 +460,8 @@ class WebhookDeliveryService:
         data: dict[str, Any],
         trace_id: str | None = None,
     ) -> str:
-        """Publish an event to all matching subscribers.
+        """
+        Publish an event to all matching subscribers.
 
         Args:
             event_type: Event type (e.g., "DESIGN_COMPLETED").
@@ -597,7 +607,8 @@ class WebhookDeliveryService:
         timestamp: str,
         trace_id: str,
     ) -> None:
-        """Deliver webhook with exponential backoff retry.
+        """
+        Deliver webhook with exponential backoff retry.
 
         Per agent.md Rule 17 (No Half-Solutions): full retry + DLQ.
         """
@@ -720,7 +731,8 @@ class WebhookDeliveryService:
             )
 
     def _check_ssrf_url(self, url: str) -> str | None:
-        """V134 F-1: Pre-flight SSRF check — reject internal/reserved IPs.
+        """
+        V134 F-1: Pre-flight SSRF check — reject internal/reserved IPs.
 
         Per OWASP SSRF Prevention Cheat Sheet: never allow requests to
         internal/reserved IP ranges. This prevents attackers from using
@@ -801,7 +813,8 @@ class WebhookDeliveryService:
         headers: dict[str, str],
         attempt_num: int,
     ) -> WebhookDeliveryAttempt:
-        """Perform a single HTTP POST delivery attempt.
+        """
+        Perform a single HTTP POST delivery attempt.
 
         V134 SSRF FIX (F-1/F-2): The previous implementation used
         ``urllib.request.urlopen()`` which follows HTTP redirects by
@@ -950,7 +963,8 @@ class WebhookDeliveryService:
             return list(self._dlq)
 
     def replay_dead_letter(self, dlq_index: int) -> bool:
-        """Replay a dead-lettered event.
+        """
+        Replay a dead-lettered event.
 
         V138 F-2 FIX: The OLD code had a TOCTOU race — it read the entry
         under lock, released the lock for delivery, then popped by INDEX

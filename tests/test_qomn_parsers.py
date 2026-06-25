@@ -1,4 +1,4 @@
-"""
+r"""
 QOMN-FIRE INPUT PARSING AND VALIDATION TEST SUITE
 
 Safety-Critical: These tests validate that corrupted or invalid BIM files are
@@ -93,7 +93,7 @@ class TestFormatDetector(unittest.TestCase):
         self.assertIn("AC1032", ver)
 
     def test_rvt_format_detection(self):
-        """
+        r"""
         RVT files (OLE Compound Container) must be detected.
         BUG-1 VALIDATION: Verifies the OLE signature b"\\xd0\\xcf..." is correct
         binary bytes, not escaped string literals.
@@ -107,7 +107,7 @@ class TestFormatDetector(unittest.TestCase):
 
         res = FormatDetector.detect_format_and_version(rvt_path)
         self.assertTrue(res.is_success, f"RVT detection failed: {res.error() if res.is_failure else ''}")
-        fmt, ver = res.unwrap()
+        fmt, _ver = res.unwrap()
         self.assertEqual(fmt, "RVT")
 
     def test_dxf_format_detection(self):
@@ -123,7 +123,7 @@ class TestFormatDetector(unittest.TestCase):
 
         res = FormatDetector.detect_format_and_version(dxf_path)
         self.assertTrue(res.is_success, f"DXF detection failed: {res.error() if res.is_failure else ''}")
-        fmt, ver = res.unwrap()
+        fmt, _ver = res.unwrap()
         self.assertEqual(fmt, "DXF")
 
     def test_unrecognized_format_rejected(self):

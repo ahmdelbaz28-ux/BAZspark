@@ -50,7 +50,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Dict, Tuple
 
 from qomn_conduit.errors import CatalogError, PhysicsError
 from qomn_conduit.types import ConduitType, FittingType, Result, TradeSize
@@ -90,6 +89,7 @@ class Fitting:
         - Couplings: bend_radius == 0, developed_length == 0, body_length > 0,
           angle == 0
         - All: od > 0, weight >= 0, catalog_number non-empty
+
     """
 
     fitting_type: FittingType
@@ -105,7 +105,8 @@ class Fitting:
     nec_reference: str
 
     def __post_init__(self) -> None:
-        """Validate physical consistency of catalog entry.
+        """
+        Validate physical consistency of catalog entry.
 
         Raises PhysicsError (FATAL) if any value violates physical laws
         or is inconsistent with the fitting type. This catches catalog
@@ -190,7 +191,7 @@ class Fitting:
 # Module-level catalog storage
 # ─────────────────────────────────────────────────────────────────────────────
 
-_CATALOG: Dict[str, Fitting] = {}
+_CATALOG: dict[str, Fitting] = {}
 """
 Primary catalog store: catalog_number → Fitting.
 
@@ -201,7 +202,7 @@ compression and set-screw couplings share the same key tuple but
 have different catalog numbers).
 """
 
-_INDEX: Dict[Tuple[ConduitType, TradeSize, FittingType], str] = {}
+_INDEX: dict[tuple[ConduitType, TradeSize, FittingType], str] = {}
 """
 Lookup index: (conduit_type, trade_size, fitting_type) → catalog_number.
 
@@ -229,7 +230,8 @@ def _reg(
     weight_kg: float,
     nec_reference: str,
 ) -> None:
-    """Register a fitting into the module-level catalog.
+    """
+    Register a fitting into the module-level catalog.
 
     For elbow fittings, ``developed_length_in`` is computed from the
     bend radius using the formula:
@@ -257,6 +259,7 @@ def _reg(
         PhysicsError: If the constructed Fitting fails __post_init__
                       validation (e.g. negative dimensions, inconsistent
                       values for the fitting type).
+
     """
     # Compute developed length for elbows; 0.0 for straight fittings.
     if fitting_type in (FittingType.ELBOW_90, FittingType.ELBOW_45):
@@ -539,7 +542,8 @@ def get_fitting(
     trade_size: TradeSize,
     fitting_type: FittingType,
 ) -> Result[Fitting, CatalogError]:
-    """Look up a fitting by conduit type, trade size, and fitting type.
+    """
+    Look up a fitting by conduit type, trade size, and fitting type.
 
     Returns Result.ok(Fitting) if a matching entry exists in the catalog,
     or Result.err(CatalogError) if no entry is found.
@@ -572,6 +576,7 @@ def get_fitting(
             print(fitting.developed_length_in)  # 6.283
         else:
             print(result.error)  # CatalogError
+
     """
     key = (conduit_type, trade_size, fitting_type)
     catalog_number = _INDEX.get(key)
@@ -593,7 +598,8 @@ def get_fitting(
 
 
 def catalog_size() -> int:
-    """Return the total number of fittings in the catalog.
+    """
+    Return the total number of fittings in the catalog.
 
     This counts every unique catalog entry, including multiple coupling
     subtypes for the same conduit type (e.g. both EMT-C and EMT-S
@@ -601,12 +607,14 @@ def catalog_size() -> int:
 
     Returns:
         Number of registered Fitting objects.
+
     """
     return len(_CATALOG)
 
 
-def all_fittings() -> Dict[str, Fitting]:
-    """Return a shallow copy of the complete catalog.
+def all_fittings() -> dict[str, Fitting]:
+    """
+    Return a shallow copy of the complete catalog.
 
     The returned dictionary is keyed by catalog_number (str) and
     contains every registered Fitting. Modifications to the returned
@@ -619,5 +627,6 @@ def all_fittings() -> Dict[str, Fitting]:
 
     Returns:
         Dict[str, Fitting] — catalog_number → Fitting copy.
+
     """
     return dict(_CATALOG)

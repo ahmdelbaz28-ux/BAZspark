@@ -1,4 +1,5 @@
-"""fireai/core/elevator_shunt_trip.py.
+"""
+fireai/core/elevator_shunt_trip.py.
 ===================================
 Elevator Shunt-Trip Power Severance Auditor — CRITICAL LIFE-SAFETY MODULE.
 
@@ -149,7 +150,8 @@ class ShuntTripResult:
 
 
 class ElevatorShuntTripAuditor:
-    """Audits elevator spaces for mandatory shunt-trip heat detector
+    """
+    Audits elevator spaces for mandatory shunt-trip heat detector
     compliance per NFPA 72 §21.4.1 / ASME A17.1 Rule 2.8.3.3.
 
     V19.1 ENHANCEMENT: Now validates BOTH temperature gap AND RTI
@@ -187,7 +189,8 @@ class ElevatorShuntTripAuditor:
         safety_gap_C: float = SAFETY_GAP_C,
         rti_ratio_limit: float = RTI_RATIO_LIMIT,
     ) -> None:
-        """Initialise the auditor.
+        """
+        Initialise the auditor.
 
         Args:
             safety_gap_C: Minimum temperature gap (°C) between the heat
@@ -208,7 +211,8 @@ class ElevatorShuntTripAuditor:
         heat_detector_locations: list[dict[str, Any]],
         elevator_spaces: list[str],
     ) -> Any:
-        """Audit all sprinklers in elevator spaces for shunt-trip compliance.
+        """
+        Audit all sprinklers in elevator spaces for shunt-trip compliance.
 
         Each sprinkler dict now supports an optional ``rti`` field:
         - ``rti`` (float, optional): Response Time Index in (m·s)^0.5.

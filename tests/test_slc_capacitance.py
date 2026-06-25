@@ -107,7 +107,7 @@ class TestManufacturerLimits:
         assert SLC_MAX_CAPACITANCE_UF["generic"] == pytest.approx(0.50)
 
     def test_default_max_cap_0_5uf(self):
-        assert DEFAULT_MAX_CAP_UF == pytest.approx(0.50)
+        assert pytest.approx(0.50) == DEFAULT_MAX_CAP_UF
 
     def test_all_limits_positive(self):
         for mfr, limit in SLC_MAX_CAPACITANCE_UF.items():
@@ -123,10 +123,10 @@ class TestDeviceParasiticCapacitance:
     """V20.2 FIX: Per-device parasitic capacitance values."""
 
     def test_device_capacitance_25pf(self):
-        assert DEVICE_CAPACITANCE_PF == pytest.approx(25.0)
+        assert pytest.approx(25.0) == DEVICE_CAPACITANCE_PF
 
     def test_isolator_capacitance_40pf(self):
-        assert ISOLATOR_CAPACITANCE_PF == pytest.approx(40.0)
+        assert pytest.approx(40.0) == ISOLATOR_CAPACITANCE_PF
 
     def test_isolator_higher_than_device(self):
         """Isolators have higher parasitic capacitance than detectors."""
@@ -236,8 +236,10 @@ class TestSLCCapacitanceAuditor:
         assert val["safe"] is False
 
     def test_capacitance_formula(self):
-        """Total capacitance = cable_cap + device_cap + isolator_cap.
-        Verify by comparing a loop that should be compliant vs one that shouldn't."""
+        """
+        Total capacitance = cable_cap + device_cap + isolator_cap.
+        Verify by comparing a loop that should be compliant vs one that shouldn't.
+        """
         auditor = SLCCapacitanceAuditor(manufacturer="notifier")
         # FPLP_Shielded: 164 pF/m, 500m = 82,000 pF cable
         # 50 devices × 25 pF = 1,250 pF + 2 isolators × 40 pF = 80 pF

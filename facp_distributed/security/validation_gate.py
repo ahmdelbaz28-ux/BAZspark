@@ -1,11 +1,9 @@
-"""
-Validation Firewall for Distributed FACP System
-"""
+"""Validation Firewall for Distributed FACP System"""
 import hashlib
 import logging
 import time
 from enum import Enum
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..protocol.message_schema import FACPMessageValidator, FACPRequest
 from .auth import AuthProvider
@@ -19,9 +17,8 @@ class RiskLevel(Enum):
 
 
 class SecurityMiddleware:
-    """
-    Security middleware that enforces validation rules in distributed environment
-    """
+    """Security middleware that enforces validation rules in distributed environment"""
+
     def __init__(self, auth_provider: AuthProvider):
         self.auth_provider = auth_provider
         self.validator = FACPMessageValidator()
@@ -29,7 +26,7 @@ class SecurityMiddleware:
         self.payload_size_limit = 1024 * 1024  # 1MB
         self.rate_limits = {}  # user_id -> [(timestamp, count)]
 
-    def validate_request(self, request_data: Dict[str, Any], source_node: str = None) -> Tuple[bool, List[str], Dict[str, Any]]:
+    def validate_request(self, request_data: Dict[str, Any], source_node: Optional[str] = None) -> Tuple[bool, List[str], Dict[str, Any]]:
         """
         Validate incoming request against security rules in distributed context
         :param request_data: Raw request data
@@ -42,7 +39,7 @@ class SecurityMiddleware:
         try:
             request = FACPRequest.from_dict(request_data)
         except Exception as e:
-            errors.append(f"Invalid request format: {str(e)}")
+            errors.append(f"Invalid request format: {e!s}")
             return False, errors, {}
 
         # Validate the request format
@@ -93,7 +90,7 @@ class SecurityMiddleware:
                 return False, f"Payload exceeds size limit ({payload_size} > {self.payload_size_limit})"
             return True, ""
         except Exception as e:
-            return False, f"Could not measure payload size: {str(e)}"
+            return False, f"Could not measure payload size: {e!s}"
 
     def _check_rate_limits(self, token: str, source_node: str) -> Tuple[bool, str]:
         """Check if request rate is within limits"""
@@ -153,6 +150,7 @@ class ValidationFirewall:
     The security firewall that sits between L1 and L2 in distributed system
     All requests must pass through this gate before reaching orchestrator
     """
+
     def __init__(self, auth_provider: AuthProvider):
         self.middleware = SecurityMiddleware(auth_provider)
         self.request_cache = {}  # For idempotency across distributed system
@@ -160,7 +158,7 @@ class ValidationFirewall:
         self.distributed_idempotency_store = {}  # Shared idempotency store
         self.idempotency_ttl = 3600  # 1 hour TTL
 
-    def process_request(self, request_data: Dict[str, Any], source_node: str = None) -> Tuple[bool, Dict[str, Any], List[str]]:
+    def process_request(self, request_data: Dict[str, Any], source_node: Optional[str] = None) -> Tuple[bool, Dict[str, Any], List[str]]:
         """
         Process an incoming request through the validation firewall
         :param request_data: Raw request data
@@ -222,14 +220,13 @@ class ValidationFirewall:
                    ("operator" in user_roles and source_node and "l2" in source_node))
 
         # Client access might be limited based on user role
-        elif target == "client":
+        if target == "client":
             return len(user_permissions) > 0  # Basic authenticated access
 
         # Orchestrator access requires basic permissions
-        else:
-            return len(user_permissions) > 0
+        return len(user_permissions) > 0
 
-    def log_security_event(self, event_type: str, details: Dict[str, Any], source_node: str = None):
+    def log_security_event(self, event_type: str, details: Dict[str, Any], source_node: Optional[str] = None):
         """Log security-related events in distributed context"""
         details["source_node"] = source_node
         details["timestamp"] = time.time()
@@ -249,9 +246,7 @@ class ValidationFirewall:
         }
 
     def sync_idempotency_store(self, cluster_nodes: list, sync_callback):
-        """
-        Sync idempotency store with other nodes in cluster
-        """
+        """Sync idempotency store with other nodes in cluster"""
         sync_data = {
             "idempotency_store": self.distributed_idempotency_store,
             "node_id": getattr(self, 'node_id', 'validation_firewall'),
@@ -263,9 +258,7 @@ class ValidationFirewall:
             sync_callback(node, sync_data)
 
     def cleanup_expired_entries(self):
-        """
-        Clean up expired entries from stores
-        """
+        """Clean up expired entries from stores"""
         current_time = time.time()
 
         # Clean up expired idempotency entries

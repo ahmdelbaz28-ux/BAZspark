@@ -77,7 +77,8 @@ class TestBugV95Engine02IterationReset:
         )
 
     def test_engine_detects_violation_after_many_calls(self):
-        """Engine must detect CRITICAL violations after 30+ consecutive evaluate() calls.
+        """
+        Engine must detect CRITICAL violations after 30+ consecutive evaluate() calls.
 
         Before the fix: 30 calls × ~4 iters = 120 > max_iterations=100 → silent stop.
         After the fix: each call resets _iteration → engine always evaluates fully.
@@ -176,7 +177,8 @@ class TestBugV95Engine01AuditInflation:
         )
 
     def test_total_audit_entries_not_inflated(self):
-        """Audit log must not contain more not-fired entries than total rules.
+        """
+        Audit log must not contain more not-fired entries than total rules.
 
         Before fix: 34 entries for 10 rules (3.4× from per-iteration logging).
         After fix: not-fired entries ≤ number of rules.

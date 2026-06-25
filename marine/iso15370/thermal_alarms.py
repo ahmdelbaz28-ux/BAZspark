@@ -1,4 +1,5 @@
-"""marine/iso15370/thermal_alarms.py — ISO 15370 Thermal Alarms.
+"""
+marine/iso15370/thermal_alarms.py — ISO 15370 Thermal Alarms.
 
 ISO 15370: Ships and marine technology — Thermal alarms for passenger ships.
 Provides thermal-alarm spacing and temperature-class selection for escape
@@ -21,18 +22,22 @@ v2 BUGFIXES:
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 from marine.core.constants import (
-    THERMAL_ALARM_MAX_SPACING_M, THERMAL_ALARM_RESPONSE_C,
+    THERMAL_ALARM_MAX_SPACING_M,
 )
 from marine.core.types import (
-    ComplianceResult, MarineZone, ShipProject, SpaceCategory, ThermalAlarmClass,
+    ComplianceResult,
+    MarineZone,
+    ShipProject,
+    SpaceCategory,
+    ThermalAlarmClass,
 )
 
 
 def select_thermal_alarm_class(ambient_temp_c: float) -> ThermalAlarmClass:
-    """Pick Class A (70°C) or B (90°C) based on ambient temperature.
+    """
+    Pick Class A (70°C) or B (90°C) based on ambient temperature.
 
     ISO 15370 §6.2:
       - Class A: 70°C ±5°C — for low-ambient areas (escape routes exposed
@@ -47,10 +52,11 @@ def select_thermal_alarm_class(ambient_temp_c: float) -> ThermalAlarmClass:
 
 def calculate_thermal_alarm_count(
     zone: MarineZone,
-    ship: Optional[ShipProject] = None,
-    route_length_m: Optional[float] = None,
+    ship: ShipProject | None = None,
+    route_length_m: float | None = None,
 ) -> ComplianceResult:
-    """Calculate thermal alarms needed in a passenger-ship escape route.
+    """
+    Calculate thermal alarms needed in a passenger-ship escape route.
 
     ISO 15370 §6.4: alarms are spaced at most THERMAL_ALARM_MAX_SPACING_M
     (10 m) ALONG the escape route, not by floor area. The previous
@@ -71,6 +77,7 @@ def calculate_thermal_alarm_count(
 
     Returns:
         ComplianceResult with `details["alarm_count"]`.
+
     """
     result = ComplianceResult(
         compliant=True, standard_reference="ISO 15370 §6.4",
@@ -126,4 +133,4 @@ def calculate_thermal_alarm_count(
     return result
 
 
-__all__ = ["select_thermal_alarm_class", "calculate_thermal_alarm_count"]
+__all__ = ["calculate_thermal_alarm_count", "select_thermal_alarm_class"]

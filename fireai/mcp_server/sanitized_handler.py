@@ -1,4 +1,5 @@
-"""sanitized_handler.py — Input-Sanitized MCP Request Handler.
+"""
+sanitized_handler.py — Input-Sanitized MCP Request Handler.
 ===========================================================
 LIFE-SAFETY CRITICAL: This module is the GATEKEEPER between external
 MCP clients (AI assistants) and the FireAI system. Every request from
@@ -90,7 +91,8 @@ _FORBIDDEN_CODE_PATTERNS = [
 
 @dataclass
 class MCPRequest:
-    """An incoming request from an MCP client (AI assistant).
+    """
+    An incoming request from an MCP client (AI assistant).
 
     Attributes:
         request_id: Unique identifier for audit trail.
@@ -110,7 +112,8 @@ class MCPRequest:
 
 @dataclass
 class MCPResponse:
-    """Response to an MCP request.
+    """
+    Response to an MCP request.
 
     Attributes:
         request_id: Matches the MCPRequest.request_id.
@@ -135,7 +138,8 @@ class MCPResponse:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class SanitizedMCPHandler:
-    """Input-sanitized handler for MCP tool requests.
+    """
+    Input-sanitized handler for MCP tool requests.
 
     SAFETY: This handler is the ONLY approved entry point for MCP
     requests. It enforces:
@@ -215,7 +219,8 @@ class SanitizedMCPHandler:
         self._request_log: list[dict[str, Any]] = []
 
     def handle(self, request: MCPRequest) -> MCPResponse:
-        """Process an MCP request with full input sanitization.
+        """
+        Process an MCP request with full input sanitization.
 
         SAFETY: This method enforces ALL safety gates before any
         processing occurs. A request that fails ANY gate is REJECTED.

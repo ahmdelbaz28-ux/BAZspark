@@ -1,4 +1,5 @@
-"""international_reg_selector.py – International Regulatory Jurisdiction Selector.
+"""
+international_reg_selector.py – International Regulatory Jurisdiction Selector.
 ===============================================================================
 Maps project location to the correct regulatory framework for hazardous area
 classification. This is a LEGAL GATE — wrong jurisdiction = illegal design.
@@ -102,7 +103,8 @@ class ATEXZone(str, Enum):
 
 
 class UnknownCountryError(Exception):
-    """FIXED Q3: Raised when country has no registered regulatory framework.
+    """
+    FIXED Q3: Raised when country has no registered regulatory framework.
     Prevents exporting legally incorrect specifications.
     Criminal liability protection for life-safety systems.
     """
@@ -513,7 +515,8 @@ ZONE_TO_DIVISION: dict[ATEXZone, tuple[NECDivision, HazardClass]] = {
 
 
 def resolve(country_code: str) -> RegSelectorResult:
-    """Resolve regulatory framework for a country.
+    """
+    Resolve regulatory framework for a country.
 
     RAISES UnknownCountryError if country not in database.
     Never silently falls back to IECEx.
@@ -544,7 +547,8 @@ def convert_division_to_zone(
     division: str,
     hazard_class: str,
 ) -> str:
-    """Fix #2: Convert NEC Division/Class to IEC Zone.
+    """
+    Fix #2: Convert NEC Division/Class to IEC Zone.
     hazard_class MUST be provided — CLASS_I(gas) != CLASS_II(dust).
     CLASS_III has NO IEC equivalent.
 
@@ -594,7 +598,8 @@ class JurisdictionResult:
 
 
 class InternationalRegSelector:
-    """Resolves project country/region to the correct regulatory framework.
+    """
+    Resolves project country/region to the correct regulatory framework.
 
     This is a LEGAL GATE. Using the wrong system is a legal violation.
 
@@ -611,7 +616,8 @@ class InternationalRegSelector:
         country: str,
         override_system: HazardSystem | None = None,
     ) -> JurisdictionResult:
-        """Legacy resolve — still uses warning-based fallback for unknown countries.
+        """
+        Legacy resolve — still uses warning-based fallback for unknown countries.
         Prefer resolve_v21() for new code.
         """
         key = country.upper().strip()

@@ -1,4 +1,5 @@
-"""riser_diagram_generator.py — NFPA 72 §7.4.5 System Riser Diagram Generator.
+"""
+riser_diagram_generator.py — NFPA 72 §7.4.5 System Riser Diagram Generator.
 ===============================================================================
 
 Generates a fire alarm system riser diagram (one-line schematic) showing
@@ -60,7 +61,8 @@ __all__ = [
 
 @dataclass(frozen=True)
 class RiserPanel:
-    """A fire alarm control panel or booster in the riser diagram.
+    """
+    A fire alarm control panel or booster in the riser diagram.
 
     Attributes:
         panel_id:   Unique panel identifier (e.g. "FACP-1").
@@ -80,7 +82,8 @@ class RiserPanel:
 
 @dataclass(frozen=True)
 class RiserLoop:
-    """An SLC loop in the riser diagram.
+    """
+    An SLC loop in the riser diagram.
 
     Attributes:
         loop_id:           Loop identifier (e.g. "SLC-1").
@@ -106,7 +109,8 @@ class RiserLoop:
 
 @dataclass(frozen=True)
 class RiserNACCircuit:
-    """A NAC (Notification Appliance Circuit) in the riser diagram.
+    """
+    A NAC (Notification Appliance Circuit) in the riser diagram.
 
     Attributes:
         nac_id:         Circuit identifier (e.g. "NAC-1").
@@ -128,7 +132,8 @@ class RiserNACCircuit:
 
 @dataclass(frozen=True)
 class RiserNetworkLink:
-    """A network connection between panels.
+    """
+    A network connection between panels.
 
     Attributes:
         from_panel: Source panel ID.
@@ -146,7 +151,8 @@ class RiserNetworkLink:
 
 @dataclass
 class RiserDiagramSpec:
-    """Complete specification for a riser diagram.
+    """
+    Complete specification for a riser diagram.
 
     Attributes:
         project_name:    Project identifier.
@@ -170,7 +176,8 @@ class RiserDiagramSpec:
 
 @dataclass
 class RiserDiagramResult:
-    """Result of riser diagram generation.
+    """
+    Result of riser diagram generation.
 
     Attributes:
         output_path: Path to the generated DXF file.
@@ -196,7 +203,8 @@ class RiserDiagramResult:
 
 
 class RiserDiagramGenerator:
-    """Generate NFPA 72 §7.4.5 compliant fire alarm riser diagrams.
+    """
+    Generate NFPA 72 §7.4.5 compliant fire alarm riser diagrams.
 
     Creates a DXF-format schematic showing:
       - Panels (FACP/Booster) arranged vertically by floor
@@ -234,7 +242,8 @@ class RiserDiagramGenerator:
         spec: RiserDiagramSpec,
         output_path: str = "riser_diagram.dxf",
     ) -> RiserDiagramResult:
-        """Generate a riser diagram DXF file.
+        """
+        Generate a riser diagram DXF file.
 
         Args:
             spec: Riser diagram specification.

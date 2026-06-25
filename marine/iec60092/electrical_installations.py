@@ -15,26 +15,9 @@ the main and emergency switchboard, with ≥30 min battery autonomy (UPS).
 
 from __future__ import annotations
 
-from typing import Optional
-
-from marine.core.constants import (
-    FIRE_SYSTEM_UPS_MIN_AUTONOMY_MIN,
-    INSULATION_MONITOR_THRESHOLD_KOHM,
-    SHIP_EMERGENCY_VOLTAGE_V,
-    SHIP_LOW_VOLTAGE_V,
-    SHIP_MAIN_VOLTAGE_V,
-)
-from marine.core.types import (
-    ComplianceResult,
-    ShipElectricalSpec,
-    ShipProject,
-)
-
-
 from marine.engine.ship_power import (  # noqa: F401  # M4 refactor
     design_fire_system_power,
     validate_insulation_monitoring,
 )
-
 
 __all__ = ["design_fire_system_power", "validate_insulation_monitoring"]

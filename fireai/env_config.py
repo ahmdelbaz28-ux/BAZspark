@@ -1,4 +1,5 @@
-"""env_config.py — Environment Configuration with Validation.
+"""
+env_config.py — Environment Configuration with Validation.
 ==========================================================
 Replaces raw .env parsing with validated, fail-fast configuration.
 
@@ -32,7 +33,8 @@ except ImportError:
 
 @dataclass(frozen=True)
 class FireAIConfig:
-    """Validated, immutable application configuration.
+    """
+    Validated, immutable application configuration.
 
     All values sourced from environment variables with safe defaults.
     Validation runs at construction — no invalid config object can exist.

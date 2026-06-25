@@ -1,4 +1,5 @@
-"""Tests for the Role-Based Access Control (RBAC) system.
+"""
+Tests for the Role-Based Access Control (RBAC) system.
 
 Tests cover:
   - Role-permission mapping correctness
@@ -156,7 +157,8 @@ class TestAPIKeyManagement:
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     def test_add_and_validate_key(self):
-        """Adding a key should make it validatable.
+        """
+        Adding a key should make it validatable.
 
         STRESS-TEST FIX #1: The key_hash returned by add_api_key is the
         bcrypt hash (used for verification). The key_hash returned by
@@ -240,14 +242,15 @@ class TestAPIKeyManagement:
         assert deleted is False
 
     def test_key_stored_as_hash(self):
-        """Keys should be stored as hashes, never plaintext.
+        """
+        Keys should be stored as hashes, never plaintext.
 
         STRESS-TEST FIX #1: The dict key is now the HMAC lookup key
         (deterministic, used for O(1) finding). The value contains a
         bcrypt_hash field which is the verification hash. Neither the
         plaintext key nor a plain SHA-256 of it should appear.
         """
-        from backend.api_keys import _load_keys, add_api_key, _lookup_key
+        from backend.api_keys import _load_keys, _lookup_key, add_api_key
         from backend.rbac import Role
 
         add_api_key("plaintext-key", Role.ADMIN, "Hash test")
@@ -260,7 +263,7 @@ class TestAPIKeyManagement:
         stored_data = json.dumps(keys)
         assert "plaintext-key" not in stored_data
         # The plain SHA-256 (no salt, vulnerable to rainbow tables) should NOT appear
-        plain_sha256 = hashlib.sha256("plaintext-key".encode()).hexdigest()
+        plain_sha256 = hashlib.sha256(b"plaintext-key").hexdigest()
         assert plain_sha256 not in stored_data
         # The entry should contain a bcrypt_hash field
         entry = keys[expected_lookup]
@@ -357,8 +360,7 @@ class TestAuthDependency:
             async def dispatch(self, request, call_next):
                 role_header = request.headers.get("X-Test-Role", "viewer")
                 request.state.fireai_role = Role(role_header)
-                response = await call_next(request)
-                return response
+                return await call_next(request)
 
         app_with_middleware = FastAPI()
         app_with_middleware.add_middleware(SetRoleMiddleware)

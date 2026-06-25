@@ -159,7 +159,8 @@ class TestRoomResult:
 
 
 class TestFloorResultCompute:
-    """Test FloorResult.compute() which determines building status.
+    """
+    Test FloorResult.compute() which determines building status.
 
     V50 FIX: Empty room list → ERROR (not APPROVED).
     V13 FIX: "PARTIAL" → REQUIRES_MANUAL_REVIEW.
@@ -213,7 +214,8 @@ class TestFloorResultCompute:
         assert fr.status == "REQUIRES_MANUAL_REVIEW"
 
     def test_v50_empty_rooms_error(self):
-        """V50 FIX: No rooms processed → ERROR (not APPROVED).
+        """
+        V50 FIX: No rooms processed → ERROR (not APPROVED).
 
         An empty 'APPROVED' report is a false compliance claim.
         """
@@ -247,7 +249,8 @@ class TestFloorResultCompute:
         assert fr.total_time_s == pytest.approx(0.015 + 0.022, abs=0.001)
 
     def test_count_mismatch_downgrades_to_error(self):
-        """V50 FIX: If counted != total_rooms, status → ERROR.
+        """
+        V50 FIX: If counted != total_rooms, status → ERROR.
 
         Guards against unrecognized status strings.
         """
@@ -274,7 +277,8 @@ class TestFloorResultCompute:
         assert "licensed fire protection engineer" in fr.disclaimer
 
     def test_all_error_no_pass_rejected(self, error_room_result):
-        """All rooms ERROR and no PASS → ERROR (not REJECTED).
+        """
+        All rooms ERROR and no PASS → ERROR (not REJECTED).
 
         V76 HIGH-03 FIX: When every room has status ERROR, the building was NOT
         analyzed — labeling it "REJECTED" implies analysis found non-compliance.
@@ -426,7 +430,8 @@ class TestFloorOrchestratorInit:
 
 
 class TestProcessOneRoomUnresolvedGeometry:
-    """V111 CRITICAL: Rooms with unresolved geometry MUST skip NFPA analysis.
+    """
+    V111 CRITICAL: Rooms with unresolved geometry MUST skip NFPA analysis.
 
     Running NFPA analysis on fabricated geometry produces FALSE compliance
     results — a building could be signed off as "protected" when it is NOT.
@@ -654,7 +659,8 @@ class TestFloorOrchestratorProcess:
 
 
 class TestV60CoverageRadiusFallback:
-    """V60 FIX (P4-3): When calculate_coverage_radius_from_height fails,
+    """
+    V60 FIX (P4-3): When calculate_coverage_radius_from_height fails,
     log a warning instead of silently falling back to defaults.
     """
 
@@ -694,14 +700,16 @@ class TestV60CoverageRadiusFallback:
 
 
 class TestV13AdaptiveReSolve:
-    """V13 FIX: If DensityOptimizer coverage fails, try ConstraintSolver.
+    """
+    V13 FIX: If DensityOptimizer coverage fails, try ConstraintSolver.
 
     Note: ConstraintSolver module may not exist (ImportError), in which case
     the adaptive re-solve error is caught and reported to the user.
     """
 
     def test_adaptive_re_solve_constraint_solver_recovers(self):
-        """When DensityOptimizer fails but ConstraintSolver recovers, result is PASS.
+        """
+        When DensityOptimizer fails but ConstraintSolver recovers, result is PASS.
 
         V124 created constraint_solver.py, so the import now succeeds.
         This test verifies the recovery path: DensityOptimizer fails,
@@ -771,7 +779,8 @@ class TestV13AdaptiveReSolve:
                         assert any("Adaptive Re-solve" in str(n) for n in result.audit_notes)
 
     def test_adaptive_re_solve_both_solvers_fail(self):
-        """When DensityOptimizer AND ConstraintSolver both fail, result is FAIL.
+        """
+        When DensityOptimizer AND ConstraintSolver both fail, result is FAIL.
 
         This replaces the old test that checked ImportError — now we verify
         the double-failure path explicitly by mocking ConstraintSolver to

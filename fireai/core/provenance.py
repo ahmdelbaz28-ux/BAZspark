@@ -1,4 +1,5 @@
-"""fireai.core.provenance — Decision Provenance & Audit Trail.
+"""
+fireai.core.provenance — Decision Provenance & Audit Trail.
 ===========================================================
 
 Provides structured audit provenance for engineering decisions in the
@@ -30,7 +31,8 @@ from typing import Any
 
 
 class ConfidenceLevel(Enum):
-    """Confidence level for engineering decisions.
+    """
+    Confidence level for engineering decisions.
 
     Matches ISO 13849 PL (Performance Level) hierarchy:
       DETERMINISTIC: Mathematically proven (PL e equivalent)
@@ -54,7 +56,8 @@ class ConfidenceLevel(Enum):
 
 @dataclass(frozen=True)
 class ConfidenceScore:
-    """Quantified confidence in an engineering decision.
+    """
+    Quantified confidence in an engineering decision.
 
     Attributes:
         level: Qualitative confidence level.
@@ -84,7 +87,8 @@ class ConfidenceScore:
 
 @dataclass(frozen=True)
 class RuleApplied:
-    """Record of a specific rule or standard applied during decision-making.
+    """
+    Record of a specific rule or standard applied during decision-making.
 
     Attributes:
         rule_id: Unique rule identifier (e.g., 'NFPA72-17.6.3.1.1').
@@ -116,7 +120,8 @@ class RuleApplied:
 
 @dataclass(frozen=True)
 class Violation:
-    """A violation found during rule application.
+    """
+    A violation found during rule application.
 
     Attributes:
         rule_id: Rule that was violated.
@@ -144,7 +149,8 @@ class Violation:
 
 @dataclass
 class DecisionProvenance:
-    """Complete provenance record for an engineering decision.
+    """
+    Complete provenance record for an engineering decision.
 
     This is the central audit artifact — every safety-critical decision
     in FireAI must produce a DecisionProvenance object that can be:
@@ -196,7 +202,8 @@ class DecisionProvenance:
 
     @classmethod
     def new(cls, **kwargs: Any) -> DecisionProvenance:
-        """Factory method to create a DecisionProvenance with auto-generated ID.
+        """
+        Factory method to create a DecisionProvenance with auto-generated ID.
 
         Accepts the same keyword arguments as the constructor, plus
         automatically generates decision_id and timestamp if not provided.
@@ -237,7 +244,8 @@ class DecisionProvenance:
 
 
 class ProvenanceStore:
-    """In-memory store for decision provenance records.
+    """
+    In-memory store for decision provenance records.
 
     Thread-safe storage for all engineering decisions made during
     a FireAI analysis session. Supports lookup by decision_id,

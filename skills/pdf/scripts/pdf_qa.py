@@ -249,7 +249,7 @@ def check_page_size_consistency(doc, result):
     if len(sizes) > 1:
         result.warn("Page size", f"Inconsistent page sizes: {sizes}")
     else:
-        size = list(sizes)[0]
+        size = next(iter(sizes))
         # Convert to mm
         w_mm = size[0] * 25.4 / 72
         h_mm = size[1] * 25.4 / 72
@@ -282,7 +282,8 @@ def check_text_overflow(doc, result):
 
 
 def check_content_fill_ratio(doc, result):
-    """Check content fill ratio per page — warns when content is crammed at top leaving large void below.
+    """
+    Check content fill ratio per page — warns when content is crammed at top leaving large void below.
 
     Rules:
     - Skip single-page documents (may be intentional design)
@@ -350,7 +351,8 @@ def check_content_fill_ratio(doc, result):
 
 
 def check_cover_bleed(doc, result, poster=False):
-    """Check if the cover page (page 1) fills the entire page area (full-bleed).
+    """
+    Check if the cover page (page 1) fills the entire page area (full-bleed).
 
     A properly designed cover should have background color/graphics extending
     to the page edges. If the content bbox has significant margins on all sides,
@@ -596,7 +598,8 @@ def check_font_embedding(doc, result):
 
 
 def check_helvetica_in_cjk(doc, result):
-    """Detect Helvetica rendering visible text in documents containing CJK text.
+    """
+    Detect Helvetica rendering visible text in documents containing CJK text.
 
     Helvetica is a Latin-only built-in PDF font. When it appears rendering
     actual text content in a CJK document, it almost always means a raw string
@@ -687,7 +690,8 @@ def check_metadata(doc, result):
 
 
 def check_toc_without_cover(doc, result):
-    """Detect TOC on page 1 without a preceding cover page.
+    """
+    Detect TOC on page 1 without a preceding cover page.
 
     If the first page contains Table of Contents / 目录, it means the document
     has a TOC but no cover page. This is a structural issue — documents with

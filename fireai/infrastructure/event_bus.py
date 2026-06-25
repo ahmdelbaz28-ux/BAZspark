@@ -1,4 +1,5 @@
-"""fireai/infrastructure/event_bus.py — Production Event Bus with Schema Validation,
+"""
+fireai/infrastructure/event_bus.py — Production Event Bus with Schema Validation,
 Retry with Backoff, Dead Letter Queue, At-Least-Once Delivery, and Event Replay.
 
 Architecture:
@@ -205,7 +206,8 @@ class DeadLetterRecord:
 
 
 class DeadLetterQueue:
-    """Persistent dead letter queue with replay capability.
+    """
+    Persistent dead letter queue with replay capability.
 
     Stores failed events and supports replaying them through the event bus.
     """
@@ -285,7 +287,8 @@ class EventBus(ABC):
 # ════════════════════════════════════════════════════════════════════════════
 
 class InMemoryEventBus(EventBus):
-    """Single-process event bus for development and testing.
+    """
+    Single-process event bus for development and testing.
 
     Features:
       - Schema validation before dispatch
@@ -379,7 +382,8 @@ class InMemoryEventBus(EventBus):
         )
 
     async def replay_events(self, event_type: str | None = None, from_time: datetime | None = None) -> int:
-        """Replay stored events — at-least-once delivery guarantee.
+        """
+        Replay stored events — at-least-once delivery guarantee.
 
         Returns the number of events replayed.
         """
@@ -433,7 +437,8 @@ class InMemoryEventBus(EventBus):
 # ════════════════════════════════════════════════════════════════════════════
 
 class RedisEventBus(EventBus):
-    """Redis Streams-based event bus for lightweight production deployments.
+    """
+    Redis Streams-based event bus for lightweight production deployments.
 
     Uses Redis Streams for persistence, consumer groups for at-least-once delivery,
     and a separate list-based dead letter queue.
@@ -601,7 +606,8 @@ class RedisEventBus(EventBus):
 # ════════════════════════════════════════════════════════════════════════════
 
 class KafkaEventBus(EventBus):
-    """Apache Kafka-based event bus for high-throughput production deployments.
+    """
+    Apache Kafka-based event bus for high-throughput production deployments.
 
     Uses aiokafka for async Kafka integration with consumer groups,
     automatic offset commit, and DLQ topics for failed events.
@@ -789,7 +795,8 @@ class KafkaEventBus(EventBus):
 # ════════════════════════════════════════════════════════════════════════════
 
 class EventBusMiddleware:
-    """FastAPI middleware that publishes request events to the event bus.
+    """
+    FastAPI middleware that publishes request events to the event bus.
 
     Automatically captures HTTP request metadata as events for monitoring,
     auditing, and analytics pipelines.

@@ -1,4 +1,5 @@
-"""fireai/integration/autocad_bridge.py.
+"""
+fireai/integration/autocad_bridge.py.
 ======================================
 AutoCAD Integration — DWG/DXF processing and AutoCAD APS/Forge compatibility.
 
@@ -134,7 +135,8 @@ class DesignData:
 
 
 class _DXFTextParser:
-    """Minimal DXF text parser for when ezdxf is unavailable.
+    """
+    Minimal DXF text parser for when ezdxf is unavailable.
 
     Parses basic DXF entities (LINE, LWPOLYLINE, CIRCLE, INSERT)
     and groups them by layer. Does not support blocks, xdata, or
@@ -257,7 +259,8 @@ class _DXFTextParser:
 
 
 class AutoCADBridge:
-    """DWG/DXF processing and AutoCAD APS/Forge compatibility.
+    """
+    DWG/DXF processing and AutoCAD APS/Forge compatibility.
 
     Handles:
       - DXF import (via ezdxf when available, fallback text parser)
@@ -299,7 +302,8 @@ class AutoCADBridge:
     # ── Import ──────────────────────────────────────────────────────────
 
     def import_dwg(self, path: str) -> DesignData:
-        """Import a DWG file.
+        """
+        Import a DWG file.
 
         Production Note:
           Full DWG support requires the Open Design Alliance (ODA/Teigha)
@@ -348,7 +352,8 @@ class AutoCADBridge:
         return design
 
     def import_dxf(self, path: str) -> DesignData:
-        """Import a DXF file using ezdxf (preferred) or fallback text parser.
+        """
+        Import a DXF file using ezdxf (preferred) or fallback text parser.
 
         Args:
             path: Path to the DXF file.
@@ -404,7 +409,8 @@ class AutoCADBridge:
     # ── Export ──────────────────────────────────────────────────────────
 
     def export_dwg(self, design: DesignData, path: str) -> str:
-        """Export design data to DWG format.
+        """
+        Export design data to DWG format.
 
         Production Note:
           DWG export requires the ODA/Teigha SDK or AutoCAD API.
@@ -446,7 +452,8 @@ class AutoCADBridge:
         return path
 
     def export_dxf(self, design: DesignData, path: str) -> str:
-        """Export design data to DXF format.
+        """
+        Export design data to DXF format.
 
         Preserves all layers and entities from the design data,
         enabling round-trip: import DXF -> process -> export DXF.

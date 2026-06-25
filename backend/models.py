@@ -1,4 +1,5 @@
-"""backend/models.py — Pydantic V2 models for the Digital Twin REST API.
+"""
+backend/models.py — Pydantic V2 models for the Digital Twin REST API.
 
 These models match the frontend TypeScript interfaces defined in
 frontend/src/services/digitalTwinApi.ts exactly.
@@ -145,7 +146,8 @@ class CreateDeviceInput(BaseModel):
     @field_validator("load")
     @classmethod
     def validate_load_finite(cls, v: float) -> float:
-        """Load must be a finite number (not inf or nan).
+        """
+        Load must be a finite number (not inf or nan).
 
         FIX #23: Moved math import to module level. Also removed the
         'if v and' guard — it incorrectly skipped validation for 0.0
@@ -158,7 +160,8 @@ class CreateDeviceInput(BaseModel):
 
 
 class UpdateDeviceInput(BaseModel):
-    """Input for updating an existing device.
+    """
+    Input for updating an existing device.
 
     SAFETY NOTE: load_unit is required when updating the load field to prevent
     silent wrong-unit errors. NFPA 72 battery calculations require Amperes.
@@ -216,7 +219,8 @@ class CreateConnectionInput(BaseModel):
     @field_validator("toId")
     @classmethod
     def validate_different_endpoints(cls, v: str, info) -> str:
-        """A connection must connect two different devices.
+        """
+        A connection must connect two different devices.
 
         A self-connection is meaningless in fire alarm wiring and
         could indicate a data entry error.

@@ -1,4 +1,5 @@
-"""backend/routers/digital_twin.py — Digital Twin Conversion Endpoints.
+"""
+backend/routers/digital_twin.py — Digital Twin Conversion Endpoints.
 ===================================================================
 
 Provides endpoints for bidirectional CAD/BIM conversion,
@@ -53,7 +54,8 @@ def get_config_manager() -> ConversionConfigManager:
 
 
 def _safe_resolve_upload_path(filename: str) -> str:
-    """Resolve a filename to a safe path within the uploads directory.
+    """
+    Resolve a filename to a safe path within the uploads directory.
 
     Prevents path traversal by ensuring the resolved path stays
     within the designated uploads directory.
@@ -83,7 +85,8 @@ class ConvertRequest(BaseModel):
 
 
 class ConvertResponse(BaseModel):
-    """Response model for conversion operation.
+    """
+    Response model for conversion operation.
 
     FIX #8: Added duration_seconds field which was previously missing,
     causing Pydantic ValidationError at runtime.
@@ -132,7 +135,8 @@ class RollbackRequest(BaseModel):
 
 
 class UpdateMappingRequest(BaseModel):
-    """Request model for updating a single mapping rule (FIX #25).
+    """
+    Request model for updating a single mapping rule (FIX #25).
 
     Uses request body instead of query parameters for a POST operation.
     """
@@ -248,7 +252,8 @@ async def rollback_to_version(
     request: RollbackRequest,
     service: DigitalTwinService = Depends(get_digital_twin_service),
 ) -> OperationResponse:
-    """Rollback to a specific conversion version.
+    """
+    Rollback to a specific conversion version.
 
     FIX #9: Removed the duplicate /rollback/{version_id} route that lacked
     RBAC protection. This is now the single canonical rollback endpoint.
@@ -295,7 +300,8 @@ async def get_available_mappings(
 async def get_digital_twin_status(
     service: DigitalTwinService = Depends(get_digital_twin_service),
 ) -> Dict[str, Any]:
-    """Get Digital Twin service status.
+    """
+    Get Digital Twin service status.
 
     FIX #11: Replaced __import__('datetime').datetime.now() with proper
     import using UTC timezone for consistent timestamps.
@@ -318,7 +324,8 @@ async def update_single_mapping(
     request: UpdateMappingRequest,
     config_mgr: ConversionConfigManager = Depends(get_config_manager),
 ) -> Dict[str, Any]:
-    """Update a single mapping rule.
+    """
+    Update a single mapping rule.
 
     FIX #25: Uses request body (UpdateMappingRequest) instead of query
     parameters, enabling proper validation and API documentation.
@@ -345,7 +352,8 @@ async def update_single_mapping(
 async def get_config(
     config_mgr: ConversionConfigManager = Depends(get_config_manager),
 ) -> Dict[str, Any]:
-    """Get current conversion configuration.
+    """
+    Get current conversion configuration.
 
     FIX #10: Removed the duplicate /config GET route that lacked RBAC
     protection. This is now the single canonical config endpoint.
@@ -386,7 +394,8 @@ async def update_config(
     dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
 )
 async def download_file(filename: str) -> FileResponse:
-    """Download a converted file.
+    """
+    Download a converted file.
 
     FIX #12: Added missing imports for os, status, FileResponse, and
     _safe_resolve_upload_path that were previously undefined.

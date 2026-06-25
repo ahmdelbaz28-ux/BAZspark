@@ -1,4 +1,5 @@
-"""langwatch_integration.py — LangWatch AI Observability Integration.
+"""
+langwatch_integration.py — LangWatch AI Observability Integration.
 ====================================================================
 
 MISSION PHASE 2 — AI Observability & Reliability (CORRECTED TARGET)
@@ -72,7 +73,8 @@ NFPA72_MAX_HEAT_SPACING_M = 6.1
 
 
 class LangWatchClient:
-    """Lazy-initialized LangWatch client.
+    """
+    Lazy-initialized LangWatch client.
 
     Per agent.md Rule 12: if LangWatch is unavailable (no API key, network
     issue, etc.), ALL operations silently no-op. The pipeline MUST NOT
@@ -131,7 +133,8 @@ class LangWatchClient:
         return self._client is not None
 
     def trace(self, name: str, **kwargs: Any) -> Any:
-        """Create a LangWatch trace context.
+        """
+        Create a LangWatch trace context.
 
         Returns a no-op context manager if LangWatch is unavailable.
         """
@@ -145,7 +148,8 @@ class LangWatchClient:
             return _NoOpTraceContext()
 
     def record_event(self, event_type: str, data: dict[str, Any]) -> None:
-        """Record an event in LangWatch (e.g., LLM call, hallucination check).
+        """
+        Record an event in LangWatch (e.g., LLM call, hallucination check).
 
         Silently no-ops if LangWatch is unavailable.
         """
@@ -191,7 +195,8 @@ def get_langwatch() -> LangWatchClient:
 
 
 def trace_llm_call(operation_name: str) -> Callable:
-    """Decorator that traces LLM calls via LangWatch.
+    """
+    Decorator that traces LLM calls via LangWatch.
 
     Usage:
         @trace_llm_call("mem0_search_standards")
@@ -317,7 +322,8 @@ def hallucination_check_spacing(
     detector_type: str,
     operation_id: str | None = None,
 ) -> dict[str, Any]:
-    """Cross-reference AI-suggested spacing against NFPA 72 maximums.
+    """
+    Cross-reference AI-suggested spacing against NFPA 72 maximums.
 
     Per agent.md V75: AI is advisory only, but we STILL verify its
     suggestions don't violate code. If the AI suggests a spacing larger
@@ -426,7 +432,8 @@ def record_confidence_score(
     reasoning: str = "",
     operation_id: str | None = None,
 ) -> None:
-    """Record a confidence score for an automated design decision.
+    """
+    Record a confidence score for an automated design decision.
 
     Per PHASE 2: "Log Confidence Scores for every automated design decision."
 

@@ -1,4 +1,5 @@
-"""ETAP Expert Skill — LLM-Based Request Classifier (V131 Phase 3).
+"""
+ETAP Expert Skill — LLM-Based Request Classifier (V131 Phase 3).
 =================================================================
 Enhanced classifier that uses LLM-based reasoning when available,
 with fallback to the deterministic pattern-based classifier.
@@ -94,7 +95,8 @@ class LLMClassificationResult:
 
 
 def _try_llm_classification(request: str) -> LLMClassificationResult | None:
-    """Attempt LLM-based classification using z-ai-web-dev-sdk CLI.
+    """
+    Attempt LLM-based classification using z-ai-web-dev-sdk CLI.
 
     Returns None if LLM is unavailable or fails.
     """
@@ -146,7 +148,8 @@ def _try_llm_classification(request: str) -> LLMClassificationResult | None:
 
 
 def _try_zai_sdk_classification(request: str) -> LLMClassificationResult | None:
-    """Attempt classification using z-ai-web-dev-sdk Python bindings if available.
+    """
+    Attempt classification using z-ai-web-dev-sdk Python bindings if available.
 
     The z-ai-web-dev-sdk provides LLM capabilities. If the SDK is installed
     and ZAI_API_KEY is set, use it; otherwise fall back.
@@ -170,7 +173,8 @@ def _try_zai_sdk_classification(request: str) -> LLMClassificationResult | None:
 
 
 def _enhance_pattern_result(request: str, category: str) -> LLMClassificationResult:
-    """Enhance pattern-based classification with structured reasoning.
+    """
+    Enhance pattern-based classification with structured reasoning.
 
     The pattern-based classifier returns only a category; this function
     adds reasoning, missing_data, and correct_study fields.
@@ -241,7 +245,8 @@ def _enhance_pattern_result(request: str, category: str) -> LLMClassificationRes
 
 
 def classify_with_llm(request: str, use_llm: bool = True) -> LLMClassificationResult:
-    """Classify a user request using LLM (if available) with pattern fallback.
+    """
+    Classify a user request using LLM (if available) with pattern fallback.
 
     Args:
         request: User's natural-language request

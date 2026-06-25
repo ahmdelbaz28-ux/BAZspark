@@ -1,4 +1,5 @@
-"""ETAP Expert Skill — Extended Simulations (V131 Phase 3).
+"""
+ETAP Expert Skill — Extended Simulations (V131 Phase 3).
 ========================================================
 Three additional simulations added per Operator request:
     8. Motor Starting (IEEE 399 — Voltage Dip + Acceleration Time)
@@ -84,7 +85,8 @@ def simulate_motor_starting(
     safe_stall_time_s: float = 12.0,
     load_type: str = "motors_starting",
 ) -> MotorStartingResult:
-    """Simulate motor starting per skill Section 7.3 and IEEE 399.
+    """
+    Simulate motor starting per skill Section 7.3 and IEEE 399.
 
     Steps:
         1. Calculate motor FLA: FLA = P / (√3 × V × PF × η)
@@ -238,7 +240,8 @@ def simulate_cable_pulling(
     pull_speed_ft_per_min: float = 25.0,  # Recommended max
     incline_angle_deg: float = 0.0,  # 0 = horizontal pull
 ) -> CablePullingResult:
-    """Simulate cable pulling tension per skill Section A7 + IEEE 835.
+    """
+    Simulate cable pulling tension per skill Section A7 + IEEE 835.
 
     Steps:
         1. Calculate straight-section tension: T = T_in + W × L × (μ × cos α + sin α)
@@ -375,7 +378,8 @@ def simulate_ground_grid(
     grid_spacing_m: float = 5.0,  # 5m between conductors
     body_weight_kg: float = 50.0,  # 50kg (conservative per IEEE 80)
 ) -> GroundGridResult:
-    """Simulate ground grid design per IEEE 80-2013.
+    """
+    Simulate ground grid design per IEEE 80-2013.
 
     Steps:
         1. Calculate foot resistance: R_f = ρ_s × C / (4 × b)

@@ -104,7 +104,8 @@ def make_result(source: str, check_type: str, errors: List, warnings: List,
 # DOCX XML parsing helpers
 # ---------------------------------------------------------------------------
 def parse_docx_xml(docx_path: str) -> Optional[ET.Element]:
-    """Extract and parse document.xml from a .docx file.
+    """
+    Extract and parse document.xml from a .docx file.
 
     Returns the root Element or None if extraction fails.
     """
@@ -181,7 +182,8 @@ def is_standard_heading_style(style_val: Optional[str]) -> bool:
 
 
 def paragraph_is_bold_large(para: ET.Element) -> bool:
-    """Check if a paragraph has bold text and large font (≥28 half-points / 14pt).
+    """
+    Check if a paragraph has bold text and large font (≥28 half-points / 14pt).
 
     Checks both paragraph-level and run-level properties.
     """
@@ -230,7 +232,8 @@ def paragraph_is_bold_large(para: ET.Element) -> bool:
 
 
 def docx_has_toc_field(root: ET.Element) -> bool:
-    """Check if the document has a TOC field code.
+    """
+    Check if the document has a TOC field code.
 
     Looks for:
     - <w:fldSimple> with w:instr containing "TOC"
@@ -251,7 +254,8 @@ def docx_has_toc_field(root: ET.Element) -> bool:
 
 
 def find_toc_field_boundaries(root: ET.Element) -> Tuple[Optional[ET.Element], Optional[ET.Element], Optional[ET.Element]]:
-    """Find the TOC field begin/separate/end fldChar elements.
+    """
+    Find the TOC field begin/separate/end fldChar elements.
 
     Returns (begin_elem, separate_elem, end_elem) — any may be None.
     We search for the TOC instrText and then find the corresponding
@@ -303,7 +307,8 @@ def find_toc_field_boundaries(root: ET.Element) -> Tuple[Optional[ET.Element], O
 
 
 def find_toc_field_boundaries_v2(root: ET.Element) -> Dict[str, Any]:
-    """Enhanced TOC boundary finder that works with nested fields.
+    """
+    Enhanced TOC boundary finder that works with nested fields.
 
     Returns dict with:
         'has_toc': bool
@@ -382,7 +387,8 @@ def find_toc_field_boundaries_v2(root: ET.Element) -> Dict[str, Any]:
 
 def check_toc_has_content(root: ET.Element, separate_para_idx: Optional[int],
                           end_para_idx: Optional[int]) -> bool:
-    """Check if there are w:t elements between the separate and end markers.
+    """
+    Check if there are w:t elements between the separate and end markers.
 
     Looks at all paragraphs between the separate and end field char markers.
     """
@@ -404,7 +410,8 @@ def check_toc_has_content(root: ET.Element, separate_para_idx: Optional[int],
 
 
 def fuzzy_match(text_a: str, text_b: str) -> bool:
-    """Check if two strings match fuzzily.
+    """
+    Check if two strings match fuzzily.
 
     Match if one contains the other, or they share >60% of characters.
     """
@@ -430,7 +437,8 @@ def fuzzy_match(text_a: str, text_b: str) -> bool:
 
 
 def _detect_language(texts: list) -> str:
-    """Detect the primary language of a list of text strings.
+    """
+    Detect the primary language of a list of text strings.
 
     Returns 'zh' if more than half contain Chinese characters, else 'en'.
     """
@@ -457,7 +465,8 @@ def _get_heading_level(style_val: Optional[str]) -> int:
 
 
 def check_run_hint_style(run: ET.Element) -> Tuple[bool, bool]:
-    """Check if a run has gray color and small font size.
+    """
+    Check if a run has gray color and small font size.
 
     Returns (has_gray_color, has_small_font).
     """
@@ -502,7 +511,8 @@ def check_run_hint_style(run: ET.Element) -> Tuple[bool, bool]:
 # check-docx implementation
 # ---------------------------------------------------------------------------
 def check_docx(docx_path: str) -> Dict[str, Any]:
-    """Run all DOCX TOC validation checks.
+    """
+    Run all DOCX TOC validation checks.
 
     Returns the result dict.
     """
@@ -685,7 +695,8 @@ def check_docx(docx_path: str) -> Dict[str, Any]:
 # check-pdf implementation
 # ---------------------------------------------------------------------------
 def check_pdf(pdf_path: str) -> Dict[str, Any]:
-    """Run all PDF TOC validation checks.
+    """
+    Run all PDF TOC validation checks.
 
     Returns the result dict.
     """
@@ -864,7 +875,8 @@ def check_pdf(pdf_path: str) -> Dict[str, Any]:
 # check-conversion implementation
 # ---------------------------------------------------------------------------
 def check_conversion(docx_path: str, pdf_path: str) -> Dict[str, Any]:
-    """Run DOCX→PDF conversion TOC consistency checks.
+    """
+    Run DOCX→PDF conversion TOC consistency checks.
 
     Returns the result dict.
     """
@@ -1001,7 +1013,8 @@ def check_conversion(docx_path: str, pdf_path: str) -> Dict[str, Any]:
 # fix-docx implementation
 # ---------------------------------------------------------------------------
 def _find_toc_sdt_indices(body_elem) -> List[int]:
-    """Find indices of SDT elements in body that contain TOC.
+    """
+    Find indices of SDT elements in body that contain TOC.
 
     Returns list of indices into body's direct children.
     """
@@ -1030,7 +1043,8 @@ def _find_toc_sdt_indices(body_elem) -> List[int]:
 
 
 def _find_toc_field_para_range(body_elem) -> Tuple[Optional[int], Optional[int]]:
-    """Find the range of paragraph indices that make up a TOC field code block.
+    """
+    Find the range of paragraph indices that make up a TOC field code block.
 
     Returns (start_idx, end_idx) inclusive, or (None, None) if not found.
     These are indices into body's direct children.
@@ -1078,7 +1092,8 @@ def _find_toc_field_para_range(body_elem) -> Tuple[Optional[int], Optional[int]]
 
 
 def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any]:
-    """Detect TOC issues in a DOCX and fix them, outputting a new DOCX file.
+    """
+    Detect TOC issues in a DOCX and fix them, outputting a new DOCX file.
 
     Returns the result dict.
     """
@@ -1177,11 +1192,10 @@ def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any
                 "errors": [], "warnings": [],
                 "info": [f"Document has {heading_count} headings (< 3), no TOC needed"]
             }
-        else:
-            # Need to generate TOC
-            info_list.append(f"No TOC found, generating new TOC with {heading_count} entries")
-            need_fix = True
-            fix_reason = "no_toc"
+        # Need to generate TOC
+        info_list.append(f"No TOC found, generating new TOC with {heading_count} entries")
+        need_fix = True
+        fix_reason = "no_toc"
     else:
         # Case 2 & 3: TOC exists, check if it's stale/placeholder
         need_fix = False
@@ -1768,7 +1782,8 @@ def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any
 # CLI entry point
 # ---------------------------------------------------------------------------
 def fix_docx_accurate_pages(fixed_docx_path: str, pass1_pdf_path: str, output_path: Optional[str] = None) -> Dict[str, Any]:
-    """Update TOC page numbers in a fix-docx output using actual page positions from a PDF.
+    """
+    Update TOC page numbers in a fix-docx output using actual page positions from a PDF.
 
     Two-pass approach:
       Pass 1: Convert the DOCX (without TOC fix or with estimated pages) to PDF
@@ -1778,6 +1793,7 @@ def fix_docx_accurate_pages(fixed_docx_path: str, pass1_pdf_path: str, output_pa
         fixed_docx_path: Path to the DOCX after fix-docx (has PAGEREF fields with estimated pages)
         pass1_pdf_path: Path to a PDF converted from the ORIGINAL docx (without TOC)
         output_path: Where to save the updated DOCX (defaults to overwrite fixed_docx_path)
+
     """
     import zipfile as zf_mod
 

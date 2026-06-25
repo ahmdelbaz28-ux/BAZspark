@@ -1,4 +1,5 @@
-"""FireAI Rules Engine — NFPA 72 Declarative Rule Definitions.
+"""
+FireAI Rules Engine — NFPA 72 Declarative Rule Definitions.
 ============================================================
 
 Defines NFPA 72 fire alarm code compliance rules as declarative
@@ -50,7 +51,8 @@ def _spacing_for_ceiling_height(
     ceiling_height_m: float,
     detector_type: str,
 ) -> float:
-    """Determine NFPA 72 listed spacing based on ceiling height.
+    """
+    Determine NFPA 72 listed spacing based on ceiling height.
 
     Reference: NFPA 72-2022 Table 17.6.3.1
 
@@ -77,7 +79,8 @@ def _min_detectors_for_room(
     room_area_m2: float,
     coverage_radius_m: float,
 ) -> int:
-    """Minimum detectors for a room based on coverage area.
+    """
+    Minimum detectors for a room based on coverage area.
 
     Each detector covers a circle of radius R.
     Conservative estimate: ceiling(area / (pi * R^2)).
@@ -458,7 +461,8 @@ RULE_CORRIDOR_SPACING = Rule(
 
 
 def _action_min_detector_count(facts, engine):
-    """Action for NFPA72-009: derives minimum detector count.
+    """
+    Action for NFPA72-009: derives minimum detector count.
 
     Looks up room area from room facts in the engine when available,
     falls back to 1.0 (conservative minimum) when room area is unknown.
@@ -529,7 +533,8 @@ RULE_MINIMUM_DETECTOR_COUNT = Rule(
 
 
 def _manhattan_exceeds_spacing(x1: float, y1: float, x2: float, y2: float, spacing_m: float) -> bool:
-    """Quick Manhattan distance pre-filter for detector spacing joins.
+    """
+    Quick Manhattan distance pre-filter for detector spacing joins.
 
     PERFORMANCE (CRITICAL-6): If the Manhattan distance |dx|+|dy| exceeds
     the listed spacing, the Euclidean distance is guaranteed to exceed it
@@ -732,7 +737,8 @@ RULE_FAULT_ISOLATION_VIOLATION = Rule(
 
 
 class NFPA72RuleSet:
-    """Complete NFPA 72 rule set for the rules engine.
+    """
+    Complete NFPA 72 rule set for the rules engine.
 
     Provides all NFPA 72 rules as a ready-to-use collection.
     Rules are ordered by priority for deterministic evaluation.

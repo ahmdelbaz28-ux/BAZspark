@@ -38,7 +38,7 @@ def _get_cors_middleware_kwargs(app):
     return None
 
 
-def _reload_backend_app(env_overrides: dict) -> "Any":
+def _reload_backend_app(env_overrides: dict) -> Any:
     """Reload backend_app with the given env vars set."""
     # Clear cached module so __init__ runs again with new env
     for mod_name in list(sys.modules):
@@ -52,8 +52,7 @@ def _reload_backend_app(env_overrides: dict) -> "Any":
         else:
             os.environ[k] = v
     try:
-        backend_app = importlib.import_module("backend_app")
-        return backend_app
+        return importlib.import_module("backend_app")
     finally:
         for k, v in saved.items():
             if v is None:
@@ -114,8 +113,10 @@ class TestV127CorsHardening:
         assert "*" not in origins
 
     def test_allow_credentials_always_false(self):
-        """API uses X-API-Key header auth (not cookies), so credentials must
-        be False — prevents CORS-spec violation (wildcard + credentials)."""
+        """
+        API uses X-API-Key header auth (not cookies), so credentials must
+        be False — prevents CORS-spec violation (wildcard + credentials).
+        """
         for env in ("development", "testing"):
             backend_app = _reload_backend_app({
                 "FIREAI_ENV": env,
@@ -128,8 +129,10 @@ class TestV127CorsHardening:
             )
 
     def test_no_wildcard_in_production_when_using_explicit_list(self):
-        """If a wildcard is mixed into a comma-separated list in production,
-        the code MUST raise RuntimeError (defensive)."""
+        """
+        If a wildcard is mixed into a comma-separated list in production,
+        the code MUST raise RuntimeError (defensive).
+        """
         with pytest.raises(RuntimeError, match=r"'\*'.*forbidden"):
             _reload_backend_app({
                 "FIREAI_ENV": "production",

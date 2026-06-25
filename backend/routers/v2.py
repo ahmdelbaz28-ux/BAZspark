@@ -1,4 +1,5 @@
-"""v2.py — API v2 Routers for FireAI Cloud-Native Endpoints.
+"""
+v2.py — API v2 Routers for FireAI Cloud-Native Endpoints.
 ============================================================
 
 MISSION TASK 3.1 — API Versioning with /api/v2/ structure
@@ -57,7 +58,8 @@ router = APIRouter()
 
 
 class GenerativeDesignRequest(BaseModel):
-    """Request body for /api/v2/generative/design.
+    """
+    Request body for /api/v2/generative/design.
 
     V138 F-13: Added upper bounds to prevent DoS via huge dimensions.
     """
@@ -135,7 +137,8 @@ class SmokeDensityPointRequest(BaseModel):
 
 
 class SmokeSimulationStateRequest(BaseModel):
-    """Request body for /api/v2/smoke-simulation/state.
+    """
+    Request body for /api/v2/smoke-simulation/state.
 
     V138 F-13: Added max_length to prevent DoS.
     V138 F-14: Use Pydantic model for smoke_density_points (was unvalidated Dict).
@@ -156,7 +159,8 @@ class SmokeSimulationStateRequest(BaseModel):
 
 @router.post("/generative/design")
 async def generate_design_variants(req: GenerativeDesignRequest) -> dict[str, Any]:
-    """Generate 3 layout variants (Cost-Min, Standard, Safety-Max).
+    """
+    Generate 3 layout variants (Cost-Min, Standard, Safety-Max).
 
     Returns scored variants with recommendation based on occupancy.
     """
@@ -206,7 +210,8 @@ async def list_bim_providers() -> dict[str, Any]:
 
 @router.post("/bim/extract-rooms")
 async def extract_rooms(req: BIMExtractRoomsRequest) -> dict[str, Any]:
-    """Extract rooms via configured BIM provider.
+    """
+    Extract rooms via configured BIM provider.
 
     V137 F-5 FIX: Added source path validation to prevent SSRF/path traversal.
     The OLD code passed ``req.source`` directly to ``provider.extract_rooms()``
@@ -350,7 +355,8 @@ async def map_project_to_ifc43(req: dict[str, Any]) -> dict[str, Any]:
 
 @router.post("/ar/export")
 async def export_ar_snapshot(req: ARExportRequest) -> dict[str, Any]:
-    """Export DigitalTwin snapshot to GLB/USDZ for AR visualization.
+    """
+    Export DigitalTwin snapshot to GLB/USDZ for AR visualization.
 
     Returns base64-encoded file content for each requested format.
     """
@@ -490,7 +496,8 @@ async def publish_webhook_event(req: WebhookPublishRequest) -> dict[str, Any]:
 
 @router.post("/smoke-simulation/state")
 async def create_smoke_state(req: SmokeSimulationStateRequest) -> dict[str, Any]:
-    """Create or update smoke simulation state for a room.
+    """
+    Create or update smoke simulation state for a room.
 
     If FDS data is provided (fds_run_id), creates a validated state.
     Otherwise, creates a placeholder state with safety warnings.
@@ -588,7 +595,8 @@ async def v2_health() -> dict[str, Any]:
 
 @router.get("/auth/csrf-token")
 async def get_csrf_token(request: Request) -> dict[str, Any]:
-    """Issue a CSRF token via Double Submit Cookie pattern.
+    """
+    Issue a CSRF token via Double Submit Cookie pattern.
 
     Sets the CSRF token in:
     1. A cookie (fireai_csrf_token, SameSite=Strict)

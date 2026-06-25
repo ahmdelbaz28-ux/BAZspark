@@ -26,6 +26,8 @@ import unittest
 # Ensure the project root is on the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+import pytest
+
 from qomn_fire.core.errors import (
     BaseEngineeringError,
     ConduitFillError,
@@ -132,7 +134,7 @@ class TestFormatDetector(unittest.TestCase):
         try:
             res = FormatDetector.detect_format_and_version(path)
             self.assertTrue(res.is_success, f"RVT detection failed: {res.error() if res.is_failure else ''}")
-            fmt, ver = res.unwrap()
+            fmt, _ver = res.unwrap()
             self.assertEqual(fmt, "RVT")
         finally:
             os.unlink(path)
@@ -146,7 +148,7 @@ class TestFormatDetector(unittest.TestCase):
         try:
             res = FormatDetector.detect_format_and_version(path)
             self.assertTrue(res.is_success, f"DXF detection failed: {res.error() if res.is_failure else ''}")
-            fmt, ver = res.unwrap()
+            fmt, _ver = res.unwrap()
             self.assertEqual(fmt, "DXF")
         finally:
             os.unlink(path)
@@ -348,7 +350,8 @@ class TestIfcParser(unittest.TestCase):
             os.unlink(path)
 
     def test_parse_ifc_with_spaces_no_fallback(self):
-        """V58 SAFETY FIX: IFC file with IFCSPACE STILL has has_fallback_geometry=True.
+        """
+        V58 SAFETY FIX: IFC file with IFCSPACE STILL has has_fallback_geometry=True.
 
         The regex IFC parser CANNOT extract real room geometry — all IFCSPACE rooms
         get placeholder 10m x 10m boundary boxes. These placeholder boundaries are
@@ -691,7 +694,7 @@ class TestConverters(unittest.TestCase):
             self.assertTrue(res.is_success, f"DWG conversion failed: {res.error() if res.is_failure else ''}")
             self.assertTrue(os.path.exists(dxf_path))
             # Verify the DXF has required markers
-            with open(dxf_path, 'r') as f:
+            with open(dxf_path) as f:
                 content = f.read()
             self.assertIn("SECTION", content)
             self.assertIn("EOF", content)
@@ -716,7 +719,7 @@ class TestConverters(unittest.TestCase):
             res = RvtConverter.convert_rvt_to_ifc(rvt_path, ifc_path)
             self.assertTrue(res.is_success, f"RVT conversion failed: {res.error() if res.is_failure else ''}")
             self.assertTrue(os.path.exists(ifc_path))
-            with open(ifc_path, 'r') as f:
+            with open(ifc_path) as f:
                 content = f.read()
             self.assertIn("ISO-10303-21", content)
             self.assertIn("END-ISO-10303-21", content)
@@ -745,7 +748,7 @@ class TestDataTypes(unittest.TestCase):
     def test_point3d_frozen(self):
         """Point3D is frozen and cannot be modified after creation."""
         p = Point3D(1.0, 2.0, 3.0)
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             p.x = 5.0
 
     def test_building_compute_hash_determinism(self):
@@ -784,13 +787,13 @@ class TestDataTypes(unittest.TestCase):
     def test_result_unwrap_failure_raises(self):
         """Result.unwrap() on failure Result raises ValueError."""
         r = Result(error=GeometryError(message="test", code_ref="ref", remedy="fix"))
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             r.unwrap()
 
     def test_result_error_success_raises(self):
         """Result.error() on success Result raises ValueError."""
         r = Result(value=42)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             r.error()
 
     def test_error_hierarchy(self):
@@ -814,7 +817,8 @@ class TestIntegrationPipeline(unittest.TestCase):
     """End-to-end integration tests: validate → detect → parse → geometry check."""
 
     def test_ifc_pipeline_full(self):
-        """V58 SAFETY FIX: IFC pipeline with regex parser is REJECTED by GeometryValidator.
+        """
+        V58 SAFETY FIX: IFC pipeline with regex parser is REJECTED by GeometryValidator.
 
         The regex IFC parser CANNOT extract real room geometry — all IFCSPACE rooms
         get placeholder 10m x 10m boundary boxes. The V58 safety fix correctly
@@ -843,7 +847,7 @@ class TestIntegrationPipeline(unittest.TestCase):
             # Step 2: Detect format
             fmt_res = FormatDetector.detect_format_and_version(path)
             self.assertTrue(fmt_res.is_success)
-            fmt, ver = fmt_res.unwrap()
+            fmt, _ver = fmt_res.unwrap()
             self.assertEqual(fmt, "IFC")
 
             # Step 3: Parse
@@ -871,7 +875,8 @@ class TestIntegrationPipeline(unittest.TestCase):
             os.unlink(path)
 
     def test_dxf_pipeline_full(self):
-        """Full DXF pipeline: validate → detect → parse → geometry validate.
+        """
+        Full DXF pipeline: validate → detect → parse → geometry validate.
 
         BUG-8 FIX: DXF file with no entities produces fallback geometry, which
         is now correctly REJECTED by the GeometryValidator. Fallback geometry is
@@ -891,7 +896,7 @@ class TestIntegrationPipeline(unittest.TestCase):
             # Detect
             fmt_res = FormatDetector.detect_format_and_version(path)
             self.assertTrue(fmt_res.is_success)
-            fmt, ver = fmt_res.unwrap()
+            fmt, _ver = fmt_res.unwrap()
             self.assertEqual(fmt, "DXF")
 
             # Parse
@@ -960,7 +965,7 @@ class TestIntegrationPipeline(unittest.TestCase):
     # ── BUG-1 FIX TEST: Result cannot hold both value and error ──
     def test_result_cannot_hold_both_value_and_error(self):
         """BUG-1 FIX: Result with both value and error raises ValueError."""
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             Result(value=42, error=GeometryError(message="test", code_ref="r", remedy="f"))
 
     # ── BUG-30+36 FIX TEST: Building hash includes wall geometry and openings ──

@@ -1,4 +1,5 @@
-"""Clause-Mapped Compliance Engine — NFPA 72 / NEC Validation.
+"""
+Clause-Mapped Compliance Engine — NFPA 72 / NEC Validation.
 
 PDF Audit Phase 3: Domain Verification
 Per "From Prototype to Production-Grade" §Phase 3, Appendix B:
@@ -45,7 +46,8 @@ class ComplianceRule:
 
 
 class ComplianceEngine:
-    """An engine to evaluate a calculation context against compliance rules.
+    """
+    An engine to evaluate a calculation context against compliance rules.
 
     Each rule maps to a specific NFPA 72 or NEC clause.
     """

@@ -30,12 +30,14 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from backend.rbac import Role
-from backend.routers.qomn import router as qomn_router
 from backend.routers.analyze import (
-    router as analyze_router,
     project_router as analyze_project_router,
 )
+from backend.routers.analyze import (
+    router as analyze_router,
+)
 from backend.routers.health import router as health_router
+from backend.routers.qomn import router as qomn_router
 
 # V129: Security middleware — same hardening as backend/app.py.
 # SecurityHeadersMiddleware adds X-Frame-Options, X-Content-Type-Options,
@@ -63,7 +65,8 @@ logger = logging.getLogger(__name__)
 # Dev role middleware (V127)
 # ----------------------------------------------------------------------------
 class _RoleDevMiddleware(BaseHTTPMiddleware):
-    """Grants ADMIN role in development / testing environments.
+    """
+    Grants ADMIN role in development / testing environments.
 
     In production this middleware is a no-op -- the real API-key
     middleware (deployed by the platform) is responsible for setting
@@ -170,7 +173,8 @@ async def root():
 
 @app.exception_handler(Exception)
 async def _unhandled_exception_handler(request: Request, exc: Exception):
-    """Catch-all exception handler.
+    """
+    Catch-all exception handler.
 
     Never leak internal exception text to clients -- fire-safety systems
     may have sensitive paths / connection strings in error messages.

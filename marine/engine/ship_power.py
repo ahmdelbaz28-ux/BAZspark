@@ -9,10 +9,9 @@ References:
     [IEC301] IEC 60092-301 — Main power generation & distribution
     [IEC502] IEC 60092-502 — Tankers electrical installations
     [IEC504] IEC 60092-504 — Ships carrying dangerous goods
+
 """
 from __future__ import annotations
-
-from typing import Optional
 
 from marine.core.constants import (
     FIRE_SYSTEM_UPS_MIN_AUTONOMY_MIN,
@@ -34,7 +33,8 @@ def design_fire_system_power(
     alarm_load_w: float = 1000.0,
     extinguish_load_w: float = 2000.0,
 ) -> ShipElectricalSpec:
-    """Design the power-supply architecture for fire systems.
+    """
+    Design the power-supply architecture for fire systems.
 
     Per SOLAS II-2/5.1.3 + IEC 60092-502 §6.2:
       1. Main supply (440V AC) -> step-down to 230V AC -> 24V DC control
@@ -50,6 +50,7 @@ def design_fire_system_power(
 
     Returns:
         ShipElectricalSpec with calculated UPS capacity.
+
     """
     total_load_w = detection_load_w + alarm_load_w + extinguish_load_w
     ups_capacity_ah = (total_load_w * FIRE_SYSTEM_UPS_MIN_AUTONOMY_MIN) / \
@@ -68,9 +69,10 @@ def design_fire_system_power(
 
 def validate_insulation_monitoring(
     spec: ShipElectricalSpec,
-    ship: Optional[ShipProject] = None,
+    ship: ShipProject | None = None,
 ) -> ComplianceResult:
-    """Validate insulation monitoring per IEC 60092-504 §5.
+    """
+    Validate insulation monitoring per IEC 60092-504 §5.
 
     Required for all ships carrying dangerous goods (tankers). Threshold:
     alarm at insulation resistance < 100 k Ohm.
@@ -79,6 +81,7 @@ def validate_insulation_monitoring(
         spec: Ship electrical spec to validate.
         ship: Optional ShipProject — if provided, the IMD requirement is
             enforced strictly only when ``ship.is_tanker`` is True.
+
     """
     result = ComplianceResult(
         compliant=True,

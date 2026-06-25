@@ -1,4 +1,5 @@
-"""Floor analyser tests — NFPA 72 floor-level fire detection validation.
+"""
+Floor analyser tests — NFPA 72 floor-level fire detection validation.
 
 Tests the FloorAnalyser class which performs floor-level analysis of
 fire alarm detector placement using DensityOptimizer V7.3.

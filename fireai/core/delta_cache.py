@@ -1,4 +1,5 @@
-"""delta_cache.py — DeltaCache: Incremental Change Detection & Recomputation.
+"""
+delta_cache.py — DeltaCache: Incremental Change Detection & Recomputation.
 ==========================================================================
 Solves Section 11.2: "When a single room changes, recompute only that room
 + affected cable routes (not the entire building)."
@@ -61,7 +62,8 @@ logger = logging.getLogger(__name__)
 
 
 def _content_hash(obj: Any) -> str:
-    """SHA-256 of serialised content. Used for change detection.
+    """
+    SHA-256 of serialised content. Used for change detection.
     Consistent: same logical content → same hash (sorted keys).
     """
     try:
@@ -103,7 +105,8 @@ class DependencyEdge:
 
 
 class _LRUCache:
-    """Thread-safe LRU cache with optional TTL.
+    """
+    Thread-safe LRU cache with optional TTL.
     Backed by OrderedDict for O(1) access + eviction.
     """
 
@@ -182,7 +185,8 @@ class _LRUCache:
 
 
 class _DependencyGraph:
-    """Directed graph: room_id → {cable_route_ids, floor_ids, report_ids}.
+    """
+    Directed graph: room_id → {cable_route_ids, floor_ids, report_ids}.
     On invalidation of a node, all its dependents are also invalidated.
     Thread-safe.
     """
@@ -213,7 +217,8 @@ class _DependencyGraph:
             self._dependents.pop(node_id, None)
 
     def get_all_dependents(self, node_id: str) -> frozenset[str]:
-        """BFS: all nodes that transitively depend on node_id.
+        """
+        BFS: all nodes that transitively depend on node_id.
         These must all be invalidated when node_id changes.
         """
         visited: set[str] = set()
@@ -250,7 +255,8 @@ _ALGORITHM_VERSION = "v30.0"
 
 
 class DeltaCache:
-    """Incremental recomputation cache for FireAI.
+    """
+    Incremental recomputation cache for FireAI.
 
     Solves Section 11.2: single-room change → recompute only that room
     + its affected cable routes/floors/reports.
@@ -313,7 +319,8 @@ class DeltaCache:
         compute_fn: Callable[[], Any],
         depends_on: list[str] | None = None,
     ) -> Any:
-        """Return cached result if content unchanged, else recompute.
+        """
+        Return cached result if content unchanged, else recompute.
 
         node_id:    Unique identifier (room_id, route_id, etc.)
         content:    The input data whose hash determines staleness
@@ -360,7 +367,8 @@ class DeltaCache:
         node_id: str,
         cascade: bool = True,
     ) -> frozenset[str]:
-        """Invalidate node_id and (optionally) all its dependents.
+        """
+        Invalidate node_id and (optionally) all its dependents.
 
         Returns frozenset of all invalidated node_ids.
         cascade=True: also invalidates transitively dependent nodes.
@@ -444,7 +452,8 @@ class DeltaCache:
     # ------------------------------------------------------------------
 
     def has_valid_entry(self, room_dict: dict) -> bool:
-        """Check if a valid cached result exists for this room.
+        """
+        Check if a valid cached result exists for this room.
 
         Legacy API: room-dict based. Checks geometry hash,
         algorithm version, ceiling height, and detector type.
@@ -492,7 +501,8 @@ class DeltaCache:
         analysis_func,
         changed_room_ids: list[str] | None = None,
     ) -> tuple[list[dict], list[dict]]:
-        """Process rooms incrementally using cached results.
+        """
+        Process rooms incrementally using cached results.
 
         Legacy API: For rooms that haven't changed, return cached results.
         For rooms that have changed (or are new), run analysis.
@@ -554,7 +564,8 @@ class DeltaCache:
         return results, stats  # type: ignore[return-value]
 
     def persist(self) -> None:
-        """Persist cache to SQLite database (legacy feature).
+        """
+        Persist cache to SQLite database (legacy feature).
 
         Only writes if db_path was provided and cache has been modified.
         """

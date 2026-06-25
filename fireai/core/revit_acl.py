@@ -1,4 +1,5 @@
-"""revit_acl.py – Anti-Corruption Layer for Revit/BIM Data Import.
+"""
+revit_acl.py – Anti-Corruption Layer for Revit/BIM Data Import.
 ==============================================================
 Protects strict Pydantic domain models from corrupted external data.
 
@@ -176,7 +177,8 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
 
 
 class RevitSubstanceDTO(BaseModel):
-    """Anti-Corruption Layer for substance data from Revit/BIM exports.
+    """
+    Anti-Corruption Layer for substance data from Revit/BIM exports.
 
     This model is FLEXIBLE (strict=False) to accept raw external data.
     It sanitizes and coerces values before converting to strict domain models.
@@ -250,7 +252,8 @@ class RevitSubstanceDTO(BaseModel):
         return data
 
     def to_domain(self, report: ImportReport | None = None) -> SubstanceProperties | None:
-        """Convert this flexible DTO to a strict SubstanceProperties model.
+        """
+        Convert this flexible DTO to a strict SubstanceProperties model.
         Returns None if conversion fails (logged to report).
         """
         try:
@@ -298,7 +301,8 @@ class RevitSubstanceDTO(BaseModel):
 
 
 class RevitObstructionDTO(BaseModel):
-    """Anti-Corruption Layer for obstruction data from Revit/BIM exports.
+    """
+    Anti-Corruption Layer for obstruction data from Revit/BIM exports.
     Handles: missing transparency data, vertex format variations, etc.
     """
 
@@ -461,7 +465,8 @@ class RevitDetectorDTO(BaseModel):
 def import_substances_from_revit(
     raw_data: list[dict[str, Any]],
 ) -> tuple[list[SubstanceProperties], ImportReport]:
-    """Import a batch of substance data from Revit/BIM export.
+    """
+    Import a batch of substance data from Revit/BIM export.
 
     Args:
         raw_data: List of dictionaries from Revit API/CSV/JSON export.

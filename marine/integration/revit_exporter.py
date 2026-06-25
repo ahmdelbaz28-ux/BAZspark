@@ -1,9 +1,10 @@
-"""marine/integration/revit_exporter.py — Revit Family + Model Generator.
+"""
+marine/integration/revit_exporter.py — Revit Family + Model Generator.
 Generates .rfa family definitions and .rvt model placements for marine
-detectors, nozzles, alarm horns, and fire divisions."""
+detectors, nozzles, alarm horns, and fire divisions.
+"""
 from __future__ import annotations
-import json
-from typing import List
+
 from marine.core.types import DetectorPlacement, FireResistanceSpec
 
 
@@ -52,5 +53,7 @@ def generate_revit_division(spec: FireResistanceSpec) -> dict:
 
 
 __all__ = [
-    "generate_revit_family", "generate_revit_placement", "generate_revit_division",
+    "generate_revit_division",
+    "generate_revit_family",
+    "generate_revit_placement",
 ]

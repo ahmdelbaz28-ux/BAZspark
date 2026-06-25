@@ -75,7 +75,8 @@ class EngineNameV2(enum.Enum):
 
 
 def is_rectangular_polygon(coords: list[tuple[float, float]], tolerance: float = 0.01) -> bool:
-    """Check if a polygon is effectively a rectangle.
+    """
+    Check if a polygon is effectively a rectangle.
 
     A polygon is rectangular if:
       1. It has exactly 4 or 5 vertices (4 + closing point)
@@ -153,7 +154,8 @@ def grid_polygon_verify(
     coverage_radius: float,
     step: float = 0.20,
 ) -> tuple[bool, float]:
-    """Grid verification restricted to a polygon boundary.
+    """
+    Grid verification restricted to a polygon boundary.
 
     Generates a grid of points within the bounding box, then filters
     to only those inside the polygon. Checks each point against
@@ -232,7 +234,8 @@ def grid_polygon_verify(
 
 
 class ConsensusEngineV2:
-    """Extended consensus engine supporting non-rectangular rooms.
+    """
+    Extended consensus engine supporting non-rectangular rooms.
 
     For rectangular rooms: delegates to ConsensusEngine (v1) unchanged.
     For non-rectangular rooms: runs a modified triple verification
@@ -277,7 +280,8 @@ class ConsensusEngineV2:
         grid_proof_valid: bool | None = None,
         grid_coverage_pct: float | None = None,
     ) -> ConsensusResult:
-        """Verify a rectangular room using v1 consensus engine.
+        """
+        Verify a rectangular room using v1 consensus engine.
 
         This is a thin wrapper around ConsensusEngine.verify() for
         backward compatibility.
@@ -298,7 +302,8 @@ class ConsensusEngineV2:
         detectors: list[tuple[float, float]],
         obstacles: list[list[tuple[float, float]]] | None = None,
     ) -> ConsensusResult:
-        """Verify a non-rectangular room using polygon-aware triple verification.
+        """
+        Verify a non-rectangular room using polygon-aware triple verification.
 
         Runs three independent engines:
           1. ExactCoverage — Shapely polygon difference (area-based)
@@ -464,7 +469,8 @@ class ConsensusEngineV2:
         grid_coverage_pct: float | None = None,
         obstacles: list[list[tuple[float, float]]] | None = None,
     ) -> ConsensusResult:
-        """Auto-detect room type and run appropriate verification.
+        """
+        Auto-detect room type and run appropriate verification.
 
         If room_coords is provided and is non-rectangular:
           → verify_polygon()
@@ -524,7 +530,8 @@ class ConsensusEngineV2:
 
     @staticmethod
     def _compute_consensus(verdicts: list[EngineVerdict]) -> ConsensusResult:
-        """Compute consensus from a list of engine verdicts.
+        """
+        Compute consensus from a list of engine verdicts.
 
         Same logic as v1 ConsensusEngine but reusable for both paths.
         """

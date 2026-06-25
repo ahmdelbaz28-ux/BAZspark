@@ -1,6 +1,4 @@
-"""
-Authentication System for Distributed FACP
-"""
+"""Authentication System for Distributed FACP"""
 import hashlib
 import secrets
 import time
@@ -18,9 +16,8 @@ class UserRole(Enum):
 
 
 class TokenManager:
-    """
-    Manages authentication tokens for distributed FACP
-    """
+    """Manages authentication tokens for distributed FACP"""
+
     def __init__(self, secret_key: str = "default_secret_for_dev"):
         self.secret_key = secret_key.encode() if isinstance(secret_key, str) else secret_key
         self.active_tokens = {}  # token_hash -> token_data
@@ -96,15 +93,14 @@ class TokenManager:
 
 
 class AuthProvider:
-    """
-    Main authentication provider for distributed FACP
-    """
+    """Main authentication provider for distributed FACP"""
+
     def __init__(self, secret_key: str = "default_secret_for_dev"):
         self.token_manager = TokenManager(secret_key)
         self.users = {}  # user_id -> user_data
         self.distributed_cache = {}  # For sharing auth state across nodes
 
-    def register_user(self, user_id: str, roles: list, permissions: list, node_id: str = None):
+    def register_user(self, user_id: str, roles: list, permissions: list, node_id: Optional[str] = None):
         """Register a new user"""
         self.users[user_id] = {
             "roles": roles,
@@ -113,7 +109,7 @@ class AuthProvider:
             "node_id": node_id  # Which node registered this user
         }
 
-    def authenticate_request(self, security_block: Dict[str, Any], source_node: str = None) -> tuple[bool, Optional[Dict[str, Any]]]:
+    def authenticate_request(self, security_block: Dict[str, Any], source_node: Optional[str] = None) -> tuple[bool, Optional[Dict[str, Any]]]:
         """
         Authenticate a request based on security block
         :param security_block: Security information from request
@@ -151,8 +147,8 @@ class AuthProvider:
             "authenticated_at": time.time()
         }
 
-    def create_session_token(self, user_id: str, permissions: list = None,
-                           roles: list = None, expires_in: int = 3600) -> Optional[str]:
+    def create_session_token(self, user_id: str, permissions: Optional[list] = None,
+                           roles: Optional[list] = None, expires_in: int = 3600) -> Optional[str]:
         """Create a session token for a user"""
         if user_id not in self.users:
             return None
@@ -170,9 +166,7 @@ class AuthProvider:
         return self.token_manager.generate_token(user_id, perms_to_grant, roles_to_assign, expires_in)
 
     def distribute_auth_state(self, target_nodes: list):
-        """
-        Distribute authentication state to other nodes in the cluster
-        """
+        """Distribute authentication state to other nodes in the cluster"""
         auth_state = {
             "users": self.users,
             "active_tokens": dict(self.active_tokens.items()),
@@ -186,9 +180,7 @@ class AuthProvider:
             self.distributed_cache[node] = auth_state
 
     def sync_with_cluster(self, cluster_auth_state: Dict[str, Any]):
-        """
-        Sync authentication state with cluster
-        """
+        """Sync authentication state with cluster"""
         # Merge cluster state with local state
         for user_id, user_data in cluster_auth_state.get("users", {}).items():
             if user_id not in self.users:
@@ -202,9 +194,8 @@ class AuthProvider:
 
 
 class DistributedTokenManager(TokenManager):
-    """
-    Token manager for distributed environments with shared state
-    """
+    """Token manager for distributed environments with shared state"""
+
     def __init__(self, secret_key: str = "default_secret_for_dev", node_id: str = "node_0"):
         super().__init__(secret_key)
         self.node_id = node_id

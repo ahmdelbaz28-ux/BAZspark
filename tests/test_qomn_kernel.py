@@ -333,34 +333,36 @@ class TestNFPA72Constants:
     # (NFPA 72 states 9.1m, not 30ft×0.3048=9.144)
     def test_smoke_max_spacing(self):
         """NFPA 72 §17.7.3.2.3: max 9.1m (30ft)."""
-        assert NFPA72_SMOKE_MAX_SPACING_M == pytest.approx(9.1)
+        assert pytest.approx(9.1) == NFPA72_SMOKE_MAX_SPACING_M
 
     # V121 FIX: HEAT_MAX_SPACING_M corrected from 15.240 to 6.1
     # (6.1m = 20ft is the standard spacing at h≤3.0m per Table 17.6.3.5.1;
     # 15.24m = 50ft is the ABSOLUTE max listed spacing, now in
     # fireai/constants/nfpa72.py as HEAT_ABSOLUTE_MAX_SPACING_M)
     def test_heat_max_spacing(self):
-        """NFPA 72 Table 17.6.2.1: max 6.1m (20ft) for fixed-temperature heat.
+        """
+        NFPA 72 Table 17.6.2.1: max 6.1m (20ft) for fixed-temperature heat.
         CRITICAL FIX: Was 15.240m (50ft) which was the LINEAR detection spacing,
         not fixed-temperature. 15.24m would produce R=10.67m — 2.5× overestimate.
         """
-        assert NFPA72_HEAT_MAX_SPACING_M == pytest.approx(6.1)
+        assert pytest.approx(6.1) == NFPA72_HEAT_MAX_SPACING_M
 
     # V121 FIX: WALL_MIN_DISTANCE corrected from 0.305 to 0.10
     # (NFPA 72 §17.6.3.1.1 specifies 0.1m dead air space minimum)
     def test_wall_min_distance(self):
-        """NFPA 72 §17.6.3.1.1: 4 inches (0.1016m) dead air space minimum.
+        """
+        NFPA 72 §17.6.3.1.1: 4 inches (0.1016m) dead air space minimum.
         CRITICAL FIX: Was 0.305m which conflated with wall MAX distance S/2.
         """
-        assert NFPA72_WALL_MIN_DISTANCE_M == pytest.approx(0.1016)
+        assert pytest.approx(0.1016) == NFPA72_WALL_MIN_DISTANCE_M
 
     def test_pull_station_height(self):
         """NFPA 72 §17.15.7: 48 inches = 1.219m AFF."""
-        assert NFPA72_PULL_STATION_HEIGHT_M == pytest.approx(1.219)
+        assert pytest.approx(1.219) == NFPA72_PULL_STATION_HEIGHT_M
 
     def test_pull_station_from_exit(self):
         """NFPA 72 §17.15.3: 5 ft = 1.524m from exit."""
-        assert NFPA72_PULL_STATION_FROM_EXIT_M == pytest.approx(1.524)
+        assert pytest.approx(1.524) == NFPA72_PULL_STATION_FROM_EXIT_M
 
     def test_battery_standby_hours(self):
         """NFPA 72 §10.6.7.2.1: 24 hours standby."""
@@ -388,9 +390,11 @@ class TestNECConstants:
         assert set(NEC_TABLE8_RESISTANCE_OHM_PER_KM.keys()) == expected
 
     def test_awg14_resistance(self):
-        """AWG 14: 4.263 Ω/km at 20°C stranded (NEC Table 8).
+        """
+        AWG 14: 4.263 Ω/km at 20°C stranded (NEC Table 8).
         C-3 FIX: Value changed from 8.19 (incorrect 75°C claim) to 4.263 (correct 20°C stranded).
-        Temperature correction to 75°C is applied in compute_voltage_drop()."""
+        Temperature correction to 75°C is applied in compute_voltage_drop().
+        """
         assert NEC_TABLE8_RESISTANCE_OHM_PER_KM["14"] == pytest.approx(4.263, abs=0.01)
 
     def test_resistance_increases_with_gauge(self):
@@ -470,7 +474,7 @@ class TestComputeSmokeDetectorSpacing:
 
     # V121 FIX: Spacing is now flat 9.1m per §17.7.3.2.3
     def test_low_ceiling(self):
-        """h ≤ 3.0m → S = 9.1m, R = 0.7 × 9.1 = 6.37m."""
+        """H ≤ 3.0m → S = 9.1m, R = 0.7 × 9.1 = 6.37m."""
         result = compute_smoke_detector_spacing(3.0)
         assert result["listed_spacing_m"] == pytest.approx(9.1, rel=0.01)
         assert result["coverage_radius_m"] == pytest.approx(0.7 * 9.1, rel=0.01)
@@ -621,9 +625,11 @@ class TestComputeVoltageDrop:
     """NEC Chapter 9, Table 8: V_drop = 2 × I × L × R_per_m (at operating temp)."""
 
     def test_basic_calculation(self):
-        """V_drop = 2 × I × L × R/km / 1000 × temp_correction.
+        """
+        V_drop = 2 × I × L × R/km / 1000 × temp_correction.
         C-3 FIX: Now includes temperature correction from 20°C to 75°C operating temp.
-        R_75 = R_20 × [1 + 0.00393 × (75-20)] = R_20 × 1.2163"""
+        R_75 = R_20 × [1 + 0.00393 × (75-20)] = R_20 × 1.2163
+        """
         result = compute_voltage_drop(1.0, 100.0, "14")
         # Resistance at 20°C ref, corrected to 75°C operating temp
         r_20_per_m = NEC_TABLE8_RESISTANCE_OHM_PER_KM["14"] / 1000.0

@@ -1,4 +1,5 @@
-"""fireai/core/routing_engine_v10.py.
+"""
+fireai/core/routing_engine_v10.py.
 =================================
 NEC/NFPA-compliant cable routing engine — V10 Optimized.
 
@@ -109,7 +110,8 @@ class ObstacleType(str, Enum):
 
 @dataclass
 class RoutingObstacle:
-    """An obstacle in the routing space.
+    """
+    An obstacle in the routing space.
 
     Defined as an axis-aligned bounding box (AABB) with a type,
     which determines the required clearance.
@@ -183,7 +185,8 @@ class RoutingObstacle:
 
 @dataclass(frozen=True)
 class RoutingConstraint:
-    """Constraints for cable routing per NEC/NFPA.
+    """
+    Constraints for cable routing per NEC/NFPA.
 
     Attributes
     ----------
@@ -235,7 +238,8 @@ class RoutingConstraint:
 
 @dataclass
 class RouteResult:
-    """Result of a cable routing operation.
+    """
+    Result of a cable routing operation.
 
     Attributes
     ----------
@@ -277,7 +281,8 @@ class RouteResult:
 
 
 class _ObstacleIndex:
-    """Spatial index over obstacle clearance polygons.
+    """
+    Spatial index over obstacle clearance polygons.
 
     Uses Shapely STRtree for O(log O) line-of-sight queries.
     Falls back to linear scan when Shapely is unavailable.
@@ -320,7 +325,8 @@ class _ObstacleIndex:
                     valid_idx += 1
 
     def check_los(self, start: tuple[float, float], end: tuple[float, float]) -> bool:
-        """Check line-of-sight between two points.
+        """
+        Check line-of-sight between two points.
 
         Returns True if the line segment does NOT intersect any
         obstacle clearance polygon.
@@ -356,7 +362,8 @@ class _ObstacleIndex:
         return True
 
     def check_los_fallback(self, start: tuple[float, float], end: tuple[float, float]) -> bool:
-        """Line-of-sight check without Shapely (AABB-based).
+        """
+        Line-of-sight check without Shapely (AABB-based).
 
         Uses Liang-Barsky algorithm for each obstacle.
         """
@@ -413,7 +420,8 @@ class _ObstacleIndex:
 
 
 class RoutingEngineV10:
-    """NEC/NFPA-compliant cable routing engine — V10 Optimized.
+    """
+    NEC/NFPA-compliant cable routing engine — V10 Optimized.
 
     Key improvements over engineering_router.py:
       1. STRtree spatial index for O(log O) LOS queries
@@ -435,7 +443,8 @@ class RoutingEngineV10:
     """
 
     def __init__(self, constraints: RoutingConstraint = None) -> None:
-        """Initialize the router.
+        """
+        Initialize the router.
 
         Parameters
         ----------
@@ -504,7 +513,8 @@ class RoutingEngineV10:
     # ── Routing API ────────────────────────────────────────────────────────
 
     def route(self, start: tuple[float, float], end: tuple[float, float]) -> RouteResult:
-        """Route a cable from start to end, avoiding obstacles.
+        """
+        Route a cable from start to end, avoiding obstacles.
 
         Parameters
         ----------
@@ -561,7 +571,8 @@ class RoutingEngineV10:
     def route_multi(
         self, points: list[tuple[float, float]], panel_pos: tuple[float, float] | None = None
     ) -> list[RouteResult]:
-        """Route cables between multiple points using nearest-neighbour ordering.
+        """
+        Route cables between multiple points using nearest-neighbour ordering.
 
         Parameters
         ----------
@@ -601,7 +612,8 @@ class RoutingEngineV10:
     def route_batch(
         self, segments: list[tuple[tuple[float, float], tuple[float, float]]], n_workers: int = 1
     ) -> list[RouteResult]:
-        """Route multiple cable segments.
+        """
+        Route multiple cable segments.
 
         Parameters
         ----------
@@ -626,7 +638,8 @@ class RoutingEngineV10:
     # ── Line-of-Sight ──────────────────────────────────────────────────────
 
     def _has_line_of_sight(self, start: tuple[float, float], end: tuple[float, float]) -> bool:
-        """Check if there is a clear line of sight between two points.
+        """
+        Check if there is a clear line of sight between two points.
 
         Delegates to _ObstacleIndex which uses STRtree for O(log O)
         candidate lookup, then precise Shapely intersection on candidates.
@@ -649,7 +662,8 @@ class RoutingEngineV10:
     def _find_path_lazy_astar(
         self, start: tuple[float, float], end: tuple[float, float]
     ) -> list[tuple[float, float]] | None:
-        """Find a path from start to end using Lazy A* on a visibility graph.
+        """
+        Find a path from start to end using Lazy A* on a visibility graph.
 
         Key optimization: The visibility graph is NOT pre-computed.
         Instead, when A* expands a node, we lazily compute visibility
@@ -729,7 +743,8 @@ class RoutingEngineV10:
         return None  # No path found
 
     def _segment_cost_factor(self, p1: tuple[float, float], p2: tuple[float, float]) -> float:
-        """Compute cost multiplier for a segment based on routing constraints.
+        """
+        Compute cost multiplier for a segment based on routing constraints.
 
         V12 Fix preserved: Uses Shapely LineString.intersection() to check
         the ENTIRE segment against obstacle clearance zones, not just
@@ -805,7 +820,8 @@ class RoutingEngineV10:
     def _compute_approach_angle(
         self, p1: tuple[float, float], p2: tuple[float, float], obs: RoutingObstacle
     ) -> float | None:
-        """Compute the approach angle of a path segment relative to an obstacle.
+        """
+        Compute the approach angle of a path segment relative to an obstacle.
 
         Returns angle in degrees between the path direction and the
         obstacle's LONG axis. For a seismic joint (thin horizontal strip),
@@ -917,7 +933,8 @@ class RoutingEngineV10:
         )
 
     def _validate_route(self, result: RouteResult) -> RouteResult:
-        """Validate a route against NEC/NFPA constraints.
+        """
+        Validate a route against NEC/NFPA constraints.
 
         Checks:
           1. Maximum cable length per NEC 760.154
@@ -1041,7 +1058,8 @@ EngineeringRouter = RoutingEngineV10  # type: ignore[misc]
 
 
 def benchmark_routing(n_obstacles: int = 50, n_routes: int = 100) -> dict:
-    """Benchmark the routing engine performance.
+    """
+    Benchmark the routing engine performance.
 
     Parameters
     ----------
@@ -1251,7 +1269,8 @@ if __name__ == "__main__":
 
 @dataclass
 class RouteSegment:
-    """One segment of a Class A routed loop.
+    """
+    One segment of a Class A routed loop.
 
     Attributes:
         path: Ordered list of (x, y) waypoints.
@@ -1268,7 +1287,8 @@ class RouteSegment:
 
 
 class ArchitecturalWall:
-    """A wall segment with optional fire-rating metadata.
+    """
+    A wall segment with optional fire-rating metadata.
 
     Parameters
     ----------
@@ -1294,7 +1314,8 @@ class ArchitecturalWall:
 
 
 class EliteClassARouter:
-    """Unified Class A + Firestopping routing engine.
+    """
+    Unified Class A + Firestopping routing engine.
 
     This router computes both outgoing and return paths for a Class A
     loop while simultaneously identifying fire-rated wall penetrations
@@ -1347,7 +1368,8 @@ class EliteClassARouter:
         self.walls: list[ArchitecturalWall] = []
 
     def inject_structural_obstructions(self, walls: list[ArchitecturalWall]) -> None:
-        """Add wall obstructions to the cost grid.
+        """
+        Add wall obstructions to the cost grid.
 
         Fire-rated walls get a cost of 1500.0 (high but traversable —
         cables CAN pass through walls but firestopping will be triggered).
@@ -1373,7 +1395,8 @@ class EliteClassARouter:
     def generate_class_a_loop(
         self, facp_node: tuple[float, float], loop_devices: list[tuple[float, float]]
     ) -> dict[str, RouteSegment]:
-        """Generate a complete Class A loop with outgoing and return paths.
+        """
+        Generate a complete Class A loop with outgoing and return paths.
 
         V14: The outgoing path DAISY-CHAINS through ALL devices in order:
           FACP -> loop_devices[0] -> loop_devices[1] -> ... -> loop_devices[-1]

@@ -27,6 +27,7 @@ logger = logging.getLogger("fireai.excel_parser")
 
 class ExcelParseError(Exception):
     """Raised when Excel parsing fails."""
+
     pass
 
 
@@ -37,6 +38,7 @@ class ExcelParseError(Exception):
 @dataclass
 class ExcelRoom:
     """Room from Excel."""
+
     name: str
     width_m: float
     depth_m: float
@@ -63,6 +65,7 @@ class ExcelRoom:
 @dataclass
 class ExcelParseResult:
     """Result of parsing Excel file."""
+
     source_file: str
     success: bool
     room_count: int = 0
@@ -102,7 +105,8 @@ class ExcelParser:
     def __init__(self, min_area: float = 2.0):
         """
         Args:
-            min_area: Minimum room area in m² (default 2.0)
+        min_area: Minimum room area in m² (default 2.0)
+
         """
         self.min_area = min_area
 
@@ -116,6 +120,7 @@ class ExcelParser:
 
         Returns:
             ExcelParseResult with room list
+
         """
         # V126: Path security + file-size cap
         from parsers._path_security import (

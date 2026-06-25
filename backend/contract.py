@@ -1,4 +1,5 @@
-"""backend/contract.py — Runtime API response contract validation.
+"""
+backend/contract.py — Runtime API response contract validation.
 
 Ensures every API response matches the expected shape before being
 sent to the client. For a life-safety system, silently dropping
@@ -47,7 +48,8 @@ def _validate_fields(
     required: dict[str, type],
     optional: dict[str, type] | None = None,
 ) -> list[str]:
-    """Validate that data has required fields with correct types.
+    """
+    Validate that data has required fields with correct types.
 
     Supports field aliases: each field name can be a pipe-separated string
     like "id|projectId" meaning either name is acceptable.
@@ -83,7 +85,8 @@ def _validate_fields(
 
 
 def validate_project(data: dict[str, Any]) -> dict[str, Any]:
-    """Validate a project response against the API contract.
+    """
+    Validate a project response against the API contract.
 
     V115: Supports BOTH System A (digital_twin.db) and System B (UDM) field names.
     System A returns: id, name, description, author, createdAt, updatedAt, status, deviceCount, connectionCount
@@ -116,7 +119,8 @@ def validate_project(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_device(data: dict[str, Any]) -> dict[str, Any]:
-    """Validate a device response against the API contract.
+    """
+    Validate a device response against the API contract.
 
     V115: Supports BOTH naming conventions.
     System A (database.py) returns: id, projectId, type, name, category, x, y, z, ...
@@ -153,7 +157,8 @@ def validate_device(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_connection(data: dict[str, Any]) -> dict[str, Any]:
-    """Validate a connection response against the API contract.
+    """
+    Validate a connection response against the API contract.
 
     V115: Supports BOTH naming conventions.
     System A (database.py) returns: id, projectId, fromId, toId, cableSize, length, type, createdAt
@@ -184,7 +189,8 @@ def validate_connection(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_paginated(data: dict[str, Any], item_validator=None) -> dict[str, Any]:
-    """Validate a paginated response.
+    """
+    Validate a paginated response.
 
     V115: Supports both naming conventions.
     System A returns: data, total, page, limit, totalPages

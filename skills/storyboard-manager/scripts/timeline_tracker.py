@@ -11,14 +11,14 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 class TimelineEvent:
     """Represents a single event in the story timeline"""
 
-    def __init__(self, content: str, location: str, chapter: str = None,
-                 timepoint: str = None, characters: List[str] = None):
+    def __init__(self, content: str, location: str, chapter: Optional[str] = None,
+                 timepoint: Optional[str] = None, characters: Optional[List[str]] = None):
         self.content = content
         self.location = location  # File path where event was found
         self.chapter = chapter
@@ -181,7 +181,6 @@ class TimelineTracker:
 
     def analyze_project(self) -> Dict:
         """Analyze entire project and build timeline"""
-
         # First, find all characters
         char_dirs = ['characters', 'Characters', 'cast']
         for dirname in char_dirs:
@@ -201,7 +200,7 @@ class TimelineTracker:
                     self.events.extend(events)
 
         # Build analysis
-        analysis = {
+        return {
             'total_events': len(self.events),
             'total_characters': len(self.characters),
             'characters': sorted(self.characters),
@@ -212,7 +211,6 @@ class TimelineTracker:
             'warnings': self._check_consistency()
         }
 
-        return analysis
 
     def _group_events_by_time(self) -> Dict[str, List[Dict]]:
         """Group events by their timepoint"""
@@ -303,7 +301,6 @@ class TimelineTracker:
 
 def main():
     """Main entry point for timeline tracker"""
-
     if len(sys.argv) < 2:
         print("Usage: timeline_tracker.py <project_directory> [--output json|markdown]")
         sys.exit(1)

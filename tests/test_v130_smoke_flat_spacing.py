@@ -324,7 +324,7 @@ class TestSSoTConsistency:
 class TestHeatSpacingStillReduced:
     """Verify heat detector height reduction was NOT affected by smoke fix."""
 
-    @pytest.mark.parametrize("height,expected_spacing", [
+    @pytest.mark.parametrize(("height", "expected_spacing"), [
         (3.0, 6.10),   # No reduction at h<=3.0m
         (4.6, 5.50),   # Reduced
         (6.1, 4.90),   # More reduced

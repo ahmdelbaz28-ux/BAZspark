@@ -1,4 +1,5 @@
-"""fireai.conduit.catalog — Immutable Fitting Catalog.
+"""
+fireai.conduit.catalog — Immutable Fitting Catalog.
 ===================================================
 
 All fitting data is hardcoded from manufacturer published dimensions and
@@ -50,7 +51,8 @@ _CATALOG_NUMBER_PATTERN = re.compile(
 
 @dataclass(frozen=True)
 class Fitting:
-    """A single catalog fitting with all dimensional data.
+    """
+    A single catalog fitting with all dimensional data.
 
     Adapted from OSE Piping elbow descriptor (alpha, POD, PID, H, J, M)
     but simplified to the fields needed for NEC conduit routing:
@@ -435,7 +437,8 @@ def get_fitting(
     trade_size: TradeSize,
     fitting_type: FittingType,
 ) -> Result[Fitting, CatalogError]:
-    """Look up a fitting in the immutable catalog.
+    """
+    Look up a fitting in the immutable catalog.
 
     Returns Result.ok(Fitting) on success, Result.err(CatalogError)
     if the (conduit_type, trade_size, fitting_type) combination is not

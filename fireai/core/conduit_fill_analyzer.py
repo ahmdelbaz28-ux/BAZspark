@@ -1,4 +1,5 @@
-"""conduit_fill_analyzer.py — NEC Chapter 9 Conduit Fill Analysis.
+"""
+conduit_fill_analyzer.py — NEC Chapter 9 Conduit Fill Analysis.
 ===============================================================
 CRITICAL LIFE-SAFETY MODULE — V18
 
@@ -90,7 +91,8 @@ class InsulationType(str, Enum):
 
 
 class CircuitClass(str, Enum):
-    """Fire alarm circuit classification per NEC 760.
+    """
+    Fire alarm circuit classification per NEC 760.
 
     CRITICAL: NEC 760.154 PROHIBITS mixing PLFA and NPLFA circuits
     in the same conduit. The consultant's code ignored this entirely.
@@ -264,7 +266,8 @@ CONDUCTOR_DERATING = {
 
 
 def get_derating_factor(conductor_count: int) -> float:
-    """Get ampacity derating factor per NEC 310.15(B)(3)(a).
+    """
+    Get ampacity derating factor per NEC 310.15(B)(3)(a).
 
     Args:
         conductor_count: Number of current-carrying conductors.
@@ -288,7 +291,8 @@ def get_derating_factor(conductor_count: int) -> float:
 
 @dataclass(frozen=True)
 class WireSpec:
-    """Specification of a wire/cable for conduit fill calculation.
+    """
+    Specification of a wire/cable for conduit fill calculation.
 
     Attributes:
         awg: American Wire Gauge (0 for fiber optic).
@@ -332,7 +336,8 @@ class WireSpec:
 
 @dataclass
 class ConduitFillResult:
-    """Result of conduit fill analysis.
+    """
+    Result of conduit fill analysis.
 
     Attributes:
         bundle_id: Identifier for this cable bundle.
@@ -370,7 +375,8 @@ class ConduitFillResult:
 
 
 class ConduitSizer:
-    """NEC Chapter 9 Conduit Fill Analyzer for fire alarm cable bundles.
+    """
+    NEC Chapter 9 Conduit Fill Analyzer for fire alarm cable bundles.
 
     Determines the minimum conduit size required for a bundle of fire
     alarm cables, ensuring compliance with NEC fill ratio limits and
@@ -411,7 +417,8 @@ class ConduitSizer:
         conduit_type: str = "EMT",
         enforce_plfa_separation: bool = True,
     ) -> Any:
-        """Analyze conduit fill for a cable bundle.
+        """
+        Analyze conduit fill for a cable bundle.
 
         Args:
             bundle_id: Identifier for this cable bundle.
@@ -709,7 +716,8 @@ class ConduitSizer:
         conduit_type: str = "EMT",
         enforce_plfa_separation: bool = True,
     ) -> Any:
-        """Analyze conduit fill with wire size overrides from NAC voltage drop.
+        """
+        Analyze conduit fill with wire size overrides from NAC voltage drop.
 
         This method accepts a wire_size_overrides dict that maps original AWG
         to upgraded AWG (e.g., {14: 10} means all 14AWG wires were upsized

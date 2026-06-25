@@ -9,7 +9,8 @@
 # Standard: NFPA 70E-2024, IEEE 1584-2018
 # Reference: PR #75, commit d858dee1
 
-"""PE REVIEW REPORT — Arc Flash Example 4 Fix.
+"""
+PE REVIEW REPORT — Arc Flash Example 4 Fix.
 ==========================================
 
 1. SCOPE OF REVIEW
@@ -166,7 +167,8 @@ class PEReviewResult:
 
 
 def verify_arc_flash_fix() -> PEReviewResult:
-    """PE verification of the Arc Flash fix applied in V131 Phase 2.
+    """
+    PE verification of the Arc Flash fix applied in V131 Phase 2.
 
     Returns:
         PEReviewResult with verification of all corrected values

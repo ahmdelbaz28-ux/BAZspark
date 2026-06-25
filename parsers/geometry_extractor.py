@@ -27,6 +27,7 @@ class ConfidenceLevel(Enum):
 @dataclass
 class WallElement:
     """جدار مستخلص من الرسم."""
+
     geometry: List[Tuple[float, float]]  # قائمة نقاط مغلقة
     confidence: ConfidenceLevel
     source: str
@@ -92,6 +93,7 @@ class GeometryExtractor:
 
         Returns:
             List of WallElement objects
+
         """
         drawings = self.page.get_drawings()
         walls = []
@@ -267,6 +269,7 @@ def extract_walls_from_pdf(pdf_path: str, page: int = 0) -> List[WallElement]:
 
     Returns:
         List of WallElement objects
+
     """
     extractor = GeometryExtractor(pdf_path, page)
     return extractor.extract_walls()

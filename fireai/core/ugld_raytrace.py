@@ -1,4 +1,5 @@
-"""ugld_raytrace.py — UGLD Acoustic Ray Tracing Engine (Phase 2).
+"""
+ugld_raytrace.py — UGLD Acoustic Ray Tracing Engine (Phase 2).
 ==============================================================
 V23 Phase 2 — 3D Obstacle Shadow & Maekawa Barrier Diffraction
 
@@ -136,7 +137,8 @@ def maekawa_insertion_loss(
     center_frequency_hz: float,
     temp_c: float = 40.0,
 ) -> float:
-    """Calculate barrier insertion loss using Maekawa's diffraction model.
+    """
+    Calculate barrier insertion loss using Maekawa's diffraction model.
 
     Maekawa's empirical formula (ISO 9613-2:1996 Annex A):
         IL = 10 * log10(3 + 20*N)  for N > 0
@@ -195,7 +197,8 @@ def compute_path_difference(
     obstacle_min: tuple[float, float, float],
     obstacle_max: tuple[float, float, float],
 ) -> float:
-    """Compute the path length difference for barrier diffraction.
+    """
+    Compute the path length difference for barrier diffraction.
 
     The path difference δ is the difference between the shortest
     diffraction path (source → barrier edge → receiver) and the
@@ -345,7 +348,8 @@ def _ray_intersects_aabb(
     box_min: tuple[float, float, float],
     box_max: tuple[float, float, float],
 ) -> bool:
-    """Test if a line segment from origin to end intersects an AABB.
+    """
+    Test if a line segment from origin to end intersects an AABB.
 
     Uses the slab method (same algorithm as Layer 5's _ray_intersects_box).
     Ray parameter t is in [0, 1] (parametric from origin to end).
@@ -387,7 +391,8 @@ def _ray_intersects_aabb(
 
 
 class AcousticObstacle(BaseModel):
-    """An obstacle in the UGLD acoustic propagation path.
+    """
+    An obstacle in the UGLD acoustic propagation path.
 
     Uses the same AABB vertex pattern as Layer 5's Obstruction model.
     At ultrasonic frequencies, sound does NOT pass through solid obstacles
@@ -462,7 +467,8 @@ class ObstacleHit(BaseModel):
 
 
 class AcousticRayResult(BaseModel):
-    """Result of UGLD acoustic ray tracing with obstacle interaction.
+    """
+    Result of UGLD acoustic ray tracing with obstacle interaction.
 
     Composes with UGLDTriggerResult from Phase 1 for full audit trail.
     Provides:
@@ -527,7 +533,8 @@ def trace_acoustic_ray(
     temp_c: float = 40.0,
     relative_humidity_pct: float = 50.0,
 ) -> AcousticRayResult:
-    """Trace an acoustic ray from leak source to UGLD sensor through obstacles.
+    """
+    Trace an acoustic ray from leak source to UGLD sensor through obstacles.
 
     Algorithm:
       1. Calculate direct distance and Phase 1 free-field SPL

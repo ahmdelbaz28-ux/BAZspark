@@ -143,8 +143,7 @@ def render(questions: list[dict[str, Any]], title: str, subtitle: str, qid: str)
     html = html.replace("{{TITLE}}", _safe(title))
     html = html.replace("{{SUBTITLE}}", _safe(subtitle))
     html = html.replace("{{QUIZ_DATA}}", quiz_json)
-    html = html.replace("{{META}}", meta_json)
-    return html
+    return html.replace("{{META}}", meta_json)
 
 
 def _safe(s: str) -> str:

@@ -1,6 +1,4 @@
-"""
-Comprehensive Tests for Distributed FACP System
-"""
+"""Comprehensive Tests for Distributed FACP System"""
 import time
 import unittest
 import uuid
@@ -28,9 +26,7 @@ from ..security.validation_gate import ValidationFirewall
 
 
 class TestDistributedFACP(unittest.TestCase):
-    """
-    Comprehensive test suite for distributed FACP system
-    """
+    """Comprehensive test suite for distributed FACP system"""
 
     def setUp(self):
         """Set up test fixtures"""
@@ -316,7 +312,7 @@ class TestDistributedFACP(unittest.TestCase):
         # Since we're using a Mock transport, we expect the call to fail at transport level
         # but the validation should work
         try:
-            success, response = self.l1_gateway.handle_client_request(request_data)
+            _success, _response = self.l1_gateway.handle_client_request(request_data)
         except AttributeError:
             # Expected since transport is mocked
             pass
@@ -350,7 +346,7 @@ class TestDistributedFACP(unittest.TestCase):
         }
 
         # Process through orchestrator
-        success, response = self.orchestrator.process_request(request_data)
+        _success, response = self.orchestrator.process_request(request_data)
         # This should succeed in routing even if no actual worker is available
         self.assertIsInstance(response, dict)
 
@@ -579,7 +575,7 @@ class TestDistributedFACP(unittest.TestCase):
         self.assertTrue(is_valid, f"Request validation failed: {errors}")
 
         # Test security validation
-        is_valid, processed_data, errors = self.validation_firewall.process_request(request_data)
+        is_valid, _processed_data, errors = self.validation_firewall.process_request(request_data)
         self.assertTrue(is_valid or len(errors) == 0, f"Security validation failed: {errors}")
 
         # The complete flow would involve more components but this validates the key parts
@@ -597,9 +593,7 @@ class TestDistributedFACP(unittest.TestCase):
 
 
 class TestDistributedSecurity(unittest.TestCase):
-    """
-    Security-specific tests for distributed FACP system
-    """
+    """Security-specific tests for distributed FACP system"""
 
     def setUp(self):
         """Set up security test fixtures"""
@@ -644,7 +638,7 @@ class TestDistributedSecurity(unittest.TestCase):
         self.assertTrue(allowed)
 
         # Viewer should not have execution access
-        allowed, reason = permission_checker.check_method_access("viewer_user", "engine.calculate")
+        allowed, _reason = permission_checker.check_method_access("viewer_user", "engine.calculate")
         self.assertFalse(allowed)
 
     def test_token_validation(self):
@@ -688,7 +682,7 @@ class TestDistributedSecurity(unittest.TestCase):
         }
 
         # This should be blocked by the validation firewall
-        is_valid, processed_data, errors = self.validation_firewall.process_request(request_data)
+        _is_valid, _processed_data, _errors = self.validation_firewall.process_request(request_data)
         # The firewall validates format, not permissions - that's handled downstream
         # So this should pass format validation but may have other checks
 

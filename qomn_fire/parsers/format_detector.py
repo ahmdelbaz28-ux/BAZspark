@@ -110,7 +110,7 @@ class FormatDetector:
                 header_bytes = f.read(1024)
         except Exception as e:
             return Result(error=FormatError(
-                message=f"Unreadable file stream: {str(e)}",
+                message=f"Unreadable file stream: {e!s}",
                 code_ref="OS Security Exception",
                 remedy="Check file permission levels."
             ))

@@ -202,7 +202,7 @@ class TestEventBusSubscribePublish:
 
     def test_subscribe_and_publish(self, bus):
         received = []
-        bus.subscribe("test.event", lambda e: received.append(e))
+        bus.subscribe("test.event", received.append)
         bus.publish("test.event", {"key": "val"})
         assert len(received) == 1
         assert received[0].data["key"] == "val"
@@ -224,7 +224,7 @@ class TestEventBusSubscribePublish:
 
     def test_subscriber_receives_event_object(self, bus):
         received = []
-        bus.subscribe("test", lambda e: received.append(e))
+        bus.subscribe("test", received.append)
         bus.publish("test", {"x": 42}, source="test_module", correlation_id="corr-1")
         assert received[0].data == {"x": 42}
         assert received[0].source == "test_module"
@@ -501,7 +501,7 @@ class TestEventBusEdgeCases:
         """Empty string event type should work (though not recommended)."""
         bus = EventBus()
         received = []
-        bus.subscribe("", lambda e: received.append(e))
+        bus.subscribe("", received.append)
         bus.publish("")
         assert len(received) == 1
 
@@ -509,7 +509,7 @@ class TestEventBusEdgeCases:
         """Custom event types (not in Events) should work."""
         bus = EventBus()
         received = []
-        bus.subscribe("custom.event.type", lambda e: received.append(e))
+        bus.subscribe("custom.event.type", received.append)
         bus.publish("custom.event.type")
         assert len(received) == 1
 

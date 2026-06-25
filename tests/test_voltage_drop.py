@@ -89,8 +89,10 @@ class TestGetWireResistance:
         assert r == pytest.approx(10.07 / 1000.0, rel=1e-4)
 
     def test_numeric_awg_converted_to_string(self):
-        """Passing integer 14 works because get_wire_resistance_ohm_per_m
-        does str(awg).strip() internally — so 14 → "14" is valid."""
+        """
+        Passing integer 14 works because get_wire_resistance_ohm_per_m
+        does str(awg).strip() internally — so 14 → "14" is valid.
+        """
         r = get_wire_resistance_ohm_per_m(14)
         assert r == pytest.approx(10.07 / 1000.0, rel=1e-4)
 
@@ -113,7 +115,8 @@ class TestCalculateVoltageDrop:
     """
 
     def test_known_voltage_drop(self):
-        """Manual verification: 1A, 100m, AWG14, 24V, 75°C.
+        """
+        Manual verification: 1A, 100m, AWG14, 24V, 75°C.
         R = 0.01007 Ω/m, V_drop = 1.0 × 2 × 100 × 0.01007 = 2.014V
         """
         result = calculate_voltage_drop(1.0, 100.0, "14", 24.0)
@@ -179,15 +182,18 @@ class TestCalculateVoltageDrop:
             calculate_voltage_drop(1.0, float("nan"), "14", 24.0)
 
     def test_inf_nominal_voltage_not_checked(self):
-        """Source code only checks nominal_voltage <= 0; inf passes through.
-        With inf voltage, drop% = 0 (any finite drop / inf = 0)."""
+        """
+        Source code only checks nominal_voltage <= 0; inf passes through.
+        With inf voltage, drop% = 0 (any finite drop / inf = 0).
+        """
         result = calculate_voltage_drop(1.0, 100.0, "14", float("inf"))
         # With infinite voltage, voltage_drop_pct should be 0 (or NaN if 0*inf)
         # The actual result depends on floating-point arithmetic
         assert result["voltage_drop_v"] > 0
 
     def test_return_path_factor_included(self):
-        """BUG-11: The ×2 round-trip factor MUST be present.
+        """
+        BUG-11: The ×2 round-trip factor MUST be present.
         Without it, voltage drop would be exactly half the correct value.
         """
         result = calculate_voltage_drop(1.0, 100.0, "14", 24.0)
@@ -199,7 +205,8 @@ class TestCalculateVoltageDrop:
         assert result["voltage_drop_v"] != pytest.approx(one_way_drop, rel=0.01)
 
     def test_temperature_correction_hot(self):
-        """At 100°C, resistance should be higher than at 75°C.
+        """
+        At 100°C, resistance should be higher than at 75°C.
         R_T = R_75 × [1 + 0.00323 × (T - 75)]
         At 100°C: factor = 1 + 0.00323 × 25 = 1.08075
         """
@@ -240,7 +247,8 @@ class TestCalculateVoltageDrop:
 
 class TestCalculateMaxCircuitLength:
     def test_known_max_length(self):
-        """For 1A on AWG14 at 24V with 10% drop:
+        """
+        For 1A on AWG14 at 24V with 10% drop:
         L_max = (24 × 0.10) / (1.0 × 2 × 0.01007) = 119.17m
         """
         result = calculate_max_circuit_length(1.0, "14", 24.0, 10.0)
@@ -294,7 +302,8 @@ class TestRecommendWireGauge:
             assert result["recommended_awg"] in ("10", "8", "6", "4", "3", "2", "1")
 
     def test_impossible_circuit_returns_engineering_review(self):
-        """Even 4/0 insufficient → ENGINEERING_REVIEW (V58 FIX: was 2/0).
+        """
+        Even 4/0 insufficient → ENGINEERING_REVIEW (V58 FIX: was 2/0).
         Need extreme scenario: very high current + very long distance
         so that even 4/0 (0.0002 Ω/m) fails 10% drop.
         V_drop_4_0 = I × 2 × L × R = I × 2 × L × 0.0002
@@ -341,7 +350,8 @@ class TestCalculateBatteryBackup:
     """
 
     def test_basic_battery_calculation(self):
-        """Standard FA panel: 0.5A standby, 1.5A alarm.
+        """
+        Standard FA panel: 0.5A standby, 1.5A alarm.
         Required = (0.5×24 + 1.5×(5/60)) / 0.80 = (12.0 + 0.125) / 0.80 = 15.15625 Ah
         """
         result = calculate_battery_backup(0.5, 1.5)
@@ -349,7 +359,8 @@ class TestCalculateBatteryBackup:
         assert result["required_ah"] == pytest.approx(expected_ah, rel=1e-3)
 
     def test_battery_not_1000x_too_small(self):
-        """BUG-13: Result must NOT be 1000× smaller than expected.
+        """
+        BUG-13: Result must NOT be 1000× smaller than expected.
         Old broken code: result = (0.5 × 24 + 1.5 × 0.25) / 0.80 / 1000
         """
         result = calculate_battery_backup(0.5, 1.5)

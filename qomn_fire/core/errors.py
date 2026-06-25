@@ -65,7 +65,8 @@ class Result(Generic[T, E]):
         return f"Result.err({self._error!r})"
 
 class BaseEngineeringError(Exception):
-    """Base class for all QOMN-FIRE engineering errors.
+    """
+    Base class for all QOMN-FIRE engineering errors.
 
     BUG-3 FIX: Now inherits from Exception so errors can be caught by
     standard exception handlers and participate in Python's exception hierarchy.
@@ -73,6 +74,7 @@ class BaseEngineeringError(Exception):
     would NOT catch it — errors could escape error handling boundaries silently.
     In a safety-critical system, uncaught errors = silent failures = people die.
     """
+
     def __init__(self, message: str, code_ref: str, remedy: str):
         super().__init__(message)
         self.message = message
@@ -96,28 +98,35 @@ class FACPSelectionError(BaseEngineeringError): pass
 
 class FileValidationError(BaseEngineeringError):
     """File does not meet structural requirements (existence, size, permissions)."""
+
     pass
 
 class FormatError(BaseEngineeringError):
     """File format cannot be identified — magic bytes don't match any known specification."""
+
     pass
 
 class VersionError(BaseEngineeringError):
     """File version is unsupported or incompatible with the parser."""
+
     pass
 
 class CorruptionError(BaseEngineeringError):
     """File is structurally corrupted — missing mandatory sections or markers."""
+
     pass
 
 class ConversionError(BaseEngineeringError):
     """DWG→DXF or RVT→IFC conversion failed — external tool error."""
+
     pass
 
 class GeometryError(BaseEngineeringError):
     """Building geometry is physically impossible (zero-area rooms, unclosed boundaries)."""
+
     pass
 
 class UnitError(BaseEngineeringError):
     """File uses wrong unit system (mm/inches instead of meters) — coordinates exceed limits."""
+
     pass

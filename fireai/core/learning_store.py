@@ -22,14 +22,16 @@ logger = logging.getLogger(__name__)
 
 
 class LearningStore:
-    """Experience-based learning store with adaptive threshold calibration.
+    """
+    Experience-based learning store with adaptive threshold calibration.
 
     Stores analysis experiences and recalibrates confidence thresholds
     based on actual compliant results.
     """
 
     def __init__(self, db_path: str = "fireai_learning.sqlite3") -> None:
-        """Initialize LearningStore with SQLite database.
+        """
+        Initialize LearningStore with SQLite database.
 
         Args:
             db_path: Path to SQLite database file
@@ -103,7 +105,8 @@ class LearningStore:
         compliant: bool,
         timestamp_utc: str,
     ) -> bool:
-        """Store a single analysis experience.
+        """
+        Store a single analysis experience.
 
         Args:
             project_id: Project identifier
@@ -165,7 +168,8 @@ class LearningStore:
             return False
 
     def get_calibrated_thresholds(self) -> tuple[float, float]:
-        """Get calibrated confidence thresholds.
+        """
+        Get calibrated confidence thresholds.
 
         Returns:
             Tuple of (high_threshold, medium_threshold)
@@ -188,7 +192,8 @@ class LearningStore:
         return (_CONFIDENCE_HIGH_THRESHOLD, _CONFIDENCE_MEDIUM_THRESHOLD)
 
     def maybe_recalibrate(self, force: bool = False) -> bool:
-        """Recalibrate thresholds if enough new records exist.
+        """
+        Recalibrate thresholds if enough new records exist.
 
         Args:
             force: Force recalibration regardless of record count
@@ -216,7 +221,8 @@ class LearningStore:
         return False
 
     def recalibrate(self) -> bool:
-        """Recalibrate thresholds based on compliant experiences.
+        """
+        Recalibrate thresholds based on compliant experiences.
 
         Uses 10th percentile of confidence scores from compliant results.
         Never sets thresholds below V10 constants.

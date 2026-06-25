@@ -1,6 +1,4 @@
-"""
-Validator for Word document XML files against XSD schemas.
-"""
+"""Validator for Word document XML files against XSD schemas."""
 
 import re
 import tempfile
@@ -70,9 +68,7 @@ class DOCXSchemaValidator(BaseSchemaValidator):
         return all_valid
 
     def validate_whitespace_preservation(self):
-        """
-        Validate that w:t elements with whitespace have xml:space='preserve'.
-        """
+        """Validate that w:t elements with whitespace have xml:space='preserve'."""
         errors = []
 
         for xml_file in self.xml_files:
@@ -116,10 +112,9 @@ class DOCXSchemaValidator(BaseSchemaValidator):
             for error in errors:
                 print(error)
             return False
-        else:
-            if self.verbose:
-                print("PASSED - All whitespace is properly preserved")
-            return True
+        if self.verbose:
+            print("PASSED - All whitespace is properly preserved")
+        return True
 
     def validate_deletions(self):
         """
@@ -165,10 +160,9 @@ class DOCXSchemaValidator(BaseSchemaValidator):
             for error in errors:
                 print(error)
             return False
-        else:
-            if self.verbose:
-                print("PASSED - No w:t elements found within w:del elements")
-            return True
+        if self.verbose:
+            print("PASSED - No w:t elements found within w:del elements")
+        return True
 
     def count_paragraphs_in_unpacked(self):
         """Count the number of paragraphs in the unpacked document."""
@@ -255,10 +249,9 @@ class DOCXSchemaValidator(BaseSchemaValidator):
             for error in errors:
                 print(error)
             return False
-        else:
-            if self.verbose:
-                print("PASSED - No w:delText elements within w:ins elements")
-            return True
+        if self.verbose:
+            print("PASSED - No w:delText elements within w:ins elements")
+        return True
 
     def compare_paragraph_counts(self):
         """Compare paragraph counts between original and new document."""

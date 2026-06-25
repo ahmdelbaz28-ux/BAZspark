@@ -145,25 +145,25 @@ class TestAdviseHighCeiling:
         assert advisory.severity == "CRITICAL"
 
     def test_exactly_at_warning_threshold(self):
-        """h = 9.1m exactly should still be INFO (not > 9.1)."""
+        """H = 9.1m exactly should still be INFO (not > 9.1)."""
         advisor = SensorPhysicsAdvisor()
         advisory = advisor.advise(room_id="R1", ceiling_height_m=9.1)
         assert advisory.severity == "INFO"
 
     def test_just_above_warning_threshold(self):
-        """h = 9.2m → WARNING."""
+        """H = 9.2m → WARNING."""
         advisor = SensorPhysicsAdvisor()
         advisory = advisor.advise(room_id="R1", ceiling_height_m=9.2)
         assert advisory.severity == "WARNING"
 
     def test_exactly_at_table_max(self):
-        """h = 12.2m exactly should be WARNING (not > 12.2)."""
+        """H = 12.2m exactly should be WARNING (not > 12.2)."""
         advisor = SensorPhysicsAdvisor()
         advisory = advisor.advise(room_id="R1", ceiling_height_m=12.2)
         assert advisory.severity == "WARNING"
 
     def test_just_above_table_max(self):
-        """h = 12.3m → CRITICAL."""
+        """H = 12.3m → CRITICAL."""
         advisor = SensorPhysicsAdvisor()
         advisory = advisor.advise(room_id="R1", ceiling_height_m=12.3)
         assert advisory.severity == "CRITICAL"

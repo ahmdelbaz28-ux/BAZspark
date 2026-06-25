@@ -41,12 +41,12 @@ import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # DDC CLI binary names (Linux .deb installed to /usr/bin/)
-_DDC_CONVERTERS: Dict[str, str] = {
+_DDC_CONVERTERS: dict[str, str] = {
     ".rvt": "ddc-rvtconverter",
     ".rfa": "ddc-rvtconverter",
     ".dwg": "ddc-dwgconverter",
@@ -55,7 +55,7 @@ _DDC_CONVERTERS: Dict[str, str] = {
 }
 
 # Windows .exe equivalents (fallback for Windows deployments)
-_DDC_CONVERTERS_WIN: Dict[str, str] = {
+_DDC_CONVERTERS_WIN: dict[str, str] = {
     ".rvt": "RvtExporter.exe",
     ".rfa": "RvtExporter.exe",
     ".dwg": "DwgExporter.exe",
@@ -73,7 +73,7 @@ _DDC_CONVERTERS_WIN: Dict[str, str] = {
 #
 # On Linux, DDC converters are installed via apt to /usr/bin/.
 # On Windows, they are typically in the converter_dir or C:\DDC\.
-_ALLOWED_BINARIES: Dict[str, List[str]] = {
+_ALLOWED_BINARIES: dict[str, list[str]] = {
     "ddc-rvtconverter": ["/usr/bin/ddc-rvtconverter", "/usr/local/bin/ddc-rvtconverter"],
     "ddc-dwgconverter": ["/usr/bin/ddc-dwgconverter", "/usr/local/bin/ddc-dwgconverter"],
     "ddc-ifcconverter": ["/usr/bin/ddc-ifcconverter", "/usr/local/bin/ddc-ifcconverter"],
@@ -103,12 +103,12 @@ class DDCConversionResult:
 
     success: bool
     source_file: str
-    xlsx_path: Optional[str] = None
-    dae_path: Optional[str] = None
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    rooms: List[Dict[str, Any]] = field(default_factory=list)
-    elements: List[Dict[str, Any]] = field(default_factory=list)
+    xlsx_path: str | None = None
+    dae_path: str | None = None
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    rooms: list[dict[str, Any]] = field(default_factory=list)
+    elements: list[dict[str, Any]] = field(default_factory=list)
     duration_s: float = 0.0
 
 
@@ -122,19 +122,21 @@ class DDCAdapter:
     SAFETY: Output is advisory geometry — validated before use in calculations.
     """
 
-    def __init__(self, converter_dir: Optional[str] = None):
+    def __init__(self, converter_dir: str | None = None):
         """
         Initialize DDC adapter.
 
         Args:
             converter_dir: Optional path to DDC .exe directory (Windows).
                           On Linux, converters must be on $PATH via apt install.
+
         """
         self._converter_dir = converter_dir
         self._platform = "windows" if os.name == "nt" else "linux"
 
     def is_available(self, file_ext: str) -> bool:
-        """Check if DDC converter is available for the given file extension.
+        """
+        Check if DDC converter is available for the given file extension.
 
         V105 FIX (LOW-5): Use shutil.which() instead of spawning a subprocess.
         This is faster and doesn't leak information about installed binaries.
@@ -151,7 +153,7 @@ class DDCAdapter:
         except Exception:
             return False
 
-    def _get_binary(self, ext: str) -> Optional[str]:
+    def _get_binary(self, ext: str) -> str | None:
         """Get the DDC binary name for a file extension."""
         if self._platform == "windows":
             binary = _DDC_CONVERTERS_WIN.get(ext)
@@ -164,7 +166,7 @@ class DDCAdapter:
         self,
         input_path: str,
         export_mode: str = "standard",
-        output_dir: Optional[str] = None,
+        output_dir: str | None = None,
     ) -> DDCConversionResult:
         """
         Convert a CAD/BIM file using the appropriate DDC converter.
@@ -180,6 +182,7 @@ class DDCAdapter:
         Raises:
             DDCNotAvailableError: If DDC converter not installed
             FileNotFoundError: If input file doesn't exist
+
         """
         import time
 
@@ -400,7 +403,7 @@ class DDCAdapter:
                 errors=[f"{type(e).__name__}: {e}"],
             )
 
-    def _extract_rooms_from_xlsx(self, xlsx_path: str) -> List[Dict[str, Any]]:
+    def _extract_rooms_from_xlsx(self, xlsx_path: str) -> list[dict[str, Any]]:
         """
         Extract room/space data from DDC-generated XLSX.
 
@@ -455,7 +458,7 @@ class DDCAdapter:
 
         return rooms
 
-    def _extract_elements_from_xlsx(self, xlsx_path: str) -> List[Dict[str, Any]]:
+    def _extract_elements_from_xlsx(self, xlsx_path: str) -> list[dict[str, Any]]:
         """Extract all BIM elements from DDC XLSX."""
         try:
             import openpyxl
@@ -483,7 +486,7 @@ class DDCAdapter:
 
         return elements
 
-    def _extract_rooms_xlrd(self, xlsx_path: str) -> List[Dict[str, Any]]:
+    def _extract_rooms_xlrd(self, xlsx_path: str) -> list[dict[str, Any]]:
         """Fallback room extraction using xlrd (for .xls files)."""
         import xlrd  # type: ignore[import-not-found]
 
@@ -510,6 +513,6 @@ class DDCAdapter:
         return rooms
 
 
-def get_ddc_adapter(converter_dir: Optional[str] = None) -> DDCAdapter:
+def get_ddc_adapter(converter_dir: str | None = None) -> DDCAdapter:
     """Get a DDCAdapter instance (simple factory, no singleton needed)."""
     return DDCAdapter(converter_dir=converter_dir)

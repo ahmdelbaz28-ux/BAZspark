@@ -1,4 +1,5 @@
-"""Initial schema — capture existing database state.
+"""
+Initial schema — capture existing database state.
 
 Revision ID: 001
 Revises:
@@ -10,7 +11,6 @@ Captures the actual schema from backend/database.py including:
 - Performance indexes
 """
 import sqlalchemy as sa
-
 from alembic import op
 
 # revision identifiers
@@ -22,7 +22,6 @@ depends_on = None
 
 def upgrade() -> None:
     """Create initial schema — applies to fresh databases."""
-
     # ── Projects ────────────────────────────────────────────────────────
     op.create_table(
         'projects',

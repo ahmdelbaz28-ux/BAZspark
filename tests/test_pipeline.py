@@ -661,7 +661,7 @@ class TestAnalyzeBuilding:
         assert len(result["results"]) == 3
 
     def test_building_with_battery_kwargs(self):
-        """kwargs like battery params should propagate to each room."""
+        """Kwargs like battery params should propagate to each room."""
         rooms = [_valid_payload(room_id=f"R-{i}") for i in range(3)]
         result = analyze_building(
             rooms,

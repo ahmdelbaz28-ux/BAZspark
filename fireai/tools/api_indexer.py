@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""FireAI — API Endpoints Index Generator.
+"""
+FireAI — API Endpoints Index Generator.
 
 Scans backend/routers/ and generates a comprehensive API index.
 """

@@ -1,4 +1,5 @@
-"""test_v134_security_fixes.py — Regression tests for V134 CRITICAL fixes.
+"""
+test_v134_security_fixes.py — Regression tests for V134 CRITICAL fixes.
 
 Per agent.md Rule 10: tests run after every modification.
 Per agent.md Rule 19: each cycle must be MORE THOROUGH than the previous.
@@ -13,10 +14,7 @@ These tests verify the 6 CRITICAL fixes from the V134 adversarial audit:
 
 from __future__ import annotations
 
-import math
-
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # F-1/F-2: SSRF Prevention Tests
@@ -85,7 +83,6 @@ class TestSSRFPrevention:
         from fireai.infrastructure.webhook_service import (
             WebhookDeliveryService,
             WebhookSubscription,
-            DeliveryStatus,
         )
         service = WebhookDeliveryService(allow_http=True, max_retries=1)
         sub = WebhookSubscription(
@@ -94,7 +91,7 @@ class TestSSRFPrevention:
             secret="very-secure-secret-key-1234567890-abcdef",
         )
         service.subscribe(sub)
-        event_id = service.publish_event(
+        service.publish_event(
             event_type="DESIGN_COMPLETED",
             source="test",
             data={"test": True},
@@ -114,7 +111,8 @@ class TestGLBConsistency:
     """V134 F-3: GLB must not reference non-existent accessors."""
 
     def test_glb_json_has_no_accessor_references(self):
-        """V139: Mesh primitives now have REAL accessor references (was V134 F-3 fix).
+        """
+        V139: Mesh primitives now have REAL accessor references (was V134 F-3 fix).
 
         V134 removed invalid accessor references (empty accessors array).
         V139 added REAL vertex data with proper accessors. Now we verify
@@ -159,7 +157,8 @@ class TestGLBConsistency:
                     )
 
     def test_glb_accessors_array_empty_when_no_geometry(self):
-        """V139: Accessors array now has REAL entries (was empty in V134 F-3).
+        """
+        V139: Accessors array now has REAL entries (was empty in V134 F-3).
 
         V134 removed accessors because they were invalid (referenced
         non-existent data). V139 added real vertex data, so accessors
@@ -316,7 +315,7 @@ class TestSmitheryEnqueueTransparency:
 
     def test_to_dict_includes_enqueue_status(self):
         """to_dict must include enqueue_status for API transparency."""
-        from fireai.mcp_server.smithery_mcp_integration import ProposedAction, ActionType
+        from fireai.mcp_server.smithery_mcp_integration import ActionType, ProposedAction
         action = ProposedAction(
             id="test-1",
             action_type=ActionType.CREATE,
@@ -333,7 +332,7 @@ class TestSmitheryEnqueueTransparency:
 
     def test_dropped_proposal_is_not_enqueued(self):
         """If enqueue fails, is_enqueued must be False."""
-        from fireai.mcp_server.smithery_mcp_integration import ProposedAction, ActionType
+        from fireai.mcp_server.smithery_mcp_integration import ActionType, ProposedAction
         action = ProposedAction(
             id="test-1",
             action_type=ActionType.CREATE,
@@ -344,7 +343,7 @@ class TestSmitheryEnqueueTransparency:
 
     def test_enqueued_proposal_is_enqueued(self):
         """If enqueue succeeds, is_enqueued must be True."""
-        from fireai.mcp_server.smithery_mcp_integration import ProposedAction, ActionType
+        from fireai.mcp_server.smithery_mcp_integration import ActionType, ProposedAction
         action = ProposedAction(
             id="test-1",
             action_type=ActionType.CREATE,

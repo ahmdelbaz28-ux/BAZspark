@@ -1,4 +1,5 @@
-"""marine/integration/autocad_exporter.py — DXF Layer + Entity Generator.
+"""
+marine/integration/autocad_exporter.py — DXF Layer + Entity Generator.
 
 Generates DXF layer definitions and entity placements for marine fire-safety
 drawings. Layers per ISO 1101 fire-safety drawing convention:
@@ -7,10 +8,10 @@ drawings. Layers per ISO 1101 fire-safety drawing convention:
 v3: Replaced hand-rolled DXF group-code generation with ezdxf library.
 """
 from __future__ import annotations
+
 import math
 import os
 import tempfile
-from typing import List, Optional
 
 import ezdxf
 from ezdxf.document import Drawing
@@ -18,8 +19,7 @@ from ezdxf.enums import TextEntityAlignment
 
 from marine.core.types import DetectorPlacement, MarineZone
 
-
-LAYER_SPECS: List[dict] = [
+LAYER_SPECS: list[dict] = [
     {"name": "F-ZONES",        "color": 5, "linetype": "CONTINUOUS"},
     {"name": "F-DETECTORS",    "color": 1, "linetype": "CONTINUOUS"},
     {"name": "F-EXTINGUISH",   "color": 2, "linetype": "CONTINUOUS"},
@@ -55,7 +55,7 @@ def generate_dxf_layer_definitions() -> str:
     return _dxf_string(doc)
 
 
-def place_detector_entities(placements: List[DetectorPlacement]) -> str:
+def place_detector_entities(placements: list[DetectorPlacement]) -> str:
     doc = _init_doc()
     msp = doc.modelspace()
     for dp in placements:
@@ -69,7 +69,7 @@ def place_detector_entities(placements: List[DetectorPlacement]) -> str:
     return _dxf_string(doc)
 
 
-def draw_zones(zones: List[MarineZone], frame_spacing_m: float = 0.6) -> str:
+def draw_zones(zones: list[MarineZone], frame_spacing_m: float = 0.6) -> str:
     doc = _init_doc()
     msp = doc.modelspace()
     for z in zones:
@@ -92,8 +92,8 @@ def draw_zones(zones: List[MarineZone], frame_spacing_m: float = 0.6) -> str:
 
 
 def generate_full_dxf(
-    zones: List[MarineZone],
-    detector_placements: Optional[List[DetectorPlacement]] = None,
+    zones: list[MarineZone],
+    detector_placements: list[DetectorPlacement] | None = None,
     frame_spacing_m: float = 0.6,
 ) -> str:
     doc = _init_doc()
@@ -130,6 +130,9 @@ def generate_full_dxf(
 
 
 __all__ = [
-    "DXF_LAYERS", "generate_dxf_layer_definitions",
-    "place_detector_entities", "draw_zones", "generate_full_dxf",
+    "DXF_LAYERS",
+    "draw_zones",
+    "generate_dxf_layer_definitions",
+    "generate_full_dxf",
+    "place_detector_entities",
 ]

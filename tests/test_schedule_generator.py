@@ -149,6 +149,7 @@ class TestScheduleTextReport:
 
 class TestNFPA72Limits:
     """NFPA 72 §23.6.2 limits are correctly defined."""
+
     def test_12awg_limit(self):
         assert _NFPA72_23_6_2_MAX_LEN_M["12 AWG"] == pytest.approx(2286.0)
 

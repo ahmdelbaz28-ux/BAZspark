@@ -1,4 +1,5 @@
-"""fireai/core/pdf_report.py  V1.0 — Building-level NFPA 72-2022 PDF Report.
+"""
+fireai/core/pdf_report.py  V1.0 — Building-level NFPA 72-2022 PDF Report.
 ========================================================================
 Professional PDF compliance report generator for FireAI.
 
@@ -590,7 +591,8 @@ def generate_building_report(
     scenario_results: dict[str, ScenarioBatteryResult] | None = None,
     audit_summary: dict | None = None,
 ) -> str:
-    """Generate a professional NFPA 72-2022 compliance PDF report.
+    """
+    Generate a professional NFPA 72-2022 compliance PDF report.
 
     Args:
         report: BuildingReport from BuildingEngine.analyse().

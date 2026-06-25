@@ -1,4 +1,5 @@
-"""room_lifecycle.py — FireAI Room Lifecycle State Machine.
+"""
+room_lifecycle.py — FireAI Room Lifecycle State Machine.
 ========================================================
 NFPA 72-2022 compliant state machine that transforms the fire safety
 system from a stateless "calculator" into a proper engineering system
@@ -61,7 +62,8 @@ logger = logging.getLogger(__name__)
 
 
 class RoomState(enum.Enum):
-    """Finite states for room analysis lifecycle.
+    """
+    Finite states for room analysis lifecycle.
 
     Each state represents a distinct phase in the NFPA 72-2022 compliant
     engineering workflow. Transitions between states are strictly validated
@@ -117,7 +119,8 @@ LEGAL_TRANSITIONS: dict[RoomState, set] = {
 
 @dataclass(frozen=True)
 class RoomTransition:
-    """Immutable record of a single state transition in the room lifecycle.
+    """
+    Immutable record of a single state transition in the room lifecycle.
 
     Every transition is recorded with full audit metadata for NFPA 72
     compliance and AHJ review. The frozen dataclass ensures that transition
@@ -160,7 +163,8 @@ class RoomTransition:
 
 
 class RoomLifecycle:
-    """State machine for a single room's analysis lifecycle.
+    """
+    State machine for a single room's analysis lifecycle.
 
     Maintains the current state and full transition history for one room.
     All transitions are validated against the LEGAL_TRANSITIONS map and
@@ -191,7 +195,8 @@ class RoomLifecycle:
         room_id: str,
         bus: EventBus | None = None,
     ) -> None:
-        """Initialize a new room lifecycle in PENDING state.
+        """
+        Initialize a new room lifecycle in PENDING state.
 
         Args:
             room_id: Unique identifier for this room (e.g. "R-101").
@@ -235,7 +240,8 @@ class RoomLifecycle:
     # ── Transition Validation ─────────────────────────────────────────
 
     def can_transition_to(self, new_state: RoomState) -> bool:
-        """Check whether a transition to new_state is legal from current state.
+        """
+        Check whether a transition to new_state is legal from current state.
 
         Args:
             new_state: The target state to check.
@@ -260,7 +266,8 @@ class RoomLifecycle:
         actor: str,
         metadata: dict[str, Any] | None = None,
     ) -> RoomTransition:
-        """Execute a validated state transition and record it.
+        """
+        Execute a validated state transition and record it.
 
         Validates the transition against LEGAL_TRANSITIONS, creates an
         immutable RoomTransition record, updates the current state, and
@@ -336,7 +343,8 @@ class RoomLifecycle:
         reason: str,
         actor: str,
     ) -> None:
-        """Publish a lifecycle change event to the EventBus.
+        """
+        Publish a lifecycle change event to the EventBus.
 
         Args:
             from_state: State before transition.
@@ -374,7 +382,8 @@ class RoomLifecycle:
     # ── Duration Tracking ─────────────────────────────────────────────
 
     def duration_in_state(self) -> float:
-        """Return the number of seconds spent in the current state.
+        """
+        Return the number of seconds spent in the current state.
 
         Returns:
             Seconds (as a float) since the current state was entered.
@@ -397,7 +406,8 @@ class RoomLifecycle:
     # ── Utility ───────────────────────────────────────────────────────
 
     def is_terminal(self) -> bool:
-        """Check if the current state is terminal (CERTIFIED or REJECTED).
+        """
+        Check if the current state is terminal (CERTIFIED or REJECTED).
 
         Terminal states have no forward transitions (only backward
         retry/resubmit paths). This is useful for pipeline completion
@@ -411,7 +421,8 @@ class RoomLifecycle:
             return self._state in {RoomState.CERTIFIED, RoomState.REJECTED}
 
     def is_failed(self) -> bool:
-        """Check if the room is in FAILED state.
+        """
+        Check if the room is in FAILED state.
 
         Returns:
             True if the room is in FAILED state.
@@ -421,7 +432,8 @@ class RoomLifecycle:
             return self._state == RoomState.FAILED
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize the lifecycle state and history to a dictionary.
+        """
+        Serialize the lifecycle state and history to a dictionary.
 
         Returns:
             Dictionary containing room_id, current state, transition count,
@@ -447,7 +459,8 @@ class RoomLifecycle:
 
 
 class RoomLifecycleManager:
-    """Manages lifecycles for all rooms in a building.
+    """
+    Manages lifecycles for all rooms in a building.
 
     Provides centralized access to room lifecycles, building-level status
     aggregation, and certification checks. Thread-safe for concurrent
@@ -477,7 +490,8 @@ class RoomLifecycleManager:
     """
 
     def __init__(self, bus: EventBus | None = None) -> None:
-        """Initialize the lifecycle manager.
+        """
+        Initialize the lifecycle manager.
 
         Args:
             bus: Optional EventBus instance. If None, the singleton
@@ -496,7 +510,8 @@ class RoomLifecycleManager:
     # ── Room Management ───────────────────────────────────────────────
 
     def register_room(self, room_id: str) -> RoomLifecycle:
-        """Register a new room and create its lifecycle.
+        """
+        Register a new room and create its lifecycle.
 
         If the room is already registered, returns the existing lifecycle
         without creating a duplicate.
@@ -525,7 +540,8 @@ class RoomLifecycleManager:
             return lifecycle
 
     def get_room(self, room_id: str) -> RoomLifecycle | None:
-        """Get the lifecycle for a specific room.
+        """
+        Get the lifecycle for a specific room.
 
         Args:
             room_id: Unique identifier for the room.
@@ -538,7 +554,8 @@ class RoomLifecycleManager:
             return self._rooms.get(room_id)
 
     def has_room(self, room_id: str) -> bool:
-        """Check if a room is registered.
+        """
+        Check if a room is registered.
 
         Args:
             room_id: Unique identifier for the room.
@@ -551,7 +568,8 @@ class RoomLifecycleManager:
             return room_id in self._rooms
 
     def room_ids(self) -> list[str]:
-        """Return a list of all registered room IDs.
+        """
+        Return a list of all registered room IDs.
 
         Returns:
             List of room ID strings.
@@ -568,7 +586,8 @@ class RoomLifecycleManager:
     # ── Building-Level Status ─────────────────────────────────────────
 
     def building_status(self) -> dict[RoomState, int]:
-        """Aggregate room states across the entire building.
+        """
+        Aggregate room states across the entire building.
 
         Returns a count of rooms in each lifecycle state. States with
         zero rooms are still included for completeness (useful for
@@ -598,7 +617,8 @@ class RoomLifecycleManager:
             return status
 
     def all_certified(self) -> bool:
-        """Check if ALL rooms in the building are CERTIFIED.
+        """
+        Check if ALL rooms in the building are CERTIFIED.
 
         This is the hard gate for AHJ submission. A building cannot
         be submitted until every single room has a proof certificate
@@ -616,7 +636,8 @@ class RoomLifecycleManager:
             return all(lc.state == RoomState.CERTIFIED for lc in self._rooms.values())
 
     def any_failed(self) -> bool:
-        """Check if any room in the building is in FAILED state.
+        """
+        Check if any room in the building is in FAILED state.
 
         Returns:
             True if at least one room is FAILED.
@@ -626,7 +647,8 @@ class RoomLifecycleManager:
             return any(lc.state == RoomState.FAILED for lc in self._rooms.values())
 
     def any_warnings(self) -> bool:
-        """Check if any room in the building is in WARNING state.
+        """
+        Check if any room in the building is in WARNING state.
 
         Returns:
             True if at least one room is in WARNING state.
@@ -641,7 +663,8 @@ class RoomLifecycleManager:
             return sum(1 for lc in self._rooms.values() if lc.state == RoomState.CERTIFIED)
 
     def certification_progress(self) -> float:
-        """Return the certification progress as a percentage (0.0–100.0).
+        """
+        Return the certification progress as a percentage (0.0–100.0).
 
         Returns:
             Percentage of rooms that are CERTIFIED.
@@ -657,7 +680,8 @@ class RoomLifecycleManager:
     # ── Bulk Operations ───────────────────────────────────────────────
 
     def reset_room(self, room_id: str) -> None:
-        """Reset a room's lifecycle back to PENDING.
+        """
+        Reset a room's lifecycle back to PENDING.
 
         This is useful for retrying a failed room. The room must
         already be registered.
@@ -677,7 +701,8 @@ class RoomLifecycleManager:
         logger.info("Reset lifecycle for room %s", room_id)
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize the manager state to a dictionary.
+        """
+        Serialize the manager state to a dictionary.
 
         Returns:
             Dictionary containing room count, certification progress,

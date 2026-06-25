@@ -1,4 +1,5 @@
-"""blockchain_readiness_gate.py — Merkle Tree Readiness Gate for FireAI.
+"""
+blockchain_readiness_gate.py — Merkle Tree Readiness Gate for FireAI.
 ====================================================================
 LOW PRIORITY MODULE
 
@@ -79,7 +80,8 @@ def _sha256_hex(data: str) -> str:
 
 
 def _hash_pair(left: str, right: str) -> str:
-    """Hash a pair of nodes in the Merkle tree.
+    """
+    Hash a pair of nodes in the Merkle tree.
 
     The concatenation order is: left || right per RFC 6962 convention.
     """
@@ -93,7 +95,8 @@ def _hash_pair(left: str, right: str) -> str:
 
 @dataclass(frozen=True)
 class MerkleProof:
-    """Merkle inclusion proof per RFC 6962 §2.1.1.
+    """
+    Merkle inclusion proof per RFC 6962 §2.1.1.
 
     Contains the sibling hashes needed to verify that a specific leaf
     is included in the Merkle tree. Walking from the leaf to the root
@@ -113,7 +116,8 @@ class MerkleProof:
     merkle_root: str
 
     def verify(self) -> bool:
-        """Verify this Merkle proof by walking siblings to the root.
+        """
+        Verify this Merkle proof by walking siblings to the root.
 
         For each level, combine the current hash with the sibling:
             - If leaf_index is even: current = hash(current || sibling)
@@ -148,7 +152,8 @@ class MerkleProof:
 
 
 class MerkleTree:
-    """Merkle tree implementation per RFC 6962 §2.1.
+    """
+    Merkle tree implementation per RFC 6962 §2.1.
 
     Builds a binary hash tree from a list of leaf hashes. When the
     number of leaves is odd, the last leaf is duplicated to make the
@@ -167,7 +172,8 @@ class MerkleTree:
     """
 
     def __init__(self, leaves: list[str]) -> None:
-        """Build a Merkle tree from leaf hashes.
+        """
+        Build a Merkle tree from leaf hashes.
 
         Args:
             leaves: List of hex-encoded hash strings (the leaves).
@@ -228,7 +234,8 @@ class MerkleTree:
 
     @classmethod
     def from_leaves(cls, leaf_data: list[str]) -> MerkleTree:
-        """Create a MerkleTree from raw data (hashes each item first).
+        """
+        Create a MerkleTree from raw data (hashes each item first).
 
         Args:
             leaf_data: List of raw data strings to hash as leaves.
@@ -241,7 +248,8 @@ class MerkleTree:
         return cls(leaves)
 
     def get_proof(self, index: int) -> MerkleProof:
-        """Generate a Merkle inclusion proof for the leaf at index.
+        """
+        Generate a Merkle inclusion proof for the leaf at index.
 
         The proof contains the sibling hashes needed to walk from the
         leaf to the root. Verification takes O(log n) time.
@@ -284,7 +292,8 @@ class MerkleTree:
         )
 
     def verify_proof(self, proof: MerkleProof) -> bool:
-        """Verify a Merkle proof against this tree.
+        """
+        Verify a Merkle proof against this tree.
 
         Args:
             proof: The MerkleProof to verify.
@@ -302,7 +311,8 @@ class MerkleTree:
 
 
 class BlockchainReadinessGate:
-    """Readiness gate using Merkle tree for design manifest integrity.
+    """
+    Readiness gate using Merkle tree for design manifest integrity.
 
     This gate verifies that all design artifacts are accounted for by
     building a Merkle tree from their hashes and checking the root.
@@ -327,7 +337,8 @@ class BlockchainReadinessGate:
 
     @property
     def design_manifest_hash(self) -> str:
-        """Simple SHA-256 hash of all artifacts concatenated.
+        """
+        Simple SHA-256 hash of all artifacts concatenated.
 
         NOTE: This is DIFFERENT from the merkle_root.
         - design_manifest_hash: Single hash of concatenated data.
@@ -345,7 +356,8 @@ class BlockchainReadinessGate:
         return len(self._artifacts)
 
     def get_proof(self, artifact_index: int) -> MerkleProof:
-        """Get a Merkle inclusion proof for a specific artifact.
+        """
+        Get a Merkle inclusion proof for a specific artifact.
 
         Args:
             artifact_index: Zero-based index of the artifact.
@@ -360,7 +372,8 @@ class BlockchainReadinessGate:
         return self._tree.get_proof(artifact_index)
 
     def verify_artifact(self, proof: MerkleProof) -> bool:
-        """Verify that an artifact is included in the design set.
+        """
+        Verify that an artifact is included in the design set.
 
         Args:
             proof: MerkleProof for the artifact.
@@ -372,7 +385,8 @@ class BlockchainReadinessGate:
         return proof.verify()
 
     def check_tamper(self, original_root: str) -> bool:
-        """Check if the design set has been tampered with.
+        """
+        Check if the design set has been tampered with.
 
         Compares the current merkle_root against a known-good root.
         If they differ, at least one artifact has been modified,
@@ -392,7 +406,8 @@ class BlockchainReadinessGate:
         evidence_chain: list[dict[str, Any]],
         event_description: str = "Merkle tree anchored",
     ) -> list[dict[str, Any]]:
-        """Anchor the Merkle root to the existing evidence chain.
+        """
+        Anchor the Merkle root to the existing evidence chain.
 
         This adds ONE event to the evidence_chain — it does NOT
         replace the chain. Replacing the chain would destroy the

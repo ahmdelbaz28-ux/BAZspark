@@ -1,4 +1,5 @@
-"""backend/routers/reports.py — Report generation and export endpoints.
+"""
+backend/routers/reports.py — Report generation and export endpoints.
 
 Reports can be:
   - voltage_drop: IEC 60364 / NFPA 72 voltage drop analysis
@@ -46,7 +47,8 @@ def _verify_project(project_id: str) -> None:
 
 
 def _generate_report_content(report_type: str, project_id: str) -> dict:
-    """Generate report content based on type.
+    """
+    Generate report content based on type.
 
     This is a functional implementation that produces real engineering
     data structures. For full calculations, the frontend's CalculationEngine
@@ -220,7 +222,8 @@ _SORT_MAP = {
 
 
 def _normalize_sort(sort: str) -> str:
-    """Convert camelCase sort fields to snake_case for database.
+    """
+    Convert camelCase sort fields to snake_case for database.
 
     SECURITY FIX (BUG-32): Strict whitelist — rejects unknown sort fields.
     """
@@ -361,7 +364,8 @@ async def export_report(
             content_data = params.get("content", {})
 
             def _add_data(data, prefix="", depth=0) -> None:
-                """Recursively add data to PDF, limiting depth.
+                """
+                Recursively add data to PDF, limiting depth.
 
                 BUG-M1 FIX: Escape XML entities in values to prevent
                 ReportLab Paragraph markup injection. User-controlled data

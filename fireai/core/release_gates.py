@@ -1,4 +1,5 @@
-"""fireai.core.release_gates — Release Gate Evaluation.
+"""
+fireai.core.release_gates — Release Gate Evaluation.
 =====================================================
 
 Implements the 8 release gates that must ALL pass before a design
@@ -116,7 +117,8 @@ def _gate_wall_distance(wall_violations: int) -> dict[str, Any]:
 
 
 def _gate_battery(battery_result: dict | None) -> dict[str, Any]:
-    """G5: Battery must be adequate per NFPA 72 §10.6.7.
+    """
+    G5: Battery must be adequate per NFPA 72 §10.6.7.
 
     If no battery data provided, this gate PASSES (not all designs
     require battery calculation). If battery data IS provided,
@@ -138,7 +140,8 @@ def _gate_battery(battery_result: dict | None) -> dict[str, Any]:
 
 
 def _gate_voltage_drop(loop_data: dict | None) -> dict[str, Any]:
-    """G6: Voltage drop must be within limits per NFPA 72 §10.6.4.
+    """
+    G6: Voltage drop must be within limits per NFPA 72 §10.6.4.
 
     If no loop data provided, this gate PASSES (not all designs
     require voltage drop verification).
@@ -183,7 +186,8 @@ def _gate_voltage_drop(loop_data: dict | None) -> dict[str, Any]:
 
 
 def _gate_fault_isolation(loop_data: dict | None) -> dict[str, Any]:
-    """G7: SLC fault isolator placement per NFPA 72 §12.3.
+    """
+    G7: SLC fault isolator placement per NFPA 72 §12.3.
 
     If no loop data provided, this gate PASSES.
 
@@ -256,7 +260,8 @@ def verify_and_evaluate(
     stale_detector_ids: list[str] | None = None,
     evidence_secret_key: str | None = None,
 ) -> dict[str, Any]:
-    """Evaluate all 8 release gates.
+    """
+    Evaluate all 8 release gates.
 
     ALL gates must pass for release_status = "green".
     Any single gate failure results in release_status = "blocked".
@@ -391,7 +396,8 @@ def verify_and_evaluate(
 
 
 def describe_blockers(gate_result: dict[str, Any]) -> list[str]:
-    """Describe all blocking issues in human-readable form.
+    """
+    Describe all blocking issues in human-readable form.
 
     Args:
         gate_result: Output of verify_and_evaluate().

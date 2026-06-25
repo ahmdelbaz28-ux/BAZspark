@@ -335,7 +335,8 @@ class TestDetectorPlacementEngineHeat:
             assert d.device_type == DPDetectorType.HEAT
 
     def test_heat_more_detectors_than_smoke(self, engine):
-        """Heat and smoke detectors placed per NFPA 72 spacing rules.
+        """
+        Heat and smoke detectors placed per NFPA 72 spacing rules.
 
         With the corrected heat detector spacing formula (S = 0.7 × √A,
         max 15.24m per §17.6.3.1), heat detector spacing may be larger

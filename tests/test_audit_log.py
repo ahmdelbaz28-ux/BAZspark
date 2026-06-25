@@ -460,7 +460,8 @@ class TestAuditLogVerifyChain:
         assert len(errors) == 0
 
     def test_detects_tampered_prev_hash(self):
-        """Should detect tampering with prev_entry_hash.
+        """
+        Should detect tampering with prev_entry_hash.
 
         Note: The append() method automatically patches prev_entry_hash to the
         correct chain value, so we test tampering by directly modifying the DB.

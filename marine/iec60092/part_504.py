@@ -13,11 +13,10 @@ References:
     [IEC504]  IEC 60092-504 §4 (hazardous area classification)
     [IEC60079] IEC 60079-10-1 (zone classification methodology)
     [SOLAS]   SOLAS II-2/19 (dangerous goods in cargo spaces)
+
 """
 
 from __future__ import annotations
-
-from typing import Dict
 
 from marine.core.constants import HAZARDOUS_ZONE_DEFINITIONS
 from marine.core.types import ComplianceResult, MarineZone, ShipProject, SpaceCategory
@@ -27,7 +26,8 @@ def classify_hazardous_zone(
     zone: MarineZone,
     ship: ShipProject,
 ) -> ComplianceResult:
-    """Classify a zone's IEC 60079 hazardous-area classification.
+    """
+    Classify a zone's IEC 60079 hazardous-area classification.
 
     Marine assignments per IEC 60092-504:
       - Cargo tank deck (tankers)       → Zone 1
@@ -45,6 +45,7 @@ def classify_hazardous_zone(
     Returns:
         ComplianceResult with `details["zone_classification"]` in
         {"zone_0", "zone_1", "zone_2", "non_hazardous"}.
+
     """
     result = ComplianceResult(
         compliant=True,
@@ -87,7 +88,8 @@ def classify_hazardous_zone(
 def select_intrinsically_safe_equipment(
     zone_classification: str,
 ) -> ComplianceResult:
-    """Select Ex-rated equipment protection level per IEC 60079-26.
+    """
+    Select Ex-rated equipment protection level per IEC 60079-26.
 
     Zone → Equipment Protection Level (EPL) mapping:
       - Zone 0 → Ga (EPL Ga, e.g. Ex ia)
@@ -101,13 +103,14 @@ def select_intrinsically_safe_equipment(
     Returns:
         ComplianceResult with `details["epl_required"]` and
         `details["acceptable_protection_types"]`.
+
     """
     result = ComplianceResult(
         compliant=True,
         standard_reference="IEC 60079-26 + IEC 60092-504",
     )
 
-    epl_map: Dict[str, Dict] = {
+    epl_map: dict[str, dict] = {
         "zone_0": {
             "epl": "Ga",
             "protection_types": ["Ex ia", "Ex ma"],

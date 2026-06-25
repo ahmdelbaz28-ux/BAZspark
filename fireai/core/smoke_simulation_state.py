@@ -1,4 +1,5 @@
-"""smoke_simulation_state.py — Smoke Density & Visibility Gradient State.
+"""
+smoke_simulation_state.py — Smoke Density & Visibility Gradient State.
 ========================================================================
 
 MISSION TASK 4.1 — Advanced Simulation Hooks for Fire Dynamics Simulators
@@ -131,7 +132,8 @@ class SimulationStatus(str, Enum):
 
 @dataclass(frozen=True)
 class SmokeDensityPoint:
-    """Single point measurement of smoke density at a 3D location.
+    """
+    Single point measurement of smoke density at a 3D location.
 
     Attributes:
         x, y, z: 3D coordinates in metres (relative to room origin).
@@ -167,7 +169,8 @@ class SmokeDensityPoint:
 
     @property
     def is_tenability_threshold_exceeded(self) -> bool:
-        """Check if smoke density exceeds tenability threshold.
+        """
+        Check if smoke density exceeds tenability threshold.
 
         Per SFPE: 0.05 kg/m³ (50 mg/m³) is the upper limit for
         occupant survivability.
@@ -176,7 +179,8 @@ class SmokeDensityPoint:
 
     @property
     def optical_density_db_per_m(self) -> float:
-        """Convert mass concentration to optical density (dB/m).
+        """
+        Convert mass concentration to optical density (dB/m).
 
         Per Bouguer-Beer law: D = K × C
         where K ≈ 7.6 m²/g for soot (SFPE Handbook).
@@ -187,7 +191,8 @@ class SmokeDensityPoint:
 
 @dataclass(frozen=True)
 class VisibilityGradient:
-    """Visibility (metres) at multiple heights above floor.
+    """
+    Visibility (metres) at multiple heights above floor.
 
     Captures the vertical stratification of smoke, which is critical
     for egress analysis: occupants at eye level may have different
@@ -225,7 +230,8 @@ class VisibilityGradient:
 
     @property
     def is_tenability_threshold_exceeded(self) -> bool:
-        """Check if visibility at eye level is below safe egress threshold.
+        """
+        Check if visibility at eye level is below safe egress threshold.
 
         Per NFPA 101 §A.7.2: minimum 10m visibility for safe egress.
         """
@@ -251,7 +257,8 @@ class VisibilityGradient:
 
 @dataclass
 class FDSIntegrationConfig:
-    """Configuration for connecting to an external FDS simulation service.
+    """
+    Configuration for connecting to an external FDS simulation service.
 
     Attributes:
         fds_executable_path: Path to FDS binary (if running locally).
@@ -293,7 +300,8 @@ class FDSIntegrationConfig:
 
 @dataclass
 class SmokeSimulationState:
-    """Complete smoke simulation state for a room.
+    """
+    Complete smoke simulation state for a room.
 
     This is the primary data structure that gets attached to DigitalTwin
     state for future FDS integration. Per VERIFY-TASK4 SAFETY-R1, all
@@ -329,7 +337,8 @@ class SmokeSimulationState:
 
     @classmethod
     def create_placeholder(cls, room_id: str) -> SmokeSimulationState:
-        """Create a placeholder state with safe default values.
+        """
+        Create a placeholder state with safe default values.
 
         The placeholder represents a "no data yet" state. It uses
         conservative (worst-case) values to ensure downstream code
@@ -362,7 +371,8 @@ class SmokeSimulationState:
         timestamp_s: float = 0.0,
         fds_config: FDSIntegrationConfig | None = None,
     ) -> SmokeSimulationState:
-        """Create a validated state from FDS simulation results.
+        """
+        Create a validated state from FDS simulation results.
 
         Args:
             room_id: Room identifier.
@@ -413,7 +423,8 @@ class SmokeSimulationState:
         fds_run_id: str,
         timestamp_s: float = 0.0,
     ) -> None:
-        """Update state with FDS simulation results.
+        """
+        Update state with FDS simulation results.
 
         Transitions status from PLACEHOLDER/PENDING → VALIDATED.
         Clears the validation_warning (data is now real).
@@ -496,7 +507,8 @@ class SmokeSimulationState:
 
     @property
     def is_tenability_exceeded(self) -> bool:
-        """Check if smoke conditions exceed tenability thresholds.
+        """
+        Check if smoke conditions exceed tenability thresholds.
 
         Returns True if EITHER:
         - Max smoke density ≥ 0.05 kg/m³, OR
@@ -569,7 +581,8 @@ class SmokeSimulationState:
     # ------------------------------------------------------------------
 
     def to_audit_safe_dict(self) -> dict[str, Any]:
-        """Convert to dict safe for AuditStore persistence.
+        """
+        Convert to dict safe for AuditStore persistence.
 
         Per VERIFY-TASK4 SAFETY-R2: placeholder data MUST NEVER be
         persisted to AuditStore (would taint legal chain).

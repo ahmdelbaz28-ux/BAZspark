@@ -18,11 +18,10 @@ Coverage:
 References:
     [SOLAS] IMO SOLAS Ch. II-2 (2024)
     [FSS]   IMO FSS Code Ch. 9 (fire detection) & Ch. 14 (sprinklers)
+
 """
 
 from __future__ import annotations
-
-from typing import List
 
 from marine.core.constants import (
     INSULATION_THICKNESS_MM,
@@ -30,30 +29,27 @@ from marine.core.constants import (
     MAX_MAIN_VERTICAL_ZONE_LENGTH_M,
     MAX_PASSENGER_MVZ_LENGTH_M,
     MIN_AREA_REQUIRING_TWO_ESCAPES_M2,
-    MIN_ESCAPE_ROUTE_HEIGHT_MM,
-    MIN_ESCAPE_ROUTE_WIDTH_MM,
     PASSENGER_MVZ_PAX_THRESHOLD,
     SHIP_FRAME_SPACING_M,
     SOLAS_FIRE_DIVISION_MATRIX,
 )
+from marine.core.errors import FireClassAssignmentError
 from marine.core.types import (
     ComplianceResult,
     FireClass,
     MarineZone,
     ShipProject,
-    ShipType,
     SpaceCategory,
 )
-from marine.core.errors import FireClassAssignmentError, SOLASComplianceError
-
 
 # ─── Main Vertical Zone Validation ──────────────────────────────────────────
 
 def validate_main_vertical_zones(
-    zones: List[MarineZone],
+    zones: list[MarineZone],
     ship: ShipProject,
 ) -> ComplianceResult:
-    """Validate ship is divided into proper main vertical zones.
+    """
+    Validate ship is divided into proper main vertical zones.
 
     SOLAS II-2/2.2.1: Main vertical zones shall not exceed 40 m in length.
     Passenger ships (>36 passengers) MUST have main vertical zones;
@@ -65,6 +61,7 @@ def validate_main_vertical_zones(
 
     Returns:
         ComplianceResult with findings for each violation.
+
     """
     result = ComplianceResult(
         compliant=True, standard_reference="SOLAS II-2/2.2.1"
@@ -135,7 +132,8 @@ def required_fire_class_between(
     from_category: SpaceCategory,
     to_category: SpaceCategory,
 ) -> FireClass:
-    """Determine required FireClass for a division between two space categories.
+    """
+    Determine required FireClass for a division between two space categories.
 
     Implements SOLAS II-2/9.2 Table 9.1 (the "fire division matrix").
     The matrix specifies the minimum class for bulkheads/decks separating
@@ -150,6 +148,7 @@ def required_fire_class_between(
 
     Raises:
         FireClassAssignmentError: If the combination is not in the matrix.
+
     """
     key = (from_category.value, to_category.value)
 
@@ -167,9 +166,7 @@ def required_fire_class_between(
         if SpaceCategory.MACHINERY_SPACE_A in cats or \
            SpaceCategory.CARGO_SPACE in cats:
             class_str = "A-60"
-        elif SpaceCategory.MACHINERY_SPACE_OTHER in cats:
-            class_str = "A-30"
-        elif SpaceCategory.CONTROL_STATION in cats:
+        elif SpaceCategory.MACHINERY_SPACE_OTHER in cats or SpaceCategory.CONTROL_STATION in cats:
             class_str = "A-30"
         elif cats <= {SpaceCategory.ACCOMMODATION, SpaceCategory.SERVICE_SPACE_MINOR,
                       SpaceCategory.ESCAPE_ROUTE}:
@@ -187,10 +184,11 @@ def required_fire_class_between(
 
 
 def validate_fire_divisions(
-    zones: List[MarineZone],
-    division_specs: List,
+    zones: list[MarineZone],
+    division_specs: list,
 ) -> ComplianceResult:
-    """Validate each fire division meets its required class.
+    """
+    Validate each fire division meets its required class.
 
     Args:
         zones: List of MarineZone objects.
@@ -199,6 +197,7 @@ def validate_fire_divisions(
 
     Returns:
         ComplianceResult listing any under-rated divisions.
+
     """
     result = ComplianceResult(
         compliant=True, standard_reference="SOLAS II-2/9.2 Table 9.1"
@@ -257,8 +256,9 @@ def validate_fire_divisions(
 
 # ─── Escape Route Geometry (SOLAS II-2/13) ──────────────────────────────────
 
-def validate_escape_routes(zones: List[MarineZone]) -> ComplianceResult:
-    """Validate escape-route geometry per SOLAS II-2/13.
+def validate_escape_routes(zones: list[MarineZone]) -> ComplianceResult:
+    """
+    Validate escape-route geometry per SOLAS II-2/13.
 
     Rules checked:
       - Every space has ≥1 means of escape (II-2/13.3.2)
@@ -272,6 +272,7 @@ def validate_escape_routes(zones: List[MarineZone]) -> ComplianceResult:
 
     Returns:
         ComplianceResult listing each violation.
+
     """
     result = ComplianceResult(
         compliant=True, standard_reference="SOLAS II-2/13.3"
@@ -328,7 +329,8 @@ def required_detection_for_space(
     category: SpaceCategory,
     ship: ShipProject,
 ) -> ComplianceResult:
-    """Determine required fire-detection coverage for a space category.
+    """
+    Determine required fire-detection coverage for a space category.
 
     SOLAS II-2/7 mandates fixed fire-detection systems in:
       - Accommodation spaces (smoke detectors)
@@ -344,6 +346,7 @@ def required_detection_for_space(
 
     Returns:
         ComplianceResult with required detector types in details.
+
     """
     result = ComplianceResult(
         compliant=True,
@@ -394,7 +397,8 @@ def required_extinguishing_for_space(
     category: SpaceCategory,
     ship: ShipProject,
 ) -> ComplianceResult:
-    """Determine required fixed extinguishing system for a space.
+    """
+    Determine required fixed extinguishing system for a space.
 
     SOLAS II-2/10 mandates fixed fire-extinguishing systems for:
       - Machinery spaces (Type A): water mist OR CO2 (II-2/10.4)
@@ -410,6 +414,7 @@ def required_extinguishing_for_space(
 
     Returns:
         ComplianceResult listing required systems.
+
     """
     result = ComplianceResult(
         compliant=True,
@@ -459,7 +464,8 @@ def _frames_to_meters(frames: int) -> float:
 
 
 def _fire_class_meets_or_exceeds(provided: FireClass, required: FireClass) -> bool:
-    """Check if a provided FireClass meets or exceeds the required class.
+    """
+    Check if a provided FireClass meets or exceeds the required class.
 
     Hierarchy (descending protection level):
         A-60 > A-30 > A-15 > A-0 > B-15 > B-0 > C
@@ -477,10 +483,10 @@ def _fire_class_meets_or_exceeds(provided: FireClass, required: FireClass) -> bo
 # ─── Public API ─────────────────────────────────────────────────────────────
 
 __all__ = [
-    "validate_main_vertical_zones",
-    "required_fire_class_between",
-    "validate_fire_divisions",
-    "validate_escape_routes",
     "required_detection_for_space",
     "required_extinguishing_for_space",
+    "required_fire_class_between",
+    "validate_escape_routes",
+    "validate_fire_divisions",
+    "validate_main_vertical_zones",
 ]

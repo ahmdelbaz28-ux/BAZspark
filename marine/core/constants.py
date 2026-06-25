@@ -15,6 +15,7 @@ References:
     [MSC1316] IMO MSC.1/Circ.1316 — CO2 total flooding guidelines
     [MSC1318] IMO MSC.1/Circ.1318 — CO2 maintenance guidelines
     [LR]      Lloyd's Register Rules for Fire Protection, Detection & Extinguishment
+
 """
 
 from __future__ import annotations

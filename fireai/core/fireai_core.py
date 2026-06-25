@@ -79,7 +79,8 @@ class ResilienceResult:
 
 @dataclass
 class EnhancedRoomResult:
-    """Adapter: wraps FireExpertSystem output into shape expected by API layers.
+    """
+    Adapter: wraps FireExpertSystem output into shape expected by API layers.
 
     CRITICAL FIX: The original code imported `analyse_room_enhanced` from a
     non-existent module. This class provides the same interface using the
@@ -122,7 +123,8 @@ class EnhancedRoomResult:
 
 
 def _resolve_db_path(db_path: str | None = None) -> str:
-    """Resolve the database path from argument, environment, or sensible default.
+    """
+    Resolve the database path from argument, environment, or sensible default.
 
     Priority:
         1. Explicit db_path argument (including ":memory:" for testing)
@@ -151,7 +153,8 @@ def _resolve_db_path(db_path: str | None = None) -> str:
 
 @dataclass
 class FireAISystem:
-    """Central orchestrator that combines analysis with audit logging
+    """
+    Central orchestrator that combines analysis with audit logging
     and adaptive learning.
 
     CRITICAL FIX: Now uses the actual FireExpertSystem instead of
@@ -226,7 +229,8 @@ class FireAISystem:
         user_id: str = "system",
         run_resilience: bool = True,
     ) -> EnhancedRoomResult:
-        """Analyze a single room and log to audit trail.
+        """
+        Analyze a single room and log to audit trail.
 
         CRITICAL FIX: Uses actual FireExpertSystem instead of the
         non-existent `analyse_room_enhanced` function.
@@ -445,7 +449,8 @@ class FireAISystem:
         user_id: str = "system",
         run_resilience: bool = True,
     ) -> list[EnhancedRoomResult]:
-        """Analyze multiple rooms as a floor and log to audit trail.
+        """
+        Analyze multiple rooms as a floor and log to audit trail.
 
         Args:
             rooms: List of RoomSpec to analyze as a floor
@@ -542,7 +547,8 @@ class FireAISystem:
         bim_source: str | None = None,
         user_id: str = "system",
     ) -> dict[str, Any]:
-        """Run the FULL integration pipeline wiring all 8 subsystems.
+        """
+        Run the FULL integration pipeline wiring all 8 subsystems.
 
         This is the main entry point that connects the entire FireAI
         platform: the 4 core subsystems (cable routing, digital twin

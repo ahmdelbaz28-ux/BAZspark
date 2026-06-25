@@ -44,7 +44,8 @@ def main():
 
 
 def pack_document(input_dir, output_file, validate=False):
-    """Pack a directory into an Office file (.docx/.pptx/.xlsx).
+    """
+    Pack a directory into an Office file (.docx/.pptx/.xlsx).
 
     Args:
         input_dir: Path to unpacked Office document directory
@@ -53,6 +54,7 @@ def pack_document(input_dir, output_file, validate=False):
 
     Returns:
         bool: True if successful, False if validation failed
+
     """
     input_dir = Path(input_dir)
     output_file = Path(output_file)
@@ -133,7 +135,7 @@ def validate_document(doc_path):
 
 def condense_xml(xml_file):
     """Strip unnecessary whitespace and remove comments."""
-    with open(xml_file, "r", encoding="utf-8") as f:
+    with open(xml_file, encoding="utf-8") as f:
         dom = defusedxml.minidom.parse(f)
 
     # Process each element to remove whitespace and comments

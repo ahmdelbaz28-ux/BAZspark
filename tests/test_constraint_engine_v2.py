@@ -103,19 +103,19 @@ class TestConstants:
         assert MIN_CONDUIT_INCHES == 0.75
 
     def test_min_conduit_mm(self):
-        assert MIN_CONDUIT_MM == pytest.approx(19.05)
+        assert pytest.approx(19.05) == MIN_CONDUIT_MM
 
     def test_emt_inner_diameter(self):
         assert EMT_3_4_INNER_DIAMETER_MM == 15.8  # NEC Ch.9 Table 4
 
     def test_emt_outer_diameter(self):
-        assert EMT_3_4_OUTER_DIAMETER_MM == pytest.approx(19.05)
+        assert pytest.approx(19.05) == EMT_3_4_OUTER_DIAMETER_MM
 
     def test_bend_radius_factor(self):
         assert BEND_RADIUS_FACTOR == 6  # NEC 344.24
 
     def test_max_bend_radius_mm(self):
-        assert MAX_BEND_RADIUS_MM == pytest.approx(6 * 19.05)
+        assert pytest.approx(6 * 19.05) == MAX_BEND_RADIUS_MM
 
     def test_min_electrical_separation(self):
         assert MIN_ELECTRICAL_SEPARATION_MM == 300.0
@@ -518,7 +518,7 @@ class TestCableFastening:
         assert result.source == ConstraintSource.NEC_760_24_A.value
 
     def test_interval_formula(self, engine):
-        """interval = L_mm / (n + 1)."""
+        """Interval = L_mm / (n + 1)."""
         result = engine.check_cable_fastening(10.0, 21)
         expected_interval = 10000.0 / 22.0
         assert result.actual_value == pytest.approx(expected_interval, rel=0.01)

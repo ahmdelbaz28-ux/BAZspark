@@ -1,4 +1,5 @@
-"""fireai/core/safe_building_engine.py.
+"""
+fireai/core/safe_building_engine.py.
 ===================================
 Replaces ProcessPoolExecutor bindings triggering Deadlocks at CBC level,
 with safely managed, lock-restricted threading executing pure multi-node
@@ -47,7 +48,8 @@ logger = logging.getLogger(__name__)
 
 
 class SafeBuildingEngine:
-    """Thread-safe multi-floor building analysis engine.
+    """
+    Thread-safe multi-floor building analysis engine.
 
     Uses ThreadPoolExecutor with a global RLock to serialize CBC solver
     invocations. This prevents the deadlock scenario that occurs when
@@ -88,7 +90,8 @@ class SafeBuildingEngine:
         )  # Hard barrier avoiding C++ Memory Corruption on solver library instance loading.
 
     def _solve_mip_safe(self, room_spec: dict[str, Any]) -> dict[str, Any]:
-        """Solve MIP for a single room in a thread-safe manner.
+        """
+        Solve MIP for a single room in a thread-safe manner.
 
         Uses solve_set_covering_mip (function-based) which is the VERIFIED
         solver used by FloorAnalyser and BuildingEngine. This avoids the
@@ -156,7 +159,8 @@ class SafeBuildingEngine:
             return {"room_id": room_spec.get("room_id", "UNK"), "success": False, "status": "ERROR", "error": str(ex)}
 
     def run_multi_floor_safety_analysis(self, floor_spec_registry: list[dict[str, Any]]) -> list[dict]:
-        """Run MIP analysis across multiple floors in a thread-safe manner.
+        """
+        Run MIP analysis across multiple floors in a thread-safe manner.
 
         Flattens the floor/room hierarchy into a list of room specifications,
         submits each room as a separate task to the ThreadPoolExecutor, and

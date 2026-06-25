@@ -30,27 +30,27 @@ class TestBendCompliance:
     """Bends at or above NEC minimum must be compliant."""
 
     def test_emt_half_inch_at_minimum(self):
-        """½\" EMT, actual R=4.0\" → is_compliant=True, min=4.0\"."""
+        r"""½\" EMT, actual R=4.0\" → is_compliant=True, min=4.0\"."""
         result = verify_bend_radius(ConduitType.EMT, TradeSize.HALF_INCH, 4.0)
         assert result.is_ok()
         assert result.value.is_compliant is True
         assert result.value.min_required_in == pytest.approx(4.0, abs=0.001)
 
     def test_emt_half_inch_above_minimum(self):
-        """½\" EMT, actual R=5.0\" → is_compliant=True."""
+        r"""½\" EMT, actual R=5.0\" → is_compliant=True."""
         result = verify_bend_radius(ConduitType.EMT, TradeSize.HALF_INCH, 5.0)
         assert result.is_ok()
         assert result.value.is_compliant is True
 
     def test_upvc_sch40_three_quarter_at_minimum(self):
-        """¾\" UPVC Sch40, actual R=5.25\" → is_compliant=True."""
+        r"""¾\" UPVC Sch40, actual R=5.25\" → is_compliant=True."""
         result = verify_bend_radius(ConduitType.UPVC_SCH40, TradeSize.THREE_QUARTER, 5.25)
         assert result.is_ok()
         assert result.value.is_compliant is True
         assert result.value.min_required_in == pytest.approx(5.25, abs=0.01)
 
     def test_rgd_half_inch_at_minimum(self):
-        """½\" RGD, actual R=4.5\" → is_compliant=True."""
+        r"""½\" RGD, actual R=4.5\" → is_compliant=True."""
         result = verify_bend_radius(ConduitType.RGD, TradeSize.HALF_INCH, 4.5)
         assert result.is_ok()
         assert result.value.is_compliant is True
@@ -64,13 +64,13 @@ class TestBendViolation:
     """Bends below NEC minimum must be non-compliant (CodeViolationError)."""
 
     def test_emt_half_inch_below_minimum(self):
-        """½\" EMT, actual R=3.5\" → is_compliant=False, min=4.0\"."""
+        r"""½\" EMT, actual R=3.5\" → is_compliant=False, min=4.0\"."""
         result = verify_bend_radius(ConduitType.EMT, TradeSize.HALF_INCH, 3.5)
         assert result.is_err()
         assert isinstance(result.error, CodeViolationError)
 
     def test_upvc_sch40_half_inch_below_minimum(self):
-        """½\" UPVC Sch40, actual R=3.0\" → violation."""
+        r"""½\" UPVC Sch40, actual R=3.0\" → violation."""
         result = verify_bend_radius(ConduitType.UPVC_SCH40, TradeSize.HALF_INCH, 3.0)
         assert result.is_err()
         assert isinstance(result.error, CodeViolationError)
@@ -84,19 +84,19 @@ class TestDevelopedLength:
     """Arc length = π × R × angle / 180."""
 
     def test_90_degree_bend_r4_5(self):
-        """R=4.5\", angle=90° → developed = π × 4.5 × 90/180 = π × 4.5 / 2 = 7.0686...\""""
+        r"""R=4.5\", angle=90° → developed = π × 4.5 × 90/180 = π × 4.5 / 2 = 7.0686...\""""
         result = calculate_developed_length(4.5, 90.0)
         assert result.is_ok()
         assert result.value == pytest.approx(math.pi * 4.5 / 2, abs=0.001)
 
     def test_45_degree_bend_r4_5(self):
-        """R=4.5\", angle=45° → developed = π × 4.5 × 45/180 = 3.534...\""""
+        r"""R=4.5\", angle=45° → developed = π × 4.5 × 45/180 = 3.534...\""""
         result = calculate_developed_length(4.5, 45.0)
         assert result.is_ok()
         assert result.value == pytest.approx(math.pi * 4.5 * 45.0 / 180.0, abs=0.001)
 
     def test_emt_half_inch_90_bend_developed_length(self):
-        """½\" EMT R=4.0\", 90° → developed = π × 4.0 / 2 = 6.283...\""""
+        r"""½\" EMT R=4.0\", 90° → developed = π × 4.0 / 2 = 6.283...\""""
         result = verify_bend_radius(ConduitType.EMT, TradeSize.HALF_INCH, 4.0)
         assert result.is_ok()
         assert result.value.developed_length_in == pytest.approx(math.pi * 4.0 / 2, abs=0.001)

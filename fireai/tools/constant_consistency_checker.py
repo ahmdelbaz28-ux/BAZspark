@@ -1,4 +1,5 @@
-"""Static analysis tool — scans ALL .py files for numeric constant mismatches.
+"""
+Static analysis tool — scans ALL .py files for numeric constant mismatches.
 Prevents Bug #25-class issues where mw_air or DETECTOR_RADIUS diverge silently.
 
 Run:  python -m fireai.tools.constant_consistency_checker
@@ -224,7 +225,8 @@ class ConstantCollector(ast.NodeVisitor):
         self.generic_visit(node)
 
     def _scan_dict_literal(self, node: ast.Assign) -> None:
-        """Scan dict literal assignments for known constant keys with float values.
+        """
+        Scan dict literal assignments for known constant keys with float values.
 
         Catches patterns like:
             PHYSICAL_CONSTANTS = {
@@ -390,7 +392,8 @@ def _check_cross_module_consistency(
 def _check_dict_constants(
     dict_constants: list[DictConstantOccurrence],
 ) -> list[str]:
-    """Check dict-literal constants against their expected canonical values.
+    """
+    Check dict-literal constants against their expected canonical values.
 
     This catches constants defined inside PHYSICAL_CONSTANTS-style dicts
     that the AST visitor's visit_Assign would miss (since the dict key is
@@ -412,7 +415,8 @@ def _filter_suspicious(
     all_literals: list[SuspiciousLiteral],
     all_occurrences: list[ConstantOccurrence],
 ) -> list[SuspiciousLiteral]:
-    """Remove false positives: a literal on the SAME line as its named constant
+    """
+    Remove false positives: a literal on the SAME line as its named constant
     assignment is not suspicious (it IS the definition).
     """
     definition_lines: set = set()
@@ -426,7 +430,8 @@ def _filter_suspicious(
 def _canonical_mismatch_check(
     registry: dict[str, list[ConstantOccurrence]],
 ) -> list[str]:
-    """Check: known canonical constants against their expected values.
+    """
+    Check: known canonical constants against their expected values.
     Returns list of CRITICAL mismatch descriptions.
     """
     critical: list[str] = []

@@ -1,4 +1,5 @@
-"""backend/services/geocoding_service.py — Geocoding service for FireAI.
+"""
+backend/services/geocoding_service.py — Geocoding service for FireAI.
 
 Provides forward geocoding (address → lat/lon) using Nominatim
 (OpenStreetMap) — a free, no-auth API.
@@ -33,7 +34,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class GeocodingResult:
-    """Immutable geocoding result for engineering use.
+    """
+    Immutable geocoding result for engineering use.
 
     Attributes:
         latitude: Latitude in decimal degrees
@@ -57,7 +59,8 @@ class GeocodingResult:
 
 
 class GeocodingService:
-    """Async geocoding service using Nominatim (OpenStreetMap).
+    """
+    Async geocoding service using Nominatim (OpenStreetMap).
 
     Rate Limiting:
         Nominatim requires max 1 request/second. This service enforces
@@ -167,7 +170,8 @@ class GeocodingService:
         return result
 
     async def geocode(self, address: str) -> GeocodingResult | None:
-        """Geocode an address to coordinates.
+        """
+        Geocode an address to coordinates.
 
         Strategy:
           1. Check cache
@@ -210,7 +214,8 @@ class GeocodingService:
     async def reverse_geocode(
         self, latitude: float, longitude: float
     ) -> GeocodingResult | None:
-        """Reverse geocode coordinates to address.
+        """
+        Reverse geocode coordinates to address.
 
         Args:
             latitude: Latitude in decimal degrees

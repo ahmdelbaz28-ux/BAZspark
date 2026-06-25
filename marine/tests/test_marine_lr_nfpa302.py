@@ -1,4 +1,5 @@
-"""marine/tests/test_marine_lr_nfpa302.py — Tests for LR Rules and NFPA 302.
+"""
+marine/tests/test_marine_lr_nfpa302.py — Tests for LR Rules and NFPA 302.
 
 Covers the previously untested marine.lr_rules and marine.nfpa302 modules.
 """
@@ -8,13 +9,15 @@ import pytest
 
 from marine.core.types import ShipProject, ShipType
 from marine.lr_rules import (
-    validate_detector_response_time, validate_fire_main_redundancy,
+    validate_detector_response_time,
+    validate_fire_main_redundancy,
     validate_loop_capacity,
 )
 from marine.nfpa302 import (
-    is_in_scope, required_portable_extinguishers, validate_galley_fixed_system,
+    is_in_scope,
+    required_portable_extinguishers,
+    validate_galley_fixed_system,
 )
-
 
 # ─── Fixtures ───────────────────────────────────────────────────────────────
 

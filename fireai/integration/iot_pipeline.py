@@ -1,4 +1,5 @@
-"""fireai/integration/iot_pipeline.py.
+"""
+fireai/integration/iot_pipeline.py.
 ====================================
 IoT Device Integration — MQTT/OPC-UA sensor ingestion and real-time
 event processing for fire alarm system monitoring.
@@ -145,7 +146,8 @@ class SensorConfig:
 
 
 class IoTPipeline:
-    """MQTT/OPC-UA sensor ingestion and real-time event processing.
+    """
+    MQTT/OPC-UA sensor ingestion and real-time event processing.
 
     Features:
       - Async MQTT client with automatic reconnection (exponential backoff)
@@ -207,7 +209,8 @@ class IoTPipeline:
         username: str = "",
         password: str = "",
     ) -> bool:
-        """Connect to an MQTT broker with auto-reconnection.
+        """
+        Connect to an MQTT broker with auto-reconnection.
 
         Uses asyncio-mqtt when available, otherwise simulates
         the connection for testing.
@@ -273,7 +276,8 @@ class IoTPipeline:
         username: str = "",
         password: str = "",
     ) -> bool:
-        """Connect to an OPC-UA server with session management.
+        """
+        Connect to an OPC-UA server with session management.
 
         Uses opcua-asyncio when available, otherwise simulates
         the connection for testing.
@@ -333,7 +337,8 @@ class IoTPipeline:
         value: float,
         timestamp: datetime | None = None,
     ) -> SensorReading:
-        """Ingest a sensor reading: validate and process.
+        """
+        Ingest a sensor reading: validate and process.
 
         Steps:
           1. Look up sensor config
@@ -422,7 +427,8 @@ class IoTPipeline:
     def process_event(
         self, reading: SensorReading
     ) -> SecurityEvent | None:
-        """Process a sensor reading and generate a SecurityEvent if
+        """
+        Process a sensor reading and generate a SecurityEvent if
         any thresholds or anomaly conditions are triggered.
 
         Event types:
@@ -526,7 +532,8 @@ class IoTPipeline:
     async def start_comm_loss_monitor(
         self, interval_seconds: float = 60.0
     ) -> None:
-        """Start background task to detect communication loss.
+        """
+        Start background task to detect communication loss.
 
         Periodically checks all registered sensors for heartbeat
         timeout and generates COMM_LOSS events.

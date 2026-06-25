@@ -1,4 +1,5 @@
-"""backend/routers/environment.py — Environmental data endpoints for FireAI.
+"""
+backend/routers/environment.py — Environmental data endpoints for FireAI.
 
 Provides real-time weather, geocoding, regulatory region, elevation,
 air quality, severe weather alerts, and hazardous material data
@@ -60,7 +61,8 @@ router = APIRouter(prefix="/environment", tags=["environment"],
 
 @router.get("/countries")
 async def get_countries():
-    """List supported countries and their regulatory frameworks.
+    """
+    List supported countries and their regulatory frameworks.
 
     Returns the full country → regulatory framework mapping used by FireAI
     to determine applicable fire/electrical codes for each jurisdiction.
@@ -89,7 +91,8 @@ async def get_weather(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
 ):
-    """Get current weather data for engineering calculations.
+    """
+    Get current weather data for engineering calculations.
 
     Returns ambient temperature, wind speed, and relative humidity.
     Falls back to conservative defaults when API is unavailable.
@@ -131,7 +134,8 @@ async def geocode_address(
         description="Address to geocode (e.g., 'Cairo, Egypt')"
     ),
 ):
-    """Geocode an address to coordinates.
+    """
+    Geocode an address to coordinates.
 
     Uses Nominatim (OpenStreetMap) — free, no auth.
     Returns latitude, longitude, display name, and country code.
@@ -165,7 +169,8 @@ async def get_region(
         description="ISO 3166-1 alpha-2 country code (e.g., 'US', 'EG', 'SA')"
     ),
 ):
-    """Get regulatory region context for a country.
+    """
+    Get regulatory region context for a country.
 
     Returns applicable fire/electrical codes and regulatory framework.
     Essential for determining which standards to apply in calculations.
@@ -195,7 +200,8 @@ async def get_elevation(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
 ):
-    """Get terrain elevation and atmospheric pressure for engineering calculations.
+    """
+    Get terrain elevation and atmospheric pressure for engineering calculations.
 
     Elevation affects:
       - Atmospheric pressure (barometric formula per ISO 2533)
@@ -240,7 +246,8 @@ async def get_air_quality(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
 ):
-    """Get air quality data for engineering calculations.
+    """
+    Get air quality data for engineering calculations.
 
     AQI affects:
       - Tenability baseline (pre-existing air quality)
@@ -284,7 +291,8 @@ async def get_air_quality(
 
 
 def _build_coverage_note(coverage_area: str, source: str) -> str:
-    """Build a human-readable coverage note for the severe-weather response.
+    """
+    Build a human-readable coverage note for the severe-weather response.
 
     Informs the user when severe weather data may be incomplete or
     unavailable for their location, and suggests checking local
@@ -354,7 +362,8 @@ async def get_severe_weather(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
 ):
-    """Get active severe weather alerts for engineering calculations.
+    """
+    Get active severe weather alerts for engineering calculations.
 
     Severe weather affects:
       - Power outage risk (battery/UPS sizing per NFPA 72 §10.6)
@@ -431,7 +440,8 @@ async def get_hazmat_data(
         description="Material name (e.g., 'methane', 'propane', 'hydrogen')"
     ),
 ):
-    """Get hazardous material properties for engineering calculations.
+    """
+    Get hazardous material properties for engineering calculations.
 
     Material properties determine:
       - Zone 0/1/2 extent (LFL per IEC 60079-10-1 §6.3)
@@ -482,7 +492,8 @@ async def get_hazmat_data(
 
 @router.get("/hazmat/known")
 async def list_known_materials():
-    """List all materials in the internal hazardous materials database.
+    """
+    List all materials in the internal hazardous materials database.
 
     The internal DB contains verified data from IEC 60079-10-1 Table B.1
     and NFPA 497 for the most common hazardous materials in fire alarm
@@ -509,7 +520,8 @@ async def get_full_environmental_context(
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
     is_indoor: bool = Query(True, description="Indoor or outdoor environment"),
 ):
-    """Get complete environmental context for engineering calculations (Phase 1).
+    """
+    Get complete environmental context for engineering calculations (Phase 1).
 
     Combines weather data, geocoding, and regulatory region in one call.
     This is the primary endpoint for the calculation engine.
@@ -598,7 +610,8 @@ async def get_full_phase2_context(
         description="Optional hazardous material name for HAC data"
     ),
 ):
-    """Get COMPLETE environmental context including all Phase 1 + Phase 2 data.
+    """
+    Get COMPLETE environmental context including all Phase 1 + Phase 2 data.
 
     This is the ULTIMATE endpoint for the calculation engine. It returns
     ALL environmental data needed for comprehensive engineering calculations:

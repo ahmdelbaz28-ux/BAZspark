@@ -1,4 +1,5 @@
-"""ifc43_mapper.py — IFC 4.3 Schema Mapper for FireAI.
+"""
+ifc43_mapper.py — IFC 4.3 Schema Mapper for FireAI.
 ======================================================
 
 MISSION TASK 1.3 — IFC 4.3 Integration
@@ -70,7 +71,8 @@ IFC43_IMPLEMENTATION_LEVEL = "official"
 
 
 class IFC43ElementType(str, Enum):
-    """IFC 4.3 element types for fire alarm system components.
+    """
+    IFC 4.3 element types for fire alarm system components.
 
     Per IFC 4.3 ADD2, IfcFireAlarmInstance is a first-class entity
     (no longer a typed IfcFlowTerminal). This enum maps FireAI's
@@ -190,7 +192,8 @@ PSET_FIREAI_SAFETY = "Pset_FireAI_SafetyClassification"
 
 @dataclass
 class IFC43MappedElement:
-    """Result of mapping a FireAI element to IFC 4.3 representation.
+    """
+    Result of mapping a FireAI element to IFC 4.3 representation.
 
     This is an intermediate representation — it can be serialized to
     actual IFC entities via ifcopenshell, OR converted to JSON for
@@ -210,7 +213,8 @@ class IFC43MappedElement:
 
 
 class IFC43Mapper:
-    """Map FireAI internal elements to IFC 4.3 ADD2 representation.
+    """
+    Map FireAI internal elements to IFC 4.3 ADD2 representation.
 
     Usage:
         mapper = IFC43Mapper()
@@ -242,7 +246,8 @@ class IFC43Mapper:
 
     @staticmethod
     def _generate_global_id(seed: str) -> str:
-        """Generate a deterministic IFC GlobalId from a seed string.
+        """
+        Generate a deterministic IFC GlobalId from a seed string.
 
         IFC GlobalId is a 22-character base64-encoded 128-bit value.
         Per agent.md V85 Bug #28: must be DETERMINISTIC (no uuid4).
@@ -294,7 +299,8 @@ class IFC43Mapper:
     # ------------------------------------------------------------------
 
     def map_detector(self, detector: dict[str, Any]) -> IFC43MappedElement:
-        """Map a FireAI detector dict to IFC 4.3 representation.
+        """
+        Map a FireAI detector dict to IFC 4.3 representation.
 
         Args:
             detector: Dict with at minimum:
@@ -407,7 +413,8 @@ class IFC43Mapper:
         )
 
     def map_room(self, room: dict[str, Any]) -> IFC43MappedElement:
-        """Map a FireAI room dict to IFC 4.3 IfcSpace.
+        """
+        Map a FireAI room dict to IFC 4.3 IfcSpace.
 
         Args:
             room: Dict with at minimum:
@@ -486,7 +493,8 @@ class IFC43Mapper:
         application: str = "FireAI IFC43Mapper v1.0",
         origin_schema: str = "IFC4",
     ) -> dict[str, str]:
-        """Generate IFC 4.3 file header metadata.
+        """
+        Generate IFC 4.3 file header metadata.
 
         Returns:
             Dict with keys: file_description, file_name, file_schema.
@@ -523,7 +531,8 @@ class IFC43Mapper:
         self,
         project: dict[str, Any],
     ) -> dict[str, Any]:
-        """Map an entire FireAI project to IFC 4.3 representation.
+        """
+        Map an entire FireAI project to IFC 4.3 representation.
 
         Args:
             project: Dict with:

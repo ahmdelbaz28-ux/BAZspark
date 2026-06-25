@@ -1,4 +1,5 @@
-"""beam_obstruction.py — Ceiling Beam Obstruction Logic (NFPA 72 §17.7.3.2.4.2).
+"""
+beam_obstruction.py — Ceiling Beam Obstruction Logic (NFPA 72 §17.7.3.2.4.2).
 ==============================================================================
 
 MISSION PHASE 4.1 — 3D Geometry Upgrade for Beam-Pocket Detection
@@ -83,7 +84,8 @@ MAX_POCKETS_PER_ROOM: int = 100
 
 @dataclass(frozen=True)
 class Beam:
-    """A single ceiling beam definition.
+    """
+    A single ceiling beam definition.
 
     Attributes:
         id: Unique beam identifier.
@@ -127,7 +129,8 @@ class Beam:
 
     @property
     def is_horizontal(self) -> bool:
-        """True if beam runs along X-axis (perpendicular to Y).
+        """
+        True if beam runs along X-axis (perpendicular to Y).
 
         V135 F-38 FIX: Tightened tolerance from 0.001m (1mm) to 1e-6m (1μm).
         The OLD tolerance was too loose — a beam from (0,0) to (10, 0.0005)
@@ -139,7 +142,8 @@ class Beam:
 
     @property
     def is_vertical(self) -> bool:
-        """True if beam runs along Y-axis (perpendicular to X).
+        """
+        True if beam runs along Y-axis (perpendicular to X).
 
         V135 F-38 FIX: Same tightened tolerance as is_horizontal.
         """
@@ -149,7 +153,8 @@ class Beam:
 
 @dataclass
 class BeamPocket:
-    """A sub-room created by beam subdivision.
+    """
+    A sub-room created by beam subdivision.
 
     Attributes:
         pocket_id: Unique pocket identifier (e.g., "ROOM-001-P1").
@@ -188,7 +193,8 @@ class BeamPocket:
 
 @dataclass
 class BeamObstructionResult:
-    """Result of beam obstruction analysis.
+    """
+    Result of beam obstruction analysis.
 
     Attributes:
         original_room_id: Original room identifier.
@@ -244,7 +250,8 @@ def calculate_beam_obstruction(
     ceiling_height_m: float,
     beams: list[Beam],
 ) -> BeamObstructionResult:
-    """Analyze ceiling beams and subdivide room into pockets if needed.
+    """
+    Analyze ceiling beams and subdivide room into pockets if needed.
 
     Per NFPA 72-2022 §17.7.3.2.4.2: if any beam depth exceeds 10% of ceiling
     height, the room must be subdivided into beam pockets, each treated as
@@ -397,7 +404,8 @@ def calculate_beam_obstruction(
 
 
 def _compute_polygon_area(polygon: list[tuple[float, float]]) -> float:
-    """Compute polygon area using the Shoelace formula.
+    """
+    Compute polygon area using the Shoelace formula.
 
     Args:
         polygon: List of (x, y) points in order (CW or CCW).
@@ -429,7 +437,8 @@ def _subdivide_room_by_beams(
     ceiling_height_m: float,
     significant_beams: list[Beam],
 ) -> list[BeamPocket]:
-    """Subdivide room into pockets using significant beams as cutting lines.
+    """
+    Subdivide room into pockets using significant beams as cutting lines.
 
     Simplified algorithm: Group beams by orientation (horizontal/vertical),
     then use their positions to define pocket boundaries.
@@ -515,7 +524,8 @@ def _subdivide_by_horizontal_beams(
     ceiling_height_m: float,
     beams: list[Beam],
 ) -> list[BeamPocket]:
-    """Subdivide room using horizontal beams (running along X-axis).
+    """
+    Subdivide room using horizontal beams (running along X-axis).
 
     Each horizontal beam has a Y position (its start[1] == end[1]).
     Sort beams by Y, then create pockets between adjacent Y values.

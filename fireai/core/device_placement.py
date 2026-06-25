@@ -1,4 +1,5 @@
-"""fireai/core/device_placement.py — NFPA 72 Device Placement Engine.
+"""
+fireai/core/device_placement.py — NFPA 72 Device Placement Engine.
 ===================================================================
 Implements deterministic device placement per NFPA 72-2022:
 
@@ -96,7 +97,8 @@ class CeilingType(str, Enum):
 
 @dataclass
 class BeamObstruction:
-    """Beam obstruction on ceiling.
+    """
+    Beam obstruction on ceiling.
 
     Rule: if beam_depth > 0.10 × ceiling_height, treat beam as wall.
     Source: NFPA 72-2022 §17.7.3.2.7
@@ -111,7 +113,8 @@ class BeamObstruction:
 
 @dataclass
 class ExitDoor:
-    """Exit door location for pull station placement.
+    """
+    Exit door location for pull station placement.
 
     Source: NFPA 72-2022 §17.15.3
     """
@@ -123,7 +126,8 @@ class ExitDoor:
 
 @dataclass
 class RoomSpec:
-    """Complete room specification for device placement.
+    """
+    Complete room specification for device placement.
 
     All coordinates in meters from room origin (0,0).
     """
@@ -238,7 +242,8 @@ class PlacementResult:
 
 
 class DetectorPlacementEngine:
-    """NFPA 72-2022 compliant detector placement.
+    """
+    NFPA 72-2022 compliant detector placement.
 
     Uses orthogonal hex grid placement optimized for NFPA 72 coverage.
     Applies beam obstruction rule and wall distance constraints.
@@ -250,7 +255,8 @@ class DetectorPlacementEngine:
         self._kernel = kernel or QOMNKernel()
 
     def place_detectors(self, room: RoomSpec) -> PlacementResult:
-        """Place detectors in room per NFPA 72-2022.
+        """
+        Place detectors in room per NFPA 72-2022.
 
         Algorithm:
           1. Validate room specification (Layer 0)
@@ -400,7 +406,8 @@ class DetectorPlacementEngine:
         radius_m: float,
         wall_min_m: float,
     ) -> list[PlacedDevice]:
-        """Place detectors on hexagonal grid within room.
+        """
+        Place detectors on hexagonal grid within room.
 
         Hexagonal grid provides optimal coverage efficiency.
         Row offset of S/2 per alternate row.
@@ -462,7 +469,8 @@ class DetectorPlacementEngine:
         return 0 <= x <= room.width_m and 0 <= y <= room.length_m
 
     def _check_beam_obstructions(self, room: RoomSpec, spacing_m: float) -> int:
-        """Check for beam obstructions that divide detector zones.
+        """
+        Check for beam obstructions that divide detector zones.
 
         Rule: beam_depth > 0.10 × ceiling_height → treat as wall.
         Source: NFPA 72-2022 §17.7.3.2.7
@@ -481,7 +489,8 @@ class DetectorPlacementEngine:
         radius_m: float,
         grid_step: float = 0.0,
     ) -> float:
-        """Verify coverage by sampling grid points.
+        """
+        Verify coverage by sampling grid points.
 
         Adaptive step = min(0.25m, radius_m / 12) per V-07 fix.
         Ensures ≤ 8% quantization error for any detector radius:
@@ -519,7 +528,8 @@ class DetectorPlacementEngine:
         return round(100.0 * covered / total, 4) if total > 0 else 0.0
 
     def _place_pull_stations(self, room: RoomSpec) -> list[PlacedPullStation]:
-        """Place manual pull stations near exit doors.
+        """
+        Place manual pull stations near exit doors.
 
         Rule: Within 1.524m (5 ft) of each exit doorway.
         Height: 1.219m (48") AFF to handle center.
@@ -558,7 +568,8 @@ class DetectorPlacementEngine:
         return stations
 
     def _place_notification_appliances(self, room: RoomSpec) -> list[PlacedNotificationAppliance]:
-        """Place strobes/horns per NFPA 72 Chapter 18.
+        """
+        Place strobes/horns per NFPA 72 Chapter 18.
 
         Candela: 75 cd minimum, 177 cd for sleeping areas.
         Height:  2.032m (80") AFF minimum.
@@ -598,7 +609,8 @@ class DetectorPlacementEngine:
 
 @dataclass
 class DuctDetectorSpec:
-    """Duct smoke detector specification.
+    """
+    Duct smoke detector specification.
 
     Placed in supply and return air ducts to detect smoke in HVAC.
     Source: NFPA 72-2022 §17.7.4
@@ -611,7 +623,8 @@ class DuctDetectorSpec:
 
 
 def place_duct_detector(spec: DuctDetectorSpec) -> dict[str, Any]:
-    """Compute duct detector placement per NFPA 72 §17.7.4.
+    """
+    Compute duct detector placement per NFPA 72 §17.7.4.
 
     Rules:
       - Duct width ≤ 0.305m (12 in): one detector
