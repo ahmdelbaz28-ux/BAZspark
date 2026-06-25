@@ -14443,7 +14443,9 @@ Test breakdown:
 - HMAC secrets require 32 chars (NIST SP 800-107)
 
 ### Commit Information
-- **Commit Hash:** (pending — will be filled after git commit)
+- **Commit Hash:** `8fb41e43`
 - **Branch:** `feat/v133-total-remediation` (V136 added to V133/V134/V135 PR)
+- **Pull Request:** https://github.com/ahmdelbaz28-ux/revit/pull/79
+- **Direct commit link:** https://github.com/ahmdelbaz28-ux/revit/commit/8fb41e43
 - **Tests:** 526 passed, 0 failed, 0 regressions
 
