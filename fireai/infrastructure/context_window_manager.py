@@ -400,6 +400,7 @@ class ContextWindowManager:
         approx_chars = max_tokens * 4
         return text[:approx_chars]
 
+
     def get_relevant_chunks(
         self,
         query: str,
