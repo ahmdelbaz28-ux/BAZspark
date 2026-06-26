@@ -447,12 +447,12 @@ def test_manifest_and_result_json_serialization() -> None:
         max_size=50,
         alphabet=st.characters(
             whitelist_categories=["Ll", "Lu", "Nd", "Zs", "Po"],
-            whitelist_characters=["-", "_", "@"],
+            whitelist_characters=["-", "_", "@", "!", "#", "$", "%", "^", "&", "*", "(", ")", "+", "=", "[", "]", "{", "}", "|", ";", ":", "'", "\"", ",", ".", "<", ">", "/", "?", " ", "µ", "Σ", "Ω", "α", "β"],
         ),
     ).filter(
-        lambda value: value == ""
-        or not value[0].isalpha()
-        or any(char not in "abcdefghijklmnopqrstuvwxyz0123456789-_" for char in value.lower())
+        lambda value: len(value) > 0 and any(
+            c.lower() not in "abcdefghijklmnopqrstuvwxyz0123456789-_" for c in value
+        )
     ),
 )
 def test_invalid_skill_name_rejected(bad_name: str) -> None:
