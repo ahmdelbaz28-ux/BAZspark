@@ -86,7 +86,7 @@ class CodeIndexer:
         # Stats
         self._files_indexed = 0
         self._chunks_indexed = 0
-        self._errors = []
+        self._errors: list[Any] = []
 
     def _should_exclude(self, path: Path) -> bool:
         """Check if path should be excluded."""
@@ -210,7 +210,7 @@ class CodeIndexer:
 
         return chunks
 
-    def _chunk_function(self, node: ast.FunctionDef, rel_path: str) -> list[dict[str, Any]]:
+    def _chunk_function(self, node: ast.FunctionDef | ast.AsyncFunctionDef, rel_path: str) -> list[dict[str, Any]]:
         """Chunk a function definition."""
         chunks = []
 
@@ -248,7 +248,7 @@ class CodeIndexer:
 
         return chunks
 
-    def _get_import_name(self, node) -> str:
+    def _get_import_name(self, node: ast.Import | ast.ImportFrom) -> str:
         """Get import name for display."""
         if isinstance(node, ast.Import):
             return ", ".join(a.name for a in node.names)
@@ -397,7 +397,7 @@ class CodeIndexer:
             "errors": self._errors[:10],  # First 10 errors
         }
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all indexed data."""
         self.context_manager.clear()
         self.vector_store.clear()

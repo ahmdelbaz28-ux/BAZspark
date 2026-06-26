@@ -29,7 +29,7 @@ import re
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import numpy as np
 
@@ -100,6 +100,9 @@ class LocalVectorStore:
             self._vectorizer = None
             self._fitted = False
 
+        # Matrix for TF-IDF embeddings
+        self._matrix: Optional[np.ndarray] = None
+
         # Statistics
         self._total_embedded = 0
 
@@ -119,7 +122,7 @@ class LocalVectorStore:
                 self._matrix = self._vectorizer.transform(texts).toarray()
             except Exception as e:
                 logger.warning(f"TF-IDF transform failed: {e}")
-                return np.zeros((len(texts), 100))
+                return cast(np.ndarray, np.zeros((len(texts), 100)))
         return self._matrix
 
     def _embed_openai(self, texts: list[str]) -> np.ndarray:
@@ -176,11 +179,11 @@ class LocalVectorStore:
             return 0.0
 
         # Count matches
-        matches = len(query_words & content_words)
+        matches: float = float(len(query_words & content_words))
 
         # Bonus for exact phrase matches
         if query.lower() in content.lower():
-            matches += 5
+            matches += 5.0
 
         # Bonus for word starts
         for word in query_words:
@@ -322,7 +325,7 @@ class LocalVectorStore:
                         found = False
                         for r in results:
                             if r["chunk_id"] == chunk.chunk_id:
-                                r["score"] = (r["score"] + tfidf_score) / 2
+                                r["score"] = (cast(float, r["score"]) + tfidf_score) / 2
                                 found = True
                                 break
                         if not found and tfidf_score > 0.1:  # Threshold
@@ -336,7 +339,7 @@ class LocalVectorStore:
                 logger.warning(f"TF-IDF search failed: {e}")
 
         # Sort by score
-        results.sort(key=lambda x: -x["score"])
+        results.sort(key=lambda x: -cast(float, x["score"]))
 
         return results[:k]
 
@@ -356,11 +359,12 @@ class LocalVectorStore:
             return True
         return False
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all chunks."""
         self._chunks.clear()
         self._contents.clear()
         self._fitted = False
+        self._matrix = None
 
     @property
     def total_chunks(self) -> int:
@@ -369,7 +373,7 @@ class LocalVectorStore:
 
     def get_stats(self) -> dict[str, Any]:
         """Get store statistics."""
-        type_counts = defaultdict(int)
+        type_counts: dict[str, int] = defaultdict(int)
         for chunk in self._chunks.values():
             chunk_type = chunk.metadata.get("chunk_type", "unknown")
             type_counts[chunk_type] += 1

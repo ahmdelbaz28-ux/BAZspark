@@ -28,6 +28,7 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Optional
 
 import httpx
@@ -59,7 +60,7 @@ class RAGConfig:
 You help users understand codebases, find relevant code, and answer questions about software.
 Always be concise and accurate. When showing code, use proper formatting."""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.modal_api_key:
             # Try to get from environment
             self.modal_api_key = os.environ.get(
@@ -98,7 +99,7 @@ class CodeRAG:
         # Conversation history
         self._history: list[dict[str, str]] = []
 
-    def index_directory(self, directory: str) -> dict[str, Any]:
+    def index_directory(self, directory: Path) -> dict[str, Any]:
         """
         Index a directory for retrieval.
 
@@ -190,7 +191,7 @@ class CodeRAG:
 
                 if response.status_code == 200:
                     data = response.json()
-                    return data["choices"][0]["message"]["content"]
+                    return str(data["choices"][0]["message"]["content"])
                 elif response.status_code == 429:
                     if attempt < retries - 1:
                         wait_time = (attempt + 1) * 5  # 5, 10, 15 seconds
@@ -331,11 +332,11 @@ Provide a summary of what this code does and its main components."""
 
         return self._call_modal(messages)
 
-    def clear_history(self):
+    def clear_history(self) -> None:
         """Clear conversation history."""
         self._history.clear()
 
-    def clear_index(self):
+    def clear_index(self) -> None:
         """Clear the code index."""
         self.indexer.clear()
         self.context_manager.clear()

@@ -55,7 +55,7 @@ class Chunk:
     line_end: int = 0
     chunk_id: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.chunk_id:
             self.chunk_id = hashlib.md5(
                 f"{self.file_path}:{self.line_start}:{self.name}".encode(),
@@ -460,7 +460,7 @@ class ContextWindowManager:
         """
         return self._truncate_to_tokens(text, max_tokens)
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all chunks."""
         self._chunks.clear()
         self._chunk_map.clear()
@@ -477,7 +477,7 @@ class ContextWindowManager:
 
     def get_stats(self) -> dict[str, Any]:
         """Get context manager statistics."""
-        type_counts = {}
+        type_counts: dict[str, int] = {}
         for chunk in self._chunks:
             type_counts[chunk.chunk_type] = type_counts.get(chunk.chunk_type, 0) + 1
 
