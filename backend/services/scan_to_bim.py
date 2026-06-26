@@ -51,6 +51,7 @@ class ScanToBIMResult:
     extracted_at: str = ""
 
     def __post_init__(self):
+        """Auto-set extracted_at timestamp if not already provided."""
         if not self.extracted_at:
             self.extracted_at = datetime.now(timezone.utc).isoformat()
 
@@ -79,6 +80,7 @@ class ScanToBIMService:
     ]
 
     def __init__(self):
+        """Initialize the service with an OCR backend for text extraction."""
         self._ocr_service = OCRService()
 
     def process(
