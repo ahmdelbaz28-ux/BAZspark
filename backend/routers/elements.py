@@ -25,7 +25,7 @@ from backend.schemas import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/elements", tags=["elements"])
+router = APIRouter(prefix="/elements", tags=["elements"])
 
 
 @router.get("", response_model=ApiResponse[PaginatedData[ElementResponse]], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])

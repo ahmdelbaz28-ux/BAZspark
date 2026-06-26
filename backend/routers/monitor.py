@@ -530,7 +530,7 @@ def _check_rate_limit(request: Request) -> None:
 # Endpoints
 # ════════════════════════════════════════════════════════════════════════════
 
-@router.get("/api/v1/monitor/health", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+@router.get("/monitor/health", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_health(request: Request):
     """
     GET /api/v1/monitor/health — Aggregated system health status.
@@ -555,7 +555,7 @@ async def get_health(request: Request):
     }
 
 
-@router.get("/api/v1/monitor/metrics", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+@router.get("/monitor/metrics", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_metrics(request: Request):
     """
     GET /api/v1/monitor/metrics — Prometheus-format metrics.
@@ -571,7 +571,7 @@ async def get_metrics(request: Request):
     )
 
 
-@router.get("/api/v1/monitor/engine-status", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+@router.get("/monitor/engine-status", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_engine_status(
     request: Request,
     engine_id: str | None = Query(None, description="Filter by engine ID"),
@@ -611,7 +611,7 @@ async def get_engine_status(
     }
 
 
-@router.get("/api/v1/monitor/agent-activity", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+@router.get("/monitor/agent-activity", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_agent_activity(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Max records to return"),
@@ -642,7 +642,7 @@ async def get_agent_activity(
     }
 
 
-@router.get("/api/v1/monitor/security-alerts", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+@router.get("/monitor/security-alerts", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_security_alerts(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Max alerts to return"),
@@ -697,7 +697,7 @@ async def get_security_alerts(
     }
 
 
-@router.get("/api/v1/monitor/alerts", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+@router.get("/monitor/alerts", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_alerts(request: Request):
     """
     GET /api/v1/monitor/alerts — Current alert state.

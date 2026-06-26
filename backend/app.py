@@ -37,6 +37,7 @@ import sys
 import threading
 import time
 from contextlib import asynccontextmanager
+from enum import Enum
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -463,17 +464,43 @@ app.include_router(digital_twin.router, prefix="/api/v1", tags=["Digital-Twin-v1
 # has an unmet optional dependency (e.g. shapely, ezdxf), it's skipped
 # with a warning instead of crashing the whole app.
 def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "") -> None:
-    """Import a router module and register it. Skip silently if unavailable."""
+    """
+    Import a router module and register it. Skip silently if unavailable.
+
+    Each router is mounted under the versioned ``/api/v1`` prefix (the canonical,
+    schema-documented surface) and ALSO under the unversioned ``/api`` prefix as a
+    backward-compatible alias. The unversioned alias mirrors the existing health
+    router convention (V129) where ``/api/health`` is served alongside
+    ``/api/v1/health`` because clients, deployment probes, and the test suite
+    target the unversioned paths. The alias is excluded from the OpenAPI schema to
+    keep the spec single-sourced on ``/api/v1`` and avoid duplicate operation IDs.
+    """
     try:
         import importlib
         mod = importlib.import_module(f"backend.routers.{module_name}")
+        tags: list[str | Enum] = [tag or module_name.title()]
+        alias_prefix = prefix.replace("/api/v1", "/api", 1) if prefix.startswith("/api/v1") else None
         if hasattr(mod, "router"):
-            app.include_router(mod.router, prefix=prefix, tags=[tag or module_name.title()])
+            app.include_router(mod.router, prefix=prefix, tags=tags)
+            if alias_prefix and alias_prefix != prefix:
+                app.include_router(
+                    mod.router, prefix=alias_prefix, tags=tags, include_in_schema=False
+                )
             logger.debug("Registered router: %s", module_name)
         # Some routers define additional routers (e.g. analyze.project_router)
         if hasattr(mod, "project_router"):
-            app.include_router(mod.project_router, prefix=prefix, tags=[tag or module_name.title()])
+            app.include_router(mod.project_router, prefix=prefix, tags=tags)
+            if alias_prefix and alias_prefix != prefix:
+                app.include_router(
+                    mod.project_router, prefix=alias_prefix, tags=tags, include_in_schema=False
+                )
             logger.debug("Registered project_router from: %s", module_name)
+        # Some routers expose a WebSocket router (e.g. sync.ws_router → /ws).
+        # WebSocket endpoints are mounted at the application root (no version
+        # prefix) so clients connect to the stable, unversioned path.
+        if hasattr(mod, "ws_router"):
+            app.include_router(mod.ws_router)
+            logger.debug("Registered ws_router from: %s", module_name)
     except ImportError as e:
         logger.warning("Router '%s' skipped (optional dependency missing): %s", module_name, e)
     except Exception as e:
@@ -509,6 +536,9 @@ for _router_name in (
 from backend.routers import marine as marine_router_module
 
 app.include_router(marine_router_module.router, prefix="/api/v1", tags=["Marine"])
+app.include_router(
+    marine_router_module.router, prefix="/api", tags=["Marine"], include_in_schema=False
+)
 
 # V130 FIX: Mount the monitor router so Prometheus can scrape /api/v1/monitor/metrics.
 # Previously monitor.router was defined but NEVER registered via include_router,
@@ -519,6 +549,9 @@ app.include_router(marine_router_module.router, prefix="/api/v1", tags=["Marine"
 from backend.routers import monitor as monitor_router_module
 
 app.include_router(monitor_router_module.router, prefix="/api/v1", tags=["Monitor"])
+app.include_router(
+    monitor_router_module.router, prefix="/api", tags=["Monitor"], include_in_schema=False
+)
 
 # V129: Mount the health router under /api prefix so /api/health works.
 # Previously only /api/v1/health existed (defined inline above), but tests
