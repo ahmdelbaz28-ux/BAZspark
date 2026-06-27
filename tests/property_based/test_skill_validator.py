@@ -46,11 +46,16 @@ valid_version_strategy = st.tuples(
 ).map(lambda x: f"{x[0]}.{x[1]}.{x[2]}")
 
 
+# V140 FIX (Rule 17): The validator strips whitespace (ConfigDict
+# str_strip_whitespace=True) before enforcing min_length=1. The old strategy
+# allowed Zs (space separator) chars including U+0020 space, so ' ' (single
+# space) became '' after stripping and failed validation. Filter to ensure
+# the stripped value is non-empty.
 valid_author_strategy = st.text(
     min_size=1,
     max_size=50,
     alphabet=st.characters(whitelist_categories=["Ll", "Lu", "Nd", "Zs", "Po"]),
-)
+).filter(lambda s: s.strip() != "")
 
 
 trigger_word_strategy = st.text(

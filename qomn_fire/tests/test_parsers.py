@@ -492,7 +492,8 @@ class TestDxfParser(unittest.TestCase):
     # the production safety contract (no default height) is unchanged.
     @staticmethod
     def _with_height_header(dxf_content: str, extmin_z: float = 0.0, extmax_z: float = 3.0) -> str:
-        """Inject EXTMIN/EXTMAX Z values into a DXF HEADER section.
+        r"""
+        Inject EXTMIN/EXTMAX Z values into a DXF HEADER section.
 
         V140 FIX: Both $EXTMIN and $EXTMAX use group code 30 for their Z
         component (per DXF spec — group 31 is the LINE entity's end Z, not a
