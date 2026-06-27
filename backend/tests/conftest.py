@@ -107,12 +107,19 @@ try:
             frame = frame.f_back
 
         # Only inject header if the caller is under backend/tests/
-        if caller_file and caller_file.startswith(_BACKEND_TESTS_DIR):
+        is_backend_test = bool(caller_file and caller_file.startswith(_BACKEND_TESTS_DIR))
+        if is_backend_test:
             caller_headers = kwargs.pop("headers", None) or {}
             # setdefault so a test can still override with its own X-API-Key
             caller_headers.setdefault("X-API-Key", TEST_API_KEY)
             kwargs["headers"] = caller_headers
         _original_testclient_init(self, *args, **kwargs)
+        # V140 FIX: Set a flag on the INSTANCE so _patched_method/_patched_request
+        # can check it without call-stack inspection (which is fragile because
+        # starlette's testclient.py filename contains "test_" and confuses the
+        # frame walker). This is the root-cause fix for the URL rewriting bug
+        # that was breaking tests/test_dwg_router.py.
+        self._fireai_backend_test = is_backend_test
 
     _StarletteTestClient.__init__ = _patched_testclient_init
 
@@ -183,7 +190,12 @@ try:
 
         def _make_patched_method(orig, name):
             def _patched_method(self, url, *args, **kwargs):
-                return orig(self, _rewrite_legacy_url(url), *args, **kwargs)
+                # V140 FIX: Use instance flag instead of call-stack inspection.
+                # The flag is set in _patched_testclient_init based on whether
+                # the TestClient was created from a test under backend/tests/.
+                if getattr(self, '_fireai_backend_test', False):
+                    return orig(self, _rewrite_legacy_url(url), *args, **kwargs)
+                return orig(self, url, *args, **kwargs)
             _patched_method.__name__ = name
             return _patched_method
 
@@ -193,7 +205,10 @@ try:
     if hasattr(_StarletteTestClient, "request"):
         _original_request = _StarletteTestClient.request
         def _patched_request(self, method, url, *args, **kwargs):
-            return _original_request(self, method, _rewrite_legacy_url(url), *args, **kwargs)
+            # V140 FIX: Same instance-flag check as _patched_method
+            if getattr(self, '_fireai_backend_test', False):
+                return _original_request(self, method, _rewrite_legacy_url(url), *args, **kwargs)
+            return _original_request(self, method, url, *args, **kwargs)
         _StarletteTestClient.request = _patched_request
 
 except ImportError:
