@@ -16,6 +16,10 @@ import { FireAlarmPage } from './pages/FireAlarmPage';
 import { FireAlarmDesigner } from './components/mockups/engineering/FireAlarmDesigner';
 import { DigitalTwinPage } from './pages/DigitalTwinPage';
 import { CADSettingsPage } from './pages/CADSettingsPage';
+import Elements from './pages/Elements';
+import Connections from './pages/Connections';
+import Conflicts from './pages/Conflicts';
+import ElementDetail from './pages/ElementDetail';
 import './i18n';
 import './styles/globals.css';
 import './styles/typography.css';
@@ -64,6 +68,12 @@ function App() {
     { path: '/digital-twin', element: <DigitalTwinPage /> },
     { path: '/fire-alarm', element: <FireAlarmPage /> },
     { path: '/fire-alarm/designer', element: <FireAlarmDesigner /> },
+    // V140 FIX: Add missing routes that Sidebar links to
+    { path: '/fire-alarm-designer', element: <Navigate to="/fire-alarm/designer" /> },
+    { path: '/elements', element: <Elements /> },
+    { path: '/elements/:elementId', element: <ElementDetail /> },
+    { path: '/connections', element: <Connections /> },
+    { path: '/conflicts', element: <Conflicts /> },
   ];
 
   return (

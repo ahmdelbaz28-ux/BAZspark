@@ -78,9 +78,15 @@ class AutoCADService:
         self.connected = False
         self.active_entities = {}
 
-    def connect(self) -> bool:
+    def connect(self, visible: bool = True, force_new: bool = False) -> bool:
         """
         Connect to a running AutoCAD instance or launch a new one.
+
+        Args:
+            visible: Whether to make the AutoCAD window visible (default True).
+                Only applies when launching a new instance.
+            force_new: If True, skip the GetActiveObject attempt and always
+                launch a new instance (default False).
 
         Returns:
             bool: True if connection successful, False otherwise
@@ -94,19 +100,29 @@ class AutoCADService:
             # Initialize COM
             pythoncom.CoInitialize()
 
-            # Try to connect to existing AutoCAD instance
-            try:
-                self.acad_app = win32com.client.GetActiveObject("AutoCAD.Application")
-                logger.info("Connected to existing AutoCAD instance")
-            except Exception:
-                # FIX #7: Changed bare 'except:' to 'except Exception:'
-                # A bare except catches KeyboardInterrupt and SystemExit,
-                # preventing the application from being stopped cleanly.
-                # Launch new AutoCAD instance
+            # Try to connect to existing AutoCAD instance (unless force_new)
+            if not force_new:
+                try:
+                    self.acad_app = win32com.client.GetActiveObject("AutoCAD.Application")
+                    logger.info("Connected to existing AutoCAD instance")
+                except Exception:
+                    # FIX #7: Changed bare 'except:' to 'except Exception:'
+                    # A bare except catches KeyboardInterrupt and SystemExit,
+                    # preventing the application from being stopped cleanly.
+                    # Launch new AutoCAD instance
+                    try:
+                        self.acad_app = win32com.client.Dispatch("AutoCAD.Application")
+                        self.acad_app.Visible = visible  # Make it visible to user
+                        logger.info("Launched new AutoCAD instance (visible=%s)", visible)
+                    except Exception as e:
+                        logger.error("Could not launch AutoCAD: %s", e)
+                        return False
+            else:
+                # force_new: always launch a new instance
                 try:
                     self.acad_app = win32com.client.Dispatch("AutoCAD.Application")
-                    self.acad_app.Visible = True  # Make it visible to user
-                    logger.info("Launched new AutoCAD instance")
+                    self.acad_app.Visible = visible
+                    logger.info("Launched new AutoCAD instance (force_new=True, visible=%s)", visible)
                 except Exception as e:
                     logger.error("Could not launch AutoCAD: %s", e)
                     return False

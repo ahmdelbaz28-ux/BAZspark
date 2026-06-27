@@ -89,7 +89,10 @@ def test_skill_metadata_valid_inputs(name, version, author):
 
     assert metadata.name == name
     assert metadata.version == version
-    assert metadata.author == author
+    # V140 FIX: SkillMetadata has str_strip_whitespace=True in its ConfigDict,
+    # so author is stripped. The assertion must compare against the stripped
+    # value, not the raw input.
+    assert metadata.author == author.strip()
     assert isinstance(metadata.created_at, datetime)
 
 

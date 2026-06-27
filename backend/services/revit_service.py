@@ -533,7 +533,8 @@ class RevitService:
             return False
 
     def create_wall(self, start_point: List[float], end_point: List[float],
-                   height: float = 3000.0, level: str = "Level 1") -> Optional[str]:
+                   height: float = 3000.0, level: str = "Level 1",
+                   wall_type: str = "Basic Wall") -> Optional[str]:
         """
         Create a wall in the active Revit document.
 
@@ -542,6 +543,7 @@ class RevitService:
             end_point: Ending coordinates [x, y, z]
             height: Wall height in millimeters
             level: Level name for the wall
+            wall_type: Wall type name (default "Basic Wall")
 
         Returns:
             Element ID of created wall or None if failed
@@ -556,20 +558,24 @@ class RevitService:
             import uuid
             wall_id = str(uuid.uuid4())
 
-            logger.info("Simulated creating wall from %s to %s on %s", start_point, end_point, level)
+            logger.info("Simulated creating wall from %s to %s on %s (type=%s)", start_point, end_point, level, wall_type)
             return wall_id
 
         except Exception as e:
             logger.error("Error creating wall: %s", e)
             return None
 
-    def create_floor(self, boundary: List[List[float]], level: str = "Level 1") -> Optional[str]:
+    def create_floor(self, boundary: List[List[float]], level: str = "Level 1",
+                     floor_type: str = "Floor", boundary_points: Optional[List[List[float]]] = None) -> Optional[str]:
         """
         Create a floor in the active Revit document.
 
         Args:
             boundary: List of boundary points [[x, y, z], ...]
             level: Level name for the floor
+            floor_type: Floor type name (default "Floor")
+            boundary_points: Alias for ``boundary`` (accepted for backward compat
+                with routers that pass ``boundary_points=`` instead of ``boundary=``)
 
         Returns:
             Element ID of created floor or None if failed
@@ -579,12 +585,16 @@ class RevitService:
             if not self.connected:
                 logger.warning("Not connected to Revit. Operation simulated.")
 
+            # V140 FIX: Accept boundary_points as alias for boundary (router compat)
+            actual_boundary = boundary_points if boundary_points is not None else boundary
+
             # In a real implementation, this would create an actual floor using Revit API
             # For now, we'll simulate the creation
             import uuid
             floor_id = str(uuid.uuid4())
 
-            logger.info("Simulated creating floor with boundary on %s", level)
+            logger.info("Simulated creating floor with %d boundary points on %s (type=%s)",
+                        len(actual_boundary), level, floor_type)
             return floor_id
 
         except Exception as e:
@@ -592,7 +602,8 @@ class RevitService:
             return None
 
     def create_column(self, location: List[float], height: float = 3000.0,
-                     level: str = "Level 1") -> Optional[str]:
+                     level: str = "Level 1", column_type: str = "M_Columns",
+                     location_point: Optional[List[float]] = None) -> Optional[str]:
         """
         Create a column in the active Revit document.
 
@@ -600,6 +611,9 @@ class RevitService:
             location: Location point [x, y, z]
             height: Column height in millimeters
             level: Level name for the column
+            column_type: Column family type name (default "M_Columns")
+            location_point: Alias for ``location`` (accepted for backward compat
+                with routers that pass ``location_point=`` instead of ``location=``)
 
         Returns:
             Element ID of created column or None if failed
@@ -609,12 +623,16 @@ class RevitService:
             if not self.connected:
                 logger.warning("Not connected to Revit. Operation simulated.")
 
+            # V140 FIX: Accept location_point as alias for location (router compat)
+            actual_location = location_point if location_point is not None else location
+
             # In a real implementation, this would create an actual column using Revit API
             # For now, we'll simulate the creation
             import uuid
             column_id = str(uuid.uuid4())
 
-            logger.info("Simulated creating column at %s on %s", location, level)
+            logger.info("Simulated creating column at %s height %s on %s (type=%s)",
+                        actual_location, height, level, column_type)
             return column_id
 
         except Exception as e:

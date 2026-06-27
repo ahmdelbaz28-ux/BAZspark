@@ -2,12 +2,14 @@
   "nav": {
     "dashboard": "لوحة التحكم",
     "projects": "المشاريع",
-    "engineering": "الحسابات الهندسية",
+    "engineering": "الهندسة",
+    "fireAlarmDesigner": "مصمم إنذار الحريق",
+    "digitalTwin": "التوأم الرقمي",
     "reports": "التقارير",
-    "settings": "الإعدادات",
     "elements": "العناصر",
-    "connections": "الاتصالات",
-    "conflicts": "التعارضات"
+    "connections": "التوصيلات",
+    "conflicts": "التعارضات",
+    "settings": "الإعدادات"
   },
   "common": {
     "create": "إنشاء",
