@@ -82,6 +82,7 @@ os.environ["FIREAI_API_KEY"] = TEST_API_KEY
 try:
     import os as _os
     import sys as _sys
+
     from starlette.testclient import TestClient as _StarletteTestClient
     _original_testclient_init = _StarletteTestClient.__init__
 
@@ -89,10 +90,12 @@ try:
     _BACKEND_TESTS_DIR = _os.path.dirname(_os.path.abspath(__file__))
 
     def _patched_testclient_init(self, *args, **kwargs):
-        """Inject X-API-Key header by default into every TestClient — but ONLY
+        """
+        Inject X-API-Key header by default into every TestClient — but ONLY
         when called from a test under backend/tests/. Other test directories
         (tests/, fireai/core/tests/, etc.) get an unpatched TestClient so they
-        can test unauthenticated request paths."""
+        can test unauthenticated request paths.
+        """
         # V140: walk the call stack to find the calling test file
         frame = _sys._getframe(1)
         caller_file = ""
