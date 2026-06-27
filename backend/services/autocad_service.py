@@ -34,16 +34,32 @@ logger = logging.getLogger(__name__)
 # Cross-platform support: Real imports for Windows, mock for Linux/Mac
 IS_WINDOWS = platform.system() == "Windows"
 
+# V140 FIX (Rule 17 — Root-Cause Analysis): On non-Windows platforms,
+# `pythoncom` and `win32com` were not imported at all, so the module had no
+# `pythoncom` / `win32com` attributes. This broke `unittest.mock.patch(
+# 'backend.services.autocad_service.pythoncom')` and
+# `patch('...win32com.client')` in test_autocad.py because `patch` requires
+# the attribute to exist (and be reachable) unless `create=True` is passed.
+# Root-cause fix: declare module-level placeholder objects on non-Windows so
+# mock.patch has real attributes to replace. On Windows, the real imports
+# shadow these placeholders. We use `types.ModuleType` so `win32com.client`
+# is also reachable as a sub-attribute.
+import types as _types
+
+pythoncom = _types.ModuleType("pythoncom")  # placeholder, replaced on Windows
+win32com = _types.ModuleType("win32com")    # placeholder, replaced on Windows
+win32com.client = _types.ModuleType("win32com.client")  # type: ignore[attr-defined]
+
 if IS_WINDOWS:
     try:
-        import pythoncom
-        import win32com.client
+        import pythoncom  # noqa: F811  (re-defines the placeholder above)
+        import win32com.client  # noqa: F811
         HAS_AUTOCAD_API = True
     except ImportError:
         logger.warning("AutoCAD COM API not available. Install pywin32.")
         HAS_AUTOCAD_API = False
 else:
-    # Linux/Mac: No win32com available
+    # Linux/Mac: No win32com available — placeholders remain as dummy modules
     HAS_AUTOCAD_API = False
     logger.info("Running on non-Windows platform. Using simulation mode for AutoCAD.")
 
