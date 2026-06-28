@@ -139,7 +139,7 @@ jobs:
             --cov=backend --cov=fireai --cov=core \
             --cov-report=html:reports/coverage_html \
             --cov-report=term-missing \
-            --cov-fail-under=20 \
+            --cov-fail-under=25 \
             -x \
             -q
 
