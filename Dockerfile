@@ -77,4 +77,14 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 # C-2 FIX: Default to 1 worker for SQLite (WAL mode allows concurrent reads
 # but concurrent writes from multiple processes risk SQLITE_BUSY/data corruption).
 # For multi-worker deployments, use PostgreSQL via deploy/docker/docker-compose.yml
-CMD uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${UVICORN_WORKERS:-1}
+#
+# H-3 FIX: Bind to 127.0.0.1 (loopback only) instead of 0.0.0.0.
+# Production deployments MUST use a reverse proxy (nginx/traefik) that:
+#   - Terminates TLS
+#   - Provides rate limiting
+#   - Sets security headers
+#   - Filters malicious requests
+# Exposing uvicorn directly to 0.0.0.0 bypasses all these protections.
+# In Docker, 127.0.0.1 inside the container is reachable via docker network
+# port mapping (docker run -p 8000:8000 maps host:8000 → container:8000).
+CMD uvicorn backend.app:app --host 127.0.0.1 --port ${PORT:-8000} --workers ${UVICORN_WORKERS:-1}
