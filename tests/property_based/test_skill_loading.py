@@ -4,7 +4,8 @@ from datetime import datetime
 from typing import Any
 
 import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from hypothesis.stateful import Bundle, RuleBasedStateMachine, initialize, invariant, rule
 
 from skills.skill_validator import (
@@ -195,7 +196,16 @@ def test_skill_description_properties(
         use_cases=use_cases,
     )
     dumped = description.model_dump(mode="json")
-    expected_triggers = {word.lower() for word in trigger_words if word.strip()}
+    # The validator auto-prepends "a" to trigger words with no alphabetic chars
+    # e.g. '00' → 'a00'. Account for this in the expected set.
+    expected_triggers = set()
+    for word in trigger_words:
+        stripped = word.strip()
+        if stripped:
+            lowered = stripped.lower()
+            if not any(ch.isalpha() for ch in lowered):
+                lowered = f"a{lowered}"
+            expected_triggers.add(lowered)
 
     assert description.short_description == short_description
     assert description.long_description == long_description
@@ -287,9 +297,16 @@ def test_skill_manifest_properties(
     assert manifest.metadata.author == author.strip()
     assert manifest.description.short_description == short_description
     assert manifest.description.long_description == long_description
-    assert set(manifest.description.trigger_words) == {
-        word.lower() for word in trigger_words if word.strip()
-    }
+    # The validator auto-prepends "a" to trigger words with no alphabetic chars
+    expected_manifest_triggers = set()
+    for word in trigger_words:
+        stripped = word.strip()
+        if stripped:
+            lowered = stripped.lower()
+            if not any(ch.isalpha() for ch in lowered):
+                lowered = f"a{lowered}"
+            expected_manifest_triggers.add(lowered)
+    assert set(manifest.description.trigger_words) == expected_manifest_triggers
     assert manifest.description.use_cases == use_cases
     assert manifest.requirements.dependencies == dependencies
     assert manifest.requirements.max_execution_time == max_execution_time
@@ -301,7 +318,7 @@ def test_skill_manifest_properties(
     assert dumped["version_compatibility"] == version_compatibility
     assert dumped["tags"] == tags
     assert {"metadata", "description", "requirements", "version_compatibility", "tags"}.issubset(
-        schema["properties"]
+        schema["properties"],
     )
 
 
@@ -437,7 +454,7 @@ def test_manifest_and_result_json_serialization() -> None:
     assert serialized_result["timestamp"] == created_at.isoformat()
     assert serialized_result["duration_ms"] == 123.0
     assert {"metadata", "description", "requirements", "version_compatibility", "tags"}.issubset(
-        schema["properties"]
+        schema["properties"],
     )
 
 
@@ -453,7 +470,7 @@ def test_manifest_and_result_json_serialization() -> None:
     ).filter(
         lambda value: value == ""
         or not value[0].isalpha()
-        or any(char not in "abcdefghijklmnopqrstuvwxyz0123456789-_" for char in value)
+        or any(char not in "abcdefghijklmnopqrstuvwxyz0123456789-_" for char in value),
     ),
 )
 def test_invalid_skill_name_rejected(bad_name: str) -> None:
@@ -487,7 +504,7 @@ def test_short_description_rejected(short_description: str) -> None:
         st.text(min_size=0, max_size=10),
         min_size=0,
         max_size=5,
-    ).filter(lambda words: not words or any(word == "" for word in words))
+    ).filter(lambda words: not words or any(word == "" for word in words)),
 )
 def test_empty_trigger_words_rejected(trigger_words: list[str]) -> None:
     with pytest.raises(ValueError):
@@ -497,7 +514,7 @@ def test_empty_trigger_words_rejected(trigger_words: list[str]) -> None:
 @settings(max_examples=50, deadline=1000)
 @given(
     max_execution_time=st.integers(min_value=-100, max_value=4000).filter(
-        lambda value: value < 1 or value > 3600
+        lambda value: value < 1 or value > 3600,
     ),
 )
 def test_invalid_max_execution_time_rejected(max_execution_time: int) -> None:
@@ -631,7 +648,7 @@ class SkillLifecycleMachine(RuleBasedStateMachine):
                 "manifest": manifest,
                 "result": result,
                 "input": data_input,
-            }
+            },
         )
 
     @invariant()
