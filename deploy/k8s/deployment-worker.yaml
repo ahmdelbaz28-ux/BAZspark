@@ -40,7 +40,9 @@ spec:
           type: RuntimeDefault
       containers:
         - name: worker
-          image: fireai/worker:1.0.0
+          # V141.1 FIX (B6 revised): corrected from `fireai/worker:1.0.0`
+          # (non-existent Docker Hub org) to GHCR path.
+          image: ghcr.io/ahmdelbaz28-ux/revit/worker:latest
           imagePullPolicy: Always
           envFrom:
             - configMapRef:

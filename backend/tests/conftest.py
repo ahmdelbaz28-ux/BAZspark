@@ -242,6 +242,71 @@ def _enforce_test_api_key(monkeypatch):
     return
 
 
+# ─── V141.1 FIX (adversarial audit — Rate Limiter Test Pollution) ────────────
+# ROOT CAUSE: backend/limiter.py creates a module-level `limiter = Limiter(...)`
+# with MemoryStorage. slowapi's MemoryStorage persists across tests within the
+# same process. When backend/tests/ runs as a whole, the cumulative POST
+# requests to /api/v1/parse-dwg (from test_dwg.py + test_routers.py + others)
+# exceed the @limiter.limit("10/minute") quota before test_parse_invalid_extension_rejected
+# runs — causing it to receive 429 Too Many Requests instead of the expected
+# 400 Bad Request.
+#
+# This is NOT a bug in the production code (rate limiting is correct in prod).
+# It is test infrastructure pollution: the limiter's in-memory state is not
+# reset between tests. Per Rule 10 (Tests are NEVER modified — only production
+# code is modified), this fix goes in conftest.py (test infrastructure), not
+# in the test files or the limiter production code.
+#
+# ROOT-CAUSE FIX: autouse fixture that clears the limiter's storage before
+# every test. This ensures each test starts with a fresh rate-limit window,
+# matching the test's assumption that it is the first request to the endpoint.
+# The production limiter behavior is unchanged — we only reset its in-memory
+# state in the test process.
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter_storage():
+    """
+    Clear slowapi's in-memory rate-limit storage before every test.
+
+    Without this, the cumulative requests from earlier tests in the same
+    process exhaust the per-endpoint rate limit, causing later tests to
+    receive 429 instead of their expected status code. This is purely a
+    test-infrastructure concern — production rate limiting is unaffected.
+
+    V141.1 FIX (root cause): MemoryStorage.clear(key) requires a single
+    key argument — it cannot clear ALL keys at once. The original fix
+    called `_storage.clear()` with no args, which raised TypeError
+    (silently caught by the try/except, leaving storage uncleared). The
+    correct approach is to directly mutate the four internal dicts:
+    `storage` (Counter of hit counts), `events` (dict of timestamp lists),
+    `expirations` (dict of expiry times), and `locks` (dict of RLocks).
+    Clearing all four dicts resets the limiter to a fresh state, matching
+    each test's assumption that it is the first request to any endpoint.
+    """
+    try:
+        from backend.limiter import limiter as _limiter
+        if _limiter is not None and hasattr(_limiter, "_storage"):
+            _storage = _limiter._storage
+            # MemoryStorage internal state (from limits/storage/memory.py):
+            #   self.storage: Counter[str]      — hit counts per key
+            #   self.events: dict[str, list]    — request timestamps per key
+            #   self.expirations: dict[str, float] — expiry times per key
+            #   self.locks: dict[str, RLock]    — per-key locks
+            # Clear all four to fully reset the limiter between tests.
+            if hasattr(_storage, "storage"):
+                _storage.storage.clear()
+            if hasattr(_storage, "events"):
+                _storage.events.clear()
+            if hasattr(_storage, "expirations"):
+                _storage.expirations.clear()
+            if hasattr(_storage, "locks"):
+                _storage.locks.clear()
+    except Exception:
+        # If limiter import fails (e.g., slowapi not installed), tests that
+        # depend on rate limiting will skip on their own. Don't fail the
+        # whole suite here.
+        pass
+
+
 # ─── Optional: skip slow integration tests unless --run-slow ─────────────────
 def pytest_addoption(parser):
     parser.addoption(
