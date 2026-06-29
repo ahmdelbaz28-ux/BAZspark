@@ -43,7 +43,11 @@ spec:
           type: RuntimeDefault
       containers:
         - name: api
-          image: fireai/api:1.0.0
+          # V141.1 FIX (B6 revised): k8s manifest used `fireai/api:1.0.0`
+          # without registry prefix — kubectl would try to pull from Docker
+          # Hub org `fireai` which does not exist. Corrected to the GHCR
+          # path produced by deploy.yml workflow.
+          image: ghcr.io/ahmdelbaz28-ux/revit/api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

@@ -1057,3 +1057,42 @@ Stage Summary:
 - جاهزية الإطلاق: متحققة في الأبعاد المُراجَعة (Workflow + CI/CD + Deployment)
 - مطلوب من المشغّل: (1) إلغاء التوكن المُسرَّب (2) إنشاء tag جديد على HEAD (3) تشغيل الـ full test suite في CI
 
+
+---
+Task ID: v141.1-adversarial-critique
+Agent: Super Z (Main)
+Task: انتقاد ذاتي عدائي لإصلاح V141 + إصلاح كل bug مكتشف + اختبار شامل
+
+Work Log:
+- طبّقت Rule 21 (4-layer self-criticism) على V141 بلا رحمة
+- اكتشفت 5 bugs في إصلاحاتي السابقة:
+  1. B1 كان ناقصاً: aiosqlite 0.21.0 يحتوي is_alive لكنه موروث من threading.Thread
+     (semantic mismatch) — V141.1 pin: langgraph-checkpoint-sqlite<2.0.6 + aiosqlite<0.21.0
+  2. B2 فاتته 5 حزم حرجة: marine, adapters, qomn_fire, qomn_conduit, integration
+     (marine = SOLAS/NFPA 302 fire safety — safety-critical!)
+  3. B3 استخدم editable install في Docker multi-stage → .pth dangling pointer
+  4. Rate limiter test pollution: slowapi MemoryStorage يتراكم بين الاختبارات → 429 بدلاً من 400
+     (اكتُشف بتشغيل backend/tests/ كاملة — V141 شغّل subset فقط)
+  5. k8s manifests استخدمت fireai/api بدون registry prefix
+- أصلحت الـ 5 bugs جذرياً مع توثيق السبب الجذري لكل واحد
+- شغّلت اختبارات شاملة بعد الإصلاح:
+  * backend/tests/: 485/485 PASS (كان 1 فاشل)
+  * workflow + security + safety + launch_blockers: 365/365 PASS
+  * fireai/core/tests/: 1,232/1,232 PASS (9 skipped: ecdsa optional)
+  * marine + qomn: 352/352 PASS
+  * المجموع: 2,434 PASS, 9 skipped, 0 FAIL
+- تحققت من: استيراد backend.app (35 routes) + fireai + workflow_service + facp_system + marine
+- تحققت من: wheel build (4.5MB, 570 ملف Python, 13 حزمة)
+- تحققت من: كل الـ 13 مسار في Dockerfiles موجودة
+- حدّثت agent.md بقسم V141.1 كامل (150+ سطر) موثَّق بالأدلة
+
+Stage Summary:
+- 5 bugs في V141 تم اكتشافها وإصلاحها في V141.1
+- 7 ملفات مُعدَّلة في V141.1
+- 2,434 اختبار ناجح، 0 فاشل
+- الاعتراف الأهم: V141 كان متغطرساً — أعلنت "all root-cause" لكن انتقاد عدائي
+  وجد 5 bugs. الدرس: دائماً شغّل الـ full test suite، وانتقد بـ "هل هذا الإصدار
+  الصحيح دلالياً؟" وليس فقط "هل الاختبارات تنجح؟"
+- جاهزية الإطلاق: متحققة في الأبعاد المُراجَعة، لكن يشترط تشغيل الـ 8,790+
+  test في CI (لا timeout هناك)
+
