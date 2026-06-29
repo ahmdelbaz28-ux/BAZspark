@@ -56,11 +56,11 @@ try:
         Violation,
     )
 except ImportError:
-    DecisionProvenance = None  # type: ignore[misc,assignment]
-    RuleApplied = None  # type: ignore[misc,assignment]
-    Violation = None  # type: ignore[misc,assignment]
-    ConfidenceScore = None  # type: ignore[misc,assignment]
-    ConfidenceLevel = None  # type: ignore[misc,assignment]
+    DecisionProvenance = None
+    RuleApplied = None
+    Violation = None
+    ConfidenceScore = None
+    ConfidenceLevel = None
 
 # Import the physics-correct implementation from fireai.core
 from fireai.core.battery_aging_derating import (

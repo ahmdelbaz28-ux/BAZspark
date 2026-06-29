@@ -1291,7 +1291,7 @@ def analyze_room(
     # This fix is a side-effect call: it does NOT hold state, does NOT
     # block the result on failure (graceful degradation), but DOES
     # guarantee legal traceability for every room analyzed.
-    # See: docs/archive/agent.md V67-V84 audit chain requirements.
+    # See: agent.md V67-V84 audit chain requirements.
     try:
         from fireai.core.audit_store import AuditStore as _AuditStore
 

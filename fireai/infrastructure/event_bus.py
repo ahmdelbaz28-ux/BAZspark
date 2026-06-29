@@ -469,7 +469,7 @@ class RedisEventBus(EventBus):
         if self._redis is None:
             try:
                 import redis.asyncio as aioredis
-                self._redis = aioredis.from_url(self._redis_url, decode_responses=True)  # type: ignore[assignment]
+                self._redis = aioredis.from_url(self._redis_url, decode_responses=True)
                 logger.info("Connected to Redis at %s", self._redis_url)
             except ImportError:
                 raise RuntimeError("redis-py is required for RedisEventBus: pip install redis")

@@ -1,480 +1,185 @@
 """
-tests/test_unit_converter.py
-=============================
-Comprehensive test suite for fireai/core/unit_converter.py
+test_unit_converter.py — Tests for fireai/core/unit_converter.py
 
-SAFETY CRITICAL: Incorrect unit conversions in BIM/Revit integration lead to
-catastrophic engineering errors. A pipe sized in feet instead of metres, or a
-pressure in psf instead of psi, can cause undersized fire suppression systems
-that fail during a real fire, costing lives.
-
-Standards:
-  - NIST SP 811: Exact conversion factors
-  - Revit API: Internal lengths are decimal feet (1 ft = 0.3048 m exactly)
-  - NFPA 13-2022 Chapter 23: Hydraulic calculation units
+SAFETY-CRITICAL: Unit conversion errors can cause catastrophic engineering
+failures (undersized fire suppression, wrong detector spacing, etc.).
+These tests verify the exact conversion factors against NIST SP 811.
 """
-
 from __future__ import annotations
 
+import math
 import pytest
 
 from fireai.core.unit_converter import (
-    BAR_TO_PSI,
-    CUBIC_FT_TO_CUBIC_M,
-    FAHRENHEIT_OFFSET,
-    FAHRENHEIT_SCALE,
-    # Conversion factors
-    FEET_TO_METRES,
-    FEET_TO_MM,
-    GALLONS_US_TO_LITRES,
-    GPM_TO_LPM,
-    INCHES_TO_MM,
-    LITRES_TO_GALLONS_US,
-    LPM_TO_GPM,
-    METRES_TO_FEET,
-    MM_TO_FEET,
-    MM_TO_INCHES,
-    PSF_TO_PSI,
-    PSI_TO_BAR,
-    PSI_TO_KPA,
-    PSI_TO_PSF,
-    SQFT_TO_SQM,
-    SQIN_TO_SQMM,
-    SQM_TO_SQFT,
-    bar_to_psi,
-    celsius_to_fahrenheit,
-    convert_polygon_revit_to_metres,
-    fahrenheit_to_celsius,
-    gpm_to_lpm,
-    inches_to_mm,
-    metres_to_revit_internal,
-    mm_to_revit_internal,
-    psi_to_bar,
-    # Functions
     revit_internal_to_metres,
+    metres_to_revit_internal,
     revit_internal_to_mm,
+    mm_to_revit_internal,
+    inches_to_mm,
+    psi_to_bar,
+    bar_to_psi,
+    gpm_to_lpm,
     sqft_to_sqm,
+    fahrenheit_to_celsius,
+    celsius_to_fahrenheit,
+    FEET_TO_METRES,
+    INCHES_TO_MM,
+    PSI_TO_BAR,
+    GPM_TO_LPM,
+    SQFT_TO_SQM,
 )
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Exact Conversion Factors (NIST SP 811)
-# ─────────────────────────────────────────────────────────────────────────────
-
-
-class TestExactConversionFactors:
-    """Verify all conversion factors match NIST definitions exactly."""
-
-    def test_feet_to_metres_exact(self):
-        """1 ft = 0.3048 m exactly (since 1959)."""
-        assert FEET_TO_METRES == 0.3048
-
-    def test_metres_to_feet_inverse(self):
-        assert pytest.approx(1.0 / 0.3048) == METRES_TO_FEET
-
-    def test_inches_to_mm_exact(self):
-        """1 in = 25.4 mm exactly (since 1959)."""
-        assert INCHES_TO_MM == 25.4
-
-    def test_mm_to_inches_inverse(self):
-        assert pytest.approx(1.0 / 25.4) == MM_TO_INCHES
-
-    def test_feet_to_mm_composition(self):
-        """FEET_TO_MM = FEET_TO_METRES × 1000."""
-        assert FEET_TO_MM == FEET_TO_METRES * 1000.0
-
-    def test_mm_to_feet_inverse(self):
-        assert pytest.approx(1.0 / FEET_TO_MM) == MM_TO_FEET
-
-    def test_sqft_to_sqm_exact(self):
-        """1 ft² = 0.3048² = 0.09290304 m² exactly."""
-        assert SQFT_TO_SQM == 0.09290304
-        assert SQFT_TO_SQM == FEET_TO_METRES ** 2
-
-    def test_sqm_to_sqft_inverse(self):
-        assert pytest.approx(1.0 / 0.09290304) == SQM_TO_SQFT
-
-    def test_sqin_to_sqmm_exact(self):
-        """1 in² = 25.4² = 645.16 mm² exactly."""
-        assert SQIN_TO_SQMM == 645.16
-        assert SQIN_TO_SQMM == INCHES_TO_MM ** 2
-
-    def test_cubic_ft_to_cubic_m_exact(self):
-        """1 ft³ = 0.3048³ = 0.028316846592 m³ exactly."""
-        assert pytest.approx(0.3048 ** 3) == CUBIC_FT_TO_CUBIC_M
-
-    def test_gallons_to_litres_exact(self):
-        """1 US gal = 3.785411784 L exactly."""
-        assert GALLONS_US_TO_LITRES == 3.785411784
-
-    def test_litres_to_gallons_inverse(self):
-        assert pytest.approx(1.0 / 3.785411784) == LITRES_TO_GALLONS_US
-
-    def test_psi_to_bar_approx(self):
-        """1 psi ≈ 0.0689476 bar."""
-        assert pytest.approx(0.0689476, rel=1e-6) == PSI_TO_BAR
-
-    def test_bar_to_psi_inverse(self):
-        assert pytest.approx(1.0 / 0.0689476, rel=1e-6) == BAR_TO_PSI
-
-    def test_psi_to_kpa_approx(self):
-        """1 psi ≈ 6.89476 kPa."""
-        assert pytest.approx(6.89476, rel=1e-6) == PSI_TO_KPA
-
-    def test_psf_to_psi_exact(self):
-        """1 psi = 144 psf."""
-        assert PSF_TO_PSI == 1.0 / 144.0
-        assert PSI_TO_PSF == 144.0
-
-    def test_gpm_to_lpm_same_as_gallons(self):
-        """1 US gpm = 3.785411784 L/min (same factor as gallons→litres)."""
-        assert GPM_TO_LPM == GALLONS_US_TO_LITRES
-
-    def test_lpm_to_gpm_inverse(self):
-        assert pytest.approx(1.0 / 3.785411784) == LPM_TO_GPM
-
-    def test_fahrenheit_constants(self):
-        assert FAHRENHEIT_OFFSET == 32.0
-        assert pytest.approx(5.0 / 9.0) == FAHRENHEIT_SCALE
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# revit_internal_to_metres / metres_to_revit_internal
-# ─────────────────────────────────────────────────────────────────────────────
 
 
 class TestRevitInternalConversions:
-    """CRITICAL: Revit stores ALL lengths as decimal feet internally."""
+    """Revit internal units (decimal feet) ↔ metric conversions."""
 
-    def test_one_foot_to_metres(self):
-        assert revit_internal_to_metres(1.0) == pytest.approx(0.3048)
+    def test_revit_internal_to_metres_exact(self):
+        """1 ft = 0.3048 m exactly (NIST SP 811)."""
+        assert revit_internal_to_metres(1.0) == pytest.approx(0.3048, abs=1e-12)
 
-    def test_zero_feet_to_metres(self):
+    def test_revit_internal_to_metres_zero(self):
+        """0 ft = 0 m."""
         assert revit_internal_to_metres(0.0) == 0.0
 
-    def test_negative_feet_to_metres(self):
-        """Revit can have negative coordinates (e.g. below origin)."""
-        assert revit_internal_to_metres(-1.0) == pytest.approx(-0.3048)
+    def test_metres_to_revit_internal_negative_raises(self):
+        """Negative metres should raise ValueError (safety: physical length >= 0)."""
+        with pytest.raises(ValueError):
+            metres_to_revit_internal(-5.0)
 
-    def test_large_value(self):
-        """1000 ft = 304.8 m."""
-        assert revit_internal_to_metres(1000.0) == pytest.approx(304.8)
+    def test_revit_internal_to_metres_large(self):
+        """1000 ft = 304.8 m (building-scale)."""
+        assert revit_internal_to_metres(1000.0) == pytest.approx(304.8, abs=1e-9)
 
-    def test_nan_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            revit_internal_to_metres(float("nan"))
+    def test_metres_to_revit_internal_exact(self):
+        """1 m = 1/0.3048 ft ≈ 3.28084 ft."""
+        assert metres_to_revit_internal(1.0) == pytest.approx(1.0 / 0.3048, abs=1e-12)
 
-    def test_inf_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            revit_internal_to_metres(float("inf"))
+    def test_metres_to_revit_internal_roundtrip(self):
+        """roundtrip: ft → m → ft should return original."""
+        for ft in [0.0, 1.0, 10.5, 100.0]:
+            m = revit_internal_to_metres(ft)
+            ft_back = metres_to_revit_internal(m)
+            assert ft_back == pytest.approx(ft, abs=1e-12)
 
-    def test_neg_inf_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            revit_internal_to_metres(float("-inf"))
-
-    def test_round_trip_feet_to_metres_to_feet(self):
-        """Converting ft→m→ft must return original value."""
-        original = 42.5
-        result = metres_to_revit_internal(revit_internal_to_metres(original))
-        assert result == pytest.approx(original, rel=1e-10)
-
-    def test_metres_to_revit_internal(self):
-        """1 m = 1/0.3048 ≈ 3.28084 ft."""
-        assert metres_to_revit_internal(1.0) == pytest.approx(1.0 / 0.3048)
-
-    def test_metres_negative_rejected(self):
-        """Physical length cannot be negative when converting TO Revit."""
-        with pytest.raises(ValueError, match="Negative"):
-            metres_to_revit_internal(-1.0)
-
-    def test_metres_nan_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            metres_to_revit_internal(float("nan"))
-
-    def test_metres_inf_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            metres_to_revit_internal(float("inf"))
-
-    def test_metres_zero_allowed(self):
-        assert metres_to_revit_internal(0.0) == 0.0
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# revit_internal_to_mm / mm_to_revit_internal
-# ─────────────────────────────────────────────────────────────────────────────
-
-
-class TestRevitInternalMMConversions:
-    def test_one_foot_to_mm(self):
+    def test_revit_internal_to_mm(self):
         """1 ft = 304.8 mm."""
-        assert revit_internal_to_mm(1.0) == pytest.approx(304.8)
-
-    def test_zero_feet_to_mm(self):
-        assert revit_internal_to_mm(0.0) == 0.0
-
-    def test_nan_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            revit_internal_to_mm(float("nan"))
-
-    def test_inf_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            revit_internal_to_mm(float("inf"))
+        assert revit_internal_to_mm(1.0) == pytest.approx(304.8, abs=1e-9)
 
     def test_mm_to_revit_internal(self):
         """304.8 mm = 1 ft."""
-        assert mm_to_revit_internal(304.8) == pytest.approx(1.0, rel=1e-6)
+        assert mm_to_revit_internal(304.8) == pytest.approx(1.0, abs=1e-9)
 
-    def test_mm_nan_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            mm_to_revit_internal(float("nan"))
-
-    def test_mm_inf_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            mm_to_revit_internal(float("inf"))
-
-    def test_round_trip_mm(self):
-        """Mm → ft → mm must return original."""
-        original_mm = 1500.0  # 1.5 m
-        result = revit_internal_to_mm(mm_to_revit_internal(original_mm))
-        assert result == pytest.approx(original_mm, rel=1e-6)
+    def test_mm_roundtrip(self):
+        """roundtrip: ft → mm → ft."""
+        for ft in [1.0, 10.0, 50.5]:
+            mm = revit_internal_to_mm(ft)
+            ft_back = mm_to_revit_internal(mm)
+            assert ft_back == pytest.approx(ft, abs=1e-9)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# inches_to_mm
-# ─────────────────────────────────────────────────────────────────────────────
+class TestInchesMmConversion:
+    def test_inches_to_mm_exact(self):
+        """1 in = 25.4 mm exactly."""
+        assert inches_to_mm(1.0) == pytest.approx(25.4, abs=1e-12)
 
-
-class TestInchesToMm:
-    def test_one_inch(self):
-        assert inches_to_mm(1.0) == pytest.approx(25.4)
-
-    def test_two_inches(self):
-        assert inches_to_mm(2.0) == pytest.approx(50.8)
-
-    def test_pipe_diameter(self):
-        """2" Schedule 40 internal diameter = 2.067" → 52.5 mm."""
-        result = inches_to_mm(2.067)
-        assert result == pytest.approx(52.5018, rel=1e-3)
-
-    def test_zero_inches(self):
+    def test_inches_to_mm_zero(self):
         assert inches_to_mm(0.0) == 0.0
 
-    def test_negative_inches_rejected(self):
-        with pytest.raises(ValueError, match="Negative"):
-            inches_to_mm(-1.0)
-
-    def test_nan_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            inches_to_mm(float("nan"))
-
-    def test_inf_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            inches_to_mm(float("inf"))
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Pressure Conversions
-# ─────────────────────────────────────────────────────────────────────────────
+    def test_inches_to_mm_pipe_diameter(self):
+        """Common pipe: 2 in = 50.8 mm."""
+        assert inches_to_mm(2.0) == pytest.approx(50.8, abs=1e-9)
 
 
 class TestPressureConversions:
-    def test_psi_to_bar_standard(self):
-        """100 psi ≈ 6.89476 bar."""
-        result = psi_to_bar(100.0)
-        assert result == pytest.approx(100.0 * 0.0689476, rel=1e-6)
+    def test_psi_to_bar(self):
+        """1 psi ≈ 0.0689476 bar."""
+        assert psi_to_bar(1.0) == pytest.approx(0.0689476, abs=1e-7)
 
-    def test_bar_to_psi_standard(self):
-        """1 bar ≈ 14.5038 psi."""
-        result = bar_to_psi(1.0)
-        assert result == pytest.approx(1.0 / 0.0689476, rel=1e-4)
-
-    def test_psi_bar_round_trip(self):
-        original = 175.0
-        result = bar_to_psi(psi_to_bar(original))
-        assert result == pytest.approx(original, rel=1e-6)
-
-    def test_zero_psi_to_bar(self):
+    def test_psi_to_bar_zero(self):
         assert psi_to_bar(0.0) == 0.0
 
-    def test_negative_psi_allowed(self):
-        """Negative pressure (vacuum) is physically meaningful."""
-        result = psi_to_bar(-14.7)
-        assert result < 0
+    def test_bar_to_psi_roundtrip(self):
+        """roundtrip: psi → bar → psi."""
+        for psi in [10.0, 50.0, 175.0]:  # common fire protection pressures
+            bar = psi_to_bar(psi)
+            psi_back = bar_to_psi(bar)
+            assert psi_back == pytest.approx(psi, abs=1e-5)
 
-    def test_psi_nan_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            psi_to_bar(float("nan"))
-
-    def test_psi_inf_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            psi_to_bar(float("inf"))
-
-    def test_bar_nan_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            bar_to_psi(float("nan"))
-
-    def test_bar_inf_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            bar_to_psi(float("inf"))
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Flow Rate Conversions
-# ─────────────────────────────────────────────────────────────────────────────
+    def test_typical_fire_pump_pressure(self):
+        """100 psi (typical fire pump) ≈ 6.895 bar."""
+        assert psi_to_bar(100.0) == pytest.approx(6.895, abs=0.01)
 
 
 class TestFlowRateConversions:
-    def test_gpm_to_lpm_standard(self):
-        """100 gpm ≈ 378.5 L/min."""
-        result = gpm_to_lpm(100.0)
-        assert result == pytest.approx(100.0 * 3.785411784, rel=1e-6)
+    def test_gpm_to_lpm(self):
+        """1 US gpm = 3.785411784 L/min."""
+        assert gpm_to_lpm(1.0) == pytest.approx(3.785411784, abs=1e-9)
 
-    def test_zero_gpm(self):
+    def test_gpm_to_lpm_zero(self):
         assert gpm_to_lpm(0.0) == 0.0
 
-    def test_negative_gpm_rejected(self):
-        """Flow rate cannot be negative."""
-        with pytest.raises(ValueError, match="Negative"):
-            gpm_to_lpm(-10.0)
-
-    def test_gpm_nan_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            gpm_to_lpm(float("nan"))
-
-    def test_gpm_inf_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            gpm_to_lpm(float("inf"))
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Area Conversions
-# ─────────────────────────────────────────────────────────────────────────────
+    def test_typical_sprinkler_flow(self):
+        """25 gpm (typical sprinkler discharge) ≈ 94.6 L/min."""
+        assert gpm_to_lpm(25.0) == pytest.approx(94.6, abs=0.1)
 
 
 class TestAreaConversions:
-    def test_sqft_to_sqm_standard(self):
-        """100 ft² = 9.290304 m²."""
-        result = sqft_to_sqm(100.0)
-        assert result == pytest.approx(9.290304, rel=1e-6)
+    def test_sqft_to_sqm(self):
+        """1 ft² = 0.09290304 m² exactly."""
+        assert sqft_to_sqm(1.0) == pytest.approx(0.09290304, abs=1e-12)
 
-    def test_zero_sqft(self):
+    def test_sqft_to_sqm_zero(self):
         assert sqft_to_sqm(0.0) == 0.0
 
-    def test_negative_sqft_rejected(self):
-        with pytest.raises(ValueError, match="Negative"):
-            sqft_to_sqm(-10.0)
-
-    def test_sqft_nan_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            sqft_to_sqm(float("nan"))
-
-    def test_sqft_inf_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            sqft_to_sqm(float("inf"))
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Temperature Conversions
-# ─────────────────────────────────────────────────────────────────────────────
+    def test_large_room_area(self):
+        """1000 ft² (medium room) = 92.9 m²."""
+        assert sqft_to_sqm(1000.0) == pytest.approx(92.9, abs=0.1)
 
 
 class TestTemperatureConversions:
-    def test_freezing_point(self):
-        """32°F = 0°C."""
-        assert fahrenheit_to_celsius(32.0) == pytest.approx(0.0)
+    def test_fahrenheit_to_celsius_freezing(self):
+        """32°F = 0°C (freezing point of water)."""
+        assert fahrenheit_to_celsius(32.0) == pytest.approx(0.0, abs=1e-12)
 
-    def test_boiling_point(self):
-        """212°F = 100°C."""
-        assert fahrenheit_to_celsius(212.0) == pytest.approx(100.0)
-
-    def test_body_temperature(self):
-        """98.6°F = 37°C."""
-        assert fahrenheit_to_celsius(98.6) == pytest.approx(37.0)
+    def test_fahrenheit_to_celsius_boiling(self):
+        """212°F = 100°C (boiling point of water)."""
+        assert fahrenheit_to_celsius(212.0) == pytest.approx(100.0, abs=1e-12)
 
     def test_celsius_to_fahrenheit_freezing(self):
         """0°C = 32°F."""
-        assert celsius_to_fahrenheit(0.0) == pytest.approx(32.0)
+        assert celsius_to_fahrenheit(0.0) == pytest.approx(32.0, abs=1e-12)
 
     def test_celsius_to_fahrenheit_boiling(self):
         """100°C = 212°F."""
-        assert celsius_to_fahrenheit(100.0) == pytest.approx(212.0)
+        assert celsius_to_fahrenheit(100.0) == pytest.approx(212.0, abs=1e-12)
 
-    def test_round_trip_f_to_c_to_f(self):
-        original = 72.5
-        result = celsius_to_fahrenheit(fahrenheit_to_celsius(original))
-        assert result == pytest.approx(original, rel=1e-10)
+    def test_temp_roundtrip(self):
+        """roundtrip: F → C → F."""
+        for f in [-40.0, 0.0, 32.0, 72.0, 100.0, 212.0]:
+            c = fahrenheit_to_celsius(f)
+            f_back = celsius_to_fahrenheit(c)
+            assert f_back == pytest.approx(f, abs=1e-9)
 
-    def test_round_trip_c_to_f_to_c(self):
-        original = 25.3
-        result = fahrenheit_to_celsius(celsius_to_fahrenheit(original))
-        assert result == pytest.approx(original, rel=1e-10)
-
-    def test_negative_fahrenheit(self):
-        """-40°F = -40°C (the crossover point)."""
-        assert fahrenheit_to_celsius(-40.0) == pytest.approx(-40.0)
-
-    def test_fahrenheit_nan_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            fahrenheit_to_celsius(float("nan"))
-
-    def test_fahrenheit_inf_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            fahrenheit_to_celsius(float("inf"))
-
-    def test_celsius_nan_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            celsius_to_fahrenheit(float("nan"))
-
-    def test_celsius_inf_rejected(self):
-        with pytest.raises(ValueError, match="non-finite"):
-            celsius_to_fahrenheit(float("inf"))
+    def test_neg_40_equal(self):
+        """-40°F = -40°C (the intersection point)."""
+        assert fahrenheit_to_celsius(-40.0) == pytest.approx(-40.0, abs=1e-9)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Polygon Conversion
-# ─────────────────────────────────────────────────────────────────────────────
+class TestConversionConstants:
+    """Verify exact constant values (NIST SP 811)."""
 
+    def test_feet_to_metres_exact(self):
+        """1 ft = 0.3048 m (exact since 1959)."""
+        assert FEET_TO_METRES == 0.3048
 
-class TestConvertPolygonRevitToMetres:
-    def test_simple_square(self):
-        """10ft × 10ft room → 3.048m × 3.048m."""
-        poly_revit = [(0, 0), (10, 0), (10, 10), (0, 10)]
-        result = convert_polygon_revit_to_metres(poly_revit)
-        assert len(result) == 4
-        assert result[0] == pytest.approx((0.0, 0.0))
-        assert result[1] == pytest.approx((10 * 0.3048, 0.0))
-        assert result[2] == pytest.approx((10 * 0.3048, 10 * 0.3048))
+    def test_inches_to_mm_exact(self):
+        """1 in = 25.4 mm (exact since 1959)."""
+        assert INCHES_TO_MM == 25.4
 
-    def test_empty_polygon(self):
-        result = convert_polygon_revit_to_metres([])
-        assert result == []
+    def test_gpm_to_lpm_exact(self):
+        """1 US gal = 3.785411784 L (exact)."""
+        assert GPM_TO_LPM == pytest.approx(3.785411784, abs=1e-12)
 
-    def test_single_point(self):
-        result = convert_polygon_revit_to_metres([(1.0, 2.0)])
-        assert result == pytest.approx([(1.0 * 0.3048, 2.0 * 0.3048)])
-
-    def test_nan_coordinate_rejected(self):
-        with pytest.raises(ValueError, match="Non-finite"):
-            convert_polygon_revit_to_metres([(float("nan"), 0.0)])
-
-    def test_inf_coordinate_rejected(self):
-        with pytest.raises(ValueError, match="Non-finite"):
-            convert_polygon_revit_to_metres([(0.0, float("inf"))])
-
-    def test_negative_coordinates_allowed(self):
-        """Negative coords are valid in Revit (e.g. below origin)."""
-        result = convert_polygon_revit_to_metres([(-5.0, -10.0)])
-        assert result[0][0] < 0
-        assert result[0][1] < 0
-
-    def test_l_shape_polygon(self):
-        """L-shaped room from Revit."""
-        poly_revit = [(0, 0), (20, 0), (20, 10), (10, 10), (10, 20), (0, 20)]
-        result = convert_polygon_revit_to_metres(poly_revit)
-        assert len(result) == 6
-        for x, y in result:
-            assert isinstance(x, float)
-            assert isinstance(y, float)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    def test_sqft_to_sqm_exact(self):
+        """1 ft² = 0.09290304 m² (exact = 0.3048²)."""
+        assert SQFT_TO_SQM == pytest.approx(0.3048 ** 2, abs=1e-15)

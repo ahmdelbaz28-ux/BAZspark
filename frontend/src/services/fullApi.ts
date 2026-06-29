@@ -83,6 +83,8 @@ async function apiCall<T>(
     ...options,
     headers,
     signal: options.signal || AbortSignal.timeout(30000),
+    // M-3: Send cookies (HttpOnly session) with same-origin requests
+    credentials: 'same-origin',
   });
 
   if (!response.ok) {
