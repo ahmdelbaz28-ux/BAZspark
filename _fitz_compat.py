@@ -30,8 +30,8 @@ try:
     from pymupdf import *  # type: ignore[import-untyped]
 
     # Re-export all symbols from pymupdf for backward compatibility
-    Document = _pymupdf.Document  # type: ignore[misc]
-    open = _pymupdf.open  # type: ignore[misc]
+    Document = _pymupdf.Document
+    open = _pymupdf.open
 
 except ImportError:
     import warnings
@@ -56,6 +56,6 @@ except ImportError:
                 "Install with: pip install pymupdf"
             )
 
-    _pymupdf = _PymupdfNotInstalled()  # type: ignore[assignment]
-    Document = _PymupdfNotInstalled  # type: ignore[misc,assignment]
-    open = _PymupdfNotInstalled()  # type: ignore[misc,assignment]
+    _pymupdf = _PymupdfNotInstalled()
+    Document = _PymupdfNotInstalled
+    open = _PymupdfNotInstalled()
