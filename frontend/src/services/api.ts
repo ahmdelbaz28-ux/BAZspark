@@ -20,18 +20,27 @@ import type {
 const API_BASE = '/api/v1';
 
 /**
- * C-1 FIX: Get API key from environment or runtime config.
- * In production, the backend requires X-API-Key for all mutating requests.
- * The key is read from: VITE_FIREAI_API_KEY env var > localStorage settings > prompt.
+ * M-3 FIX: Session-based auth with HttpOnly cookie.
+ *
+ * The API key is NO LONGER stored in sessionStorage (which is XSS-readable).
+ * Instead, the frontend calls POST /api/v1/auth/login once, which sets an
+ * HttpOnly cookie that the browser automatically attaches to all subsequent
+ * requests. JavaScript cannot read the cookie, so XSS cannot steal the key.
+ *
+ * For backwards compatibility:
+ *  - VITE_FIREAI_API_KEY env var still works (for SSR / CLI / headless builds)
+ *  - sessionStorage 'fireai_settings' still works (legacy, deprecated, will be removed in v2)
+ *  - If neither is set, the browser cookie handles auth automatically (no header needed)
  */
 function getApiKey(): string | null {
   // 1. Check Vite env variable (set at build time or in .env)
+  //    Used by: headless tests, SSR, CLI scripts that don't have a browser cookie
   const envKey = import.meta.env.VITE_FIREAI_API_KEY;
   if (envKey) return envKey;
 
-  // 2. Check sessionStorage (set via Settings page at runtime)
-  // SECURITY FIX: Use sessionStorage instead of localStorage to reduce XSS attack window.
-  // SessionStorage is cleared when the tab closes, limiting key exposure time.
+  // 2. LEGACY: Check sessionStorage (deprecated, will be removed in v2.0)
+  //    Kept for backwards compat with existing Settings page during migration.
+  //    New code should use /auth/login instead.
   try {
     const stored = sessionStorage.getItem('fireai_settings');
     if (stored) {
@@ -44,8 +53,54 @@ function getApiKey(): string | null {
     // Invalid JSON in sessionStorage — ignore
   }
 
-  // 3. No key available — return null (backend will return 401 for mutating requests)
+  // 3. No header key — rely on HttpOnly cookie set by /auth/login.
+  //    The browser will automatically attach the cookie to all same-origin
+  //    requests. credentials: 'same-origin' is set in fetch() below.
   return null;
+}
+
+/**
+ * M-3: Login with API key to establish an HttpOnly session cookie.
+ * After calling this, all subsequent API requests will be authenticated
+ * via the cookie — no need to set X-API-Key header manually.
+ *
+ * @returns The user's role if login succeeds, throws ApiError otherwise.
+ */
+export async function login(apiKey: string): Promise<{ role: string }> {
+  const resp = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify({ api_key: apiKey }),
+  });
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({}));
+    throw new ApiError(body.message || body.detail || 'Login failed', resp.status);
+  }
+  const body = await resp.json();
+  return body.data;
+}
+
+/**
+ * M-3: Logout — clears the session cookie.
+ */
+export async function logout(): Promise<void> {
+  await fetch(`${API_BASE}/auth/logout`, {
+    method: 'POST',
+    credentials: 'same-origin',
+  });
+}
+
+/**
+ * M-3: Check current session — returns the role if authenticated.
+ */
+export async function getCurrentUser(): Promise<{ role: string } | null> {
+  const resp = await fetch(`${API_BASE}/auth/me`, {
+    credentials: 'same-origin',
+  });
+  if (!resp.ok) return null;
+  const body = await resp.json();
+  return body.data;
 }
 
 class ApiError extends Error {
@@ -93,6 +148,9 @@ class ApiClient {
           ...options,
           headers,
           signal: controller.signal,
+          // M-3: Send cookies (HttpOnly session) with same-origin requests.
+          // This is REQUIRED for the cookie-based auth to work.
+          credentials: 'same-origin',
         });
 
         clearTimeout(timeout);

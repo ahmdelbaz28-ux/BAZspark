@@ -295,6 +295,9 @@ _PUBLIC_PATHS_EXACT = frozenset({
     "/api/health/statistics",
     "/api/reports/statistics",
     "/health",
+    # M-3: Auth endpoints must be public (login validates credentials itself)
+    "/api/v1/auth/login",
+    "/api/v1/auth/logout",
 })
 
 # Path prefixes that are public (for routes with path params, e.g. /docs/*)
@@ -378,6 +381,27 @@ class ApiKeyMiddleware:
                 if name == b"x-api-key":
                     api_key = value.decode("utf-8", errors="replace")
                     break
+
+            # M-3 FIX: Fallback to HttpOnly cookie if X-API-Key header is missing.
+            # The cookie is set by POST /api/v1/auth/login (see backend/routers/auth.py).
+            # HttpOnly prevents JavaScript from reading the key (XSS-resistant),
+            # SameSite=Strict prevents CSRF, Secure requires HTTPS in production.
+            # This is MORE secure than sessionStorage which is XSS-readable.
+            if not api_key:
+                cookie_header: str | None = None
+                for name, value in headers:
+                    if name == b"cookie":
+                        cookie_header = value.decode("utf-8", errors="replace")
+                        break
+                if cookie_header:
+                    # Parse cookie header: "key1=val1; key2=val2"
+                    for pair in cookie_header.split(";"):
+                        pair = pair.strip()
+                        if "=" in pair:
+                            k, v = pair.split("=", 1)
+                            if k.strip() == "fireai_session":
+                                api_key = v.strip()
+                                break
 
             # Also accept FIREAI_API_KEY env var bypass for server-side
             # internal calls (e.g. sidecars, monitoring agents). Only honored

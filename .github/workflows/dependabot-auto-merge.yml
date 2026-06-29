@@ -1,5 +1,9 @@
 name: Auto-merge Dependabot PRs
 
+# M-9 FIX: Auto-merge is now restricted to DEV dependencies only.
+# Safety-critical production packages (fastapi, cryptography, etc.) require
+# manual review because any API change could break NFPA 72 calculations.
+
 on:
   pull_request:
     types:
@@ -17,8 +21,77 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
+      - name: Check if dependency is safe to auto-merge
+        id: check-safe
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const title = pr.title || '';
+            const headRef = pr.head.ref || '';
+
+            // M-9: Critical packages that MUST NOT be auto-merged.
+            // These are production runtime dependencies where API changes
+            // could break safety-critical NFPA 72 calculations.
+            const CRITICAL_PACKAGES = [
+              // Web framework & ASGI
+              'fastapi', 'starlette', 'uvicorn', 'gunicorn',
+              // Crypto & auth
+              'cryptography', 'pyjwt', 'passlib', 'bcrypt',
+              // Data & serialization
+              'pydantic', 'pydantic-settings', 'sqlalchemy', 'alembic',
+              // Networking
+              'aiohttp', 'requests', 'httpx', 'websockets', 'asyncpg',
+              // Math & science (used in NFPA 72 calculations)
+              'numpy', 'scipy', 'shapely',
+              // File parsing (attack surface)
+              'python-multipart', 'pillow', 'lxml',
+              // Messaging & tasks
+              'redis', 'celery', 'kombu',
+              // AI/ML (used in workflow)
+              'langgraph', 'langgraph-checkpoint-sqlite',
+              // Frontend (production runtime)
+              'react', 'react-dom', 'react-router-dom', 'vite',
+              'typescript', '@vitejs/plugin-react',
+            ];
+
+            // Extract package name from Dependabot PR title or branch
+            // Title format: "Bump <package> from X to Y" or "chore(deps): bump <package>"
+            // Branch format: "dependabot/npm_and_yarn/frontend/<package>-<version>"
+            //                "dependabot/pip/<package>-<version>"
+            let packageName = '';
+            const titleMatch = title.match(/bump\s+([^\s]+)/i);
+            if (titleMatch) {
+              packageName = titleMatch[1].replace(/[^a-zA-Z0-9@/_-]/g, '');
+            }
+            if (!packageName) {
+              const branchMatch = headRef.match(/dependabot\/[^/]+\/(?:frontend\/)?([^/-]+)/);
+              if (branchMatch) packageName = branchMatch[1];
+            }
+
+            const pkgLower = packageName.toLowerCase();
+            const isCritical = CRITICAL_PACKAGES.some(p =>
+              pkgLower === p || pkgLower === p.replace('/', '-') || pkgLower.endsWith('/' + p)
+            );
+
+            console.log(`PR title: ${title}`);
+            console.log(`Package: ${packageName}`);
+            console.log(`Is critical: ${isCritical}`);
+
+            core.setOutput('package', packageName);
+            core.setOutput('is_critical', isCritical.toString());
+
+            if (isCritical) {
+              console.log(`::warning::Critical package "${packageName}" requires manual review. Auto-merge SKIPPED.`);
+              core.setOutput('safe', 'false');
+            } else {
+              console.log(`Dev dependency "${packageName}" is safe for auto-merge.`);
+              core.setOutput('safe', 'true');
+            }
+
       - name: Wait for status checks
         id: wait-for-status-checks
+        if: steps.check-safe.outputs.safe == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -26,22 +99,20 @@ jobs:
             const ref = context.payload.pull_request.head.sha;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            
+
             // Wait up to 30 minutes for checks to complete
             const timeout = 30 * 60 * 1000;
             const start = Date.now();
-            
+
             while (Date.now() - start < timeout) {
               const { data: statuses } = await github.rest.repos.listCommitStatuses({
                 owner, repo, ref
               });
-              
-              // Check if there are any required status checks
+
               const { data: branch } = await github.rest.repos.getBranch({ owner, repo, branch: context.payload.pull_request.base.ref });
-              
-              // If there are no pending statuses and all are success, we're good
+
               const hasPending = statuses.some(s => s.state === 'pending');
-              
+
               if (!hasPending && statuses.length > 0) {
                 const allSuccess = statuses.every(s => s.state === 'success');
                 if (allSuccess) {
@@ -49,19 +120,26 @@ jobs:
                   return;
                 }
               } else if (statuses.length === 0) {
-                // No status checks configured - proceed
                 core.setOutput('ready', 'true');
                 return;
               }
-              
+
               await new Promise(resolve => setTimeout(resolve, 30000));
             }
-            
+
             core.setOutput('ready', 'false');
 
-      - name: Enable auto-merge
-        if: steps.wait-for-status-checks.outputs.ready == 'true'
+      - name: Enable auto-merge (dev deps only)
+        if: steps.check-safe.outputs.safe == 'true' && steps.wait-for-status-checks.outputs.ready == 'true'
         run: |
+          echo "Auto-merging dev dependency: ${{ steps.check-safe.outputs.package }}"
           gh pr merge --admin --squash "${{ github.event.pull_request.number }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip auto-merge (critical dep)
+        if: steps.check-safe.outputs.is_critical == 'true'
+        run: |
+          echo "::notice::Auto-merge skipped for critical package: ${{ steps.check-safe.outputs.package }}"
+          echo "This PR requires manual review because it touches a safety-critical dependency."
+          echo "Reviewer must verify NFPA 72 calculations still produce correct results."

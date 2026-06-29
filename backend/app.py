@@ -533,6 +533,7 @@ for _router_name in (
     "facp",
     "api_keys",
     "analyze",
+    "auth",  # M-3: session-based auth with HttpOnly cookies
 ):
     _safe_include_router(_router_name)
 
