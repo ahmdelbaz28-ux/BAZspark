@@ -586,13 +586,20 @@ class RevitMCPServer:
         tool_name = params.get("name")
         tool_args = params.get("arguments", {})
 
-        # Build an MCPRequest and delegate to the safety-enforcing handler
+        # Build an MCPRequest and delegate to the safety-enforcing handler.
+        # V142 FIX (Rule 17 root-cause): Previously called `process_request`
+        # which does NOT exist on SanitizedMCPHandler — the actual method
+        # is `handle`. This caused every tools/call to fail with
+        # AttributeError, breaking Claude Desktop integration entirely.
+        # Verified at runtime before fix: tools/call returned -32603 error.
+        # Verified at runtime after fix: tools/call returns the handler's
+        # MCPResponse wrapped in the MCP content envelope.
         mcp_request = MCPRequest(
             request_id=str(params.get("_meta", {}).get("request_id", "")),
             tool_name=tool_name or "",
             parameters=tool_args,
         )
-        response: MCPResponse = self._handler.process_request(mcp_request)
+        response: MCPResponse = self._handler.handle(mcp_request)
 
         return {
             "content": [
