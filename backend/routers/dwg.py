@@ -33,7 +33,7 @@ try:
     _HAS_LIMITER = True
 except ImportError:
     _HAS_LIMITER = False
-    limiter = None  # type: ignore[assignment]
+    limiter = None
 
 logger = logging.getLogger(__name__)
 
@@ -208,4 +208,14 @@ else:
         dependencies=_AUTH,
         name="parse_dwg",
     )
+
+# HOTFIX C-3: Public alias for backward compatibility.
+# V140 Phase 10 refactor renamed parse_dwg → _parse_dwg_impl (private) and
+# registered it via router.add_api_route(). However, tests/test_dwg_router.py
+# imports `parse_dwg` directly to register it on a test FastAPI app without
+# the _AUTH dependency (which would cause 403 in tests).
+# This alias preserves backward compatibility without changing the rate-limited
+# production endpoint. The alias points to the unwrapped _parse_dwg_impl so
+# tests can register it without auth.
+parse_dwg = _parse_dwg_impl
 

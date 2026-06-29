@@ -92,6 +92,8 @@ class ApiClient {
         ...options,
         headers: { ...this.defaultHeaders, ...options.headers },
         signal: controller.signal,
+        // M-3: Send cookies (HttpOnly session) with same-origin requests
+        credentials: 'same-origin',
       });
 
       clearTimeout(timeoutId);
@@ -503,6 +505,8 @@ class ApiClient {
       const response = await fetch(url, {
         headers,
         signal: controller.signal,
+        // M-3: Send cookies (HttpOnly session) with same-origin requests
+        credentials: 'same-origin',
       });
       clearTimeout(timeoutId);
       if (!response.ok) throw new Error('Export failed: HTTP ' + response.status);
