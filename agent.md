@@ -15648,7 +15648,9 @@ pythonnet isn't installed. The lazy import pattern is correct.
 
 ### Commit Information
 
-Commit: <will-be-filled-after-commit>
+Commit: 988b94cd
+PR: https://github.com/ahmdelbaz28-ux/revit/pull/125
+GitHub link: https://github.com/ahmdelbaz28-ux/revit/commit/988b94cd
 Files modified: 5 production + 2 test + 3 documentation = 10 files
 Files added: 2 new test files (test_mcp_server.py, test_langfuse_setup.py)
 Lines added: ~900 (production + tests)
