@@ -11,11 +11,12 @@ import math
 import pytest
 
 from fireai.mcp_server.sanitized_handler import (
-    ALLOWED_TOOLS,
     MCPRequest,
     MCPResponse,
     SanitizedMCPHandler,
 )
+
+ALLOWED_TOOLS = SanitizedMCPHandler.ALLOWED_TOOLS
 
 
 class TestSanitizedMCPHandler:
