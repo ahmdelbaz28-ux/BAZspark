@@ -450,21 +450,24 @@ class RevitService:
 
         """
         try:
-            # Defense in depth: validate path even if caller already did.
-            # CodeQL: py/path-injection — filepath is validated below.
+            # V141.4 SECURITY FIX (CodeQL: py/path-injection):
+            # Use validate_input_path as the SOLE authority for path safety.
+            # The previous code had a fallback that called os.path.realpath()
+            # and only checked for ".." — this is insufficient because:
+            #   1. It doesn't verify the path is inside an allowed base directory
+            #   2. Symlinks can bypass ".." checks
+            #   3. CodeQL correctly flagged os.path.exists/getsize/open on
+            #      the unvalidated path as path-injection vulnerabilities.
+            # Now: if validate_input_path raises, we propagate the error
+            # (fail-closed). No fallback that could be exploited.
             from parsers._path_security import validate_input_path
-            try:
-                filepath = validate_input_path(filepath, must_exist=True)
-            except Exception:
-                filepath = os.path.realpath(filepath)
-                if ".." in filepath:
-                    raise FileNotFoundError("Path traversal detected")
+            # V141.4.1 FIX (Devin review): validate_input_path returns a Path
+            # object. Convert to str for JSON serialization in the return dict.
+            safe_path = validate_input_path(filepath)
+            filepath = str(safe_path)
 
-            if not os.path.exists(filepath):
-                raise FileNotFoundError("RVT file not found")  # noqa: S608 - no SQL
-
-            # In a real implementation, we would open the RVT file using Revit API
-            # For now, we'll simulate reading by parsing the file size and creating sample elements
+            # After validation, filepath is guaranteed safe (resolved + inside
+            # allowed base). CodeQL should recognize the validated path.
             file_size = os.path.getsize(filepath)
 
             # Simulate reading elements from the file
@@ -542,20 +545,20 @@ class RevitService:
 
         """
         try:
-            # Defense in depth: validate path.
-            # CodeQL: py/path-injection — filepath is validated below.
-            from parsers._path_security import validate_input_path
-            try:
-                filepath = validate_input_path(filepath, must_exist=False)
-            except Exception:
-                filepath = os.path.realpath(filepath)
-                if ".." in filepath:
-                    raise ValueError("Path traversal detected")
+            # V141.4 SECURITY FIX (CodeQL: py/path-injection):
+            # Use validate_output_path for OUTPUT paths (file may not exist
+            # yet). This is the dedicated security function for write
+            # operations — it resolves symlinks and verifies the path is
+            # inside an allowed base directory. After validation, the path
+            # is guaranteed safe for file operations.
+            from parsers._path_security import validate_output_path
+            safe_path = validate_output_path(filepath, parser_name="revit_write_rvt")
+            filepath = str(safe_path)
 
             if not self.connected:
                 logger.warning("Not connected to Revit. Writing to file in simulation mode.")
 
-            # Create directory if it doesn't exist
+            # Create directory if it doesn't exist (filepath is validated above)
             output_dir = os.path.dirname(filepath)
             if output_dir:
                 os.makedirs(output_dir, exist_ok=True)
@@ -1505,9 +1508,13 @@ class RevitService:
     def load_revit_api_data(self, json_path: str) -> bool:
         """Load Revit API data from JSON file."""
         try:
-            if not os.path.exists(json_path):
-                logger.error("File not found: %s", json_path)
-                return False
+            # V141.4 SECURITY FIX (CodeQL: py/path-injection):
+            # Validate path before opening. Previous code called open() on
+            # an unvalidated path — path-injection vulnerability.
+            from parsers._path_security import validate_input_path
+            # V141.4.1 FIX (Devin review): convert Path to str after validation.
+            safe_path = validate_input_path(json_path)
+            json_path = str(safe_path)
 
             with open(json_path, encoding='utf-8') as f:
                 self._api_data_cache = json.load(f)
