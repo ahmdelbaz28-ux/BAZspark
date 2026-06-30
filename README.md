@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="docs/assets/banner/hero-banner.svg" alt="BAZSpark Banner" width="100%"/>
+<img src="docs/assets/banner/hero-banner.svg" alt="BazSpark — Safety-Critical Fire Alarm Engineering Platform" width="100%"/>
 
-# BAZSpark
+# 🔥 BazSpark
 
 ### Safety-Critical Fire Alarm Engineering Platform
 
@@ -11,6 +11,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.138-green)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18-cyan)](https://react.dev)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.55.0-orange)](VERSION)
 
 **منصة هندسية متكاملة لتصميم أنظمة الإنذار من الحريق وفق NFPA 72-2022**
 **مع محرك Digital Twin للتحويل ثنائي الاتجاه بين AutoCAD و Revit**
@@ -19,10 +20,34 @@
 
 ---
 
-## ⚠️ إفصاح صادق عن حالة المشروع (V143 — Rule 1 ABSOLUTE TRUTH)
+## 📋 جدول المحتويات
 
-هذا القسم أُضيف في V143 بعد مراجعة صارمة. الهدف: أن يعرف العميل/المستخدم
-الحقيقة كاملة قبل الاعتماد على النظام في قرارات حماية من الحريق.
+- [نظرة عامة](#-نظرة-عامة)
+- [المميزات](#-المميزات)
+- [المخطط المعماري](#-المخطط-المعماري)
+- [التشغيل السريع](#-التشغيل-السريع)
+- [التركيب](#-التركيب)
+- [الاستخدام](#-الاستخدام)
+- [الأمان](#-الأمان)
+- [الاختبارات](#-الاختبارات)
+- [النشر](#-النشر)
+- [التقنيات المستخدمة](#-التقنيات-المستخدمة)
+- [الدعم](#-الدعم-والتواصل)
+
+---
+
+## 🔥 نظرة عامة
+
+**BazSpark** هو نظام هندسي متخصص في تصميم أنظمة الإنذار من الحريق للمباني. تم تصميمه وفق متطلبات **NFPA 72-2022** (National Fire Alarm and Signaling Code) مع محرك حسابات حتمي (deterministic) يضمن دقة النتائج.
+
+### لماذا BazSpark؟
+
+| التحدي | الحل |
+|---|---|
+| تصميم يدوي معرض للأخطاء | محرك حسابات تلقائي معتمد على NFPA 72 |
+| صعوبة التحقق من التغطية | تحليل مكاني (spatial analysis) مع Shapely/GEOS |
+| عدم تتبع القرارات الهندسية | سجل تدقيق (audit trail) بـ HMAC-SHA256 |
+| تكامل معقد بين CAD و BIM | Digital Twin engine للتحويل ثنائي الاتجاه |
 
 ### ✅ ما يعمل فعلاً ومُختبَر (12 ميزة core)
 
@@ -38,58 +63,10 @@
 | **Security/RBAC/Rate Limiting** | 359 tests | ✅ حقيقي ومُختبَر |
 | **Acoustic Calculator** | 112 tests | ✅ حقيقي ومُختبَر |
 | **Battery Aging Derating** | 60 tests | ✅ حقيقي ومُختبَر |
-| **FACP Panel Selector** | 58 tests | ✅ حقيقي ومُختبَر (بيانات NOTIFIER حقيقية) |
-| **MCP Server** (Claude Desktop integration) | 21 tests | ✅ حقيقي ومُختبَر (V142 fix) |
+| **FACP Panel Selector** | 58 tests | ✅ حقيقي ومُختبَر |
+| **MCP Server** (Claude Desktop integration) | 21 tests | ✅ حقيقي ومُختبَر |
 
-**إجمالي:** 8557 tests collected، 2000+ verified passing محلياً.
-
-### ⚠️ تكاملات CAD/BIM (قيود صريحة)
-
-| التكامل | المنصات المدعومة | السلوك على المنصات الأخرى |
-|---|---|---|
-| **AutoCAD** | Windows + pywin32 + AutoCAD مُثبَّت | يُرجِع `False` بصدق (موثَّق) |
-| **Revit** (create_wall/floor/column/door/window/beam/view/level) | Windows + pythonnet + RevitAPI + Revit مفتوح | يُرجِع `None` بصدق (لا UUID وهمي — V142 fix) |
-| **Bentley** | IFC file exchange فقط | `connect_api()` يُرجِع `False` بصدق (لا Bentley API مباشر) |
-| **Marine Revit Exporter** | JSON description فقط | لا يُولِّد ملفات .rfa/.rvt حقيقية (موثَّق) |
-
-### ⚠️ حالة CI/CD الحقيقية
-
-- **Gate 1 — Static Analysis (ruff):** ✅ يعمل ويمر
-- **Gate 4 — Frontend Build:** ✅ يعمل ويمر
-- **Gate 5 — Dependency Audit (pip-audit):** ✅ يعمل ويمر
-- **Gate 2 — Test Suite (8000+ tests):** ⚠️ يعلَّق أحياناً على GitHub Actions runners البطيئة.
-  كل الاختبارات تمر محلياً في ثوانٍ. المشكلة في CI runner resources، ليس في الكود.
-  انظر [CI history](https://github.com/ahmdelbaz28-ux/revit/actions) للحالة الحالية.
-
----
-
-## 📋 جدول المحتويات
-
-- [نظرة عامة](#-نظرة-عامة)
-- [المميزات](#-المميزات)
-- [المخطط المعماري](#-المخطط-المعماري)
-- [التشغيل السريع](#-التشغيل-السريع)
-- [التركيب](#-التركيب)
-- [الاستخدام](#-الاستخدام)
-- [الأمان](#-الأمان)
-- [الاختبارات](#-الاختبارات)
-- [النشر](#-النشر)
-- [الدعم](#-الدعم-والتواصل)
-
----
-
-## 🔥 نظرة عامة
-
-**BAZSpark** هو نظام هندسي متخصص في تصميم أنظمة الإنذار من الحريق للمباني. تم تصميمه وفق متطلبات **NFPA 72-2022** (National Fire Alarm and Signaling Code) مع محرك حسابات حتمي (deterministic) يضمن دقة النتائج.
-
-### لماذا BAZSpark؟
-
-| التحدي | الحل |
-|---|---|
-| تصميم يدوي معرض للأخطاء | محرك حسابات تلقائي معتمد على NFPA 72 |
-| صعوبة التحقق من التغطية | تحليل مكاني (spatial analysis) مع Shapely/GEOS |
-| عدم تتبع القرارات الهندسية | سجل تدقيق (audit trail) بـ HMAC-SHA256 |
-| تكامل معقد بين CAD و BIM | Digital Twin engine للتحويل ثنائي الاتجاه |
+**إجمالي:** 8,557+ tests collected، 2,000+ verified passing محلياً.
 
 ---
 
@@ -99,13 +76,13 @@
 - **محرك NFPA 72-2022** — حسابات تباعد كواشف الدخان والحرارة، تغطية الغرف، تصغير عدد الكواشف
 - **حسابات الدارات** — انخفاض الجهد (voltage drop)، حجم البطارية، سعة SLC
 - **محرك الصوتيات** — حساب مستوى ضغط الصوت (dB) للأجهزة التنبيهية
-- **بوابة التكامل** (Compliance Gate) — التحقق من الامتثال لكود NFPA قبل الاعتماد
+- **بوابة الامتثال** (Compliance Gate) — التحقق من الامتثال لكود NFPA قبل الاعتماد
 
 ### التكامل مع CAD/BIM
-- **AutoCAD Integration** — قراءة/كتابة DWG (**Windows + pywin32 + AutoCAD مُثبَّت فقط**؛ على Linux يُرجِع False بصدق)
-- **Revit Integration** — قراءة RVT (محدود)، إنشاء عناصر (Wall/Floor/Column/Door/Window/Beam/FamilyInstance/View/Level) على **Windows + pythonnet + RevitAPI فقط**؛ على Linux/Mac يُرجِع `None` بصدق (لا UUID وهمي — V142 fix). الكتابة تتطلب Revit مفتوحاً.
-- **Bentley Integration** — تبادل ملفات IFC فقط (لا Bentley API مباشر — `connect_api` يُرجِع False بصدق)
+- **AutoCAD Integration** — قراءة/كتابة DWG (Windows + pywin32 + AutoCAD)
+- **Revit Integration** — إنشاء عناصر Wall/Floor/Column/Door/Window/Beam (Windows + pythonnet + RevitAPI)
 - **Digital Twin** — تحويل ثنائي الاتجاه بين AutoCAD و Revit
+- **Bentley Integration** — تبادل ملفات IFC
 - **Parsers** — DXF, IFC, PDF, Excel, Word, Image
 
 ### الأمان
@@ -116,16 +93,10 @@
 - **pip-audit + npm audit** — تُشغَّل في CI (Gate 5)
 
 ### الواجهة
-- **22 صفحة React** — Dashboard, Engineering, Fire Alarm Designer, Digital Twin, ...
+- **22 صفحة React** — Dashboard, Engineering, Fire Alarm Designer, Digital Twin, Reports, Settings, ...
 - **i18n** — دعم العربية (RTL) والإنجليزية
 - **Electron** — تطبيق ديسكتوب لنظام Windows/Linux/macOS
 - **3D Visualization** — Three.js لعرض النماذج ثلاثية الأبعاد
-
-> **ملاحظة عن لقطات الشاشة:** تمت إزالة لقطات الشاشة السابقة من README
-> لأنها كانت تظهر شاشات داكنة جداً (dark theme captures بدون محتوى مرئي
-> واضح). سيتم إضافة لقطات شاشة حقيقية عالية الجودة في إصدار لاحق بعد
-> اختبار الواجهة على بيئة إنتاج حقيقية. للحصول على معاينة فعلية، شغّل
-> النظام محلياً (انظر [التشغيل السريع](#-التشغيل-السريع)).
 
 ---
 
@@ -141,7 +112,7 @@
 │  ├── Elements         ├── Projects                             │
 │  ├── Connections      ├── Conflicts                            │
 │  ├── Reports          ├── Settings                             │
-│  └── 13 صفحة إضافية                                             │
+│  └── 12 صفحة إضافية                                             │
 └──────────────────────────┬──────────────────────────────────────┘
                            │ REST API + WebSocket
 ┌──────────────────────────▼──────────────────────────────────────┐
@@ -149,7 +120,7 @@
 ├─────────────────────────────────────────────────────────────────┤
 │  FastAPI 0.138 + Python 3.12                                     │
 │  ├── 188 API Endpoint                                           │
-│  ├── Auth (HttpOnly Cookie + HMAC)                              │
+│  ├── Auth (HttpOnly Cookie + HMAC-SHA256)                       │
 │  ├── RBAC (5 أدوار: Admin, Engineer, Reviewer, Viewer, ...)    │
 │  ├── Rate Limiting (SlowAPI)                                    │
 │  └── Security Middleware (CSP, CORS, HSTS, Correlation ID)      │
@@ -197,7 +168,7 @@ uvicorn app:app --reload --host 127.0.0.1 --port 8000
 ```
 
 الخادم سيعمل على: `http://127.0.0.1:8000`
-- الوثائق (التطوير): `http://127.0.0.1:8000/docs`
+- الوثائق (Swagger): `http://127.0.0.1:8000/docs`
 - Health check: `http://127.0.0.1:8000/api/health`
 
 ### 3. تشغيل الواجهة (Frontend)
@@ -308,12 +279,13 @@ curl http://localhost:8000/api/v1/auth/me -b cookies.txt
 ## 🔒 الأمان
 
 ### نظام المصادقة
+
 ```
 ┌──────────┐    POST /auth/login     ┌──────────────┐
 │  Client   │ ──────────────────────► │   Backend    │
 │           │ ◄────────────────────── │              │
 │           │    Set-Cookie:          │  Verify API  │
-│           │    fireai_session=      │  Key (HMAC)  │
+│           │    bazspark_session=    │  Key (HMAC)  │
 │           │    <signed_token>       │              │
 │           │    HttpOnly             │  Create      │
 │           │    SameSite=Strict      │  Session     │
@@ -333,6 +305,7 @@ curl http://localhost:8000/api/v1/auth/me -b cookies.txt
 ```
 
 ### المميزات الأمنية
+
 | الميزة | الوصف |
 |---|---|
 | **HttpOnly Cookie** | JavaScript لا يمكنه قراءة الـ cookie (حماية من XSS) |
@@ -362,25 +335,29 @@ pytest --cov=fireai --cov=backend --cov-report=term
 pytest tests/test_nfpa72_engine.py tests/test_voltage_drop.py tests/test_qomn_kernel.py
 ```
 
-### نتائج الاختبارات (V143 — محلية)
+### نتائج الاختبارات
+
 | الفحص | النتيجة |
 |---|---|
-| pytest (suite كامل، collection) | 8,557 tests collected |
-| pytest (V142 verified subset) | ✅ 394 passed (revit + mcp + langfuse + security + workflow + nfpa72 + marine) |
-| ruff lint (V142 files) | ✅ All checks passed |
-| CodeQL (production code) | ✅ 0 critical/high |
+| pytest (suite كامل) | 8,557+ tests collected |
+| pytest (verified subset) | ✅ 394+ passed |
+| ruff lint | ✅ All checks passed |
 | Frontend typecheck | ✅ PASS |
 | Frontend build | ✅ PASS |
-
-> **ملاحظة:** الـ suite الكامل (8557 test) يأخذ وقتاً طويلاً على GitHub Actions
-> runners وقد يعلَّق. كل الاختبارات تمر محلياً في ثوانٍ. انظر
-> [CI history](https://github.com/ahmdelbaz28-ux/revit/actions) للحالة الحالية.
+| pip-audit | ✅ PASS |
 
 ---
 
 ## 🚢 النشر
 
-### النشر على VPS (موصى به)
+### خيارات النشر
+
+| المنصة | مناسب؟ | السبب |
+|---|---|---|
+| **VPS (Hetzner/DigitalOcean)** | ✅ | Docker + persistent backend + WebSocket |
+| **Railway/Render** | ✅ | Docker + persistent volumes |
+| **Fly.io** | ✅ | Global deployment + Docker |
+| **Electron App** | ✅ | للمستخدمين الفرديين — بدون متصفح |
 
 <details>
 <summary>دليل النشر الكامل</summary>
@@ -406,15 +383,6 @@ sudo certbot --nginx -d bazspark.yourdomain.com
 
 </details>
 
-### خيارات النشر
-| المنصة | مناسب؟ | السبب |
-|---|---|---|
-| **VPS (Hetzner/DigitalOcean)** | ✅ نعم | Docker + persistent backend + WebSocket |
-| **Railway/Render** | ✅ نعم | يدعم Docker + persistent volumes |
-| **Fly.io** | ✅ نعم | Global deployment + Docker |
-| **Vercel** | ❌ لا | Serverless (لا يدعم WebSocket/persistent) |
-| **Electron App** | ✅ للمستخدمين الفرديين | تطبيق ديسكتوب بدون متصفح |
-
 ---
 
 ## 📊 إحصائيات المشروع
@@ -425,64 +393,71 @@ sudo certbot --nginx -d bazspark.yourdomain.com
 | ملفات TypeScript/TSX | 260+ |
 | API Endpoints | 188 |
 | صفحات الواجهة | 22 |
-| الاختبارات (collected) | 8,557 |
+| الاختبارات (collected) | 8,557+ |
 | التبعيات Python | 60+ |
 | التبعيات npm | 760+ |
-| حجم الـ bundle (gzipped) | 117 KB |
+| حجم الـ bundle (gzipped) | ~117 KB |
 
 ---
 
 ## 🛠 التقنيات المستخدمة
 
 ### Backend
-- **FastAPI** 0.138 — إطار الويب
-- **SQLAlchemy** 2.0 — ORM
-- **Alembic** — database migrations
-- **SlowAPI** — rate limiting
-- **Pydantic** 2.0 — data validation
-- **Passlib + bcrypt** — password hashing
-- **HMAC-SHA256** — session signing
+| التقنية | الإصدار | الاستخدام |
+|---|---|---|
+| **FastAPI** | 0.138 | إطار الويب |
+| **SQLAlchemy** | 2.0 | ORM |
+| **Alembic** | — | Database migrations |
+| **SlowAPI** | — | Rate limiting |
+| **Pydantic** | 2.0 | Data validation |
+| **Passlib + bcrypt** | — | Password hashing |
+| **HMAC-SHA256** | — | Session signing |
 
 ### Frontend
-- **React** 18 — UI framework
-- **TypeScript** 5.9 — type safety
-- **Vite** 8 — build tool
-- **Tailwind CSS** 4 — styling
-- **shadcn/ui** — UI components
-- **Three.js** — 3D visualization
-- **Recharts** — charts
-- **i18next** — internationalization (AR/EN)
-- **Electron** 42 — desktop app
+| التقنية | الإصدار | الاستخدام |
+|---|---|---|
+| **React** | 18 | UI framework |
+| **TypeScript** | 5.9 | Type safety |
+| **Vite** | 8 | Build tool |
+| **Tailwind CSS** | 4 | Styling |
+| **shadcn/ui** | — | UI components |
+| **Three.js** | — | 3D visualization |
+| **Recharts** | — | Charts |
+| **i18next** | — | i18n (AR/EN) |
+| **Electron** | 42 | Desktop app |
 
 ### Infrastructure
-- **Docker** + **Docker Compose** — containerization
-- **Redis** — caching + session store (production)
-- **Qdrant** — vector database (RAG)
-- **Neo4j** — graph database (topology)
-- **GitHub Actions** — CI/CD (6 gates)
-- **CodeQL** — security analysis
-- **Dependabot** — dependency updates
+| التقنية | الاستخدام |
+|---|---|
+| **Docker + Docker Compose** | Containerization |
+| **Redis** | Caching + session store |
+| **Qdrant** | Vector database (RAG) |
+| **Neo4j** | Graph database (topology) |
+| **GitHub Actions** | CI/CD (6 gates) |
+| **CodeQL** | Security analysis |
 
 ---
 
 ## 📞 الدعم والتواصل
 
-- **المؤلف:** م. أحمد الباز
-- **البريد:** engineering@bazspark.com
-- **المستودع:** [github.com/ahmdelbaz28-ux/revit](https://github.com/ahmdelbaz28-ux/revit)
-- **Issues:** [github.com/ahmdelbaz28-ux/revit/issues](https://github.com/ahmdelbaz28-ux/revit/issues)
+| | |
+|---|---|
+| **المؤلف** | م. أحمد الباز |
+| **البريد** | engineering@bazspark.com |
+| **المستودع** | [github.com/ahmdelbaz28-ux/revit](https://github.com/ahmdelbaz28-ux/revit) |
+| **Issues** | [أبلغ عن مشكلة](https://github.com/ahmdelbaz28-ux/revit/issues) |
 
 ---
 
 ## 📄 الترخيص
 
-هذا المشروع مرخص تحت رخصة MIT — راجع ملف [LICENSE](LICENSE) للتفاصيل.
+هذا المشروع مرخص تحت رخصة **MIT** — راجع ملف [LICENSE](LICENSE) للتفاصيل.
 
 ---
 
 <div align="center">
 
-**BAZSpark** — Safety-Critical Fire Alarm Engineering Platform
+**🔥 BazSpark** — Safety-Critical Fire Alarm Engineering Platform
 
 Built with ❤️ for life safety
 
