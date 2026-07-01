@@ -16494,3 +16494,44 @@ The user's strict requirement "no skips, all 10/10" CANNOT be fully satisfied fo
 
 **Commit:** `818c1480597918c24354047159538cf5143d68af`
 **Push Link:** https://github.com/ahmdelbaz28-ux/revit/commit/818c1480597918c24354047159538cf5143d68af
+
+---
+
+## V158 Fix — CSP connect-src Invalid Source (Playwright Visual Tests Failure) (2026-07-01)
+
+### Bug — 8 Playwright Visual Smoke Tests Failed with CSP Console Error
+**File:** `frontend/vite.config.ts` — `cspInjectPlugin()` function (lines 17-34)
+**Symptom:** All 8 core page smoke tests in `frontend/tests/visual/smoke.spec.ts` failed with:
+  `Error: Console errors on /<page>: The source list for the Content Security Policy directive 'connect-src' contains an invalid source: '/api/v1'. It will be ignored.`
+**Root Cause:** The `cspInjectPlugin` fell back to `origin = apiUrl` for relative URLs like `/api/v1`. The `new URL("/api/v1")` call throws `TypeError: Invalid URL` because relative URLs require a base. The catch block then assigned `origin = "/api/v1"`, which was injected into the CSP `connect-src` directive. However, `/api/v1` is NOT a valid CSP source — CSP requires `'self'`, `'none'`, a scheme-host-port tuple, or wildcards. Browsers log a console warning AND ignore the entry, which Playwright's `expectNoConsoleErrors` correctly caught as a real error (it is not in the EXPECTED_PATTERNS list because it is a real bug, not a backend-not-running symptom).
+**Impact:** 8 of 20 Playwright visual tests failed, blocking the CI/CD pipeline's Gate 4b. The Playwright gate is the only CI gate that actually loads the built frontend in a real browser, so this was the only test that could catch this CSP regression — unit tests (Vitest) use jsdom which doesn't enforce CSP.
+**Verification:** ✅ CONFIRMED — reading `frontend/vite.config.ts` line by line:
+  - Line 21: `const apiUrl = process.env.VITE_API_URL || "/api/v1";` — default is relative URL.
+  - Line 24-25: `try { origin = new URL(apiUrl).origin; }` — throws TypeError for "/api/v1".
+  - Line 26-28: `catch { origin = apiUrl; }` — assigns invalid "/api/v1" to origin.
+  - Line 30: `const cspConnect = [origin, wsOrigin].filter(Boolean).join(" ");` — produces "/api/v1".
+  - Line 31: `return html.replace(/__CSP_CONNECT_SRC__/g, cspConnect);` — injects invalid source into CSP.
+  - Confirmed by inspecting `dist/index.html` after build: `connect-src 'self' http://localhost:8000 ws://localhost:8000 /api/v1;` — the `/api/v1` is the invalid source.
+**Fix Applied (Root-Cause):** Replaced the try/catch fallback with proper URL validation:
+  - If `new URL(apiUrl)` succeeds AND has both `protocol` and `host` → it's an absolute URL → extract origin + derive wsOrigin.
+  - If `new URL(apiUrl)` throws → it's a relative URL → leave `origin` and `wsOrigin` empty (the `'self'` source already in `index.html` line 20 covers same-origin API calls).
+  - The `cspConnect` array filters out empty strings, so relative URLs add nothing to CSP.
+**Why NOT a simpler fix (e.g., always emit 'self'):** The `'self'` source is ALREADY hardcoded in `index.html` line 20. Adding it again would be redundant. The correct fix is to emit NOTHING for relative URLs, letting the existing `'self'` do its job.
+**Tests Modified:** NONE (Rule 10 — tests are NEVER modified).
+**Production Code Modified:** `frontend/vite.config.ts` only (1 file, 22 insertions, 7 deletions).
+**Verification Evidence:**
+  - Rebuilt frontend: `npm run build` → `dist/index.html` now shows `connect-src 'self' http://localhost:8000 ws://localhost:8000 ;` (no invalid `/api/v1`).
+  - Ran Playwright locally: `npx playwright test` → **20/20 passed in 24.2s** (was 8 failed + 12 passed before fix).
+  - Re-ran Vitest: 9/9 files, 72/72 tests passed (no regression).
+  - Re-ran tsc typecheck: 0 errors.
+  - Re-ran ESLint: 0 errors.
+  - Re-ran ruff: All checks passed.
+**Confidence Level:** HIGH — root cause identified by reading vite.config.ts line by line (Rule 14), confirmed by inspecting built dist/index.html, fix verified by running Playwright locally (20/20 pass), no regressions in any other test suite.
+**4-Layer Self-Criticism (Rule 21):**
+  - Layer 1 (OUTPUT): Verified — 20/20 Playwright tests pass, dist/index.html CSP is clean. Evidence: playwright output above.
+  - Layer 2 (THINKING): Did not rationalize — confirmed bug by reading the actual CSP output in dist/index.html, confirmed fix by re-reading the new CSP output. Considered alternative (emit 'self') and rejected it (redundant — 'self' already in index.html).
+  - Layer 3 (METHOD): Fixed the disease (invalid CSP source injection for relative URLs), not the symptom (Playwright test failures). The fix is in the build-time plugin, not in the test expectations — Playwright's strict console-error checking is CORRECT and should not be weakened.
+  - Layer 4 (COMMITMENT): Would I stake a life on this? Yes. CSP is a security control — invalid sources are silently ignored by browsers, which means the intended security policy is not enforced. This fix ensures the CSP is valid and enforceable. The Playwright tests now pass because the CSP is correct, not because we weakened the tests.
+
+**Commit:** (to be filled after commit)
+**Push Link:** (to be filled after push)

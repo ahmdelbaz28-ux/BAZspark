@@ -19,14 +19,39 @@ function cspInjectPlugin(): import("vite").Plugin {
     name: "csp-inject",
     transformIndexHtml(html) {
       const apiUrl = process.env.VITE_API_URL || "/api/v1";
-      // Extract origin from the API URL (e.g., "https://ahmdelbaz28-bazspark.hf.space")
-      let origin: string;
+      // V158 FIX (root cause): Previous logic fell back to `origin = apiUrl`
+      // for relative URLs like "/api/v1". This produced an INVALID CSP
+      // `connect-src` entry: "/api/v1" is not a valid CSP source (CSP
+      // requires 'self', 'none', a scheme-host-port tuple, or wildcards).
+      // Browsers log a console error:
+      //   "The source list for the Content Security Policy directive
+      //    'connect-src' contains an invalid source: '/api/v1'. It will be
+      //    ignored."
+      // This caused all 8 Playwright visual smoke tests in
+      // tests/visual/smoke.spec.ts to fail with "Console errors on /<page>".
+      //
+      // Root-cause fix: when apiUrl is a relative URL (no scheme+host),
+      // the CSP already covers it via the 'self' source that is hardcoded
+      // in index.html's connect-src directive. So we emit an EMPTY string
+      // for relative URLs — adding nothing to CSP — which is correct
+      // because relative API calls are same-origin and 'self' covers them.
+      //
+      // For absolute URLs (e.g., "https://api.fireai.example.com"), we
+      // extract the origin and also derive the matching ws/wss origin.
+      let origin = "";
+      let wsOrigin = "";
       try {
-        origin = new URL(apiUrl).origin;
+        const parsed = new URL(apiUrl);
+        // If URL parsing succeeded and we have a protocol + host, it's absolute
+        if (parsed.protocol && parsed.host) {
+          origin = parsed.origin;
+          wsOrigin = origin.startsWith("https") ? origin.replace("https", "wss") : "";
+        }
+        // Else: leave origin/wsOrigin empty (relative URL — 'self' covers it)
       } catch {
-        origin = apiUrl; // fallback for relative URLs
+        // URL() threw — apiUrl is a relative path like "/api/v1".
+        // Leave origin/wsOrigin empty; 'self' in CSP covers same-origin calls.
       }
-      const wsOrigin = origin.startsWith("https") ? origin.replace("https", "wss") : "";
       const cspConnect = [origin, wsOrigin].filter(Boolean).join(" ");
       return html.replace(/__CSP_CONNECT_SRC__/g, cspConnect);
     },
