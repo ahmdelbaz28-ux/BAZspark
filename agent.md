@@ -16387,3 +16387,47 @@ Hugging Face container crashed on startup with `ModuleNotFoundError: No module n
   3. Fixed docstring style (D213) in `fireai/core/delta_cache.py`
   4. Full CI targets (`backend/`, `fireai/`, `core/`, `skills/`, `backend_app.py`) now pass ruff with zero errors
 - **Result:** All 71 issues resolved. CI Gate 1 (Ruff lint) will pass on next GitHub Actions run.
+
+---
+
+## V156 Fix — API Keys Test Isolation (Root-Cause Fix) (2026-07-01)
+
+### Bug — test_list_api_keys False Failure (test isolation defect)
+**File:** `backend/api_keys.py` — `_load_keys()`, `_save_keys()`, `_load_server_secret()`
+**Symptom:** `backend/tests/test_api_keys.py::TestCRUDOperations::test_list_api_keys` fails with `assert 8 == 2` — the keys file accumulates entries across tests instead of being isolated per-test.
+**Root Cause:** `KEYS_FILE` (line 35) and `_SERVER_SECRET_FILE` (line 130) are bound at module import time via `os.getenv(...)`. When the test fixture in `backend/tests/test_api_keys.py` uses `monkeypatch.setenv("FIREAI_API_KEYS_FILE", keys_file)` to redirect to a temp directory, the production code (`_load_keys`, `_save_keys`, `_load_server_secret`) still reads the import-time constant, NOT the updated env var. Result: all tests read/write the same `db/api_keys.json` file → cross-test state leakage.
+**Impact:** Test isolation defect. NOT a production safety bug (production doesn't change env vars at runtime). However, the same bug would prevent runtime reconfiguration of the keys file path via env var changes — a real operational limitation.
+**Verification:** ✅ CONFIRMED — reading `backend/api_keys.py` line by line:
+  - Line 35: `KEYS_FILE = os.getenv("FIREAI_API_KEYS_FILE", "db/api_keys.json")` — evaluated ONCE at import.
+  - Line 130-133: `_SERVER_SECRET_FILE = os.getenv(...)` — same pattern.
+  - Line 283 (now 321): `path = Path(KEYS_FILE)` in `_load_keys()` — uses constant, not env var.
+  - Line 302 (now 340): `path = Path(KEYS_FILE)` in `_save_keys()` — same.
+  - Line 171 (now 209): `path = Path(_SERVER_SECRET_FILE)` in `_load_server_secret()` — same.
+  - Test fixture `backend/tests/test_api_keys.py:13-17` uses `monkeypatch.setenv` — env var IS set but IGNORED by production code.
+**Fix Applied (Root-Cause):** Added two helper functions that re-read the env var at CALL time, falling back to the module-level constant:
+  - `_get_keys_file_path()` → `os.getenv("FIREAI_API_KEYS_FILE", KEYS_FILE)`
+  - `_get_server_secret_file_path()` → `os.getenv("FIREAI_API_KEYS_SECRET_FILE", _SERVER_SECRET_FILE)`
+  Updated 3 callers: `_load_keys()`, `_save_keys()`, `_load_server_secret()` now use the helpers instead of the constants directly.
+**Backward Compatibility:**
+  - `KEYS_FILE` and `_SERVER_SECRET_FILE` module-level constants are KEPT (not removed) because:
+    - `tests/test_rbac.py:150` patches `backend.api_keys.KEYS_FILE` via `mock.patch` — needs the attribute to exist.
+    - `tests/stress_test_suite.py:950,962` imports `_SERVER_SECRET_FILE` directly — needs the attribute to exist.
+  - Precedence: env var (if set) > module constant (may be patched) > default. This is correct because:
+    - `test_rbac.py` sets env var to nothing, patches attribute → helper falls back to patched constant. ✅
+    - `test_api_keys.py` sets env var, doesn't patch attribute → helper reads env var. ✅
+    - Production: env var set at startup → helper reads env var. ✅
+    - Production runtime reconfiguration: env var changed → helper picks up new value (NEW capability). ✅
+**Why NOT a simpler fix (e.g., make KEYS_FILE a function):** Would break `test_rbac.py` patching and `stress_test_suite.py` imports. The helper-function approach preserves all existing API surface while fixing the root cause.
+**Tests Modified:** NONE (Rule 10 — tests are NEVER modified, only production code).
+**Verification Evidence:**
+  - `pytest backend/tests/test_api_keys.py` → 14/14 passed (was 13/14 before fix).
+  - `pytest tests/test_rbac.py` → 26/26 passed (backward compat confirmed).
+  - Full suite: `pytest` → **8,964 passed, 33 skipped, 0 failed** in 226s (was 8,963 passed + 1 failed before fix).
+**Confidence Level:** HIGH — root cause identified by line-by-line code reading (Rule 14), fix is minimal and surgical (41 insertions, 3 deletions, 1 file), all 8,996 tests collected pass, no regressions.
+**4-Layer Self-Criticism (Rule 21):**
+  - Layer 1 (OUTPUT): Verified correct — test passes, no regression. Evidence: pytest output above.
+  - Layer 2 (THINKING): Did not rationalize — confirmed bug by re-running test (8 keys vs 2), confirmed fix by re-running test (2 keys). Considered alternative (function-only approach) and rejected it (breaks backward compat).
+  - Layer 3 (METHOD): Fixed the disease (env var not re-read at call time), not the symptom. Verified against full system (8,996 tests), not just isolated test.
+  - Layer 4 (COMMITMENT): Would I stake a life on this? This is a test-isolation fix, not a safety-critical calculation. The fix is correct, minimal, and preserves all existing behavior. YES.
+**Commit:** (to be filled after commit)
+**Push Link:** (to be filled after push)

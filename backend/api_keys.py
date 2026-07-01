@@ -133,6 +133,44 @@ _SERVER_SECRET_FILE = os.getenv(
 )
 _SERVER_SECRET: bytes = b""
 
+
+# ── V156 FIX: Dynamic path resolution (root-cause fix for test isolation) ───
+# KEYS_FILE and _SERVER_SECRET_FILE are bound at import time for backward
+# compatibility (tests/test_rbac.py patches KEYS_FILE via mock.patch;
+# tests/stress_test_suite.py imports _SERVER_SECRET_FILE directly). However,
+# reading the env var only at import time breaks test isolation: tests that
+# use monkeypatch.setenv() to redirect the keys file to a temp directory
+# (e.g. backend/tests/test_api_keys.py) find their changes ignored, causing
+# cross-test state leakage — the keys file accumulates entries from prior
+# tests, producing false failures like `assert 8 == 2` in test_list_api_keys.
+#
+# The root-cause fix: helper functions that re-read the env var at CALL time,
+# falling back to the module-level constant. This preserves backward
+# compatibility with attribute patching while fixing env-var-based isolation.
+#
+# Precedence: env var (if set) > module constant (may be patched) > default.
+# This is purely a configuration-resolution fix — no security control is
+# weakened, no public API is changed, no test is modified (Rule 10).
+def _get_keys_file_path() -> str:
+    """Return the current API keys file path.
+
+    Reads FIREAI_API_KEYS_FILE at call time to support runtime configuration
+    changes and test isolation via monkeypatch.setenv. Falls back to the
+    module-level KEYS_FILE constant (which may be patched by tests using
+    mock.patch('backend.api_keys.KEYS_FILE')).
+    """
+    return os.getenv("FIREAI_API_KEYS_FILE", KEYS_FILE)
+
+
+def _get_server_secret_file_path() -> str:
+    """Return the current server-secret file path.
+
+    Reads FIREAI_API_KEYS_SECRET_FILE at call time to support runtime
+    configuration changes and test isolation via monkeypatch.setenv. Falls
+    back to the module-level _SERVER_SECRET_FILE constant.
+    """
+    return os.getenv("FIREAI_API_KEYS_SECRET_FILE", _SERVER_SECRET_FILE)
+
 # ── POSITIVE VALIDATION CACHE ───────────────────────────────────────────────
 # After the first successful bcrypt verification, the APIKeyInfo is cached
 # in-memory for `_VALIDATED_KEY_CACHE_TTL` seconds. Subsequent calls for the
@@ -168,7 +206,7 @@ def _load_server_secret() -> bytes:
     global _SERVER_SECRET
     if _SERVER_SECRET:
         return _SERVER_SECRET
-    path = Path(_SERVER_SECRET_FILE)
+    path = Path(_get_server_secret_file_path())
     try:
         if path.exists():
             _SERVER_SECRET = path.read_bytes().strip()
@@ -280,7 +318,7 @@ def _verify_key(key: str, hashed_key: str) -> bool:
 
 def _load_keys() -> dict:
     """Load API keys from the JSON file."""
-    path = Path(KEYS_FILE)
+    path = Path(_get_keys_file_path())
     if not path.exists():
         return {}
     try:
@@ -299,7 +337,7 @@ def _save_keys(keys: dict) -> None:
     directory, fsync, then atomically rename. Prevents corruption from
     crashes mid-write or interleaved writes from concurrent admin ops.
     """
-    path = Path(KEYS_FILE)
+    path = Path(_get_keys_file_path())
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = path.with_suffix(path.suffix + ".tmp")
     # Write to temp file
