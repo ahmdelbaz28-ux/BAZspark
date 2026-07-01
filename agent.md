@@ -16280,5 +16280,27 @@ Hugging Face Docker build failed with `"/validation": not found` because `valida
 - Verified build logs on Hugging Face.
 
 ### Commit Information
-- **Commit:** `98c62b8f2f6e3f718b736f7555c8247eb5240e25`
-- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/98c62b8f2f6e3f718b736f7555c8247eb5240e25
+- **Commit:** `ab0eb6b185b0d0c3eb1a90c5f0b5d95fa50f38b2`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/ab0eb6b185b0d0c3eb1a90c5f0b5d95fa50f38b2
+
+---
+
+## V159 Fix (2026-07-01) — Dockerfile Missing marine and adapters COPY Commands
+
+### Context
+Hugging Face container crashed on startup with `ModuleNotFoundError: No module named 'marine'` because `marine/` and `adapters/` directories were not copied in the Dockerfile, and were also missing from the Hugging Face deployment copy script list.
+
+### Bug Fixed — Docker Missing Code Directories for marine & adapters (CRITICAL)
+- **File:** `Dockerfile`, `deploy_to_hf.py`
+- **Change:**
+  - Added COPY commands for `marine/` and `adapters/` folders in the `Dockerfile`.
+  - Added `"marine"` and `"adapters"` to `to_copy` list in `deploy_to_hf.py`.
+- **Purpose:** Resolves startup import crash for SOLAS marine safety logic and CAD format adapters.
+- **Files Modified:** `Dockerfile`, `deploy_to_hf.py`.
+
+### Verification Evidence
+- Verified build logs on Hugging Face.
+
+### Commit Information
+- **Commit:** `93bad939e8d7b1f0d58d49db325f5ecd4362b90e`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/93bad939e8d7b1f0d58d49db325f5ecd4362b90e
