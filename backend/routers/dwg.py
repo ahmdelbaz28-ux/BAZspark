@@ -193,6 +193,8 @@ if _HAS_LIMITER:
         """Rate-limited wrapper for DWG parse endpoint."""
         return await _parse_dwg_impl(request, file)
 
+    _rate_limited_parse_dwg.__annotations__["file"] = UploadFile
+
     router.add_api_route(
         "",
         _rate_limited_parse_dwg,

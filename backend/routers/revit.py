@@ -115,7 +115,7 @@ from backend.rbac import Permission
 from parsers._path_security import UnsafePathError, validate_input_path
 
 
-def _sanitize_error(msg: str | None) -> str:
+def _sanitize_error(msg: Optional[str]) -> str:
     """Sanitize error messages to prevent stack trace exposure (CodeQL: py/stack-trace-exposure)."""
     if not msg:
         return "An error occurred"
