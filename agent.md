@@ -16147,3 +16147,31 @@ Integrating Langfuse LLM engineering platform credentials (provided by the user)
 ### Commit Information
 - **Commit:** `e9722bbdd16fcba4236430421ecf6b49807cff5e`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/e9722bbdd16fcba4236430421ecf6b49807cff5e
+
+---
+
+## V153 Fix (2026-07-01) — Resilient Score Logging across Langfuse SDK Versions
+
+### Context
+Verified Langfuse cloud authentication and SDK method mapping. Discovered that the modern Langfuse Python SDK (v4+) deprecates/removes the legacy `client.score()` method in favor of `client.create_score()`, which would cause runtime score logging to fail.
+
+### Bug Fixed — Incompatible Langfuse SDK score Method Call (CRITICAL)
+- **File:** `fireai/infrastructure/langfuse_setup.py`
+- **Bug:** `log_verification_score()` invoked the legacy `client.score()` method directly. Under `langfuse>=4.0.0` (which is installed in the test environment, specifically `4.12.0`), this raised an `AttributeError` and prevented verification scores from being logged to the cloud.
+- **Fix Applied:** Made the score logging resilient by checking `hasattr(client, "score")` and falling back to `client.create_score()` as appropriate:
+  ```python
+  if hasattr(client, "score"):
+      client.score(...)
+  else:
+      client.create_score(...)
+  ```
+- **Files Modified:** `fireai/infrastructure/langfuse_setup.py`
+
+### Verification Evidence
+- Successfully installed `langfuse-4.12.0` in python environment.
+- Ran a connection verification script executing `client.auth_check()` (returned `True`) and `log_verification_score` (returned `True`), confirming successful score pushing to cloud.
+- Ran `pytest tests/test_langfuse_setup.py` (all 17 tests passed).
+
+### Commit Information
+- **Commit:** `dfee179f3e29352c11d28f2f5e160dedd30d8a07`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/dfee179f3e29352c11d28f2f5e160dedd30d8a07
