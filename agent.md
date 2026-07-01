@@ -16429,5 +16429,5 @@ Hugging Face container crashed on startup with `ModuleNotFoundError: No module n
   - Layer 2 (THINKING): Did not rationalize — confirmed bug by re-running test (8 keys vs 2), confirmed fix by re-running test (2 keys). Considered alternative (function-only approach) and rejected it (breaks backward compat).
   - Layer 3 (METHOD): Fixed the disease (env var not re-read at call time), not the symptom. Verified against full system (8,996 tests), not just isolated test.
   - Layer 4 (COMMITMENT): Would I stake a life on this? This is a test-isolation fix, not a safety-critical calculation. The fix is correct, minimal, and preserves all existing behavior. YES.
-**Commit:** (to be filled after commit)
-**Push Link:** (to be filled after push)
+**Commit:** `fdfc0d12d8442c5ba18de9bf418d3645ad7d14cc`
+**Push Link:** https://github.com/ahmdelbaz28-ux/revit/commit/fdfc0d12d8442c5ba18de9bf418d3645ad7d14cc
