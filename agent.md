@@ -16578,3 +16578,113 @@ The user's strict requirement "no skips, all 10/10" CANNOT be fully satisfied fo
 
 **Commit:** `22ee87755f5537e06942c8cccb82de9c7603e818`
 **Push Link:** https://github.com/ahmdelbaz28-ux/revit/commit/22ee87755f5537e06942c8cccb82de9c7603e818
+
+---
+
+## V160 Fix (2026-07-02) — RulesEngine.get_facts O(N²) Performance Bug
+
+### Context
+During full pre-launch verification per operator instruction ("اكمل ماكنت تفعله للنهاية" / continue to the end), the full Python test suite was run. One test failed with `pytest-timeout (>30.0s)`:
+
+`tests/test_engine_regression_v95.py::TestBugV95Engine02IterationReset::test_engine_detects_violation_after_many_calls`
+
+This test asserts that after 30 consecutive `evaluate()` calls (each adding a room), the engine still detects a CRITICAL ceiling-height violation. The V95 fix reset `_iteration` per call (so the engine does not silently exhaust `max_iterations`), but the test was timing out at 30s — meaning the engine was taking >30s to process 31 rooms.
+
+### Root Cause Analysis (per Rule 17 — No Half-Solutions)
+
+**Surface symptom:** Test timeout (>30s).
+
+**Layer 1 — Output:** The engine was not broken logically — it WAS detecting violations correctly. The problem was purely performance: each `evaluate()` call was getting slower as more facts accumulated.
+
+**Layer 2 — Thinking:** I initially suspected the V95 fix itself was buggy. After reading the code line-by-line (Rule 14), the V95 fix is correct. The real issue is a separate, pre-existing performance bug that V95's test happens to expose because it runs 30+ iterations.
+
+**Layer 3 — Method:** The root cause is in `RulesEngine.get_facts(fact_type)`:
+```python
+# BEFORE (V160):
+def get_facts(self, fact_type=None):
+    if fact_type is None:
+        return list(self._facts.values())
+    return [f for f in self._facts.values() if f.fact_type == fact_type]  # ← O(N)
+```
+
+NFPA 72 rule actions (e.g., `_action_min_detector_count` in `fireai/core/rules_engine/nfpa72_rules.py:476`) call `engine.get_facts("room")` inside their action loop. The action loop iterates over `coverage` facts (one per room), so the total cost is:
+- M rooms × N total facts × P passes per evaluate() = O(M·N·P)
+
+For 30 rooms with ~5 derived facts each (coverage, detector_requirement, spacing, etc.), N ≈ 180, P ≈ 4. So per evaluate(): 30 × 180 × 4 = 21,600 iterations. Over 30 evaluate() calls: 648,000 iterations. Each iteration is a dict iteration + comparison — about 1µs each → ~0.65s. But the actual measurement was >30s, suggesting additional overhead from `_evaluate_one_pass()` also iterating all facts (line 504: `for fact in list(self._facts.values())`).
+
+**Layer 4 — Commitment:** This is a real safety bug, not just a performance issue. In a continuously-running fire alarm system, slow rule evaluation means delayed violation detection. If an engineer submits a design with a critical ceiling-height violation and the engine takes >30s to respond, the AHJ (Authority Having Jurisdiction) review pipeline stalls. Worse, in a real-time monitoring context, slow evaluation could delay the detection of a non-compliant design until after construction begins.
+
+### Bug V160-1 — RulesEngine.get_facts(fact_type) is O(N) instead of O(K) (HIGH — Performance/Scalability)
+
+**File:** `fireai/core/rules_engine/engine.py`
+**Lines affected:** `__init__` (new field), `assert_fact`, `_retract_fact_internal`, `get_facts`, `reset`
+**Discovery:** Line-by-line code reading (Rule 14). The `_facts` dict is keyed by `fact_id`, so filtering by `fact_type` requires a full scan. The `_alpha_index` already indexes `fact_type → rule_ids` but there was no `fact_type → fact_ids` index.
+
+**Fix Applied (Root-Cause):**
+1. Added new instance field `_facts_by_type: dict[str, dict[str, Fact]]` — a secondary index mapping `fact_type → {fact_id → Fact}`.
+2. `assert_fact()`: After `self._facts[fact.fact_id] = fact`, also do `self._facts_by_type.setdefault(fact.fact_type, {})[fact.fact_id] = fact`.
+3. `_retract_fact_internal()`: After `self._facts.pop(fact_id)`, also pop from the type bucket. Clean up empty type buckets to prevent slow growth of the index dict.
+4. `get_facts(fact_type)`: Changed from list comprehension over all facts to direct dict lookup: `list(self._facts_by_type.get(fact_type, {}).values())`. This is O(K) where K is the number of facts of that type (typically small — e.g., 30 rooms, not 180 total facts).
+5. `reset()`: Added `self._facts_by_type.clear()` in lockstep with `self._facts.clear()`.
+
+**Invariant maintained:** For every `fact_id F` of `fact_type T` in `self._facts`, `self._facts_by_type[T][F]` exists and equals the same `Fact` object. This is verified by the lockstep updates in `assert_fact`, `_retract_fact_internal`, and `reset`.
+
+**Backward compatibility:** 100%. The public API of `get_facts`, `assert_fact`, `retract_fact`, `reset` is unchanged. The `_facts_by_type` field is private (underscore prefix) and no external code accesses it (verified via grep: `engine._facts[` appears only in `engine.py`).
+
+**Why NOT a simpler fix (e.g., LRU cache on get_facts):** A cache would be invalidated on every `assert_fact` call (which is the common case in the evaluate loop), making it useless. The index is the correct data structure — O(1) updates, O(K) queries, no invalidation needed.
+
+### Verification Evidence
+
+**Failing test now passes in 4.15s (was >30s timeout):**
+```
+$ python -m pytest tests/test_engine_regression_v95.py::TestBugV95Engine02IterationReset::test_engine_detects_violation_after_many_calls -v
+tests/test_engine_regression_v95.py::TestBugV95Engine02IterationReset::test_engine_detects_violation_after_many_calls PASSED [100%]
+=== 1 passed in 4.15s ===
+```
+
+**Full regression suite for rules engine (9/9 pass in 4.74s):**
+```
+$ python -m pytest tests/test_engine_regression_v95.py -v
+=== 9 passed in 4.74s ===
+```
+
+**Full test suite (no regressions):**
+- `tests/` (excluding cloud E2E + stress): 6477 passed
+- `tests/` (slow tests batch): 193 passed
+- `fireai/core/tests/`: 1240 passed, 1 skipped (ecdsa conditional)
+- `backend/tests/`: 502 passed
+- `tests/test_rules_engine.py` + `test_compliance_engine.py` + `test_nfpa72_engine.py` + `test_engine_regression_v95.py`: 202 passed
+- **Total: 8,412+ tests passing, 0 failures, 1 conditional skip**
+
+**Static analysis:**
+- `ruff check .`: All checks passed
+- Frontend `tsc --noEmit`: 0 errors
+- Frontend `vite build`: success in 3.63s
+- Frontend `vitest`: 72/72 passed
+
+**Tests Modified:** NONE (Rule 10 — tests are NEVER modified).
+**Production Code Modified:** `fireai/core/rules_engine/engine.py` only (1 file, ~30 insertions, 4 deletions).
+
+### 4-Layer Self-Criticism (Rule 21)
+
+**Layer 1 (OUTPUT):** Verified correct — failing test now passes in 4.15s, all 8,412+ tests pass with 0 regressions. Evidence: pytest output above.
+
+**Layer 2 (THINKING):** Did I rationalize? I initially thought the V95 test itself was the problem (too aggressive). After reading the test, it correctly demands that the engine detect violations after 30 calls — this is a legitimate life-safety requirement. The bug was in the engine, not the test. I did not weaken the test (Rule 10).
+
+**Layer 3 (METHOD):** Fixed the disease (O(N) scan in get_facts) not the symptom (test timeout). A half-solution would have been increasing the pytest timeout to 60s — that would hide the performance regression until it hit production with 100+ rooms. The root-cause fix (secondary index) makes the engine scalable to thousands of rooms.
+
+**Layer 4 (COMMITMENT):** Would I stake a life on this? Yes. The fix is minimal, surgical, and maintains all existing invariants. The index is maintained in lockstep with the primary `_facts` dict. The public API is unchanged. All 8,412+ tests pass. No safety-critical calculation was weakened — the engine produces identical results, just faster.
+
+### Operator Credentials Verification
+
+As part of pre-launch verification, all operator-provided credentials were tested:
+- ✅ **Langfuse**: `auth_check() = True` (cloud.langfuse.com)
+- ✅ **Supabase service_role key**: 200 OK on REST endpoint (nrdqdnmyxbbdrrmqxzej.supabase.co)
+- ✅ **Supabase anon key**: JWT valid (issued 2025-05-04, expires 2036-05-27)
+- ✅ **Vercel token**: User authenticated as ahmdelbaz28@gmail.com
+- ✅ **HuggingFace token**: User authenticated as ahmdelbaz28, Space BAZSPARK status = RUNNING
+- ✅ **GitHub PAT**: Repository cloned and pushed successfully
+
+### Commit Information
+- **Commit:** (pending — will be filled after `git commit`)
+- **Tests:** 8,412+ passing, 0 failures, 1 conditional skip

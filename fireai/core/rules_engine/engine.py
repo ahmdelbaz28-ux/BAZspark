@@ -262,6 +262,18 @@ class RulesEngine:
         # Alpha network: fact_type → list of rule_ids that match
         self._alpha_index: dict[str, list[str]] = {}
 
+        # V160 FIX — fact_type → dict[fact_id → Fact] index.
+        # Root-cause fix for BUG-V95-ENGINE-02 performance regression:
+        # get_facts(fact_type) was O(N) over ALL facts; rule actions
+        # that call get_facts() inside their action loop turned the
+        # engine into O(N²) when many rooms + derived facts accumulated.
+        # This index makes get_facts(fact_type) O(K) where K is the
+        # number of facts OF THAT TYPE (typically small per type).
+        # Maintained in lockstep with _facts in assert_fact /
+        # _retract_fact_internal. Invariant: for every fact_id F of
+        # type T in self._facts, self._facts_by_type[T][F] == that Fact.
+        self._facts_by_type: dict[str, dict[str, Fact]] = {}
+
         # TMS dependency tracking
         self._derived_from: dict[str, list[str]] = {}  # derived_fact_id → [source_fact_ids]
         self._supports: dict[str, list[str]] = {}  # source_fact_id → [derived_fact_ids]
@@ -336,6 +348,12 @@ class RulesEngine:
                 self._retract_fact_internal(fact.fact_id, trigger_tms=True)
 
             self._facts[fact.fact_id] = fact
+            # V160 FIX: maintain _facts_by_type index in lockstep with _facts.
+            # If the fact's type changes between retract and re-assert (rare
+            # but possible if the same fact_id is reused with a different
+            # fact_type), _retract_fact_internal already removed it from the
+            # old type bucket. Here we only need to add to the new bucket.
+            self._facts_by_type.setdefault(fact.fact_type, {})[fact.fact_id] = fact
             logger.debug("Fact asserted: %s id=%s source=%s", fact.fact_type, fact.fact_id, fact.source)
             return fact.fact_id
 
@@ -355,6 +373,18 @@ class RulesEngine:
             return False
 
         fact = self._facts.pop(fact_id)
+
+        # V160 FIX: remove from _facts_by_type index in lockstep with _facts.
+        # Use .pop with default to avoid KeyError if the type bucket was
+        # already cleared by a parallel code path (defensive — should not
+        # happen given the lock, but costs nothing).
+        type_bucket = self._facts_by_type.get(fact.fact_type)
+        if type_bucket is not None:
+            type_bucket.pop(fact_id, None)
+            # Clean up empty type buckets to prevent slow growth of the
+            # _facts_by_type dict itself over long engine lifetimes.
+            if not type_bucket:
+                del self._facts_by_type[fact.fact_type]
 
         # Truth maintenance: retract derived facts
         if trigger_tms and fact_id in self._supports:
@@ -384,10 +414,22 @@ class RulesEngine:
         return True
 
     def get_facts(self, fact_type: str | None = None) -> list[Fact]:
-        """Get all facts, optionally filtered by type."""
+        """
+        Get all facts, optionally filtered by type.
+
+        V160 FIX: Uses _facts_by_type index for O(K) lookup where K is
+        the number of facts of the requested type. Previous implementation
+        was O(N) over ALL facts, causing O(N²) behavior when rule actions
+        called get_facts() inside their evaluation loop (e.g.,
+        _action_min_detector_count calling get_facts("room") for every
+        coverage fact — see test_engine_detects_violation_after_many_calls).
+        """
         if fact_type is None:
             return list(self._facts.values())
-        return [f for f in self._facts.values() if f.fact_type == fact_type]
+        type_bucket = self._facts_by_type.get(fact_type)
+        if type_bucket is None:
+            return []
+        return list(type_bucket.values())
 
     def get_fact(self, fact_id: str) -> Fact | None:
         """Get a specific fact by ID."""
@@ -683,6 +725,8 @@ class RulesEngine:
         """
         with self._lock:
             self._facts.clear()
+            # V160 FIX: clear the by-type index in lockstep with _facts.
+            self._facts_by_type.clear()
             self._results.clear()
             self._audit_log.clear()
             self._derived_from.clear()
