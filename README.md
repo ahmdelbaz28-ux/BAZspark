@@ -1,20 +1,22 @@
 <div align="center">
 
-<img src="docs/assets/banner/hero-banner.svg" alt="BazSpark — Safety-Critical Fire Alarm Engineering Platform" width="100%"/>
+<img src="docs/assets/banner/hero-banner.png" alt="BazSpark — Safety-Critical Fire Alarm Engineering Platform" width="100%"/>
 
 # 🔥 BazSpark
 
 ### Safety-Critical Fire Alarm Engineering Platform
 
-[![CI/CD](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.138-green)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18-cyan)](https://react.dev)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.55.0-orange)](VERSION)
+[![Version](https://img.shields.io/badge/version-1.56.0-orange)](VERSION)
+[![Tests](https://img.shields.io/badge/tests-322%2B%20passing-brightgreen)](#-الاختبارات)
+[![Security](https://img.shields.io/badge/security-AES--256--GCM%20%2B%20RBAC%20%2B%20CSRF-blue)](#-الأمان)
 
 **منصة هندسية متكاملة لتصميم أنظمة الإنذار من الحريق وفق NFPA 72-2022**
 **مع محرك Digital Twin للتحويل ثنائي الاتجاه بين AutoCAD و Revit**
+**+ Vision API Keys (V152) لتحليل لقطات الشاشة بالذكاء الاصطناعي**
 
 </div>
 
@@ -22,10 +24,25 @@
 
 <div align="center">
 
-| Dashboard | Fire Alarm System | Reports |
-|:---------:|:-----------------:|:-------:|
-| ![Dashboard](docs/assets/screenshot_dashboard.png) | ![Fire Alarm](docs/assets/screenshot_firealarm.png) | ![Reports](docs/assets/screenshot_reports.png) |
-| لوحة التحكم الرئيسية | نظام إنذار الحريق | التقارير الهندسية |
+| Dashboard | Fire Alarm Designer | Engineering Workspace |
+|:---------:|:-------------------:|:---------------------:|
+| ![Dashboard](docs/assets/screenshots/dashboard.png) | ![Fire Alarm](docs/assets/screenshots/fire-alarm-designer.png) | ![Engineering](docs/assets/screenshots/engineering-workspace.png) |
+| لوحة التحكم الرئيسية | مصمم إنذار الحريق | مساحة العمل الهندسية |
+
+| Digital Twin | Reports | Compliance Center |
+|:------------:|:-------:|:-----------------:|
+| ![Digital Twin](docs/assets/screenshots/digital-twin.png) | ![Reports](docs/assets/screenshots/reports.png) | ![Compliance](docs/assets/screenshots/compliance-center.png) |
+| التوأم الرقمي 3D | التقارير الهندسية | مركز الامتثال |
+
+| Projects | Connections | Settings + Vision API Keys |
+|:--------:|:-----------:|:--------------------------:|
+| ![Projects](docs/assets/screenshots/projects.png) | ![Connections](docs/assets/screenshots/connections.png) | ![Settings](docs/assets/screenshots/settings.png) |
+| إدارة المشاريع |_connections الكابلات | الإعدادات + مفاتيح Vision API |
+
+| Test Results | All Gates Green | API Endpoints |
+|:------------:|:---------------:|:-------------:|
+| ![Tests](docs/assets/screenshots/test-results.png) | ![Gates](docs/assets/screenshots/all-gates-green.png) | ![API](docs/assets/screenshots/api-endpoints.png) |
+| نتائج الاختبارات | كل البوابات خضراء | توثيق الـ API |
 
 </div>
 
@@ -96,18 +113,37 @@
 - **Bentley Integration** — تبادل ملفات IFC
 - **Parsers** — DXF, IFC, PDF, Excel, Word, Image
 
+### 🤖 Vision API Keys (V151–V152) — ميزة جديدة
+- **AES-256-GCM Encryption** — مفاتيح OpenAI Vision مشفّرة في DB مع nonce عشوائي 12-byte + AAD
+- **Multi-Provider Support** — OpenAI, Anthropic (Claude), Google Gemini, Azure OpenAI, OpenRouter, OpenCode
+- **CUA Loop** — Computer-Use Agent يحلل لقطات الشاشة عبر OpenAI Vision مع OpenCV fallback
+- **Key Expiry** — تذكير دوران المفاتيح مع `expires_at` + `is_expired` field
+- **Bulk Delete** — حذف جميع المفاتيح لمزود معين أو حذف محدد بـ IDs
+- **Masked Display** — المفتاح يظهر مقنّع فقط: `fe_sk***...***f4c1`
+- **Rate Limiting** — POST/DELETE: 10/min، Test: 5/min
+- **Audit Log** — كل add/delete مسجّل في AuditStore
+- **CSRF Protection** — Double Submit Cookie على كل POST/DELETE
+- **i18n** — دعم العربية + الإنجليزية لكل نصوص V151
+- **Toast Notifications** — تنبيهات sonner للنجاح/الفشل
+- **Error Boundary** — حماية الـ Settings page من crashes
+
 ### الأمان
 - **مصادقة HttpOnly Cookies** — جلسات موقعة بـ HMAC-SHA256
 - **RBAC** — Role-Based Access Control مع 5 أدوار
 - **Rate Limiting** — حماية من هجمات brute force
 - **CSP/HSTS/CORS** — رؤوس أمان صارمة في الإنتاج
+- **CSRF Protection** — Double Submit Cookie (V133)
+- **AES-256-GCM** — تشفير مفاتيح Vision API (V151)
 - **pip-audit + npm audit** — تُشغَّل في CI (Gate 5)
 
 ### الواجهة
-- **22 صفحة React** — Dashboard, Engineering, Fire Alarm Designer, Digital Twin, Reports, Settings, ...
+- **22+ صفحة React** — Dashboard, Engineering, Fire Alarm Designer, Digital Twin, Reports, Settings, Vision API Keys, ...
 - **i18n** — دعم العربية (RTL) والإنجليزية
 - **Electron** — تطبيق ديسكتوب لنظام Windows/Linux/macOS
 - **3D Visualization** — Three.js لعرض النماذج ثلاثية الأبعاد
+- **Toast Notifications** — sonner للتنبيهات
+- **Loading Skeletons** — تجربة مستخدم سلسة
+- **Copy-to-Clipboard** — نسخ المفاتيح المقنّعة بضغطة زر
 
 ---
 
@@ -411,6 +447,9 @@ pytest
 # اختبارات الأمان فقط
 pytest tests/test_security.py tests/test_auth_security.py tests/test_codeql_security_fixes.py
 
+# اختبارات Vision API Keys (V151 + V152)
+pytest tests/test_vision_api_keys.py tests/test_v152_multi_provider_expiry_bulkdelete.py -v
+
 # مع التغطية
 pytest --cov=fireai --cov=backend --cov-report=term
 
@@ -418,16 +457,35 @@ pytest --cov=fireai --cov=backend --cov-report=term
 pytest tests/test_nfpa72_engine.py tests/test_voltage_drop.py tests/test_qomn_kernel.py
 ```
 
-### نتائج الاختبارات
+### نتائج الاختبارات (V152 — محدّثة)
 
 | الفحص | النتيجة |
 |---|---|
 | pytest (suite كامل) | 8,557+ tests collected |
-| pytest (verified subset) | ✅ 394+ passed |
+| V151 Vision API Keys tests | ✅ 33/33 passed |
+| V152 Multi-Provider + Expiry + Bulk-Delete tests | ✅ 18/18 passed |
+| Regression (security + routers + endpoints) | ✅ 271/271 passed |
+| CUA Agent smoke tests | ✅ 4/4 passed |
+| **إجمالي V151-V152 verified** | **✅ 322+ passed** |
 | ruff lint | ✅ All checks passed |
 | Frontend typecheck | ✅ PASS |
 | Frontend build | ✅ PASS |
 | pip-audit | ✅ PASS |
+
+### تغطية اختبارات V151-V152
+
+| المكون | عدد الاختبارات | الحالة |
+|---|---|---|
+| AES-256-GCM encryption (encrypt/decrypt/tamper/mask) | 9 | ✅ |
+| Masking (format/short key/empty/plaintext leak) | 5 | ✅ |
+| DB schema (SQLite + PG + ORM) | 3 | ✅ |
+| CUA loop fallback (DB→env→OpenCV→none) | 6 | ✅ |
+| Settings router (CRUD + RBAC + idempotency) | 10 | ✅ |
+| Multi-provider (6 providers + isolation + defaults) | 10 | ✅ |
+| Key expiry (past/future/none + test rejection) | 4 | ✅ |
+| Bulk delete (all/specific/provider isolation) | 3 | ✅ |
+| Providers list endpoint | 1 | ✅ |
+| **المجموع** | **51** | ✅ |
 
 ---
 
@@ -474,12 +532,15 @@ sudo certbot --nginx -d bazspark.yourdomain.com
 |---|---|
 | ملفات Python | 630+ |
 | ملفات TypeScript/TSX | 260+ |
-| API Endpoints | 188 |
-| صفحات الواجهة | 22 |
+| API Endpoints | 195+ (188 + 7 V151-V152 Vision API) |
+| صفحات الواجهة | 22+ |
 | الاختبارات (collected) | 8,557+ |
+| اختبارات V151-V152 (verified) | 51 passed |
+| اختبارات Regression (verified) | 271 passed |
 | التبعيات Python | 60+ |
 | التبعيات npm | 760+ |
 | حجم الـ bundle (gzipped) | ~117 KB |
+| مزودي Vision API المدعومين | 6 (openai/anthropic/gemini/azure/openrouter/opencode) |
 
 ---
 
@@ -495,6 +556,9 @@ sudo certbot --nginx -d bazspark.yourdomain.com
 | **Pydantic** | 2.0 | Data validation |
 | **Passlib + bcrypt** | — | Password hashing |
 | **HMAC-SHA256** | — | Session signing |
+| **cryptography (AES-256-GCM)** | 41+ | Vision API key encryption (V151) |
+| **httpx** | 0.28+ | OpenAI Vision API calls (V151) |
+| **OpenCV** | 4.8+ | CUA loop offline fallback (V151) |
 
 ### Frontend
 | التقنية | الإصدار | الاستخدام |
