@@ -181,6 +181,7 @@ class TestSensitiveDataHashingFix:
     def test_session_id_hash_is_sha256(self) -> None:
         """Session IDs should be hashed with SHA-256 for lookup (not password storage)."""
         import hashlib
+
         from backend.routers.auth import _hash_secret
 
         test_value = "test_session_id_12345"

@@ -798,7 +798,8 @@ class DeltaCache:
         return hashlib.sha256(geo_string.encode("utf-8")).hexdigest()
 
     def _load_from_db(self) -> None:
-        """Load cached entries from SQLite database (legacy feature).
+        """
+        Load cached entries from SQLite database (legacy feature).
 
         V150 FIX (Edge Case): The previous implementation stored entries
         in the LRU cache using a content_hash derived from

@@ -5,7 +5,6 @@ Verifies thread-safety, enqueue/dequeue, result reporting, stats, and cleanup.
 """
 from __future__ import annotations
 
-import threading
 import time
 
 import pytest

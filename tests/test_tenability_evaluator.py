@@ -14,8 +14,6 @@ Covers:
 
 from __future__ import annotations
 
-import math
-
 import pytest
 
 from fireai.core.tenability_evaluator import (

@@ -6,11 +6,6 @@ timing-safe dummy verify, and the O(1) lookup index.
 """
 from __future__ import annotations
 
-import os
-import sys
-import tempfile
-from unittest.mock import patch
-
 import pytest
 
 

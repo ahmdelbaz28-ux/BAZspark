@@ -8,18 +8,16 @@ from __future__ import annotations
 import platform
 import sys
 
-import pytest
-
 from fireai.version import (
+    ATEX_EDITION,
     FIREAI_VERSION,
     FIREAI_VERSION_FULL,
+    IEC_HAC_EDITION,
     MAJOR,
     MINOR,
-    PATCH,
-    NFPA_EDITION,
-    IEC_HAC_EDITION,
     NEC_EDITION,
-    ATEX_EDITION,
+    NFPA_EDITION,
+    PATCH,
     __package_version__,
     assert_version_consistency,
     build_version_header,

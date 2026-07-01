@@ -6,16 +6,16 @@ message broadcasting.
 """
 from __future__ import annotations
 
-import os
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+from fastapi import HTTPException
 
 from fireai.core.websocket_manager import (
     ConnectionManager,
-    verify_api_key_ws,
     _init_api_keys,
+    verify_api_key_ws,
 )
-from fastapi import HTTPException
 
 
 class TestApiKeyVerification:

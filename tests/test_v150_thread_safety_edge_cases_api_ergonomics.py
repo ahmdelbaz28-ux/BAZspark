@@ -31,10 +31,8 @@ confirm they work. Each test documents the exact bug it prevents.
 
 from __future__ import annotations
 
-import math
 import os
 import sys
-import tempfile
 import threading
 import time
 
@@ -47,14 +45,14 @@ from fireai.core.delta_cache import CacheEntry, DeltaCache, _LRUCache
 from fireai.core.digital_twin import DetectorStatus, DigitalTwin
 from fireai.core.event_bus import EventBus, Events
 
-
 # ============================================================================
 # THREAD SAFETY: EventBus._error_count race condition
 # ============================================================================
 
 
 class TestEventBusErrorCountThreadSafety:
-    """V150 FIX #1: EventBus._error_count was incremented without a lock.
+    """
+    V150 FIX #1: EventBus._error_count was incremented without a lock.
 
     Under concurrent publish() calls with failing callbacks, the
     read-modify-write `+= 1` raced and lost increments. The fix adds
@@ -62,7 +60,8 @@ class TestEventBusErrorCountThreadSafety:
     """
 
     def test_concurrent_failing_callbacks_count_is_exact(self):
-        """1000 failing callbacks across 10 threads must count exactly 1000.
+        """
+        1000 failing callbacks across 10 threads must count exactly 1000.
 
         Before V150: this test would intermittently fail with counts
         like 997 or 992 — silently masking the true error severity.
@@ -158,7 +157,8 @@ class TestEventBusErrorCountThreadSafety:
 
 
 class TestDeltaCacheMetricsThreadSafety:
-    """V150 FIX #2: DeltaCache metrics counters were incremented without a lock.
+    """
+    V150 FIX #2: DeltaCache metrics counters were incremented without a lock.
 
     The previous code had comments like "V44 NOTE: Not thread-safe but
     acceptable for stats counter" — a cop-out in a safety-critical system.
@@ -328,7 +328,8 @@ class TestLRUCacheStatsThreadSafety:
 
 
 class TestDigitalTwinRegisterDetectorEdgeCases:
-    """V150 FIX #3-#6: register_detector now validates all inputs.
+    """
+    V150 FIX #3-#6: register_detector now validates all inputs.
 
     Previously, NaN/Inf coordinates, empty IDs, non-positive coverage_radius,
     and unknown detector_types were silently accepted — corrupting downstream
@@ -450,7 +451,8 @@ class TestDigitalTwinRegisterDetectorEdgeCases:
 
 
 class TestUpdateDetectorStatusForceRequiresReason:
-    """V150 FIX #7: force=True now requires a non-empty force_reason.
+    """
+    V150 FIX #7: force=True now requires a non-empty force_reason.
 
     Previously, force=True bypassed safety validation with no audit trail.
     In a life-safety system, an unreviewable bypass is itself a safety defect.
@@ -513,7 +515,8 @@ class TestUpdateDetectorStatusForceRequiresReason:
 
 
 class TestDeltaCacheLoadedResults:
-    """V150 FIX #8: _load_from_db now populates _loaded_results so
+    """
+    V150 FIX #8: _load_from_db now populates _loaded_results so
     has_valid_entry can find entries loaded from a previous session.
     """
 
@@ -565,7 +568,8 @@ class TestDeltaCacheLoadedResults:
 
 
 class TestDeltaCachePersistUsesSnapshot:
-    """V150 FIX #9: persist() now uses _LRUCache.snapshot() instead of
+    """
+    V150 FIX #9: persist() now uses _LRUCache.snapshot() instead of
     reaching into private _lock and _data directly.
     """
 
@@ -583,7 +587,8 @@ class TestDeltaCachePersistUsesSnapshot:
         assert cache2.size >= 2
 
     def test_persist_does_not_access_private_lock(self, tmp_path):
-        """persist() must not access _cache._lock or _cache._data directly.
+        """
+        persist() must not access _cache._lock or _cache._data directly.
 
         This is a structural test: we verify that the _LRUCache class
         can change its internals without breaking persist().
@@ -606,12 +611,14 @@ class TestDeltaCachePersistUsesSnapshot:
 
 
 class TestAuditStoreLazyInitThreadSafety:
-    """V150 FIX #10: _get_ecdsa_signer and _get_hmac_key lazy init
+    """
+    V150 FIX #10: _get_ecdsa_signer and _get_hmac_key lazy init
     are now thread-safe (double-checked locking).
     """
 
     def test_get_hmac_key_concurrent_returns_same_key(self):
-        """Concurrent _get_hmac_key calls must return the SAME dev key.
+        """
+        Concurrent _get_hmac_key calls must return the SAME dev key.
 
         Before V150: two threads could both see _DEV_HMAC_KEY is None,
         both generate different random keys, and one would be discarded —
@@ -669,7 +676,8 @@ class TestAuditStoreLazyInitThreadSafety:
             audit_store._DEV_KEY_WARNED = False
 
     def test_get_ecdsa_signer_concurrent_returns_same_result(self):
-        """Concurrent _get_ecdsa_signer calls must be safe.
+        """
+        Concurrent _get_ecdsa_signer calls must be safe.
 
         Before V150: two threads could both see _ecdsa_initialized=False
         and both call SigningKey.from_pem(). The fix uses double-checked
@@ -717,7 +725,8 @@ class TestV150Integration:
     """End-to-end test exercising all V150 fixes together."""
 
     def test_concurrent_register_and_status_change(self):
-        """Concurrent register_detector + update_detector_status must be safe.
+        """
+        Concurrent register_detector + update_detector_status must be safe.
 
         Exercises:
           - V150 thread safety (RLock in DigitalTwin)

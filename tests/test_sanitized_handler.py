@@ -6,13 +6,8 @@ and code injection detection.
 """
 from __future__ import annotations
 
-import math
-
-import pytest
-
 from fireai.mcp_server.sanitized_handler import (
     MCPRequest,
-    MCPResponse,
     SanitizedMCPHandler,
 )
 

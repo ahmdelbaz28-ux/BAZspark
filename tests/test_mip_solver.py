@@ -15,8 +15,8 @@ from __future__ import annotations
 import pytest
 
 from fireai.core.spatial_engine.mip_solver import (
-    MIPResult,
     PULP_AVAILABLE,
+    MIPResult,
     solve_set_covering_mip,
 )
 

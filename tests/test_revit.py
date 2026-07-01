@@ -167,7 +167,8 @@ class TestRevitFileOperations:
     """Test Revit file operations."""
 
     def test_read_nonexistent_file(self):
-        """Test reading a non-existent file.
+        """
+        Test reading a non-existent file.
 
         V141.4: Updated to use a path inside allowed bases (/tmp) so the
         security validator doesn't reject it as path traversal. The test

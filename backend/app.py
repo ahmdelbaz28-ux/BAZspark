@@ -39,8 +39,6 @@ import time
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
-# Import multi-database service
-from backend.multi_db_service import get_multi_db_service, close_multi_db_service
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from slowapi import _rate_limit_exceeded_handler
@@ -51,6 +49,9 @@ from backend.auth import require_permission
 
 # Import rate limiter from centralized module (avoids circular import)
 from backend.limiter import limiter
+
+# Import multi-database service
+from backend.multi_db_service import get_multi_db_service
 from backend.rbac import Permission
 
 # Import our CAD/BIM integration routers

@@ -5,8 +5,6 @@ Verifies configuration loading, validation, defaults, and environment handling.
 """
 from __future__ import annotations
 
-import os
-
 import pytest
 
 from fireai.env_config import _load_config

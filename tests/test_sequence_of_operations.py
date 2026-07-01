@@ -17,8 +17,6 @@ Covers:
 
 from __future__ import annotations
 
-import pytest
-
 from fireai.core.sequence_of_operations import (
     CAUSE_EFFECT_RULES,
     NFPA_REFERENCES,

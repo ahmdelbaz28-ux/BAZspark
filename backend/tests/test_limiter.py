@@ -5,8 +5,6 @@ Verifies the rate limiter module configuration.
 """
 from __future__ import annotations
 
-import pytest
-
 from backend.limiter import get_remote_address, limiter
 
 
