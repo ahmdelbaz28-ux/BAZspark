@@ -16127,3 +16127,23 @@ During deployment planning, identified critical syntax issues in `docker-compose
 ### Commit Information
 - **Commit:** `7ff1c0b78d4b0132430d755605c0a9080fd33327`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/7ff1c0b78d4b0132430d755605c0a9080fd33327
+
+---
+
+## V152 Fix (2026-07-01) — Langfuse Observability Integration in Docker Compose
+
+### Context
+Integrating Langfuse LLM engineering platform credentials (provided by the user) into the local environment and forwarding them into the Docker container architecture.
+
+### Configuration Enhancement — Docker Compose Variable Forwarding (HIGH)
+- **File:** `docker-compose.yml`
+- **Change:** Added forwarding for `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST`, and `LANGFUSE_ENABLED` into the environment block of the `fireai` service container.
+- **Purpose:** Enables the lazy-initialized Langfuse client inside the container to automatically detect and authenticate with the Langfuse Cloud.
+- **Files Modified:** `docker-compose.yml`, `frontend/.gitignore` (added `.vercel` ignore entry).
+
+### Verification Evidence
+- Ran `docker compose config` with local `.env` containing the provided credentials. The environment variables successfully resolved and mapped inside the final container configuration.
+
+### Commit Information
+- **Commit:** `e9722bbdd16fcba4236430421ecf6b49807cff5e`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/e9722bbdd16fcba4236430421ecf6b49807cff5e
