@@ -327,6 +327,78 @@ curl http://localhost:8000/api/v1/auth/me -b cookies.txt
 | **Secret Rotation** | تدوير المفتاح بدون downtime |
 | **CSP/HSTS** | رؤوس أمان صارمة في الإنتاج |
 | **RBAC** | 5 أدوار مع صلاحيات مختلفة |
+| **Vision API Keys (V151)** | مفاتيح OpenAI Vision مشفّرة AES-256-GCM + CSRF + Rate Limiting |
+
+---
+
+## 🤖 Vision API Keys (V151) — ميزة جديدة
+
+<div align="center">
+
+```
+🌐 Flow:
+  Customer opens Settings → 'Vision API Keys' tab
+       ↓
+  Customer enters OpenAI key + base URL + model name
+       ↓
+  Frontend POSTs to /api/v1/settings/keys/openai
+       ↓
+  Backend encrypts AES-256-GCM → stores in SQLite
+       ↓
+  Backend returns masked key: fe_sk***...***f4c1
+       ↓
+  CUA Loop reads key from DB (prefers DB over env vars)
+       ↓
+  OpenAI Vision analyzes screenshots
+       ↓
+  Wrong key? → automatic OpenCV fallback
+```
+
+</div>
+
+### 🔒 ضمانات الأمان
+
+| الضمان | التفاصيل |
+|---|---|
+| ✅ **AES-256-GCM** | المفتاح مشفّر في DB مع nonce عشوائي 12-byte لكل سجل + AAD |
+| ✅ **Masked in Frontend** | المفتاح يظهر مقنّع فقط: `fe_sk***...***f4c1` — النص العادي لا يُرجع أبداً |
+| ✅ **Optional** | النظام يعمل بدون مفتاح (OpenCV fallback — offline، deterministic) |
+| ✅ **Anytime** | العميل يقدر يضيف/يحذف/يحدث المفتاح في أي وقت |
+| ✅ **Auto-Fallback** | المفتاح الغلط → fallback تلقائي إلى OpenCV |
+| ✅ **RBAC** | كل الـ endpoints تتطلب `Permission.SYSTEM_CONFIG` (admin only) |
+| ✅ **CSRF Protection** | كل POST/DELETE يطلب `X-CSRF-Token` header (Double Submit Cookie) |
+| ✅ **Rate Limiting** | POST/DELETE: 10/minute، Test: 5/minute (منع abuse) |
+| ✅ **Audit Log** | كل add/delete مسجّل في AuditStore (compliance traceability) |
+| ✅ **Idempotent DELETE** | حذف مفتاح غير موجود يرجع 204 (لا leak للمعلومات) |
+
+### 📡 Endpoints
+
+| Method | Path | الوصف |
+|---|---|---|
+| POST | `/api/v1/settings/keys/openai` | تخزين مفتاح (encrypt + persist) |
+| GET | `/api/v1/settings/keys/openai` | قائمة المفاتيح (masked فقط) |
+| GET | `/api/v1/settings/keys/openai/{id}` | مفتاح واحد (masked) |
+| DELETE | `/api/v1/settings/keys/openai/{id}` | حذف مفتاح (idempotent) |
+| POST | `/api/v1/settings/keys/openai/{id}/test` | اختبار المفتاح (ping OpenAI /models) |
+
+### 🤖 CUA Loop (Computer-Use Agent)
+
+```python
+from fireai.agents.cua_agent import CUAAgent
+
+agent = CUAAgent(prompt="Identify fire alarm devices in this engineering UI")
+result = agent.step()  # captures screen → analyzes → suggests action
+
+print(result.provider)  # "openai-db" | "openai-env" | "opencv" | "none"
+print(result.description)
+print(result.suggested_action)  # {"type": "click", "target": {...}}
+```
+
+**Priority chain (deterministic):**
+1. **OpenAI Vision (DB key)** — يقرأ المفتاح من `vision_api_keys` table
+2. **OpenAI Vision (env var)** — يستخدم `OPENAI_API_KEY`
+3. **OpenCV fallback** — offline، deterministic (cv2.Canny + contours)
+4. **None** — كل الـ providers فشلت
 
 ---
 

@@ -48,6 +48,7 @@ from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
 from backend.database import get_db
+from backend.limiter import limiter, get_remote_address
 from backend.rbac import Permission
 from backend.vision_key_store import (
     VisionApiKeyRecord,
@@ -60,6 +61,27 @@ from backend.vision_key_store import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/settings/keys", tags=["settings"])
+
+
+# ── V151.1 Audit logging helper ──────────────────────────────────────────────
+def _audit_key_event(event_type: str, key_id: str, masked_key: str, extra: dict | None = None) -> None:
+    """
+    Record a Vision API Keys event in the AuditStore for compliance traceability.
+
+    Best-effort: never raises — if the AuditStore is unavailable (e.g. dev mode
+    without ecdsa), the event is logged via the standard logger and skipped.
+    This follows the same fail-safe pattern used in backend/audit_integrity_helper.py.
+    """
+    details = {"key_id": key_id, "masked_key": masked_key, "provider": "openai"}
+    if extra:
+        details.update(extra)
+    try:
+        from fireai.core.audit_store import AuditStore
+        store = AuditStore()
+        store.add_event(event_type=f"vision_key.{event_type}", room_id="global", details_dict=details)
+    except Exception as e:
+        # Fail-safe: log the event even if AuditStore is unavailable
+        logger.debug("AuditStore unavailable for vision key event (%s): %s", event_type, type(e).__name__)
 
 
 # ── Pydantic schemas ─────────────────────────────────────────────────────────
@@ -189,8 +211,10 @@ def _ensure_description_column() -> None:
     response_model=OpenAIKeyResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("10/minute", key_func=get_remote_address)
 async def store_openai_key(
-    request: OpenAIKeyRequest,
+    request: Request,
+    body: OpenAIKeyRequest,
     _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
 ):
     """
@@ -207,9 +231,9 @@ async def store_openai_key(
     db = get_db()
     now = utc_now_iso()
     key_id = str(uuid.uuid4())
-    masked = mask_key(request.api_key)
+    masked = mask_key(body.api_key)
     try:
-        encrypted = encrypt_key(request.api_key)
+        encrypted = encrypt_key(body.api_key)
     except ValueError as e:
         # Encryption failed — generic error, no key material leaked
         logger.error("Vision key encryption failed: %s", type(e).__name__)
@@ -238,11 +262,11 @@ async def store_openai_key(
                     "openai",
                     encrypted,
                     masked,
-                    request.base_url,
-                    request.model_name,
+                    body.base_url,
+                    body.model_name,
                     now,
                     now,
-                    request.description,
+                    body.description,
                 ),
             )
             # Read back
@@ -271,8 +295,9 @@ async def store_openai_key(
         "Stored OpenAI Vision key id=%s masked=%s model=%s",
         key_id,
         masked,
-        request.model_name,
+        body.model_name,
     )
+    _audit_key_event("added", key_id, masked, {"model_name": body.model_name, "base_url": body.base_url})
     return _row_to_response(row)
 
 
@@ -345,8 +370,10 @@ async def get_openai_key(
 
 
 @router.delete("/openai/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("10/minute", key_func=get_remote_address)
 async def delete_openai_key(
     key_id: str,
+    request: Request,
     _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
 ):
     """
@@ -357,8 +384,17 @@ async def delete_openai_key(
     """
     _ensure_description_column()
     db = get_db()
+    # Fetch masked_key BEFORE delete (for audit log) — best-effort, no leak on miss
+    masked_for_audit = ""
     try:
         with db._transaction() as cur:
+            cur.execute(
+                f"SELECT masked_key FROM vision_api_keys WHERE id = {_ph()} AND provider = {_ph()}",
+                (key_id, "openai"),
+            )
+            row = cur.fetchone()
+            if row is not None:
+                masked_for_audit = row["masked_key"]
             cur.execute(
                 f"DELETE FROM vision_api_keys WHERE id = {_ph()} AND provider = {_ph()}",
                 (key_id, "openai"),
@@ -370,14 +406,17 @@ async def delete_openai_key(
             detail="Failed to delete the key. The database is unavailable.",
         ) from e
 
-    # Log WITHOUT plaintext (only id)
+    # Log WITHOUT plaintext (only id + masked)
     logger.info("Deleted OpenAI Vision key id=%s", key_id)
+    _audit_key_event("deleted", key_id, masked_for_audit or "unknown")
     return None
 
 
 @router.post("/openai/{key_id}/test", response_model=OpenAIKeyTestResponse)
+@limiter.limit("5/minute", key_func=get_remote_address)
 async def test_openai_key(
     key_id: str,
+    request: Request,
     _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
 ):
     """

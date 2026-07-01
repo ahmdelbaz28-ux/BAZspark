@@ -1103,5 +1103,35 @@
     "dtConvert": "DT Convert",
     "dtConfig": "DT Config",
     "dtHistory": "DT History"
+  },
+  "settings": {
+    "vision": {
+      "title": "Vision API Keys",
+      "subtitle": "Add an OpenAI Vision API key to enable AI-powered screenshot analysis. Keys are encrypted at rest and never exposed to the frontend. Optional — the system falls back to OpenCV if no key is set.",
+      "addUpdate": "Add / Update OpenAI Vision Key",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "sk-proj-...",
+      "apiKeyHelp": "Stored AES-256-GCM encrypted. Only the masked form is returned after save.",
+      "baseUrl": "Base URL",
+      "modelName": "Model Name",
+      "description": "Description (optional)",
+      "descriptionPlaceholder": "e.g. Production OpenAI key",
+      "save": "Save Key (Encrypted)",
+      "storedKeys": "Stored Keys",
+      "noKeys": "No active keys. The CUA loop is using OpenCV fallback.",
+      "test": "Test",
+      "delete": "Delete",
+      "keyWorks": "Key works",
+      "deleteConfirm": "Delete this key? The CUA loop will fall back to OpenCV or the env var.",
+      "savedToast": "Vision API key saved",
+      "deletedToast": "Vision API key deleted",
+      "deletedToastDesc": "CUA loop will fall back to OpenCV",
+      "testPassedToast": "Key test passed",
+      "testPassedToastDesc": "OpenAI accepted the key",
+      "testFailedToast": "Key test failed",
+      "copyToast": "Masked key copied to clipboard",
+      "securityNotice": "Keys are encrypted with AES-256-GCM at rest. Plaintext is never logged or returned to the frontend. The system works without a key (OpenCV fallback). Wrong keys auto-fallback to OpenCV. You can add, delete, or update keys at any time.",
+      "minLengthError": "API key must be at least 8 characters"
+    }
   }
 }

@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { useHealth } from '@/hooks/useApi';
 import { api } from '@/services/digitalTwinApi';
+import { toast } from 'sonner';
 
 export function SettingsPage() {
   const { t } = useTranslation();
@@ -480,11 +481,44 @@ function VisionApiKeysTab() {
   // Per-key testing state
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<Record<string, { ok: boolean; error?: string }>>({});
+  // V151.1: copied key feedback
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '/api/v1';
   const authToken = typeof sessionStorage !== 'undefined'
     ? sessionStorage.getItem('fireai_api_key') || ''
     : '';
+
+  // V151.1 S1: CSRF token helper — reads the __Host-fireai_csrf_token cookie
+  // set by the backend CSRFMiddleware and sends it as X-CSRF-Token header
+  // on all state-changing requests (POST/DELETE). Matches backend/security_csrf.py.
+  const getCsrfToken = (): string => {
+    if (typeof document === 'undefined') return '';
+    const match = document.cookie.match(/__Host-fireai_csrf_token=([^;]+)/);
+    return match ? match[1] : '';
+  };
+
+  // V151.1 S1: build headers with auth + CSRF for state-changing requests
+  const buildMutationHeaders = (contentType = false): Record<string, string> => {
+    const headers: Record<string, string> = {};
+    if (authToken) headers['X-API-Key'] = authToken;
+    const csrf = getCsrfToken();
+    if (csrf) headers['X-CSRF-Token'] = csrf;
+    if (contentType) headers['Content-Type'] = 'application/json';
+    return headers;
+  };
+
+  // V151.1 U3: copy masked key to clipboard
+  const handleCopyMasked = async (id: string, maskedKey: string) => {
+    try {
+      await navigator.clipboard.writeText(maskedKey);
+      setCopiedId(id);
+      toast.success('Masked key copied to clipboard', { description: maskedKey });
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast.error('Failed to copy — clipboard not available');
+    }
+  };
 
   const fetchKeys = async () => {
     setLoading(true);
@@ -514,17 +548,16 @@ function VisionApiKeysTab() {
     setError(null);
     setSuccess(null);
     if (!apiKey || apiKey.length < 8) {
-      setError('API key must be at least 8 characters');
+      const msg = 'API key must be at least 8 characters';
+      setError(msg);
+      toast.error(msg);
       return;
     }
     setLoading(true);
     try {
       const resp = await fetch(`${API_BASE}/settings/keys/openai`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken ? { 'X-API-Key': authToken } : {}),
-        },
+        headers: buildMutationHeaders(true),
         body: JSON.stringify({
           api_key: apiKey,
           base_url: baseUrl,
@@ -537,13 +570,17 @@ function VisionApiKeysTab() {
         throw new Error(errBody.detail || `HTTP ${resp.status}`);
       }
       const saved = await resp.json();
-      setSuccess(`Key saved — masked as ${saved.masked_key}`);
+      const successMsg = `Key saved — masked as ${saved.masked_key}`;
+      setSuccess(successMsg);
+      toast.success('Vision API key saved', { description: `Masked: ${saved.masked_key}` });
       // Clear the plaintext from the form immediately
       setApiKey('');
       setDescription('');
       await fetchKeys();
     } catch (e: any) {
-      setError(e.message || 'Failed to save key');
+      const msg = e.message || 'Failed to save key';
+      setError(msg);
+      toast.error('Failed to save key', { description: msg });
     } finally {
       setLoading(false);
     }
@@ -558,15 +595,18 @@ function VisionApiKeysTab() {
     try {
       const resp = await fetch(`${API_BASE}/settings/keys/openai/${id}`, {
         method: 'DELETE',
-        headers: authToken ? { 'X-API-Key': authToken } : {},
+        headers: buildMutationHeaders(),
       });
       if (!resp.ok && resp.status !== 204) {
         throw new Error(`HTTP ${resp.status}`);
       }
       setSuccess('Key deleted');
+      toast.success('Vision API key deleted', { description: 'CUA loop will fall back to OpenCV' });
       await fetchKeys();
     } catch (e: any) {
-      setError(e.message || 'Failed to delete key');
+      const msg = e.message || 'Failed to delete key';
+      setError(msg);
+      toast.error('Failed to delete key', { description: msg });
     }
   };
 
@@ -576,7 +616,7 @@ function VisionApiKeysTab() {
     try {
       const resp = await fetch(`${API_BASE}/settings/keys/openai/${id}/test`, {
         method: 'POST',
-        headers: authToken ? { 'X-API-Key': authToken } : {},
+        headers: buildMutationHeaders(),
       });
       if (!resp.ok) {
         throw new Error(`HTTP ${resp.status}`);
@@ -586,11 +626,18 @@ function VisionApiKeysTab() {
         ...prev,
         [id]: { ok: data.ok, error: data.error || undefined },
       }));
+      if (data.ok) {
+        toast.success('Key test passed', { description: 'OpenAI accepted the key' });
+      } else {
+        toast.error('Key test failed', { description: data.error || 'OpenAI rejected the key' });
+      }
     } catch (e: any) {
+      const msg = e.message || 'Network error';
       setTestResult((prev) => ({
         ...prev,
-        [id]: { ok: false, error: e.message || 'Network error' },
+        [id]: { ok: false, error: msg },
       }));
+      toast.error('Key test failed', { description: msg });
     } finally {
       setTestingId(null);
     }
@@ -701,7 +748,19 @@ function VisionApiKeysTab() {
               Refresh
             </Button>
           </div>
-          {keys.length === 0 ? (
+          {loading && keys.length === 0 ? (
+            // V151.1 U4: loading skeleton (instead of empty state during initial load)
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex items-center p-3 rounded-lg border border-slate-700 bg-slate-900/50 animate-pulse">
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-700 rounded w-1/3" />
+                    <div className="h-3 bg-slate-800 rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : keys.length === 0 ? (
             <div className="text-sm text-slate-400 p-4 rounded-lg border border-dashed border-slate-700 text-center">
               No active keys. The CUA loop is using OpenCV fallback.
             </div>
@@ -723,6 +782,20 @@ function VisionApiKeysTab() {
                           active
                         </Badge>
                       )}
+                      {/* V151.1 U3: copy-to-clipboard button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                        onClick={() => handleCopyMasked(k.id, k.masked_key)}
+                        title="Copy masked key"
+                      >
+                        {copiedId === k.id ? (
+                          <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                        ) : (
+                          <Key className="h-3 w-3" />
+                        )}
+                      </Button>
                     </div>
                     <div className="text-xs text-slate-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
                       <span>model: {k.model_name}</span>
