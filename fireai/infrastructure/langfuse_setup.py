@@ -175,12 +175,20 @@ def log_verification_score(
         if client is None:
             return False
 
-        client.score(
-            trace_id=trace_id,
-            name=name,
-            value=value,
-            comment=comment or "",
-        )
+        if hasattr(client, "score"):
+            client.score(
+                trace_id=trace_id,
+                name=name,
+                value=value,
+                comment=comment or "",
+            )
+        else:
+            client.create_score(
+                trace_id=trace_id,
+                name=name,
+                value=value,
+                comment=comment or "",
+            )
         return True
     except Exception as e:
         logger.debug("Failed to log Langfuse score %s: %s", name, e)
