@@ -1,62 +1,61 @@
-# Vercel ignore list — prevents Python project auto-detection.
+# Vercel ignore list — prevents Python auto-detection.
 # Vercel should ONLY build the Vite frontend (see vercel.json framework=vite).
+#
+# IMPORTANT: All patterns are anchored with leading "/" to match ONLY the
+# repository root, not nested directories of the same name. Without the
+# leading slash, a pattern like "core/" would also exclude
+# "frontend/src/components/core/" (which contains ErrorBoundary.tsx,
+# ErrorRecovery.tsx, etc.) and break the Vite build.
 
-# ── Python project files (force Vercel to ignore Python detection) ──
-pyproject.toml
-requirements.txt
-requirements-optional.txt
-requirements_multi_db.txt
-setup.py
-setup.cfg
-uv.lock
-poetry.lock
-Pipfile
-Pipfile.lock
+# ── Python project files at ROOT only (force Vercel to ignore Python) ──
+/pyproject.toml
+/requirements.txt
+/requirements-optional.txt
+/requirements_multi_db.txt
+/setup.py
+/setup.cfg
+/uv.lock
+/poetry.lock
+/Pipfile
+/Pipfile.lock
 
-# ── Python source directories (not needed for frontend build) ──
-backend/
-fireai/
-parsers/
-integration/
-core/
-marine/
-adapters/
-qomn_conduit/
-qomn_fire/
-facp_system/
-facp_distributed/
-services/
-alembic/
-tests/
-backend/tests/
-fireai/core/tests/
-skills/
-templates/
-revit_samples/
-revit_data/
-test_data/
+# ── Python source directories at ROOT only ──
+/backend/
+/fireai/
+/parsers/
+/integration/
+/core/
+/qomn_conduit/
+/qomn_fire/
+/facp_system/
+/facp_distributed/
+/services/
+/alembic/
+/tests/
+/skills/
+/templates/
+/revit_samples/
+/revit_data/
+/test_data/
 
-# ── Documentation & non-build artifacts ──
-docs/
-*.md
-!frontend/README.md
-LICENSE
-CHANGELOG.md
+# ── Documentation at ROOT only ──
+/docs/
+/README.md
+/LICENSE
+/CHANGELOG.md
+# Do NOT ignore frontend/README.md or any nested README.md files
 
-# ── Docker / deployment configs (not needed for Vercel) ──
-Dockerfile
-docker-compose.yml
-deploy/
-nginx/
-traefik/
-render.yaml
-alembic.ini
+# ── Docker / deployment configs at ROOT only ──
+/Dockerfile
+/docker-compose.yml
+/deploy/
+/nginx/
+/traefik/
+/render.yaml
+/alembic.ini
 
-# ── Scripts & tools ──
-scripts/
-*.py
-!frontend/**/*.ts
-!frontend/**/*.tsx
+# ── Python scripts at ROOT only ──
+/*.py
 
 # ── Build artifacts ──
 build/
@@ -80,8 +79,7 @@ secrets/
 .vercel/
 
 # ── Other tools ──
-.github/
-.gitlab-ci.yml
-blackbox_mcp_settings.json
-docker-compose.yml
-vercel.json
+/.github/
+/.gitlab-ci.yml
+/blackbox_mcp_settings.json
+/vercel.json
