@@ -396,3 +396,6 @@ conversion_history.json
 
 # V141.4: Runtime data directories (Mem0, Qdrant, SQLite checkpoints)
 data/
+
+# Vercel linkage folder
+.vercel/
