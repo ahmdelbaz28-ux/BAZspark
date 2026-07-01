@@ -156,8 +156,23 @@ jobs:
         # Evidence: pytest completes in 11:45 min (7198 passed), then hangs 13+ min
         # in atexit with branch=True. With branch=False, atexit should be <1s.
         #
+        # V159.5 FIX: Increased timeout from 20 to 25 min. V159.4 reduced the
+        # atexit hang from 13 min to 9.5 min (branch=False helped), but the hang
+        # is not fully eliminated — coverage 7.x still takes ~9.5 min to flush
+        # line-coverage traces at exit. pytest takes ~11 min, atexit ~9.5 min =
+        # 20.5 min total. 25 min gives 4.5 min headroom.
+        #
+        # The root cause of the remaining 9.5 min hang is coverage 7.x's atexit
+        # flush of the .coverage data file (SQLite-backed in 7.x). This is a
+        # known performance issue with large codebases (53k+ lines). The proper
+        # fix is upgrading pytest-cov to 5.0+ which uses a faster flush path,
+        # but that requires a separate validation cycle (pyproject.toml pin
+        # change + full test re-run). For now, 25 min timeout is the pragmatic
+        # fix — pytest completes successfully (7198 passed), just needs time
+        # to exit.
+        #
         # No test files modified (Rule 10). CI workflow config only.
-        timeout-minutes: 20
+        timeout-minutes: 25
         env:
           PYTEST_ADDOPTS: "--color=no"
         run: |
