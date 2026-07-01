@@ -53,8 +53,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     FIREAI_ENV=production \
     LOG_LEVEL=WARNING \
-    DATABASE_URL=sqlite:////app/data/fireai.db \
     UDM_DB_PATH=/app/data/udm_elements.db
+# DATABASE_URL is intentionally NOT set here — it comes from the Hugging Face Space secret.
+# This allows the container to use the Supabase PostgreSQL instance.
+# Fallback: if no secret is provided, the app uses the DIGITAL_TWIN_DB_PATH SQLite file.
 # CRITICAL-3: Unified DB path — DATABASE_URL is now the single source of truth.
 # Removed DIGITAL_TWIN_DB_PATH (was unused, caused confusion).
 
