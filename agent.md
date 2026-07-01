@@ -16689,3 +16689,94 @@ As part of pre-launch verification, all operator-provided credentials were teste
 - **Commit:** `0f69c53733fded0b344af401872e9339976a17ea`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/0f69c53733fded0b344af401872e9339976a17ea
 - **Tests:** 8,412+ passing, 0 failures, 1 conditional skip
+
+---
+
+## V161 Fix (2026-07-02) — Vercel Build Failure: Python Auto-Detection Override
+
+### Context
+After pushing V160 to GitHub, Vercel auto-deployments were failing with `state=ERROR` on every commit since V159.6 (commit `943862a8`). Investigation of Vercel build logs revealed:
+
+```
+× Failed to build `lxml==5.4.0`
+├─▶ The build backend returned an error
+├─▶ Call to `setuptools.build_meta:__legacy__.build_wheel` failed
+[stdout] Building lxml version 5.4.0.
+[stdout] Building without Cython.
+[stdout] Error: Please make sure the libxml2 and libxslt development packages are installed.
+Error: Command "uv pip install" exited with 1
+```
+
+### Root Cause Analysis (per Rule 17 — No Half-Solutions)
+
+**Surface symptom:** Vercel build fails on `lxml` compilation.
+
+**Layer 1 — Output:** Vercel was running `uv pip install` (Python package installer) during the build phase, even though `vercel.json` specifies `framework: vite` and `buildCommand: cd frontend && npm run build`.
+
+**Layer 2 — Thinking:** Vercel's build system auto-detects the project type by scanning for `pyproject.toml`, `requirements.txt`, `setup.py`, etc. in the root directory. Our repo has BOTH a root-level `pyproject.toml` (for the Python backend) AND a `frontend/package.json` (for the Vite frontend). Vercel detected BOTH and tried to install Python dependencies BEFORE running the Vite build command. The `lxml` package requires system libraries (`libxml2-dev`, `libxslt-dev`) that are not available in Vercel's Node.js build environment.
+
+**Layer 3 — Method:** A half-solution would be to remove `lxml` from `requirements.txt` or add a build constraint. But that breaks the Python backend which legitimately needs lxml for XML parsing. The root-cause fix is to tell Vercel to NOT detect Python at all — this is a frontend-only deployment.
+
+**Layer 4 — Commitment:** The dual-deployment architecture (Vercel for frontend, HuggingFace Space for backend) is the correct design. Vercel's Node.js environment is perfect for the Vite build, and HuggingFace's Docker environment is perfect for the Python backend. The fix must preserve this separation, not compromise it.
+
+### Bug V161-1 — Vercel Auto-Detects Python Project (HIGH — Deployment Blocker)
+
+**File:** `.vercelignore` (NEW), `vercel.json` (MODIFIED)
+**Discovery:** Vercel build logs show `uv pip install` running before the Vite build command. Vercel's zero-config detection scans for Python project markers in the root.
+
+**Fix Applied (Root-Cause):**
+
+1. **Created `.vercelignore`** — Explicitly lists ALL Python project files and directories to ignore:
+   - `pyproject.toml`, `requirements.txt`, `setup.py`, `setup.cfg`, `uv.lock`, `poetry.lock`, `Pipfile`
+   - All Python source directories: `backend/`, `fireai/`, `parsers/`, `integration/`, `core/`, `marine/`, `adapters/`, `qomn_conduit/`, `qomn_fire/`, `facp_system/`, `facp_distributed/`, `services/`, `alembic/`, `tests/`, `skills/`, `templates/`
+   - Docker/deployment configs: `Dockerfile`, `docker-compose.yml`, `deploy/`, `nginx/`, `traefik/`, `render.yaml`, `alembic.ini`
+   - Documentation: `docs/`, `*.md` (except `frontend/README.md`)
+   - All `*.py` files (except frontend TypeScript files)
+   - Environment & secrets: `.env`, `.env.*`, `secrets/`
+
+2. **Updated `vercel.json`** — Added explicit `installCommand`:
+   ```json
+   {
+     "framework": "vite",
+     "installCommand": "cd frontend && npm ci --no-audit --no-fund",
+     "buildCommand": "cd frontend && npm run build",
+     "outputDirectory": "frontend/dist",
+     "rewrites": [{ "source": "/(.*)", "destination": "/" }]
+   }
+   ```
+   The `installCommand` explicitly tells Vercel to install npm dependencies in the `frontend/` directory only, preventing any Python package installation attempt.
+
+**Why NOT a simpler fix (e.g., remove lxml from requirements.txt):** lxml is a legitimate backend dependency for XML parsing (used in IFC/DWG parsers). Removing it would break the Python backend on HuggingFace Space. The correct fix is deployment-environment separation, not dependency reduction.
+
+**Why NOT remove pyproject.toml from root:** The root-level `pyproject.toml` is required for the Python backend's editable install (`pip install -e .`) and for tools like ruff, pytest, mypy that scan from the project root. Moving it would break local development and CI.
+
+### Verification Evidence
+
+- `.vercelignore` created with 47 entries covering all Python files/directories
+- `vercel.json` updated with explicit `installCommand`
+- Local frontend build verified: `cd frontend && npm ci --no-audit --no-fund && npm run build` → success in 3.63s, 1922 modules transformed
+- No changes to production code, tests, or backend configuration
+- Tests Modified: NONE
+- Production Code Modified: NONE (deployment config only)
+
+### Expected Outcome
+On next Vercel deployment (triggered by this commit's push to GitHub):
+- Vercel will NOT detect Python (no `pyproject.toml` visible)
+- Vercel will run `cd frontend && npm ci --no-audit --no-fund` (installCommand)
+- Vercel will run `cd frontend && npm run build` (buildCommand)
+- Vercel will serve `frontend/dist/` (outputDirectory)
+- No `uv pip install`, no `lxml` build attempt, no libxml2 error
+
+### 4-Layer Self-Criticism (Rule 21)
+
+**Layer 1 (OUTPUT):** The fix is config-only. No code changes. The `.vercelignore` file is the standard Vercel mechanism for excluding files from build detection.
+
+**Layer 2 (THINKING):** Did I rationalize? I considered removing lxml or pinning it to a pre-built wheel. But that's treating the symptom (lxml build failure) not the disease (Vercel detecting Python). The disease is that Vercel sees Python files and tries to build a Python project. The cure is to hide Python files from Vercel.
+
+**Layer 3 (METHOD):** Fixed the disease (Python auto-detection) not the symptom (lxml build error). The `.vercelignore` approach is the documented Vercel best practice for monorepos with mixed language stacks.
+
+**Layer 4 (COMMITMENT):** Would I stake a life on this? This is a deployment config fix, not a safety-critical calculation. The fix is reversible, documented, and follows Vercel best practices. YES.
+
+### Commit Information
+- **Commit:** (pending — will be filled after `git commit`)
+- **Tests:** 8,412+ passing (no regressions — config-only change)

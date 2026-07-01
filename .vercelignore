@@ -1,0 +1,87 @@
+# Vercel ignore list — prevents Python project auto-detection.
+# Vercel should ONLY build the Vite frontend (see vercel.json framework=vite).
+
+# ── Python project files (force Vercel to ignore Python detection) ──
+pyproject.toml
+requirements.txt
+requirements-optional.txt
+requirements_multi_db.txt
+setup.py
+setup.cfg
+uv.lock
+poetry.lock
+Pipfile
+Pipfile.lock
+
+# ── Python source directories (not needed for frontend build) ──
+backend/
+fireai/
+parsers/
+integration/
+core/
+marine/
+adapters/
+qomn_conduit/
+qomn_fire/
+facp_system/
+facp_distributed/
+services/
+alembic/
+tests/
+backend/tests/
+fireai/core/tests/
+skills/
+templates/
+revit_samples/
+revit_data/
+test_data/
+
+# ── Documentation & non-build artifacts ──
+docs/
+*.md
+!frontend/README.md
+LICENSE
+CHANGELOG.md
+
+# ── Docker / deployment configs (not needed for Vercel) ──
+Dockerfile
+docker-compose.yml
+deploy/
+nginx/
+traefik/
+render.yaml
+alembic.ini
+
+# ── Scripts & tools ──
+scripts/
+*.py
+!frontend/**/*.ts
+!frontend/**/*.tsx
+
+# ── Build artifacts ──
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ── IDE / OS ──
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ── Environment & secrets ──
+.env
+.env.*
+!.env.example
+secrets/
+
+# ── Vercel itself ──
+.vercel/
+
+# ── Other tools ──
+.github/
+.gitlab-ci.yml
+blackbox_mcp_settings.json
+docker-compose.yml
+vercel.json
