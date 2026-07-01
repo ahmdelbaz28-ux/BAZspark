@@ -56,7 +56,7 @@ async def health_check():
         result = db.list_projects(page=1, limit=1)
         db_connected = result is not None
     except Exception as e:
-        logger.debug("Health check: main database connection failed: %s", e)
+        logger.warning("Health check: main database connection failed: %s", e)
         db_connected = False
 
     # Check UDM (UniversalDataModel) database connectivity
