@@ -152,7 +152,8 @@ _SERVER_SECRET: bytes = b""
 # This is purely a configuration-resolution fix — no security control is
 # weakened, no public API is changed, no test is modified (Rule 10).
 def _get_keys_file_path() -> str:
-    """Return the current API keys file path.
+    """
+    Return the current API keys file path.
 
     Reads FIREAI_API_KEYS_FILE at call time to support runtime configuration
     changes and test isolation via monkeypatch.setenv. Falls back to the
@@ -163,7 +164,8 @@ def _get_keys_file_path() -> str:
 
 
 def _get_server_secret_file_path() -> str:
-    """Return the current server-secret file path.
+    """
+    Return the current server-secret file path.
 
     Reads FIREAI_API_KEYS_SECRET_FILE at call time to support runtime
     configuration changes and test isolation via monkeypatch.setenv. Falls

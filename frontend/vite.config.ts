@@ -127,6 +127,21 @@ export default defineConfig({
       environment: "jsdom",
       setupFiles: ["./src/test/setup.ts"],
       css: true,
+      // V156 FIX: Exclude Playwright visual tests from Vitest collection.
+      // tests/visual/*.spec.ts are Playwright test files (use @playwright/test's
+      // test() function). When Vitest discovers them, it fails with:
+      //   "Playwright Test did not expect test() to be called here"
+      // because Playwright's test() is not the same as Vitest's test().
+      // These tests must be run with `npx playwright test`, not `npx vitest`.
+      // Excluding them here makes `npm run test` (Vitest) pass 100%.
+      exclude: [
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/cypress/**",
+        "**/.{idea,git,cache,output,temp}/**",
+        "**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*",
+        "tests/visual/**",
+      ],
     },
   } : {}),
 });

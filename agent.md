@@ -16431,3 +16431,66 @@ Hugging Face container crashed on startup with `ModuleNotFoundError: No module n
   - Layer 4 (COMMITMENT): Would I stake a life on this? This is a test-isolation fix, not a safety-critical calculation. The fix is correct, minimal, and preserves all existing behavior. YES.
 **Commit:** `fdfc0d12d8442c5ba18de9bf418d3645ad7d14cc`
 **Push Link:** https://github.com/ahmdelbaz28-ux/revit/commit/fdfc0d12d8442c5ba18de9bf418d3645ad7d14cc
+
+---
+
+## V157 Improvements — Test Coverage & Static Analysis Hardening (2026-07-01)
+
+### Phase 1 — Frontend Vitest Config Fix
+**File:** `frontend/vite.config.ts`
+**Bug:** Vitest was collecting Playwright spec files in `tests/visual/`, causing `npm run test` to fail with:
+  `Error: Playwright Test did not expect test() to be called here.`
+**Root Cause:** Vitest's default `include` pattern picks up `*.spec.ts` files anywhere. The `tests/visual/smoke.spec.ts` file is a Playwright test file (uses `@playwright/test`'s `test()` function, not Vitest's).
+**Fix Applied:** Added explicit `exclude` array to the `test` config block, excluding `tests/visual/**` along with the standard defaults (`node_modules`, `dist`, etc.).
+**Verification:** `npm run test` now reports `9 passed (9) / 72 passed (72)` with 0 failures and 0 skipped (was 1 failed suite before fix).
+**Tests Modified:** NONE (config file only — Vitest config is production infrastructure, not a test).
+
+### Phase 2 — Python Test Coverage Expansion (Dependency Installation)
+**Action:** Installed missing Python packages required by tests that were skipping due to `ImportError`:
+  - `ecdsa` (v0.19.2) — required by `fireai/core/tests/test_audit_store.py` for ECDSA signature tests
+  - `langgraph` (v1.2.7) + `langgraph-checkpoint-sqlite` (v3.1.0) — required by `backend/services/workflow_service.py` (imported by `backend/tests/test_monitor_unit.py` and `tests/test_workflow_service*.py`)
+**Verification:**
+  - `fireai/core/tests/test_audit_store.py`: 89 passed, 1 skipped (was 80 passed, 9 skipped). The 1 remaining skip is a CONDITIONAL test (`test_verify_ecdsa_raises_without_library`) that intentionally skips itself when ecdsa IS installed — this is correct behavior, not a defect.
+  - `backend/tests/test_monitor_unit.py`: 44 passed, 0 skipped (was 38 passed, 6 skipped).
+  - `tests/test_workflow_service.py` + `tests/test_workflow_service_v2.py`: 108 passed, 0 skipped (was 0 passed, 2 module-level skipped).
+**Tests Modified:** NONE. Only environment packages were added.
+**Production Code Modified:** NONE. Only runtime dependencies installed.
+
+### Phase 3 — Ruff Lint Cleanup
+**Action:** Ran `ruff check --fix backend/api_keys.py` to auto-fix 2 D213 (multi-line docstring summary) issues introduced by the V156 fix.
+**Verification:** `ruff check .` now reports `All checks passed!` (was 2 errors).
+**Tests Modified:** NONE.
+
+### Phase 4 — Full Suite Re-Verification
+**Python pytest (full suite):** **9,086 passed, 17 skipped, 0 failed** in 223.70s.
+  - Before this cycle: 8,964 passed, 33 skipped, 0 failed.
+  - Net improvement: +122 tests passing, -16 skips.
+  - Remaining 17 skips:
+    - 16 × `tests/test_e2e_cloud.py` — REQUIRE real cloud credentials (Neo4j Aura URI+password, Qdrant URL+API key, Modal/OpenAI API key) that are NOT available in this environment. These tests are designed to skip gracefully when credentials are absent (per the file's docstring: "Tests are SKIPPED if cloud credentials are not in .env (not failed)"). Enabling them WITHOUT credentials would convert skips to failures (connection errors), violating the no-failures constraint.
+    - 1 × `fireai/core/tests/test_audit_store.py:748` — CONDITIONAL test that intentionally skips when `ecdsa` IS installed (it tests the ImportError path, which can only run when ecdsa is absent). This is correct test design, not a defect.
+
+**Frontend full pipeline:**
+  - `npm run typecheck` (tsc --noEmit): 0 errors, EXIT 0
+  - `npm run test` (Vitest): 9/9 files, 72/72 tests passed, EXIT 0
+  - `npm run lint` (ESLint): 0 errors (277 warnings — all `no-unused-vars` and `no-explicit-any`, non-blocking), EXIT 0
+  - `npm audit --audit-level=high`: 0 vulnerabilities, EXIT 0
+
+**Static analysis:**
+  - `ruff check .`: All checks passed
+  - `bandit -r fireai/`: 0 high, 5 medium (3× B310 urllib.urlopen in mem0_setup.py — false positive, URL is internally constructed; 2× B108 /tmp in tests)
+  - `bandit -r backend/`: 0 high, 44 medium (38× B608 SQL injection — false positives, code uses parameterized queries via self._ph() placeholders; 5× B108 /tmp in tests; 1× B310 in mem0_setup)
+
+### Honest Limitation (Rule 13)
+The user's strict requirement "no skips, all 10/10" CANNOT be fully satisfied for the 16 `test_e2e_cloud.py` tests without real cloud service credentials. Per Rule 1 (ABSOLUTE TRUTH) and Rule 13 (HONEST SELF-ASSESSMENT), I declare this limitation explicitly rather than faking it. Options for the user:
+  1. Provide Neo4j Aura, Qdrant Cloud, and Modal/OpenAI credentials in `.env` (preferred — enables true E2E cloud testing)
+  2. Accept the 16 skips as infrastructure-dependent tests (current state — graceful skip is the designed behavior)
+  3. Mark the cloud tests with `@pytest.mark.integration` and exclude them from default collection via `pytest -m "not integration"` (would require modifying pyproject.toml markers + the test file decorators — Rule 10 prohibits modifying tests, but pyproject.toml is config not a test)
+
+### 4-Layer Self-Criticism (Rule 21)
+  - Layer 1 (OUTPUT): Verified — 9,086 Python tests pass, 72 frontend tests pass, 0 failures, ruff clean, npm audit clean, tsc 0 errors. Evidence: pytest output, npm output above.
+  - Layer 2 (THINKING): Did not rationalize. The ecdsa/langgraph fixes are real dependency installations verified by re-running the affected test files. The 16 cloud skips are an honest limitation, not a hidden defect.
+  - Layer 3 (METHOD): Fixed root causes (missing dependencies, missing Vitest exclude config), not symptoms. Did NOT modify any test file. Did NOT weaken any security control. Did NOT introduce any regression (verified by re-running full 9,086-test suite).
+  - Layer 4 (COMMITMENT): Would I stake a life on this? Yes. The improvements are real, verified, and minimal. The remaining 17 skips are either infrastructure-dependent (cloud) or intentionally conditional (ecdsa ImportError path). No safety-critical calculation was weakened.
+
+**Commit:** (to be filled after commit)
+**Push Link:** (to be filled after push)
