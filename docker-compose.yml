@@ -12,7 +12,7 @@ services:
       - "8000:8000"
     environment:
       - FIREAI_ENV=${FIREAI_ENV:-production}
-      - FIREAI_API_KEY=${FIREAI_API_KEY:?ERROR: FIREAI_API_KEY must be set}
+      - "FIREAI_API_KEY=${FIREAI_API_KEY:?ERROR: FIREAI_API_KEY must be set}"
       # Session secret: REQUIRED in production.
       # Generate with: python3 -m backend.session_secret generate
       # Option A (env var): set FIREAI_SESSION_SECRET
@@ -194,3 +194,7 @@ volumes:
     driver: local
   neo4j-logs:
     driver: local
+
+networks:
+  fireai-net:
+    driver: bridge
