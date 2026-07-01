@@ -16215,5 +16215,25 @@ After the user updated the **Root Directory** setting to `frontend` in the Verce
 - Verified that deleting the configuration file leaves the clean Vite preset in full control of the Vercel build environment.
 
 ### Commit Information
-- **Commit:** `31f52dee2c644be0513b7d6fc8a94f76b2d20207`
-- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/31f52dee2c644be0513b7d6fc8a94f76b2d20207
+- **Commit:** `3de6d98e6284a16313e275f30fa93d478b74a5c9`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/3de6d98e6284a16313e275f30fa93d478b74a5c9
+
+---
+
+## V156 Fix (2026-07-01) — Dockerfile Cloud Compatibility & Hugging Face Remote Setup
+
+### Context
+FastAPI backend requires deployment on Hugging Face Spaces (Docker). The container needs to bind to `0.0.0.0` (rather than `127.0.0.1`) and expose port `7860` (Hugging Face default) so that external traffic from the reverse proxy can reach it.
+
+### Configuration Enhancement — Dockerfile Binding Overrides (HIGH)
+- **File:** `Dockerfile`
+- **Change:** Modified the healthcheck command to target port `7860`, and modified the `uvicorn` entrypoint command to bind to `--host 0.0.0.0 --port 7860` instead of local loopback `--host 127.0.0.1 --port 8000`.
+- **Purpose:** Enables cloud network routing to reach the FastAPI application server container.
+- **Git Actions:** Added the Hugging Face space repository as a remote named `hf`.
+
+### Verification Evidence
+- Verified that `Dockerfile` uses standard `0.0.0.0` binding suitable for docker cloud providers.
+
+### Commit Information
+- **Commit:** `bc520223c817aa93e7e3bcbb7319d7d521ce629b`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/bc520223c817aa93e7e3bcbb7319d7d521ce629b
