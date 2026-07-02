@@ -42,13 +42,13 @@ const TopBar: React.FC<TopBarProps> = ({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const pageName = routeLabels[location.pathname] || "FireAI";
+  const pageName = routeLabels[location.pathname] || "BAZSPARK";
 
   return (
     <header className="h-12 bg-slate-900 backdrop-blur-sm border-b border-slate-700/50 flex items-center px-4 gap-4 shrink-0">
       <Flame className="h-5 w-5 text-orange-500 shrink-0 transition-transform duration-300 hover:scale-110" />
       <span className="text-white font-semibold text-sm tracking-wide">
-        FireAI
+        BAZSPARK
       </span>
 
       <div className="h-5 w-px bg-slate-700/50" />
