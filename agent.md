@@ -17013,3 +17013,41 @@ No known vulnerabilities found
 ### Commit Information
 - **Commit:** (pending — will be filled after `git commit`)
 - **Tests:** 314+ verified passing after upgrade, 0 vulnerabilities
+
+---
+
+## V164 Fix (2026-07-02) — deploy.yml atexit hang (align with ci.yml V159.6)
+
+### Context
+After V163 fixed dependency vulnerabilities, the deploy.yml workflow was still using `--cov-fail-under=10` which causes the same pytest-cov 4.1.0 + coverage 7.x atexit hang that was fixed in ci.yml V159.6.
+
+### Root Cause Analysis (per Rule 17)
+
+**Layer 1 — Output:** deploy.yml's "Unit tests" step uses `pytest tests/ -v --cov=fireai --cov=backend --cov-report=term-missing --cov-fail-under=10`. This triggers the same atexit hang as ci.yml Gate 2.
+
+**Layer 2 — Thinking:** V159.6 fixed ci.yml but the same fix was not applied to deploy.yml. This is a consistency gap — both workflows run pytest, both should use the same coverage-disabled approach.
+
+**Layer 3 — Method:** The root cause is divergent CI config between ci.yml and deploy.yml. The fix is to align deploy.yml with ci.yml V159.6 (disable coverage, add timeout, add PYTEST_ADDOPTS, add backend/tests/ to path).
+
+**Layer 4 — Commitment:** CI consistency is essential. Two workflows running the same tests with different configs creates confusion and maintenance burden. Aligning them is the correct root-cause fix.
+
+### Bug V164-1 — deploy.yml Unit tests step uses coverage (causes atexit hang)
+
+**File:** `.github/workflows/deploy.yml`
+**Fix Applied:**
+1. Removed `--cov=fireai --cov=backend --cov-report=term-missing --cov-fail-under=10`
+2. Added `tests/ backend/tests/` (backend/tests/ was missing — deploy.yml was only running tests/)
+3. Added `timeout-minutes: 20` (defense-in-depth)
+4. Added `env: PYTEST_ADDOPTS: "--color=no"` (prevents ANSI codes in CI logs)
+5. Added `-p no:cacheprovider` (avoids stale cache)
+6. Changed `-v` to `-q` (quiet mode, faster log output)
+
+### Verification Evidence
+- No production code changes
+- No test changes
+- CI workflow config only
+- Same approach as ci.yml V159.6 (proven to work)
+
+### Commit Information
+- **Commit:** `4a9c63ea`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/4a9c63ea
