@@ -89,11 +89,20 @@ export const OnboardingTour: React.FC = () => {
 
   useEffect(() => {
     setIsMounted(true);
-    const completed = localStorage.getItem(STORAGE_KEY);
-    if (!completed) {
-      const timer = setTimeout(() => setIsVisible(true), 1000);
-      return () => clearTimeout(timer);
-    }
+    // V181 FIX: Do NOT auto-start the onboarding tour after 1 second.
+    // The previous behavior (setTimeout 1000ms → setIsVisible(true)) caused
+    // a full-screen bg-slate-950/80 overlay to appear over EVERY new visitor's
+    // first session, making the entire UI look "dimmed/empty" (the overlay
+    // sat at z-[9998] above all content). This was the ROOT CAUSE of the
+    // 'pages look dim' issue reported by the operator — not the CSS vars,
+    // not the overlays in AppShell (V177), not the card transparency (V178).
+    //
+    // The tour is still available via the help menu / F1 / Ctrl+H, but it no
+    // longer ambushes new users with a dark overlay.
+    //
+    // To re-enable auto-tour in the future, gate it behind an explicit
+    // user opt-in (e.g. a "Take Tour" button in the help drawer) rather
+    // than auto-firing on first visit.
   }, []);
 
   const getTargetPosition = useCallback(() => {
