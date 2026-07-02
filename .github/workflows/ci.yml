@@ -162,29 +162,48 @@ jobs:
         # No test files modified (Rule 10). CI workflow config only.
         #
         # V165 FIX: Increase timeout to 30 min + add pytest-timeout (60s/test)
-        # GitHub Actions runners are slower than local dev machines. The
-        # full suite (9000+ tests) takes ~11 min locally but can take 20+
-        # min on GHA. The 20 min timeout was causing Gate 2 to fail.
         #
-        # V166 FIX (root-cause): Add --no-cov to disable pytest-cov's atexit
-        # hook. pytest-cov is installed (via [dev] extras) and registers an
-        # atexit handler EVEN WHEN --cov is not passed. This handler tries
-        # to flush coverage data and hangs for 27+ minutes after pytest
-        # completes successfully (verified: 7198 passed in 193s, then hang
-        # until 30-min timeout). --no-cov explicitly disables coverage
-        # measurement AND the atexit hook.
-        timeout-minutes: 30
+        # V166 FIX: Add --no-cov to disable pytest-cov's atexit hook
+        #
+        # V167 FIX (TRUE ROOT-CAUSE): pytest completes successfully (7198 passed
+        # in 200s) but the process does NOT exit — it hangs as an orphan process
+        # for 27+ minutes until the 30-min job timeout. CI logs confirm:
+        #   "Terminate orphan process: pid (2690) (pytest)"
+        # The hang is NOT pytest-cov (V166 --no-cov didn't fix it). The hang
+        # is caused by non-daemon threads or asyncio event loops that some
+        # tests start but never clean up. Python's interpreter waits for ALL
+        # non-daemon threads to finish before exiting, which never happens.
+        #
+        # Root-cause fix: Wrap pytest in a Python script that calls os._exit(0)
+        # immediately after pytest returns. os._exit() bypasses Python's
+        # normal shutdown sequence (atexit handlers, thread joins, interpreter
+        # cleanup) and terminates the process immediately. This is the
+        # documented workaround for "pytest hangs after completion" when the
+        # root cause is thread cleanup.
+        #
+        # Reference: https://github.com/pytest-dev/pytest/issues/5775
+        # Reference: https://docs.python.org/3/library/os.html#os._exit
+        timeout-minutes: 15
         env:
           PYTEST_ADDOPTS: "--color=no"
         run: |
           pip install pytest-timeout
-          pytest tests/ backend/tests/ \
-            --tb=short \
-            -p no:cacheprovider \
-            --no-cov \
-            --timeout=60 \
-            --timeout-method=signal \
-            -q
+          python -c "
+          import subprocess, sys, os
+          result = subprocess.run([
+              sys.executable, '-m', 'pytest',
+              'tests/', 'backend/tests/',
+              '--tb=short',
+              '-p', 'no:cacheprovider',
+              '--no-cov',
+              '--timeout=60',
+              '--timeout-method=signal',
+              '-q',
+          ])
+          # Force immediate exit — bypass thread cleanup that hangs.
+          # pytest's exit code is preserved (0=pass, 1=fail, 2=error).
+          os._exit(result.returncode)
+          "
 
       - name: Upload coverage report
         # V159.6 FIX: Coverage is now disabled in CI (see step above). This step

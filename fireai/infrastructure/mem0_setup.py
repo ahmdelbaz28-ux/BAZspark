@@ -314,7 +314,7 @@ def _detect_provider_uncached() -> dict[str, Any]:
     """
     Detect the best available LLM/embedding provider (uncached version).
 
-    Strategy (V81 — 6-Strategy Failover with OpenCode):
+    Strategy (V168 — 7-Strategy Failover with NVIDIA):
     1. Try OpenAI API (if OPENAI_API_KEY available AND not region-blocked)
        - gpt-4o for LLM, text-embedding-3-small for embeddings
        - Best accuracy for engineering analysis, native Mem0 support
@@ -334,8 +334,19 @@ def _detect_provider_uncached() -> dict[str, Any]:
        - gemini-2.0-flash for LLM + local sentence-transformers for embeddings
        - PRIMARY when OpenAI/OpenRouter/OpenCode unavailable
        - Uses google-generativeai SDK via Mem0's native gemini provider
-    5. Fall back to z-ai proxy at localhost:11435 (if running)
-    6. Raise error if no provider available
+    5. Try NVIDIA API (V168 — OpenAI-compatible, 120+ models, no region block)
+       - Uses NVIDIA_API_KEY + NVIDIA_BASE_URL
+       - OpenAI-compatible: works with Mem0's openai provider
+       - 120+ models: Llama 3.x, Mistral, Qwen, Gemma, Nemotron
+       - Default: meta/llama-3.1-8b-instruct (configurable via NVIDIA_MODEL)
+       - No region blocking — works globally
+    6. Fall back to z-ai proxy at localhost:11435 (if running)
+    7. Raise error if no provider available
+
+    V168 CHANGE: Added NVIDIA as Strategy 5 (after Gemini, before z-ai proxy).
+    NVIDIA build.nvidia.com provides OpenAI-compatible API access to 120+
+    models including Llama 3.x, Mistral, Qwen, Gemma, and Nemotron families.
+    Default model: meta/llama-3.1-8b-instruct (verified working 2026-07-02).
 
     V81 CHANGE: Renamed OpenQuotta (Strategy 3) to OpenCode — correct provider
     name. OpenCode (opencode.ai) provides OpenAI-compatible API access to
@@ -495,10 +506,55 @@ def _detect_provider_uncached() -> dict[str, Any]:
                 "collection_name": "fireai_memory_gemini_v78",
             }
         logger.info(
-            "Gemini API key found but not reachable (quota exceeded or network error). Falling back to z-ai proxy."
+            "Gemini API key found but not reachable (quota exceeded or network error). Falling back to NVIDIA or z-ai proxy."
         )
 
-    # ── Strategy 5: Try z-ai proxy ──
+    # ── Strategy 5: NVIDIA API (V168 — OpenAI-compatible, 120 models, no region block) ──
+    # NVIDIA build.nvidia.com provides OpenAI-compatible API access to 120+ models
+    # including Llama 3.x, Mistral, Qwen, Gemma, and Nemotron families.
+    #
+    # Why NVIDIA for Strategy 5:
+    # 1. No geographic region blocking — works globally (unlike OpenAI)
+    # 2. OpenAI-compatible API at https://integrate.api.nvidia.com/v1/
+    # 3. 120+ models available (verified: meta/llama-3.1-8b-instruct works)
+    # 4. Free tier with generous limits
+    # 5. Mem0 can use its openai provider with NVIDIA's base_url
+    #
+    # Default model: meta/llama-3.1-8b-instruct (verified working 2026-07-02)
+    # Configurable via NVIDIA_MODEL env var (e.g., meta/llama-3.3-70b-instruct)
+    #
+    # Per agent.md Priority 1 (Safety): NVIDIA provides Llama 3.x which is
+    # suitable for NFPA engineering analysis. While gpt-4o has higher accuracy,
+    # Llama 3.x is a capable fallback when all premium providers are unavailable.
+    nvidia_key = os.getenv("NVIDIA_API_KEY")
+    nvidia_base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+    nvidia_model = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
+
+    if nvidia_key:
+        nvidia_reachable = _test_openai_compatible_connectivity(nvidia_base_url, nvidia_key)
+
+        if nvidia_reachable:
+            logger.info(
+                f"NVIDIA API reachable at {nvidia_base_url} — "
+                f"using NVIDIA as provider. "
+                f"(LLM: {nvidia_model}, Embeddings: local sentence-transformers, 384d)"
+            )
+            return {
+                "provider": "nvidia",
+                "api_key": nvidia_key,
+                "llm_provider": "openai",
+                "llm_model": nvidia_model,
+                "embedder_provider": "local",
+                "embedder_model": "multi-qa-MiniLM-L6-cos-v1",
+                "embedding_dims": 384,
+                "collection_name": "fireai_memory_nvidia_v168",
+                "base_url": nvidia_base_url,
+            }
+        logger.info(
+            f"NVIDIA API key found but {nvidia_base_url} not reachable. Falling back to z-ai proxy."
+        )
+
+    # ── Strategy 6: Try z-ai proxy ──
     proxy_url = os.getenv("FIREAI_PROXY_URL", "http://localhost:11435")
     try:
         import urllib.request
@@ -532,14 +588,15 @@ def _detect_provider_uncached() -> dict[str, Any]:
     except Exception as e:
         logger.warning("z-ai proxy not available at %s: %s", proxy_url, e)
 
-    # ── Strategy 6: No provider available ──
+    # ── Strategy 7: No provider available ──
     raise ValueError(
         "No LLM provider available. Either:\n"
         "1. Set OPENAI_API_KEY for OpenAI access (best engineering accuracy)\n"
         "2. Set OPENROUTER_API_KEY for OpenRouter (no region block, gpt-4o access)\n"
         "3. Set OPENCODE_API_KEY for OpenCode (V81, no region block, gpt-4o access)\n"
         "4. Set GEMINI_API_KEY for Google Gemini (works globally)\n"
-        "5. Start z-ai proxy: python zai_openai_proxy.py\n"
+        "5. Set NVIDIA_API_KEY for NVIDIA build.nvidia.com (V168, 120+ models, no region block)\n"
+        "6. Start z-ai proxy: python zai_openai_proxy.py\n"
         "Memory layer requires at least one provider."
     )
 
