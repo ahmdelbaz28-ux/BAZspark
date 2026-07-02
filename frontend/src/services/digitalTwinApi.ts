@@ -88,9 +88,28 @@ class ApiClient {
     }
 
     try {
+      // V176 FIX: Inject X-API-Key header on every request (not just fetchBlob).
+      // Previously, fetchWithRetry only sent defaultHeaders (Content-Type + X-Client-Version)
+      // without the API key. This caused ALL GET/POST/PUT/DELETE requests to return
+      // HTTP 401 from the backend (which requires X-API-Key on all /projects, /devices,
+      // /connections, /reports endpoints). Only fetchBlob() injected the key — but
+      // fetchBlob is only used for export endpoints. The main data-fetching path
+      // (get/post/put/delete → fetchWithRetry) was silently unauthenticated.
+      //
+      // Symptoms: Dashboard cards showed "0" for all stats, Projects page showed
+      // "No projects found" with error text, Elements/Connections pages were empty.
+      // The pages LOOKED dimmed/empty because the loading skeletons never resolved
+      // to real data (every API call failed with 401, which fetchWithRetry treated
+      // as an error and returned success:false with no data).
+      const authHeaders: Record<string, string> = { ...this.defaultHeaders, ...options.headers };
+      const apiKey = this.getApiKey();
+      if (apiKey) {
+        authHeaders['X-API-Key'] = apiKey;
+      }
+
       const response = await fetch(url, {
         ...options,
-        headers: { ...this.defaultHeaders, ...options.headers },
+        headers: authHeaders,
         signal: controller.signal,
         // M-3: Send cookies (HttpOnly session) with same-origin requests
         credentials: 'same-origin',

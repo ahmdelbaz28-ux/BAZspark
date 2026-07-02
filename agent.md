@@ -17503,3 +17503,100 @@ RUN mkdir -p /app/data /app/logs /app/tmp /app/db && \
 - **Commit:** `94e61ae093618d94a41064ef41991893a084b4e6`
 - **GitHub push link:** https://github.com/ahmdelbaz28-ux/revit/commit/94e61ae093618d94a41064ef41991893a084b4e6
 - **Branch:** main (c6c77d49 → 94e61ae0)
+
+---
+
+## V176 Fix (2026-07-03) — Frontend pages empty/dimmed: missing X-API-Key + wrong VITE_API_URL
+
+### Context
+
+Operator reported (with screenshot evidence): "صفحات فيها ظل للايقونات لكن الصفحات تظهر معتمة تماما" — pages show icon shadows but content appears completely dimmed/empty.
+
+### Root Cause Analysis (per Rule 17)
+
+**Layer 1 — OUTPUT:** All 20 frontend page screenshots showed dimmed/empty content. VLM analysis confirmed: "main content area is mostly empty/dimmed", "no clear, legible details are present".
+
+**Layer 2 — THINKING:** Investigated live DOM via agent-browser:
+- Main element: opacity=1, visibility=visible, display=block, dimensions 1216×824 — NOT hidden
+- Cards: bg=oklab(0.279...), opacity=1, visible, correct dimensions — NOT dimmed by CSS
+- 2 skeleton loaders present on dashboard — meaning API calls were pending/failing
+- i18n: only 2 untranslated keys (dashboard.warning + URL string) — translations work
+
+**Layer 3 — METHOD:** Traced network requests:
+```
+GET https://ahmdelbaz28-bazspark.hf.space/health    → 200 OK
+GET https://ahmdelbaz28-bazspark.hf.space/projects  → 401 Unauthorized
+```
+
+TWO root causes discovered:
+
+1. **VITE_API_URL missing /api/v1 suffix** (Vercel env var):
+   - Was: `https://ahmdelbaz28-bazspark.hf.space`
+   - Should be: `https://ahmdelbaz28-bazspark.hf.space/api/v1`
+   - Without the prefix, requests went to `/projects` instead of `/api/v1/projects` → 404 on backend router
+
+2. **fetchWithRetry in digitalTwinApi.ts does NOT inject X-API-Key header** (CRITICAL):
+   - `fetchWithRetry()` (line 91) used `headers: { ...this.defaultHeaders, ...options.headers }`
+   - `defaultHeaders` only contains `Content-Type` + `X-Client-Version` — NO API key
+   - `getApiKey()` method EXISTS (line 560) but is only called in `fetchBlob()` (line 501) — NOT in fetchWithRetry
+   - ALL GET/POST/PUT/DELETE requests (used by get/post/put/delete methods → all data fetching) were sent WITHOUT authentication
+   - Backend's ApiKeyMiddleware returned 401 for /projects, /devices, /connections, /reports
+   - fetchWithRetry treated 401 as error, returned success:false with no data
+   - Hooks (useProjects, useDevices) received null data, showed skeletons forever
+   - Result: pages LOOKED dimmed because skeleton loaders never resolved to real content
+
+**Layer 4 — COMMITMENT:** This bug has been present since the API key auth was added. It was masked in development (where VITE_API_URL=/api/v1 proxied through Vite dev server with no auth) and only became visible in production where VITE_API_URL points directly to the HF backend (which requires X-API-Key). The operator's screenshots were the FIRST time this was visible to a human. I should have caught this during the V175 viewer-key rollout by actually loading a data-fetching page in the browser — not just checking that the key was in the bundle.
+
+### Bug V176-1 — fetchWithRetry missing X-API-Key injection (CRITICAL — UI completely broken)
+
+**File:** `frontend/src/services/digitalTwinApi.ts`
+
+**Fix Applied (root-cause):**
+```typescript
+// In fetchWithRetry(), BEFORE the fetch() call:
+const authHeaders: Record<string, string> = { ...this.defaultHeaders, ...options.headers };
+const apiKey = this.getApiKey();
+if (apiKey) {
+  authHeaders['X-API-Key'] = apiKey;
+}
+
+const response = await fetch(url, {
+  ...options,
+  headers: authHeaders,  // ← was: { ...this.defaultHeaders, ...options.headers }
+  signal: controller.signal,
+  credentials: 'same-origin',
+});
+```
+
+This matches the pattern already used in `fetchBlob()` (line 500-504) and `api.ts` (line 139).
+
+### Bug V176-2 — VITE_API_URL missing /api/v1 suffix (HIGH — wrong endpoint)
+
+**Vercel env var** `VITE_API_URL`:
+- Before: `https://ahmdelbaz28-bazspark.hf.space`
+- After:  `https://ahmdelbaz28-bazspark.hf.space/api/v1`
+
+Fixed via PATCH /v9/projects/{id}/env/{envId} (HTTP 200). This matches the value documented in `frontend/.env.example` (line 7).
+
+### Verification Evidence
+
+**Cannot fully verify locally** — the fix requires a Vercel rebuild to bake the new code + env var into the bundle. Will trigger redeploy and verify via:
+1. Network panel: GET /api/v1/projects with X-API-Key header → 200 (not 401)
+2. VLM analysis of new screenshots: content should be visible, not dimmed
+3. Live DOM eval: skeleton loaders should resolve to real data
+
+**Tests Modified:** NONE (Rule 10).
+**Production Code Modified:** `frontend/src/services/digitalTwinApi.ts` only (1 file, +20 lines, -1 line).
+
+### 4-Layer Self-Criticism (Rule 21)
+
+**Layer 1 (OUTPUT):** Fix is minimal (20 lines) and matches the existing pattern in fetchBlob(). No new abstractions.
+
+**Layer 2 (THINKING):** Did I rationalize? Yes — during V175 (viewer key rollout), I verified the key was in the bundle but did NOT verify that the bundle actually USES the key in requests. This is a verification gap. The correct test would have been: open browser → check network panel → confirm X-API-Key header on /projects request. I skipped this step and declared success prematurely. This violated Rule 14 (verify before changing) — I changed the env var without verifying the end-to-end request flow.
+
+**Layer 3 (METHOD):** Fixed the disease (missing auth header) not the symptom (dimmed pages). A half-solution would have been adding a workaround in the backend to allow unauthenticated reads — that would have re-introduced the security hole V175 closed.
+
+**Layer 4 (COMMITMENT):** Would I stake a life on this? Yes — but I also commit to NEVER declaring "verified" again without actually loading a data-fetching page in a browser and confirming the network request succeeds. The V175 rollout was incomplete; V176 completes it.
+
+### Commit Information
+- **Commit:** (pending — will be filled after `git commit`)
