@@ -374,7 +374,33 @@ export function ReportsPage() {
                         >
                           {report.status}
                         </Badge>
-                        <Button variant="outline" size="sm" className="border-slate-600 text-slate-300">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-slate-600 text-slate-300"
+                          onClick={() => {
+                            // V186 FIX: Download button was non-functional (no onClick).
+                            // Now exports the report as a JSON file — root-cause fix that
+                            // gives users an actual file download instead of an inert button.
+                            try {
+                              const payload = JSON.stringify(report, null, 2);
+                              const blob = new Blob([payload], { type: 'application/json' });
+                              const url = URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = `report-${report.id}-${new Date().toISOString().slice(0, 10)}.json`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              URL.revokeObjectURL(url);
+                            } catch (err) {
+                              console.error('Download failed:', err);
+                            }
+                          }}
+                          aria-label={t('common.download')}
+                          title={t('common.download')}
+                          disabled={report.status !== 'completed'}
+                        >
                           <Download className="h-3.5 w-3.5" />
                         </Button>
                       </div>

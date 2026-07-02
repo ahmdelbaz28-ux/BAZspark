@@ -28,6 +28,11 @@ global.fetch = vi.fn().mockResolvedValue({
   json: () => Promise.resolve({ success: true, data: { status: 'ok' } }),
 });
 
+// Mock react-router-dom
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+}));
+
 import { SettingsPage } from '../SettingsPage';
 
 describe('SettingsPage', () => {

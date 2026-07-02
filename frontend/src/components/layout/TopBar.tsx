@@ -5,6 +5,7 @@ import { Search, HelpCircle, Settings, Globe, Flame } from "lucide-react";
 interface TopBarProps {
   isConnected: boolean;
   onHelpOpen: () => void;
+  onSearchOpen?: () => void;
   currentLanguage: string;
   onLanguageChange: (lang: string) => void;
 }
@@ -25,6 +26,7 @@ const routeLabels: Record<string, string> = {
 const TopBar: React.FC<TopBarProps> = ({
   isConnected,
   onHelpOpen,
+  onSearchOpen,
   currentLanguage,
   onLanguageChange,
 }) => {
@@ -71,8 +73,10 @@ const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       <button
+        onClick={onSearchOpen}
         className="p-1.5 text-slate-400 hover:text-slate-200 transition-all duration-200 hover:scale-110"
         aria-label="Search"
+        title="Search (Ctrl+K)"
       >
         <Search className="h-4 w-4" />
       </button>

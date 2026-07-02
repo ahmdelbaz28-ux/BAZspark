@@ -112,6 +112,7 @@ function App() {
         currentLanguage={i18n.language}
         onLanguageChange={(lng: string) => i18n.changeLanguage(lng)}
         onHelpOpen={() => { setMagicHelpTopic(null); setHelpOpen(true); }}
+        onSearchOpen={() => setCommandPaletteOpen(true)}
       >
         <main className="flex-1 overflow-auto relative">
           <Routes>

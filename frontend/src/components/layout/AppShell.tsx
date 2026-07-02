@@ -9,6 +9,7 @@ interface AppShellProps {
   backendUrl: string;
   environment: string;
   onHelpOpen: () => void;
+  onSearchOpen?: () => void;
   currentLanguage: string;
   onLanguageChange: (lang: string) => void;
 }
@@ -19,6 +20,7 @@ const AppShell: React.FC<AppShellProps> = ({
   backendUrl,
   environment,
   onHelpOpen,
+  onSearchOpen,
   currentLanguage,
   onLanguageChange,
 }) => {
@@ -46,6 +48,7 @@ const AppShell: React.FC<AppShellProps> = ({
         <TopBar
           isConnected={isConnected}
           onHelpOpen={onHelpOpen}
+          onSearchOpen={onSearchOpen}
           currentLanguage={currentLanguage}
           onLanguageChange={onLanguageChange}
         />

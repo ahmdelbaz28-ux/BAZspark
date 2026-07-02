@@ -3,6 +3,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ import { api } from '@/services/digitalTwinApi';
 
 export function SettingsPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { data: health, loading: healthLoading, connected, refetch: refetchHealth } = useHealth();
   
   const [activeTab, setActiveTab] = useState('general');
@@ -162,22 +164,26 @@ export function SettingsPage() {
         {/* Report Generator Quick Access */}
         <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg text-slate-100">Advanced Report Generator</CardTitle>
+            <CardTitle className="text-lg text-slate-100">{t('settings.advancedReportGenerator')}</CardTitle>
             <CardDescription className="text-slate-400">
-              Generate deterministic analysis reports with NFPA 72 compliance
+              {t('settings.reportGeneratorDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
-                <h3 className="font-medium text-slate-200 mb-2">Comprehensive Report Generation</h3>
+                <h3 className="font-medium text-slate-200 mb-2">{t('settings.comprehensiveReportGeneration')}</h3>
                 <p className="text-sm text-slate-400">
-                  Generate NFPA 72 Coverage, Battery Calculations, Voltage Drop Analysis, Complete Compliance Reports, Cause & Effect Matrices, and Cable Schedules.
+                  {t('settings.comprehensiveReportDesc')}
                 </p>
               </div>
-              <Button className="bg-red-600 hover:bg-red-700 text-white border-none flex items-center gap-2">
+              <Button
+                onClick={() => navigate('/reports')}
+                className="bg-red-600 hover:bg-red-700 text-white border-none flex items-center gap-2"
+                aria-label={t('settings.openReportGenerator')}
+              >
                 <Calculator className="h-4 w-4" />
-                Open Report Generator
+                {t('settings.openReportGenerator')}
               </Button>
             </div>
           </CardContent>
@@ -353,14 +359,14 @@ export function SettingsPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-slate-100">{t('settings.reports')}</CardTitle>
                 <CardDescription className="text-slate-400">
-                  Configure report generation and export options
+                  {t('settings.reportGeneratorDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between py-3">
                   <div>
-                    <Label className="text-slate-300">Auto-save Reports</Label>
-                    <p className="text-xs text-slate-400 mt-1">Automatically save reports after generation</p>
+                    <Label className="text-slate-300">{t('settings.autoSaveReports')}</Label>
+                    <p className="text-xs text-slate-400 mt-1">{t('settings.autoSaveReportsDesc')}</p>
                   </div>
                   <Switch
                     checked={autoSaveReports}
@@ -370,7 +376,7 @@ export function SettingsPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-slate-300">Report Format</Label>
+                    <Label className="text-slate-300">{t('settings.reportFormat')}</Label>
                     <select
                       value={reportFormat}
                       onChange={(e) => setReportFormat(e.target.value)}
@@ -381,10 +387,10 @@ export function SettingsPage() {
                       <option value="excel">Excel</option>
                       <option value="xml">XML</option>
                     </select>
-                    <p className="text-xs text-slate-400">Default format for exported reports</p>
+                    <p className="text-xs text-slate-400">{t('settings.reportFormatDesc')}</p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-slate-300">Report Quality</Label>
+                    <Label className="text-slate-300">{t('settings.reportQuality')}</Label>
                     <select
                       value={reportQuality}
                       onChange={(e) => setReportQuality(e.target.value)}
@@ -394,7 +400,7 @@ export function SettingsPage() {
                       <option value="medium">Medium</option>
                       <option value="high">High (Detailed)</option>
                     </select>
-                    <p className="text-xs text-slate-400">Level of detail in reports</p>
+                    <p className="text-xs text-slate-400">{t('settings.reportQualityDesc')}</p>
                   </div>
                 </div>
                 <div className="pt-4">
@@ -402,7 +408,7 @@ export function SettingsPage() {
                     className="bg-red-600 hover:bg-red-700 text-white border-none"
                     onClick={handleSaveReports}
                   >
-                    Save Report Settings
+                    {t('settings.saveReportSettings')}
                   </Button>
                 </div>
               </CardContent>

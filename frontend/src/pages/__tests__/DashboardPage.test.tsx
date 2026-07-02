@@ -39,6 +39,7 @@ vi.mock('@/hooks/useApi', () => ({
 // Mock react-router-dom
 vi.mock('react-router-dom', () => ({
   NavLink: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
+  useNavigate: () => vi.fn(),
 }));
 
 import { DashboardPage } from '../DashboardPage';

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { useHealth, useProjects, useDevices } from '@/hooks/useApi';
 
 export function DashboardPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { data: health, loading: healthLoading, connected, refetch: refetchHealth } = useHealth();
   const { data: projects, loading: projectsLoading, error: projectsError } = useProjects();
   const { data: devices, loading: devicesLoading, error: devicesError } = useDevices(null); // Pass null as projectId
@@ -207,22 +209,26 @@ export function DashboardPage() {
         {/* Report Generator Quick Access */}
         <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg text-slate-100">Advanced Report Generator</CardTitle>
+            <CardTitle className="text-lg text-slate-100">{t('settings.advancedReportGenerator')}</CardTitle>
             <CardDescription className="text-slate-400">
-              Generate deterministic analysis reports with NFPA 72 compliance
+              {t('settings.reportGeneratorDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
-                <h3 className="font-medium text-slate-200 mb-2">Comprehensive Report Generation</h3>
+                <h3 className="font-medium text-slate-200 mb-2">{t('settings.comprehensiveReportGeneration')}</h3>
                 <p className="text-sm text-slate-400">
-                  Generate NFPA 72 Coverage, Battery Calculations, Voltage Drop Analysis, Complete Compliance Reports, Cause & Effect Matrices, and Cable Schedules.
+                  {t('settings.comprehensiveReportDesc')}
                 </p>
               </div>
-              <Button className="bg-red-600 hover:bg-red-700 text-white border-none flex items-center gap-2">
+              <Button
+                onClick={() => navigate('/reports')}
+                className="bg-red-600 hover:bg-red-700 text-white border-none flex items-center gap-2"
+                aria-label={t('settings.openReportGenerator')}
+              >
                 <Calculator className="h-4 w-4" />
-                Open Report Generator
+                {t('settings.openReportGenerator')}
               </Button>
             </div>
           </CardContent>

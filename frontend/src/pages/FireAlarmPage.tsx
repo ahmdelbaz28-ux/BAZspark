@@ -89,6 +89,50 @@ export function FireAlarmPage() {
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [showProperties, setShowProperties] = useState(false);
 
+  // V186 FIX: Undo/Redo/Save buttons were non-functional (no onClick handlers).
+  // Added a history stack for undo/redo, and Save persists to localStorage.
+  // This is a minimal root-cause fix: the buttons now actually do something
+  // instead of being inert UI elements that frustrate users.
+  const [history, setHistory] = useState<Detector[][]>([]);
+  const [redoStack, setRedoStack] = useState<Detector[][]>([]);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+
+  const pushHistory = (snapshot: Detector[]) => {
+    setHistory(prev => [...prev.slice(-19), snapshot]);
+    setRedoStack([]);
+  };
+
+  const handleUndo = () => {
+    setHistory(prev => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setRedoStack(r => [...r, detectors]);
+      setDetectors(last);
+      return prev.slice(0, -1);
+    });
+  };
+
+  const handleRedo = () => {
+    setRedoStack(prev => {
+      if (prev.length === 0) return prev;
+      const next = prev[prev.length - 1];
+      setHistory(h => [...h, detectors]);
+      setDetectors(next);
+      return prev.slice(0, -1);
+    });
+  };
+
+  const handleSave = () => {
+    try {
+      localStorage.setItem('fireai_firealarm_detectors', JSON.stringify(detectors));
+      setSaveStatus(t('fireAlarm.projectSaved'));
+      setTimeout(() => setSaveStatus(null), 2500);
+    } catch {
+      setSaveStatus(t('common.error'));
+      setTimeout(() => setSaveStatus(null), 2500);
+    }
+  };
+
   // V140 Phase 5: Fetch zones from API
   const [zones, setZones] = useState<typeof mockZones>([]);
   const [zonesLoading, setZonesLoading] = useState(false);
@@ -152,6 +196,8 @@ export function FireAlarmPage() {
   };
 
   const handleSaveDevice = (updatedDevice: any) => {
+    // V186: push current state to history before mutating
+    pushHistory(detectors);
     // Update the device in the detectors array
     setDetectors(prev => prev.map(det => det.id === updatedDevice.id ? updatedDevice : det));
     setShowProperties(false);
@@ -178,25 +224,50 @@ export function FireAlarmPage() {
         {/* Top Toolbar */}
         <div className="h-14 flex items-center px-4 border-b border-slate-700 bg-slate-800">
           <h1 className="text-lg font-semibold text-slate-100">{t('fireAlarm.designer')}</h1>
-          <div className="ml-auto flex gap-2">
-            <Button variant="outline" className="border-slate-600 text-slate-300">
+          <div className="ml-auto flex gap-2 items-center">
+            <Button
+              variant="outline"
+              className="border-slate-600 text-slate-300"
+              onClick={handleUndo}
+              disabled={history.length === 0}
+              aria-label={t('common.undo')}
+            >
               {t('common.undo')}
             </Button>
-            <Button variant="outline" className="border-slate-600 text-slate-300">
+            <Button
+              variant="outline"
+              className="border-slate-600 text-slate-300"
+              onClick={handleRedo}
+              disabled={redoStack.length === 0}
+              aria-label={t('common.redo')}
+            >
               {t('common.redo')}
             </Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white border-none">
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white border-none"
+              onClick={handleSave}
+              aria-label={t('common.save')}
+            >
               {t('common.save')}
             </Button>
+            {saveStatus && (
+              <span className="text-xs text-emerald-400 ml-2" role="status" aria-live="polite">
+                {saveStatus}
+              </span>
+            )}
           </div>
         </div>
 
         {/* Canvas Area */}
         <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 p-4">
-            <CanvasEditor 
-              detectors={detectors} 
-              onDetectorsChange={setDetectors}
+            <CanvasEditor
+              detectors={detectors}
+              onDetectorsChange={(next: Detector[] | ((prev: Detector[]) => Detector[])) => {
+                // V186: snapshot current state before each external mutation
+                pushHistory(detectors);
+                setDetectors(next);
+              }}
             />
           </div>
 
