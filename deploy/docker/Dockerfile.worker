@@ -51,8 +51,13 @@ COPY --chown=fireai:fireai integration/ ./integration/
 COPY --chown=fireai:fireai pyproject.toml ./
 COPY deploy/docker/entrypoint-worker.sh /entrypoint-worker.sh
 
-RUN mkdir -p /app/data /app/logs /app/tmp && \
-    chown -R fireai:fireai /app/data /app/logs /app/tmp && \
+# V174 FIX: /app/db MUST be pre-created (same root cause as the root Dockerfile
+# and Dockerfile.api). The worker imports backend.api_keys (via backend.app),
+# which calls _ensure_default_admin_key() at module load time. When
+# FIREAI_API_KEY is set (Kubernetes secret), this writes to db/api_keys.json
+# and would crash without /app/db pre-created and owned by fireai.
+RUN mkdir -p /app/data /app/logs /app/tmp /app/db && \
+    chown -R fireai:fireai /app/data /app/logs /app/tmp /app/db && \
     chmod +x /entrypoint-worker.sh
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

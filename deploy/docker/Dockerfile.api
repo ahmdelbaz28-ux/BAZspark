@@ -66,8 +66,14 @@ COPY --chown=fireai:fireai qomn_conduit/ ./qomn_conduit/
 COPY --chown=fireai:fireai integration/ ./integration/
 COPY --chown=fireai:fireai pyproject.toml ./
 
-RUN mkdir -p /app/data /app/logs /app/tmp && \
-    chown -R fireai:fireai /app/data /app/logs /app/tmp
+# V174 FIX: /app/db MUST be pre-created (same root cause as the root Dockerfile).
+# backend/api_keys.py line 648 calls _ensure_default_admin_key() at module load
+# time; when FIREAI_API_KEY is set (injected as Kubernetes secret in deploy.yml
+# lines 210, 269), it tries to mkdir("db") relative to CWD (/app). Without this
+# pre-created directory, the fireai user cannot create /app/db (root-owned)
+# and the API container crashes on startup with PermissionError.
+RUN mkdir -p /app/data /app/logs /app/tmp /app/db && \
+    chown -R fireai:fireai /app/data /app/logs /app/tmp /app/db
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

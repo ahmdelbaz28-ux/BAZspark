@@ -45,9 +45,20 @@ COPY --chown=fireai:fireai core/ core/
 COPY --chown=fireai:fireai marine/ marine/
 COPY --chown=fireai:fireai adapters/ adapters/
 
-# Create data and logs directories
-RUN mkdir -p /app/data /app/logs && \
-    chown -R fireai:fireai /app/data /app/logs
+# Create data, logs, and db directories.
+# V174 FIX: /app/db MUST be pre-created and owned by fireai. backend/api_keys.py
+# line 648 calls _ensure_default_admin_key() at MODULE LOAD TIME; when
+# FIREAI_API_KEY is set (production + CI Gate 6), this calls add_api_key() →
+# _save_keys() → path.parent.mkdir(parents=True, exist_ok=True) on the
+# KEYS_FILE directory (default "db/api_keys.json" → /app/db). Without this
+# pre-created directory, the fireai user (non-root) cannot mkdir under /app
+# (owned by root) and the container crashes with:
+#   PermissionError: [Errno 13] Permission denied: 'db'
+# This was the root cause of CI Gate 6 failures (runs #741–#748+).
+# Pre-creating /app/db aligns with the existing pattern for /app/data and
+# /app/logs, and requires NO application code change.
+RUN mkdir -p /app/data /app/logs /app/db && \
+    chown -R fireai:fireai /app/data /app/logs /app/db
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

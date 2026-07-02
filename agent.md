@@ -17351,3 +17351,153 @@ $ python -c "from fireai.infrastructure.mem0_setup import _detect_provider; prin
 
 ### Commit Information
 - **Commit:** (pending — will be filled after `git commit`)
+
+---
+
+## V174 Fix (2026-07-03) — ROOT-CAUSE: Gate 6 Docker container crash on startup (PermissionError: 'db')
+
+### Context
+
+Operator directive (2026-07-03): "راجع تزامن كل المواقع ... وانها تعمل بنجاح كامل والمشروع جاهز للاطلاق واصلح اللازم كن صارما وحازما وصادقا" — review synchronization across all services, ensure full successful operation, project ready for launch, fix what's necessary, be strict/firm/honest.
+
+Service synchronization audit performed:
+- ✅ **Supabase REST API** (nrdqdnmyxbbdrrmqxzej.supabase.co): service_role key returns HTTP 200 on /rest/v1/; anon JWT valid (iat=1777923653, exp=2093499653, role=anon, ref=nrdqdnmyxbbdrrmqxzej); management API (sbp_ token) returns HTTP 200. **WARNING**: only 2 tables exist (`support_messages`, `auto_reply_settings`) — application schema not deployed. Connectivity is healthy but DB is essentially empty.
+- ✅ **Langfuse** (cloud.langfuse.com): public+secret keys authenticate (HTTP 200 on /api/public/projects); project "BAZSPARK" in org "AHMED ETAP" verified.
+- ✅ **Vercel** project `revit` (id prj_Y6Qr828DXS83tWF1LntFakyofMrf): framework=vite, root=frontend, build=`cd frontend && npm run build`, output=frontend/dist, Node 24.x, git-linked to `revit` repo on `main` branch. Latest production deployment READY: https://revit-53auvoyiq-ahmdelbaz28-uxs-projects.vercel.app (HTTP 200). 16 env vars present (VITE_API_URL → https://ahmdelbaz28-bazspark.hf.space; Supabase vars present as sensitive). The trailing ID `9v148N44sQZ7nUgAPd3FU4Cd88rk` in the Vercel URL is the TEAM id, not the project id — not an issue.
+- ✅ **Hugging Face BAZSPARK space** (ahmdelbaz28/BAZSPARK): RUNNING stage, sdk=docker, hardware=cpu-basic, public. Backend reachable: GET /api/v1/health returns HTTP 200. Root `/` returns 401 (requires X-API-Key — by design, security gate).
+- ❌ **GitHub Actions CI/CD Pipeline**: Run #748 (HEAD c6c77d49 V173, branch main, 2026-07-02T12:30:26Z) FAILED at **Gate 6 — Docker Build & Test** ("Test Docker container" step). Gates 1–5 all PASS. Deploy pipeline + modernization showcase PASS.
+
+### Root Cause Analysis (per Rule 17 — No Half-Solutions)
+
+**Layer 1 — OUTPUT:** Gate 6 fails. Container starts but never becomes healthy — `/api/health` does not respond within 60 seconds. Container logs show:
+```
+File "/app/backend/api_keys.py", line 648, in <module>
+    _ensure_default_admin_key()
+  File "/app/backend/api_keys.py", line 383, in _ensure_default_admin_key
+    add_api_key(env_key, Role.ADMIN, "Default admin key (from FIREAI_API_KEY)")
+  File "/app/backend/api_keys.py", line 416, in add_api_key
+    _save_keys(keys)
+  File "/app/backend/api_keys.py", line 343, in _save_keys
+    path.parent.mkdir(parents=True, exist_ok=True)
+PermissionError: [Errno 13] Permission denied: 'db'
+```
+
+**Layer 2 — THINKING:** Did I rationalize? No. I traced the full call chain:
+1. CI Gate 6 (ci.yml line 486) passes `-e FIREAI_API_KEY=test-ci-key` to `docker run`
+2. Container starts as `fireai` user (Dockerfile line 63 `USER fireai`), CWD=/app
+3. `uvicorn backend.app:app` triggers import of `backend/routers/__init__.py` (line 72) which lazily imports `backend.routers.api_keys` (line 18)
+4. `backend/api_keys.py` line 648 calls `_ensure_default_admin_key()` AT MODULE LOAD TIME (top-level side effect)
+5. Since `FIREAI_API_KEY` is set, line 383 calls `add_api_key(env_key, Role.ADMIN, ...)`
+6. `add_api_key` calls `_save_keys(keys)` (line 416)
+7. `_save_keys` line 343: `path.parent.mkdir(parents=True, exist_ok=True)` where `path = Path("db/api_keys.json")` (default KEYS_FILE on line 35 = `os.getenv("FIREAI_API_KEYS_FILE", "db/api_keys.json")`)
+8. `path.parent` = `db` (relative to CWD=/app → `/app/db`)
+9. `/app/db` does NOT exist; the `fireai` user (non-root) cannot create it because `/app` is owned by root (only `/app/data` and `/app/logs` are pre-created and chown'd to fireai by Dockerfile lines 49–50)
+10. → `PermissionError: [Errno 13] Permission denied: 'db'`
+11. Process crashes; uvicorn never starts listening; /api/health never responds; Gate 6 fails after 30 retry attempts (60s)
+
+**Why HF BAZSPARK space runs successfully but Gate 6 doesn't:** On HF Spaces, `FIREAI_API_KEY` is NOT set in the Space secrets (the /api/v1/health endpoint returned 200, and the root / returned 401 with "X-API-Key required" — meaning the API key middleware is active but no admin key has been seeded from env). Without `FIREAI_API_KEY`, `_ensure_default_admin_key()` returns early at line 377 (`else: return`) and never calls `_save_keys()`. So the import succeeds and the app starts. Gate 6 in CI sets `FIREAI_API_KEY=test-ci-key`, triggering the broken write path. **This means production deployments that set `FIREAI_API_KEY` (which deploy.yml lines 210 and 269 DO via Kubernetes secrets) would also crash on startup** — the bug is launch-blocking for any environment that uses API-key authentication.
+
+**Layer 3 — METHOD:** The root-cause fix is to pre-create `/app/db` in the Dockerfile, owned by `fireai:fireai`. This matches the EXISTING pattern for `/app/data` and `/app/logs` (Dockerfile lines 49–50). No application code change needed. No env var change needed. The application's `path.parent.mkdir(parents=True, exist_ok=True)` then succeeds because `/app/db` already exists with correct ownership (`exist_ok=True` makes mkdir a no-op).
+
+A half-solution would have been:
+- "Set FIREAI_API_KEYS_FILE=/app/data/api_keys.json in Dockerfile ENV" — works but moves the problem; doesn't fix the api_keys.secret file (also written to same dir, see line 132); and changes default behavior.
+- "Run container as root" — security regression; violates least-privilege.
+- "Skip Gate 6 in CI" — masking the symptom; violates Rule 17.
+
+The CORRECT fix is pre-creating the directory the application expects to write to. This is the same pattern Dockerfile already uses for `/app/data` and `/app/logs`.
+
+**Layer 4 — COMMITMENT:** Would I stake a life on this? Yes. The fix is minimal (one `mkdir -p` + `chown`), follows existing Dockerfile patterns, requires zero application code change, and unblocks both CI Gate 6 AND production Kubernetes deployments that inject `FIREAI_API_KEY` as a secret. Without this fix, ANY environment that sets `FIREAI_API_KEY` (production-correct behavior) crashes on container startup — a silent launch blocker.
+
+### Bug V174-1 — Dockerfile missing /app/db pre-creation (CRITICAL — Launch Blocker)
+
+**Files affected:**
+1. `Dockerfile` (root) — used by CI Gate 6 and HF BAZSPARK space
+2. `deploy/docker/Dockerfile.api` — used by production Kubernetes API deployment (deploy.yml line 296)
+3. `deploy/docker/Dockerfile.worker` — used by production Kubernetes worker deployment (deploy.yml line 297) — imports `backend.app` via entrypoint, same crash path
+
+**Fix Applied (root-cause, all 3 Dockerfiles):**
+
+`Dockerfile` (root):
+```dockerfile
+# Before (V173):
+RUN mkdir -p /app/data /app/logs && \
+    chown -R fireai:fireai /app/data /app/logs
+
+# After (V174):
+RUN mkdir -p /app/data /app/logs /app/db && \
+    chown -R fireai:fireai /app/data /app/logs /app/db
+```
+
+`deploy/docker/Dockerfile.api`:
+```dockerfile
+# Before:
+RUN mkdir -p /app/data /app/logs /app/tmp && \
+    chown -R fireai:fireai /app/data /app/logs /app/tmp
+
+# After:
+RUN mkdir -p /app/data /app/logs /app/tmp /app/db && \
+    chown -R fireai:fireai /app/data /app/logs /app/tmp /app/db
+```
+
+`deploy/docker/Dockerfile.worker`:
+```dockerfile
+# Before:
+RUN mkdir -p /app/data /app/logs /app/tmp && \
+    chown -R fireai:fireai /app/data /app/logs /app/tmp && \
+    chmod +x /entrypoint-worker.sh
+
+# After:
+RUN mkdir -p /app/data /app/logs /app/tmp /app/db && \
+    chown -R fireai:fireai /app/data /app/logs /app/tmp /app/db && \
+    chmod +x /entrypoint-worker.sh
+```
+
+### Verification Evidence
+
+**Cannot verify locally** — Docker daemon is not available in this sandbox (`docker: command not found`). Verification deferred to next CI run after push.
+
+**Expected behavior after V174 fix:**
+1. CI Run #749 (post-push) Gate 6: `docker run -e FIREAI_API_KEY=test-ci-key ...` starts container
+2. Container imports `backend.app` → `backend.routers.api_keys` → `_ensure_default_admin_key()` → `add_api_key()` → `_save_keys()` → `path.parent.mkdir(parents=True, exist_ok=True)` on `/app/db`
+3. `/app/db` exists (pre-created, owned by fireai) → mkdir succeeds (exist_ok=True)
+4. `os.open("/app/db/api_keys.json.tmp", ...)` succeeds (dir is writable by fireai)
+5. `os.replace(tmp, path)` succeeds → keys file written
+6. Import continues, uvicorn starts, /api/health responds within 60s
+7. Gate 6 PASSES ✅
+
+**Tests Modified:** NONE (Rule 10).
+**Production Code Modified:** NONE. Only 3 Dockerfiles (infrastructure).
+
+### Service Synchronization Summary
+
+| Service | Endpoint | Status | Notes |
+|---------|----------|--------|-------|
+| Supabase REST (service_role) | https://nrdqdnmyxbbdrrmqxzej.supabase.co/rest/v1/ | ✅ HTTP 200 | Swagger reachable, 2 tables only |
+| Supabase REST (anon JWT) | https://nrdqdnmyxbbdrrmqxzej.supabase.co/rest/v1/ | ✅ HTTP 401 (expected) | OpenAPI endpoint restricted to service_role; anon works on data endpoints |
+| Supabase management API | https://api.supabase.com/v1/projects/nrdqdnmyxbbdrrmqxzej | ✅ HTTP 200 | sbp_ token valid |
+| Langfuse | https://cloud.langfuse.com/api/public/projects | ✅ HTTP 200 | Project "BAZSPARK" in org "AHMED ETAP" |
+| Vercel project revit | https://api.vercel.com/v1/projects/prj_Y6Qr828DXS83tWF1LntFakyofMrf | ✅ HTTP 200 | Latest prod deployment READY, HTTP 200 |
+| Vercel prod URL | https://revit-53auvoyiq-ahmdelbaz28-uxs-projects.vercel.app/ | ✅ HTTP 200 | Frontend served correctly |
+| HF BAZSPARK space | https://ahmdelbaz28-bazspark.hf.space/api/v1/health | ✅ HTTP 200 | Backend healthy, RUNNING stage |
+| GitHub repo | https://github.com/ahmdelbaz28-ux/revit | ✅ synced | HEAD=c6c77d49, clean tree |
+| GitHub Actions CI #748 | Gate 6 — Docker Build & Test | ❌ FAILURE | **Fixed by V174** (this commit) |
+| GitHub Actions Deploy Pipeline | #332 | ✅ SUCCESS | Independent of CI Gate 6 |
+
+### Phase Status (Rule 11)
+
+(a) **Current status:** All 5 external services (Supabase, Langfuse, Vercel, HF BAZSPARK, GitHub) are reachable and authenticated. CI Gate 6 was the only failing gate — root cause identified (PermissionError: 'db' on container startup), root-cause fix applied to 3 Dockerfiles (root + api + worker). Push pending.
+
+(b) **To advance to launch-ready:** Push V174 fix → wait for CI Run #749 → verify Gate 6 passes → confirm Vercel auto-deploy picks up the change → final GO/NO-GO.
+
+### 4-Layer Self-Criticism (Rule 21)
+
+**Layer 1 (OUTPUT):** Fix is config-only (3 Dockerfiles, 1 line each). No app code, no test code. Verification deferred to CI because Docker is unavailable locally — this is HONESTLY reported, not fabricated.
+
+**Layer 2 (THINKING):** Did I rationalize? I considered simpler fixes (env var override, run as root, skip Gate 6) and rejected each because they were half-solutions. The mkdir fix matches the existing Dockerfile pattern and addresses the root cause without changing application behavior. I traced the call chain end-to-end (CI yaml → docker run → fireai user → CWD /app → api_keys.py:648 → :383 → :416 → :343 → PermissionError) — every link verified.
+
+**Layer 3 (METHOD):** Fixed the disease (missing directory) not the symptom (Gate 6 timeout). A half-solution would have been disabling Gate 6 or increasing the timeout — both would have masked the crash and shipped a broken production container.
+
+**Layer 4 (COMMITMENT):** Would I stake a life on this? Yes. Without this fix, any environment that sets `FIREAI_API_KEY` (which is the production-correct behavior per deploy.yml lines 210, 269) would crash on container startup. The bug was hiding behind HF Spaces not setting FIREAI_API_KEY — a coincidence, not a safety control. This fix makes the container robust to the production configuration.
+
+### Commit Information
+- **Commit:** (pending — will be filled after `git commit`)
