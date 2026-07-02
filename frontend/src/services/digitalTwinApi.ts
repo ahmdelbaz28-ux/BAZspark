@@ -11,6 +11,8 @@
  * Supports retry logic, timeouts, and WebSocket real-time subscription
  */
 
+import { getApiKey as getApiKeyShared } from './apiKey';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 3;
@@ -591,24 +593,11 @@ class ApiClient {
   }
 
   /**
-   * Get API key from environment or runtime config.
-   * Mirrors the pattern in api.ts for consistent auth across both API clients.
+   * Get API key — delegates to shared getApiKey() from apiKey.ts.
+   * V184: deduplicated — was a 4th copy of the same logic.
    */
   private getApiKey(): string | null {
-    const envKey = import.meta.env.VITE_FIREAI_API_KEY;
-    if (envKey) return envKey;
-    try {
-      const stored = sessionStorage.getItem('fireai_settings');
-      if (stored) {
-        const settings = JSON.parse(stored);
-        if (settings?.apiKey && typeof settings.apiKey === 'string' && settings.apiKey.trim()) {
-          return settings.apiKey.trim();
-        }
-      }
-    } catch {
-      // Invalid JSON in sessionStorage — ignore
-    }
-    return null;
+    return getApiKeyShared();
   }
 }
 
@@ -754,21 +743,10 @@ export default api;
 // Add CSRF token handling to API requests
 let csrfToken: string | null = null;
 
-// Free-function API key getter (mirrors DigitalTwinApi.getApiKey class method).
-// Used by the standalone apiRequest() helper below.
+// V184: Free-function API key getter now delegates to shared module.
+// Was a 4th duplicate copy of the same logic. See apiKey.ts for the canonical implementation.
 function getApiKey(): string | null {
-  const envKey = import.meta.env.VITE_FIREAI_API_KEY;
-  if (envKey) return envKey;
-  try {
-    const stored = sessionStorage.getItem('fireai_settings');
-    if (stored) {
-      const settings = JSON.parse(stored);
-      return settings.apiKey ?? null;
-    }
-  } catch {
-    // sessionStorage not available or invalid JSON
-  }
-  return null;
+  return getApiKeyShared();
 }
 
 // Function to get CSRF token from meta tag or other source
