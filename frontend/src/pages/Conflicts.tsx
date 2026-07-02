@@ -56,8 +56,8 @@ function Conflicts() {
           <h1 className="text-2xl font-bold text-white">{t('conflicts.title')}</h1>
           <p className="text-slate-400 text-sm mt-1">
             {conflicts
-              ? `${unresolvedCount} unresolved / ${resolvedCount} resolved`
-              : 'Loading...'}
+              ? `${unresolvedCount} ${t('conflicts.unresolved')} / ${resolvedCount} ${t('conflicts.resolved')}`
+              : t('common.loading')}
           </p>
         </div>
         <Button
@@ -87,7 +87,7 @@ function Conflicts() {
       {detectMutation.isSuccess && detectMutation.data && (
         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4">
           <p className="text-emerald-400 text-sm">
-            Detected {detectMutation.data.length} conflicts
+            {t('conflicts.detectedConflicts', { count: detectMutation.data.length })}
           </p>
         </div>
       )}
@@ -95,7 +95,7 @@ function Conflicts() {
       {detectMutation.isError && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
           <p className="text-red-400 text-sm">
-            {detectMutation.error instanceof Error ? detectMutation.error.message : 'Failed to detect conflicts'}
+            {detectMutation.error instanceof Error ? detectMutation.error.message : t('conflicts.failedToDetect')}
           </p>
         </div>
       )}
@@ -103,7 +103,7 @@ function Conflicts() {
       {/* Error */}
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-          <p className="text-red-400 text-sm">Failed to load conflicts.</p>
+          <p className="text-red-400 text-sm">{t('conflicts.failedToLoad')}</p>
         </div>
       )}
 
@@ -119,15 +119,15 @@ function Conflicts() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
             <p className="text-2xl font-bold text-white">{conflictsData.total}</p>
-            <p className="text-slate-400 text-sm">Total Conflicts</p>
+            <p className="text-slate-400 text-sm">{t('conflicts.totalConflicts')}</p>
           </div>
           <div className="bg-slate-800 border border-amber-500/20 rounded-xl p-4">
             <p className="text-2xl font-bold text-amber-400">{unresolvedCount}</p>
-            <p className="text-slate-400 text-sm">Unresolved</p>
+            <p className="text-slate-400 text-sm">{t('conflicts.unresolved')}</p>
           </div>
           <div className="bg-slate-800 border border-emerald-500/20 rounded-xl p-4">
             <p className="text-2xl font-bold text-emerald-400">{resolvedCount}</p>
-            <p className="text-slate-400 text-sm">Resolved</p>
+            <p className="text-slate-400 text-sm">{t('conflicts.resolved')}</p>
           </div>
         </div>
       )}
@@ -139,12 +139,12 @@ function Conflicts() {
             <table className="w-full text-sm" aria-label={t('conflicts.title')}>
               <thead>
                 <tr className="border-b border-slate-700 bg-slate-800/50">
-                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Element</th>
-                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Type</th>
-                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Sources</th>
-                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Status</th>
-                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Timestamp</th>
-                  <th scope="col" className="text-right text-slate-400 font-medium px-4 py-3">Actions</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('conflicts.element')}</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('elements.type')}</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('conflicts.sources')}</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('conflicts.status')}</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('conflicts.timestamp')}</th>
+                  <th scope="col" className="text-right text-slate-400 font-medium px-4 py-3">{t('elements.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -153,10 +153,10 @@ function Conflicts() {
                      <td colSpan={6} className="py-8">
                        <EmptyState
                          icon={<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-12 w-12 text-slate-600"><line x1="12" y1="22" x2="12" y2="2" /><path d="M10 22a2 2 0 002-2V4a2 2 0 00-2-2h0a2 2 0 00-2 2v16a2 2 0 002 2h0z" /></svg>}
-                         title="No conflicts detected"
-                         description="Your project has no data conflicts. Click detect to scan for issues."
+                         title={t('conflicts.noConflictsDetected')}
+                         description=""
                          action={{
-                           label: "Detect Conflicts",
+                           label: t('conflicts.detectConflicts'),
                            onClick: () => detectMutation.mutate(),
                          }}
                        />
@@ -193,12 +193,12 @@ function Conflicts() {
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
-                            Resolved
+                            {t('conflicts.resolved')}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs text-amber-400">
                             <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
-                            Unresolved
+                            {t('conflicts.unresolved')}
                           </span>
                         )}
                       </td>
@@ -228,15 +228,15 @@ function Conflicts() {
       {resolveTarget && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-white mb-2">Resolve Conflict</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">{t('conflicts.resolveConflict')}</h3>
             <p className="text-slate-400 text-sm mb-4">
-              Select a resolution strategy for this conflict.
+              {t('conflicts.selectResolutionStrategy')}
             </p>
 
             {resolveMutation.isError && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
                 <p className="text-red-400 text-sm">
-                  {resolveMutation.error instanceof Error ? resolveMutation.error.message : 'Failed to resolve'}
+                  {resolveMutation.error instanceof Error ? resolveMutation.error.message : t('conflicts.resolutionFailed')}
                 </p>
               </div>
             )}

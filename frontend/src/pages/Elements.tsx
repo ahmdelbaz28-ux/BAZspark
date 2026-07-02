@@ -67,7 +67,7 @@ function Elements() {
         <div>
           <h1 className="text-2xl font-bold text-white">{t('elements.title')}</h1>
           <p className="text-slate-400 text-sm mt-1">
-            {data ? `${data.total} total elements` : 'Loading...'}
+            {data ? t('elements.totalElements', { count: data.total }) : t('common.loading')}
           </p>
         </div>
         <button
@@ -78,7 +78,7 @@ function Elements() {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Create Element
+          {t('elements.createElement')}
         </button>
       </div>
 
@@ -92,7 +92,7 @@ function Elements() {
           }}
           className="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none"
         >
-          <option value="">All Types</option>
+          <option value="">{t('elements.allTypes')}</option>
           {ELEMENT_TYPES.map((type) => (
             <option key={type} value={type}>
               {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -117,7 +117,7 @@ function Elements() {
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
           <p className="text-red-400 text-sm">
-            Failed to load elements. Make sure the backend is running.
+            {t('elements.failedToLoad')}
           </p>
         </div>
       )}
@@ -137,12 +137,12 @@ function Elements() {
               <table className="w-full text-sm" aria-label={t('elements.title')}>
                 <thead>
                   <tr className="border-b border-slate-700 bg-slate-800/50">
-                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Name</th>
-                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Type</th>
-                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Area</th>
-                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Version</th>
-                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Modified</th>
-                    <th scope="col" className="text-right text-slate-400 font-medium px-4 py-3">Actions</th>
+                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('elements.name')}</th>
+                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('elements.type')}</th>
+                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('elements.area')}</th>
+                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('elements.version')}</th>
+                    <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('elements.modified')}</th>
+                    <th scope="col" className="text-right text-slate-400 font-medium px-4 py-3">{t('elements.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -151,8 +151,8 @@ function Elements() {
                         <td colSpan={6} className="py-8">
                           <EmptyState
                             icon={<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-12 w-12 text-slate-600"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>}
-                            title="No elements found"
-                            description="Create your first element to get started"
+                            title={t('elements.noElements')}
+                            description={t('elements.createFirstElement')}
                           />
                         </td>
                       </tr>
@@ -224,7 +224,7 @@ function Elements() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-slate-400">
-                Page {page} of {totalPages}
+                {t('common.page')} {page} {t('common.of')} {totalPages}
               </p>
               <div className="flex gap-2">
                 <button
@@ -233,7 +233,7 @@ function Elements() {
                   className="px-3 py-1.5 bg-slate-700 text-white text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
                   aria-label={t('common.previous')}
                 >
-                  Previous
+                  {t('common.previous')}
                 </button>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -241,7 +241,7 @@ function Elements() {
                   className="px-3 py-1.5 bg-slate-700 text-white text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
                   aria-label={t('common.next')}
                 >
-                  Next
+                  {t('common.next')}
                 </button>
               </div>
             </div>
@@ -264,13 +264,13 @@ function Elements() {
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-white mb-2">Delete Element</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">{t('elements.deleteElement')}</h3>
             <p className="text-slate-400 text-sm mb-4">
-              Are you sure you want to delete &quot;{deleteTarget.properties?.name ?? deleteTarget.element_id}&quot;? This action cannot be undone.
+              {t('elements.deleteConfirmation', { name: deleteTarget.properties?.name ?? deleteTarget.element_id })}
             </p>
             {deleteMutation.isError && (
               <p className="text-red-400 text-sm mb-3">
-                Failed to delete: {deleteMutation.error instanceof Error ? deleteMutation.error.message : 'Unknown error'}
+                {t('elements.deleteFailed')}: {deleteMutation.error instanceof Error ? deleteMutation.error.message : t('common.unknownError')}
               </p>
             )}
             <div className="flex justify-end gap-3">
@@ -278,7 +278,7 @@ function Elements() {
                 onClick={() => setDeleteTarget(null)}
                 className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <Button
                 onClick={() => deleteMutation.mutate(deleteTarget.element_id)}
