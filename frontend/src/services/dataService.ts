@@ -3,7 +3,7 @@ import { actions } from "@/store/simpleStore";
 /**
  * DataService — Real-time telemetry connection manager.
  *
- * Connects to the FireAI backend via WebSocket (/ws endpoint) for live data,
+ * Connects to the BAZSPARK backend via WebSocket (/ws endpoint) for live data,
  * with automatic fallback to mock data in demo/development mode.
  *
  * Backend WebSocket protocol (sync.py):

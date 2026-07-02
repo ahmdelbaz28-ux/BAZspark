@@ -32,8 +32,8 @@ export const HELP_TOPICS: Record<HelpTopicId, HelpTopic> = {
     category: 'getting-started',
     titleEn: 'Quick Start Guide',
     titleAr: 'دليل البدء السريع',
-    descriptionEn: 'Get up and running with FireAI in 5 minutes. Learn the basic workflow from project creation to report generation.',
-    descriptionAr: 'ابدأ مع FireAI في 5 دقائق. تعرف على سير العمل الأساسي من إنشاء المشروع حتى توليد التقارير.',
+    descriptionEn: 'Get up and running with BAZSPARK in 5 minutes. Learn the basic workflow from project creation to report generation.',
+    descriptionAr: 'ابدأ مع BAZSPARK في 5 دقائق. تعرف على سير العمل الأساسي من إنشاء المشروع حتى توليد التقارير.',
     stepsEn: [
       'Open the Dashboard to verify the backend is connected (green badge in top bar).',
       'Go to Projects and click "New Project" to create your first fire alarm project.',

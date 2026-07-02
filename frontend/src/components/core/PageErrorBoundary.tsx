@@ -29,7 +29,7 @@ export class PageErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log the error for debugging — never suppress silently
     console.error(
-      `[FireAI PageErrorBoundary] Error in page "${this.props.pageName || 'unknown'}":`,
+      `[BAZSPARK PageErrorBoundary] Error in page "${this.props.pageName || 'unknown'}":`,
       error,
       errorInfo
     );

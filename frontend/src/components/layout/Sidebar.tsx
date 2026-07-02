@@ -83,7 +83,7 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
         <Flame className="h-6 w-6 text-orange-500 shrink-0 transition-transform duration-300 group-hover:scale-110" />
         {!collapsed && (
           <span className="text-white font-bold text-lg tracking-wide">
-            FireAI
+            BAZSPARK
           </span>
         )}
       </div>

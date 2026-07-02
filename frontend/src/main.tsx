@@ -44,13 +44,13 @@ if (sentryDsn) {
 // ── Root Element Guard ────────────────────────────────────────────────────
 const rootEl = document.getElementById("root");
 if (!rootEl) {
-  throw new Error("FireAI: Root element #root not found in DOM. Cannot mount application.");
+  throw new Error("BAZSPARK: Root element #root not found in DOM. Cannot mount application.");
 }
 
 createRoot(rootEl).render(
   <BrowserRouter basename={import.meta.env.BASE_URL || '/'}>
     <QueryClientProvider client={queryClient}>
-      <ErrorRecovery onError={(error, info) => console.error("[FireAI] Fatal error caught by boundary:", error, info)}>
+      <ErrorRecovery onError={(error, info) => console.error("[BAZSPARK] Fatal error caught by boundary:", error, info)}>
         <App />
       </ErrorRecovery>
     </QueryClientProvider>

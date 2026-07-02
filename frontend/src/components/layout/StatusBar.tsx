@@ -13,7 +13,7 @@ const StatusBar: React.FC<StatusBarProps> = ({
 }) => {
   return (
     <footer className="h-7 bg-slate-900 border-t border-slate-700 flex items-center px-3 gap-4 text-xs shrink-0" data-onboarding="status-bar">
-      <span className="text-slate-500">FireAI V55.0.0</span>
+      <span className="text-slate-500">BAZSPARK V55.0.0</span>
 
       <div className="h-3 w-px bg-slate-700" />
 

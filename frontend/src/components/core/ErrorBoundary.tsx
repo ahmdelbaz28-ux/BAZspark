@@ -30,7 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log to console — never suppress errors silently
-    console.error('[FireAI ErrorBoundary] Caught error:', error, errorInfo);
+    console.error('[BAZSPARK ErrorBoundary] Caught error:', error, errorInfo);
     this.setState({ errorInfo });
     // Forward to parent error handler if provided
     this.props.onError?.(error, errorInfo);
