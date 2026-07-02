@@ -165,45 +165,53 @@ jobs:
         #
         # V166 FIX: Add --no-cov to disable pytest-cov's atexit hook
         #
-        # V167 FIX (TRUE ROOT-CAUSE): pytest completes successfully (7198 passed
-        # in 200s) but the process does NOT exit — it hangs as an orphan process
-        # for 27+ minutes until the 30-min job timeout. CI logs confirm:
-        #   "Terminate orphan process: pid (2690) (pytest)"
-        # The hang is NOT pytest-cov (V166 --no-cov didn't fix it). The hang
-        # is caused by non-daemon threads or asyncio event loops that some
-        # tests start but never clean up. Python's interpreter waits for ALL
-        # non-daemon threads to finish before exiting, which never happens.
+        # V167 FIX: Wrap pytest in subprocess + os._exit() — DID NOT WORK
+        # because subprocess.run() waits for the child, and the child hangs.
         #
-        # Root-cause fix: Wrap pytest in a Python script that calls os._exit(0)
-        # immediately after pytest returns. os._exit() bypasses Python's
-        # normal shutdown sequence (atexit handlers, thread joins, interpreter
-        # cleanup) and terminates the process immediately. This is the
-        # documented workaround for "pytest hangs after completion" when the
-        # root cause is thread cleanup.
+        # V168 FIX (TRUE ROOT-CAUSE): Run pytest directly with a hard process
+        # timeout using `timeout` command. The `timeout` command sends SIGTERM
+        # after the specified duration, then SIGKILL after 10s if the process
+        # doesn't exit. This kills the ENTIRE process tree including any
+        # non-daemon threads that block Python's interpreter exit.
         #
-        # Reference: https://github.com/pytest-dev/pytest/issues/5775
-        # Reference: https://docs.python.org/3/library/os.html#os._exit
+        # Evidence (Run #742 with V167 subprocess+os._exit):
+        #   04:16:33  7198 passed, 16 skipped in 203.72s  ← pytest completed
+        #   04:28:15  ##[error] timed out after 15 minutes  ← still hung
+        #   04:28:15  Terminate orphan process: pid (2809) (python)  ← child
+        #   04:28:15  Terminate orphan process: pid (2810) (python)  ← child
+        # The parent's os._exit() was never reached because subprocess.run()
+        # was blocked waiting for the hanging child process.
+        #
+        # Root-cause fix: Use `timeout 600` (10 min) to kill pytest + all
+        # its threads after 10 minutes. pytest takes 3 min, so 10 min gives
+        # 3x headroom. The `timeout` command uses process groups to kill
+        # ALL child processes, including non-daemon threads.
+        #
+        # Reference: https://man7.org/linux/man-pages/man1/timeout.1.html
         timeout-minutes: 15
         env:
           PYTEST_ADDOPTS: "--color=no"
         run: |
           pip install pytest-timeout
-          python -c "
-          import subprocess, sys, os
-          result = subprocess.run([
-              sys.executable, '-m', 'pytest',
-              'tests/', 'backend/tests/',
-              '--tb=short',
-              '-p', 'no:cacheprovider',
-              '--no-cov',
-              '--timeout=60',
-              '--timeout-method=signal',
-              '-q',
-          ])
-          # Force immediate exit — bypass thread cleanup that hangs.
-          # pytest's exit code is preserved (0=pass, 1=fail, 2=error).
-          os._exit(result.returncode)
-          "
+          # timeout: kill after 600s (10 min), send SIGKILL after 10s grace
+          # --preserve-status: exit with pytest's status code (0=pass, 1=fail)
+          timeout --preserve-status --kill-after=10 600 \
+            python -m pytest tests/ backend/tests/ \
+              --tb=short \
+              -p no:cacheprovider \
+              --no-cov \
+              --timeout=60 \
+              --timeout-method=signal \
+              -q
+          EXIT_CODE=$?
+          echo "pytest exit code: $EXIT_CODE"
+          # 124 = timeout killed the process (took >600s)
+          # 137 = SIGKILL (process didn't respond to SIGTERM)
+          if [ "$EXIT_CODE" -eq 124 ] || [ "$EXIT_CODE" -eq 137 ]; then
+            echo "FAIL: pytest timed out after 600 seconds"
+            exit 1
+          fi
+          exit $EXIT_CODE
 
       - name: Upload coverage report
         # V159.6 FIX: Coverage is now disabled in CI (see step above). This step
