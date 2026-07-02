@@ -35,7 +35,7 @@ function Connections() {
         <div>
           <h1 className="text-2xl font-bold text-white">{t('connectionsPage.title')}</h1>
           <p className="text-slate-400 text-sm mt-1">
-            {connectionsData ? `${connectionsData.total} connections` : 'Loading...'}
+            {connectionsData ? t('connectionsPage.totalConnections', { count: connectionsData.total }) : t('common.loading')}
           </p>
         </div>
         <button
@@ -46,7 +46,7 @@ function Connections() {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Create Connection
+          {t('connectionsPage.createConnection')}
         </button>
       </div>
 
@@ -56,7 +56,7 @@ function Connections() {
           type="text"
           value={elementFilter}
           onChange={(e) => setElementFilter(e.target.value)}
-          placeholder="Filter by element ID..."
+          placeholder={t('connectionsPage.elementFilter')}
           className="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none w-full sm:w-72"
         />
         {elementFilter && (
@@ -64,7 +64,7 @@ function Connections() {
             onClick={() => setElementFilter('')}
             className="text-sm text-slate-400 hover:text-white"
           >
-            ✕ Clear
+            ✕ {t('common.clear')}
           </button>
         )}
       </div>
@@ -72,7 +72,7 @@ function Connections() {
       {/* Error */}
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-          <p className="text-red-400 text-sm">Failed to load connections.</p>
+          <p className="text-red-400 text-sm">{t('connectionsPage.failedToLoad')}</p>
         </div>
       )}
 
@@ -90,11 +90,11 @@ function Connections() {
             <table className="w-full text-sm" aria-label={t('connectionsPage.title')}>
               <thead>
                 <tr className="border-b border-slate-700 bg-slate-800/50">
-                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">From</th>
-                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">To</th>
-                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Type</th>
-                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">Parametric</th>
-                  <th scope="col" className="text-right text-slate-400 font-medium px-4 py-3">Actions</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('connectionsPage.sourceElement')}</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('connectionsPage.targetElement')}</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('connectionsPage.relationshipType')}</th>
+                  <th scope="col" className="text-left text-slate-400 font-medium px-4 py-3">{t('common.active')}</th>
+                  <th scope="col" className="text-right text-slate-400 font-medium px-4 py-3">{t('connectionsPage.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,8 +103,8 @@ function Connections() {
                         <td colSpan={5} className="py-8">
                           <EmptyState
                             icon={<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-12 w-12 text-slate-600"><path d="M10 19h4m-2-17V4a2 2 0 00-2 2v3m6 12V7a4 4 0 00-8 0v12" /></svg>}
-                            title="No connections found"
-                            description="Create connections between elements to build your system topology"
+                            title={t('connectionsPage.noConnections')}
+                            description={t('connectionsPage.createFirst')}
                           />
                         </td>
                       </tr>
@@ -178,23 +178,23 @@ function Connections() {
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-white mb-2">Delete Connection</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">{t('connectionsPage.deleteConnection')}</h3>
             <p className="text-slate-400 text-sm mb-4">
-              Are you sure you want to delete this connection?
+              {t('connectionsPage.deleteConfirmation')}
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
                 className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => deleteMutation.mutate(deleteTarget)}
                 disabled={deleteMutation.isPending}
                 className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
               >
-                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                {deleteMutation.isPending ? t('common.deleting') : t('common.delete')}
               </button>
             </div>
           </div>
@@ -213,6 +213,7 @@ function CreateConnectionModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const [fromId, setFromId] = useState('');
   const [toId, setToId] = useState('');
   const [relationshipType, setRelationshipType] = useState('');
@@ -234,21 +235,21 @@ function CreateConnectionModal({
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
       <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Create Connection</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">{t('connectionsPage.createConnection')}</h3>
 
         {createMutation.isError && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
             <p className="text-red-400 text-sm">
               {createMutation.error instanceof Error
                 ? createMutation.error.message
-                : 'Failed to create connection'}
+                : t('connectionsPage.failedToLoad')}
             </p>
           </div>
         )}
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">From Element ID *</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">{t('connectionsPage.sourceElement')} *</label>
             <input
               type="text"
               value={fromId}
@@ -258,7 +259,7 @@ function CreateConnectionModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">To Element ID *</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">{t('connectionsPage.targetElement')} *</label>
             <input
               type="text"
               value={toId}
@@ -268,7 +269,7 @@ function CreateConnectionModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Relationship Type *</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">{t('connectionsPage.relationshipType')} *</label>
             <input
               type="text"
               value={relationshipType}
@@ -284,7 +285,7 @@ function CreateConnectionModal({
               onChange={(e) => setIsParametric(e.target.checked)}
               className="rounded bg-slate-900 border-slate-600 text-orange-500 focus:ring-orange-500"
             />
-            <span className="text-sm text-slate-300">Parametric</span>
+            <span className="text-sm text-slate-300">{t('common.active')}</span>
           </label>
         </div>
 
@@ -293,14 +294,14 @@ function CreateConnectionModal({
             onClick={onClose}
             className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={() => createMutation.mutate()}
             disabled={!fromId || !toId || !relationshipType || createMutation.isPending}
             className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
           >
-            {createMutation.isPending ? 'Creating...' : 'Create'}
+            {createMutation.isPending ? t('common.creating') : t('common.create')}
           </button>
         </div>
       </div>
