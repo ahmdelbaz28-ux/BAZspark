@@ -47,8 +47,11 @@ References
 import logging
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
+
+from backend.auth import require_permission
+from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +163,7 @@ class SmokeSimulationStateRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-@router.post("/generative/design")
+@router.post("/generative/design", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def generate_design_variants(req: GenerativeDesignRequest) -> dict[str, Any]:
     """
     Generate 3 layout variants (Cost-Min, Standard, Safety-Max).
@@ -214,7 +217,7 @@ async def list_bim_providers() -> dict[str, Any]:
     }
 
 
-@router.post("/bim/extract-rooms")
+@router.post("/bim/extract-rooms", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def extract_rooms(req: BIMExtractRoomsRequest) -> dict[str, Any]:
     """
     Extract rooms via configured BIM provider.
@@ -320,7 +323,7 @@ async def bim_health() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-@router.post("/ifc43/map-detector")
+@router.post("/ifc43/map-detector", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
 async def map_detector_to_ifc43(req: IFC43MapDetectorRequest) -> dict[str, Any]:
     """Map a FireAI detector to IFC 4.3 ADD2 representation."""
     from fireai.bridges.ifc43_mapper import IFC43Mapper
@@ -339,7 +342,7 @@ async def map_detector_to_ifc43(req: IFC43MapDetectorRequest) -> dict[str, Any]:
     }
 
 
-@router.post("/ifc43/map-project")
+@router.post("/ifc43/map-project", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
 async def map_project_to_ifc43(req: dict[str, Any]) -> dict[str, Any]:
     """Map an entire FireAI project to IFC 4.3 ADD2."""
     from fireai.bridges.ifc43_mapper import IFC43Mapper
@@ -361,7 +364,7 @@ async def map_project_to_ifc43(req: dict[str, Any]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-@router.post("/ar/export")
+@router.post("/ar/export", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
 async def export_ar_snapshot(req: ARExportRequest) -> dict[str, Any]:
     """
     Export DigitalTwin snapshot to GLB/USDZ for AR visualization.
@@ -418,7 +421,7 @@ async def export_ar_snapshot(req: ARExportRequest) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-@router.post("/webhooks/subscribe")
+@router.post("/webhooks/subscribe", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 async def subscribe_webhook(req: WebhookSubscribeRequest) -> dict[str, Any]:
     """Subscribe to webhook events."""
     from fireai.infrastructure.webhook_service import (
@@ -468,7 +471,7 @@ async def list_webhook_subscriptions() -> dict[str, Any]:
     }
 
 
-@router.delete("/webhooks/subscriptions/{sub_id}")
+@router.delete("/webhooks/subscriptions/{sub_id}", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 async def unsubscribe_webhook(sub_id: str) -> dict[str, Any]:
     """Remove a webhook subscription."""
     from fireai.infrastructure.webhook_service import get_webhook_service
@@ -480,7 +483,7 @@ async def unsubscribe_webhook(sub_id: str) -> dict[str, Any]:
     return {"subscription_id": sub_id, "removed": True}
 
 
-@router.post("/webhooks/publish")
+@router.post("/webhooks/publish", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 async def publish_webhook_event(req: WebhookPublishRequest) -> dict[str, Any]:
     """Publish an event to all matching webhook subscribers."""
     from fireai.infrastructure.webhook_service import get_webhook_service
@@ -504,7 +507,7 @@ async def publish_webhook_event(req: WebhookPublishRequest) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-@router.post("/smoke-simulation/state")
+@router.post("/smoke-simulation/state", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def create_smoke_state(req: SmokeSimulationStateRequest) -> dict[str, Any]:
     """
     Create or update smoke simulation state for a room.
@@ -606,7 +609,7 @@ class TopologyImpactRequest(BaseModel):
     breaker_id: str = Field(..., max_length=200)
 
 
-@router.post("/memory/store")
+@router.post("/memory/store", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 async def store_memory(req: VectorMemoryStoreRequest) -> Dict[str, Any]:
     """Store a memory entry in Qdrant vector database."""
     from fireai.infrastructure.vector_memory_service import (
@@ -650,7 +653,7 @@ async def memory_health() -> Dict[str, Any]:
     return get_vector_memory().health_check()
 
 
-@router.post("/topology/element")
+@router.post("/topology/element", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def add_topology_element(req: TopologyAddElementRequest) -> Dict[str, Any]:
     """Add a network element to the Neo4j topology graph."""
     from fireai.infrastructure.topology_graph_service import (
@@ -671,7 +674,7 @@ async def add_topology_element(req: TopologyAddElementRequest) -> Dict[str, Any]
     return {"element_id": req.element_id, "added": added}
 
 
-@router.post("/topology/connection")
+@router.post("/topology/connection", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def add_topology_connection(req: TopologyAddConnectionRequest) -> Dict[str, Any]:
     """Add a connection between two network elements."""
     from fireai.infrastructure.topology_graph_service import (
@@ -692,7 +695,7 @@ async def add_topology_connection(req: TopologyAddConnectionRequest) -> Dict[str
     return {"from": req.from_element, "to": req.to_element, "added": added}
 
 
-@router.post("/topology/impact")
+@router.post("/topology/impact", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def analyze_impact(req: TopologyImpactRequest) -> Dict[str, Any]:
     """
     Analyze the impact of tripping a breaker.
@@ -737,7 +740,7 @@ class GraphRAGSearchRequest(BaseModel):
     limit: int = Field(5, ge=1, le=50)
 
 
-@router.post("/graphrag/knowledge")
+@router.post("/graphrag/knowledge", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def add_graphrag_knowledge(req: GraphRAGAddKnowledgeRequest) -> Dict[str, Any]:
     """
     Add knowledge to GraphRAG (vector + entity/relationship graph).
@@ -762,7 +765,7 @@ async def add_graphrag_knowledge(req: GraphRAGAddKnowledgeRequest) -> Dict[str, 
     return {"stored": True, "extract_entities": req.extract_entities, "text_length": len(req.text)}
 
 
-@router.post("/graphrag/ask")
+@router.post("/graphrag/ask", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def ask_graphrag(req: GraphRAGAskRequest) -> Dict[str, Any]:
     """
     Ask a question using GraphRAG hybrid retrieval (vector + graph).
@@ -779,7 +782,7 @@ async def ask_graphrag(req: GraphRAGAskRequest) -> Dict[str, Any]:
     return {"question": req.question, "answer": answer}
 
 
-@router.post("/graphrag/search")
+@router.post("/graphrag/search", dependencies=[Depends(require_permission(Permission.CALCULATION_READ))])
 async def search_graphrag(req: GraphRAGSearchRequest) -> Dict[str, Any]:
     """Semantic search in GraphRAG vector store (no LLM, fast)."""
     from fireai.infrastructure.graphrag_engine import get_graphrag_engine

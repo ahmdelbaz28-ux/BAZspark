@@ -25,6 +25,7 @@
 
 import { api as coreApi } from './api';
 import { api as digitalTwinApiClient } from './digitalTwinApi';
+import { getApiKey } from './apiKey';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -48,22 +49,8 @@ export interface PaginatedResponse<T> {
 const API_BASE = '/api/v1';
 const API_V2_BASE = '/api/v2';
 
-function getApiKey(): string | null {
-  const envKey = import.meta.env.VITE_FIREAI_API_KEY;
-  if (envKey) return envKey;
-  try {
-    const stored = sessionStorage.getItem('fireai_settings');
-    if (stored) {
-      const settings = JSON.parse(stored);
-      if (settings?.apiKey && typeof settings.apiKey === 'string' && settings.apiKey.trim()) {
-        return settings.apiKey.trim();
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return null;
-}
+// V184: getApiKey() is now imported from ./apiKey (line 28). The local
+// duplicate definition was removed to avoid a redeclaration error.
 
 async function apiCall<T>(
   path: string,

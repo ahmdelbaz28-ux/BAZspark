@@ -16,6 +16,7 @@ import type {
   Statistics,
   HealthStatus,
 } from '@/types';
+import { getApiKey } from './apiKey';
 
 const API_BASE = '/api/v1';
 
@@ -32,32 +33,8 @@ const API_BASE = '/api/v1';
  *  - sessionStorage 'fireai_settings' still works (legacy, deprecated, will be removed in v2)
  *  - If neither is set, the browser cookie handles auth automatically (no header needed)
  */
-function getApiKey(): string | null {
-  // 1. Check Vite env variable (set at build time or in .env)
-  //    Used by: headless tests, SSR, CLI scripts that don't have a browser cookie
-  const envKey = import.meta.env.VITE_FIREAI_API_KEY;
-  if (envKey) return envKey;
-
-  // 2. LEGACY: Check sessionStorage (deprecated, will be removed in v2.0)
-  //    Kept for backwards compat with existing Settings page during migration.
-  //    New code should use /auth/login instead.
-  try {
-    const stored = sessionStorage.getItem('fireai_settings');
-    if (stored) {
-      const settings = JSON.parse(stored);
-      if (settings?.apiKey && typeof settings.apiKey === 'string' && settings.apiKey.trim()) {
-        return settings.apiKey.trim();
-      }
-    }
-  } catch {
-    // Invalid JSON in sessionStorage — ignore
-  }
-
-  // 3. No header key — rely on HttpOnly cookie set by /auth/login.
-  //    The browser will automatically attach the cookie to all same-origin
-  //    requests. credentials: 'same-origin' is set in fetch() below.
-  return null;
-}
+// V184: getApiKey() is now imported from ./apiKey (line 19). The local
+// duplicate definition was removed to avoid a redeclaration error.
 
 /**
  * M-3: Login with API key to establish an HttpOnly session cookie.
