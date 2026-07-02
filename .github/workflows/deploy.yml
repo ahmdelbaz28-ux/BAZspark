@@ -85,18 +85,27 @@ jobs:
         run: bandit -r fireai/ qomn_conduit/ -f json -o reports/bandit.json -ll || true
 
       - name: Unit tests
+        # V163 FIX: Align with ci.yml Gate 2 (V159.6) — disable coverage
+        # entirely in CI to avoid pytest-cov 4.1.0 + coverage 7.x atexit
+        # hang. The CI gate's purpose is to verify tests pass, not to
+        # measure coverage. Coverage measurement is a development-time
+        # concern, not a deployment gate. Local development still uses
+        # full coverage (pyproject.toml [tool.coverage] settings preserved).
+        #
         # V141 FIX (B5 — Launch Blocker): Removed --ignore=test_workflow_service*.py
         # These tests were previously ignored because they failed due to the
         # aiosqlite 0.22.0+ incompatibility (B1 — conn.is_alive() removed).
         # B1 fixed by pinning aiosqlite<0.22.0 in pyproject.toml. All 108
         # workflow_service tests now pass (40 + 68), so they are included
         # in the deploy gate to prevent regressions.
+        timeout-minutes: 20
+        env:
+          PYTEST_ADDOPTS: "--color=no"
         run: |
-          pytest tests/ -v \
+          pytest tests/ backend/tests/ \
             --tb=short \
-            --cov=fireai --cov=backend \
-            --cov-report=term-missing \
-            --cov-fail-under=10
+            -p no:cacheprovider \
+            -q
 
       - name: Build frontend
         run: |
