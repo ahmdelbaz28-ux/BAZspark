@@ -85,47 +85,32 @@ jobs:
         run: bandit -r fireai/ qomn_conduit/ -f json -o reports/bandit.json -ll || true
 
       - name: Unit tests
-        # V169 FIX (FINAL ROOT-CAUSE): Capture pytest's exit code BEFORE the
-        # process hangs. pytest returns exit code 0 but Python's interpreter
-        # hangs during shutdown (non-daemon threads). See ci.yml V169 for
-        # full root-cause analysis.
+        # V170 FIX (TRUE ROOT-CAUSE): atexit + os._exit in Python wrapper.
+        # Do NOT call sys.exit() — it triggers threading._shutdown() before atexit.
+        # See ci.yml V170 for full root-cause analysis.
         timeout-minutes: 15
         env:
           PYTEST_ADDOPTS: "--color=no"
         run: |
           pip install pytest-timeout
-          EXIT_CODE_FILE=$(mktemp)
-          (
-            python -m pytest tests/ backend/tests/ \
-              --tb=short \
-              -p no:cacheprovider \
-              --no-cov \
-              --timeout=300 \
-              --timeout-method=signal \
-              -q
-            echo $? > "$EXIT_CODE_FILE"
-          ) &
-          PYTEST_PID=$!
-          for i in $(seq 1 600); do
-            if [ -f "$EXIT_CODE_FILE" ]; then
-              break
-            fi
-            sleep 1
-          done
-          if [ -f "$EXIT_CODE_FILE" ]; then
-            PYTEST_EXIT=$(cat "$EXIT_CODE_FILE")
-            echo "pytest exit code: $PYTEST_EXIT"
-            kill -9 $PYTEST_PID 2>/dev/null || true
-            wait $PYTEST_PID 2>/dev/null || true
-            rm -f "$EXIT_CODE_FILE"
-            exit $PYTEST_EXIT
-          else
-            echo "FAIL: pytest did not complete within 600 seconds"
-            kill -9 $PYTEST_PID 2>/dev/null || true
-            wait $PYTEST_PID 2>/dev/null || true
-            rm -f "$EXIT_CODE_FILE"
-            exit 1
-          fi
+          python -c "
+          import atexit, os
+          _exit_code = [0]
+          def _force_exit():
+              os._exit(_exit_code[0])
+          atexit.register(_force_exit)
+          import pytest
+          _exit_code[0] = pytest.main([
+              'tests/', 'backend/tests/',
+              '--tb=short',
+              '-p', 'no:cacheprovider',
+              '--no-cov',
+              '--timeout=300',
+              '--timeout-method=signal',
+              '-q',
+          ])
+          # Do NOT call sys.exit() — let atexit fire os._exit.
+          "
 
       - name: Build frontend
         run: |
