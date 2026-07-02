@@ -8,8 +8,17 @@ const Card = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
+    // V180 FIX: Use bg-slate-800 directly instead of bg-card.
+    // In Tailwind v4, the bg-card theme token (via @theme inline) was being
+    // overridden by tailwind-merge when pages added bg-slate-800, but the
+    // MERGE RESULT was inconsistent — sometimes bg-card won (slate-950,
+    // invisible against slate-950 background), sometimes bg-slate-800 won.
+    // Pixel analysis showed cards rendering at #0f1524 (slate-950) — same as
+    // background, making them invisible. The fix: hardcode bg-slate-800 here
+    // so all cards are guaranteed visible. Pages that pass bg-slate-800 in
+    // className are now redundant but harmless.
     className={cn(
-      "rounded-xl border bg-card text-card-foreground shadow",
+      "rounded-xl border bg-slate-800 text-card-foreground shadow-sm",
       className
     )}
     {...props}
