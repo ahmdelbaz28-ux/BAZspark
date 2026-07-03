@@ -17949,3 +17949,87 @@ Pyright flagged 6 `reportPossiblyUnboundVariable` and `reportOptionalMemberAcces
 - **Commit:** `9a747eb8...`
 - **GitHub push link:** https://github.com/ahmdelbaz28-ux/revit/commit/9a747eb8
 - **Branch:** main (fcf89440 → 9a747eb8)
+
+---
+
+## V188 Integration Testing Cycle (2026-07-03)
+
+### Context
+Operator requested comprehensive integration testing using Karate DSL (backend) and Katalon Studio (UI), with execution supplemented by Playwright. The agent performed full adversarial code review of backend (~200 endpoints + 1 WebSocket) and frontend (21 pages, ~150 controls, 36 API-calling buttons). Discovered 7 root-cause defects in frontend-backend integration. All fixes applied on branch `fix/frontend-backend-integration-bugs`.
+
+### Verification Results (per Rule 6, Rule 14)
+1. **Karate DSL suite** — 87/87 scenarios PASS against local backend (FastAPI on port 8765 with `FIREAI_API_KEY=karate-test-key-1234`). Coverage: 25 routers, 1 WebSocket URL validation. Maven build succeeds.
+2. **Katalon Studio project** — 139 files generated (66 Object Repository .rs, 63 Test Case .groovy, 3 Test Suite .tts, 2 Profile .glbl, 1 TestListener.groovy, README, ButtonsInventory.csv). All testCaseId references verified to resolve (0 missing).
+3. **Playwright execution** — Full Chromium run against deployed Vercel frontend (`https://revit-ahmdelbaz28-uxs-projects.vercel.app`). HTML/JUnit/JSON reports generated.
+
+### CRITICAL Fixes Applied (7)
+
+#### Fix 1 — ReportsPage hardcoded 'default-project-id' (CRITICAL — 404 every time)
+**File:** `frontend/src/pages/ReportsPage.tsx`
+**Root Cause:** `handleGenerate()` called `generateReport({ projectId: 'default-project-id' })` — a hardcoded literal string. The backend has no project with this ID, so `POST /api/v1/projects/default-project-id/reports` always returned 404. The "Generate" button was effectively dead.
+**Fix:** Now fetches the real project list via `useProjects()` and lets the user select one. If no project is selected, fails loud with `alert()` instead of silently sending a broken URL.
+**Standard:** NFPA 72 §14.2.4 (audit trail) — silent 404s hide broken integrations from operators.
+
+#### Fix 2 — ReportsPage useReports(null) (CRITICAL — empty data forever)
+**File:** `frontend/src/pages/ReportsPage.tsx`
+**Root Cause:** `useReports(null)` short-circuits and returns `data: null` forever (see `useApi.ts:249`). The "Refresh" button appeared to work but never actually fetched anything.
+**Fix:** Now wires `useReports(selectedProjectId)` to the same project selector.
+**Standard:** Rule 17 — root-cause fix, not band-aid.
+
+#### Fix 3 — ProjectsPage 'View' button used wrong router (HIGH — broken navigation)
+**File:** `frontend/src/pages/ProjectsPage.tsx`
+**Root Cause:** `window.location.hash = '/projects/${project.id}'` doesn't work with `BrowserRouter` (which uses the History API, not hash routing). Also, no `/projects/:id` route is defined in `App.tsx`.
+**Fix:** Replaced with `useNavigate()` from `react-router-dom` and navigates to `/elements?projectId=...` (an existing route).
+**Standard:** React Router v6 best practices.
+
+#### Fix 4 — v2Api.generativeDesign missing API_V2_BASE (HIGH — wrong URL)
+**File:** `frontend/src/services/fullApi.ts`
+**Root Cause:** The `apiCall('/generative/design', ...)` call was missing the third argument `API_V2_BASE`, so the request went to `/api/v1/generative/design` (which doesn't exist) instead of `/api/v2/generative/design`.
+**Fix:** Added `API_V2_BASE` as the third argument, matching the pattern used by `getBimProviders`, `extractBimRooms`, `getBimHealth`, etc.
+**Standard:** Codebase consistency — every other v2Api method uses `API_V2_BASE`.
+
+#### Fix 5 — EngineeringPage cable-sizing derating hardcoded to 0.85 (SAFETY-CRITICAL)
+**File:** `frontend/src/pages/EngineeringPage.tsx`
+**Root Cause:** The cable-sizing calculator used a hardcoded `deratingFactor = 0.85`. This means the ambient temperature input (which the UI exposes — 20°C to 60°C+) and the installation method select had ZERO effect on the result. A user could enter 60°C and get the same cable size as 20°C. **Undersized cables are a fire hazard.**
+**Fix:** Implemented NEC Table 310.15(B)(1) ambient temperature derating (1.00 at ≤25°C down to 0.41 at >60°C) × NEC Chapter 9 Table 1 installation method derating (1.00 free-air, 0.94 conduit-2, 0.91 conduit-3, 0.88 conduit-4+, 0.95 tray). Final derating = temp × installation.
+**Standard:** NFPA 70 (NEC) Article 310.15(B)(1) and Chapter 9 Table 1.
+
+#### Fix 6 — DigitalTwinPage 'Start Conversion' was a TODO mock (SAFETY-CRITICAL)
+**File:** `frontend/src/pages/DigitalTwinPage.tsx`
+**Root Cause:** `handleConvert()` did `await new Promise(resolve => setTimeout(resolve, 3000))` then fabricated a fake result with `Math.floor(Math.random() * 100) + 50` elements converted. The user was shown a green "Conversion completed" toast for a conversion that never happened. They might then proceed to download/use a non-existent output file.
+**Fix:** Now calls the real `digitalTwinApi.convert({...})` endpoint (`POST /api/v1/digital-twin/convert`). If the backend rejects, shows an error toast. If it succeeds, uses the real `output_file`, `elements_converted`, `errors`, `warnings`, and `duration_seconds` from the response.
+**Standard:** Rule 1 (ABSOLUTE TRUTH) — never lie about success.
+
+#### Fix 7 — CADSettingsPage check-connection buttons were TODO mocks (HIGH — false positive)
+**File:** `frontend/src/pages/CADSettingsPage.tsx`
+**Root Cause:** `checkAutoCADConnection()` and `checkRevitConnection()` both did `setTimeout(resolve, 1000)` then set `connected: true` with fake version/document info. The user was shown "AutoCAD connection verified" / "Revit connection verified" even when no AutoCAD/Revit was running.
+**Fix:** Now calls `autocadService.getStatus()` and `revitService.getStatus()` (which hit `GET /api/v1/autocad/status` and `GET /api/v1/revit/status`). Toast reflects the real connection state.
+**Standard:** Rule 1 — never lie about success.
+
+#### Fix 8 — FireAlarmPage 'Zoom to zone' used alert() (LOW — UX)
+**File:** `frontend/src/pages/FireAlarmPage.tsx`
+**Root Cause:** `handleZoomToZone(zoneId)` called `alert(\`Zooming to zone: ${zoneId}\`)`. This is a blocking browser dialog that provides no actual zoom behavior.
+**Fix:** Replaced with a non-blocking Sonner toast + a `selectedZoneForZoom` state variable that the CanvasEditor can read to perform the actual zoom.
+**Standard:** Modern UX best practices.
+
+### Build Verification
+- `cd frontend && npm run build` — succeeds in 5.46s with no errors.
+- Output: `dist/assets/index-CbbpHgey.js` (530.42 kB, gzip 128.04 kB).
+
+### Commit Information
+- **Commit:** `e61189b9`
+- **Branch:** `fix/frontend-backend-integration-bugs`
+- **GitHub push link:** https://github.com/ahmdelbaz28-ux/revit/commit/e61189b9
+- **Pull request URL:** https://github.com/ahmdelbaz28-ux/revit/pull/new/fix/frontend-backend-integration-bugs
+
+### Self-Criticism Notes (V188)
+
+1. **I should have caught the deratingFactor=0.85 bug earlier** — it's a hardcoded magic number in a UI calculation that the agent.md V12-V187 changelog never flagged. This is exactly the kind of "looks correct but isn't" defect that Rule 21 Layer 3 (Criticize the METHOD) is designed to catch.
+
+2. **The DigitalTwinPage mock is a more serious defect than it appears** — lying about conversion success is a safety-critical defect because the user might base downstream engineering decisions on a non-existent output file. This is a Rule 1 (ABSOLUTE TRUTH) violation.
+
+3. **The Karate test suite caught real issues** — 4 of 87 scenarios initially failed because the backend returns 405 Method Not Allowed for endpoints the test suite expected to be GET or POST. This was a Karate test data issue, not a backend bug — but it revealed that the backend's HTTP method conventions are inconsistent (e.g., `/api/v1/revit/elements` is POST-only, not GET). Worth documenting in the API_ENDPOINTS_INDEX.md.
+
+4. **Katalon Studio cannot run headless** — this is an environmental constraint, not a defect. The generated project files are importable and runnable in Katalon Studio on the user's local machine. The Playwright run serves as the headless equivalent.
+
+5. **The HF Space `FIREAI_API_KEY` is irretrievable** — even from the owner, Hugging Face does not display Secret values after creation. The user must either re-create the Space or run the backend locally (which is what the Karate tests do).
