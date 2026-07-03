@@ -383,7 +383,8 @@ class ApiClient {
       searchParams.set('limit', String(params.page_size));
     }
     const query = searchParams.toString();
-    const raw = await this.fetchWithRetry<{data: Record<string, unknown>[]; total: number; page: number; limit: number; total_pages: number; totalPages: number}>(`/projects${query ? `?${query}` : ''}`);
+    const url = query ? `/projects?${query}` : '/projects';
+    const raw = await this.fetchWithRetry<{data: Record<string, unknown>[]; total: number; page: number; limit: number; total_pages: number; totalPages: number}>(url);
     // Adapt System A format to PaginatedData format AND map field names.
     // V189 FIX: deepCamelToSnake now transforms `totalPages` → `total_pages`.
     // Accept both forms for robustness (in case the transformer is removed later).

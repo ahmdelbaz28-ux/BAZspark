@@ -116,6 +116,127 @@ export function ReportsPage() {
 
   const coverageCalculation = calculateCoverage(sampleRooms, sampleDetectors);
 
+  // ─── Report History Content ───────────────────────────────────────────────
+  // Extracted from inline JSX to reduce Cognitive Complexity (Sonar S3358).
+  // The original nested ternary (loading → error → empty → list) is now a
+  // switch-based helper function.
+
+  function renderReportsContent() {
+    if (reportsLoading) {
+      return (
+        <div className="space-y-4">
+          {['rep-sk-0', 'rep-sk-1', 'rep-sk-2', 'rep-sk-3', 'rep-sk-4'].map((id) => (
+            <div key={id} className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-8 w-8 rounded" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-40 bg-slate-700" />
+                  <Skeleton className="h-3 w-32 bg-slate-700" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-8 w-20 rounded" />
+                <Skeleton className="h-8 w-8 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (reportsError) {
+      return (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+          <p className="text-red-400 text-sm">{t('reports.errorLoading')}: {reportsError}</p>
+        </div>
+      );
+    }
+
+    if (!reports || reports.length === 0) {
+      return (
+        <div className="text-center py-8 text-slate-400">
+          <FileText className="h-8 w-8 mx-auto mb-3 opacity-50" />
+          <p>{t('reports.noReports')}</p>
+          <p className="text-sm mt-1">{t('reports.createFirst')}</p>
+        </div>
+      );
+    }
+
+    return (
+      <ScrollArea className="max-h-96">
+        <div className="space-y-2">
+          {reports.map((report) => (
+            <div
+              key={report.id}
+              className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded bg-blue-500/10 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-blue-400" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-slate-200">
+                    {report.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </div>
+                  <div className="text-xs text-slate-400 flex items-center gap-3">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(report.createdAt).toLocaleDateString()}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {new Date(report.createdAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant={report.status === 'completed' ? 'default' : report.status === 'pending' ? 'secondary' : 'destructive'}
+                  className={
+                    report.status === 'completed'
+                      ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30'
+                      : report.status === 'pending'
+                      ? 'bg-amber-600/20 text-amber-400 border-amber-500/30'
+                      : 'bg-red-600/20 text-red-400 border-red-500/30'
+                  }
+                >
+                  {report.status}
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-slate-600 text-slate-300"
+                  onClick={() => {
+                    try {
+                      const payload = JSON.stringify(report, null, 2);
+                      const blob = new Blob([payload], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `report-${report.id}-${new Date().toISOString().slice(0, 10)}.json`;
+                      document.body.appendChild(link);
+                      link.click();
+                      link.remove();
+                      URL.revokeObjectURL(url);
+                    } catch (err) {
+                      console.error('Download failed:', err);
+                    }
+                  }}
+                  aria-label={t('common.download')}
+                  title={t('common.download')}
+                  disabled={report.status !== 'completed'}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-auto" aria-label={t('reports.title')}>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -304,111 +425,7 @@ export function ReportsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {reportsLoading ? (
-              // Skeleton loader for reports
-              <div className="space-y-4">
-                {[...Array(5)].map((_, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-8 w-8 rounded" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-40 bg-slate-700" />
-                        <Skeleton className="h-3 w-32 bg-slate-700" />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-8 w-20 rounded" />
-                      <Skeleton className="h-8 w-8 rounded" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : reportsError ? (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                <p className="text-red-400 text-sm">{t('reports.errorLoading')}: {reportsError}</p>
-              </div>
-            ) : !reports || reports.length === 0 ? (
-              <div className="text-center py-8 text-slate-400">
-                <FileText className="h-8 w-8 mx-auto mb-3 opacity-50" />
-                <p>{t('reports.noReports')}</p>
-                <p className="text-sm mt-1">{t('reports.createFirst')}</p>
-              </div>
-            ) : (
-              <ScrollArea className="max-h-96">
-                <div className="space-y-2">
-                  {reports.map((report) => (
-                    <div
-                      key={report.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded bg-blue-500/10 flex items-center justify-center">
-                          <FileText className="h-4 w-4 text-blue-400" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-slate-200">
-                            {report.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </div>
-                          <div className="text-xs text-slate-400 flex items-center gap-3">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {new Date(report.createdAt).toLocaleDateString()}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {new Date(report.createdAt).toLocaleTimeString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={report.status === 'completed' ? 'default' : report.status === 'pending' ? 'secondary' : 'destructive'}
-                          className={
-                            report.status === 'completed'
-                              ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30'
-                              : report.status === 'pending'
-                              ? 'bg-amber-600/20 text-amber-400 border-amber-500/30'
-                              : 'bg-red-600/20 text-red-400 border-red-500/30'
-                          }
-                        >
-                          {report.status}
-                        </Badge>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-slate-600 text-slate-300"
-                          onClick={() => {
-                            // V186 FIX: Download button was non-functional (no onClick).
-                            // Now exports the report as a JSON file — root-cause fix that
-                            // gives users an actual file download instead of an inert button.
-                            try {
-                              const payload = JSON.stringify(report, null, 2);
-                              const blob = new Blob([payload], { type: 'application/json' });
-                              const url = URL.createObjectURL(blob);
-                              const link = document.createElement('a');
-                              link.href = url;
-                              link.download = `report-${report.id}-${new Date().toISOString().slice(0, 10)}.json`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                              URL.revokeObjectURL(url);
-                            } catch (err) {
-                              console.error('Download failed:', err);
-                            }
-                          }}
-                          aria-label={t('common.download')}
-                          title={t('common.download')}
-                          disabled={report.status !== 'completed'}
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            )}
+            {renderReportsContent()}
           </CardContent>
         </Card>
       </div>

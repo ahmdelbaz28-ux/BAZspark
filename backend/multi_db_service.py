@@ -117,8 +117,8 @@ class MultiDatabaseService:
             # Test connection
             self._redis_client.ping()
             logger.info("Redis connection established")
-        except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
+        except Exception:
+            logger.exception("Failed to connect to Redis")
             self._redis_client = None
 
     def _setup_qdrant(self):
@@ -146,8 +146,8 @@ class MultiDatabaseService:
             # Test connection
             self._qdrant_client.get_collections()
             logger.info("Qdrant connection established")
-        except Exception as e:
-            logger.error(f"Failed to connect to Qdrant: {e}")
+        except Exception:
+            logger.exception("Failed to connect to Qdrant")
             self._qdrant_client = None
 
     def _setup_neo4j(self):
@@ -167,8 +167,8 @@ class MultiDatabaseService:
                 session.run("RETURN 1")
 
             logger.info("Neo4j connection established")
-        except Exception as e:
-            logger.error(f"Failed to connect to Neo4j: {e}")
+        except Exception:
+            logger.exception("Failed to connect to Neo4j")
             self._neo4j_driver = None
 
     def _setup_postgres(self):
@@ -184,8 +184,8 @@ class MultiDatabaseService:
                 dsn=config.DATABASE_URL,
             )
             logger.info("PostgreSQL connection pool established")
-        except Exception as e:
-            logger.error(f"Failed to create PostgreSQL pool: {e}")
+        except Exception:
+            logger.exception("Failed to create PostgreSQL pool")
             self._postgres_pool = None
 
     # Redis methods
@@ -200,8 +200,8 @@ class MultiDatabaseService:
         try:
             self._redis_client.set(key, value, ex=ex)
             return True
-        except Exception as e:
-            logger.error(f"Redis set error: {e}")
+        except Exception:
+            logger.exception("Redis set error")
             return False
 
     def redis_get(self, key: str) -> Optional[str]:
@@ -210,8 +210,8 @@ class MultiDatabaseService:
             return None
         try:
             return self._redis_client.get(key)
-        except Exception as e:
-            logger.error(f"Redis get error: {e}")
+        except Exception:
+            logger.exception("Redis get error")
             return None
 
     def redis_delete(self, key: str) -> bool:
@@ -220,8 +220,8 @@ class MultiDatabaseService:
             return False
         try:
             return bool(self._redis_client.delete(key))
-        except Exception as e:
-            logger.error(f"Redis delete error: {e}")
+        except Exception:
+            logger.exception("Redis delete error")
             return False
 
     # Qdrant methods
@@ -236,8 +236,8 @@ class MultiDatabaseService:
         try:
             self._qdrant_client.upsert(collection_name=collection_name, points=points)
             return True
-        except Exception as e:
-            logger.error(f"Qdrant upsert error: {e}")
+        except Exception:
+            logger.exception("Qdrant upsert error")
             return False
 
     def qdrant_search(self, collection_name: str, query_vector: list, limit: int = 10) -> list:
@@ -251,8 +251,8 @@ class MultiDatabaseService:
                 limit=limit
             )
             return results
-        except Exception as e:
-            logger.error(f"Qdrant search error: {e}")
+        except Exception:
+            logger.exception("Qdrant search error")
             return []
 
     # Neo4j methods
@@ -281,8 +281,8 @@ class MultiDatabaseService:
             with self.neo4j_session(database) as session:
                 result = session.run(query, parameters or {})
                 return [record.data() for record in result]
-        except Exception as e:
-            logger.error(f"Neo4j query error: {e}")
+        except Exception:
+            logger.exception("Neo4j query error")
             return []
 
     # PostgreSQL methods (when using PostgreSQL as primary DB)
@@ -319,8 +319,8 @@ class MultiDatabaseService:
                     conn.commit()
                     cur.close()
                     return []
-        except Exception as e:
-            logger.error(f"PostgreSQL query error: {e}")
+        except Exception:
+            logger.exception("PostgreSQL query error")
             return []
 
     def health_check(self) -> dict:

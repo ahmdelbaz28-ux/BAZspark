@@ -23,10 +23,9 @@
  *   - Health & Cache
  */
 
-import { api as coreApi } from './api';
+import { api as coreApi, ApiError } from './api';
 import { api as digitalTwinApiClient } from './digitalTwinApi';
 import { getApiKey } from './apiKey';
-import { ApiError } from './api';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

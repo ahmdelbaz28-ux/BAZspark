@@ -230,8 +230,8 @@ export function ProjectsPage() {
         {/* Loading State with Skeletons */}
         {projectsLoading && (
           <div className="space-y-4">
-            {[...Array(3)].map((_, index) => (
-              <Card key={index} className="border-slate-700 bg-slate-800">
+            {['skeleton-0', 'skeleton-1', 'skeleton-2'].map((id) => (
+              <Card key={id} className="border-slate-700 bg-slate-800">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div>

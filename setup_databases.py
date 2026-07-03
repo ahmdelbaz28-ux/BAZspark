@@ -13,10 +13,17 @@ This script helps generate a .env file with the proper configuration.
 """
 
 from pathlib import Path
+import getpass as _getpass
 
 
 def prompt_user(message: str, default: str = "", hide_input: bool = False) -> str:
     """Prompt user for input with optional default value."""
+    if hide_input:
+        user_input = _getpass.getpass(prompt=f"{message}: ").strip()
+        if user_input:
+            return user_input
+        return default
+
     if default:
         prompt_text = f"{message} (default: {default}): "
     else:
