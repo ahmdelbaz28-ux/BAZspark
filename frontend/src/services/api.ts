@@ -27,6 +27,103 @@ import { getApiKey } from './apiKey';
 // Space backend URL in production.
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
+// V189 FIX (CRITICAL): camelCase → snake_case transformer.
+// ============================================================
+// ROOT CAUSE: The backend's CamelModel base class (backend/schemas.py:73)
+// uses `alias_generator=_to_camel`, so ALL response fields are serialized
+// as camelCase (e.g., `elementId`, `fromElementId`, `connectionId`).
+//
+// But the frontend types in src/types/index.ts use snake_case (e.g.,
+// `element_id`, `from_element_id`, `connection_id`) — and the comment at
+// line 6 of that file WRONGLY claims "Field naming: snake_case (matching
+// Python/DB conventions)".
+//
+// Before V188, this mismatch was HIDDEN because the Connections V2 API
+// always returned 500 (the tuple-mutation crash). So `connections` was
+// always `[]` and the `.slice()` call on `from_element_id` was never
+// reached. After V188 fixed the API, real data started flowing — and
+// the page crashed with:
+//   "TypeError: Cannot read properties of undefined (reading 'slice')"
+//
+// This same crash would affect Elements.tsx and Conflicts.tsx IF those
+// tables had data — but they're currently empty, so the crash is dormant.
+//
+// Root-cause fix per Rule 17: transform ALL API responses from camelCase
+// to snake_case at the API boundary (fetchWithRetry). This way:
+//   1. All existing snake_case types continue to work unchanged
+//   2. All pages (Elements, Connections, Conflicts, Projects) benefit
+//   3. No need to edit every page individually
+//   4. The transformer is the SINGLE source of truth for the contract
+//
+// Why not change the backend to return snake_case? Because:
+//   - The CamelModel pattern is used by ALL response schemas (not just
+//     UDM) — changing it would break the Projects API, Devices API, etc.
+//   - The backend OpenAPI spec documents camelCase as the contract
+//   - camelCase is the JSON API convention (JavaScript style)
+//
+// Why not change the frontend types to camelCase? Because:
+//   - There are 30+ field accesses across 6 page components
+//   - The types are also used for request bodies (where the backend
+//     accepts both snake_case and camelCase via populate_by_name=True)
+//   - High risk of introducing new bugs during a mass rename
+//
+// The transformer is the safest, most targeted fix.
+// ============================================================
+
+/**
+ * Convert a single camelCase string to snake_case.
+ * "fromElementId" → "from_element_id"
+ * "connectionId"  → "connection_id"
+ * "elementType"   → "element_type"
+ */
+function camelToSnake(key: string): string {
+  // Only transform keys that contain a lowercase→uppercase boundary
+  // (i.e., actual camelCase). Keys that are already snake_case, all-caps,
+  // or single words pass through unchanged.
+  if (!/[a-z]/.test(key) || !/[A-Z]/.test(key)) {
+    return key;
+  }
+  return key.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+}
+
+/**
+ * Deeply transform all object keys from camelCase to snake_case.
+ * - Arrays: each element is transformed recursively
+ * - Objects: each key is converted, each value is transformed recursively
+ * - Primitives (string, number, boolean, null): returned as-is
+ *
+ * IMPORTANT: This transforms ALL keys, including those inside `metadata`.
+ * This is correct because metadata from the backend is also serialized
+ * through the CamelModel pipeline. If a user stored `{"myKey": "value"}`
+ * in metadata, the backend returns `{"myKey": "value"}` as-is (metadata
+ * is a freeform dict[str, Any], not a CamelModel). The transformer will
+ * convert it to `{"my_key": "value"}`.
+ *
+ * This is a known trade-off. If a user has camelCase metadata keys that
+ * MUST be preserved, they should store them as snake_case in the backend.
+ * The alternative (skip transformation for metadata) would require knowing
+ * the schema of every response type, defeating the purpose of a generic
+ * transformer.
+ */
+function deepCamelToSnake<T>(value: T): T {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(deepCamelToSnake) as unknown as T;
+  }
+  if (typeof value === 'object' && value.constructor === Object) {
+    const result: Record<string, unknown> = {};
+    for (const key of Object.keys(value as Record<string, unknown>)) {
+      const snakeKey = camelToSnake(key);
+      result[snakeKey] = deepCamelToSnake((value as Record<string, unknown>)[key]);
+    }
+    return result as T;
+  }
+  // Primitive (string, number, boolean, etc.)
+  return value;
+}
+
 /**
  * M-3 FIX: Session-based auth with HttpOnly cookie.
  *
@@ -153,8 +250,13 @@ class ApiClient {
           throw new ApiError(json.message || 'API request failed', response.status);
         }
 
+        // V189 FIX: Transform camelCase response keys to snake_case to match
+        // the frontend types. See deepCamelToSnake() docstring for the full
+        // root-cause analysis.
+        const transformedData = deepCamelToSnake(json.data);
+
         // Extract data from the wrapper
-        return json.data as T;
+        return transformedData as T;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
 
@@ -215,24 +317,30 @@ class ApiClient {
 
   // ===== Projects API =====
   // The /api/projects endpoint is served by System A (Digital Twin backend).
-  // System A returns project objects with camelCase fields:
-  //   {id, name, description, author, createdAt, updatedAt, status, deviceCount, connectionCount}
-  // The api.ts client uses snake_case Project type from @/types:
+  // System A returns project objects with these fields (camelCase from backend,
+  // now transformed to snake_case by deepCamelToSnake in fetchWithRetry):
+  //   {id, name, description, author, created_at, updated_at, status, device_count, connection_count}
+  // The api.ts client uses snake_case UdmProject type from @/types:
   //   {project_id, name, description, status, metadata, element_count, created_timestamp, last_modified_timestamp}
-  // We MUST map field names here so components receive correctly shaped data.
-  // Failure to map causes undefined field access at runtime (project.project_id = undefined).
+  // We MUST map field names here because System A uses `id` (not `project_id`)
+  // and `device_count` (not `element_count`) — these are semantic mismatches
+  // that a generic camelToSnake transformer cannot fix.
+  //
+  // V189 FIX: After adding deepCamelToSnake transformer in fetchWithRetry,
+  // the raw object now has snake_case keys (created_at, not createdAt).
+  // Updated _mapProjectFromSystemA to read snake_case keys.
 
   /** Map a System A project object to the System B Project type expected by @/types */
   private _mapProjectFromSystemA(raw: Record<string, unknown>): UdmProject {
     return {
-      project_id: (raw.id as string) || '',
+      project_id: (raw.id as string) || (raw.project_id as string) || '',
       name: (raw.name as string) || '',
       description: (raw.description as string) || undefined,
       status: (raw.status as string) || 'draft',
       metadata: raw.author ? { author: raw.author } : undefined,
-      element_count: (raw.deviceCount as number) || 0,
-      created_timestamp: (raw.createdAt as string) || null,
-      last_modified_timestamp: (raw.updatedAt as string) || null,
+      element_count: (raw.device_count as number) ?? (raw.deviceCount as number) ?? (raw.element_count as number) ?? 0,
+      created_timestamp: (raw.created_at as string) ?? (raw.createdAt as string) ?? (raw.created_timestamp as string) ?? null,
+      last_modified_timestamp: (raw.updated_at as string) ?? (raw.updatedAt as string) ?? (raw.last_modified_timestamp as string) ?? null,
     };
   }
 
@@ -247,15 +355,17 @@ class ApiClient {
       searchParams.set('limit', String(params.page_size));
     }
     const query = searchParams.toString();
-    const raw = await this.fetchWithRetry<{data: Record<string, unknown>[]; total: number; page: number; limit: number; totalPages: number}>(`/projects${query ? `?${query}` : ''}`);
-    // Adapt System A format to PaginatedData format AND map field names
+    const raw = await this.fetchWithRetry<{data: Record<string, unknown>[]; total: number; page: number; limit: number; total_pages: number; totalPages: number}>(`/projects${query ? `?${query}` : ''}`);
+    // Adapt System A format to PaginatedData format AND map field names.
+    // V189 FIX: deepCamelToSnake now transforms `totalPages` → `total_pages`.
+    // Accept both forms for robustness (in case the transformer is removed later).
     const mappedProjects = (raw.data || []).map(p => this._mapProjectFromSystemA(p));
     return {
       items: mappedProjects,
       total: raw.total,
       page: raw.page,
       page_size: raw.limit,
-      total_pages: raw.totalPages,
+      total_pages: raw.total_pages ?? raw.totalPages ?? 0,
     };
   }
 
