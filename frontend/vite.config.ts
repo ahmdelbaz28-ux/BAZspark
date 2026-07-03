@@ -2,8 +2,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import path from "path";
-import { fileURLToPath } from "url";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { mockupPreviewPlugin } from "./mockupPreviewPlugin";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,7 +53,7 @@ function cspInjectPlugin(): import("vite").Plugin {
         // Leave origin/wsOrigin empty; 'self' in CSP covers same-origin calls.
       }
       const cspConnect = [origin, wsOrigin].filter(Boolean).join(" ");
-      return html.replace(/__CSP_CONNECT_SRC__/g, cspConnect);
+      return html.replaceAll("__CSP_CONNECT_SRC__", cspConnect);
     },
   };
 }
@@ -63,8 +63,8 @@ export default defineConfig({
   plugins: [
     mockupPreviewPlugin(),
     react(),
-    !isTest ? tailwindcss() : null,
-    !isTest ? cspInjectPlugin() : null,
+    isTest ? null : tailwindcss(),
+    isTest ? null : cspInjectPlugin(),
   ].filter(Boolean),
   resolve: {
     alias: {
