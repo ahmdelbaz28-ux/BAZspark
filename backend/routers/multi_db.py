@@ -40,8 +40,8 @@ async def get_database_health():
             data=health,
             message="Database health check completed successfully"
         )
-    except Exception as e:
-        logger.error(f"Database health check failed: {e}")
+    except Exception:
+        logger.exception("Database health check failed")
         raise HTTPException(status_code=500, detail="Database health check failed")
 
 
@@ -59,8 +59,8 @@ async def get_from_redis(key: str):
             )
         else:
             raise HTTPException(status_code=404, detail=f"Key '{key}' not found in Redis")
-    except Exception as e:
-        logger.error(f"Redis get failed: {e}")
+    except Exception:
+        logger.exception("Redis get failed")
         raise HTTPException(status_code=500, detail="Redis operation failed")
 
 
@@ -78,8 +78,8 @@ async def set_in_redis(key: str, value: str, ttl: Optional[int] = Query(None, de
             )
         else:
             raise HTTPException(status_code=500, detail="Failed to set value in Redis")
-    except Exception as e:
-        logger.error(f"Redis set failed: {e}")
+    except Exception:
+        logger.exception("Redis set failed")
         raise HTTPException(status_code=500, detail="Redis operation failed")
 
 
@@ -97,8 +97,8 @@ async def cache_bim_element(element_id: str, element_data: Dict):
             )
         else:
             raise HTTPException(status_code=500, detail="Failed to cache BIM element")
-    except Exception as e:
-        logger.error(f"BIM element caching failed: {e}")
+    except Exception:
+        logger.exception("BIM element caching failed")
         raise HTTPException(status_code=500, detail="BIM element caching failed")
 
 
@@ -116,8 +116,8 @@ async def get_cached_bim_element(element_id: str):
             )
         else:
             raise HTTPException(status_code=404, detail=f"Cached BIM element '{element_id}' not found")
-    except Exception as e:
-        logger.error(f"Get cached BIM element failed: {e}")
+    except Exception:
+        logger.exception("Get cached BIM element failed")
         raise HTTPException(status_code=500, detail="Get cached BIM element failed")
 
 
@@ -135,8 +135,8 @@ async def store_element_embeddings(element_id: str, embeddings: List[float]):
             )
         else:
             raise HTTPException(status_code=500, detail="Failed to store element embeddings")
-    except Exception as e:
-        logger.error(f"Store element embeddings failed: {e}")
+    except Exception:
+        logger.exception("Store element embeddings failed")
         raise HTTPException(status_code=500, detail="Store element embeddings failed")
 
 
@@ -151,8 +151,8 @@ async def find_similar_elements(query_embedding: List[float], limit: int = Query
             data={"results": results, "query_length": len(query_embedding)},
             message=f"Found {len(results)} similar elements"
         )
-    except Exception as e:
-        logger.error(f"Find similar elements failed: {e}")
+    except Exception:
+        logger.exception("Find similar elements failed")
         raise HTTPException(status_code=500, detail="Find similar elements failed")
 
 
@@ -178,8 +178,8 @@ async def create_element_relationships(
             )
         else:
             raise HTTPException(status_code=500, detail="Failed to create element relationships")
-    except Exception as e:
-        logger.error(f"Create element relationships failed: {e}")
+    except Exception:
+        logger.exception("Create element relationships failed")
         raise HTTPException(status_code=500, detail="Create element relationships failed")
 
 
@@ -197,8 +197,8 @@ async def find_related_elements(
             data={"element_id": element_id, "related_elements": results, "relationship_type": relationship_type},
             message=f"Found {len(results)} related elements"
         )
-    except Exception as e:
-        logger.error(f"Find related elements failed: {e}")
+    except Exception:
+        logger.exception("Find related elements failed")
         raise HTTPException(status_code=500, detail="Find related elements failed")
 
 
@@ -216,8 +216,8 @@ async def execute_neo4j_query(query: str, parameters: Optional[str] = Query(None
             data={"query": query, "parameters": params, "results": results},
             message=f"Query executed successfully, returned {len(results)} results"
         )
-    except Exception as e:
-        logger.error(f"Neo4j query failed: {e}")
+    except Exception:
+        logger.exception("Neo4j query failed")
         raise HTTPException(status_code=500, detail="Neo4j query failed")
 
 
@@ -239,6 +239,6 @@ async def get_qdrant_collections():
             data={"collections": collection_names, "count": len(collection_names)},
             message=f"Found {len(collection_names)} Qdrant collections"
         )
-    except Exception as e:
-        logger.error(f"Get Qdrant collections failed: {e}")
+    except Exception:
+        logger.exception("Get Qdrant collections failed")
         raise HTTPException(status_code=500, detail="Get Qdrant collections failed")
