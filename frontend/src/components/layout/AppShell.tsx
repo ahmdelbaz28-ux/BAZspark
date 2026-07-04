@@ -40,7 +40,7 @@ const AppShell: React.FC<AppShellProps> = ({
       // Fix: Use a flat solid background (bg-slate-950) with NO overlays. The
       // sidebar and topbar provide enough visual structure. Content area is now
       // clean and high-contrast.
-      className="h-screen w-screen flex overflow-hidden bg-slate-950 relative"
+      className="h-screen w-screen flex overflow-hidden bg-[#09090d] relative"
       dir={isRTL ? "rtl" : "ltr"}
     >
       <EnhancedSidebar />
@@ -56,8 +56,8 @@ const AppShell: React.FC<AppShellProps> = ({
 
         <Breadcrumbs />
 
-        <main className="flex-1 overflow-auto bg-slate-950 relative">
-          <div className="relative z-10">{children}</div>
+        <main className="flex-1 overflow-auto bg-[#09090d] relative">
+          <div className="relative z-10 h-full">{children}</div>
         </main>
 
         <StatusBar

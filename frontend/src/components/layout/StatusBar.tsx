@@ -12,27 +12,43 @@ const StatusBar: React.FC<StatusBarProps> = ({
   environment,
 }) => {
   return (
-    <footer className="h-7 bg-slate-900 border-t border-slate-700 flex items-center px-3 gap-4 text-xs shrink-0" data-onboarding="status-bar">
-      <span className="text-slate-500">BAZSPARK V55.0.0</span>
+    <footer
+      data-onboarding="status-bar"
+      className="
+        h-6 shrink-0 flex items-center px-3 gap-3
+        bg-[#0a0a0e] border-t border-[#131318]
+        text-[10px] font-mono text-[#3a3a50]
+        select-none
+      "
+    >
+      {/* Brand + version */}
+      <span className="text-[#2e2e42] tracking-wider uppercase">BAZSPARK</span>
+      <span className="text-[#1e1e2a]">v55.0.0</span>
 
-      <div className="h-3 w-px bg-slate-700" />
+      <span className="text-[#1a1a22]">·</span>
 
-      <span className="text-slate-500 truncate" title={backendUrl}>
+      {/* Backend URL */}
+      <span className="truncate max-w-[180px] text-[#2a2a3a]" title={backendUrl}>
         {backendUrl}
       </span>
 
-      <div className="h-3 w-px bg-slate-700" />
+      <span className="text-[#1a1a22]">·</span>
 
-      <span className="text-slate-500">{environment}</span>
+      {/* Environment */}
+      <span className="uppercase tracking-wider text-[#2a2a3a]">{environment}</span>
 
       <div className="flex-1" />
 
+      {/* NFPA badge */}
+      <span className="text-[#2a2a42] tracking-wider">NFPA&nbsp;72</span>
+
+      <span className="text-[#1a1a22]">·</span>
+
+      {/* Connection */}
       <div className="flex items-center gap-1.5">
-        <span
-          className={`h-1.5 w-1.5 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"}`}
-        />
-        <span className="text-slate-500">
-          {isConnected ? "Connected" : "Disconnected"}
+        <span className={`baz-dot ${isConnected ? "baz-dot-online" : "baz-dot-offline"}`} />
+        <span className={isConnected ? "text-[#3a5a3a]" : "text-[#5a3a3a]"}>
+          {isConnected ? "connected" : "offline"}
         </span>
       </div>
     </footer>

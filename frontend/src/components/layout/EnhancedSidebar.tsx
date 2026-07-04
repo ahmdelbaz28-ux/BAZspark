@@ -3,183 +3,257 @@ import { useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
-  FolderKanban,
-  Flame,
-  Box,
-  FileText,
-  Layers,
-  Cable,
+  FolderOpen,
+  Layers2,
+  GitFork,
   AlertTriangle,
-  Settings,
-  ChevronDown,
-  Gauge,
-  Zap,
-  Database,
-  BarChart3,
+  FlameKindling,
+  Box,
+  FileBarChart2,
+  Cpu,
+  Bolt,
   Building2,
-  PencilRuler,
-  ArrowRightLeft,
+  PenLine,
+  ArrowLeftRight,
   History,
+  SlidersHorizontal,
+  Wind,
+  ShieldAlert,
+  Download,
+  ClipboardList,
+  Activity,
+  BellRing,
+  Settings,
   Settings2,
-  Menu,
-  X,
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeft,
+  Bot,
+  Thermometer,
+  Cable,
 } from "lucide-react";
+
+/* ---------------------------------------------------------- */
+/*  NAV DATA                                                    */
+/* ---------------------------------------------------------- */
 
 interface NavItem {
   labelKey: string;
-  defaultLabel: string;
+  label: string;
   icon: React.ElementType;
   path: string;
+  badge?: string;
+  badgeVariant?: "danger" | "warning" | "accent" | "success";
   dataOnboarding?: string;
 }
 
 interface NavGroup {
-  groupKey: string;
-  groupLabelKey: string;
-  defaultGroupLabel: string;
-  groupIcon?: React.ElementType;
+  key: string;
+  label: string;
   items: NavItem[];
+  separator?: boolean;
 }
 
 const navGroups: NavGroup[] = [
   {
-    groupKey: "core",
-    groupLabelKey: "nav.group.core",
-    defaultGroupLabel: "Core",
-    groupIcon: LayoutDashboard,
+    key: "core",
+    label: "Workspace",
     items: [
-      { labelKey: "nav.dashboard", defaultLabel: "Dashboard", icon: LayoutDashboard, path: "/dashboard", dataOnboarding: "nav-dashboard" },
-      { labelKey: "nav.projects", defaultLabel: "Projects", icon: FolderKanban, path: "/projects", dataOnboarding: "nav-projects" },
-      { labelKey: "nav.elements", defaultLabel: "Elements", icon: Layers, path: "/elements" },
-      { labelKey: "nav.connections", defaultLabel: "Connections", icon: Cable, path: "/connections" },
-      { labelKey: "nav.conflicts", defaultLabel: "Conflicts", icon: AlertTriangle, path: "/conflicts" },
+      { labelKey: "nav.dashboard",    label: "Dashboard",    icon: LayoutDashboard, path: "/dashboard",   dataOnboarding: "nav-dashboard" },
+      { labelKey: "nav.projects",     label: "Projects",     icon: FolderOpen,      path: "/projects",    dataOnboarding: "nav-projects"  },
+      { labelKey: "nav.elements",     label: "Elements",     icon: Layers2,         path: "/elements"   },
+      { labelKey: "nav.connections",  label: "Connections",  icon: Cable,           path: "/connections" },
+      { labelKey: "nav.conflicts",    label: "Conflicts",    icon: AlertTriangle,   path: "/conflicts",  badge: "3", badgeVariant: "danger" },
     ],
   },
   {
-    groupKey: "engineering",
-    groupLabelKey: "nav.group.engineering",
-    defaultGroupLabel: "Engineering (Safety Critical)",
-    groupIcon: Gauge,
+    key: "engineering",
+    label: "Engineering",
+    separator: true,
     items: [
-      { labelKey: "nav.engineering", defaultLabel: "Engineering", icon: Gauge, path: "/engineering", dataOnboarding: "nav-engineering" },
-      { labelKey: "nav.qomn", defaultLabel: "QOMN Calculator", icon: Zap, path: "/engineering/qomn" },
-      { labelKey: "nav.facp", defaultLabel: "FACP Designer", icon: Flame, path: "/engineering/facp" },
-      { labelKey: "nav.physicsGuards", defaultLabel: "Physics Guards", icon: AlertTriangle, path: "/engineering/guards" },
+      { labelKey: "nav.engineering",     label: "Console",       icon: Cpu,          path: "/engineering",       dataOnboarding: "nav-engineering" },
+      { labelKey: "nav.qomn",            label: "QOMN Calc",     icon: Bolt,         path: "/engineering/qomn"  },
+      { labelKey: "nav.facp",            label: "FACP Designer", icon: FlameKindling, path: "/engineering/facp" },
+      { labelKey: "nav.physicsGuards",   label: "Physics Guards",icon: ShieldAlert,  path: "/engineering/guards", badge: "safe", badgeVariant: "success" },
+      { labelKey: "nav.fireAlarmDesigner", label: "Fire Alarm", icon: BellRing,     path: "/fire-alarm/designer", dataOnboarding: "nav-fire-alarm-designer" },
     ],
   },
   {
-    groupKey: "cad-integration",
-    groupLabelKey: "nav.group.cad",
-    defaultGroupLabel: "BIM & CAD Integration",
-    groupIcon: Building2,
+    key: "cad",
+    label: "BIM & CAD",
+    separator: true,
     items: [
-      { labelKey: "nav.revit", defaultLabel: "Revit", icon: Building2, path: "/revit" },
-      { labelKey: "nav.revitCreate", defaultLabel: "Revit Create", icon: Building2, path: "/revit/create" },
-      { labelKey: "nav.revitElements", defaultLabel: "Revit Elements", icon: Layers, path: "/revit/elements" },
-      { labelKey: "nav.autocad", defaultLabel: "AutoCAD", icon: PencilRuler, path: "/autocad" },
-      { labelKey: "nav.autocadDraw", defaultLabel: "AutoCAD Draw", icon: PencilRuler, path: "/autocad/draw" },
-      { labelKey: "nav.digitalTwin", defaultLabel: "Digital Twin", icon: Box, path: "/digital-twin" },
-      { labelKey: "nav.dtConvert", defaultLabel: "DT Convert", icon: ArrowRightLeft, path: "/digital-twin/convert" },
-      { labelKey: "nav.dtConfig", defaultLabel: "DT Config", icon: Settings2, path: "/digital-twin/config" },
-      { labelKey: "nav.dtHistory", defaultLabel: "DT History", icon: History, path: "/digital-twin/history" },
-      { labelKey: "nav.fireAlarmDesigner", defaultLabel: "Fire Alarm Designer", icon: Flame, path: "/fire-alarm/designer", dataOnboarding: "nav-fire-alarm-designer" },
+      { labelKey: "nav.revit",         label: "Revit",          icon: Building2,      path: "/revit"               },
+      { labelKey: "nav.revitCreate",   label: "Revit · Create", icon: Building2,      path: "/revit/create"        },
+      { labelKey: "nav.revitElements", label: "Revit · Items",  icon: Layers2,        path: "/revit/elements"      },
+      { labelKey: "nav.autocad",       label: "AutoCAD",        icon: PenLine,        path: "/autocad"             },
+      { labelKey: "nav.autocadDraw",   label: "AutoCAD · Draw", icon: PenLine,        path: "/autocad/draw"        },
+      { labelKey: "nav.digitalTwin",   label: "Digital Twin",   icon: Box,            path: "/digital-twin"        },
+      { labelKey: "nav.dtConvert",     label: "DT · Convert",   icon: ArrowLeftRight, path: "/digital-twin/convert"},
+      { labelKey: "nav.dtConfig",      label: "DT · Config",    icon: SlidersHorizontal, path: "/digital-twin/config"},
+      { labelKey: "nav.dtHistory",     label: "DT · History",   icon: History,        path: "/digital-twin/history"},
     ],
   },
   {
-    groupKey: "environment",
-    groupLabelKey: "nav.group.environment",
-    defaultGroupLabel: "Environment & Context",
-    groupIcon: Database,
+    key: "environment",
+    label: "Environment",
+    separator: true,
     items: [
-      { labelKey: "nav.environmentContext", defaultLabel: "Weather & Geocoding", icon: Database, path: "/environment/context" },
-      { labelKey: "nav.airQuality", defaultLabel: "Air Quality", icon: Database, path: "/environment/air-quality" },
-      { labelKey: "nav.hazmat", defaultLabel: "HazMat Database", icon: AlertTriangle, path: "/environment/hazmat" },
+      { labelKey: "nav.environmentContext", label: "Weather",   icon: Wind,         path: "/environment/context"   },
+      { labelKey: "nav.airQuality",         label: "Air Quality",icon: Thermometer, path: "/environment/air-quality"},
+      { labelKey: "nav.hazmat",             label: "HazMat DB", icon: AlertTriangle, path: "/environment/hazmat"   },
     ],
   },
   {
-    groupKey: "reporting",
-    groupLabelKey: "nav.group.reporting",
-    defaultGroupLabel: "Reports & Exports",
-    groupIcon: FileText,
+    key: "reporting",
+    label: "Reports",
+    separator: true,
     items: [
-      { labelKey: "nav.reports", defaultLabel: "Reports", icon: FileText, path: "/reports", dataOnboarding: "nav-reports" },
-      { labelKey: "nav.exports", defaultLabel: "Export Manager", icon: FileText, path: "/exports" },
-      { labelKey: "nav.auditTrail", defaultLabel: "Audit Trail", icon: BarChart3, path: "/audit-trail" },
+      { labelKey: "nav.reports",     label: "Reports",       icon: FileBarChart2,  path: "/reports",      dataOnboarding: "nav-reports" },
+      { labelKey: "nav.exports",     label: "Export",        icon: Download,       path: "/exports"       },
+      { labelKey: "nav.auditTrail",  label: "Audit Trail",   icon: ClipboardList,  path: "/audit-trail"   },
     ],
   },
   {
-    groupKey: "monitoring",
-    groupLabelKey: "nav.group.monitoring",
-    defaultGroupLabel: "System & Monitoring",
-    groupIcon: BarChart3,
+    key: "monitoring",
+    label: "Monitoring",
+    separator: true,
     items: [
-      { labelKey: "nav.systemHealth", defaultLabel: "System Health", icon: BarChart3, path: "/system-health" },
-      { labelKey: "nav.agentActivity", defaultLabel: "Agent Activity", icon: Zap, path: "/agent-activity" },
-      { labelKey: "nav.securityAlerts", defaultLabel: "Security Alerts", icon: AlertTriangle, path: "/security-alerts" },
+      { labelKey: "nav.systemHealth",    label: "System Health", icon: Activity,   path: "/system-health"   },
+      { labelKey: "nav.agentActivity",   label: "AI Agent",      icon: Bot,        path: "/agent-chat",     badge: "live", badgeVariant: "accent" },
+      { labelKey: "nav.securityAlerts",  label: "Security",      icon: BellRing,   path: "/security-alerts" },
     ],
   },
   {
-    groupKey: "settings",
-    groupLabelKey: "nav.group.settings",
-    defaultGroupLabel: "Settings",
-    groupIcon: Settings,
+    key: "settings",
+    label: "Settings",
+    separator: true,
     items: [
-      { labelKey: "nav.settings", defaultLabel: "Settings", icon: Settings, path: "/settings", dataOnboarding: "nav-settings" },
-      { labelKey: "nav.advancedSettings", defaultLabel: "Advanced Settings", icon: Settings2, path: "/settings/advanced" },
+      { labelKey: "nav.settings",         label: "Preferences",     icon: Settings,  path: "/settings",          dataOnboarding: "nav-settings" },
+      { labelKey: "nav.advancedSettings", label: "Advanced",        icon: Settings2, path: "/settings/advanced" },
     ],
   },
 ];
 
-interface SidebarGroupProps {
+/* ---------------------------------------------------------- */
+/*  BADGE COMPONENT                                            */
+/* ---------------------------------------------------------- */
+
+const NavBadge: React.FC<{ text: string; variant?: NavItem["badgeVariant"] }> = ({
+  text, variant = "accent"
+}) => {
+  const colors: Record<string, string> = {
+    danger:  "bg-red-500/15 text-red-400",
+    warning: "bg-amber-500/15 text-amber-400",
+    accent:  "bg-cyan-500/15 text-cyan-400",
+    success: "bg-emerald-500/15 text-emerald-400",
+  };
+  return (
+    <span className={`ml-auto text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded ${colors[variant]}`}>
+      {text}
+    </span>
+  );
+};
+
+/* ---------------------------------------------------------- */
+/*  NAV GROUP COMPONENT                                        */
+/* ---------------------------------------------------------- */
+
+interface GroupProps {
   group: NavGroup;
-  isOpen: boolean;
+  expanded: boolean;
+  collapsed: boolean; // sidebar icon-only mode
   onToggle: () => void;
   currentPath: string;
 }
 
-const SidebarGroup: React.FC<SidebarGroupProps> = ({ group, isOpen, onToggle, currentPath }) => {
+const NavGroupSection: React.FC<GroupProps> = ({ group, expanded, collapsed, onToggle, currentPath }) => {
   const { t } = useTranslation();
-  const GroupIcon = group.groupIcon;
-
-  const isGroupActive = group.items.some((item) => currentPath === item.path);
+  const isAnyActive = group.items.some(i => currentPath === i.path || currentPath.startsWith(i.path + "/"));
 
   return (
-    <div className="mb-2">
-      <button
-        onClick={onToggle}
-        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-          isGroupActive
-            ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-            : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-200"
-        }`}
-      >
-        {GroupIcon && <GroupIcon size={18} className="flex-shrink-0" />}
-        <span className="flex-1 text-left text-sm font-semibold">{t(group.groupLabelKey, group.defaultGroupLabel)}</span>
-        <ChevronDown
-          size={16}
-          className={`flex-shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-        />
-      </button>
+    <div className={group.separator ? "mt-2 pt-2 border-t border-[#141418]" : ""}>
+      {/* Group header — hidden in icon-only mode */}
+      {!collapsed && (
+        <button
+          onClick={onToggle}
+          className={`w-full flex items-center gap-2 px-3 py-1 mb-0.5 rounded text-[10px] font-semibold tracking-widest uppercase
+            transition-colors duration-150 cursor-pointer select-none
+            ${isAnyActive ? "text-[#6a6a80]" : "text-[#2e2e3a] hover:text-[#4e4e62]"}`}
+          aria-expanded={expanded}
+        >
+          <span className="flex-1 text-left">{group.label}</span>
+          <ChevronRight
+            size={10}
+            className={`transition-transform duration-200 ${expanded ? "rotate-90" : ""} opacity-50`}
+          />
+        </button>
+      )}
 
-      {isOpen && (
-        <div className="mt-2 ml-4 space-y-1 border-l border-slate-600/30 pl-3">
-          {group.items.map((item) => {
-            const ItemIcon = item.icon;
-            const isActive = currentPath === item.path;
+      {/* Nav items */}
+      {(expanded || collapsed) && (
+        <div className={`${collapsed ? "py-1" : "pb-1"} space-y-px`}>
+          {group.items.map(item => {
+            const Icon = item.icon;
+            const isActive = currentPath === item.path || currentPath.startsWith(item.path + "/");
+            const label = t(item.labelKey, item.label);
 
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 data-onboarding={item.dataOnboarding}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-150 ${
-                  isActive
-                    ? "bg-cyan-500/20 text-cyan-300 font-medium"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/20"
-                }`}
+                title={collapsed ? label : undefined}
+                className={`
+                  group relative flex items-center gap-2.5 rounded select-none
+                  transition-all duration-150
+                  ${collapsed
+                    ? "justify-center w-9 h-9 mx-auto"
+                    : "px-3 py-[7px] mx-1"}
+                  ${isActive
+                    ? "bg-[#1a1a24] text-[#f0f0f2]"
+                    : "text-[#6a6a80] hover:bg-[#141418] hover:text-[#c0c0cc]"}
+                `}
               >
-                <ItemIcon size={16} className="flex-shrink-0" />
-                <span className="truncate">{t(item.labelKey, item.defaultLabel)}</span>
+                {/* Active indicator bar */}
+                {isActive && !collapsed && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-[#00d4ff] rounded-r" />
+                )}
+
+                {/* Icon container */}
+                <span className={`flex items-center justify-center flex-shrink-0 transition-transform duration-150 group-hover:scale-110 ${isActive ? "text-[#00d4ff]" : ""}`}>
+                  <Icon size={15} strokeWidth={isActive ? 2.5 : 1.8} />
+                </span>
+
+                {/* Label */}
+                {!collapsed && (
+                  <span className="flex-1 text-[12.5px] font-medium leading-none truncate">
+                    {label}
+                  </span>
+                )}
+
+                {/* Badge */}
+                {!collapsed && item.badge && (
+                  <NavBadge text={item.badge} variant={item.badgeVariant} />
+                )}
+
+                {/* Tooltip in collapsed mode */}
+                {collapsed && (
+                  <span className="
+                    pointer-events-none absolute left-full ml-2 z-50
+                    bg-[#1e1e28] border border-[#2a2a36] text-[#f0f0f2]
+                    text-[11px] font-medium whitespace-nowrap
+                    px-2.5 py-1.5 rounded shadow-lg
+                    opacity-0 group-hover:opacity-100
+                    translate-x-1 group-hover:translate-x-0
+                    transition-all duration-150
+                  ">
+                    {label}
+                    {item.badge && (
+                      <NavBadge text={item.badge} variant={item.badgeVariant} />
+                    )}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -189,83 +263,86 @@ const SidebarGroup: React.FC<SidebarGroupProps> = ({ group, isOpen, onToggle, cu
   );
 };
 
+/* ---------------------------------------------------------- */
+/*  MAIN SIDEBAR                                               */
+/* ---------------------------------------------------------- */
+
 const EnhancedSidebar: React.FC = () => {
-  const { t } = useTranslation();
   const location = useLocation();
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     core: true,
     engineering: true,
+    cad: false,
+    environment: false,
+    reporting: false,
+    monitoring: true,
+    settings: false,
   });
 
-  const toggleGroup = (groupKey: string) => {
-    setExpandedGroups((prev) => ({
-      ...prev,
-      [groupKey]: !prev[groupKey],
-    }));
-  };
+  const toggle = (key: string) =>
+    setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
 
-  const sidebarContent = (
-    <div className="h-full flex flex-col bg-gradient-to-b from-slate-900 to-slate-950 border-r border-slate-700/50">
-      {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-700/30">
-        <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-          BAZSPARK
-        </h1>
-        <p className="text-xs text-slate-500 mt-1 font-medium">Fire Safety System</p>
+  return (
+    <aside
+      className={`
+        relative flex flex-col shrink-0 h-screen
+        bg-[#0c0c10] border-r border-[#1a1a20]
+        transition-all duration-250
+        ${collapsed ? "w-[52px]" : "w-[220px]"}
+      `}
+      style={{ transition: "width 250ms cubic-bezier(0.16,1,0.3,1)" }}
+    >
+      {/* ---- Logo bar ---- */}
+      <div className={`
+        flex items-center shrink-0 h-12 border-b border-[#1a1a20]
+        ${collapsed ? "justify-center px-0" : "px-4 gap-2.5"}
+      `}>
+        {/* Logo mark */}
+        <span className="flex items-center justify-center w-7 h-7 rounded bg-[#00d4ff] flex-shrink-0">
+          <FlameKindling size={15} strokeWidth={2.5} className="text-[#0a0a0b]" />
+        </span>
+
+        {!collapsed && (
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-semibold tracking-tight text-[#f0f0f2]">BAZSPARK</div>
+            <div className="text-[10px] text-[#3a3a50] font-medium tracking-wider uppercase leading-none mt-0.5">Fire Safety</div>
+          </div>
+        )}
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-4 py-5 space-y-1">
-        {navGroups.map((group) => (
-          <SidebarGroup
-            key={group.groupKey}
+      {/* ---- Scrollable nav ---- */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 space-y-0">
+        {navGroups.map(group => (
+          <NavGroupSection
+            key={group.key}
             group={group}
-            isOpen={expandedGroups[group.groupKey] || false}
-            onToggle={() => toggleGroup(group.groupKey)}
+            expanded={expandedGroups[group.key] ?? false}
+            collapsed={collapsed}
+            onToggle={() => toggle(group.key)}
             currentPath={location.pathname}
           />
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="px-4 py-4 border-t border-slate-700/30">
-        <div className="text-xs text-slate-500 text-center">
-          <p>v1.0.0</p>
-          <p className="mt-1">NFPA 72 Compliant</p>
-        </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <>
-      {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-64 flex-col bg-slate-900">
-        {sidebarContent}
-      </div>
-
-      {/* Mobile Sidebar */}
-      <div className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-700/50">
-        <h1 className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-          BAZSPARK
-        </h1>
+      {/* ---- Collapse toggle ---- */}
+      <div className="shrink-0 border-t border-[#1a1a20] p-2">
         <button
-          onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className="p-2 hover:bg-slate-700/30 rounded-lg transition-colors"
+          onClick={() => setCollapsed(v => !v)}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="
+            w-full flex items-center justify-center gap-2 h-8 rounded
+            text-[#3a3a50] hover:text-[#8a8a9a] hover:bg-[#141418]
+            transition-all duration-150 text-[11px] font-medium
+          "
         >
-          {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
+          {collapsed
+            ? <PanelLeft size={14} />
+            : <><PanelLeftClose size={14} /><span>Collapse</span></>
+          }
         </button>
       </div>
-
-      {isMobileOpen && (
-        <div className="md:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setIsMobileOpen(false)}>
-          <div className="absolute left-0 top-0 w-64 h-screen" onClick={(e) => e.stopPropagation()}>
-            {sidebarContent}
-          </div>
-        </div>
-      )}
-    </>
+    </aside>
   );
 };
 
