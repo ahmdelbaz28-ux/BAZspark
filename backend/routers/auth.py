@@ -212,6 +212,7 @@ def _record_failed_attempt(client_ip: str) -> None:
 
 
 @router.post("/login")
+@router.post("/session/login")
 async def login(request: Request, body: LoginRequest):
     """
     Authenticate with an API key and receive a signed HttpOnly session cookie.

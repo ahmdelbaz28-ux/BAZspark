@@ -298,6 +298,7 @@ _PUBLIC_PATHS_EXACT = frozenset({
     # M-3: Auth endpoints must be public (login validates credentials itself)
     "/api/v1/auth/login",
     "/api/v1/auth/logout",
+    "/api/v1/auth/session/login",
 })
 
 # Path prefixes that are public (for routes with path params, e.g. /docs/*)

@@ -302,6 +302,32 @@ def generate_html(data: dict, auto_refresh: bool = False, skill_name: str = "") 
     return "".join(html_parts)
 
 
+def _validate_input_path(path_str: str) -> Path:
+    """
+    Validate input path to prevent path traversal attacks.
+    """
+    path = Path(path_str)
+    
+    # Resolve the path to handle any '..' or symbolic links
+    resolved_path = path.resolve()
+    
+    # Get the current working directory as the base for allowed paths
+    allowed_base = Path.cwd().resolve()
+    
+    # Check if the resolved path is within the allowed base directory
+    try:
+        resolved_path.relative_to(allowed_base)
+    except ValueError:
+        raise ValueError(f"Path '{path_str}' is outside allowed directory. Path traversal detected.")
+    
+    # Additional check: ensure the path doesn't contain suspicious patterns
+    path_str_lower = str(resolved_path).lower()
+    if '..' in path_str_lower or any(char in path_str_lower for char in ['\\', '/..', '../']):
+        raise ValueError(f"Suspicious path pattern detected in '{path_str}'.")
+    
+    return path
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate HTML report from run_loop output")
     parser.add_argument("input", help="Path to JSON output from run_loop.py (or - for stdin)")
@@ -312,7 +338,9 @@ def main():
     if args.input == "-":
         data = json.load(sys.stdin)
     else:
-        data = json.loads(Path(args.input).read_text())
+        # Validate the input path to prevent path traversal
+        input_path = _validate_input_path(args.input)
+        data = json.loads(input_path.read_text())
 
     html_output = generate_html(data, skill_name=args.skill_name)
 
