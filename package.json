@@ -1,5 +1,10 @@
 {
   "dependencies": {
+    "lucide-react": "^1.23.0",
+    "react": "^19.2.7",
+    "react-i18next": "^17.0.8",
+    "react-router-dom": "^7.18.1",
+    "sonner": "^2.0.7",
     "typescript": "^6.0.3"
   },
   "devDependencies": {
