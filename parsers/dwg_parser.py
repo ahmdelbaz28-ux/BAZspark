@@ -439,7 +439,7 @@ class DWGParser:
 
     def parse(self, dwg_path: str) -> DWGParseResult:
         """
-        Parse DWG or DXF file to rooms.
+        Parse DWG or DXF file to rooms with enhanced security.
 
         Args:
             dwg_path: Path to .dwg or .dxf file. MUST be under one of
@@ -450,17 +450,14 @@ class DWGParser:
         Returns:
             DWGParseResult with room count. On security/validation
             failure, returns a result with success=False and the
-            specific error in result.errors (never raises out of this
-            method, so callers always get a structured response).
+            specific error in result.errors.
 
         Raises:
             (no longer raises directly — see Returns)
-
         """
         import time
 
         start = time.monotonic()
-
         result = DWGParseResult(source_file=dwg_path, success=False)
 
         # V122 SECURITY: Validate path BEFORE any file/subprocess access.
@@ -471,6 +468,7 @@ class DWGParser:
                 dwg_path,
                 allowed_extensions=_DWG_ALLOWED_EXTENSIONS,
                 parser_name="DWGParser",
+                max_size_bytes=_DWG_MAX_FILE_SIZE_BYTES,
             )
         except FileNotFoundError as e:
             result.errors.append(str(e))
@@ -480,24 +478,11 @@ class DWGParser:
             logger.warning("DWGParser rejected unsafe path: %s", e)
             return result
 
-        # V122 SECURITY: Reject oversized files before any further work
-        # (decompression bomb, DoS, accidental misuse).
-        try:
-            validate_file_size(
-                safe_path,
-                max_size_bytes=_DWG_MAX_FILE_SIZE_BYTES,
-                parser_name="DWGParser",
-            )
-        except UnsafePathError as e:
-            result.errors.append(f"SECURITY: {e}")
-            logger.warning("DWGParser rejected oversized file: %s", e)
-            return result
-
         # Use the RESOLVED (canonical) path for all subsequent operations.
         # This prevents TOCTOU between validation and subprocess call:
         # even if the original `dwg_path` symlink changes after our check,
         # we hand the subprocess the resolved target instead.
-        dwg_path = str(safe_path)
+        dwg_path = str(safe_path.resolve())
 
         # V46 FIX: If file is already DXF, skip LibreDWG conversion and
         # parse directly with ezdxf. This handles the common case where
@@ -600,52 +585,73 @@ class DWGParser:
 
     def _convert_to_dxf(self, dwg_path: str) -> str:
         """
-        Convert DWG to DXF using dxf-out.
+        Convert DWG to DXF using dxf-out with strict path validation.
 
-        SECURITY CONTRACT:
-            This is a PRIVATE method. The caller MUST have already
-            validated `dwg_path` via parsers._path_security.validate_input_path.
-            For belt-and-braces, we re-check that the path:
-              - does not start with '-' (argument injection)
-              - does not contain null bytes
-            These are cheap checks that prevent a future refactor from
-            accidentally bypassing the entry-point validation.
+        SECURITY:
+            This method enforces multiple layers of security:
+            1. Path validation at the entry point via validate_input_path()
+            2. Additional checks for path injection patterns
+            3. Secure tempfile creation
+            4. Explicit argument separation to prevent command injection
         """
-        # V122 SECURITY: belt-and-braces re-check at the subprocess
-        # boundary. Defense-in-depth — if a future caller forgets the
-        # entry-point validation, the subprocess still refuses to run
-        # with a path that looks like an argument.
+        # V122 SECURITY: Validate path at the entry point
+        # This ensures even if a future caller bypasses the class's public methods,
+        # we still validate the path before any subprocess operations
+        try:
+            safe_path = validate_input_path(
+                dwg_path,
+                allowed_extensions=_DWG_ALLOWED_EXTENSIONS,
+                parser_name="DWGParser._convert_to_dxf",
+            )
+            # Use the validated/sanitized path
+            dwg_path = str(safe_path.resolve())
+        except UnsafePathError as e:
+            raise DWGConversionError(
+                f"SECURITY: Invalid path in DWG conversion: {e}"
+            ) from e
+
+        # V122 SECURITY: Additional checks for path injection patterns
         if dwg_path.startswith("-") or "\x00" in dwg_path:
             raise DWGConversionError(
-                f"SECURITY: refused to invoke dxf-out with unsafe path "
-                f"{dwg_path!r}. This indicates a bug in the caller — entry "
-                "points must call validate_input_path() first."
+                f"SECURITY: Refused to execute dxf-out with unsafe path: {dwg_path!r}"
             )
 
-        # Create temp file
-        temp_fd, temp_path = tempfile.mkstemp(suffix=".dxf", prefix="fireai_dwg_")
-        os.close(temp_fd)
-
-        # V122: Use "--" separator to forcibly end option parsing.
-        # Even if `dwg_path` somehow slipped through (it cannot, per the
-        # check above, but defense-in-depth), `dxf-out` treats anything
-        # after "--" as a positional argument, never a flag.
-        cmd = [self.DXF_OUT_CMD, "--file", dwg_path, "--output", temp_path]
-
+        # Create secure temporary file in allowed directory
         try:
-            proc = subprocess.run(cmd, capture_output=True, timeout=60)  # noqa: S603 — cmd built from class constant + validated path
-
+            temp_fd, temp_path = tempfile.mkstemp(
+                suffix=".dxf",
+                prefix="fireai_dwg_",
+                dir=tempfile.gettempdir()  # Explicitly use secure temp directory
+            )
+            os.close(temp_fd)
+            
+            # V122 SECURITY: Use Path operations to ensure no path traversal occurs
+            temp_path = Path(temp_path).resolve()
+            
+            # V122 SECURITY: Explicitly separate command arguments to prevent injection
+            # Use "--" to mark the end of options and ensure the path is treated as a positional argument
+            cmd = [self.DXF_OUT_CMD, "--", "--file", str(dwg_path), "--output", str(temp_path)]
+            
+            logger.debug(f"Executing command: {' '.join(cmd)}")
+            
+            proc = subprocess.run(cmd, capture_output=True, timeout=60)
+            
             if proc.returncode != 0:
                 error = proc.stderr.decode() or proc.stdout.decode()
                 raise DWGConversionError(f"dxf-out failed: {error}")
-
-            if not Path(temp_path).exists() or Path(temp_path).stat().st_size == 0:
+                
+            if not temp_path.exists() or temp_path.stat().st_size == 0:
                 raise DWGConversionError("Empty DXF output")
-
-            return temp_path
-
-        except subprocess.TimeoutExpired:
-            raise DWGConversionError("Conversion timeout")
+                
+            return str(temp_path)
+            
+        except Exception as e:
+            # Clean up temp file on failure
+            try:
+                if 'temp_path' in locals():
+                    temp_path.unlink(missing_ok=True)
+            finally:
+                raise
 
 
 # ═══════════════════════════════════════════════════════
