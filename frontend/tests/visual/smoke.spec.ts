@@ -110,15 +110,12 @@ for (const page of CORE_PAGES) {
     await browserPage.waitForLoadState('networkidle');
     await browserPage.waitForTimeout(500);
 
-    // Root element must be visible
     const root = browserPage.locator('#root');
     await expect(root).toBeVisible();
 
-    // Body must not be empty
     const bodyText = await browserPage.locator('body').innerText();
     expect(bodyText.trim().length, `Page ${page.path} rendered empty body`).toBeGreaterThan(0);
 
-    // Check for required text content (verifies correct page loaded)
     if (page.requiredText) {
       await expect(browserPage.locator('body')).toContainText(page.requiredText, { timeout: 5000 });
     }

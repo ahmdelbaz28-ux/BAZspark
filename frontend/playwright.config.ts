@@ -14,7 +14,7 @@ import { defineConfig, devices } from '@playwright/test';
  * secure alternative to peek-cli for CI visual testing.
  */
 export default defineConfig({
-  testDir: './tests/visual',
+  testDir: './tests', // Changed from './tests/visual' to './tests' to include all test subdirectories
   outputDir: './test-results',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -40,8 +40,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run preview -- --port 4173 --strictPort',
-    url: 'http://localhost:4173',
+    command: 'npm run dev -- --port 5173 --strictPort',
+    url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
     cwd: '.',
