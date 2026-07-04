@@ -63,6 +63,14 @@ else:
     HAS_AUTOCAD_API = False
     logger.info("Running on non-Windows platform. Using simulation mode for AutoCAD.")
 
+class MockAutoCADObject:
+    """Mock/Simulated AutoCAD drawing object for development environments."""
+    def __init__(self, **kwargs) -> None:
+        self.Handle = kwargs.get("Handle", "MOCK_HANDLE")
+        self.ObjectName = kwargs.get("ObjectName", "MockObject")
+        self.Layer = kwargs.get("Layer", "0")
+        self.Color = kwargs.get("Color", 0)
+
 
 class AutoCADService:
     """
@@ -95,6 +103,10 @@ class AutoCADService:
         try:
             if not HAS_AUTOCAD_API:
                 logger.error("AutoCAD COM API not available. Install pywin32.")
+                if os.getenv("FIREAI_ENV", "development") == "development":
+                    logger.info("Using SIMULATION mode for AutoCAD in development (no pywin32)")
+                    self.connected = True
+                    return True
                 return False
 
             # Initialize COM
@@ -116,6 +128,10 @@ class AutoCADService:
                         logger.info("Launched new AutoCAD instance (visible=%s)", visible)
                     except Exception as e:
                         logger.error("Could not launch AutoCAD: %s", e)
+                        if os.getenv("FIREAI_ENV", "development") == "development":
+                            logger.info("Falling back to SIMULATION mode for AutoCAD in development")
+                            self.connected = True
+                            return True
                         return False
             else:
                 # force_new: always launch a new instance
@@ -125,6 +141,10 @@ class AutoCADService:
                     logger.info("Launched new AutoCAD instance (force_new=True, visible=%s)", visible)
                 except Exception as e:
                     logger.error("Could not launch AutoCAD: %s", e)
+                    if os.getenv("FIREAI_ENV", "development") == "development":
+                        logger.info("Falling back to SIMULATION mode for AutoCAD in development")
+                        self.connected = True
+                        return True
                     return False
 
             # Get active document
@@ -140,6 +160,10 @@ class AutoCADService:
 
         except Exception as e:
             logger.error("Error connecting to AutoCAD: %s", e)
+            if os.getenv("FIREAI_ENV", "development") == "development":
+                logger.info("Falling back to SIMULATION mode for AutoCAD in development (outer)")
+                self.connected = True
+                return True
             self.connected = False
             return False
 

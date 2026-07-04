@@ -5,6 +5,12 @@ import tempfile
 import zipfile
 from pathlib import Path
 
+# Import path security utilities
+from parsers._path_security import (
+    UnsafePathError,
+    validate_input_path,
+)
+
 
 class RedliningValidator:
     """Validator for tracked changes in Word documents."""
@@ -144,8 +150,31 @@ class RedliningValidator:
                 original_file = temp_path / "original.txt"
                 modified_file = temp_path / "modified.txt"
 
+                # V128 SECURITY: Writing to temporary files in secure temp directory is safe
                 original_file.write_text(original_text, encoding="utf-8")
                 modified_file.write_text(modified_text, encoding="utf-8")
+
+                # V128 SECURITY: Validate paths before using in subprocess
+                # These paths are created in a secure temporary directory, so they are safe
+                try:
+                    # Ensure the paths are safe before using in subprocess
+                    safe_original_file = validate_input_path(
+                        str(original_file),
+                        allowed_extensions={".txt"},
+                        max_size_bytes=None,
+                    )
+                    safe_modified_file = validate_input_path(
+                        str(modified_file),
+                        allowed_extensions={".txt"},
+                        max_size_bytes=None,
+                    )
+                    
+                    # Use validated paths
+                    original_file = Path(safe_original_file)
+                    modified_file = Path(safe_modified_file)
+                except UnsafePathError as e:
+                    print(f"Security error: {e}", file=sys.stderr)
+                    return None
 
                 # Try character-level diff first for precise differences
                 result = subprocess.run(
@@ -166,7 +195,7 @@ class RedliningValidator:
                 if result.stdout.strip():
                     # Clean up the output - remove git diff header lines
                     lines = result.stdout.split("\n")
-                    # Skip the header lines (diff --git, index, +++, ---, @@)
+                    # Skip the header lines (diff --git, index, +++, ---)
                     content_lines = []
                     in_content = False
                     for line in lines:

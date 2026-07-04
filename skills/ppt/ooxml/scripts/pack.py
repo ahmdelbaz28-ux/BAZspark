@@ -16,6 +16,12 @@ from pathlib import Path
 
 import defusedxml.minidom
 
+# Import path security utilities
+from parsers._path_security import (
+    UnsafePathError,
+    validate_input_path,
+)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Pack a directory into an Office file")
@@ -92,6 +98,20 @@ def pack_document(input_dir, output_file, validate=False):
 
 def validate_document(doc_path):
     """Validate document by converting to HTML with soffice."""
+    # V128 SECURITY: Validate document path to prevent path traversal
+    # This prevents an attacker from passing a path like "../../../etc/passwd" to the soffice command
+    try:
+        safe_doc_path = validate_input_path(
+            str(doc_path),
+            allowed_extensions={".docx", ".pptx", ".xlsx"},
+            max_size_bytes=None,  # No size limit for validation
+        )
+        # Use the validated/sanitized path from here forward
+        doc_path = Path(safe_doc_path)
+    except UnsafePathError as e:
+        print(f"Validation error: Unsafe path: {e}", file=sys.stderr)
+        return False
+
     # Determine the correct filter based on file extension
     match doc_path.suffix.lower():
         case ".docx":
@@ -102,6 +122,7 @@ def validate_document(doc_path):
             filter_name = "html:HTML (StarCalc)"
 
     with tempfile.TemporaryDirectory() as temp_dir:
+        # V128 SECURITY: Use validated doc_path and secure temp_dir to prevent path injection
         try:
             result = subprocess.run(
                 [
@@ -111,7 +132,7 @@ def validate_document(doc_path):
                     filter_name,
                     "--outdir",
                     temp_dir,
-                    str(doc_path),
+                    str(doc_path),  # Using validated path
                 ],
                 capture_output=True,
                 timeout=10,
