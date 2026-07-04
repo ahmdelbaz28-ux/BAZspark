@@ -616,13 +616,6 @@ def _register_csrf_middleware() -> None:
     except Exception as e:
         logger.warning("CSRF middleware registration failed: %s", e)
 
-# NOTE: CSRF middleware is registered CONDITIONALLY below, after all routers
-# are mounted, to ensure exempt paths (health, docs) work correctly.
-# It's commented out by default to avoid breaking existing tests that don't
-# send CSRF tokens. Enable in production via env var FIREAI_CSRF_ENABLED=1.
-# _register_csrf_middleware()
-
-
 # Deprecation middleware: add Deprecation/Sunset/Link headers to v1 responses.
 # Per RFC 7234 (HTTP Caching) and the HTTP Deprecation header draft.
 @app.middleware("http")

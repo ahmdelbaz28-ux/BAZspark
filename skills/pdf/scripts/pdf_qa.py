@@ -54,9 +54,6 @@ LINE_END_FORBIDDEN = set(
 # Minimum fill ratio for last page
 LAST_PAGE_MIN_FILL = 0.40
 
-# Maximum allowed color count — REMOVED (color count is now info-only)
-# MAX_COLORS = 8
-
 # ============================================================
 # Checks
 # ============================================================
