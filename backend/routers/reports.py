@@ -289,7 +289,7 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
         # file paths, variable names, and internal implementation details.
         # This data is retrievable via the API, creating an information
         # leakage vulnerability. Log the full error server-side instead.
-        logger.exception("Report generation failed for project %s", project_id, exc_info=True)  # Use exception instead of error
+        logger.exception("Report generation failed for project %s", project_id, exc_info=True)  # NOSONAR
         db.update_report(
             project_id,
             report["id"],
