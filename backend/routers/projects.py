@@ -66,7 +66,7 @@ async def list_projects(
     return success(result)
 
 
-@router.post("", status_code=200, dependencies=[Depends(require_permission(Permission.PROJECT_CREATE))])
+@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.PROJECT_CREATE))])
 async def create_project(input_data: CreateProjectInput):
     """Create a new project."""
     db = get_db()

@@ -468,7 +468,12 @@ class DWGParser:
                 dwg_path,
                 allowed_extensions=_DWG_ALLOWED_EXTENSIONS,
                 parser_name="DWGParser",
+            )
+            # V122 SECURITY: Also validate file size (DoS protection)
+            validate_file_size(
+                safe_path,
                 max_size_bytes=_DWG_MAX_FILE_SIZE_BYTES,
+                parser_name="DWGParser",
             )
         except FileNotFoundError as e:
             result.errors.append(str(e))
