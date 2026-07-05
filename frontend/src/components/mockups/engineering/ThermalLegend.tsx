@@ -262,7 +262,7 @@ export function MiniIndicator({
 				backgroundColor: color,
 				boxShadow: `0 0 ${isCritical ? 8 : 4}px ${color}`,
 			}}
-			title={`${value}${type === "voltageDrop" ? "%" : "%"} ${type === "voltageDrop" ? "Voltage Drop" : "Load"}`}
+			title={`${value}% ${type === "voltageDrop" ? "Voltage Drop" : "Load"}`}
 		/>
 	);
 }

@@ -107,7 +107,7 @@ try:
             frame = frame.f_back
 
         # Only inject header if the caller is under backend/tests/
-        is_backend_test = bool(caller_file and caller_file.startswith(_BACKEND_TESTS_DIR))
+        is_backend_test = bool(caller_file and _os.path.normcase(caller_file).startswith(_os.path.normcase(_BACKEND_TESTS_DIR)))
         if is_backend_test:
             caller_headers = kwargs.pop("headers", None) or {}
             # setdefault so a test can still override with its own X-API-Key

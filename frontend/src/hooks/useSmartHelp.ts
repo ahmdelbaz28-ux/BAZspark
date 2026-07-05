@@ -86,7 +86,7 @@ export const openHelp = (
 	setHelpState({
 		isHelpOpen: true,
 		selectedTopic: getTopicForContext(contextId, search),
-		searchQuery: contextId ? search : search,
+		searchQuery: search,
 		category: "all",
 	});
 };

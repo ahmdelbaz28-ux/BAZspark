@@ -344,9 +344,7 @@ export function ProjectsPage() {
 														? "bg-emerald-600/20 text-emerald-400 border-emerald-500/30"
 														: project.status === "draft"
 															? "bg-amber-600/20 text-amber-400 border-amber-500/30"
-															: project.status === "archived"
-																? "bg-slate-600/20 text-slate-400 border-slate-500/30"
-																: "bg-slate-600/20 text-slate-400 border-slate-500/30"
+															: "bg-slate-600/20 text-slate-400 border-slate-500/30"
 												}
 											>
 												{project.status === "active"

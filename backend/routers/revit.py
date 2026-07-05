@@ -419,6 +419,19 @@ class LoadFamilyRequest(BaseModel):
     family_path: str = Field(..., description="Path to family file")
     category: Optional[str] = Field(None, description="Optional category")
 
+
+class ReadRvtRequest(BaseModel):
+    """Request to read elements from an RVT file."""
+
+    filepath: str = Field(..., description="Path to the RVT file")
+
+
+class WriteRvtRequest(BaseModel):
+    """Request to write elements to an RVT file."""
+
+    filepath: str = Field(..., description="Path to save the RVT file")
+    elements: List[Dict[str, Any]] = Field(..., description="List of elements to write")
+
 # =============================================================================
 # CONNECTION ENDPOINTS
 # =============================================================================
@@ -551,32 +564,32 @@ async def close_document(request: DocumentCloseRequest) -> Dict[str, Any]:
 # =============================================================================
 
 @router.post("/read_rvt", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
-async def read_rvt_file(filepath: str) -> Dict[str, Any]:
+async def read_rvt_file(request: ReadRvtRequest) -> Dict[str, Any]:
     """Read elements from an RVT file (legacy endpoint)."""
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
 
     # FIX: Path traversal validation
-    _validate_file_path(filepath)
+    _validate_file_path(request.filepath)
 
-    result = svc.read_rvt(filepath)
+    result = svc.read_rvt(request.filepath)
     if not result.get("success", False):
         raise HTTPException(status_code=400, detail=_sanitize_error(result.get("error", "Unknown error")))
     return result
 
 
 @router.post("/write_rvt", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
-async def write_rvt_file(filepath: str, elements: List[Dict[str, Any]]) -> Dict[str, Any]:
+async def write_rvt_file(request: WriteRvtRequest) -> Dict[str, Any]:
     """Write elements to an RVT file (legacy endpoint)."""
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
 
     # FIX: Path traversal validation
-    _validate_file_path(filepath)
+    _validate_file_path(request.filepath)
 
-    success = svc.write_rvt(filepath, elements)
+    success = svc.write_rvt(request.filepath, request.elements)
     if success:
         return {"success": True, "message": "File written successfully"}
     raise HTTPException(status_code=500, detail="Failed to write file")
