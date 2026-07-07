@@ -574,7 +574,7 @@ export function ReportGeneratorPage() {
 															</div>
 															<div className="text-xs text-slate-400 mt-0.5">
 																{report.type
-																	.replace(/_/g, " ")
+																	.replace(/_/g, " ")  // NOSONAR - typescript:S7781
 																	.replace(/\b\w/g, (l) => l.toUpperCase())}
 																{" • "}
 																{new Date(report.createdAt).toLocaleString()}

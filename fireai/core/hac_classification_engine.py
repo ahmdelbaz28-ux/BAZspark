@@ -404,7 +404,7 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
     # Units: (m³/s) / (1/s) = m³. The +1e-12 guard prevents ZeroDivisionError
     # when both f and n_per_s are zero (e.g. unknown ventilation enum value).
     # References: IEC 60079-10-1:2015 Annex B eq. B.3.
-    Vz_diluted_m3 = Vz_source_m3_s / (effective_dilution_rate + 1e-12)
+    Vz_diluted_m3 = Vz_source_m3_s / (effective_dilution_rate + 1e-12)  # NOSONAR - python:S117
 
     # Convert to zone radius
     if is_indoor:

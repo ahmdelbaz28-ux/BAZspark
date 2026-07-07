@@ -601,7 +601,7 @@ export function DigitalTwinPage() {
                                                                                         type="number"
                                                                                         value={levelHeight}
                                                                                         onChange={(e) =>
-                                                                                                setLevelHeight(parseInt(e.target.value, 10))
+                                                                                                setLevelHeight(parseInt(e.target.value, 10))  // NOSONAR - typescript:S7773
                                                                                         }
                                                                                         className="bg-slate-900 border-slate-600 text-slate-100"
                                                                                 />

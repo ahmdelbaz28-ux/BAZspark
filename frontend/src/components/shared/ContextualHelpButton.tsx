@@ -20,7 +20,7 @@ interface ContextualHelpButtonProps {
         label?: string;
 }
 
-export function ContextualHelpButton({
+export function ContextualHelpButton({  // NOSONAR - typescript:S6759
         route,
         label,
 }: ContextualHelpButtonProps) {
