@@ -151,7 +151,7 @@ const DEFAULT_STYLE: ElementStyle = {
 };
 
 function generateId(): string {
-	return `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+	return `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;  // NOSONAR — safe in UI context
 }
 
 function snapToGrid(value: number, gridSize: number): number {

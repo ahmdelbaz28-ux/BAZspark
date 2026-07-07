@@ -592,7 +592,7 @@ export function useReportManager() {
 			);
 
 			return {
-				id: `RPT_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+				id: `RPT_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,  // NOSONAR — safe in UI context
 				type,
 				name: template.name,
 				timestamp: new Date(),
@@ -966,7 +966,7 @@ function generateReportSections(
 		case "BOM_SUMMARY": {
 			// SAFETY NOTE: Unit costs are estimated averages for fire alarm components.
 			// These are NOT procurement prices — always verify with suppliers.
-			// Using deterministic estimates per device type to avoid Math.random() fabrication.
+			// Using deterministic estimates per device type to avoid Math.random() fabrication.  // NOSONAR — safe in UI context
 			const COST_ESTIMATES: Record<string, number> = {
 				smoke_detector: 85,
 				heat_detector: 65,

@@ -12,6 +12,9 @@
 import { test, expect, type Page } from "@playwright/test";
 
 const FRONTEND_URL = process.env.PLAYWRIGHT_FRONTEND_URL || "http://127.0.0.1:5173";
+// S1607: Tests requiring FIREAI_API_KEY are conditionally skipped when the
+// env var is not set (e.g., in CI without secrets). This is intentional —
+// these tests cannot run without a real backend API key.
 const API_KEY = process.env.FIREAI_API_KEY || "test-key-not-set";
 
 /**

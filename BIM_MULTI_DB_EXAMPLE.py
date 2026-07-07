@@ -21,17 +21,17 @@ def simulate_bim_element_data(element_id: str) -> Dict:
 
     return {
         "element_id": element_id,
-        "type": secrets.choice(element_types),  # NOSONAR: weak random in test/example
-        "category": secrets.choice(categories),  # NOSONAR: weak random in test/example
-        "name": f"{secrets.choice(element_types)}_{element_id}",  # NOSONAR: weak random in test/example
-        "level": f"Level_{1 + secrets.randbelow(4)}",  # NOSONAR: weak random in test/example
-        "coordinates": [random.uniform(0, 100), random.uniform(0, 100), random.uniform(0, 30)],
-        "dimensions": [random.uniform(1, 20), random.uniform(0.1, 5), random.uniform(2, 10)],
-        "material": secrets.choice(["Concrete", "Steel", "Wood", "Glass"]),  # NOSONAR: weak random in test/example
+        "type": secrets.choice(element_types),  # NOSONAR
+        "category": secrets.choice(categories),  # NOSONAR
+        "name": f"{secrets.choice(element_types)}_{element_id}",  # NOSONAR
+        "level": f"Level_{1 + secrets.randbelow(4)}",  # NOSONAR
+        "coordinates": [random.uniform(0, 100), random.uniform(0, 100), random.uniform(0, 30)],  # NOSONAR
+        "dimensions": [random.uniform(1, 20), random.uniform(0.1, 5), random.uniform(2, 10)],  # NOSONAR
+        "material": secrets.choice(["Concrete", "Steel", "Wood", "Glass"]),  # NOSONAR
         "properties": {
-            "fire_rating": secrets.choice(["1-hour", "2-hour", "3-hour", "non-rated"]),  # NOSONAR: weak random in test/example
-            "thermal_resistance": round(random.uniform(0.5, 5.0), 2),
-            "cost_per_unit": round(random.uniform(50, 500), 2)
+            "fire_rating": secrets.choice(["1-hour", "2-hour", "3-hour", "non-rated"]),  # NOSONAR
+            "thermal_resistance": round(random.uniform(0.5, 5.0), 2),  # NOSONAR
+            "cost_per_unit": round(random.uniform(50, 500), 2)  # NOSONAR
         },
         "created_at": "2024-01-01T00:00:00Z"
     }
@@ -39,7 +39,7 @@ def simulate_bim_element_data(element_id: str) -> Dict:
 
 def simulate_embeddings(vector_size: int = 1536) -> List[float]:
     """Simulate embeddings for vector search."""
-    return [random.random() for _ in range(vector_size)]  # NOSONAR: weak random in test/example
+    return [random.random() for _ in range(vector_size)]  # NOSONAR
 
 
 def simulate_relationships(element_ids: List[str], count: int) -> List[str]:
@@ -47,7 +47,7 @@ def simulate_relationships(element_ids: List[str], count: int) -> List[str]:
     relationships = []
     for _ in range(count):
         if len(element_ids) > 1:
-            relationships.append(secrets.choice(element_ids))  # NOSONAR: weak random in test/example
+            relationships.append(secrets.choice(element_ids))  # NOSONAR
     return list(set(relationships))  # Remove duplicates
 
 
