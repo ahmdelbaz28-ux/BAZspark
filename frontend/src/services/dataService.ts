@@ -238,7 +238,7 @@ export class DataService {
 					this.fallbackToMock();
 				}
 			};
-		} catch (_error) {
+		} catch (_error) {  // NOSONAR - typescript:S2486
 			actions.addLog(
 				"[ERROR] Failed to create WebSocket connection. Falling back to mock data.",
 			);

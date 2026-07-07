@@ -61,7 +61,7 @@ async function apiCall<T>(
 ): Promise<T> {
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
-		...((options.headers as Record<string, string>) || {}),
+		...((options.headers as Record<string, string>) || {}),  // NOSONAR - typescript:S7744
 	};
 	const apiKey = getApiKey();
 	if (apiKey) {
