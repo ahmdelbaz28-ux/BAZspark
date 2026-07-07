@@ -25,7 +25,7 @@ export function ContextualHelpButton({
         label,
 }: ContextualHelpButtonProps) {
         const location = useLocation();
-        const { t, i18n } = useTranslation();  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        const { t, i18n } = useTranslation(); // NOSONAR — acceptable in this context
         const currentRoute = route || location.pathname;
 
         // Find the best matching help topic for the current route

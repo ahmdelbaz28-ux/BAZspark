@@ -40,11 +40,7 @@ class SkillMetadataFactory:
         if name is None:
             name = f"test-skill-{cls._random_suffix()}"
         if version is None:
-<<<<<<< Updated upstream
             version = f"{secrets.randbelow(9)}.{secrets.randbelow(9)}.{secrets.randbelow(9)}"  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
-=======
-            version = f"{secrets.randbelow(10)}.{secrets.randbelow(10)}.{secrets.randbelow(10)}"
->>>>>>> Stashed changes
         if author is None:
             author = f"test-author-{cls._random_suffix()}"
 
@@ -145,7 +141,6 @@ class SkillRequirementsFactory:
     ) -> SkillRequirements:
         """Create a SkillRequirements instance with default values."""
         if python_version is None:
-<<<<<<< Updated upstream
             python_version = f"{3}.{8 + secrets.randbelow(3)}"  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
         if dependencies is None:
             dependencies = {f"pkg{cls._random_suffix()}": f">={1}.0.0"}  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
@@ -153,15 +148,6 @@ class SkillRequirementsFactory:
             permissions = SkillPermissionsFactory.create()
         if max_execution_time is None:
             max_execution_time = 60 + secrets.randbelow(3540)  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
-=======
-            python_version = f"3.{secrets.randbelow(4) + 8}"
-        if dependencies is None:
-            dependencies = {f"pkg{cls._random_suffix()}": f">={secrets.randbelow(2) + 1}.0.0"}
-        if permissions is None:
-            permissions = SkillPermissionsFactory.create()
-        if max_execution_time is None:
-            max_execution_time = secrets.randbelow(3541) + 60
->>>>>>> Stashed changes
 
         return SkillRequirements(
             python_version=python_version,
@@ -233,11 +219,7 @@ class ExecutionResultFactory:
             if error is not None:
                 error = None
             if data is None:
-<<<<<<< Updated upstream
                 data = {"result": cls._random_suffix(), "value": 1 + secrets.randbelow(99)}  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
-=======
-                data = {"result": cls._random_suffix(), "value": secrets.randbelow(100) + 1}
->>>>>>> Stashed changes
         else:
             if data is not None:
                 data = None
@@ -278,11 +260,7 @@ class SkillManifestFactory:
         if requirements is None:
             requirements = SkillRequirementsFactory.create()
         if version_compatibility is None:
-<<<<<<< Updated upstream
             version_compatibility = f"{1}.{secrets.randbelow(9)}"  # NOSONAR: weak random in test/example  # NOSONAR — S7632: test function documented via class name / module path
-=======
-            version_compatibility = f"{secrets.randbelow(2) + 1}.{secrets.randbelow(10)}"
->>>>>>> Stashed changes
         if tags is None:
             tags = [f"tag{cls._random_suffix()[:5]}", f"type{cls._random_suffix()[:5]}"]
 

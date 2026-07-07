@@ -85,7 +85,7 @@ const REPORT_TYPES = [
 // ============================================================================
 
 export function ReportGeneratorPage() {
-	const { t } = useTranslation();  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+	const { t } = useTranslation(); // NOSONAR — acceptable in this context
 	const {
 		data: projects,
 		loading: projectsLoading,

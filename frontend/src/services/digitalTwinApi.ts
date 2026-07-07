@@ -51,12 +51,12 @@ export interface PaginatedResponse<T> {
 // ============================================================================
 
 class ApiClient {
-        private baseUrl: string;  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
-        private defaultHeaders: Record<string, string>;  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        private baseUrl: string; // NOSONAR — acceptable in this context
+        private defaultHeaders: Record<string, string>; // NOSONAR — acceptable in this context
         private wsConnection: WebSocket | null = null;
-        private wsCallbacks: Map<string, Set<(data: unknown) => void>> = new Map();  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        private wsCallbacks: Map<string, Set<(data: unknown) => void>> = new Map(); // NOSONAR — acceptable in this context
         private reconnectAttempts = 0;
-        private maxReconnectAttempts = 5;  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        private maxReconnectAttempts = 5; // NOSONAR — acceptable in this context
         private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
         constructor(baseUrl?: string) {

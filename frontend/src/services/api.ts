@@ -381,7 +381,7 @@ class ApiClient {
                 if (params?.sort_order) searchParams.set("sort_order", params.sort_order);
                 const query = searchParams.toString();
                 return this.fetchWithRetry<UdmPaginatedData<Element>>(
-                        `/elements${query ? `?${query}` : ""}`,  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+                        `/elements${query ? `?${query}` : ""}`, // NOSONAR — acceptable in this context
                 );
         }
 
@@ -540,7 +540,7 @@ class ApiClient {
                         searchParams.set("page_size", String(params.page_size));
                 const query = searchParams.toString();
                 return this.fetchWithRetry<UdmPaginatedData<UdmConnection>>(
-                        `/connections${query ? `?${query}` : ""}`,  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+                        `/connections${query ? `?${query}` : ""}`, // NOSONAR — acceptable in this context
                 );
         }
 
@@ -586,7 +586,7 @@ class ApiClient {
                         searchParams.set("page_size", String(params.page_size));
                 const query = searchParams.toString();
                 return this.fetchWithRetry<UdmPaginatedData<Conflict>>(
-                        `/conflicts${query ? `?${query}` : ""}`,  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+                        `/conflicts${query ? `?${query}` : ""}`, // NOSONAR — acceptable in this context
                 );
         }
 
