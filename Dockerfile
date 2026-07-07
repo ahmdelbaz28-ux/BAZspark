@@ -3,7 +3,30 @@
 # Multi-stage Docker build: Frontend (Node) + Python deps + Runtime
 # ═══════════════════════════════════════════════════════════════════════════
 
-# ─── Stage 1: Python Dependencies ─────────────────────────────────────────
+# ─── Stage 1: Build the React frontend (Vite) ─────────────────────────────
+# V206 FIX: The frontend MUST be built and served by the FastAPI app on
+# HuggingFace Spaces. Without this stage, the HF Space URL returns 404 for /
+# because there is no static file server — only the FastAPI backend runs.
+FROM node:20-slim AS frontend-builder
+
+WORKDIR /build
+
+# Copy package files first to leverage Docker layer caching
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund --prefer-offline 2>&1 | tail -5
+
+# Copy the rest of the frontend source and build
+COPY frontend/ ./
+# Set the production API URL — same-origin since backend serves frontend
+ENV VITE_API_URL=/api/v1
+ENV VITE_APP_VERSION=8.1.0
+RUN npm run build
+
+# Verify the build output exists
+RUN ls -la dist/ && test -f dist/index.html
+
+
+# ─── Stage 2: Python Dependencies ─────────────────────────────────────────
 FROM python:3.12-slim AS python-builder
 
 WORKDIR /build
@@ -17,7 +40,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools>=68 wheel
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# ─── Stage 2: Runtime ─────────────────────────────────────────────────────
+# ─── Stage 3: Runtime ─────────────────────────────────────────────────────
 FROM python:3.12-slim
 
 LABEL maintainer="FireAI Engineering Team"
@@ -45,6 +68,10 @@ COPY --chown=fireai:fireai core/ core/
 COPY --chown=fireai:fireai marine/ marine/
 COPY --chown=fireai:fireai adapters/ adapters/
 
+# V206: Copy the built frontend (from Stage 1) — served at / by FastAPI StaticFiles
+# when BAZSPARK_FRONTEND_DIST is set (see backend/app.py).
+COPY --chown=fireai:fireai --from=frontend-builder /build/dist /app/frontend_dist
+
 # Create data, logs, and db directories.
 # V174 FIX: /app/db MUST be pre-created and owned by fireai. backend/api_keys.py
 # line 648 calls _ensure_default_admin_key() at MODULE LOAD TIME; when
@@ -58,24 +85,27 @@ COPY --chown=fireai:fireai adapters/ adapters/
 # Pre-creating /app/db aligns with the existing pattern for /app/data and
 # /app/logs, and requires NO application code change.
 RUN mkdir -p /app/data /app/logs /app/db && \
-    chown -R fireai:fireai /app/data /app/logs /app/db
+    chown -R fireai:fireai /app/data /app/logs /app/db /app/frontend_dist
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     FIREAI_ENV=production \
     LOG_LEVEL=WARNING \
-    UDM_DB_PATH=/app/data/udm_elements.db
+    UDM_DB_PATH=/app/data/udm_elements.db \
+    BAZSPARK_FRONTEND_DIST=/app/frontend_dist
 # DATABASE_URL is intentionally NOT set here — it comes from the Hugging Face Space secret.
 # This allows the container to use the Supabase PostgreSQL instance.
 # Fallback: if no secret is provided, the app uses the DIGITAL_TWIN_DB_PATH SQLite file.
 # CRITICAL-3: Unified DB path — DATABASE_URL is now the single source of truth.
 # Removed DIGITAL_TWIN_DB_PATH (was unused, caused confusion).
+# V206: BAZSPARK_FRONTEND_DIST points to the built frontend so backend/app.py
+# mounts StaticFiles and serves the SPA at / (see _spa_fallback in app.py).
 
 USER fireai
 
-EXPOSE 8000
+EXPOSE 7860
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860/api/health')" || exit 1
 
 # C-2 FIX: Default to 1 worker for SQLite (WAL mode allows concurrent reads
