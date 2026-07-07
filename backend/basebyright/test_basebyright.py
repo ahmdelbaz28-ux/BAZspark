@@ -62,7 +62,8 @@ def client():
 
 @pytest.fixture
 def auth_client():
-    """Create a test client that always sends the test API key.
+    """
+    Create a test client that always sends the test API key.
 
     The FIREAI_API_KEY env var bypass in ApiKeyMiddleware checks
     `hmac.compare_digest(api_key, env_key)`. Setting the env var
@@ -336,7 +337,8 @@ class TestIdempotencyChecker:
     """Tests for IdempotencyChecker — PUT/DELETE idempotency verification."""
 
     def _create_v1_project(self, client):
-        """Create a project using the /api/v1/projects endpoint.
+        """
+        Create a project using the /api/v1/projects endpoint.
 
         Tests in backend/basebyright/ do NOT get the URL-rewriting that
         conftest.py provides for backend/tests/. Use /api/v1/ paths directly.
@@ -591,7 +593,8 @@ class TestBaseByRightContextManagers:
     """Tests for BaseByRight context managers."""
 
     def test_isolated_project_creates_and_cleans(self, auth_client) -> None:
-        """isolated_project must create a project and clean it up on exit.
+        """
+        isolated_project must create a project and clean it up on exit.
 
         NOTE: Tests in backend/basebyright/ do NOT get the URL-rewriting that
         conftest.py provides for backend/tests/. The BaseByRight.isolated_project()

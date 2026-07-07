@@ -146,7 +146,8 @@ class TestInputValidation:
         assert response.status_code == 422
 
     def test_create_report_missing_type(self, client, full_project) -> None:
-        """POST report without type returns 201 (API defaults type to 'summary').
+        """
+        POST report without type returns 201 (API defaults type to 'summary').
 
         Note: GenerateReportInput.type is Optional — the endpoint falls back to
         reportType field or 'summary' when type is missing (see reports.py:263).

@@ -191,7 +191,7 @@ _CACHE_MAX_ENTRIES = int(os.getenv("FIREAI_CACHE_MAX_ENTRIES", "10000"))
 # STRICT FIX C: Max size of a single cached value (1 MB default).
 # Prevents a single entry from consuming excessive memory.
 _CACHE_MAX_VALUE_SIZE = int(os.getenv("FIREAI_CACHE_MAX_VALUE_SIZE", str(1024 * 1024)))
-_cache: "_OrderedDict[str, dict]" = _OrderedDict()
+_cache: _OrderedDict[str, dict] = _OrderedDict()
 _cache_lock = threading.Lock()
 
 # STRICT FIX H: Background reaper configuration
@@ -520,7 +520,8 @@ app.include_router(digital_twin.router, prefix="/api/v1", tags=["Digital-Twin-v1
 # has an unmet optional dependency (e.g. shapely, ezdxf), it's skipped
 # with a warning instead of crashing the whole app.
 def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "") -> None:
-    """Import a router module and register it. Skip silently if unavailable.
+    """
+    Import a router module and register it. Skip silently if unavailable.
 
     V193 (R2) FIX — ROOT CAUSE of silent auth-router failure:
       Previously this function swallowed ALL exceptions (including

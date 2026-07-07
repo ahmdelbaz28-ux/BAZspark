@@ -732,7 +732,8 @@ class TestElementsRouter:
         assert response.status_code == 200
 
     def test_create_element(self, client) -> None:
-        """POST /api/elements must create an element.
+        """
+        POST /api/elements must create an element.
 
         V190 FIX: Tightened from (200, 201, 500) to (200, 201). 500 hides
         runtime crashes. The V189 transformer + V188 db_service fixes mean
@@ -752,7 +753,8 @@ class TestElementsRouter:
         )
 
     def test_get_element_nonexistent_404(self, client) -> None:
-        """GET /api/elements/{id} for nonexistent element must return 404.
+        """
+        GET /api/elements/{id} for nonexistent element must return 404.
 
         V190 FIX: Tightened from (404, 500) to (404). 500 hides crashes.
         """
@@ -762,7 +764,8 @@ class TestElementsRouter:
         )
 
     def test_update_element_nonexistent_404(self, client) -> None:
-        """PUT /api/elements/{id} for nonexistent element must return 404.
+        """
+        PUT /api/elements/{id} for nonexistent element must return 404.
 
         V190 FIX: Tightened from (404, 500) to (404). 500 hides crashes.
         """
@@ -775,7 +778,8 @@ class TestElementsRouter:
         )
 
     def test_delete_element_nonexistent_404(self, client) -> None:
-        """DELETE /api/elements/{id} for nonexistent element must return 404.
+        """
+        DELETE /api/elements/{id} for nonexistent element must return 404.
 
         V190 FIX: Tightened from (404, 500) to (404). 500 hides crashes.
         """
@@ -803,7 +807,8 @@ class TestConnectionsV2Router:
         assert response.status_code == 200
 
     def test_create_connection_v2(self, client) -> None:
-        """POST /api/connections must create a connection between real elements.
+        """
+        POST /api/connections must create a connection between real elements.
 
         V190 FIX: Tightened from (201, 400, 500) to (201, 400). 500 is never
         acceptable — it means a runtime crash.
@@ -857,7 +862,8 @@ class TestConnectionsV2Router:
         )
 
     def test_delete_connection_v2_nonexistent(self, client) -> None:
-        """DELETE /api/connections/{id} for nonexistent must return 404.
+        """
+        DELETE /api/connections/{id} for nonexistent must return 404.
 
         V190 FIX: Tightened from (404, 500) to (404). Same rationale as
         test_create_connection_v2 — 500 hides runtime crashes.
@@ -894,11 +900,13 @@ class TestConnectionsV2Router:
 
 
 class TestConnectionsV2RegressionV188:
-    """V188 regression: prove db_service.create_connection/delete_connection
+    """
+    V188 regression: prove db_service.create_connection/delete_connection
     work end-to-end through the V2 router, not just the V1 router."""
 
     def _create_element(self, client, name: str) -> str:
-        """Helper: create an element via POST /api/elements, return its id.
+        """
+        Helper: create an element via POST /api/elements, return its id.
 
         The response uses camelCase keys (elementId, not element_id) because
         Pydantic's alias generator converts snake_case → camelCase for the
@@ -925,7 +933,8 @@ class TestConnectionsV2RegressionV188:
         return element_id
 
     def test_v2_create_connection_returns_201_not_500(self, client) -> None:
-        """V188 regression: POST /api/connections must return 201, never 500.
+        """
+        V188 regression: POST /api/connections must return 201, never 500.
 
         Before V188, this test would fail with 500 because
         db_service.create_connection() called .append() on a tuple.
@@ -995,7 +1004,8 @@ class TestConnectionsV2RegressionV188:
         )
 
     def test_v2_delete_connection_returns_200_not_500(self, client) -> None:
-        """V188 regression: DELETE /api/connections/{id} must return 200, never 500.
+        """
+        V188 regression: DELETE /api/connections/{id} must return 200, never 500.
 
         Before V188, this test would fail with 500 because
         db_service.delete_connection() accessed self._data_model.elements
@@ -1051,7 +1061,8 @@ class TestV191MetadataPreservation:
     """V191 regression: connection metadata with camelCase keys must round-trip."""
 
     def test_connection_metadata_camelcase_roundtrip(self, client) -> None:
-        """Create a connection with camelCase metadata keys, then verify
+        """
+        Create a connection with camelCase metadata keys, then verify
         the metadata is returned with the SAME camelCase keys (not converted
         to snake_case by the frontend transformer).
 
@@ -1113,7 +1124,8 @@ class TestV191MetadataPreservation:
         )
 
     def test_delete_connection_returns_404_for_nonexistent(self, client) -> None:
-        """V191 regression: delete_connection must return 404 for nonexistent ID.
+        """
+        V191 regression: delete_connection must return 404 for nonexistent ID.
 
         Before V191, delete_connection caught ALL exceptions and returned False,
         which the router translated to 404. This meant DB errors also returned
@@ -1144,7 +1156,8 @@ class TestConflictsRouter:
         assert response.status_code == 200
 
     def test_detect_conflicts(self, client) -> None:
-        """POST /api/conflicts/detect must run conflict detection.
+        """
+        POST /api/conflicts/detect must run conflict detection.
 
         V190 FIX: Tightened from (200, 500) to (200,). 500 hides crashes.
         """
@@ -1154,7 +1167,8 @@ class TestConflictsRouter:
         )
 
     def test_resolve_conflict_nonexistent_404(self, client) -> None:
-        """POST /api/conflicts/{id}/resolve for nonexistent must return 404.
+        """
+        POST /api/conflicts/{id}/resolve for nonexistent must return 404.
 
         V190 FIX: Tightened from (404, 500) to (404). 500 hides crashes.
         """

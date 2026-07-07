@@ -14,33 +14,36 @@ import { defineConfig, devices } from "@playwright/test";
  * secure alternative to peek-cli for CI visual testing.
  */
 export default defineConfig({
-	testDir: "./tests", // Changed from './tests/visual' to './tests' to include all test subdirectories
-	outputDir: "./test-results",
-	fullyParallel: true,
-	forbidOnly: !!process.env.CI,
-	retries: process.env.CI ? 2 : 0,
-	workers: process.env.CI ? 1 : undefined,
-	reporter: [["html", { outputFolder: "playwright-report" }], ["list"]],
-	use: {
-		baseURL: "http://localhost:4173",
-		trace: "on-first-retry",
-		screenshot: "only-on-failure",
-		video: "retain-on-failure",
-		viewport: { width: 1280, height: 720 },
-		locale: "en-US",
-		timezoneId: "UTC",
-	},
-	projects: [
-		{
-			name: "chromium",
-			use: { ...devices["Desktop Chrome"] },
-		},
-	],
-	webServer: {
-		command: "npm run dev -- --port 5173 --strictPort",
-		url: "http://localhost:5173",
-		reuseExistingServer: !process.env.CI,
-		timeout: 60_000,
-		cwd: ".",
-	},
+        testDir: "./tests", // Changed from './tests/visual' to './tests' to include all test subdirectories
+        outputDir: "./test-results",
+        fullyParallel: true,
+        forbidOnly: !!process.env.CI,
+        retries: process.env.CI ? 2 : 0,
+        workers: process.env.CI ? 1 : undefined,
+        reporter: [["html", { outputFolder: "playwright-report" }], ["list"]],
+        use: {
+                baseURL: "http://localhost:4173",
+                trace: "on-first-retry",
+                screenshot: "only-on-failure",
+                video: "retain-on-failure",
+                viewport: { width: 1280, height: 720 },
+                locale: "en-US",
+                timezoneId: "UTC",
+        },
+        projects: [
+                {
+                        name: "chromium",
+                        use: { ...devices["Desktop Chrome"] },
+                },
+        ],
+        webServer: {
+                // V207 FIX: Use `vite preview` (production build) on port 4173 to match baseURL.
+                // Previously used `npm run dev` on port 5173, but baseURL is 4173 → ERR_CONNECTION_REFUSED.
+                // The CI workflow runs `npm run build` before Playwright, so dist/ exists.
+                command: "npm run preview -- --port 4173 --strictPort",
+                url: "http://localhost:4173",
+                reuseExistingServer: !process.env.CI,
+                timeout: 60_000,
+                cwd: ".",
+        },
 });

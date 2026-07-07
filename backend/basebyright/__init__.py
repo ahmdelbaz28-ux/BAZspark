@@ -55,11 +55,11 @@ from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type, Union
 logger = logging.getLogger(__name__)
 
 __all__ = [
+    "AssertionContract",
     "BaseByRight",
     "BaseByRightError",
-    "AssertionContract",
-    "StateIsolationContext",
     "FaultInjector",
+    "StateIsolationContext",
     "create_basebyright",
 ]
 
@@ -83,7 +83,8 @@ class BaseByRightError(AssertionError):
 
 
 class AssertionContract:
-    """Defines what a BASEBYRIGHT assertion validates.
+    """
+    Defines what a BASEBYRIGHT assertion validates.
 
     Each contract has:
       - name: Short identifier (e.g. "STATUS_200")
@@ -150,7 +151,8 @@ REQUIRED_SECURITY_HEADERS: Set[str] = {
 
 
 class StateIsolationContext:
-    """Manages test state isolation — ensures each test starts clean.
+    """
+    Manages test state isolation — ensures each test starts clean.
 
     Responsibilities:
       1. Track created resources (projects, devices, etc.) for auto-cleanup.
@@ -244,7 +246,8 @@ class StateIsolationContext:
         return counts
 
     def reset_rate_limiter(self) -> None:
-        """Clear slowapi's in-memory rate-limit storage.
+        """
+        Clear slowapi's in-memory rate-limit storage.
 
         Reference: backend/tests/conftest.py :: _reset_rate_limiter_storage
         (V141.1 FIX — rate limiter test pollution)
@@ -266,7 +269,8 @@ class StateIsolationContext:
             pass
 
     def reset_cache(self) -> None:
-        """Clear the in-memory application cache.
+        """
+        Clear the in-memory application cache.
 
         Reference: backend/app.py :: cache_clear endpoint
         (STRESS-TEST FIX #3 — bounded cache with LRU eviction)
@@ -284,7 +288,8 @@ class StateIsolationContext:
 
 
 class FaultInjector:
-    """Context manager for injecting controlled faults during testing.
+    """
+    Context manager for injecting controlled faults during testing.
 
     Supported fault types:
       - db_fault:       "connection_lost" | "timeout" | "corrupt_data"
@@ -311,7 +316,8 @@ class FaultInjector:
         self._original_env: Dict[str, Optional[str]] = {}
 
     def activate(self, **faults: str) -> None:
-        """Activate one or more fault injections.
+        """
+        Activate one or more fault injections.
 
         Usage:
             injector.activate(db_fault="connection_lost", cache_fault="unavailable")
@@ -374,7 +380,8 @@ class GoldenTestResult:
 
 
 class GoldenTestRunner:
-    """Compares API responses against known-good golden snapshots.
+    """
+    Compares API responses against known-good golden snapshots.
 
     Golden files are stored in test_data/golden/ as JSON files.
     Each file contains the expected response for a specific endpoint + params.
@@ -452,7 +459,8 @@ class GoldenTestRunner:
         return test_result
 
     def _shallow_compare(self, expected: Any, actual: Any, path: str = "") -> bool:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-        """Compare two values, ignoring non-deterministic fields.
+        """
+        Compare two values, ignoring non-deterministic fields.
 
         Non-deterministic fields (timestamp, id, uptime, etc.) are compared
         by type only — they must exist and have the right type.
@@ -500,7 +508,8 @@ class GoldenTestRunner:
 
 
 class IdempotencyChecker:
-    """Verifies that PUT and DELETE endpoints are idempotent.
+    """
+    Verifies that PUT and DELETE endpoints are idempotent.
 
     Idempotency means calling the same operation twice produces the same result.
     For PUT: the second call returns the same status as the first.
@@ -513,7 +522,8 @@ class IdempotencyChecker:
         url: str,
         payload: Dict[str, Any],
     ) -> Tuple[bool, str]:
-        """Verify a PUT endpoint is idempotent.
+        """
+        Verify a PUT endpoint is idempotent.
 
         True = Both calls return the same status code.
         """
@@ -533,7 +543,8 @@ class IdempotencyChecker:
         url: str,
         expected_first_status: int = 200,
     ) -> Tuple[bool, str]:
-        """Verify a DELETE endpoint is idempotent.
+        """
+        Verify a DELETE endpoint is idempotent.
 
         True = First call returns expected_first_status, second returns 404.
         """
@@ -553,7 +564,8 @@ class IdempotencyChecker:
 
 
 class BaseByRight:
-    """Main BASEBYRIGHT testing framework — all 11 pillars in one class.
+    """
+    Main BASEBYRIGHT testing framework — all 11 pillars in one class.
 
     Usage:
         from backend.basebyright import BaseByRight
@@ -597,7 +609,8 @@ class BaseByRight:
         strict_mode: bool = True,
         auto_cleanup: bool = True,
     ) -> None:
-        """Initialize BASEBYRIGHT testing framework.
+        """
+        Initialize BASEBYRIGHT testing framework.
 
         Args:
             client: FastAPI TestClient instance.
@@ -624,7 +637,8 @@ class BaseByRight:
 
     @contextmanager
     def isolated_project(self) -> Iterator[Dict[str, Any]]:
-        """Create an isolated project context.
+        """
+        Create an isolated project context.
 
         The project is auto-deleted on exit (via state isolation).
         Yields the project data dict.
@@ -656,7 +670,8 @@ class BaseByRight:
 
     @contextmanager
     def fault_injector(self, **faults: str) -> Iterator[FaultInjector]:
-        """Context manager that injects faults for resilience testing.
+        """
+        Context manager that injects faults for resilience testing.
 
         Usage:
             with bbr.fault_injector(db_fault="connection_lost"):
@@ -671,7 +686,8 @@ class BaseByRight:
 
     @contextmanager
     def assert_no_crashes(self) -> Iterator[None]:
-        """Context: any 500 response inside this block is an immediate failure.
+        """
+        Context: any 500 response inside this block is an immediate failure.
 
         Usage:
             with bbr.assert_no_crashes():
@@ -706,11 +722,12 @@ class BaseByRight:
     def assert_status(
         self,
         response: Any,
-        expected: Union[int, Set[int], List[int]],
+        expected: int | set[int] | list[int],
         *,
         context: str = "",
     ) -> int:
-        """Assert that response.status_code matches expected.
+        """
+        Assert that response.status_code matches expected.
 
         Args:
             response: The HTTP response object.
@@ -769,7 +786,8 @@ class BaseByRight:
         self.assert_status(response, 429, context=context)
 
     def assert_not_500(self, response: Any, *, context: str = "") -> None:
-        """Assert response is NOT 500 Internal Server Error.
+        """
+        Assert response is NOT 500 Internal Server Error.
 
         A 500 in tests ALWAYS indicates a hidden bug (Layer 4 — Exception Guarding).
         """
@@ -786,7 +804,8 @@ class BaseByRight:
     # ── Security Assertions (Layer 10 — Header Enforcement) ──────────────
 
     def assert_security_headers(self, response: Any, *, context: str = "") -> Set[str]:
-        """Assert that the response includes all required security headers.
+        """
+        Assert that the response includes all required security headers.
 
         Reference: backend/security_middleware.py SecurityHeadersMiddleware
         (V129 INFRASTRUCTURE SECURITY HARDENING)
@@ -812,7 +831,8 @@ class BaseByRight:
         return missing
 
     def assert_has_correlation_id(self, response: Any, *, context: str = "") -> None:
-        """Assert the response has X-Correlation-ID header.
+        """
+        Assert the response has X-Correlation-ID header.
 
         Reference: backend/security_middleware.py CorrelationIdMiddleware
         (V129 — end-to-end audit tracing, NFPA 72 §14.2.4 compliance)
@@ -827,7 +847,8 @@ class BaseByRight:
         )
 
     def assert_www_authenticate_on_401(self, response: Any, *, context: str = "") -> None:
-        """Assert 401 responses include WWW-Authenticate header.
+        """
+        Assert 401 responses include WWW-Authenticate header.
 
         Reference: backend/security_middleware.py :: _send_401
         (STRESS-TEST FIX #2 — security headers on 401 responses)
@@ -846,7 +867,8 @@ class BaseByRight:
     # ── RBAC Assertions (Layer 2 — Automated Audit) ─────────────────────
 
     def assert_admin_only_endpoint(self, url: str, method: str = "GET") -> None:
-        """Verify that an admin-only endpoint rejects non-admin requests.
+        """
+        Verify that an admin-only endpoint rejects non-admin requests.
 
         Sends a request WITHOUT the admin API key and asserts 401/403.
         Reference: backend/security_middleware.py :: ApiKeyMiddleware
@@ -926,7 +948,8 @@ class BaseByRight:
     # ── State & Cleanup ─────────────────────────────────────────────────
 
     def cleanup_all(self) -> Dict[str, int]:
-        """Clean up all tracked resources, rate limiter, and cache.
+        """
+        Clean up all tracked resources, rate limiter, and cache.
 
         Returns cleanup counts.
         """
@@ -938,7 +961,8 @@ class BaseByRight:
     # ── Report ──────────────────────────────────────────────────────────
 
     def report(self) -> Dict[str, Any]:
-        """Generate a comprehensive assertion report.
+        """
+        Generate a comprehensive assertion report.
 
         Returns a dict with:
           - summary: assertion counts
@@ -986,7 +1010,8 @@ class BaseByRight:
         print("=" * 60)
 
     def save_report(self, path: Optional[str] = None) -> str:
-        """Save assertion report to a JSON file.
+        """
+        Save assertion report to a JSON file.
 
         Args:
             path: Output file path. Default: test-results/basebyright_report.json
@@ -1009,7 +1034,8 @@ class BaseByRight:
 
 
 def create_basebyright(client: Any, **kwargs: Any) -> BaseByRight:
-    """Factory: create a BASEBYRIGHT instance with a FastAPI TestClient.
+    """
+    Factory: create a BASEBYRIGHT instance with a FastAPI TestClient.
 
     Usage:
         from backend.basebyright import create_basebyright

@@ -94,7 +94,8 @@ class TestV192ElementLifecycle:
         assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
 
     def test_delete_element_soft_deletes_not_hard_deletes(self, client):
-        """DELETE /api/elements/{id} must soft-delete (mark is_deleted=true).
+        """
+        DELETE /api/elements/{id} must soft-delete (mark is_deleted=true).
 
         V192 FIX: The backend uses soft-delete for audit trail purposes
         (NFPA 72 requires traceability of all changes). After delete:

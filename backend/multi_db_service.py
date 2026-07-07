@@ -333,7 +333,8 @@ class MultiDatabaseService:
         }
 
     def close(self):
-        """Close all database connections.
+        """
+        Close all database connections.
 
         V201 (SonarCloud S8572/S2148): All exception handlers in this method
         previously used bare `except Exception: pass`, silently swallowing

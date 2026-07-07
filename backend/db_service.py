@@ -825,7 +825,8 @@ class DatabaseService:
     # ──────────────────────────────────────────────────────────────────────────
 
     def create_connection(self, data: ConnectionCreate) -> ConnectionResponse:
-        """Create a new connection (relationship) between elements.
+        """
+        Create a new connection (relationship) between elements.
 
         V188 FIX (CRITICAL): UniversalElement is a frozen dataclass with
         ``relationships: tuple[Relationship, ...]`` (immutable). The previous

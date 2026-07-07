@@ -26,7 +26,7 @@ Endpoints:
 
 # Evaluation at compile-time for rate-limiter wrapper compatibility
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
