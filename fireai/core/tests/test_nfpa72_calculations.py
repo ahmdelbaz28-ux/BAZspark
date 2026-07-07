@@ -669,6 +669,8 @@ class TestCheckVoltageDrop:
         assert result["compliant"] is False
 
     def test_drop_fraction_calculation(self) -> None:
+        # 1.0 A × 0.01 Ω/m × 50 m = 0.5 V drop
+        expected_drop = 0.5
         result = check_voltage_drop(24.0, 1.0, 0.01, 50.0)
         assert abs(result["drop_v"] - expected_drop) < 0.01
 

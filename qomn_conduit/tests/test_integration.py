@@ -12,7 +12,6 @@ import math
 import pytest
 
 from qomn_conduit import (
-    BoundingBox,
     ConduitType,
     FittingType,
     Point3D,

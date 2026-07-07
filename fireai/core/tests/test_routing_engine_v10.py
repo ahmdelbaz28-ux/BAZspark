@@ -1257,6 +1257,8 @@ class TestEliteClassARouter:
         """_measure_len computes correct path length."""
         router = EliteClassARouter(width=10.0, length=10.0)
         path = [(0, 0), (3, 0), (3, 4)]
+        # Path length: (0,0)→(3,0) = 3, (3,0)→(3,4) = 4 → total = 7.0
+        expected = 7.0
         assert abs(router._measure_len(path) - expected) < 0.01
 
     def test_measure_len_empty(self) -> None:

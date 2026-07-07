@@ -372,9 +372,17 @@ target-version = "py38"
 exclude = ["skills/ppt"]  # PPT skill uses match/case (Python 3.10+)
 
 [tool.ruff.lint]
+# V205: Treat SonarCloud rule codes (S*, python:S*) used in `# noqa` comments as
+# external — they are NOT Ruff rules. Without this, Ruff emits RUF102 "Invalid
+# rule code in # noqa" on every SonarCloud-annotated line and blocks the CI
+# Lint gate. See https://docs.astral.sh/ruff/settings/#lint_external
+external = [
+    "S",        # SonarCloud generic severity codes (S1xxx, S2xxx, ...)
+    "python",   # SonarCloud `python:S*` prefix (used as `# noqa: python:S1481`)
+]
 select = [
     "E",     # pycodestyle errors
-    "W",     # pycodestyle warnings  
+    "W",     # pycodestyle warnings
     "F",     # pyflakes
     "I",     # isort
     "N",     # pep8-naming

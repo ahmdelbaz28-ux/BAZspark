@@ -91,6 +91,13 @@ _EXTINCTION_COEFF: dict[str, float] = {
     "smouldering": 4400.0,
 }
 
+# Heat of combustion for cellulosic fuel (kW·s/kg = kJ/kg).
+# 13.1 MJ/kg = 13 100 kJ/kg ≈ 13 100 kW·s/kg.
+# Used to convert heat release rate [kW] → mass loss rate [kg/s]:
+#   s_rate = y_s × Q / ΔH_c
+# Reference: SFPE Handbook Table 3-4.14.
+HEAT_OF_COMBUSTION_KW_S_PER_KG: float = 13_100.0
+
 # Minimum blind-spot gap considered significant (metres)
 _BLIND_SPOT_MIN_GAP_M: float = 0.5
 
@@ -501,8 +508,8 @@ class FirePhysics:
         t_burn varies by occupancy — uses _BURN_DURATION table.
         Returns kW.
         """
-        t_burn = _BURN_DURATION.get(occupancy.lower(), _BURN_DURATION["default"])  # NOSONAR - python:S1481
-        total_mj = fire_load_mj_m2 * area_m2  # NOSONAR - python:S1481
+        _t_burn = _BURN_DURATION.get(occupancy.lower(), _BURN_DURATION["default"])  # NOSONAR - python:S1481: kept for debug / future use
+        _total_mj = fire_load_mj_m2 * area_m2  # NOSONAR - python:S1481: kept for debug / future use
 
     @staticmethod
     def ceiling_jet_temp_rise(

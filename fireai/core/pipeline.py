@@ -408,7 +408,7 @@ def _stage2_placement(
     This is the bridge that fixes W-01: import failure → 0% coverage.
     """
     polygon = validated_payload["room_polygon"]
-    area_m2 = validated_payload["area_m2"]  # NOSONAR - python:S1481
+    _area_m2 = validated_payload["area_m2"]  # NOSONAR - python:S1481: kept for debug / future use
 
     # Try the real optimizer first
     try:

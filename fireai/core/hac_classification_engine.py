@@ -400,6 +400,12 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
     n_per_s = n_ach / 3600.0  # air changes per second (1/s)
     effective_dilution_rate = f * n_per_s  # effective dilution rate (1/s)  # NOSONAR - python:S1481
 
+    # Vz (volume of hazardous atmosphere) = source release rate / dilution rate
+    # Units: (m³/s) / (1/s) = m³. The +1e-12 guard prevents ZeroDivisionError
+    # when both f and n_per_s are zero (e.g. unknown ventilation enum value).
+    # References: IEC 60079-10-1:2015 Annex B eq. B.3.
+    Vz_diluted_m3 = Vz_source_m3_s / (effective_dilution_rate + 1e-12)
+
     # Convert to zone radius
     if is_indoor:
         r_hz = (3.0 * Vz_diluted_m3 / (2.0 * math.pi)) ** (1.0 / 3.0)  # NOSONAR — S1854: assignment kept for debug / future use
@@ -465,13 +471,13 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
             f"({room_volume_m3:.1f} m³). Entire room is potentially hazardous. "
             f"[IEC 60079-10-1 Annex B §B.3]"
         )
-        Vz_diluted_m3 = room_volume_m3  # NOSONAR — S1854: assignment kept for debug / future use
-        zone_vol_m3 = room_volume_m3
+        Vz_diluted_m3 = room_volume_m3  # cap Vz at room volume
+        zone_vol_m3 = Vz_diluted_m3
         # Recompute radii from capped volume
         if is_indoor:
-            r_hz = (3.0 * room_volume_m3 / (2.0 * math.pi * k_buoy)) ** (1.0 / 3.0)
+            r_hz = (3.0 * Vz_diluted_m3 / (2.0 * math.pi * k_buoy)) ** (1.0 / 3.0)
         else:
-            r_hz = (3.0 * room_volume_m3 / (4.0 * math.pi * k_buoy)) ** (1.0 / 3.0)
+            r_hz = (3.0 * Vz_diluted_m3 / (4.0 * math.pi * k_buoy)) ** (1.0 / 3.0)
         r_vz = r_hz * k_buoy
 
     # V53 FIX (F7): NaN/Inf validation — adversarial inputs bypass all safety.

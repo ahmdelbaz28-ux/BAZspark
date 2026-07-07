@@ -1020,6 +1020,7 @@ def check_voltage_drop(
     if max_drop_fraction <= 0 or max_drop_fraction > 1:
         raise ValueError(f"max_drop_fraction must be in (0, 1], got {max_drop_fraction}")
 
+    total_resistance = cable_resistance_ohm_per_m * cable_length_m
     drop_v           = load_current_a * total_resistance
     drop_fraction    = drop_v / supply_voltage_v if supply_voltage_v > 0 else float("inf")
     return {
