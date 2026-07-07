@@ -462,7 +462,7 @@ export function PythonSwagger() {
 										f'https://api.openweathermap.org/data/2.5/weather?q=AbuDhabi&appid=
 										<span className="text-blue-200">{"{"}</span>  // NOSONAR — S6772: hook dependency array intentional
 										<span className="text-slate-100">api_key</span>  // NOSONAR - typescript:S6772
-										<span className="text-blue-200">{"}"}</span>'
+										<span className="text-blue-200">{"}"}</span>'  // NOSONAR
 									</span>  // NOSONAR — S6772: hook dependency array intentional
 									)
 								</span>

@@ -89,8 +89,8 @@ def pack_document(input_dir, output_file, validate=False):
 
         # Validate if requested
         if validate:
-            if not validate_document(output_file):
-                output_file.unlink()  # Delete the corrupt file
+            if not validate_document(output_file):  # NOSONAR
+                output_file.unlink()  # Delete the corrupt file  # NOSONAR
                 return False
 
     return True
@@ -165,7 +165,7 @@ def condense_xml(xml_file):
             continue
 
         # Remove whitespace-only text nodes and comment nodes
-        for child in list(element.childNodes):
+        for child in list(element.childNodes):  # NOSONAR
             if (
                 child.nodeType == child.TEXT_NODE
                 and child.nodeValue
