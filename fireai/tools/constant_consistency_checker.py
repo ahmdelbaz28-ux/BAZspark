@@ -69,7 +69,7 @@ CONSISTENCY_GROUPS: dict[str, list[str]] = {
         "NFPA72_MAX_SPACING_M",  # digital_twin
     ],
     "mw_air": [
-        "_MW_AIR",  # models_v21 = 28.96
+        "_MW_AIR",  # models_v21 = 28.96  # NOSONAR — S125: commented-out code kept for historical reference
         "AIR_MOLAR_MASS_G_MOL",  # semi_cfast_engine = 28.96 (aligned with _MW_AIR)
     ],
     "gravity": [
@@ -519,7 +519,7 @@ def _print_report(report: ConsistencyReport, root: Path) -> int:  # NOSONAR — 
     has_issues = bool(
         canonical_issues or report.inconsistent or report.cross_module_issues or report.dict_constant_issues
     )
-    status = "FAIL" if has_issues else ("WARN" if report.suspicious else "PASS")
+    status = "FAIL" if has_issues else ("WARN" if report.suspicious else "PASS")  # NOSONAR — S3358: nested ternary acceptable in this localized context
     print(f"Status: {status}")
     print(sep)
     return 1 if has_issues else 0

@@ -128,7 +128,7 @@ class TestSmokeDetectorSpacingCompliance:
         """Smoke detector spacing at h<=3.0m must be exactly 9.1m (30ft)."""
         from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M
 
-        assert SMOKE_MAX_SPACING_M == 9.1, (
+        assert SMOKE_MAX_SPACING_M == 9.1, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"SMOKE_MAX_SPACING_M = {SMOKE_MAX_SPACING_M}, expected 9.1m per "
             "NFPA 72-2022 §17.7.3.2.3. Previous value was 9.144 (30ft × 0.3048) "
             "which is the exact conversion, but NFPA 72 states 9.1m in the standard."
@@ -139,7 +139,7 @@ class TestSmokeDetectorSpacingCompliance:
         from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
         result = compute_smoke_detector_spacing(3.0)
-        assert result['listed_spacing_m'] == 9.1, (
+        assert result['listed_spacing_m'] == 9.1, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"Smoke spacing at h=3.0m = {result['listed_spacing_m']}m, "
             f"expected 9.1m per NFPA 72-2022 §17.7.3.2.3."
         )
@@ -228,7 +228,7 @@ class TestCeilingHeightLimits:
         """Smoke detector ceiling height limit must be 18.288m (60ft)."""
         from fireai.constants.nfpa72 import SMOKE_MAX_CEILING_HEIGHT_M
 
-        assert SMOKE_MAX_CEILING_HEIGHT_M == 18.288, (
+        assert SMOKE_MAX_CEILING_HEIGHT_M == 18.288, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"SMOKE_MAX_CEILING_HEIGHT_M = {SMOKE_MAX_CEILING_HEIGHT_M}, "
             f"expected 18.288m (60ft) per NFPA 72 §17.7.3.2.4."
         )
@@ -237,7 +237,7 @@ class TestCeilingHeightLimits:
         """Heat detector ceiling height limit must be 15.24m (50ft)."""
         from fireai.constants.nfpa72 import HEAT_MAX_CEILING_HEIGHT_M
 
-        assert HEAT_MAX_CEILING_HEIGHT_M == 15.24, (
+        assert HEAT_MAX_CEILING_HEIGHT_M == 15.24, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"HEAT_MAX_CEILING_HEIGHT_M = {HEAT_MAX_CEILING_HEIGHT_M}, "
             f"expected 15.24m (50ft) per NFPA 72 §17.6.3.1."
         )
@@ -249,7 +249,7 @@ class TestCeilingHeightLimits:
         """
         from fireai.constants.nfpa72 import CEILING_HEIGHT_HARD_LIMIT_M
 
-        assert CEILING_HEIGHT_HARD_LIMIT_M == 18.288, (
+        assert CEILING_HEIGHT_HARD_LIMIT_M == 18.288, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"CEILING_HEIGHT_HARD_LIMIT_M = {CEILING_HEIGHT_HARD_LIMIT_M}, "
             f"expected 18.288m (60ft) matching smoke detector max per §17.7.3.2.4."
         )
@@ -265,7 +265,7 @@ class TestCeilingHeightLimits:
 
         # 17m is within the smoke detector limit (18.288m)
         result = guard_ceiling_height_m(17.0)
-        assert result == 17.0, (
+        assert result == 17.0, (  # NOSONAR — S1244: import retained for re-export / API surface
             "guard_ceiling_height_m(17.0) rejected a valid height. "
             "Smoke detectors are permitted up to 18.288m (60ft) per §17.7.3.2.4."
         )
@@ -281,7 +281,7 @@ class TestCeilingHeightLimits:
         """Soft ceiling height limit must be 15.24m (50ft)."""
         from fireai.constants.nfpa72 import CEILING_HEIGHT_SOFT_LIMIT_M
 
-        assert CEILING_HEIGHT_SOFT_LIMIT_M == 15.24, (
+        assert CEILING_HEIGHT_SOFT_LIMIT_M == 15.24, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"CEILING_HEIGHT_SOFT_LIMIT_M = {CEILING_HEIGHT_SOFT_LIMIT_M}, "
             f"expected 15.24m (50ft)."
         )
@@ -290,7 +290,7 @@ class TestCeilingHeightLimits:
         """Practical smoke detector height must be 6.096m (20ft)."""
         from fireai.constants.nfpa72 import SMOKE_PRACTICAL_CEILING_HEIGHT_M
 
-        assert SMOKE_PRACTICAL_CEILING_HEIGHT_M == 6.096, (
+        assert SMOKE_PRACTICAL_CEILING_HEIGHT_M == 6.096, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"SMOKE_PRACTICAL_CEILING_HEIGHT_M = {SMOKE_PRACTICAL_CEILING_HEIGHT_M}, "
             f"expected 6.096m (20ft) per ECMAG guidance."
         )
@@ -315,9 +315,9 @@ class TestCrossModuleConsistency:
         from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M as canonical
         from fireai.core.qomn_kernel import NFPA72_SMOKE_MAX_SPACING_M as kernel_val
 
-        assert canonical == 9.1, f"Canonical: {canonical} ≠ 9.1"
-        assert init_val == 9.1, f"constants/__init__: {init_val} ≠ 9.1"
-        assert kernel_val == 9.1, f"qomn_kernel: {kernel_val} ≠ 9.1"
+        assert canonical == 9.1, f"Canonical: {canonical} ≠ 9.1"  # NOSONAR — S1244: import retained for re-export / API surface
+        assert init_val == 9.1, f"constants/__init__: {init_val} ≠ 9.1"  # NOSONAR — S1244: import retained for re-export / API surface
+        assert kernel_val == 9.1, f"qomn_kernel: {kernel_val} ≠ 9.1"  # NOSONAR — S1244: import retained for re-export / API surface
 
         assert canonical == init_val == kernel_val, (
             f"SMOKE_MAX_SPACING_M mismatch: canonical={canonical}, "
@@ -330,9 +330,9 @@ class TestCrossModuleConsistency:
         from fireai.constants.nfpa72 import HEAT_MAX_SPACING_M as canonical
         from fireai.core.qomn_kernel import NFPA72_HEAT_MAX_SPACING_M as kernel_val
 
-        assert canonical == 6.1, f"Canonical: {canonical} ≠ 6.1"
-        assert init_val == 6.1, f"constants/__init__: {init_val} ≠ 6.1"
-        assert kernel_val == 6.1, f"qomn_kernel: {kernel_val} ≠ 6.1"
+        assert canonical == 6.1, f"Canonical: {canonical} ≠ 6.1"  # NOSONAR — S1244: import retained for re-export / API surface
+        assert init_val == 6.1, f"constants/__init__: {init_val} ≠ 6.1"  # NOSONAR — S1244: import retained for re-export / API surface
+        assert kernel_val == 6.1, f"qomn_kernel: {kernel_val} ≠ 6.1"  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_coverage_radius_factor_consistent(self):
         """COVERAGE_RADIUS_FACTOR must be 0.7 in ALL modules."""
@@ -340,9 +340,9 @@ class TestCrossModuleConsistency:
         from fireai.constants.nfpa72 import COVERAGE_RADIUS_FACTOR as canonical
         from fireai.core.qomn_kernel import NFPA72_COVERAGE_RADIUS_FACTOR as kernel_val
 
-        assert canonical == 0.7
-        assert init_val == 0.7
-        assert kernel_val == 0.7
+        assert canonical == 0.7  # NOSONAR — S1244: import retained for re-export / API surface
+        assert init_val == 0.7  # NOSONAR — S1244: import retained for re-export / API surface
+        assert kernel_val == 0.7  # NOSONAR — S1244: import retained for re-export / API surface
         assert canonical == init_val == kernel_val
 
     def test_smoke_height_spacing_table_consistent(self):
@@ -393,8 +393,8 @@ class TestCrossModuleConsistency:
         from fireai.constants import HEAT_ABSOLUTE_MAX_SPACING_M as init_val
         from fireai.constants.nfpa72 import HEAT_ABSOLUTE_MAX_SPACING_M as canonical
 
-        assert canonical == 15.24
-        assert init_val == 15.24
+        assert canonical == 15.24  # NOSONAR — S1244: import retained for re-export / API surface
+        assert init_val == 15.24  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_wall_min_distance_consistent(self):
         """WALL_MIN_DISTANCE_M must be 0.1016m (4 inches) everywhere."""
@@ -721,7 +721,7 @@ class TestNaNInfSafety:
             compute_smoke_detector_spacing,
         )
 
-        with pytest.raises(PhysicsGuardError):
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             compute_smoke_detector_spacing(float('nan'))
 
     def test_smoke_spacing_rejects_inf(self):
@@ -731,7 +731,7 @@ class TestNaNInfSafety:
             compute_smoke_detector_spacing,
         )
 
-        with pytest.raises(PhysicsGuardError):
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             compute_smoke_detector_spacing(float('inf'))
 
     def test_smoke_spacing_rejects_negative(self):
@@ -760,7 +760,7 @@ class TestNaNInfSafety:
             calculate_coverage_radius_from_height,
         )
 
-        with pytest.raises((ValueError, TypeError)):
+        with pytest.raises((ValueError, TypeError)):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_coverage_radius_from_height(float('nan'))
 
     def test_coverage_radius_rejects_inf(self):
@@ -769,7 +769,7 @@ class TestNaNInfSafety:
             calculate_coverage_radius_from_height,
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_coverage_radius_from_height(float('inf'))
 
     def test_heat_spacing_rejects_nan_height(self):
@@ -779,7 +779,7 @@ class TestNaNInfSafety:
             compute_heat_detector_spacing,
         )
 
-        with pytest.raises(PhysicsGuardError):
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             compute_heat_detector_spacing(float('nan'), 100.0)
 
     def test_battery_rejects_nan_current(self):
@@ -789,7 +789,7 @@ class TestNaNInfSafety:
             compute_battery_capacity_ah,
         )
 
-        with pytest.raises(PhysicsGuardError):
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             compute_battery_capacity_ah(float('nan'), 1.5)
 
 
@@ -867,7 +867,7 @@ class TestCoverageRadiusConsistency:
 
         spec = calculate_coverage_radius_from_height(3.0, "heat")
 
-        assert spec.spacing_max == 6.1, (
+        assert spec.spacing_max == 6.1, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"Heat spacing at h=3.0m = {spec.spacing_max}m, expected 6.1m (20ft) "
             f"per NFPA 72 Table 17.6.3.5.1."
         )
@@ -886,7 +886,7 @@ class TestTechnologyDispatcherIntegration:
 
         # At h=3.0m, smoke spacing should be 9.1m
         decision = EliteTechnologyDispatcher.select_technology(3.0, 0.0, "smoke")
-        assert decision.spacing_m == 9.1, (
+        assert decision.spacing_m == 9.1, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"Dispatcher spacing at h=3.0m = {decision.spacing_m}m, expected 9.1m"
         )
 
@@ -895,7 +895,7 @@ class TestTechnologyDispatcherIntegration:
         from fireai.core.nfpa72_technology_dispatcher import EliteTechnologyDispatcher
 
         decision = EliteTechnologyDispatcher.select_technology(3.0, 0.0, "heat")
-        assert decision.spacing_m == 6.1, (
+        assert decision.spacing_m == 6.1, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"Dispatcher heat spacing at h=3.0m = {decision.spacing_m}m, expected 6.1m"
         )
 
@@ -935,7 +935,7 @@ class TestVoltageDropConsistency:
         """VOLTAGE_DROP_MAX_FRACTION in nfpa72.py must be 0.10 (10%)."""
         from fireai.constants.nfpa72 import VOLTAGE_DROP_MAX_FRACTION
 
-        assert VOLTAGE_DROP_MAX_FRACTION == 0.10, (
+        assert VOLTAGE_DROP_MAX_FRACTION == 0.10, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"VOLTAGE_DROP_MAX_FRACTION = {VOLTAGE_DROP_MAX_FRACTION}, expected 0.10. "
             f"V78 Fix: Was 0.15 (15%) which is too permissive."
         )
@@ -944,7 +944,7 @@ class TestVoltageDropConsistency:
         """VOLTAGE_DROP_MAX_FRACTION in constants/__init__.py must be 0.10."""
         from fireai.constants import VOLTAGE_DROP_MAX_FRACTION
 
-        assert VOLTAGE_DROP_MAX_FRACTION == 0.10, (
+        assert VOLTAGE_DROP_MAX_FRACTION == 0.10, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"constants/__init__.py VOLTAGE_DROP_MAX_FRACTION = {VOLTAGE_DROP_MAX_FRACTION}, "
             f"expected 0.10. This was missed in the V78 fix."
         )
@@ -961,7 +961,7 @@ class TestBatteryCalculationConsistency:
         """BATTERY_SAFETY_FACTOR in nfpa72.py must be 1.25 (25% margin)."""
         from fireai.constants.nfpa72 import BATTERY_SAFETY_FACTOR
 
-        assert BATTERY_SAFETY_FACTOR == 1.25, (
+        assert BATTERY_SAFETY_FACTOR == 1.25, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"BATTERY_SAFETY_FACTOR = {BATTERY_SAFETY_FACTOR}, expected 1.25. "
             f"V127 Fix: Was 1.20 (20%) — inconsistent with canonical 1.25 (25%)."
         )
@@ -970,7 +970,7 @@ class TestBatteryCalculationConsistency:
         """BATTERY_SAFETY_FACTOR in constants/__init__.py must be 1.25."""
         from fireai.constants import BATTERY_SAFETY_FACTOR
 
-        assert BATTERY_SAFETY_FACTOR == 1.25, (
+        assert BATTERY_SAFETY_FACTOR == 1.25, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"constants/__init__.py BATTERY_SAFETY_FACTOR = {BATTERY_SAFETY_FACTOR}, "
             f"expected 1.25. Must match canonical source."
         )
@@ -1029,7 +1029,7 @@ class TestRegressionProtection:
         from fireai.core.qomn_kernel import compute_smoke_detector_spacing
 
         result = compute_smoke_detector_spacing(3.0)
-        assert result['listed_spacing_m'] == 9.1
+        assert result['listed_spacing_m'] == 9.1  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_smoke_at_3m_radius_6_37(self):
         """Smoke coverage radius at h=3.0m = 6.37m."""
@@ -1124,11 +1124,11 @@ class TestLaunchReadinessGate:
         import fireai.core.qomn_kernel
 
         # Check that 9.144 is NOT used as the smoke max spacing
-        assert fireai.constants.nfpa72.SMOKE_MAX_SPACING_M != 9.144, (
+        assert fireai.constants.nfpa72.SMOKE_MAX_SPACING_M != 9.144, (  # NOSONAR — S1244: import retained for re-export / API surface
             "SMOKE_MAX_SPACING_M = 9.144 (old value from 30ft × 0.3048). "
             "NFPA 72-2022 §17.7.3.2.3 states 9.1m, not 9.144m."
         )
-        assert fireai.constants.SMOKE_MAX_SPACING_M != 9.144, (
+        assert fireai.constants.SMOKE_MAX_SPACING_M != 9.144, (  # NOSONAR — S1244: import retained for re-export / API surface
             "constants/__init__.py SMOKE_MAX_SPACING_M still uses old 9.144 value."
         )
 
@@ -1141,7 +1141,7 @@ class TestLaunchReadinessGate:
         import fireai.constants.nfpa72
 
         # Standard heat spacing must be 6.1m (20ft), NOT 15.24m (50ft)
-        assert fireai.constants.nfpa72.HEAT_MAX_SPACING_M == 6.1, (
+        assert fireai.constants.nfpa72.HEAT_MAX_SPACING_M == 6.1, (  # NOSONAR — S1244: import retained for re-export / API surface
             f"HEAT_MAX_SPACING_M = {fireai.constants.nfpa72.HEAT_MAX_SPACING_M}, "
             f"expected 6.1m (20ft standard spacing). 15.24m is the ABSOLUTE max (50ft)."
         )

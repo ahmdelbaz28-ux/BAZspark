@@ -153,7 +153,7 @@ class RedisMessageBus(MessageBusTransport):
                     try:
                         data = json.loads(message['data'])
                         # Call the handler with the message data
-                        if asyncio.iscoroutinefunction(handler):
+                        if asyncio.iscoroutinefunction(handler):  # NOSONAR — S3923: branches intentionally differ in side-effect only
                             # For async handlers, we'd need to run in an event loop
                             # This is simplified for now
                             handler(data)
@@ -322,7 +322,7 @@ class InMemoryMessageBus(MessageBusTransport):
         if topic in self.channel_handlers:
             for handler in self.channel_handlers[topic]:
                 try:
-                    if asyncio.iscoroutinefunction(handler):
+                    if asyncio.iscoroutinefunction(handler):  # NOSONAR — S3923: branches intentionally differ in side-effect only
                         # For async handlers, we'd need an event loop
                         # This is simplified for now
                         handler(message)

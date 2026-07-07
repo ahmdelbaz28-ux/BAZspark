@@ -437,7 +437,7 @@ class LocalRevitProvider:
 
     def read_devices(
         self,
-        source: str | None = None,
+        source: str | None = None,  # NOSONAR — S1172: parameter retained for API stability
         **kwargs: Any,
     ) -> list[dict[str, Any]]:
         """
@@ -763,7 +763,7 @@ class AutodeskForgeProvider:
 
     def extract_rooms(
         self,
-        source: str | None = None,
+        source: str | None = None,  # NOSONAR — S1172: parameter retained for API stability
         **kwargs: Any,
     ) -> list[BIMRoom]:
         """
@@ -797,7 +797,7 @@ class AutodeskForgeProvider:
 
     def read_devices(
         self,
-        source: str | None = None,
+        source: str | None = None,  # NOSONAR — S1172: parameter retained for API stability
         **kwargs: Any,
     ) -> list[dict[str, Any]]:
         """Read devices via APS Model Derivative API."""

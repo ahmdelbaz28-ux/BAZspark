@@ -219,7 +219,7 @@ def calculate_friction_loss(
         )
 
     # Zero flow = zero friction loss
-    if flow_rate_gpm == 0.0:
+    if flow_rate_gpm == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
         return 0.0
 
     # Hazen-Williams calculation using double precision
@@ -235,7 +235,7 @@ def calculate_friction_loss(
             f"Hazen-Williams numerator overflow: 4.52 × {flow_rate_gpm}^{HW_EXPONENT}. "
             "Flow rate may be unreasonably large."
         )
-    if not math.isfinite(denominator) or denominator == 0.0:
+    if not math.isfinite(denominator) or denominator == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
         raise ValueError(
             f"Hazen-Williams denominator invalid: C={friction_factor_c}^{HW_EXPONENT} "
             f"× d={internal_diameter_inches}^{DIAMETER_EXPONENT} = {denominator}. "

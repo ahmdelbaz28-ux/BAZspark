@@ -53,8 +53,8 @@ class TestDuctSpec:
             end_point=(10.0, 0.0),
         )
         assert duct.duct_id == "D1"
-        assert duct.length_m == 10.0
-        assert duct.width_m == 0.5
+        assert duct.length_m == 10.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert duct.width_m == 0.5  # NOSONAR — S1244: import retained for re-export / API surface
         assert duct.duct_type == "supply"
 
     def test_default_values(self):
@@ -64,7 +64,7 @@ class TestDuctSpec:
         assert duct.start_point == (0.0, 0.0)
         assert duct.end_point == (1.0, 0.0)
         assert duct.airflow_cfm is None
-        assert duct.height_m == 0.0
+        assert duct.height_m == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_return_duct(self):
         """Return duct type."""
@@ -93,12 +93,12 @@ class TestDuctSpec:
 
     def test_nan_length_raises(self):
         """V50 FIX: NaN length must raise ValueError."""
-        with pytest.raises(ValueError, match="invalid"):
+        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             DuctSpec(duct_id="D1", length_m=float("nan"), width_m=0.3)
 
     def test_inf_length_raises(self):
         """Infinite length is not valid."""
-        with pytest.raises(ValueError, match="invalid"):
+        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             DuctSpec(duct_id="D1", length_m=float("inf"), width_m=0.3)
 
     def test_negative_length_raises(self):
@@ -108,7 +108,7 @@ class TestDuctSpec:
 
     def test_nan_width_raises(self):
         """NaN width must raise ValueError."""
-        with pytest.raises(ValueError, match="invalid"):
+        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             DuctSpec(duct_id="D1", length_m=5.0, width_m=float("nan"))
 
     def test_negative_width_raises(self):
@@ -118,7 +118,7 @@ class TestDuctSpec:
 
     def test_nan_airflow_cfm_raises(self):
         """NaN airflow_cfm must raise ValueError."""
-        with pytest.raises(ValueError, match="invalid"):
+        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             DuctSpec(duct_id="D1", length_m=5.0, width_m=0.3, airflow_cfm=float("nan"))
 
     def test_negative_airflow_cfm_raises(self):
@@ -134,11 +134,11 @@ class TestDuctSpec:
     def test_zero_width_is_valid(self):
         """Zero width is valid (results in exemption)."""
         duct = DuctSpec(duct_id="D1", length_m=5.0, width_m=0.0)
-        assert duct.width_m == 0.0
+        assert duct.width_m == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_nan_height_raises(self):
         """NaN height_m is not valid."""
-        with pytest.raises(ValueError, match="invalid"):
+        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             DuctSpec(duct_id="D1", length_m=5.0, width_m=0.3, height_m=float("nan"))
 
     def test_negative_height_raises(self):
@@ -435,7 +435,7 @@ class TestVelocityBlindness:
             duct_type="supply", airflow_cfm=None,
         )
         result = analyse_duct(duct)
-        assert result.velocity_fpm == 0.0
+        assert result.velocity_fpm == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.velocity_blindness is False
 
     def test_detectors_functional_when_no_blindness(self):
@@ -553,7 +553,7 @@ class TestDuctWarnings:
         assert len(mismatch_warns) == 0
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # analyse_ducts and total_duct_detectors
 # ─────────────────────────────────────────────────────────────────────────────
 

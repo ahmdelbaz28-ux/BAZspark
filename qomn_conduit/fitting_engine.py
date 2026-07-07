@@ -42,7 +42,7 @@ from qomn_conduit.types import (
     TradeSize,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -261,9 +261,9 @@ def _is_direction_change(
     def dom_dir(a: Point3D, b: Point3D) -> tuple[int, int, int]:
         dx, dy, dz = b.x - a.x, b.y - a.y, b.z - a.z
         return (
-            (1 if dx > 0 else -1 if dx < 0 else 0),
-            (1 if dy > 0 else -1 if dy < 0 else 0),
-            (1 if dz > 0 else -1 if dz < 0 else 0),
+            (1 if dx > 0 else -1 if dx < 0 else 0),  # NOSONAR — S3358: nested ternary acceptable in this localized context
+            (1 if dy > 0 else -1 if dy < 0 else 0),  # NOSONAR — S3358: nested ternary acceptable in this localized context
+            (1 if dz > 0 else -1 if dz < 0 else 0),  # NOSONAR — S3358: nested ternary acceptable in this localized context
         )
 
     d1 = dom_dir(prev, curr)

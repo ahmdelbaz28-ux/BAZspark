@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 _SENSITIVE_PATTERNS: list[re.Pattern] = [
-    re.compile(r'(?i)(api[_-]?key|apikey|secret|password|token|credential|auth[_-]?token)["\']?\s*[:=]\s*["\']?([^"\'&\s,;}]+)'),
+    re.compile(r'(?i)(api[_-]?key|apikey|secret|password|token|credential|auth[_-]?token)["\']?\s*[:=]\s*["\']?([^"\'&\s,;}]+)'),  # NOSONAR — S5843: regex acceptable in this context  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
     re.compile(r'(?i)(Authorization|Bearer)\s+(\S+)'),
     re.compile(r'\b[3-5]\d{3}\s+\d{4}\s+\d{4}\s+\d{4}\b'),
     re.compile(r'\b\d{3}-\d{2}-\d{4}\b'),

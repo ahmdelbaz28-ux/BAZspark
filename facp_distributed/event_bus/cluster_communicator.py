@@ -702,7 +702,7 @@ class DistributedClusterCommunicator(ClusterCommunicator):
             # If no leader, broadcast to all
             self.broadcast_message(config_exchange_msg)
 
-    def handle_config_exchange(self, config_data: Dict[str, Any], sender_node_id: str):
+    def handle_config_exchange(self, config_data: Dict[str, Any], sender_node_id: str):  # NOSONAR — S1172: parameter retained for API stability
         """Handle configuration exchange message"""
         # Merge configurations
         self.cluster_config.update(config_data.get("config", {}))

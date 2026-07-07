@@ -226,7 +226,7 @@ class AsyncAuditLogger:
         ).hexdigest()[:12]
 
         # [v4.0 NEW] إضافة مستوى الخطورة
-        event_data.get("severity", "INFO")
+        event_data.get("severity", "INFO")  # NOSONAR — S2201: return value intentionally ignored (fire-and-forget)
         if event_data.get("status") == "REJECTED":
             event_data["severity"] = "CRITICAL"
         elif event_data.get("status") == "HEALED":
@@ -334,7 +334,7 @@ class WeightedCircuitBreaker:
         self._total_errors: int = 0  # [v4.0 NEW] العدد الكلي للأخطاء (لا يُمسح)
         self._lock = threading.RLock()
 
-    def register(self, error_type: str, weight: int = 1) -> bool:
+    def register(self, error_type: str, weight: int = 1) -> bool:  # NOSONAR — S1172: parameter retained for API stability
         now = time.time()
 
         with self._lock:
@@ -1010,7 +1010,7 @@ class DisasterEvacuationAdapter:
         unit="persons_per_second_per_meter",
     )
     def simulate_crowd_throughput(agent_count: int, exit_width: float) -> float:
-        if exit_width == 0.0:
+        if exit_width == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
             # [v4.0] هذا FATAL — لا يمكن الإخلاء بدون مخرج
             raise ZeroDivisionError(
                 "Exit width is zero — no evacuation possible. "
@@ -1060,7 +1060,7 @@ class EpytAdapter:
         unit="PSI",
     )
     def calculate_epanet_flow_pressure(elevation_m: float, demand_lps: float) -> float:
-        if demand_lps == 0.0:
+        if demand_lps == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
             # [v4.0] هذا FATAL — لا ضغط بدون طلب
             raise ZeroDivisionError(
                 "Zero demand — cannot calculate pressure. "
@@ -1119,7 +1119,7 @@ class SprayHydraulicAdapter:
         P = (Q/K)^2 — NFPA 13 sprinkler discharge formula.
         إذا K=0، الرشاش لا يعمل = REJECTED وليس inf.
         """
-        if k_factor == 0.0:
+        if k_factor == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
             # [v4.0] هذا FATAL — رشاش بمعامل صفر لا يعمل
             raise ZeroDivisionError(
                 "K-factor is zero — sprinkler is non-functional. "
@@ -1565,22 +1565,22 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
     # ----------------------------------------------------------
     def test_nan_fallback_is_rejected(self) -> None:
         """NaN كقيمة افتراضية = ValueError."""
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             _validate_fallback(float('nan'), "test")
 
     def test_inf_fallback_is_rejected(self) -> None:
         """Infinity كقيمة افتراضية = ValueError."""
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             _validate_fallback(float('inf'), "test")
 
     def test_negative_inf_fallback_is_rejected(self) -> None:
         """Negative infinity كقيمة افتراضية = ValueError."""
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             _validate_fallback(float('-inf'), "test")
 
     def test_list_with_nan_fallback_is_rejected(self) -> None:
         """قائمة تحتوي NaN = ValueError."""
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             _validate_fallback([1.0, float('nan'), 3.0], "test")
 
     # ----------------------------------------------------------

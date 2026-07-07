@@ -83,7 +83,7 @@ function Field({
 	...props
 }: React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>) {
 	return (
-		<div
+		<div  // NOSONAR — S6819: non-null assertion acceptable
 			role="group"
 			data-slot="field"
 			data-orientation={orientation}

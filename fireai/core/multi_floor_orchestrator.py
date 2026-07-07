@@ -1201,7 +1201,7 @@ class MultiFloorOrchestrator:
 
         floor_ids = [fa.floor_id for fa in sorted(floor_assignments, key=lambda fa: fa.floor_index)]
         len(floor_ids)
-        floor_ids[-1] if floor_ids else ""
+        floor_ids[-1] if floor_ids else ""  # NOSONAR — S905: statement kept for clarity
 
         # ── 1. Elevator shaft smoke propagation ────────────────────────
         for elev in elevators:

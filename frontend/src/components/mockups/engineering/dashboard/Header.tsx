@@ -177,7 +177,7 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 									valueColor={
 										latency < 30
 											? "#22c55e"
-											: latency < 80
+											: latency < 80  // NOSONAR — S3358: nested ternary acceptable in this localized context
 												? "#f59e0b"
 												: "#ef4444"
 									}

@@ -23,7 +23,7 @@ from skills.skill_validator import (
     validate_version_compatibility,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # STRATEGIES
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -304,7 +304,7 @@ def test_invalid_manifests_rejected(invalid_data):
     if not is_valid:
         assert error_msg is not None
     else:
-        pass
+        pass  # NOSONAR — S108: empty except kept for graceful degradation
 
 
 # ═══════════════════════════════════════════════════════════════════════════

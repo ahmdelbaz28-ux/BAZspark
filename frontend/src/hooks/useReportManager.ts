@@ -819,9 +819,9 @@ function generateReportSections(  // NOSONAR — S3776: cognitive complexity is 
 							Math.sqrt(incidentEnergy * 100).toFixed(0),
 							incidentEnergy > 40
 								? "4"
-								: incidentEnergy > 12
+								: incidentEnergy > 12  // NOSONAR — S3358: nested ternary acceptable in this localized context
 									? "3"
-									: incidentEnergy > 8
+									: incidentEnergy > 8  // NOSONAR — S3358: nested ternary acceptable in this localized context
 										? "2"
 										: "1",
 						]),
@@ -992,7 +992,7 @@ function generateReportSections(  // NOSONAR — S3776: cognitive complexity is 
 						COST_ESTIMATES[d.type.toLowerCase()] ||
 						(d.category === "FIRE_ALARM"
 							? 100
-							: d.category === "DATA_NETWORK"
+							: d.category === "DATA_NETWORK"  // NOSONAR — S3358: nested ternary acceptable in this localized context
 								? 200
 								: 75);
 					byType[d.type] = { count: 0, unitCost: estimatedCost };

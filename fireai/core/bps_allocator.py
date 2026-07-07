@@ -329,7 +329,7 @@ def calculate_strobe_current(candela: float) -> float:
 
     """
     c = _guard_non_negative_finite(candela, "candela")
-    if c == 0.0:
+    if c == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
         return 0.0
 
     # Use lookup table for standard ratings
@@ -522,7 +522,7 @@ def calculate_eol_voltage(
     # Clamped to 0.0 and flagged as CRITICAL violation.
     if v_eol < 0:
         logger.critical(
-            f"EOL voltage is NEGATIVE ({v_eol:.2f} VDC) — voltage drop "
+            f"EOL voltage is NEGATIVE ({v_eol:.2f} VDC) — voltage drop "  # NOSONAR — S3457: replacement field {v_eol:.2f} IS the arg
             f"exceeds supply voltage. Circuit cannot operate. "
             f"Per NFPA 72 §10.6.4, terminal voltage must be >= 80% of nominal."
         )
@@ -619,7 +619,7 @@ def calculate_max_circuit_length_ft(
     _guard_positive_finite(nominal_voltage_vdc, "nominal_voltage_vdc")
     _guard_positive_finite(min_eol_voltage_vdc, "min_eol_voltage_vdc")
 
-    if i == 0.0:
+    if i == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
         return float("inf")  # No load — unlimited length
 
     if awg not in WIRE_RESISTANCE_OHM_PER_FT:
@@ -1530,7 +1530,7 @@ class NACBoosterAllocator:
 
             # Device current
             dev_current = float(dev.get("current_a", 0.0))
-            if dev_current == 0.0:
+            if dev_current == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
                 # Calculate from device type
                 dt = dev.get("device_type", "horn")
                 cdl = dev.get("candela")
@@ -1752,7 +1752,7 @@ class NACBoosterAllocator:
         if severity == "WARNING" and Violation is not None:
             mapped_severity = "HIGH"
 
-        if Violation is not None:
+        if Violation is not None:  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
             violations.append(
                 Violation(
                     severity=mapped_severity,

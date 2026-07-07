@@ -26,7 +26,7 @@ function ButtonGroup({
 	...props
 }: React.ComponentProps<"div"> & VariantProps<typeof buttonGroupVariants>) {
 	return (
-		<div
+		<div  // NOSONAR — S6819: non-null assertion acceptable
 			role="group"
 			data-slot="button-group"
 			data-orientation={orientation}

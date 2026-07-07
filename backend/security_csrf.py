@@ -445,7 +445,7 @@ class CSRFMiddleware:
 # ---------------------------------------------------------------------------
 
 
-def build_csrf_cookie_header(token: str, is_https: bool = True) -> str:
+def build_csrf_cookie_header(token: str, is_https: bool = True) -> str:  # NOSONAR — S1172: parameter retained for API stability
     """
     Build the Set-Cookie header value for the CSRF token.
 

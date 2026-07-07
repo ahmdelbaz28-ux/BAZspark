@@ -22,7 +22,7 @@ def extract_endpoints(routers_dir: Path) -> dict[str, list[dict[str, object]]]: 
     http_methods = ['get', 'post', 'put', 'patch', 'delete', 'ws']
 
     for router_file in routers_dir.glob("*.py"):
-        if router_file.name.startswith("_") or router_file.name.startswith("test_"):
+        if router_file.name.startswith("_") or router_file.name.startswith("test_"):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
             continue
 
         content = router_file.read_text()

@@ -999,7 +999,7 @@ def vapor_density_tier(molecular_weight: float) -> ElevationTier:
 
 
 def room_purge_time(
-    room_volume_m3: float,
+    room_volume_m3: float,  # NOSONAR — S1172: parameter retained for API stability
     ach: float,
     target_fraction: float = 0.01,
 ) -> float:
@@ -1079,7 +1079,7 @@ def room_concentration_at_time(
 def burgess_wheeler_lfl(
     lfl_25c: float,
     ambient_temp_c: float,
-    heat_of_combustion_kj_mol: float | None = None,
+    heat_of_combustion_kj_mol: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
     lfl_floor_ratio: float | None = 0.5,
 ) -> float:
     """
@@ -1998,7 +1998,7 @@ class VolumetricMedium(BaseModel):
         if self.alpha_override is not None:
             raw = self.alpha_override.get(band, 0.0)
             # Also check string value in case dict was built with str keys
-            if raw == 0.0:
+            if raw == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
                 raw = self.alpha_override.get(band.value, 0.0)  # type: ignore[call-overload]
             return float(raw) * self.concentration_factor
 

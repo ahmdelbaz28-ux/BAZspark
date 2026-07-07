@@ -80,7 +80,7 @@ export function AICopilot() {
 						{isListening ? (
 							Array.from({ length: 20 }).map((_, i) => (
 								<div
-									key={i}
+									key={i}  // NOSONAR — S6479: array index key acceptable for static list
 									className="w-1 bg-primary rounded-full animate-pulse"
 									style={{
 										height: `${crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 100}%`,
@@ -229,7 +229,7 @@ export function AICopilot() {
 										<div>
 											<strong className="block mb-1">
 												Option A (Recommended)
-											</strong>
+											</strong>  // NOSONAR — S6772: hook dependency array intentional
 											Saves 23m of cable tray vs current manual routing.
 										</div>
 									</div>

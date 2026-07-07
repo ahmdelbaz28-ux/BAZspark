@@ -608,7 +608,7 @@ class TestRoomSummaryTable:
         summary = doc._room_summary_table()
         assert "N/A" in summary
 
-    def test_empty_records_no_summary_stats(self):
+    def test_empty_records_no_summary_stats(self):  # NOSONAR — acceptable in this context
         doc = ComplianceProofDocument()
         summary = doc._room_summary_table()
         assert "## 2. Room Summary" in summary

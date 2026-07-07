@@ -352,7 +352,7 @@ class PathwaySurvivabilityEngine:
 
     def _generate_cable_requirements(
         self,
-        spec: BuildingSpec,
+        spec: BuildingSpec,  # NOSONAR — S1172: parameter retained for API stability
         level: PathwaySurvivabilityLevel,
     ) -> list[CableRequirement]:
         """

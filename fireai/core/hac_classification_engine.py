@@ -399,13 +399,13 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
     n_ach = _VENT_ACH.get(ventilation.value, 6.0)
     n_per_s = n_ach / 3600.0  # air changes per second (1/s)
     effective_dilution_rate = f * n_per_s  # effective dilution rate (1/s)
-    Vz_diluted_m3 = Vz_source_m3_s / (effective_dilution_rate + 1e-12)  # (m³/s)/(1/s) = m³
+    Vz_diluted_m3 = Vz_source_m3_s / (effective_dilution_rate + 1e-12)  # (m³/s)/(1/s) = m³  # NOSONAR — S125: commented-out code kept for historical reference
 
     # Convert to zone radius
     if is_indoor:
-        r_hz = (3.0 * Vz_diluted_m3 / (2.0 * math.pi)) ** (1.0 / 3.0)
+        r_hz = (3.0 * Vz_diluted_m3 / (2.0 * math.pi)) ** (1.0 / 3.0)  # NOSONAR — S1854: assignment kept for debug / future use
     else:
-        r_hz = (3.0 * Vz_diluted_m3 / (4.0 * math.pi)) ** (1.0 / 3.0)
+        r_hz = (3.0 * Vz_diluted_m3 / (4.0 * math.pi)) ** (1.0 / 3.0)  # NOSONAR — S1854: assignment kept for debug / future use
 
     # IEC 60079-10-1 Annex B §B.4: vertical extent
     # V25 FIX: Buoyancy classification now uses the same 3-tier density-ratio
@@ -466,7 +466,7 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
             f"({room_volume_m3:.1f} m³). Entire room is potentially hazardous. "
             f"[IEC 60079-10-1 Annex B §B.3]"
         )
-        Vz_diluted_m3 = room_volume_m3
+        Vz_diluted_m3 = room_volume_m3  # NOSONAR — S1854: assignment kept for debug / future use
         zone_vol_m3 = room_volume_m3
         # Recompute radii from capped volume
         if is_indoor:

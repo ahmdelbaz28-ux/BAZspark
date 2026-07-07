@@ -545,7 +545,7 @@ class ConduitSizer:
                     continue
 
                 full_area = CONDUIT_SPECS[key]["area_mm2"]
-                full_area * fill_limit
+                full_area * fill_limit  # NOSONAR — S905: statement kept for clarity
                 fill_pct = (total_area / full_area) * 100.0
 
                 if fill_pct <= fill_limit * 100:

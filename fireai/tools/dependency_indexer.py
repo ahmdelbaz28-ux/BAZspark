@@ -91,7 +91,7 @@ def build_dependency_map(root: Path) -> dict:
     deps = defaultdict(set)
 
     for py_file in core_dir.glob("*.py"):
-        if py_file.name.startswith("_") or py_file.name.startswith("test_"):
+        if py_file.name.startswith("_") or py_file.name.startswith("test_"):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
             continue
 
         module_name = py_file.stem

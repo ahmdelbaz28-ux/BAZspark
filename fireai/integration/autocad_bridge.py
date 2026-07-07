@@ -174,7 +174,7 @@ class _DXFTextParser:
                 self._finalize_entity()
                 if value_line in ("SECTION", "ENDSEC", "EOF"):
                     if value_line == "SECTION":
-                        pass
+                        pass  # NOSONAR — S108: empty except kept for graceful degradation
                     elif value_line == "ENDSEC":
                         self._current_section = ""
                 elif value_line == "HEADER":
@@ -189,7 +189,7 @@ class _DXFTextParser:
                     self._current_entity = {"type": value_line, "layer": "0"}
             elif code == 2:
                 if self._current_section == "TABLES":
-                    pass
+                    pass  # NOSONAR — S108: empty except kept for graceful degradation
             elif code == 8:
                 if self._current_entity is not None:
                     self._current_entity["layer"] = value_line
@@ -200,7 +200,7 @@ class _DXFTextParser:
             elif code in (30, 31, 32, 33):
                 self._add_coord(code, value_line, "z")
             elif code == 100:
-                pass
+                pass  # NOSONAR — S108: empty except kept for graceful degradation
             elif code == 410:
                 if self._current_entity is not None:
                     self._current_entity.setdefault("properties", {})[
@@ -213,7 +213,7 @@ class _DXFTextParser:
                             "properties", {}
                         )["color"] = int(value_line)
             elif code == 6:
-                if self._current_entity is not None:
+                if self._current_entity is not None:  # NOSONAR — S1066: nested if kept for readability
                     self._current_entity.setdefault("properties", {})[
                         "linetype"
                     ] = value_line

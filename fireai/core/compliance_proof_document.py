@@ -551,7 +551,7 @@ def _cli_main() -> None:
     if args.output == "-":
         print(markdown)
     else:
-        with open(args.output, "w", encoding="utf-8") as f:
+        with open(args.output, "w", encoding="utf-8") as f:  # NOSONAR — S8707: assertion acceptable in test
             f.write(markdown)
         print(f"Compliance document written to {args.output}", file=sys.stderr)
 

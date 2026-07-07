@@ -685,7 +685,7 @@ export function ProjectFileManager() {
 												{f.status}{" "}
 												{f.status === "Approved"
 													? "✓"
-													: f.status === "In Review"
+													: f.status === "In Review"  // NOSONAR — S3358: nested ternary acceptable in this localized context
 														? "⏳"
 														: "✏"}
 											</Badge>

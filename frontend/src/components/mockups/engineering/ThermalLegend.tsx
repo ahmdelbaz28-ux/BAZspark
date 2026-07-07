@@ -98,7 +98,7 @@ export function ThermalLegend({
 
 	const gradientStops = scale.stops.map((stop, index) => (
 		<div
-			key={index}
+			key={index}  // NOSONAR — S6479: array index key acceptable for static list
 			className="relative flex-1 h-full"
 			style={{
 				background: `linear-gradient(90deg, ${stop.hex} 0%, ${index < scale.stops.length - 1 ? scale.stops[index + 1].hex : stop.hex} 100%)`,
@@ -191,7 +191,7 @@ export function ThermalLegend({
 					const color = getVoltageDropColor(midValue);
 
 					return (
-						<div key={index} className="flex items-center gap-2">
+						<div key={index} className="flex items-center gap-2">  // NOSONAR — S6479: array index key acceptable for static list
 							<div
 								className="w-3 h-3 rounded-sm"
 								style={{ backgroundColor: color }}

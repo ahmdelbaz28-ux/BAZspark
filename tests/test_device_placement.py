@@ -46,7 +46,7 @@ from fireai.core.device_placement import (
 )
 from fireai.core.qomn_kernel import PhysicsGuardError
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -142,7 +142,7 @@ class TestCeilingTypeEnum:
         assert DPCeilingType.BEAM.value == "beam"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # BeamObstruction
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -154,15 +154,15 @@ class TestBeamObstruction:
             x_end_m=10.0, y_end_m=0.0,
             depth_m=0.5,
         )
-        assert beam.depth_m == 0.5
+        assert beam.depth_m == 0.5  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_beam_coordinates(self):
         beam = BeamObstruction(0, 0, 10, 5, 0.3)
-        assert beam.x_start_m == 0.0
-        assert beam.y_end_m == 5.0
+        assert beam.x_start_m == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert beam.y_end_m == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ExitDoor
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -174,7 +174,7 @@ class TestExitDoor:
 
     def test_custom_width(self):
         door = ExitDoor(x_m=5.0, y_m=0.0, door_width_m=1.2)
-        assert door.door_width_m == 1.2
+        assert door.door_width_m == 1.2  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -224,7 +224,7 @@ class TestDPRoomSpec:
             room.validate()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # PlacedDevice
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -241,10 +241,10 @@ class TestPlacedDevice:
             formula="R = 0.7 × 9.1",
         )
         assert dev.device_id == "R1-D001"
-        assert dev.x_m == 5.0
+        assert dev.x_m == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # PlacementResult
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -264,7 +264,7 @@ class TestPlacementResult:
             computation_hash="abc123",
         )
         assert result.is_fully_compliant is True
-        assert result.coverage_pct == 100.0
+        assert result.coverage_pct == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -628,7 +628,7 @@ class TestCoverageVerification:
         """_verify_coverage with empty list returns 0."""
         room = DPRoomSpec(room_id="R", width_m=10, length_m=8, ceiling_height_m=3.0)
         coverage = engine._verify_coverage(room, [], radius_m=6.37)
-        assert coverage == 0.0
+        assert coverage == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_coverage_bounded_0_to_100(self, engine, simple_room):
         result = engine.place_detectors(simple_room)

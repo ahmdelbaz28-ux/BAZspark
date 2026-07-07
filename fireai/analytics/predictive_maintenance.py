@@ -241,7 +241,7 @@ class PredictiveMaintenance:
         asset_id = (
             maintenance_history[0].asset_id
             if maintenance_history
-            else (asset.asset_id if asset else "unknown")
+            else (asset.asset_id if asset else "unknown")  # NOSONAR — S3358: nested ternary acceptable in this localized context
         )
 
         return FailurePrediction(

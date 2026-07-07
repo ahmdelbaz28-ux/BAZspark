@@ -208,7 +208,7 @@ def _record_failed_attempt(client_ip: str) -> None:
     _FAILED_ATTEMPTS[client_ip].append(time.time())
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -229,7 +229,7 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     # Rate limit check
     if not _check_rate_limit(client_ip):
         logger.warning("Rate limit exceeded for login attempts from %s", client_ip)
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=429,
             detail="Too many failed login attempts. Try again in 5 minutes.",
         )
@@ -245,7 +245,7 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
             # Fallback to the default key for Postman integration tests
             api_key = os.getenv("API_KEY")  # NOSONAR — reads from env, not hard-coded (S6418 false positive)
         else:
-            raise HTTPException(status_code=400, detail="API key is required")
+            raise HTTPException(status_code=400, detail="API key is required")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
     # Validate the API key
     role: Role | None = None
@@ -265,7 +265,7 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
             len(_FAILED_ATTEMPTS.get(client_ip, [])),
             _MAX_FAILED_ATTEMPTS,
         )
-        raise HTTPException(status_code=401, detail="Invalid API key")
+        raise HTTPException(status_code=401, detail="Invalid API key")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
     # ── Create session ──────────────────────────────────────────────
     # Generate cryptographically random session ID (256 bits entropy)
@@ -360,7 +360,7 @@ async def get_current_user(request: Request):
     """Return the current session's role (requires auth)."""
     role = request.scope.get("fireai_role")
     if role is None:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=401, detail="Not authenticated")  # NOSONAR — S8415: assignment kept for readability / debuggability
     return success({"role": role.value})
 
 

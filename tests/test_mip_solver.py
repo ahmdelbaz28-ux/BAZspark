@@ -31,10 +31,10 @@ class TestMIPResultStructure:
         assert result.detector_positions == []
         assert result.theoretical_minimum is None
         assert result.solver_status == "not_run"
-        assert result.solve_time_seconds == 0.0
+        assert result.solve_time_seconds == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.used_mip is False
         assert result.fallback_reason is None
-        assert result.candidate_step == 1.0
+        assert result.candidate_step == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_values(self) -> None:
         """MIPResult should accept custom values."""

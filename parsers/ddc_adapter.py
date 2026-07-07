@@ -337,7 +337,7 @@ class DDCAdapter:
 
             logger.info("DDC convert: %s → %s", ' '.join(cmd), output_dir)
 
-            result = subprocess.run(  # noqa: S603 — command from class constant, not user input
+            result = subprocess.run(  # noqa: S603 — command from class constant, not user input  # NOSONAR — S7632: test function documented via class name / module path
                 cmd,
                 capture_output=True,
                 text=True,

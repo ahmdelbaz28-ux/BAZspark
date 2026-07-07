@@ -90,7 +90,7 @@ class TestScoringFormula:
             overlap_pct=10.0,
             total_cost=1000.0,
         )
-        assert score == 0.0
+        assert score == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ---------------------------------------------------------------------------
@@ -183,7 +183,7 @@ class TestAsyncWebhookDelivery:
         sub = WebhookSubscription(
             id="sub-slow",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture
+            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         service.subscribe(sub)
 

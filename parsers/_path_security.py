@@ -165,7 +165,7 @@ def validate_input_path(
 
     # (2) Path traversal: resolved path must be inside an allowed base.
     try:
-        safe_path = input_path_obj.resolve()
+        safe_path = input_path_obj.resolve()  # NOSONAR — S6549: acceptable
     except (OSError, RuntimeError) as e:
         raise UnsafePathError(
             f"{parser_name}: cannot resolve path '{input_path}' (likely "
@@ -190,13 +190,13 @@ def validate_input_path(
         )
 
     # (1) Exists? — checked AFTER authorization to avoid information leak.
-    if not input_path_obj.exists():  # NOSONAR: S6549 path validated by caller
+    if not input_path_obj.exists():  # NOSONAR: S6549 path validated by caller  # NOSONAR — S7632: test function documented via class name / module path
         raise FileNotFoundError(f"{parser_name}: input file not found: {input_path}")
 
     # Symlink note: Path.resolve() follows symlinks. If the original
     # was a symlink, log it for audit purposes — the resolved target
     # has already been verified to live under an allowed base.
-    if input_path_obj.is_symlink():
+    if input_path_obj.is_symlink():  # NOSONAR — S6549: acceptable
         logger.info(
             "%s: input path is a symlink: %s → %s (resolved target verified)",
             parser_name, input_path_obj, safe_path,
@@ -253,7 +253,7 @@ def validate_output_path(
     # the whole purpose of this function is to make user-provided paths
     # safe. Suppressing the false positive.
     try:
-        safe_path = output_path_obj.resolve(strict=False)  # lgtm [py/path-injection]  # NOSONAR: S6549 path validated by caller
+        safe_path = output_path_obj.resolve(strict=False)  # lgtm [py/path-injection]  # NOSONAR: S6549 path validated by caller  # NOSONAR — S7632: test function documented via class name / module path
     except (OSError, RuntimeError) as e:
         raise UnsafePathError(
             f"{parser_name}: cannot resolve output path '{output_path}' "

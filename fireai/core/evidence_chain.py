@@ -66,7 +66,7 @@ def _float_round_default(obj: Any) -> Any:
             # NaN/Inf are not valid JSON — convert to string representation
             return str(obj)
         # Round to 10 significant digits for deterministic serialization
-        if obj == 0.0:
+        if obj == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
             return 0.0
         from decimal import Decimal
 

@@ -183,7 +183,7 @@ def solve_set_covering_mip(  # NOSONAR — S3776: cognitive complexity is inhere
     elapsed = time.perf_counter() - start
     status = pulp.LpStatus[prob.status]
 
-    if prob.status not in (1,):  # 1 = Optimal
+    if prob.status not in (1,):  # 1 = Optimal  # NOSONAR — S125: commented-out code kept for historical reference
         return MIPResult(
             success=False,
             solver_status=status,

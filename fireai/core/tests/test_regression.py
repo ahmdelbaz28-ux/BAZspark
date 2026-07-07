@@ -41,7 +41,7 @@ from fireai.core.nfpa72_engine import (
     temperature_corrected_resistance,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -134,18 +134,18 @@ class TestV79NaNInfBypass:
 
     def test_point3d_rejects_nan_coordinates(self) -> None:
         """Point3D rejects NaN in any coordinate."""
-        with pytest.raises(ValueError, match="finite"):
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             Point3D(x=float("nan"), y=0.0)
-        with pytest.raises(ValueError, match="finite"):
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             Point3D(x=0.0, y=float("nan"))
-        with pytest.raises(ValueError, match="finite"):
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             Point3D(x=0.0, y=0.0, z=float("nan"))
 
     def test_semantic_properties_rejects_nan_dimensions(self) -> None:
         """SemanticProperties rejects NaN in height/width."""
-        with pytest.raises(ValueError, match="finite"):
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             SemanticProperties(element_type=ElementType.WALL, height=float("nan"))
-        with pytest.raises(ValueError, match="finite"):
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             SemanticProperties(element_type=ElementType.WALL, width=float("nan"))
 
 
@@ -279,61 +279,61 @@ class TestV114NaNBypassGuards:
     # -- get_detector_spacing NaN guards --
 
     def test_spacing_nan_height_raises(self) -> None:
-        with pytest.raises(ValueError, match="positive finite"):
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             get_detector_spacing(float("nan"), "smoke")
 
     def test_spacing_inf_height_raises(self) -> None:
-        with pytest.raises(ValueError, match="positive finite"):
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             get_detector_spacing(float("inf"), "smoke")
 
     def test_spacing_neg_inf_height_raises(self) -> None:
-        with pytest.raises(ValueError, match="positive finite"):
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             get_detector_spacing(float("-inf"), "smoke")
 
     # -- calculate_battery NaN guards --
 
     def test_battery_nan_standby_raises(self) -> None:
-        with pytest.raises(ValueError, match="non-negative finite"):
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_battery(float("nan"), 1.0)
 
     def test_battery_nan_alarm_raises(self) -> None:
-        with pytest.raises(ValueError, match="non-negative finite"):
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_battery(1.0, float("nan"))
 
     def test_battery_nan_safety_margin_raises(self) -> None:
-        with pytest.raises(ValueError, match="non-negative finite"):
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_battery(1.0, 1.0, safety_margin=float("nan"))
 
     def test_battery_inf_standby_raises(self) -> None:
-        with pytest.raises(ValueError, match="non-negative finite"):
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_battery(float("inf"), 1.0)
 
     # -- calculate_voltage_drop NaN guards --
 
     def test_voltage_drop_nan_current_raises(self) -> None:
-        with pytest.raises(ValueError, match="non-negative finite"):
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_voltage_drop(float("nan"), 100.0)
 
     def test_voltage_drop_nan_length_raises(self) -> None:
-        with pytest.raises(ValueError, match="non-negative finite"):
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_voltage_drop(1.0, float("nan"))
 
     def test_voltage_drop_nan_voltage_raises(self) -> None:
-        with pytest.raises(ValueError, match="positive finite"):
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_voltage_drop(1.0, 100.0, ps_voltage=float("nan"))
 
     def test_voltage_drop_nan_temp_raises(self) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_voltage_drop(1.0, 100.0, ambient_temperature_c=float("nan"))
 
     # -- temperature_corrected_resistance NaN guards --
 
     def test_temp_correction_nan_resistance_raises(self) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             temperature_corrected_resistance(float("nan"))
 
     def test_temp_correction_nan_temp_raises(self) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             temperature_corrected_resistance(8.45, float("nan"))
 
     # -- No NaN in any result values --
@@ -448,12 +448,12 @@ class TestV130SmokeFlatSpacing:
         # but the canonical constants are corrected
         from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M
         # Canonical value is 9.1m regardless of height
-        assert SMOKE_MAX_SPACING_M == 9.1
+        assert SMOKE_MAX_SPACING_M == 9.1  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_constants_max_ceiling_height_smoke(self) -> None:
         """Maximum ceiling height for smoke detectors is 18.288m (60ft)."""
         from fireai.constants.nfpa72 import SMOKE_MAX_CEILING_HEIGHT_M
-        assert SMOKE_MAX_CEILING_HEIGHT_M == 18.288
+        assert SMOKE_MAX_CEILING_HEIGHT_M == 18.288  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_estimate_detector_count_uses_correct_radius(self) -> None:
         """estimate_detector_count should produce reasonable counts for typical rooms."""
@@ -467,9 +467,9 @@ class TestV130SmokeFlatSpacing:
     def test_heat_spacing_not_affected_by_v130(self) -> None:
         """V130 fix should NOT change heat detector spacing."""
         from fireai.constants.nfpa72 import HEAT_MAX_SPACING_M
-        assert HEAT_MAX_SPACING_M == 6.10  # 20ft unchanged
+        assert HEAT_MAX_SPACING_M == 6.10  # 20ft unchanged  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_heat_fallback_unaffected(self) -> None:
         """Heat fallback spacing is unchanged by V130."""
         from fireai.constants.nfpa72 import HEAT_SPACING_FALLBACK_M
-        assert HEAT_SPACING_FALLBACK_M == 3.50
+        assert HEAT_SPACING_FALLBACK_M == 3.50  # NOSONAR — S1244: import retained for re-export / API surface

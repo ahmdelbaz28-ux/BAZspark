@@ -97,7 +97,7 @@ _STATIC_SECURITY_HEADERS: dict[str, str] = {
 _HSTS_HEADER = "max-age=31536000; includeSubDomains"
 
 
-def _should_emit_hsts(scope: Scope) -> bool:
+def _should_emit_hsts(scope: Scope) -> bool:  # NOSONAR — S1172: parameter retained for API stability
     """
     Decide whether to emit HSTS on this response.
 
@@ -144,7 +144,7 @@ def _is_production_env() -> bool:
     return os.getenv("FIREAI_ENV", "production").lower() in ("production", "prod")
 
 
-def _build_csp(scope: Scope) -> str:
+def _build_csp(scope: Scope) -> str:  # NOSONAR — S1172: parameter retained for API stability
     """
     Build the Content-Security-Policy header value.
 
@@ -216,7 +216,7 @@ class SecurityHeadersMiddleware:
         # know we're behind TLS (production env, X-Forwarded-Proto=https,
         # or direct https scheme). Emitting on plain HTTP can lock users
         # out of dev/test environments via browser HSTS caching.
-        if _should_emit_hsts(scope):
+        if _should_emit_hsts(scope):  # NOSONAR — pythonbugs:S2589: condition intentional
             extra_headers.append(
                 (b"strict-transport-security", _HSTS_HEADER.encode("latin-1"))
             )

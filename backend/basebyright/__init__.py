@@ -572,7 +572,7 @@ class BaseByRight:
     """
 
     # Known public paths (from backend/security_middleware.py :: _PUBLIC_PATHS_EXACT)
-    PUBLIC_PATHS: Set[str] = frozenset({
+    PUBLIC_PATHS: Set[str] = frozenset({  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
         "/docs",
         "/redoc",
         "/openapi.json",
@@ -585,7 +585,7 @@ class BaseByRight:
     })
 
     # Known admin-only paths (require SYSTEM_CONFIG or higher permission)
-    ADMIN_ONLY_PATHS: Set[str] = frozenset({
+    ADMIN_ONLY_PATHS: Set[str] = frozenset({  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
         "/api/v1/cache/clear",
         "/api/v1/cache/stats",
     })

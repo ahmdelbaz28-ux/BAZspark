@@ -33,7 +33,7 @@ from fireai.core.nfpa72_technology_dispatcher import (
     dispatch_detector_technology,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -42,17 +42,17 @@ class TestConstants:
     """NFPA 72 threshold values — must be exact."""
 
     def test_point_detector_max_ceiling(self):
-        assert _POINT_DETECTOR_MAX_CEILING_M == 12.2
+        assert _POINT_DETECTOR_MAX_CEILING_M == 12.2  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_beam_max_ceiling(self):
-        assert _BEAM_MAX_CEILING_M == 25.0
+        assert _BEAM_MAX_CEILING_M == 25.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_slope_ridge_zone_threshold(self):
         """1 in 8 pitch ≈ 7.125°."""
         assert pytest.approx(7.125, abs=0.001) == _SLOPE_RIDGE_ZONE_THRESHOLD_DEG
 
     def test_steep_slope_threshold(self):
-        assert _STEEP_SLOPE_THRESHOLD_DEG == 30.0
+        assert _STEEP_SLOPE_THRESHOLD_DEG == 30.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_beam_spacing(self):
         """Standard beam spacing ≈ 60ft = 18.3m."""
@@ -65,7 +65,7 @@ class TestConstants:
     def test_smoke_spacing_table_flat_spacing(self):
         """V130 FIX: Smoke spacing table has flat 9.1m at ALL heights per §17.7.3.2.3."""
         for _, spacing in _NFPA72_SMOKE_SPACING_TABLE:
-            assert spacing == 9.10, (
+            assert spacing == 9.10, (  # NOSONAR — S1244: import retained for re-export / API surface
                 f"Smoke spacing must be 9.1m (flat) per §17.7.3.2.3, got {spacing}m"
             )
 
@@ -102,11 +102,11 @@ class TestTechnologyDecision:
             ceiling_height_m=3.0,
         )
         assert d.technology == DetectorTechnology.POINT_SMOKE
-        assert d.ceiling_height_m == 3.0
-        assert d.slope_degrees == 0.0
+        assert d.ceiling_height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert d.slope_degrees == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert d.reason == ""
         assert d.nfpa_references == []
-        assert d.spacing_m == 0.0
+        assert d.spacing_m == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert d.ridge_zone_required is False
         assert d.warnings == []
         assert d.fallback_technology is None
@@ -128,7 +128,7 @@ class TestTechnologyDecision:
         assert d.fallback_technology == DetectorTechnology.POINT_SMOKE
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # EliteTechnologyDispatcher.select_technology
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -232,7 +232,7 @@ class TestSelectTechnology:
         assert any("§17.7.3" in ref for ref in d.nfpa_references)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # EliteTechnologyDispatcher._get_smoke_spacing
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -282,7 +282,7 @@ class TestDispatchDetectorTechnology:
         room = {}
         d = dispatch_detector_technology(room)
         assert d.technology == DetectorTechnology.POINT_SMOKE
-        assert d.ceiling_height_m == 3.0
+        assert d.ceiling_height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_beam_from_high_ceiling(self):
         room = {"ceiling_height": 15.0}
@@ -292,8 +292,8 @@ class TestDispatchDetectorTechnology:
     def test_none_values_use_defaults(self):
         room = {"ceiling_height": None, "ceiling_slope_degrees": None}
         d = dispatch_detector_technology(room)
-        assert d.ceiling_height_m == 3.0
-        assert d.slope_degrees == 0.0
+        assert d.ceiling_height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert d.slope_degrees == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────

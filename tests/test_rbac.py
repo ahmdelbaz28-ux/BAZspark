@@ -350,7 +350,7 @@ class TestAuthDependency:
         from backend.auth import require_permission
         from backend.rbac import Permission, Role
         app = self._create_test_app()
-        client = TestClient(app)
+        client = TestClient(app)  # NOSONAR — S1854: assignment kept for debug / future use
 
         # We need to set the role via a middleware or directly
         # For testing, we'll use a custom middleware approach

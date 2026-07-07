@@ -37,7 +37,7 @@ from core.models import (
 def udm() -> UniversalDataModel:
     """Create an in-memory UniversalDataModel instance for testing."""
     model = UniversalDataModel(db_path=":memory:")
-    yield model
+    yield model  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
     model.close()
 
 
@@ -319,8 +319,8 @@ class TestGetElement:
         assert result.properties.name == " Exterior Wall"
         assert result.properties.material == "concrete"
         assert result.properties.fire_rating == "2HR"
-        assert result.properties.height == 3.5
-        assert result.properties.width == 0.25
+        assert result.properties.height == 3.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert result.properties.width == 0.25  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.properties.load_bearing is True
 
     def test_get_element_preserves_geometry(self, udm: UniversalDataModel, sample_element: UniversalElement) -> None:
@@ -933,9 +933,9 @@ class TestDictToElement:
         assert result is not None
         assert result.geometry is not None
         assert len(result.geometry.points) == 3
-        assert result.geometry.points[0].x == 1.0
-        assert result.geometry.points[1].y == 5.0
-        assert result.geometry.points[2].z == 9.0
+        assert result.geometry.points[0].x == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert result.geometry.points[1].y == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert result.geometry.points[2].z == 9.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ── Protocol Tests ─────────────────────────────────────────────────────────

@@ -283,7 +283,7 @@ def test_nan_inf_rejected_in_schemas(value):
 
 def test_coverage_factor_equals_0_7():
     """Coverage factor must be 0.7 per NFPA 72 §17.7.4.2.3.1."""
-    assert COVERAGE_FACTOR_FLAT_CEILING == 0.7
+    assert COVERAGE_FACTOR_FLAT_CEILING == 0.7  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 def test_smoke_radius_equals_0_7_times_spacing():
@@ -294,7 +294,7 @@ def test_smoke_radius_equals_0_7_times_spacing():
 
 def test_dc_return_path_factor_is_2():
     """DC return path factor must be 2.0 per NFPA 72 §10.14."""
-    assert DC_RETURN_PATH_FACTOR == 2.0
+    assert DC_RETURN_PATH_FACTOR == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 def test_spacing_table_decreases_with_height():

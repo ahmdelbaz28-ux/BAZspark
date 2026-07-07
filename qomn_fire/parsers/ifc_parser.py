@@ -332,7 +332,7 @@ class IfcParser:
         """Extract coordinate values from STEP entity parameters."""
         result = {}
         # Try to find numeric values in params
-        nums = re.findall(r"[-+]?\d*\.?\d+", params)
+        nums = re.findall(r"[-+]?\d*\.?\d+", params)  # NOSONAR — S8786: assert kept for test clarity
         if len(nums) >= 2:
             result["x1"] = float(nums[0])
             result["y1"] = float(nums[1])

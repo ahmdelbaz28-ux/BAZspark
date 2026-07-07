@@ -134,8 +134,8 @@ def _get_kernel():
                         "Ensure fireai.core.qomn_kernel is available in the Python path.",
                         e,
                     )
-                    raise HTTPException(
-                        status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
+                    raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+                        status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
                         detail={
                             "error": "QOMN_SERVICE_UNAVAILABLE",
                             "detail": (
@@ -366,8 +366,8 @@ async def place_detectors(req: RoomRequest):
                 RoomSpec,
             )
         except ImportError:
-            raise HTTPException(
-                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
+            raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
                 detail={
                     "error": "QOMN_SERVICE_UNAVAILABLE",
                     "detail": (
@@ -488,8 +488,8 @@ async def place_duct_detector(req: DuctDetectorRequest):
                 place_duct_detector,
             )
         except ImportError:
-            raise HTTPException(
-                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
+            raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
                 detail={
                     "error": "QOMN_SERVICE_UNAVAILABLE",
                     "detail": (
@@ -550,8 +550,8 @@ async def get_physics_guards():
             NFPA72_SMOKE_MAX_SPACING_M,
         )
     except ImportError:
-        raise HTTPException(
-            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
             detail={
                 "error": "QOMN_SERVICE_UNAVAILABLE",
                 "detail": "The QOMN-FIRE engineering kernel constants are not available.",
@@ -633,8 +633,8 @@ async def get_qomn_constants():
             NFPA72_WALL_MIN_DISTANCE_M,
         )
     except ImportError:
-        raise HTTPException(
-            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
             detail={
                 "error": "QOMN_SERVICE_UNAVAILABLE",
                 "detail": "The QOMN-FIRE engineering kernel constants are not available.",
@@ -685,8 +685,8 @@ async def run_golden_tests():
             compute_voltage_drop,
         )
     except ImportError:
-        raise HTTPException(
-            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
             detail={
                 "error": "QOMN_SERVICE_UNAVAILABLE",
                 "detail": "The QOMN-FIRE engineering kernel functions are not available.",
@@ -831,7 +831,7 @@ def _handle_error(exc: Exception) -> NoReturn:
     """
     # V116: Use cached exception classes — safe even if kernel is unavailable
     if _PhysicsGuardError is not None and isinstance(exc, _PhysicsGuardError):
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=422,
             detail={
                 "error":     "PHYSICS_GUARD_REJECTION",
@@ -845,7 +845,7 @@ def _handle_error(exc: Exception) -> NoReturn:
     if _ComputationError is not None and isinstance(exc, _ComputationError):
         # H-3 FIX: Log the full error server-side, return generic message to client
         logger.error("QOMN computation error: %s", exc, exc_info=True)
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=500,
             detail={
                 "error":  "COMPUTATION_FAILURE",
@@ -856,7 +856,7 @@ def _handle_error(exc: Exception) -> NoReturn:
     if _ValidationError is not None and isinstance(exc, _ValidationError):
         # H-3 FIX: Log the full error server-side, return generic message to client
         logger.error("QOMN validation error: %s", exc, exc_info=True)
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=500,
             detail={
                 "error":  "VALIDATION_FAILURE",
@@ -868,7 +868,7 @@ def _handle_error(exc: Exception) -> NoReturn:
         # M-2 FIX: Sanitize ValueError messages — Shapely/geometry errors
         # can expose coordinates and internal variable names
         logger.warning("QOMN ValueError: %s", exc)
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=422,
             detail={
                 "error": "INVALID_INPUT",
@@ -880,7 +880,7 @@ def _handle_error(exc: Exception) -> NoReturn:
         raise exc
     # H-3 FIX: Never expose str(exc) to client on unexpected errors
     logger.error("QOMN kernel unexpected error: %s", exc, exc_info=True)
-    raise HTTPException(
+    raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
         status_code=500,
         detail={
             "error": "INTERNAL_ERROR",

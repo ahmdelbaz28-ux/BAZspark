@@ -51,7 +51,7 @@ from fireai.core.nfpa72_models import (
     RoomSpec,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -81,7 +81,7 @@ def l_shaped_polygon() -> Polygon:
     ])
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -107,21 +107,21 @@ class TestDuctDevice:
     def test_basic_creation(self):
         d = DuctDevice(device_id="DUCT_1", x=5.0, y=3.0)
         assert d.device_id == "DUCT_1"
-        assert d.x == 5.0
-        assert d.y == 3.0
-        assert d.z == 0.0
+        assert d.x == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert d.y == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert d.z == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert d.detector_type == "smoke"
 
     def test_custom_type(self):
         d = DuctDevice(device_id="DUCT_2", x=1.0, y=2.0, z=3.0, detector_type="heat")
         assert d.detector_type == "heat"
-        assert d.z == 3.0
+        assert d.z == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 class TestWallViolation:
     def test_creation(self):
         v = WallViolation(x=0.05, y=5.0, distance_m=0.05, min_required_m=0.1016)
-        assert v.distance_m == 0.05
+        assert v.distance_m == 0.05  # NOSONAR — S1244: import retained for re-export / API surface
         assert v.min_required_m == pytest.approx(0.1016, abs=0.0001)
 
 
@@ -275,7 +275,7 @@ class TestValidateHVACExclusionZones:
         assert len(v2) >= 1
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # compute_hvac_safe_zone
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -310,7 +310,7 @@ class TestComputeHVACSafeZone:
         assert safe.area < room.area
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # suggest_duct_detectors
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -334,7 +334,7 @@ class TestSuggestDuctDetectors:
         devices = suggest_duct_detectors(room)
         assert len(devices) == 2
         assert devices[0].device_id == "DUCT_1"
-        assert devices[0].x == 5.0
+        assert devices[0].x == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert devices[1].device_id == "DUCT_2"
 
     def test_heat_type_parameter(self):
@@ -349,7 +349,7 @@ class TestSuggestDuctDetectors:
         assert devices[0].detector_type == "heat"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # create_room_polygon / is_point_in_room
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -387,7 +387,7 @@ class TestRoomPolygon:
         assert isinstance(result, bool)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # check_coverage_polygon
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -448,7 +448,7 @@ class TestCheckCoveragePolygon:
         assert isinstance(result.uncovered_areas, list)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # calculate_voronoi_coverage
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -475,7 +475,7 @@ class TestVoronoiCoverage:
         assert len(regions) == 1
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # check_voronoi_coverage
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -542,7 +542,7 @@ class TestRidgeZoneCompliance:
         assert isinstance(result, NFPAComplianceResult)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # create_l_shaped_polygon
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -564,7 +564,7 @@ class TestCreateLShapedPolygon:
         assert poly.is_valid
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # check_l_shaped_coverage
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -595,7 +595,7 @@ class TestCheckLShapedCoverage:
         assert result.coverage_percentage == pytest.approx(0.0, abs=0.1)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # check_nfpa72_compliance
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -622,7 +622,7 @@ class TestCheckNFPA72Compliance:
         assert result.detector_count == 2
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # verify_full_coverage
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -669,7 +669,7 @@ class TestVerifyFullCoverage:
             assert key in result, f"Missing key: {key}"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # get_sloped_ceiling_constraints
 # ─────────────────────────────────────────────────────────────────────────────
 

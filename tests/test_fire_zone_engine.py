@@ -26,7 +26,7 @@ from fireai.core.fire_zone_engine import (
     ZoneReport,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ZoneConstraints
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -49,7 +49,7 @@ class TestZoneConstraints:
             separate_occupancy_types=False,
             prefer_adjacent=False,
         )
-        assert c.max_area_sqm == 1000.0
+        assert c.max_area_sqm == 1000.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert c.max_detectors_per_zone == 50
         assert c.max_rooms_per_zone == 10
         assert c.separate_occupancy_types is False
@@ -65,7 +65,7 @@ class TestZoneConstraints:
         assert c.max_rooms_per_zone == 0
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # FireZone
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -75,7 +75,7 @@ class TestFireZone:
         z = FireZone(zone_id="Z-01")
         assert z.zone_id == "Z-01"
         assert z.rooms == []
-        assert z.total_area_sqm == 0.0
+        assert z.total_area_sqm == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert z.total_detectors == 0
         assert z.occupancy_types == set()
         assert z.floor_id == ""
@@ -92,11 +92,11 @@ class TestFireZone:
             zone_type="supervisory",
         )
         assert len(z.rooms) == 2
-        assert z.total_area_sqm == 150.0
+        assert z.total_area_sqm == 150.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert z.zone_type == "supervisory"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ZoneReport
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -107,7 +107,7 @@ class TestZoneReport:
         assert r.floor_id == "GF"
         assert r.zones == []
         assert r.total_zones == 0
-        assert r.total_area_sqm == 0.0
+        assert r.total_area_sqm == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert r.total_detectors == 0
         assert r.warnings == []
         assert r.unzoned_rooms == []

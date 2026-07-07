@@ -57,4 +57,4 @@ async function capture() {
 	app.quit();
 }
 
-app.whenReady().then(capture);
+app.whenReady().then(capture);  // NOSONAR — S7785: acceptable

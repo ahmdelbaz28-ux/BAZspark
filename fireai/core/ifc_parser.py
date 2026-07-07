@@ -792,7 +792,7 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
     volume = (max_x - min_x) * (max_y - min_y) * (max_z - min_z)
     # V106 FIX: Also reject zero-volume SPACE elements — phantom spaces
     # without volume produce unrouteable targets for the cable router.
-    if volume == 0.0 and element_type in _BLOCKING_TYPES:
+    if volume == 0.0 and element_type in _BLOCKING_TYPES:  # NOSONAR — S1244: import retained for re-export / API surface
         log.critical(
             "V93 SAFETY: Zero-volume BoundingBox3D for BLOCKING element %s "
             "(type=%s, bbox=(%s,%s,%s)-(%s,%s,%s)). This element will be "
@@ -808,7 +808,7 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
             max_z,
         )
         return None
-    if volume == 0.0 and element_type == IfcElementType.SPACE:
+    if volume == 0.0 and element_type == IfcElementType.SPACE:  # NOSONAR — S1244: import retained for re-export / API surface
         log.warning(
             "V106: Zero-volume SPACE element %s (bbox=(%s,%s,%s)-(%s,%s,%s)). "
             "DROPPING — phantom spaces produce unrouteable cable targets.",

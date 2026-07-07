@@ -252,7 +252,7 @@ class DXFParser:
         # No valid scale: fail closed (safety-first)
         logger.error("No valid unit scale found")
 
-        return None
+        return None  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
 
     def _extract_lines(self, msp, scale: float) -> List:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         from shapely.geometry import LineString
@@ -405,7 +405,7 @@ class DXFParser:
 
         overlap_ratio = intersection.area / min_area
 
-        # 90% overlap = duplicate
+        # 90% overlap = duplicate  # NOSONAR — S125: commented-out code kept for historical reference
         return overlap_ratio > 0.9
 
     def _remove_duplicates(self, polygons: List[Polygon]) -> List[Polygon]:

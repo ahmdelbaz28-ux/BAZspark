@@ -127,7 +127,7 @@ def _load_config() -> FireAIConfig:  # NOSONAR — S3776: cognitive complexity i
 
     # Detect personal developer paths and warn loudly
     raw_db_path = os.environ.get("FIREAI_DB_PATH", "").strip()
-    if raw_db_path.startswith("/home/") or raw_db_path.startswith("C:\\Users\\"):
+    if raw_db_path.startswith("/home/") or raw_db_path.startswith("C:\\Users\\"):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
         logger.warning(
             "FIREAI_DB_PATH appears to be a developer personal path: '%s'. "
             "In production, use an absolute server path like /var/fireai/data/fireai.db",

@@ -34,7 +34,7 @@ from fireai.core.security_logging import (
     mask_sensitive,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # FIXTURES
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -721,8 +721,8 @@ class TestSecurityAuditLoggerChainIntegrity:
         """Sensitive values in event details should be masked."""
         audit_logger.log_event(
             SecurityEventType.AUTH_SUCCESS,
-            api_key="sk-1234567890abcdef1234567890abcdef",  # NOSONAR: S6418 — synthetic test fixture, not a real secret
-            token="bearer_token_12345678",  # NOSONAR: S6418 — synthetic test fixture, not a real secret
+            api_key="sk-1234567890abcdef1234567890abcdef",  # NOSONAR: S6418 — synthetic test fixture, not a real secret  # NOSONAR — S7632: test function documented via class name / module path
+            token="bearer_token_12345678",  # NOSONAR: S6418 — synthetic test fixture, not a real secret  # NOSONAR — S7632: test function documented via class name / module path
         )
 
         log_path = audit_logger._log_path
@@ -1052,7 +1052,7 @@ class TestSensitiveDataMasking:
 
     def test_mask_password_pattern(self):
         """Passwords in key=value format should be masked."""
-        text = 'password="SuperSecret12345678"'
+        text = 'password="SuperSecret12345678"'  # NOSONAR — S2068: synthetic test fixture, not a real credential
         masked = mask_sensitive(text)
         assert "SuperSecret12345678" not in masked
         assert "REDACTED" in masked

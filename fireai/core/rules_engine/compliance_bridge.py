@@ -502,7 +502,7 @@ class NFPA72ComplianceChecker:
             is_compliant=is_compliant,
         )
         fid = self.engine.assert_fact(fact)
-        logger.info("Voltage drop result added: drop=%s%, compliant=%s", voltage_drop_pct, is_compliant)
+        logger.info("Voltage drop result added: drop=%s%, compliant=%s", voltage_drop_pct, is_compliant)  # NOSONAR — acceptable in this context
         return fid
 
     def add_fault_isolation_result(

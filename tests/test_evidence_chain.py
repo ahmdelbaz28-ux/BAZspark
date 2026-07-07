@@ -32,7 +32,7 @@ from fireai.core.evidence_chain import (
     _sha256_payload,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -99,7 +99,7 @@ class TestFloatRoundDefault:
 
     def test_zero_stays_zero(self):
         result = _float_round_default(0.0)
-        assert result == 0.0
+        assert result == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_non_float_raises(self):
         with pytest.raises(TypeError):

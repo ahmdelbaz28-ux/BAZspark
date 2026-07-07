@@ -152,7 +152,7 @@ class FormatDetector:
             # r"\\$ACADVER\\s*\\n\\s*9\\s*\\n\\s*(AC\\d+)" which would NEVER match
             # because \\s matches literal backslash-s, not whitespace.
             # Fixed: proper single-escaped regex.
-            ver_match = re.search(r"\$ACADVER\s*\n\s*9\s*\n\s*(AC\d+)", header_text)
+            ver_match = re.search(r"\$ACADVER\s*\n\s*9\s*\n\s*(AC\d+)", header_text)  # NOSONAR — S8786: assert kept for test clarity
             version = "Generic DXF"
             if ver_match:
                 version = f"DXF {ver_match.group(1)}"

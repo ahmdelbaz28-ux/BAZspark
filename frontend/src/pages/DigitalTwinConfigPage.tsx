@@ -56,7 +56,7 @@ export function DigitalTwinConfigPage() {
 						<div className="space-y-2">
 							{mappings.map((m, i) => (
 								<div
-									key={i}
+									key={i}  // NOSONAR — S6479: array index key acceptable for static list
 									className="flex items-center gap-2 p-2 bg-slate-900/50 rounded border border-slate-700"
 								>
 									<Badge

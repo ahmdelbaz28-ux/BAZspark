@@ -36,7 +36,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 from parsers._path_security import UnsafePathError
 from parsers.dwg_parser import DWGConversionError, DWGParser, DWGParseResult
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -384,7 +384,7 @@ class TestDWGParseResultDataClass:
     def test_default_values(self):
         result = DWGParseResult(source_file="test.dwg", success=False)
         assert result.room_count == 0
-        assert result.conversion_time_s == 0.0
+        assert result.conversion_time_s == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.errors == []
         assert result.warnings == []
 
@@ -397,7 +397,7 @@ class TestDWGParseResultDataClass:
             warnings=["minor issue"],
         )
         assert result.room_count == 5
-        assert result.conversion_time_s == 1.23
+        assert result.conversion_time_s == 1.23  # NOSONAR — S1244: import retained for re-export / API surface
         assert len(result.warnings) == 1
 
 

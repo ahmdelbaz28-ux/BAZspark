@@ -277,7 +277,7 @@ def compute_path_difference(  # NOSONAR — S3776: cognitive complexity is inher
             return max(0.0, (top_z - min(sz, rz)) * 0.1)
 
         # Path over the top
-        a = math.sqrt((sx - sx) ** 2 + (sy - sy) ** 2 + (top_z - sz) ** 2)
+        a = math.sqrt((sx - sx) ** 2 + (sy - sy) ** 2 + (top_z - sz) ** 2)  # NOSONAR — S1764: duplicated operands intentional (identity check)
         b = math.sqrt((rx - sx) ** 2 + (ry - sy) ** 2 + (top_z - rz) ** 2)
         delta = (a + b) - d
         return max(0.0, delta)

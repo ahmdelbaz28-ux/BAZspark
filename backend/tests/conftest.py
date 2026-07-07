@@ -174,7 +174,7 @@ try:
             return url
         if not url.startswith("/api/"):
             return url
-        if url.startswith("/api/v1/") or url.startswith("/api/v2/"):
+        if url.startswith("/api/v1/") or url.startswith("/api/v2/"):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
             return url
         # Check if the URL (or its prefix) matches a known /api/ route
         # Strip query string for matching

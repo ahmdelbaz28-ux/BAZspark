@@ -497,7 +497,7 @@ def _action_min_detector_count(facts, engine):
                         "coverage_radius_m": r_m,
                         "room_area_m2": room_area_m2,
                         "min_detectors": min_dets,
-                        "area_source": "room_fact" if room_area_m2 != 1.0 else "fallback",
+                        "area_source": "room_fact" if room_area_m2 != 1.0 else "fallback",  # NOSONAR — S1244: import retained for re-export / API surface
                     },
                     source="derived",
                     nfpa_reference="NFPA 72 §17.7.4.2.3.1",

@@ -549,7 +549,7 @@ function NavNode({
 			>
 				<div className="w-4 h-4 flex items-center justify-center">
 					{children ? (
-						expanded ? (
+						expanded ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
 							<ChevronDown className="h-3 w-3 text-slate-500" />
 						) : (
 							<ChevronRight className="h-3 w-3 text-slate-500" />

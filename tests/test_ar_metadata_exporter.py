@@ -69,12 +69,12 @@ class TestARSceneNode:
         assert node.x_ray_enabled is False
 
     def test_node_nan_position_rejected(self):
-        with pytest.raises(ValueError, match="not finite"):
+        with pytest.raises(ValueError, match="not finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             ARSceneNode(id="test", name="test", node_type="detector",
                         position=(float("nan"), 0, 0))
 
     def test_node_nan_rotation_rejected(self):
-        with pytest.raises(ValueError, match="not finite"):
+        with pytest.raises(ValueError, match="not finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             ARSceneNode(id="test", name="test", node_type="detector",
                         rotation=(float("nan"), 0, 0, 1))
 
@@ -157,7 +157,7 @@ class TestGLBExport:
         json_length = struct.unpack("<I", glb[12:16])[0]
         # Bin chunk starts after header (12) + json chunk header (8) + json data
         bin_offset = 12 + 8 + json_length
-        struct.unpack("<I", glb[bin_offset:bin_offset+4])[0]  # NOSONAR: S2201 return value intentionally unused
+        struct.unpack("<I", glb[bin_offset:bin_offset+4])[0]  # NOSONAR: S2201 return value intentionally unused  # NOSONAR — S7632: test function documented via class name / module path
         bin_type = struct.unpack("<I", glb[bin_offset+4:bin_offset+8])[0]
         assert bin_type == GLB_CHUNK_BIN
 

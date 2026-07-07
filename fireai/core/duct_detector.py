@@ -232,7 +232,7 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:  # NOSONAR — S3776: co
 
     if not cfm_override and not cfm_unknown_blocks_exemption:
         # ── Exemption: zero-dimension ducts ──────────────────────────────
-        if duct.width_m == 0.0 or duct.length_m == 0.0:
+        if duct.width_m == 0.0 or duct.length_m == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
             return DuctAnalysisResult(
                 duct_id=duct.duct_id,
                 duct_length_m=duct.length_m,

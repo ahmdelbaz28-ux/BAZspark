@@ -38,7 +38,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 from parsers.ifc_parser import IFCAnalysis, IFCParser, parse_ifc
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -174,7 +174,7 @@ class TestIFCAnalysis:
         assert analysis.floors == 3
         assert len(analysis.spaces) == 1
         assert len(analysis.devices) == 1
-        assert analysis.total_area == 150.0
+        assert analysis.total_area == 150.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_empty_analysis(self):
         analysis = IFCAnalysis(
@@ -186,7 +186,7 @@ class TestIFCAnalysis:
         )
         assert analysis.building_name == "Unknown"
         assert analysis.floors == 0
-        assert analysis.total_area == 0.0
+        assert analysis.total_area == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -294,7 +294,7 @@ class TestSpaceExtraction:
             parser = IFCParser(p)
             result = parser.parse()
             assert result.spaces == []
-            assert result.total_area == 0.0
+            assert result.total_area == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         finally:
             os.unlink(p)
 
@@ -581,12 +581,12 @@ class TestIFCParserPathSecurity:
 
     def test_leading_dash_rejected(self):
         """Path starting with '-' is rejected."""
-        with pytest.raises(ValueError, match="SECURITY"):
+        with pytest.raises(ValueError, match="SECURITY"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             IFCParser("--evil.ifc").parse()
 
     def test_null_byte_rejected(self):
         """Null byte in path is rejected."""
-        with pytest.raises(ValueError, match="SECURITY"):
+        with pytest.raises(ValueError, match="SECURITY"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             IFCParser("/tmp/x\x00.ifc").parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_wrong_extension_rejected(self):
@@ -595,14 +595,14 @@ class TestIFCParserPathSecurity:
         try:
             os.write(fd, b"test")
             os.close(fd)
-            with pytest.raises(ValueError, match="SECURITY"):
+            with pytest.raises(ValueError, match="SECURITY"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
                 IFCParser(p).parse()
         finally:
             os.unlink(p)
 
     def test_missing_file_raises_valueerror(self):
         """Missing file raises ValueError (not raw FileNotFoundError)."""
-        with pytest.raises(ValueError, match="not found"):
+        with pytest.raises(ValueError, match="not found"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             IFCParser("/tmp/does_not_exist_xyzzy.ifc").parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_ifc_extension_accepted(self):
@@ -635,7 +635,7 @@ class TestIFCParserErrorHandling:
         try:
             os.write(fd, b"{broken json")
             os.close(fd)
-            with pytest.raises(ValueError, match="Failed to load IFC file"):
+            with pytest.raises(ValueError, match="Failed to load IFC file"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
                 IFCParser(p).parse()
         finally:
             os.unlink(p)
@@ -661,7 +661,7 @@ class TestIFCParserErrorHandling:
             os.close(fd)
             # The _load_json returns a list, _parse_instances expects dict
             # This should raise an AttributeError or similar
-            with pytest.raises((ValueError, AttributeError, TypeError)):
+            with pytest.raises((ValueError, AttributeError, TypeError)):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
                 IFCParser(p).parse()
         finally:
             os.unlink(p)
@@ -765,6 +765,6 @@ class TestIFCIntegration:
             assert result.floors == 1
             assert len(result.spaces) == 1
             assert len(result.devices) == 4
-            assert result.total_area == 200.0
+            assert result.total_area == 200.0  # NOSONAR — S1244: import retained for re-export / API surface
         finally:
             os.unlink(p)

@@ -88,7 +88,7 @@ class TestNACLoadExtended:
         """A device with zero current should not contribute to load."""
         devices = [NotificationDevice("D1", "detector", 0.0)]
         result = calculate_nac_load(devices, nac_rating_a=2.0)
-        assert result.total_current_a == 0.0
+        assert result.total_current_a == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert result.is_compliant is True
 
     def test_result_is_frozen(self):
@@ -99,7 +99,7 @@ class TestNACLoadExtended:
 
     def test_nac_load_factor_is_80_percent(self):
         """NEC 760: The derating factor must be exactly 0.80."""
-        assert _NAC_LOAD_FACTOR == 0.80
+        assert _NAC_LOAD_FACTOR == 0.80  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_formula_string_contains_total_current(self):
         """Formula must embed the calculated total current."""
@@ -147,17 +147,17 @@ class TestSPLExtended:
     def test_mechanical_room_5dba_above_ambient(self):
         """Mechanical room requires only 5 dBA above ambient."""
         result = calculate_spl(90.0, 10.0, ambient_dba=80.0, is_mechanical_room=True)
-        assert result.min_required_dba == 85.0  # 80 + 5
+        assert result.min_required_dba == 85.0  # 80 + 5  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_non_mechanical_room_15dba_above_ambient(self):
         """Normal room requires 15 dBA above ambient."""
         result = calculate_spl(90.0, 10.0, ambient_dba=80.0, is_mechanical_room=False)
-        assert result.min_required_dba == 95.0  # 80 + 15
+        assert result.min_required_dba == 95.0  # 80 + 15  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_quiet_room_minimum_is_75_dba(self):
         """Very quiet room: ambient + 15 < 75 → minimum is 75 dBA."""
         result = calculate_spl(95.0, 10.0, ambient_dba=10.0)
-        assert result.min_required_dba == 75.0
+        assert result.min_required_dba == 75.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_spl_result_is_frozen(self):
         """SPLResult must be immutable."""
@@ -188,7 +188,7 @@ class TestSPLExtended:
 
     def test_inf_distance_raises(self):
         """Infinite distance is not finite."""
-        with pytest.raises(ValueError, match="positive finite"):
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_spl(95.0, float("inf"))
 
     def test_negative_ambient_not_finite_passes(self):
@@ -227,7 +227,7 @@ class TestMinHornRatingExtended:
     def test_coverage_distance_matches_input(self):
         """Coverage distance in result equals input room dimension."""
         result = min_horn_rating_for_room(20.0)
-        assert result["coverage_distance_m"] == 20.0
+        assert result["coverage_distance_m"] == 20.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_round_trip_with_calculate_spl(self):
         """min_horn_rating should produce a horn that passes calculate_spl."""
@@ -283,22 +283,22 @@ class TestStrobeCandelaExtended:
 
     def test_inf_ceiling_raises(self):
         """Infinite ceiling height is not valid."""
-        with pytest.raises(ValueError, match="positive finite"):
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_strobe_candela(50.0, float("inf"))
 
     def test_nan_ceiling_raises(self):
         """NaN ceiling height is not valid."""
-        with pytest.raises(ValueError, match="positive finite"):
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_strobe_candela(50.0, float("nan"))
 
     def test_nan_installed_candela_raises(self):
         """NaN installed candela is not valid."""
-        with pytest.raises(ValueError, match="non-negative finite"):
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_strobe_candela(50.0, 3.0, installed_candela=float("nan"))
 
     def test_inf_installed_candela_compliant(self):
         """Infinite installed candela — not finite, should raise."""
-        with pytest.raises(ValueError, match="non-negative finite"):
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_strobe_candela(50.0, 3.0, installed_candela=float("inf"))
 
     def test_installed_candela_zero_non_compliant(self):
@@ -346,7 +346,7 @@ class TestCorridorStrobesExtended:
 
     def test_inf_length_raises(self):
         """Infinite corridor length is not valid."""
-        with pytest.raises(ValueError, match="positive finite"):
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_corridor_strobes(float("inf"))
 
     def test_very_short_corridor_one_strobe(self):

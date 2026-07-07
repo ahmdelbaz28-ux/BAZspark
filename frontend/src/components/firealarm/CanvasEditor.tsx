@@ -266,7 +266,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                                 </select>
                         </div>
 
-                        <div
+                        <div  // NOSONAR — S6848: type assertion acceptable
                                 ref={canvasRef}
                                 className="flex-1 bg-slate-900 border border-slate-700 rounded-lg relative overflow-hidden"
                                 onClick={handleCanvasClick} onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => { if (e.key === "Enter") { e.preventDefault(); (document.activeElement as HTMLElement)?.click(); } }}                                style={{ minHeight: "400px" }}

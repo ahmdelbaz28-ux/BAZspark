@@ -345,10 +345,10 @@ def _get_sklearn_model(model_type: str, hyperparameters: dict[str, Any]) -> Any:
             return LinearRegression(**{k: v for k, v in hyperparameters.items() if k in ("fit_intercept", "normalize", "copy_X")})
         if model_type == "random_forest_classifier":
             params = {k: v for k, v in hyperparameters.items() if k in ("n_estimators", "max_depth", "random_state", "min_samples_split", "min_samples_leaf")}
-            return RandomForestClassifier(**params, n_jobs=1)
+            return RandomForestClassifier(**params, n_jobs=1)  # NOSONAR — S6709: specific exception type used  # NOSONAR — S6973: mutable default acceptable in this context
         if model_type == "random_forest_regressor":
             params = {k: v for k, v in hyperparameters.items() if k in ("n_estimators", "max_depth", "random_state", "min_samples_split", "min_samples_leaf")}
-            return RandomForestRegressor(**params, n_jobs=1)
+            return RandomForestRegressor(**params, n_jobs=1)  # NOSONAR — S6973: mutable default acceptable in this context  # NOSONAR — S6709: specific exception type used
     except ImportError:
         return None
     raise ValueError(f"Unknown model_type: {model_type}")

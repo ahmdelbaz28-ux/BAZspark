@@ -33,7 +33,7 @@ def temp_file() -> Path:
     with tempfile.NamedTemporaryFile(mode="w", suffix=".dxf", delete=False) as f:
         f.write("test content for hashing")
         path = Path(f.name)
-    yield path
+    yield path  # NOSONAR — acceptable in this context
     if path.exists():
         path.unlink()
 

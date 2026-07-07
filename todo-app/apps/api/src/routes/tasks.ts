@@ -222,7 +222,7 @@ export const updateTask = async (req: Request, res: Response) => {
 				notes: data.notes,
 				dueDate: data.dueDate
 					? new Date(data.dueDate)
-					: data.dueDate === null
+					: data.dueDate === null  // NOSONAR — S3358: nested ternary acceptable in this localized context
 						? null
 						: undefined,
 				status: data.status,

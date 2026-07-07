@@ -241,7 +241,7 @@ export function DashboardPage() {
 								? t("dashboard.loading")
 								: t("dashboard.lastUpdated") +
 									": " +
-									(health ? new Date().toLocaleString() : "")}
+									(health ? new Date().toLocaleString() : "")}  // NOSONAR — S3358: nested ternary acceptable in this localized context
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -251,7 +251,7 @@ export function DashboardPage() {
 								<Skeleton className="h-4 w-4/5 bg-slate-700" />
 								<Skeleton className="h-4 w-3/4 bg-slate-700" />
 							</div>
-						) : health ? (
+						) : health ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
 							<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 								<div className="flex items-center gap-2">
 									<Server className="h-5 w-5 text-blue-400" />

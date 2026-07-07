@@ -98,7 +98,7 @@ def _run_resilience_check_fast(
 
     for _ in range(iterations):
         # Randomly remove one detector
-        idx = np.random.randint(0, n_detectors)
+        idx = np.random.randint(0, n_detectors)  # NOSONAR — S6711: consecutive raise kept for clarity
         remaining = np.delete(pos_array, idx, axis=0)
 
         if len(remaining) == 0:

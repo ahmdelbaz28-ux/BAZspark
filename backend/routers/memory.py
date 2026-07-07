@@ -179,7 +179,7 @@ async def delete_memory(memory_id: str):
     service = get_memory_service()
     result = service.delete_memory(memory_id=memory_id)
     if not result.get("success"):
-        raise HTTPException(status_code=404, detail=_sanitize_error(result.get("error", "Memory not found")))  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail=_sanitize_error(result.get("error", "Memory not found")))  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
     result["disclaimer"] = MEMORY_DISCLAIMER
     return result
 
@@ -201,6 +201,6 @@ async def get_memory_history(memory_id: str):
     service = get_memory_service()
     result = service.get_memory_history(memory_id=memory_id)
     if not result.get("success"):
-        raise HTTPException(status_code=404, detail=_sanitize_error(result.get("error", "Memory not found")))  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail=_sanitize_error(result.get("error", "Memory not found")))  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
     result["disclaimer"] = MEMORY_DISCLAIMER
     return result

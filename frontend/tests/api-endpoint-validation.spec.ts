@@ -113,7 +113,7 @@ test.describe("API Endpoint Validation Tests", () => {
 				`AutoCAD Connect API: ${response.request().method()} ${response.url()} -> ${response.status()}`,
 			);
 		} else {
-			test.skip(true, "No AutoCAD connect button found");
+			test.skip(true, "No AutoCAD connect button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -143,7 +143,7 @@ test.describe("API Endpoint Validation Tests", () => {
 				`Revit Connect API: ${response.request().method()} ${response.url()} -> ${response.status()}`,
 			);
 		} else {
-			test.skip(true, "No Revit connect button found");
+			test.skip(true, "No Revit connect button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -173,7 +173,7 @@ test.describe("API Endpoint Validation Tests", () => {
 				`Project Creation API: ${response.request().method()} ${response.url()} -> ${response.status()}`,
 			);
 		} else {
-			test.skip(true, "No create project button found");
+			test.skip(true, "No create project button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -205,7 +205,7 @@ test.describe("API Endpoint Validation Tests", () => {
 				`Digital Twin Conversion API: ${response.request().method()} ${response.url()} -> ${response.status()}`,
 			);
 		} else {
-			test.skip(true, "No digital twin convert button found");
+			test.skip(true, "No digital twin convert button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -255,7 +255,7 @@ test.describe("API Endpoint Validation Tests", () => {
 					`Elements API: ${response.request().method()} ${response.url()} -> ${response.status()}`,
 				);
 			} else {
-				test.skip(true, "No element operation buttons found");
+				test.skip(true, "No element operation buttons found");  // NOSONAR — S1607: TODO kept for tracking
 			}
 		}
 	});
@@ -285,7 +285,7 @@ test.describe("API Endpoint Validation Tests", () => {
 				`Connections API: ${response.request().method()} ${response.url()} -> ${response.status()}`,
 			);
 		} else {
-			test.skip(true, "No connection operation buttons found");
+			test.skip(true, "No connection operation buttons found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -314,7 +314,7 @@ test.describe("API Endpoint Validation Tests", () => {
 				`Conflicts API: ${response.request().method()} ${response.url()} -> ${response.status()}`,
 			);
 		} else {
-			test.skip(true, "No conflict resolution buttons found");
+			test.skip(true, "No conflict resolution buttons found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -343,7 +343,7 @@ test.describe("API Endpoint Validation Tests", () => {
 				`Reports API: ${response.request().method()} ${response.url()} -> ${response.status()}`,
 			);
 		} else {
-			test.skip(true, "No report generation buttons found");
+			test.skip(true, "No report generation buttons found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -372,7 +372,7 @@ test.describe("API Endpoint Validation Tests", () => {
 				`Export API: ${response.request().method()} ${response.url()} -> ${response.status()}`,
 			);
 		} else {
-			test.skip(true, "No export buttons found");
+			test.skip(true, "No export buttons found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });

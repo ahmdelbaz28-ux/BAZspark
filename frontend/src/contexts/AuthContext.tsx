@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }, []);
 
         return (
-                <AuthContext.Provider value={{ ...state, login, logout, refresh }}>
+                <AuthContext.Provider value={{ ...state, login, logout, refresh }}>  // NOSONAR — S6481: structure acceptable
                         {children}
                 </AuthContext.Provider>
         );

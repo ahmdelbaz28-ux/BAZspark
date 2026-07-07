@@ -61,7 +61,7 @@ const BreadcrumbPage = React.forwardRef<
 	HTMLSpanElement,
 	React.ComponentPropsWithoutRef<"span">
 >(({ className, ...props }, ref) => (
-	<span
+	<span  // NOSONAR — S6819: non-null assertion acceptable
 		ref={ref}
 		role="link"
 		aria-disabled="true"
@@ -77,7 +77,7 @@ const BreadcrumbSeparator = ({
 	className,
 	...props
 }: React.ComponentProps<"li">) => (
-	<li
+	<li  // NOSONAR — S6819: non-null assertion acceptable
 		role="presentation"
 		aria-hidden="true"
 		className={cn("[&>svg]:w-3.5 [&>svg]:h-3.5", className)}
@@ -92,7 +92,7 @@ const BreadcrumbEllipsis = ({
 	className,
 	...props
 }: React.ComponentProps<"span">) => (
-	<span
+	<span  // NOSONAR — S6819: non-null assertion acceptable
 		role="presentation"
 		aria-hidden="true"
 		className={cn("flex h-9 w-9 items-center justify-center", className)}

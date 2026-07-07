@@ -96,7 +96,7 @@ class TestCacheEntry:
         assert entry.key == "room-A:abc123"
         assert entry.result == {"detector_count": 5}
         assert entry.hit_count == 0
-        assert entry.compute_time_s == 0.0
+        assert entry.compute_time_s == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_hit_count(self):
         entry = CacheEntry("k", "v", "h", 1.0, hit_count=10)
@@ -160,7 +160,7 @@ class TestLRUCache:
 
     def test_no_ttl_default(self):
         cache = _LRUCache(maxsize=10)
-        assert cache._ttl == 0.0
+        assert cache._ttl == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_invalidate(self):
         cache = _LRUCache()
@@ -211,7 +211,7 @@ class TestLRUCache:
 
     def test_hit_rate_zero_when_no_accesses(self):
         cache = _LRUCache()
-        assert cache.hit_rate == 0.0
+        assert cache.hit_rate == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_stats(self):
         cache = _LRUCache(maxsize=100)

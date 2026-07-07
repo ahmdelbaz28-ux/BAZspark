@@ -354,7 +354,7 @@ class TestPLCScriptRegression:
         decls = []
         for line in script.split("\n"):
             line = line.strip()
-            if line.endswith(": BOOL;") or line.endswith(': TON;'):
+            if line.endswith(": BOOL;") or line.endswith(': TON;'):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
                 # Extract the identifier (first token before space).
                 ident = line.split()[0]
                 decls.append(ident)

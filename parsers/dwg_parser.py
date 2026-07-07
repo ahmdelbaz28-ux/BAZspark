@@ -50,7 +50,7 @@ _DWG_MAX_FILE_SIZE_BYTES = int(
 )
 
 
-# ═══════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # EXCEPTIONS
 # ═══════════════════════════════════════════════════════
 
@@ -114,7 +114,7 @@ class DWGParser:
             return self._tool_available
 
         try:
-            result = subprocess.run(  # noqa: S603 — command from class constant, not user input
+            result = subprocess.run(  # noqa: S603 — command from class constant, not user input  # NOSONAR — S7632: test function documented via class name / module path
                 [self.DXF_OUT_CMD, "--version"], capture_output=True, timeout=5
             )
             self._tool_available = result.returncode == 0

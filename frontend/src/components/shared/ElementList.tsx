@@ -62,7 +62,7 @@ export function ElementList({
                 return (
                         <div className="space-y-2">
                                 {[...Array(5)].map((_, i) => (
-                                        <div key={i} className="h-12 bg-slate-800 rounded animate-pulse" />
+                                        <div key={i} className="h-12 bg-slate-800 rounded animate-pulse" />  // NOSONAR — S6479: array index key acceptable for static list
                                 ))}
                         </div>
                 );

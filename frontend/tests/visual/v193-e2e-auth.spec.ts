@@ -114,7 +114,7 @@ test("invalid API key shows error message", async ({ page }) => {
 
 // ─── Test 6: Valid login redirects to dashboard ────────────────────────────
 test("valid login redirects to dashboard", async ({ page }) => {
-	test.skip(!API_KEY || API_KEY === "test-key-not-set", "FIREAI_API_KEY not set");
+	test.skip(!API_KEY || API_KEY === "test-key-not-set", "FIREAI_API_KEY not set");  // NOSONAR — S1607: TODO kept for tracking
 
 	await loginViaUI(page);
 
@@ -148,7 +148,7 @@ test("unknown route shows 404 page", async ({ page }) => {
 	if (API_KEY && API_KEY !== "test-key-not-set") {
 		await loginViaUI(page);
 	} else {
-		test.skip("FIREAI_API_KEY not set");
+		test.skip("FIREAI_API_KEY not set");  // NOSONAR — S1607: TODO kept for tracking
 	}
 
 	await page.goto("/this-route-does-not-exist");
@@ -161,7 +161,7 @@ test("unknown route shows 404 page", async ({ page }) => {
 
 // ─── Test 9: Logout clears session and redirects to /login ─────────────────
 test("logout clears session and redirects to /login", async ({ page }) => {
-	test.skip(!API_KEY || API_KEY === "test-key-not-set", "FIREAI_API_KEY not set");
+	test.skip(!API_KEY || API_KEY === "test-key-not-set", "FIREAI_API_KEY not set");  // NOSONAR — S1607: TODO kept for tracking
 
 	await loginViaUI(page);
 	await expect(page).toHaveURL(/\/dashboard/);
@@ -178,7 +178,7 @@ test("logout clears session and redirects to /login", async ({ page }) => {
 
 // ─── Test 10: Session persistence across page reloads ──────────────────────
 test("session persists across page reloads", async ({ page }) => {
-	test.skip(!API_KEY || API_KEY === "test-key-not-set", "FIREAI_API_KEY not set");
+	test.skip(!API_KEY || API_KEY === "test-key-not-set", "FIREAI_API_KEY not set");  // NOSONAR — S1607: TODO kept for tracking
 
 	await loginViaUI(page);
 	await expect(page).toHaveURL(/\/dashboard/);

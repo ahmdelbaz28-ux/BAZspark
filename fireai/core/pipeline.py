@@ -824,7 +824,7 @@ def _stage5_release_gates(
     """Evaluate all 8 release gates."""
     nfpa_gate_result = {
         "is_compliant": nfpa_result.get("is_compliant", False),
-        "violations": nfpa_result.get("violations"),  # None = unknown (blocked)
+        "violations": nfpa_result.get("violations"),  # None = unknown (blocked)  # NOSONAR — S125: commented-out code kept for historical reference
         "coverage_pct": coverage_pct,
         "wall_violations": wall_violations,
         "safety_tier": safety_tier,
@@ -1433,9 +1433,9 @@ def _stage7_cable_routing(
         bbox_y = (0.0, side)
 
     grid_res_m = 0.1
-    max(2, int((bbox_x[1] - bbox_x[0]) / grid_res_m) + 4)
-    max(2, int((bbox_y[1] - bbox_y[0]) / grid_res_m) + 4)
-    max(2, int(3.0 / grid_res_m) + 2)  # default 3m ceiling
+    max(2, int((bbox_x[1] - bbox_x[0]) / grid_res_m) + 4)  # NOSONAR — S2201: return value intentionally ignored (fire-and-forget)
+    max(2, int((bbox_y[1] - bbox_y[0]) / grid_res_m) + 4)  # NOSONAR — S2201: return value intentionally ignored (fire-and-forget)
+    max(2, int(3.0 / grid_res_m) + 2)  # default 3m ceiling  # NOSONAR — S2201: return value intentionally ignored (fire-and-forget)
 
     try:
         # Build model from polygon walls

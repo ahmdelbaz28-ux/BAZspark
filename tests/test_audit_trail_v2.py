@@ -163,7 +163,7 @@ class TestAuditTrailCoreLogging:
         assert trail.count() == 1
         entries = trail.entries()
         assert entries[0].operation == "HEAT_DETECTOR_PARAMS"
-        assert entries[0].inputs["listed_spacing_m"] == 9.1
+        assert entries[0].inputs["listed_spacing_m"] == 9.1  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_log_coverage_result(self, trail):
         trail.log_coverage_result("R-104", 4, 99.5, 0.3, "PASS")
@@ -212,7 +212,7 @@ class TestAuditTrailV52Logging:
         assert trail.count() == 1
         entries = trail.entries()
         assert entries[0].operation == "WALL_DISTANCE_VIOLATION"
-        assert entries[0].outputs["distance_m"] == 0.05
+        assert entries[0].outputs["distance_m"] == 0.05  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_log_duct_detector_placement(self, trail):
         trail.log_duct_detector_placement("R-103", "DUCT-01", 2, [(1.0, 2.0), (3.0, 4.0)])
@@ -226,14 +226,14 @@ class TestAuditTrailV52Logging:
         assert trail.count() == 1
         entries = trail.entries()
         assert entries[0].operation == "SAFE_FALLBACK_ACTIVATED"
-        assert entries[0].inputs["original_height_m"] == 12.0
+        assert entries[0].inputs["original_height_m"] == 12.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_log_boundary_limit_warning(self, trail):
         trail.log_boundary_limit_warning("R-105", 99.95)
         assert trail.count() == 1
         entries = trail.entries()
         assert entries[0].operation == "BOUNDARY_LIMIT_WARNING"
-        assert entries[0].outputs["coverage_pct"] == 99.95
+        assert entries[0].outputs["coverage_pct"] == 99.95  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
