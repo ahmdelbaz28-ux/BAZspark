@@ -299,6 +299,15 @@ _PUBLIC_PATHS_EXACT = frozenset({
     "/api/v1/auth/login",
     "/api/v1/auth/logout",
     "/api/v1/auth/session/login",
+    # V206: Frontend static entry points — served by FastAPI on HuggingFace Spaces.
+    # These are HTML/JS/CSS bundles with NO secrets; all sensitive data flows
+    # through /api/* which still requires X-API-Key. Without these, the HF
+    # Space root URL returns 401 and users see JSON instead of the app.
+    "/",
+    "/index.html",
+    "/favicon.ico",
+    "/manifest.json",
+    "/robots.txt",
 })
 
 # Path prefixes that are public (for routes with path params, e.g. /docs/*)
@@ -306,6 +315,9 @@ _PUBLIC_PATHS_EXACT = frozenset({
 _PUBLIC_PATH_PREFIXES = (
     "/docs/",
     "/redoc/",
+    # V206: Vite-built JS/CSS bundles live under /assets/ with content-hashed
+    # names (e.g. /assets/index-a1b2c3.js). These are safe to serve publicly.
+    "/assets/",
 )
 
 

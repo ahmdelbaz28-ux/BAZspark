@@ -848,3 +848,56 @@ if __name__ == "__main__":
         reload=True,
         reload_dirs=["backend"],
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V206 FIX: Serve the built frontend (Vite/React static assets) from FastAPI
+# when BAZSPARK_FRONTEND_DIST is set (HuggingFace Space deployment mode).
+#
+# WHY THIS EXISTS
+# ───────────────
+# On Vercel, the frontend is served by Vercel's CDN and only /api/* is proxied
+# to this backend. But on HuggingFace Spaces, the Docker container runs ONLY
+# this FastAPI app — there is no separate static file server. Without this
+# mount, visiting the Space's root URL returns 401 (the ApiKeyMiddleware
+# blocks every non-public path), so users see a JSON error instead of the app.
+#
+# The Dockerfile builds the frontend (npm run build → /app/frontend_dist) and
+# sets BAZSPARK_FRONTEND_DIST=/app/frontend_dist. This mount serves those
+# files at / and /assets/, with SPA fallback to index.html for client-side
+# routing.
+#
+# SECURITY
+# ────────
+# The frontend static files are PUBLIC (HTML/CSS/JS bundles). They contain no
+# secrets — all sensitive data is fetched via /api/* which still requires
+# X-API-Key. The /assets/ prefix and / and /index.html are added to the
+# ApiKeyMiddleware public path list (see security_middleware.py).
+# ═══════════════════════════════════════════════════════════════════════════
+import os as _os
+from pathlib import Path as _Path
+
+_FRONTEND_DIST = _os.environ.get("BAZSPARK_FRONTEND_DIST")
+if _FRONTEND_DIST and _Path(_FRONTEND_DIST).is_dir():
+    from fastapi.responses import FileResponse as _FileResponse
+    from fastapi.responses import JSONResponse as _JSONResponse
+    from fastapi.staticfiles import StaticFiles as _StaticFiles
+
+    _FRONTEND_INDEX = _Path(_FRONTEND_DIST) / "index.html"
+    logger.info("BAZSPARK_FRONTEND_DIST=%s — mounting frontend static files", _FRONTEND_DIST)
+
+    # Mount /assets/ — Vite outputs all JS/CSS bundles here with content-hashed names
+    _ASSETS_DIR = _Path(_FRONTEND_DIST) / "assets"
+    if _ASSETS_DIR.is_dir():
+        app.mount("/assets", _StaticFiles(directory=str(_ASSETS_DIR)), name="frontend-assets")
+
+    # SPA fallback: any non-/api route returns index.html so React Router can handle it
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def _spa_fallback(full_path: str):  # NOSONAR — S1172: full_path used to exclude /api routes
+        # Never intercept API routes — those are handled by routers above
+        if full_path.startswith("api/"):
+            return _JSONResponse(status_code=404, content={"detail": "Not Found", "success": False})
+        # Serve index.html for all other paths (client-side routing)
+        if _FRONTEND_INDEX.is_file():
+            return _FileResponse(str(_FRONTEND_INDEX))
+        return _JSONResponse(status_code=404, content={"detail": "Frontend not built", "success": False})

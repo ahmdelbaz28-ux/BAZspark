@@ -1106,6 +1106,7 @@ class TestVolumetricMedium:
                 medium_id="flat",
                 medium_type="SMOKE",
                 bbox_min=[0.0, 0.0, 0.0],
+                bbox_max=[0.0, 0.0, 0.0],  # same as bbox_min → zero volume
             )
 
     def test_get_alpha_with_defaults(self):

@@ -999,7 +999,7 @@ def vapor_density_tier(molecular_weight: float) -> ElevationTier:
 
 
 def room_purge_time(
-    _room_volume_m3: float,  # NOSONAR — S1172: parameter retained for API stability
+    room_volume_m3: float,  # NOSONAR — S1172: accepted for API stability; room volume flows here for purge-time calculations (volume cancels in the exponential decay formula)
     ach: float,
     target_fraction: float = 0.01,
 ) -> float:

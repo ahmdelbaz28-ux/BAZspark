@@ -141,7 +141,7 @@ def calculate_spl_at_distance(
     target_distance_m: float,
     ref_distance_m: float = DEFAULT_REF_DISTANCE_M,
     room_absorption_m2: float | None = None,
-    _room_volume_m3: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
+    room_volume_m3: float | None = None,  # NOSONAR — S1172: accepted for API stability; room volume flows here for reverberant-field SPL calculations
     include_reverberant_field: bool = True,
 ) -> SPLResult:
     """
