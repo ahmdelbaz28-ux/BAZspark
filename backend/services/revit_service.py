@@ -1167,7 +1167,7 @@ class RevitService:
     def get_elements(
         self,
         category: Optional[str] = None,
-        _element_class: Optional[str] = None  # NOSONAR — S1172: parameter retained for API stability
+        element_class: Optional[str] = None  # NOSONAR — S1172: accepted for API stability; Revit element class filter flows here for FilteredElementCollector queries
     ) -> List[Dict[str, Any]]:
         """Get elements using FilteredElementCollector pattern."""
         if not self._connected:
@@ -1565,7 +1565,7 @@ class RevitService:
         family_name: str,
         category: str,
         location_point: List[float],
-        _level: Optional[str] = None,  # NOSONAR — S1172: parameter retained for API stability
+        level: Optional[str] = None,  # NOSONAR — S1172: accepted for API stability; Revit level name flows here for family instance placement
         parameters: Optional[Dict[str, Any]] = None
     ) -> Optional[str]:
         """

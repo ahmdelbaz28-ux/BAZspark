@@ -504,12 +504,24 @@ class FirePhysics:
     ) -> float:
         """
         Estimate peak HRR from fire load and room area.
-        Q_max ~ fire_load [MJ] / t_burn [s]
-        t_burn varies by occupancy — uses _BURN_DURATION table.
-        Returns kW.
+
+        Q_max ≈ fire_load [MJ] / t_burn [s]
+          where total_mj = fire_load_mj_m2 × area_m2  (total energy in the room)
+            and t_burn varies by occupancy (see _BURN_DURATION table).
+
+        Returns kW.  1 MW = 1 MJ/s = 1000 kW, so multiply MJ/s by 1000.
+
+        SAFETY NOTE: This peak HRR cap is applied in hrr_at_time() to model
+        the fuel-limited phase of the fire. Without it, the t² growth model
+        would extrapolate HRR to infinity, producing unrealistically short
+        detection times and overestimating ceiling-jet temperatures. Any
+        change to this function must be reviewed by a fire protection
+        engineer — it directly affects ASET/RSET calculations per NFPA 101.
         """
-        _t_burn = _BURN_DURATION.get(occupancy.lower(), _BURN_DURATION["default"])  # NOSONAR - python:S1481: kept for debug / future use
-        _total_mj = fire_load_mj_m2 * area_m2  # NOSONAR - python:S1481: kept for debug / future use
+        t_burn = _BURN_DURATION.get(occupancy.lower(), _BURN_DURATION["default"])
+        total_mj = fire_load_mj_m2 * area_m2
+        # Q_max in kW: (MJ / s) × 1000 = kW
+        return (total_mj / t_burn) * 1000.0
 
     @staticmethod
     def ceiling_jet_temp_rise(
