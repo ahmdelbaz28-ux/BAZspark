@@ -58,7 +58,7 @@ interface RevitConnectionStatus {
 }
 
 export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-        const { t } = useTranslation();  # NOSONAR — acceptable in this context
+        const { t } = useTranslation(); // NOSONAR — acceptable in this context
         const [activeTab, setActiveTab] = useState("autocad");
 
         // AutoCAD settings

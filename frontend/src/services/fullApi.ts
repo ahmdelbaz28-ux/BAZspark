@@ -671,7 +671,7 @@ export const monitorApi = {
 	/** GET /monitor/agent-activity */
 	getAgentActivity: (params?: { limit?: number }) =>
 		apiCall(
-			`/monitor/agent-activity${params?.limit ? `?limit=${params.limit}` : ""}`,  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+			`/monitor/agent-activity${params?.limit ? `?limit=${params.limit}` : ""}`, // NOSONAR — acceptable in this context
 			{},
 			API_BASE.replace("/v1", ""),
 		),
@@ -683,7 +683,7 @@ export const monitorApi = {
 		if (params?.severity) query.set("severity", params.severity);
 		const qs = query.toString();
 		return apiCall(
-			`/monitor/security-alerts${qs ? `?${qs}` : ""}`,  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+			`/monitor/security-alerts${qs ? `?${qs}` : ""}`, // NOSONAR — acceptable in this context
 			{},
 			API_BASE.replace("/v1", ""),
 		);

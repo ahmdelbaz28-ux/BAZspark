@@ -68,7 +68,7 @@ interface VersionInfo {
 }
 
 export function DigitalTwinPage() {
-        const { t } = useTranslation();  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        const { t } = useTranslation(); // NOSONAR — acceptable in this context
         const [activeTab, setActiveTab] = useState("convert");
 
         // Conversion state

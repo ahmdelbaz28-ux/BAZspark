@@ -37,7 +37,7 @@ const WS_HEALTH_CHECK_INTERVAL = 30000;
 export class DataService {
 	private static instance: DataService;
 	private buffer: any[] = [];
-	private maxBufferSize = 50;  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+	private maxBufferSize = 50; // NOSONAR — acceptable in this context
 	private isConnected = false;
 	private isAuthenticated = false;
 	private reconnectAttempts = 0;
@@ -402,7 +402,7 @@ export class DataService {
 
 	// ── Shared Data Handling ─────────────────────────────────────────────────
 
-	private handleData = (data: any) => {  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+	private handleData = (data: any) => { // NOSONAR — acceptable in this context
 		if (!this.isConnected) {
 			if (this.buffer.length < this.maxBufferSize) {
 				this.buffer.push(data);
