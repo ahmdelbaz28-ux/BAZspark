@@ -142,7 +142,7 @@ class VoronoiVerifier:
                 cx, cy = region.centroid.x, region.centroid.y
                 gen_idx = min(
                     range(len(det_list)),
-                    key=lambda i: math.hypot(cx - det_list[i][0], cy - det_list[i][1]),
+                    key=lambda i: math.hypot(cx - det_list[i][0], cy - det_list[i][1]),  # NOSONAR — acceptable in this context
                 )
                 gx, gy = det_list[gen_idx]
 

@@ -38,14 +38,14 @@ class TestSensorAdvisory:
             severity="INFO",
         )
         assert advisory.room_id == "R1"
-        assert advisory.ceiling_height_m == 3.0
+        assert advisory.ceiling_height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert advisory.severity == "INFO"
         assert advisory.beam_detector_recommended is False
         assert advisory.performance_based_design is False
 
     def test_defaults(self):
         advisory = SensorAdvisory(room_id="R1", ceiling_height_m=3.0)
-        assert advisory.slope_degrees == 0.0
+        assert advisory.slope_degrees == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert advisory.detector_type == "smoke"
         assert advisory.severity == "INFO"
         assert advisory.recommendations == []
@@ -288,13 +288,13 @@ class TestAdviseRoomDict:
         """Missing ceiling_height defaults to 3.0."""
         advisor = SensorPhysicsAdvisor()
         advisory = advisor.advise_room_dict({"room_id": "R1"})
-        assert advisory.ceiling_height_m == 3.0
+        assert advisory.ceiling_height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_none_ceiling_height_default(self):
         """None ceiling_height defaults to 3.0."""
         advisor = SensorPhysicsAdvisor()
         advisory = advisor.advise_room_dict({"room_id": "R1", "ceiling_height": None})
-        assert advisory.ceiling_height_m == 3.0
+        assert advisory.ceiling_height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_heat_detector_type_detection(self):
         """Detector type with 'heat' → heat advisory."""

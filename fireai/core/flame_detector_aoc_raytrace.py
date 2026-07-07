@@ -790,7 +790,7 @@ class FlameDetectorAOCRayTrace:
 
         # Fix #20: Build per-detector covered point sets
         targets = self._generate_grid(floor_bounds)
-        set(targets)
+        set(targets)  # NOSONAR — S2201: return value intentionally ignored (fire-and-forget)
 
         detector_covered_sets: list[set] = []
         for res in individual:

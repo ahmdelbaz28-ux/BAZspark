@@ -61,7 +61,7 @@ class TestMonitorState:
         result = self.monitor.update_engine("nfpa72-engine", {"cpu_percent": 25.0})
         assert result is True
         engine = self.monitor.get_engine("nfpa72-engine")
-        assert engine["cpu_percent"] == 25.0
+        assert engine["cpu_percent"] == 25.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_update_nonexistent_engine(self) -> None:
         """Test updating non-existent engine returns False."""

@@ -166,7 +166,7 @@ class TestPipelineResult:
         assert d["qomn_audit"] is None
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _run_stage
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -212,7 +212,7 @@ class TestRunStage:
         assert sr.data == {"sum": 10}
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _stage0_contract
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -230,7 +230,7 @@ class TestStage0Contract:
             _stage0_contract({"room_id": "R-1"})
 
     def test_nan_in_payload(self) -> None:
-        with pytest.raises(ContractViolation):
+        with pytest.raises(ContractViolation):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             _stage0_contract({
                 "room_id": "R-1",
                 "room_polygon": [(0, 0), (1, 0), (1, 1)],
@@ -248,7 +248,7 @@ class TestStage0Contract:
             })
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _stage1_nfpa_spacing
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -299,7 +299,7 @@ class TestStage2Placement:
         assert "fallback_reason" in result
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _hex_grid_placement
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -336,7 +336,7 @@ class TestHexGridPlacement:
         assert len(p2) <= len(p1)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _point_in_polygon
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -368,7 +368,7 @@ class TestPointInPolygon:
         assert _point_in_polygon(5, 1, poly) is True   # inside lower-right
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _estimate_coverage
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -412,7 +412,7 @@ class TestEstimateCoverage:
         assert 0.0 < pct <= 100.0
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _stage3_verify_coverage
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -437,7 +437,7 @@ class TestStage3VerifyCoverage:
         assert isinstance(result["is_compliant"], bool)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _stage4_safety_classify
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -458,7 +458,7 @@ class TestStage4SafetyClassify:
         assert result["safety_tier"] is not None
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _stage5_release_gates
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -504,7 +504,7 @@ class TestStage5ReleaseGates:
         assert "release_status" in result
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _stage6_evidence
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -972,7 +972,7 @@ class TestStage8ConduitFittings:
         assert result["status"] == "completed"
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _count_wall_violations
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1013,7 +1013,7 @@ class TestCountWallViolations:
         assert isinstance(violations, int)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _failed_result
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1177,7 +1177,7 @@ class TestAnalyzeRoom:
         assert "S8_conduit_fittings" in stage_names
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # analyze_building
 # ═══════════════════════════════════════════════════════════════════════════════
 

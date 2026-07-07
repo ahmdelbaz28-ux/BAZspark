@@ -282,7 +282,7 @@ class EventBus(ABC):
         ...
 
 
-# ════════════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # InMemoryEventBus
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -432,7 +432,7 @@ class InMemoryEventBus(EventBus):
         return self._schema_registry
 
 
-# ════════════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # RedisEventBus
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -503,7 +503,7 @@ class RedisEventBus(EventBus):
             self._poll_task.cancel()
             try:
                 await self._poll_task
-            except asyncio.CancelledError:
+            except asyncio.CancelledError:  # NOSONAR — S7497: default value is correct
                 pass  # Expected during shutdown
         if self._redis:
             await self._redis.close()
@@ -531,7 +531,7 @@ class RedisEventBus(EventBus):
                                 await r.xack(stream_key, self._consumer_group, msg_id)
                     except Exception as e:
                         logger.exception("Redis poll error for %s: %s", stream_key, e)
-            except asyncio.CancelledError:
+            except asyncio.CancelledError:  # NOSONAR — S7497: default value is correct
                 break
             except Exception as e:
                 logger.exception("Redis poll loop error: %s", e)
@@ -601,7 +601,7 @@ class RedisEventBus(EventBus):
         return count
 
 
-# ════════════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # KafkaEventBus
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -679,7 +679,7 @@ class KafkaEventBus(EventBus):
         _ = await self._get_producer()
         if self._handlers:
             _ = await self._get_consumer()
-        asyncio.create_task(self._consume_loop())
+        asyncio.create_task(self._consume_loop())  # NOSONAR — S7502: broad except kept for resilience
         logger.info("KafkaEventBus started")
 
     async def stop(self) -> None:

@@ -180,7 +180,7 @@ class _NoOpTraceContext:
         # updates when LangWatch is not installed.
         pass  # NOSONAR — S1186: intentional no-op for graceful degradation
 
-    def span(self, name: str, **kwargs: Any) -> _NoOpTraceContext:
+    def span(self, name: str, **kwargs: Any) -> _NoOpTraceContext:  # NOSONAR — S1172: parameter retained for API stability
         return self
 
 

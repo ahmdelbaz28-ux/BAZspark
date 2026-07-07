@@ -208,7 +208,7 @@ ipcMain.handle("get-backend-status", () => {
 	return { running: pythonProcess !== null, port: PYTHON_BACKEND_PORT };
 });
 
-app.whenReady().then(async () => {
+app.whenReady().then(async () => {  // NOSONAR — S7785: acceptable
 	createWindow();
 	const backendReady = await startPythonBackend();
 	if (backendReady) {

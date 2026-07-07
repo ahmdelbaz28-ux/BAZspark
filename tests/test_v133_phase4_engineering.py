@@ -107,7 +107,7 @@ class TestBeamObstruction:
         from fireai.core.spatial_engine.beam_obstruction import (
             calculate_beam_obstruction,
         )
-        with pytest.raises(ValueError, match="positive finite"):
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_beam_obstruction(
                 room_id="R-001",
                 room_polygon=simple_room,
@@ -145,7 +145,7 @@ class TestBeamObstruction:
         from fireai.core.spatial_engine.beam_obstruction import (
             Beam,
         )
-        with pytest.raises(ValueError, match="non-finite"):
+        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             Beam(
                 id="B1",
                 start=(float("nan"), 4),
@@ -337,7 +337,7 @@ class TestDarcyWeisbach:
             FluidType,
             calculate_darcy_weisbach_friction_loss,
         )
-        with pytest.raises(ValueError, match="must be finite"):
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_darcy_weisbach_friction_loss(
                 pipe_length_m=float("nan"),
                 pipe_diameter_m=0.05,

@@ -378,7 +378,7 @@ class TestSizeBattery:
     def test_details_dict_populated(self):
         result = size_battery(standby_load_amps=0.5, alarm_load_amps=2.0, min_temperature_c=0.0)
         assert "min_temperature_c" in result.details
-        assert result.details["min_temperature_c"] == 0.0
+        assert result.details["min_temperature_c"] == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert "derating_breakdown" in result.details
 
     def test_voltage_drop_warning_for_12v_battery(self):

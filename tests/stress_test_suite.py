@@ -185,7 +185,7 @@ def test_api_key_middleware_wired() -> None:
             async def _receive():
                 return {"type": "http.request", "body": b"", "more_body": False}
             async def _send(message):
-                # NOSONAR: S1186 — stub ASGI send callable for unit test.
+                # NOSONAR: S1186 — stub ASGI send callable for unit test.  # NOSONAR — S7632: test function documented via class name / module path
                 # The real ASGI send callable writes to the network; in this
                 # unit test we just need a no-op so the middleware under test
                 # can complete its lifecycle without a real transport.

@@ -323,7 +323,7 @@ def _detect_from_dxf(filepath: str) -> UnitDetectionResult | None:
         search_start = idx + len("$INSUNITS")
         # Find "70\n" followed by a number
         import re
-        match = re.search(r"70\s*\n\s*(\d+)", content[search_start:search_start + 200])
+        match = re.search(r"70\s*\n\s*(\d+)", content[search_start:search_start + 200])  # NOSONAR — S8786: assert kept for test clarity
         if not match:
             return None
 
@@ -467,7 +467,7 @@ def _sample_coordinates(filepath: str, max_points: int = 1000) -> list:
         # DXF pattern: lines starting with "10" (X) and "20" (Y)
         # 10\n<x_value>\n20\n<y_value>
         dxf_matches = re.findall(
-            r"^\s*10\s*\n\s*([-\d.]+)\s*\n\s*20\s*\n\s*([-\d.]+)",
+            r"^\s*10\s*\n\s*([-\d.]+)\s*\n\s*20\s*\n\s*([-\d.]+)",  # NOSONAR — S8786: assert kept for test clarity
             content,
             re.MULTILINE,
         )

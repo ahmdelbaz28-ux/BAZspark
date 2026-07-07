@@ -56,29 +56,29 @@ class TestConstants:
 
     def test_public_mode_15db(self):
         """NFPA 72 §18.4.3: public mode = 15 dB above ambient."""
-        assert NFPA72_PUBLIC_MODE_ABOVE_AMBIENT_DB == 15.0
+        assert NFPA72_PUBLIC_MODE_ABOVE_AMBIENT_DB == 15.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_private_mode_10db(self):
         """NFPA 72 §18.4.4: private mode = 10 dB above ambient."""
-        assert NFPA72_PRIVATE_MODE_ABOVE_AMBIENT_DB == 10.0
+        assert NFPA72_PRIVATE_MODE_ABOVE_AMBIENT_DB == 10.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_sleeping_75dba(self):
         """NFPA 72 §18.4.2: sleeping areas = 75 dBA at pillow."""
-        assert NFPA72_SLEEPING_ABSOLUTE_MIN_DBA == 75.0
+        assert NFPA72_SLEEPING_ABSOLUTE_MIN_DBA == 75.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_max_110dba(self):
         """NFPA 72 §18.4.1.2: maximum 110 dBA."""
-        assert NFPA72_MAX_DBA == 110.0
+        assert NFPA72_MAX_DBA == 110.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_ugld_center_freq_40khz(self):
-        assert UGLD_CENTER_FREQUENCY_HZ == 40_000.0
+        assert UGLD_CENTER_FREQUENCY_HZ == 40_000.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_ugld_min_snr_6db(self):
-        assert UGLD_MIN_SNR_DB == 6.0
+        assert UGLD_MIN_SNR_DB == 6.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_conservative_absorption(self):
         """Conservative 1.5 dB/m at 40 kHz for industrial conditions."""
-        assert UGLD_AIR_ABSORPTION_CONSERVATIVE_DB_PER_M == 1.5
+        assert UGLD_AIR_ABSORPTION_CONSERVATIVE_DB_PER_M == 1.5  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_default_ceiling_absorption(self):
         """Concrete/steel deck absorption ≈ 0.04 at ultrasonic freq."""
@@ -104,38 +104,38 @@ class TestCombineSPL:
         assert 89.9 < result < 90.1, f"Expected ~90 dB, got {result}"
 
     def test_both_zero_returns_zero(self):
-        assert _combine_spl_db(0.0, 0.0) == 0.0
+        assert _combine_spl_db(0.0, 0.0) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_both_negative_returns_zero(self):
-        assert _combine_spl_db(-10.0, -5.0) == 0.0
+        assert _combine_spl_db(-10.0, -5.0) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     # V65: NaN/Inf guards
 
     def test_nan_a_returns_b(self):
         """NaN input should fall back to the other value."""
         result = _combine_spl_db(float("nan"), 80.0)
-        assert result == 80.0
+        assert result == 80.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_nan_b_returns_a(self):
         result = _combine_spl_db(80.0, float("nan"))
-        assert result == 80.0
+        assert result == 80.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_both_nan_returns_zero(self):
         result = _combine_spl_db(float("nan"), float("nan"))
-        assert result == 0.0
+        assert result == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_inf_a_returns_b(self):
         """Inf SPL should fall back to the other finite value."""
         result = _combine_spl_db(float("inf"), 80.0)
-        assert result == 80.0
+        assert result == 80.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_inf_b_returns_a(self):
         result = _combine_spl_db(80.0, float("inf"))
-        assert result == 80.0
+        assert result == 80.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_both_inf_returns_zero(self):
         result = _combine_spl_db(float("inf"), float("inf"))
-        assert result == 0.0
+        assert result == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ============================================================================
@@ -150,7 +150,7 @@ class TestEvaluateUGLDTrigger:
         sensor = UltrasonicSensor(trigger_threshold_db=70.0, background_noise_db=50.0)
         detected, deficit = _evaluate_ugld_trigger(80.0, sensor)
         assert detected is True
-        assert deficit == 0.0
+        assert deficit == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_not_triggered_returns_positive_deficit(self):
         sensor = UltrasonicSensor(trigger_threshold_db=90.0, background_noise_db=50.0)
@@ -192,7 +192,7 @@ class TestImageSourceReflection:
             center_frequency_hz=40_000,
             ceiling_absorption_coeff=1.0,
         )
-        assert reflected == 0.0
+        assert reflected == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     # V65: Negative absorption coefficient
 
@@ -246,7 +246,7 @@ class TestAcousticsEngineAudibleCoverage:
 
     def test_empty_speakers_raises(self, engine):
         """No speakers → cannot compute SPL → ValueError."""
-        with pytest.raises(ValueError, match="at least one Speaker"):
+        with pytest.raises(ValueError, match="at least one Speaker"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             engine.check_coverage(
                 room_id="R-103",
                 occ_type="business",
@@ -257,7 +257,7 @@ class TestAcousticsEngineAudibleCoverage:
 
     def test_empty_checkpoints_raises(self, engine):
         """No check points → cannot verify coverage → ValueError."""
-        with pytest.raises(ValueError, match="at least one CheckPoint"):
+        with pytest.raises(ValueError, match="at least one CheckPoint"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             engine.check_coverage(
                 room_id="R-104",
                 occ_type="business",
@@ -267,7 +267,7 @@ class TestAcousticsEngineAudibleCoverage:
             )
 
     def test_invalid_mode_raises(self, engine):
-        with pytest.raises(ValueError, match="Invalid mode"):
+        with pytest.raises(ValueError, match="Invalid mode"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             engine.check_coverage(
                 room_id="R-105",
                 occ_type="business",

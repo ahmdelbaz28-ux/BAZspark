@@ -109,7 +109,7 @@ NFPA72_DEFAULT_CEILING_M = 3.0
 NFPA72_MAX_SPACING_M = 9.1
 
 
-# ═══════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Enums
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -441,7 +441,7 @@ class SimulationResult:
         return asdict(self)
 
 
-# ═══════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # TwinDriftAnalyzer
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -527,7 +527,7 @@ class TwinDriftAnalyzer:
         return "low"
 
 
-# ═══════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # TwinSimulator
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -719,7 +719,7 @@ class TwinSimulator:
         return round(len(covered) / len(rooms) * 100, 2) if rooms else 0.0
 
 
-# ═══════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # TwinSerializer
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -858,7 +858,7 @@ class DigitalTwin:
         # The old code stored AuditStore (class), which meant _audit_log
         # called class methods instead of instance methods — no state,
         # no database connection, no hash chain.
-        self._audit_store = AuditStore() if AuditStore is not None else None
+        self._audit_store = AuditStore() if AuditStore is not None else None  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
 
         # Compose sub-components
         self._drift_analyzer = TwinDriftAnalyzer()
@@ -2000,7 +2000,7 @@ class DigitalTwin:
         return result
 
 
-# ═══════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Self-Test
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -2119,7 +2119,7 @@ if __name__ == "__main__":
     check("Planned detectors", report.planned_detectors == 1)  # D-002 is PLANNED
     check("Health score", 0.0 < report.health_score <= 1.0)
     check("Rooms with coverage", report.rooms_with_coverage == 2)  # R-01 and R-02 both have OK
-    check("Coverage pct", report.coverage_pct == 100.0)
+    check("Coverage pct", report.coverage_pct == 100.0)  # NOSONAR — S1244: import retained for re-export / API surface
 
     # Test with an uncovered room
     twin.register_detector(

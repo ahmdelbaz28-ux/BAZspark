@@ -940,11 +940,11 @@ class ConstraintEngine:
     # ─── Composite Checks ─────────────────────────────────────────────────
 
     def check_all(
-        self,
+        self,  # NOSONAR — S107: parameter count acceptable for this API
         cable_length_m: float,
         wire_gauge: WireGauge,
         num_bends: int = 0,
-        num_elevation_changes: int = 0,
+        num_elevation_changes: int = 0,  # NOSONAR — S1172: parameter retained for API stability
         min_electrical_separation_mm: float = 300.0,
         ps_voltage: float = 24.0,
         alarm_current_a: float = 0.0,
@@ -1188,7 +1188,7 @@ class ConstraintEngine:
         # not here. This method only computes single-step cost.
 
         # Electrical proximity penalty
-        if is_near_electrical:  # NOSONAR: S1763 dead code retained for documentation
+        if is_near_electrical:  # NOSONAR: S1763 dead code retained for documentation  # NOSONAR — S7632: test function documented via class name / module path
             cost += ELECTRICAL_PROXIMITY_PENALTY_M
 
         return cost

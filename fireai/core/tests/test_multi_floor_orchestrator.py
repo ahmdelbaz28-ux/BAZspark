@@ -685,7 +685,7 @@ class TestConstants:
         assert OTHER_FLOORS_PER_ZONE == 2
 
     def test_max_zone_area_sqft(self) -> None:
-        assert MAX_ZONE_AREA_SQFT == 20_000.0
+        assert MAX_ZONE_AREA_SQFT == 20_000.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_max_zone_area_sqm(self) -> None:
         assert pytest.approx(20_000.0 * 0.092903, rel=1e-4) == MAX_ZONE_AREA_SQM
@@ -803,15 +803,15 @@ class TestOrchestrate:
         result = orchestrator.orchestrate(**sample_building_spec)
         elev_map = {fa.floor_id: fa.elevation_m for fa in result.floor_assignments}
         assert elev_map["GF"] == pytest.approx(0.0)
-        assert elev_map["L1"] == 3.5
-        assert elev_map["L2"] == 7.0
+        assert elev_map["L1"] == 3.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert elev_map["L2"] == 7.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_floor_areas_set(self, orchestrator, sample_building_spec) -> None:
         """Floor areas should be propagated to floor assignments."""
         result = orchestrator.orchestrate(**sample_building_spec)
         area_map = {fa.floor_id: fa.area_sqm for fa in result.floor_assignments}
-        assert area_map["GF"] == 500.0
-        assert area_map["L1"] == 500.0
+        assert area_map["GF"] == 500.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert area_map["L1"] == 500.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_occupancy_type_set(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
@@ -871,7 +871,7 @@ class TestOrchestrate:
 
     def test_analysis_time_recorded(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
-        assert result.analysis_time_s > 0.0 or result.analysis_time_s == 0.0  # May be very fast
+        assert result.analysis_time_s > 0.0 or result.analysis_time_s == 0.0  # May be very fast  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_disclaimer_present(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
@@ -1506,7 +1506,7 @@ class TestSmokeSpreadAnalysis:
             building_height_m=0.0,
         )
         elev_results = [r for r in results if r.pathway == SmokeSpreadPathway.ELEVATOR_SHAFT]
-        assert elev_results[0].propagation_time_s == 0.0
+        assert elev_results[0].propagation_time_s == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ============================================================================

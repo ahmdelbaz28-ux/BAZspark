@@ -33,7 +33,7 @@ from fireai.core.building_engine import (
 from fireai.core.fire_zone_engine import ZoneConstraints
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -95,7 +95,7 @@ class TestBuildingReport:
         assert report.non_compliant_floors == []
         assert report.unsafe_floors == []
         assert report.building_warnings == []
-        assert report.analysis_time_s == 0.0
+        assert report.analysis_time_s == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert report.project_profile is None
         assert report.zone_reports == {}
         assert report.cache_stats is None

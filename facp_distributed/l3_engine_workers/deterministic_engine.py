@@ -354,7 +354,7 @@ class ElectricalCalculator:
         current = Decimal(str(params.get("current", 0)))
         material = params.get("material", "copper")  # copper or aluminum
         ambient_temp = params.get("ambient_temperature", 30)  # degrees Celsius
-        _ = params.get("installation_method", "conduit")  # conduit, tray, buried  # NOSONAR: S2201 return value intentionally unused
+        _ = params.get("installation_method", "conduit")  # conduit, tray, buried  # NOSONAR: S2201 return value intentionally unused  # NOSONAR — S7632: test function documented via class name / module path
 
         # Base ampacity values (simplified)
         base_ampacities = {

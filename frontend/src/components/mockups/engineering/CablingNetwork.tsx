@@ -452,7 +452,7 @@ function NavNode({
 			>
 				<div className="w-4 h-4 flex items-center justify-center">
 					{children ? (
-						expanded ? (
+						expanded ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
 							<svg
 								width="10"
 								height="10"

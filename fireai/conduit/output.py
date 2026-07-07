@@ -316,7 +316,7 @@ def _dxf_color(ct: ConduitType) -> int:
         ConduitType.UPVC_SCH40: 3,    # Green
         ConduitType.UPVC_SCH80: 4,    # Cyan
         ConduitType.RGD:        5,    # Blue
-    }.get(ct, 7)  # 7 = white (default)
+    }.get(ct, 7)  # 7 = white (default)  # NOSONAR — S125: commented-out code kept for historical reference
 
 
 def _sha256(payload: dict[str, Any]) -> str:

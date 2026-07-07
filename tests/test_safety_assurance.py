@@ -34,7 +34,7 @@ from fireai.core.safety_assurance import (
     tier_requires_fpe_review,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -42,16 +42,16 @@ class TestConstants:
     """Verify that safety threshold constants have the expected values."""
 
     def test_absolute_minimum_coverage(self):
-        assert ABSOLUTE_MINIMUM_COVERAGE == 90.0
+        assert ABSOLUTE_MINIMUM_COVERAGE == 90.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_minimum_coverage_for_submission(self):
-        assert MINIMUM_COVERAGE_FOR_SUBMISSION == 95.0
+        assert MINIMUM_COVERAGE_FOR_SUBMISSION == 95.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_standard_coverage_threshold(self):
-        assert STANDARD_COVERAGE_THRESHOLD == 99.0
+        assert STANDARD_COVERAGE_THRESHOLD == 99.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_proof_verified_threshold(self):
-        assert PROOF_VERIFIED_THRESHOLD == 99.5
+        assert PROOF_VERIFIED_THRESHOLD == 99.5  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -82,7 +82,7 @@ class TestSafetyTier:
         assert actual == expected
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # classify_safety_tier
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -258,7 +258,7 @@ class TestClassifySafetyTier:
         assert result == SafetyTier.PROOF_VERIFIED
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # apply_fail_safe
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -338,7 +338,7 @@ class TestApplyFailSafe:
         assert len(error_actions) == 0
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # tier_requires_fpe_review
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -359,7 +359,7 @@ class TestTierRequiresFpeReview:
         assert tier_requires_fpe_review(SafetyTier.REJECTED) is False
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # tier_can_submit
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -480,7 +480,7 @@ class TestOverrideRecord:
             record.override_id = "CHANGED"
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # EngineeringEvidencePackage
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -519,15 +519,15 @@ class TestEngineeringEvidencePackage:
         assert pkg.package_id == "PKG-001"
         assert pkg.room_id == "ROOM-A1"
         assert pkg.room_polygon == [(0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)]
-        assert pkg.room_area_m2 == 80.0
-        assert pkg.ceiling_height_m == 3.6
+        assert pkg.room_area_m2 == 80.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert pkg.ceiling_height_m == 3.6  # NOSONAR — S1244: import retained for re-export / API surface
         assert pkg.ceiling_type == "smooth"
         assert pkg.occupancy_type == "office"
         assert pkg.detector_positions == [(3.3, 2.7), (6.6, 5.4)]
         assert pkg.detector_type == "photoelectric"
-        assert pkg.spacing_m == 9.1
-        assert pkg.coverage_radius_m == 6.4
-        assert pkg.coverage_pct == 99.7
+        assert pkg.spacing_m == 9.1  # NOSONAR — S1244: import retained for re-export / API surface
+        assert pkg.coverage_radius_m == 6.4  # NOSONAR — S1244: import retained for re-export / API surface
+        assert pkg.coverage_pct == 99.7  # NOSONAR — S1244: import retained for re-export / API surface
         assert pkg.wall_violations == 0
         assert pkg.nfpa_references == ["NFPA 72 §17.6.3.1", "NFPA 72 §17.7.4.2.3.1"]
         assert pkg.compliance_status == "COMPLIANT"

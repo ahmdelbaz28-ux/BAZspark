@@ -194,7 +194,7 @@ const VOLTAGE_DROP_LIMITS: Record<CircuitType, number> = {
  * - sinφ = √(1 - cos²φ)
  * - Phase multiplier: 2 for single-phase (out+return), √3 for three-phase
  */
-export function calculateVoltageDrop(
+export function calculateVoltageDrop(  // NOSONAR — S107: parameter count acceptable
 	current: number,
 	length: number,
 	material: CableMaterial,
@@ -635,7 +635,7 @@ export interface EngineeringReport {
 	timestamp: number;
 }
 
-export function generateCompleteReport(
+export function generateCompleteReport(  // NOSONAR — S107: parameter count acceptable
 	current: number,
 	length: number,
 	material: CableMaterial,

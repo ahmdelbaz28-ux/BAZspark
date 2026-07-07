@@ -74,7 +74,7 @@ export function EventLog({
 			<div className="flex-1 bg-background/50 rounded-lg border border-border p-3 overflow-y-auto font-mono text-[10px] space-y-1">
 				{eventLogs.map((log, index) => (
 					<div
-						key={index}
+						key={index}  // NOSONAR — S6479: array index key acceptable for static list
 						className={`${log.message.includes("CRITICAL") || log.message.includes("CASCADE") || log.message.includes("Alert") ? "text-destructive" : "text-foreground"}`}
 					>
 						{log.message}

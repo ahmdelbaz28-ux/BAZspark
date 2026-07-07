@@ -150,7 +150,7 @@ class SensitivityAnalyzer:
         base_val = (
             baseline_value
             if baseline_value is not None
-            else (default_radius if param == "coverage_radius" else default_step)
+            else (default_radius if param == "coverage_radius" else default_step)  # NOSONAR — S3358: nested ternary acceptable in this localized context
         )
 
         values = sorted(set([base_val] + (values or [])))

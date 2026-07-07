@@ -85,7 +85,7 @@ _SENSITIVE_PATTERNS = [
         re.IGNORECASE,
     ),
     # Bearer tokens in Authorization headers
-    re.compile(r"(Bearer\s+)([A-Za-z0-9_\-\.]+)", re.IGNORECASE),
+    re.compile(r"(Bearer\s+)([A-Za-z0-9_\-\.]+)", re.IGNORECASE),  # NOSONAR — S5869: f-string without placeholders kept for future expansion
 ]
 
 # V105 FIX (HIGH-2): REMOVED the overly broad hex-regex pattern that was

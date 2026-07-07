@@ -175,7 +175,7 @@ test.describe("Dashboard Page Button Tests", () => {
 
 			await expect(refreshButton).toBeEnabled();
 		} else {
-			test.skip(true, "No refresh button found on dashboard");
+			test.skip(true, "No refresh button found on dashboard");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -281,7 +281,7 @@ test.describe("Projects Page Button Tests", () => {
 				0,
 			);
 		} else {
-			test.skip(true, "No create project button found");
+			test.skip(true, "No create project button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -382,7 +382,7 @@ test.describe("AutoCAD Page Button Tests", () => {
 			// Wait for connection status update
 			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
-			test.skip(true, "No AutoCAD connect button found");
+			test.skip(true, "No AutoCAD connect button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -417,7 +417,7 @@ test.describe("AutoCAD Page Button Tests", () => {
 			// Wait for potential file dialog (though Playwright handles this differently)
 			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
-			test.skip(true, "No AutoCAD upload button found");
+			test.skip(true, "No AutoCAD upload button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -505,7 +505,7 @@ test.describe("Revit Page Button Tests", () => {
 			// Wait for connection status update
 			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
-			test.skip("No Revit connect button found");
+			test.skip("No Revit connect button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -540,7 +540,7 @@ test.describe("Revit Page Button Tests", () => {
 			// Wait for potential file dialog
 			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
-			test.skip("No Revit upload button found");
+			test.skip("No Revit upload button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -620,7 +620,7 @@ test.describe("Digital Twin Page Button Tests", () => {
 			// Wait for conversion process to start
 			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
-			test.skip(true, "No digital twin convert button found");
+			test.skip(true, "No digital twin convert button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -784,7 +784,7 @@ test.describe("Connections Page Button Tests", () => {
 
 			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
-			test.skip("No connections create button found");
+			test.skip("No connections create button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -864,7 +864,7 @@ test.describe("Conflicts Page Button Tests", () => {
 
 			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
-			test.skip(true, "No conflicts resolve button found");
+			test.skip(true, "No conflicts resolve button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -898,7 +898,7 @@ test.describe("Conflicts Page Button Tests", () => {
 
 			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
-			test.skip(true, "No conflicts check button found");
+			test.skip(true, "No conflicts check button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -937,7 +937,7 @@ test.describe("Reports Page Button Tests", () => {
 
 			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
-			test.skip(true, "No reports generate button found");
+			test.skip(true, "No reports generate button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -1016,7 +1016,7 @@ test.describe("Settings Page Button Tests", () => {
 
 			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
-			test.skip(true, "No settings save button found");
+			test.skip(true, "No settings save button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 

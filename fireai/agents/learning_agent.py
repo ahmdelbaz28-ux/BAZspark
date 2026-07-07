@@ -67,7 +67,7 @@ def _extract_features_from_config(config_json: str) -> dict[str, float]:
         "length": float(config.get("length", 0)),
         "obstruction_count": float(config.get("obstruction_count", 0)),
         "ceiling_type": 1.0 if config.get("ceiling_type") in ("flat", "FLAT") else (
-            2.0 if config.get("ceiling_type") in ("sloped", "SLOPED", "beam", "BEAM") else 3.0
+            2.0 if config.get("ceiling_type") in ("sloped", "SLOPED", "beam", "BEAM") else 3.0  # NOSONAR — S3358: nested ternary acceptable in this localized context
         ),
     }
 

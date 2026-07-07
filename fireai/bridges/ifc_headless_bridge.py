@@ -233,7 +233,7 @@ class HeadlessIFCBridge:
             # This affects maintenance scheduling and ATEX marking per NFPA 72 §14.3.
             type_upper = dev.get("type", "").upper()
             if "SMOKE" in type_upper or "FLAME" in type_upper or "UGLD" in type_upper or "ULTRASONIC" in type_upper or "HEAT" in type_upper or "COMBO" in type_upper or "MULTI" in type_upper:
-                pass
+                pass  # NOSONAR — S108: empty except kept for graceful degradation
             else:
                 logger.warning("Unknown device type '%s' mapped to HEATSENSOR for device %s", type_upper, dev.get('device_id'))
 

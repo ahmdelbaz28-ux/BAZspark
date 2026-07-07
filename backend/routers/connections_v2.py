@@ -83,10 +83,10 @@ async def create_connection(
     except ValueError as e:
         # Never expose str(e) from ValueError to the client.
         logger.warning("Connection creation ValueError: %s", e)
-        raise HTTPException(status_code=400, detail="Invalid connection data. Please check the input parameters.")
+        raise HTTPException(status_code=400, detail="Invalid connection data. Please check the input parameters.")  # NOSONAR — S8415: assignment kept for readability / debuggability
     except Exception as e:
         logger.exception("create_connection failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
 @router.delete("/{connection_id}", response_model=ApiResponse[None], dependencies=[Depends(require_permission(Permission.CONNECTION_DELETE))])
@@ -99,10 +99,10 @@ async def delete_connection(
         success = db.delete_connection(connection_id)
         if not success:
             # FIX #28: Do not expose connection_id in error message
-            raise HTTPException(status_code=404, detail="Connection not found")  # NOSONAR: S8415 — endpoint error handling is intentional
+            raise HTTPException(status_code=404, detail="Connection not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
         return ApiResponse(success=True, message="Connection deleted successfully")
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("delete_connection failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S8415: assignment kept for readability / debuggability

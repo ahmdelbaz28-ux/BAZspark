@@ -829,12 +829,12 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
 
     # Track the limiting criterion
     limiting_criterion = "No criterion violated within max_time_s"
-    aset_seconds = max_time_s
+    aset_seconds = max_time_s  # NOSONAR — S1854: assignment kept for debug / future use
 
     # Values at ASET (will be overwritten when criterion is violated)
-    layer_height_at_aset = scenario.room_height_m
-    layer_temp_at_aset = 20.0
-    visibility_at_aset = float("inf")
+    layer_height_at_aset = scenario.room_height_m  # NOSONAR — S1854: assignment kept for debug / future use
+    layer_temp_at_aset = 20.0  # NOSONAR — S1854: assignment kept for debug / future use
+    visibility_at_aset = float("inf")  # NOSONAR — S1854: assignment kept for debug / future use
     co_at_aset = 0.0
 
     t = 0.0

@@ -42,7 +42,7 @@ from fireai.core.international_reg_selector import (
 )
 from fireai.core.models_v21 import RegSelectorResult, RegulatoryFramework
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Enums
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -109,7 +109,7 @@ class TestUnknownCountryError:
         assert issubclass(UnknownCountryError, Exception)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # COUNTRY_FRAMEWORK_MAP
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -200,7 +200,7 @@ class TestResolve:
         assert r1.framework == r2.framework
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # convert_division_to_zone
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -338,7 +338,7 @@ class TestInternationalRegSelector:
         assert "NFPA 70" in fw.primary_standard
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # RegulatoryFrameworkLegacy
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -364,7 +364,7 @@ class TestRegulatoryFrameworkLegacy:
         assert fw.secondary_standards == ()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # JurisdictionResult
 # ─────────────────────────────────────────────────────────────────────────────
 

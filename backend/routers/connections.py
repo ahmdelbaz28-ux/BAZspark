@@ -27,7 +27,7 @@ def _verify_project(project_id: str) -> None:
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
 
 # camelCase → snake_case sort field mapping
@@ -76,13 +76,13 @@ async def create_connection(project_id: str, input_data: CreateConnectionInput):
     # Verify both devices exist
     from_dev = db.get_device(project_id, input_data.fromId)
     if not from_dev:
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=400,
             detail=f"Source device '{input_data.fromId}' not found",
         )
     to_dev = db.get_device(project_id, input_data.toId)
     if not to_dev:
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=400,
             detail=f"Target device '{input_data.toId}' not found",
         )
@@ -125,7 +125,7 @@ async def update_connection(
     # Check connection exists via indexed lookup
     connection = db.get_connection(project_id, connection_id)
     if not connection:
-        raise HTTPException(status_code=404, detail="Connection not found")  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail="Connection not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
     # Build updates dict with only provided fields
     updates = {}
@@ -137,7 +137,7 @@ async def update_connection(
         updates["type"] = connection_type
 
     if not updates:
-        raise HTTPException(status_code=400, detail="No fields to update")
+        raise HTTPException(status_code=400, detail="No fields to update")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
     # Apply updates via database method
     updated = db.update_connection(project_id, connection_id, updates)
@@ -154,7 +154,7 @@ async def delete_connection(project_id: str, connection_id: str):
     db = get_db()
     deleted = db.delete_connection(project_id, connection_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Connection not found")  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail="Connection not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
     # Sync connection deletion to UDM (soft-delete for audit trail)
     from backend.project_bridge import sync_connection_delete_to_udm

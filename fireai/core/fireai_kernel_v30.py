@@ -476,7 +476,7 @@ class StreamingParser:
         """Stream DXF file → yield batches of wall LineStrings as NDArray."""
         buffer: list[str] = []
         try:
-            with open(path, encoding="utf-8", errors="replace") as fh:  # NOSONAR: S7493 sync file I/O acceptable for small config reads
+            with open(path, encoding="utf-8", errors="replace") as fh:  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
                 for line in fh:
                     buffer.append(line)
                     if len(buffer) >= self.CHUNK_LINES:
@@ -1054,7 +1054,7 @@ class WireRouterV2:
         self,
         start: tuple[float, float],
         goal: tuple[float, float],
-        nodes: list[tuple[float, float]] | None = None,
+        nodes: list[tuple[float, float]] | None = None,  # NOSONAR — S1172: parameter retained for API stability
     ) -> list[tuple[float, float]] | None:
         import heapq
 
@@ -1220,7 +1220,7 @@ class KernelCore:
         self,
         path: Path,
         ceiling_m: float = 3.0,
-        standard: str = "NFPA72",
+        standard: str = "NFPA72",  # NOSONAR — S1172: parameter retained for API stability
     ) -> BuildingResult:
         """Full pipeline: file → rooms → detectors → cables → report."""
         t_start = time.perf_counter()

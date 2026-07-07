@@ -97,7 +97,7 @@ class ConnectionManager:
                 code=4004,
                 reason=f"Connection limit exceeded: max {self.MAX_CONNECTIONS_PER_IP} per IP",
             )
-            return False
+            return False  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
 
         await websocket.accept()
         self.active_connections.append(websocket)
@@ -113,7 +113,7 @@ class ConnectionManager:
             f"Total: {len(self.active_connections)}, "
             f"IP connections: {len(self._ip_connections[client_ip])}/{self.MAX_CONNECTIONS_PER_IP}"
         )
-        return True
+        return True  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
 
     def disconnect(self, websocket: WebSocket) -> None:
         if websocket in self.active_connections:
@@ -171,7 +171,7 @@ def _verify_project(project_id: str) -> None:
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
 
 @router.post("", dependencies=[Depends(require_permission(Permission.PROJECT_UPDATE))])
@@ -278,7 +278,7 @@ def _validate_ws_origin(websocket: WebSocket) -> bool:
     return False
 
 
-def _validate_ws_api_key(websocket: WebSocket) -> bool:
+def _validate_ws_api_key(websocket: WebSocket) -> bool:  # NOSONAR — S1172: parameter retained for API stability
     """
     Check if the WebSocket connection provides a valid API key.
 

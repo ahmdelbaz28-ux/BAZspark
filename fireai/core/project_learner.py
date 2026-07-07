@@ -282,7 +282,7 @@ class ProjectLearner:
         labels = [0] * n
         for _ in range(max_iter):
             new_labels = [
-                min(range(k), key=lambda c: (pts[i][0] - centroids[c][0]) ** 2 + (pts[i][1] - centroids[c][1]) ** 2)
+                min(range(k), key=lambda c: (pts[i][0] - centroids[c][0]) ** 2 + (pts[i][1] - centroids[c][1]) ** 2)  # NOSONAR — acceptable in this context
                 for i in range(n)
             ]
             if new_labels == labels:

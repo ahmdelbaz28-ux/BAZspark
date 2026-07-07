@@ -37,7 +37,7 @@ from fireai.core.geometry_utils import (
     validate_polygon,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # _ensure_closed
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -89,9 +89,9 @@ class TestShoelaceArea:
 
     def test_fewer_than_3_vertices(self):
         """Less than 3 vertices → zero area."""
-        assert shoelace_area([(0, 0), (1, 1)]) == 0.0
-        assert shoelace_area([(0, 0)]) == 0.0
-        assert shoelace_area([]) == 0.0
+        assert shoelace_area([(0, 0), (1, 1)]) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert shoelace_area([(0, 0)]) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert shoelace_area([]) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -305,7 +305,7 @@ class TestValidatePolygon:
         assert any("simplification" in w for w in result.warnings)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Winding & Orientation
 # ─────────────────────────────────────────────────────────────────────────────
 

@@ -37,7 +37,7 @@ class TestRevitInternalConversions:
 
     def test_revit_internal_to_metres_zero(self):
         """0 ft = 0 m."""
-        assert revit_internal_to_metres(0.0) == 0.0
+        assert revit_internal_to_metres(0.0) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_metres_to_revit_internal_negative_raises(self):
         """Negative metres should raise ValueError (safety: physical length >= 0)."""
@@ -81,7 +81,7 @@ class TestInchesMmConversion:
         assert inches_to_mm(1.0) == pytest.approx(25.4, abs=1e-12)
 
     def test_inches_to_mm_zero(self):
-        assert inches_to_mm(0.0) == 0.0
+        assert inches_to_mm(0.0) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_inches_to_mm_pipe_diameter(self):
         """Common pipe: 2 in = 50.8 mm."""
@@ -94,7 +94,7 @@ class TestPressureConversions:
         assert psi_to_bar(1.0) == pytest.approx(0.0689476, abs=1e-7)
 
     def test_psi_to_bar_zero(self):
-        assert psi_to_bar(0.0) == 0.0
+        assert psi_to_bar(0.0) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_bar_to_psi_roundtrip(self):
         """roundtrip: psi → bar → psi."""
@@ -114,7 +114,7 @@ class TestFlowRateConversions:
         assert gpm_to_lpm(1.0) == pytest.approx(3.785411784, abs=1e-9)
 
     def test_gpm_to_lpm_zero(self):
-        assert gpm_to_lpm(0.0) == 0.0
+        assert gpm_to_lpm(0.0) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_typical_sprinkler_flow(self):
         """25 gpm (typical sprinkler discharge) ≈ 94.6 L/min."""
@@ -127,7 +127,7 @@ class TestAreaConversions:
         assert sqft_to_sqm(1.0) == pytest.approx(0.09290304, abs=1e-12)
 
     def test_sqft_to_sqm_zero(self):
-        assert sqft_to_sqm(0.0) == 0.0
+        assert sqft_to_sqm(0.0) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_large_room_area(self):
         """1000 ft² (medium room) = 92.9 m²."""

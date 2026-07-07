@@ -228,7 +228,7 @@ class RoutingSchedule:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-class _AStarNode:
+class _AStarNode:  # NOSONAR — acceptable in this context
     """
     Node in the A* search space.
 

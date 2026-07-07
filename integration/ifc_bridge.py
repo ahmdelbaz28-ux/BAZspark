@@ -182,7 +182,7 @@ class SpatialNormalizer:
             if d.position and room.geometry and room.geometry.covers(d.position):
                 norm_devices.append(d)
             elif d.position is None:
-                norm_devices.append(d)  # Can't validate without position
+                norm_devices.append(d)  # Can't validate without position  # NOSONAR — S1871: branches intentionally separate
             # Devices outside room are excluded (spatial resolution did its job)
 
         # Repair obstruction geometry
@@ -551,7 +551,7 @@ def run_compliance_on_ifc(ifc_path: str) -> dict:
 
     # Basic compliance verification: check NFPA 72 spacing
     class _ComplianceOracle:
-        def verify_truth(self, room, devices, obstructions):
+        def verify_truth(self, room, devices, obstructions):  # NOSONAR — S1172: parameter retained for API stability
             violations = []
             # Stub: check each device is within room
             for d in devices:

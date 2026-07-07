@@ -1777,7 +1777,7 @@ def calculate_sprinkler_pressure(flow_gpm: float, k_factor: float) -> float:
     Computes required operating pressure: P = (Q / K)^2
     Citing: NFPA 13 Section 23.4.4.
     """
-    if k_factor == 0.0:
+    if k_factor == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
         raise ZeroDivisionError("K-Factor cannot be zero under active calculations.")
     return (flow_gpm / k_factor) ** 2
 

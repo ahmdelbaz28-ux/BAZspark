@@ -48,7 +48,7 @@ def _lazy_import_pandas():
     return pd
 
 
-# ═══════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # EXCEPTIONS
 # ═══════════════════════════════════════════════════════
 

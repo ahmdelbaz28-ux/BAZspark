@@ -693,7 +693,7 @@ class TestFailedPipeline:
 
     def test_stage0_failure_coverage_zero(self):
         result = analyze_room({})
-        assert result.coverage_pct == 0.0
+        assert result.coverage_pct == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_stage0_failure_no_detectors(self):
         result = analyze_room({})

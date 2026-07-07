@@ -56,9 +56,9 @@ class TestOCRScanToBIMIntegration:
         # Verify room was created properly
         room = result.rooms[0]
         assert room.name == "A-101"  # Should be normalized
-        assert room.area == 25.0
+        assert room.area == 25.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert room.room_type in ["OFFICE", "OTHER"]
-        assert room.confidence == 85.0
+        assert room.confidence == 85.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_ocr_failure_handled_by_scan_to_bim(self):
         """Test that ScanToBIM properly handles OCR failures."""

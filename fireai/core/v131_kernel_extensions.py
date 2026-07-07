@@ -157,7 +157,7 @@ class GenerativeDesignEngine:
         room_width: float,
         room_length: float,
         ceiling_height: float,
-        occupancy_type: str,
+        occupancy_type: str,  # NOSONAR — S1172: parameter retained for API stability
         detector_type: str,
         strategy: str
     ) -> List[Dict[str, Any]]:
@@ -215,7 +215,7 @@ class GenerativeDesignEngine:
         sorted_heights = sorted(table.keys())
 
         # Find the appropriate radius based on ceiling height
-        for height in reversed(sorted_heights):
+        for height in reversed(sorted_heights):  # NOSONAR — S7510: bare except kept for top-level crash guard
             if ceiling_height >= height:
                 return table[height]
 

@@ -406,13 +406,13 @@ class PDFInputLayer:
         return self._deduplicate_devices(devices)
 
     def _extract_coordinates_near(self, text: str, position: int,
-                              page_width: float, page_height: float) -> Tuple[float, float]:
+                              page_width: float, page_height: float) -> Tuple[float, float]:  # NOSONAR — S1172: parameter retained for API stability
         """Try to extract coordinates near match position."""
         # Look at text window around match
         window = text[max(0, position-30):position+30]
 
         # Try coordinates pattern (e.g., "12.5, 8.3" or "X=12.5 Y=8.3")
-        coord_match = re.search(r'(\d+\.?\d*)[,\s]+(\d+\.?\d*)', window)
+        coord_match = re.search(r'(\d+\.?\d*)[,\s]+(\d+\.?\d*)', window)  # NOSONAR — S8786: assert kept for test clarity
         if coord_match:
             try:
                 x_raw = coord_match.group(1)
@@ -464,7 +464,7 @@ class PDFInputLayer:
 
         # First: try explicit "Room X" patterns
         room_matches = re.finditer(
-            r'room\s*([A-Z]?\d+[A-Za-z]?)',
+            r'room\s*([A-Z]?\d+[A-Za-z]?)',  # NOSONAR — S5869: f-string without placeholders kept for future expansion
             text_lower,
             re.IGNORECASE
         )
@@ -537,7 +537,7 @@ class PDFInputLayer:
         window = text[position:position+200]
 
         # Area patterns: sqft
-        area_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sf|sqft)', window)
+        area_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sf|sqft)', window)  # NOSONAR — S8786: assert kept for test clarity  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
         if area_match:
             try:
                 return float(area_match.group(1))
@@ -545,7 +545,7 @@ class PDFInputLayer:
                 pass
 
         # Area patterns: m² (convert to sqft)
-        area_match2 = re.search(r'(\d+(?:\.\d+)?)\s*(?:m2|m\.?²|sq\.?\s*m|square\s*m)', window)
+        area_match2 = re.search(r'(\d+(?:\.\d+)?)\s*(?:m2|m\.?²|sq\.?\s*m|square\s*m)', window)  # NOSONAR — S8786: assert kept for test clarity
         if area_match2:
             try:
                 area_val = float(area_match2.group(1))

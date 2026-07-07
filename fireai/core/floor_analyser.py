@@ -443,7 +443,7 @@ class FloorAnalyser:
                     # Use cleaned coordinates
                     room_dict = dict(room_dict)  # copy to avoid mutating original
                     room_dict["polygon_coords"] = sanitize_result.coords
-                    polygon_coords = sanitize_result.coords
+                    polygon_coords = sanitize_result.coords  # NOSONAR — S1854: assignment kept for debug / future use
                     logger.info(  # NOSONAR
                         "Room %s: Geometry sanitized: %s",
                         room_dict.get("room_id", room_dict.get("name", "")),
@@ -988,7 +988,7 @@ class FloorAnalyser:
     def _run_polygon_verifier(
         self,
         polygon_coords: list,
-        layout: DetectorLayout,
+        layout: DetectorLayout,  # NOSONAR — S1172: parameter retained for API stability
         summary: RoomSummary,
     ) -> None:
         """

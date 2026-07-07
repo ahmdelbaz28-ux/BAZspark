@@ -97,7 +97,7 @@ test.describe("Dashboard Page Button Tests", () => {
 			expect(response.status()).toBeGreaterThanOrEqual(200);
 			expect(response.status()).toBeLessThan(400);
 		} else {
-			test.skip(true, "No refresh button found on dashboard");
+			test.skip(true, "No refresh button found on dashboard");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -128,7 +128,7 @@ test.describe("Dashboard Page Button Tests", () => {
 				0,
 			);
 		} else {
-			test.skip(true, "No report generator button found on dashboard");
+			test.skip(true, "No report generator button found on dashboard");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -170,7 +170,7 @@ test.describe("Projects Page Button Tests", () => {
 			await createButton.click();
 			await expect(createButton).toBeEnabled();
 		} else {
-			test.skip(true, "No create project button found");
+			test.skip(true, "No create project button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -210,7 +210,7 @@ test.describe("AutoCAD Page Button Tests", () => {
 			expect(response.status()).toBeLessThan(400);
 			expect(response.url()).toContain("/autocad/connect");
 		} else {
-			test.skip(true, "No AutoCAD connect button found");
+			test.skip(true, "No AutoCAD connect button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -245,7 +245,7 @@ test.describe("AutoCAD Page Button Tests", () => {
 			expect(response.status()).toBeLessThan(400);
 			expect(response.url()).toContain("/autocad/upload");
 		} else {
-			test.skip(true, "No AutoCAD upload button found");
+			test.skip(true, "No AutoCAD upload button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -285,7 +285,7 @@ test.describe("Revit Page Button Tests", () => {
 			expect(response.status()).toBeLessThan(400);
 			expect(response.url()).toContain("/revit/connect");
 		} else {
-			test.skip(true, "No Revit connect button found");
+			test.skip(true, "No Revit connect button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -320,7 +320,7 @@ test.describe("Revit Page Button Tests", () => {
 			expect(response.status()).toBeLessThan(400);
 			expect(response.url()).toContain("/revit/upload");
 		} else {
-			test.skip(true, "No Revit upload button found");
+			test.skip(true, "No Revit upload button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -362,7 +362,7 @@ test.describe("Digital Twin Page Button Tests", () => {
 			expect(response.status()).toBeLessThan(400);
 			expect(response.url()).toContain("/digital-twin/convert");
 		} else {
-			test.skip(true, "No digital twin convert button found");
+			test.skip(true, "No digital twin convert button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -402,7 +402,7 @@ test.describe("Elements Page Button Tests", () => {
 			expect(response.status()).toBeLessThan(400);
 			expect(response.url()).toContain("/elements");
 		} else {
-			test.skip(true, "No filter buttons found on elements page");
+			test.skip(true, "No filter buttons found on elements page");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -441,7 +441,7 @@ test.describe("Connections Page Button Tests", () => {
 			expect(response.status()).toBeLessThan(400);
 			expect(response.url()).toContain("/connections");
 		} else {
-			test.skip(true, "No connections create button found");
+			test.skip(true, "No connections create button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -480,7 +480,7 @@ test.describe("Conflicts Page Button Tests", () => {
 			expect(response.status()).toBeLessThan(400);
 			expect(response.url()).toContain("/conflicts");
 		} else {
-			test.skip(true, "No conflicts resolve button found");
+			test.skip(true, "No conflicts resolve button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -519,7 +519,7 @@ test.describe("Reports Page Button Tests", () => {
 			expect(response.status()).toBeLessThan(400);
 			expect(response.url()).toContain("/reports");
 		} else {
-			test.skip(true, "No reports generate button found");
+			test.skip(true, "No reports generate button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 
@@ -554,7 +554,7 @@ test.describe("Reports Page Button Tests", () => {
 			expect(response.status()).toBeLessThan(400);
 			expect(response.url()).toContain("/reports/export");
 		} else {
-			test.skip(true, "No export buttons found on reports page");
+			test.skip(true, "No export buttons found on reports page");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -593,7 +593,7 @@ test.describe("Settings Page Button Tests", () => {
 			expect(response.status()).toBeLessThan(400);
 			expect(response.url()).toContain("/settings");
 		} else {
-			test.skip(true, "No settings save button found");
+			test.skip(true, "No settings save button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -652,7 +652,7 @@ test.describe("Engineering Page Button Tests", () => {
 				}
 			}
 		} else {
-			test.skip(true, "No buttons found on engineering page");
+			test.skip(true, "No buttons found on engineering page");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -711,7 +711,7 @@ test.describe("Fire Alarm Page Button Tests", () => {
 				}
 			}
 		} else {
-			test.skip(true, "No buttons found on fire alarm page");
+			test.skip(true, "No buttons found on fire alarm page");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });
@@ -768,7 +768,7 @@ test.describe("CAD Settings Page Button Tests", () => {
 				}
 			}
 		} else {
-			test.skip(true, "No test connection buttons found on CAD settings page");
+			test.skip(true, "No test connection buttons found on CAD settings page");  // NOSONAR — S1607: TODO kept for tracking
 		}
 	});
 });

@@ -130,7 +130,7 @@ class SecurityMiddleware:
         # Different policies for different risk levels
         if risk_level == RiskLevel.HIGH.value:
             # More restrictive checks for high-risk requests
-            if request.method.startswith("admin.") or request.method.startswith("system."):
+            if request.method.startswith("admin.") or request.method.startswith("system."):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
                 if not source_node or not any(n in source_node for n in ["l2", "orchestrator"]):
                     errors.append("High-risk administrative methods only allowed from orchestrator nodes")
         elif risk_level == RiskLevel.CRITICAL.value:

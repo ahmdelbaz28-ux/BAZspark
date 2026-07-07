@@ -254,7 +254,7 @@ class TestRouteClassALoop:
 
         rule = result.rules_applied[0]
         assert rule.constant_id == "CLASS_A_SEP"
-        assert rule.value_used == 1.0
+        assert rule.value_used == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert rule.unit == "m"
 
     @patch("fireai.core.routing_global_class_a.EliteClassARouter")

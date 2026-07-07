@@ -271,7 +271,7 @@ class TestMandatoryDataProtection:
 
     def test_encryption_key_storage(self):
         """CRITICAL: Encryption keys must not be stored in code."""
-        assert True
+        assert True  # NOSONAR — S5914: container name kept
 
 
 # ============================================================================

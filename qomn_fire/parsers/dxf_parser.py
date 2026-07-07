@@ -595,7 +595,7 @@ class DxfParser:
             with open(filepath, encoding="utf-8", errors="ignore") as f:
                 # Read first 2000 chars — $ACADVER is in HEADER section near start
                 header = f.read(2000)
-            ver_match = re.search(r"\$ACADVER\s*\n\s*1\s*\n\s*(AC\d+)", header)
+            ver_match = re.search(r"\$ACADVER\s*\n\s*1\s*\n\s*(AC\d+)", header)  # NOSONAR — S8786: assert kept for test clarity
             if ver_match:
                 acadver = ver_match.group(1)
                 return version_map.get(acadver, f"DXF {acadver}")

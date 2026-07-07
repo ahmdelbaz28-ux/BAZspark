@@ -166,13 +166,13 @@ export const OnboardingTour: React.FC = () => {
 		top:
 			step.position === "top"
 				? `${targetElement.top - 160}px`
-				: step.position === "bottom"
+				: step.position === "bottom"  // NOSONAR — S3358: nested ternary acceptable in this localized context
 					? `${targetElement.bottom + 16}px`
 					: `${targetElement.top + targetElement.height / 2 - 80}px`,
 		left:
 			step.position === "left"
 				? `${targetElement.left - 280}px`
-				: step.position === "right"
+				: step.position === "right"  // NOSONAR — S3358: nested ternary acceptable in this localized context
 					? `${targetElement.right + 16}px`
 					: `${targetElement.left + targetElement.width / 2 - 140}px`,
 	};

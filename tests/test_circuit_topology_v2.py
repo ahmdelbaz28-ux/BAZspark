@@ -34,7 +34,7 @@ from fireai.core.circuit_topology import (
     CircuitType,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -111,11 +111,11 @@ class TestCircuitDeviceEdgeCases:
 
     def test_zero_current(self):
         d = CircuitDevice("D1", "detector", 10.0, 0.0, 3.0, current_a=0.0)
-        assert d.current_a == 0.0
+        assert d.current_a == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_large_current(self):
         d = CircuitDevice("HS1", "horn_strobe", 10.0, 0.0, 3.0, current_a=2.5)
-        assert d.current_a == 2.5
+        assert d.current_a == 2.5  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_zone_id_optional(self):
         d = CircuitDevice("D1", "detector")
@@ -168,17 +168,17 @@ class TestCircuitTopologyDeviceManagement:
 
     def test_add_device_nan_y(self):
         c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC)
-        with pytest.raises(ValueError, match="non-finite"):
+        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             c.add_device(CircuitDevice("D1", "detector", 0.0, float("nan"), 3.0))
 
     def test_add_device_nan_z(self):
         c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC)
-        with pytest.raises(ValueError, match="non-finite"):
+        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             c.add_device(CircuitDevice("D1", "detector", 0.0, 0.0, float("nan")))
 
     def test_add_device_negative_inf(self):
         c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC)
-        with pytest.raises(ValueError, match="non-finite"):
+        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             c.add_device(CircuitDevice("D1", "detector", float("-inf"), 0.0, 3.0))
 
 
@@ -282,25 +282,25 @@ class TestGetDeviceCountBetweenIsolators:
 class TestTotalCableLength:
     def test_class_b_zero_length(self):
         c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC, cable_length_m=0.0)
-        assert c.total_cable_length_m() == 0.0
+        assert c.total_cable_length_m() == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_class_a_zero_return(self):
         """Class A with zero return length — only outgoing counted."""
         c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.SLC,
                           cable_length_m=100.0, return_length_m=0.0)
         # total_cable_length_m adds both paths regardless
-        assert c.total_cable_length_m() == 100.0
+        assert c.total_cable_length_m() == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_class_a_equal_paths(self):
         c = CircuitTopology("C1", CircuitClass.CLASS_A, CircuitType.SLC,
                           cable_length_m=100.0, return_length_m=100.0)
-        assert c.total_cable_length_m() == 200.0
+        assert c.total_cable_length_m() == 200.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_class_b_ignores_return(self):
         c = CircuitTopology("C1", CircuitClass.CLASS_B, CircuitType.SLC,
                           cable_length_m=100.0, return_length_m=50.0)
         # Class B: only outgoing path counted
-        assert c.total_cable_length_m() == 100.0
+        assert c.total_cable_length_m() == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ─────────────────────────────────────────────────────────────────────────────

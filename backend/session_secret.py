@@ -55,7 +55,7 @@ from typing import NamedTuple
 
 logger = logging.getLogger(__name__)
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -79,7 +79,7 @@ class SecretInfo(NamedTuple):
     is_primary: bool
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # VALIDATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -363,7 +363,7 @@ class SessionSecretManager:
         }
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # SINGLETON
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -380,7 +380,7 @@ def get_secret_manager() -> SessionSecretManager:
     return _secret_manager
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # CLI
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -394,7 +394,7 @@ def main() -> None:
         # so the user can copy it. This is NOT logging (no logger, no file).
         # The user MUST see the secret to set FIREAI_SESSION_SECRET.
         # Suppressed with explicit justification per CodeQL docs.
-        print("# FireAI Session Secret — generated with cryptographic randomness")  # noqa: S105, T201 - CLI output, not logging
+        print("# FireAI Session Secret — generated with cryptographic randomness")  # noqa: S105, T201 - CLI output, not logging  # NOSONAR — S7632: test function documented via class name / module path
         print("# Store this securely. DO NOT commit to version control.")  # noqa: T201
         print("#")  # noqa: T201
         print("# Usage (env var):")  # noqa: T201

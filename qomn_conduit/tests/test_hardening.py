@@ -219,7 +219,7 @@ class TestFillResultAlwaysReturned:
         result = calculate_fill(ConduitType.EMT, TradeSize.HALF_INCH, [d])
         assert result.is_ok()
         assert result.value.is_compliant is True
-        assert result.value.max_allowed_pct == 53.0  # 1 conductor
+        assert result.value.max_allowed_pct == 53.0  # 1 conductor  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_fill_just_above_limit(self):
         """Fill just above the limit → is_compliant=False."""

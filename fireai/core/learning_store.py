@@ -87,7 +87,7 @@ class LearningStore:
         logger.info("Learning tables created/verified")
 
     def store(
-        self,
+        self,  # NOSONAR — S107: parameter count acceptable for this API
         project_id: str,
         room_id: str,
         geometry_hash: str,

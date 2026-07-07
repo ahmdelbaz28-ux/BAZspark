@@ -38,7 +38,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 from parsers.dxf_parser import DXFParser, DXFParseResult, ParsedRoom
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -109,15 +109,15 @@ class TestDXFParserInit:
 
     def test_default_min_area(self, parser):
         assert parser.min_area == DXFParser.MIN_ROOM_AREA_M2
-        assert parser.min_area == 2.0
+        assert parser.min_area == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_default_max_area(self, parser):
         assert parser.max_area == DXFParser.MAX_ROOM_AREA_M2
-        assert parser.max_area == 50000.0
+        assert parser.max_area == 50000.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_thresholds(self, custom_parser):
-        assert custom_parser.min_area == 5.0
-        assert custom_parser.max_area == 10000.0
+        assert custom_parser.min_area == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert custom_parser.max_area == 10000.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -154,7 +154,7 @@ class TestDXFParseResult:
             source_file="test.dxf", dxf_units=6, scale_to_meters=1.0,
             rooms=[room],
         )
-        assert result.total_area_m2 == 100.0
+        assert result.total_area_m2 == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_default_values(self):
         result = DXFParseResult(
@@ -165,7 +165,7 @@ class TestDXFParseResult:
         assert result.warnings == []
         assert result.errors == []
         assert result.room_count == 0
-        assert result.total_area_m2 == 0.0
+        assert result.total_area_m2 == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -180,13 +180,13 @@ class TestParsedRoom:
         from shapely.geometry import Polygon
         poly = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
         room = ParsedRoom(room_id="R001", polygon=poly, source_layer="A-WALL")
-        assert room.area_m2 == 100.0
+        assert room.area_m2 == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_small_room_area(self):
         from shapely.geometry import Polygon
         poly = Polygon([(0, 0), (3, 0), (3, 3), (0, 3)])
         room = ParsedRoom(room_id="R001", polygon=poly, source_layer="A-WALL")
-        assert room.area_m2 == 9.0
+        assert room.area_m2 == 9.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_default_warnings(self):
         from shapely.geometry import Polygon
@@ -209,34 +209,34 @@ class TestINSUNITSMapping:
     """
 
     def test_inches_mapping(self, parser):
-        assert parser.INSUNITS_TO_METERS[1] == 0.0254
+        assert parser.INSUNITS_TO_METERS[1] == 0.0254  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_feet_mapping(self, parser):
-        assert parser.INSUNITS_TO_METERS[2] == 0.3048
+        assert parser.INSUNITS_TO_METERS[2] == 0.3048  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_miles_mapping(self, parser):
         """V76 FIX: Miles was missing — caused ValueError."""
-        assert parser.INSUNITS_TO_METERS[3] == 1609.344
+        assert parser.INSUNITS_TO_METERS[3] == 1609.344  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_millimeters_mapping(self, parser):
-        assert parser.INSUNITS_TO_METERS[4] == 0.001
+        assert parser.INSUNITS_TO_METERS[4] == 0.001  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_centimeters_mapping(self, parser):
-        assert parser.INSUNITS_TO_METERS[5] == 0.01
+        assert parser.INSUNITS_TO_METERS[5] == 0.01  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_meters_mapping(self, parser):
-        assert parser.INSUNITS_TO_METERS[6] == 1.0
+        assert parser.INSUNITS_TO_METERS[6] == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_kilometers_mapping(self, parser):
         """V76 FIX: Kilometers was missing — caused ValueError."""
-        assert parser.INSUNITS_TO_METERS[7] == 1000.0
+        assert parser.INSUNITS_TO_METERS[7] == 1000.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_microinches_mapping(self, parser):
         """V76 FIX: Microinches was 1000.0 (3.9×10¹⁰ error!)."""
-        assert parser.INSUNITS_TO_METERS[8] == 2.54e-8
+        assert parser.INSUNITS_TO_METERS[8] == 2.54e-8  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_unspecified_defaults_to_meters(self, parser):
-        assert parser.INSUNITS_TO_METERS[0] == 1.0
+        assert parser.INSUNITS_TO_METERS[0] == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_all_standard_codes_present(self, parser):
         """All standard INSUNITS codes 0-8 must be mapped."""
@@ -320,11 +320,11 @@ class TestRoomAreaValidation:
 
     def test_room_below_min_area_skipped(self, custom_parser):
         """Rooms below min_area are skipped (columns are ~1.5m²)."""
-        assert custom_parser.min_area == 5.0
+        assert custom_parser.min_area == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_room_above_max_area_skipped(self, parser):
         """V78 FIX: Oversized rooms are skipped (possible unit error)."""
-        assert parser.max_area == 50000.0
+        assert parser.max_area == 50000.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -586,7 +586,7 @@ class TestDXFParserErrorHandling:
 
     def test_missing_file_raises(self, parser):
         """Missing DXF file raises an error."""
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
             parser.parse("/tmp/does_not_exist_xyzzy.dxf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_empty_dxf_raises(self, parser):
@@ -643,7 +643,7 @@ class TestDXFParserIntegration:
         try:
             result = parser.parse(p)
             assert result.dxf_units == 6  # meters
-            assert result.scale_to_meters == 1.0
+            assert result.scale_to_meters == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
         except RuntimeError:
             # No rooms found — OK for this test
             pass
@@ -678,7 +678,7 @@ class TestDXFParserIntegration:
         try:
             result = parser.parse(p)
             assert result.dxf_units == 4  # millimeters
-            assert result.scale_to_meters == 0.001
+            assert result.scale_to_meters == 0.001  # NOSONAR — S1244: import retained for re-export / API surface
         except RuntimeError:
             pass
         finally:

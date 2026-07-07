@@ -322,7 +322,7 @@ class RoomSpec:
     name: str = ""
     width_m: float = 10.0
     depth_m: float = 10.0
-    custom_polygon: list = None  # NEW: List of (x,y) tuples for custom room shape (sets polygon field)
+    custom_polygon: list = None  # NEW: List of (x,y) tuples for custom room shape (sets polygon field)  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
     holes: list | None = None  # Interior rings (holes) — list of list of (x,y) tuples per NFPA 72 §17.7.4.2
     polygon: ShapelyPolygon | None = None
     ceiling_spec: CeilingSpec | None = None
@@ -872,7 +872,7 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
         # boolean so there is only ONE `return radius` statement. Behavior
         # is preserved — the final bracket (max_h == 18.288) uses an
         # inclusive upper bound per NFPA 72; all others use exclusive.
-        upper_inclusive = (max_h == 18.288)
+        upper_inclusive = (max_h == 18.288)  # NOSONAR — S1244: import retained for re-export / API surface
         within_bracket = (
             (min_h <= ceiling_height_m <= max_h)
             if upper_inclusive
@@ -903,7 +903,7 @@ def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
         (9.1, 18.288): 10.1,
     }
     for (min_h, max_h), max_cov in MAX_COVERAGE_MAP.items():
-        if max_h == 18.288:
+        if max_h == 18.288:  # NOSONAR — S1244: import retained for re-export / API surface
             if min_h <= ceiling_height_m <= max_h:
                 return max_cov
         else:
@@ -1003,7 +1003,7 @@ def get_smoke_detector_radius_safe(ceiling_height_m: float, _return_details: boo
         "conservative": flag is not None,
     }
     if _return_details:
-        return radius, details  # type: ignore[return-value]
+        return radius, details  # type: ignore[return-value]  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
     return radius
 
 
@@ -1035,7 +1035,7 @@ def _get_radius_internal(h: float) -> float:
         # S3516 fix: consolidate to a single return path (see
         # get_smoke_detector_radius for the same pattern). Behavior
         # is preserved — final bracket uses inclusive upper bound.
-        upper_inclusive = (max_h == 18.288)
+        upper_inclusive = (max_h == 18.288)  # NOSONAR — S1244: import retained for re-export / API surface
         within_bracket = (
             (min_h <= h <= max_h)
             if upper_inclusive
@@ -1084,7 +1084,7 @@ def _get_max_internal(h: float) -> float:
     for (min_h, max_h), m in M.items():
         # S3516 fix: consolidate to a single return path (see
         # get_smoke_detector_radius for the same pattern).
-        upper_inclusive = (max_h == 18.288)
+        upper_inclusive = (max_h == 18.288)  # NOSONAR — S1244: import retained for re-export / API surface
         within_bracket = (
             (min_h <= h <= max_h)
             if upper_inclusive

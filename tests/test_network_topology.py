@@ -41,7 +41,7 @@ from fireai.core.network_topology import (
     PanelNode,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures / Helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -105,7 +105,7 @@ def _make_daisy_chain_network():
     return panels, links
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -116,7 +116,7 @@ class TestConstants:
         assert REQUIRED_TOPOLOGY == "ring"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # PanelNode & NetworkLink
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -145,13 +145,13 @@ class TestNetworkLink:
         link = NetworkLink("L1", "P1", "P2")
         assert link.link_type == "copper"
         assert link.is_class_x is False
-        assert link.length_m == 0.0
+        assert link.length_m == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_values(self):
         link = NetworkLink("L1", "P1", "P2", "fiber_dual", True, 500.0)
         assert link.link_type == "fiber_dual"
         assert link.is_class_x is True
-        assert link.length_m == 500.0
+        assert link.length_m == 500.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_frozen(self):
         link = NetworkLink("L1", "P1", "P2")

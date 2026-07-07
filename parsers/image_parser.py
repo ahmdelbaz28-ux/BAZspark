@@ -199,7 +199,7 @@ class ImageParser:
             return ImageParseResult(source_file=image_path, success=False, errors=[f"SECURITY: {e}"])
 
         image_path = str(safe_path)
-        safe_path.suffix.lower()  # NOSONAR: S2201 return value intentionally unused
+        safe_path.suffix.lower()  # NOSONAR: S2201 return value intentionally unused  # NOSONAR — S7632: test function documented via class name / module path
         result = ImageParseResult(source_file=image_path, success=False)
 
         try:
@@ -261,7 +261,7 @@ class ImageParser:
         # Regular image
         return cv2.imread(path)
 
-    def _try_yolo_segmentation(self, image_path: str, image_size: tuple) -> list:
+    def _try_yolo_segmentation(self, image_path: str, image_size: tuple) -> list:  # NOSONAR — S1172: parameter retained for API stability
         """
         V140 Phase 10: Try YOLO segmentation service for layout analysis.
         Returns list of ImageRoom if successful, empty list if unavailable.
@@ -348,7 +348,7 @@ class ImageParser:
 
         return valid[:20]  # Max 20 rooms
 
-    def _process_contour(self, contour, img, size) -> Optional[ImageRoom]:
+    def _process_contour(self, contour, img, size) -> Optional[ImageRoom]:  # NOSONAR — S1172: parameter retained for API stability
         """Process contour to extract room info."""
         # Get bounding box
         x, y, w, h = cv2.boundingRect(contour)

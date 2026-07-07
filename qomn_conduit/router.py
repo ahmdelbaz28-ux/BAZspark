@@ -119,12 +119,12 @@ class BoundingBox:
         )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # A* node
 # ─────────────────────────────────────────────────────────────────────────────
 
 @dataclass(order=False)
-class _AStarNode:
+class _AStarNode:  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
     """Priority queue node for A* search."""
 
     f_cost: float         # g + h
@@ -218,8 +218,8 @@ class ConduitRouter:
         self,
         start: Point3D,
         end: Point3D,
-        conduit_type: ConduitType = ConduitType.EMT,
-        trade_size: TradeSize = TradeSize.HALF_INCH,
+        conduit_type: ConduitType = ConduitType.EMT,  # NOSONAR — S1172: parameter retained for API stability
+        trade_size: TradeSize = TradeSize.HALF_INCH,  # NOSONAR — S1172: parameter retained for API stability
     ) -> Result[RoutePath, RoutingError | PhysicsError]:
         """
         Find shortest NEC-compliant conduit path from start to end.

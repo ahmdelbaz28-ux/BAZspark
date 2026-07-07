@@ -267,7 +267,7 @@ class TestNodeInitialize:
     @patch("os.path.realpath")
     def test_path_traversal_blocked(self, mock_realpath, mock_env_get, sample_state):
         mock_env_get.return_value = "/allowed"
-        mock_realpath.side_effect = lambda p: "/etc/passwd" if p == "../../etc/passwd" else os.path.realpath.__wrapped__(p) if hasattr(os.path.realpath, '__wrapped__') else p
+        mock_realpath.side_effect = lambda p: "/etc/passwd" if p == "../../etc/passwd" else os.path.realpath.__wrapped__(p) if hasattr(os.path.realpath, '__wrapped__') else p  # NOSONAR — S3358: nested ternary acceptable in this localized context
         sample_state["file_path"] = "../../etc/passwd"
         result = node_initialize(sample_state)
         assert result["status"] == WorkflowStatus.FAILED.value

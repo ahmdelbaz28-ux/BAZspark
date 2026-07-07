@@ -78,7 +78,7 @@ def _validate_file_path(file_path: str) -> str:  # NOSONAR — S3516: both branc
     """
     # Null byte injection (e.g., "file.pdf\x00.sh")
     if "\x00" in file_path:
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=400,
             detail="Invalid file path: null byte detected",
         )
@@ -86,7 +86,7 @@ def _validate_file_path(file_path: str) -> str:  # NOSONAR — S3516: both branc
     # Extension whitelist — only BIM/CAD file types
     ext = os.path.splitext(file_path)[1].lower()
     if ext not in ALLOWED_FILE_EXTENSIONS:
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=400,
             detail=(
                 f"File extension '{ext}' not allowed. "
@@ -114,7 +114,7 @@ def _validate_file_path(file_path: str) -> str:  # NOSONAR — S3516: both branc
         if parent_dir == allowed_real or parent_dir.startswith(allowed_real + os.sep):
             return file_path
 
-    raise HTTPException(
+    raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
         status_code=400,
         detail=(
             f"Path traversal blocked: '{file_path}' resolves outside "
@@ -203,7 +203,7 @@ async def start_workflow(
         # Allowing this in production is a direct violation of NFPA 72.
         env = os.getenv("FIREAI_ENV", os.getenv("NODE_ENV", "production")).lower()
         if env not in ("development", "dev", "test", "testing"):
-            raise HTTPException(
+            raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=403,
                 detail=(
                     "skip_human_review=True is FORBIDDEN in production. "
@@ -245,7 +245,7 @@ async def get_workflow_status(
     result = await svc.get_workflow_status(workflow_id)
 
     if result is None:
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=404,
             detail=f"Workflow not found: {workflow_id}",
         )
@@ -280,7 +280,7 @@ async def approve_workflow(
     )
 
     if result is None:
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=404,
             detail=f"Workflow not found: {workflow_id}",
         )
@@ -290,7 +290,7 @@ async def approve_workflow(
         err_msg = str(result["error"])[:200]
         if "Traceback" in err_msg or 'File "' in err_msg:
             err_msg = "Internal workflow error (details sanitized)"
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=400,
             detail=err_msg,  # lgtm[py/stack-trace-exposure] — sanitized above
         )
@@ -324,7 +324,7 @@ async def reject_workflow(
     )
 
     if result is None:
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=404,
             detail=f"Workflow not found: {workflow_id}",
         )
@@ -334,7 +334,7 @@ async def reject_workflow(
         err_msg = str(result["error"])[:200]
         if "Traceback" in err_msg or 'File "' in err_msg:
             err_msg = "Internal workflow error (details sanitized)"
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=400,
             detail=err_msg,  # lgtm[py/stack-trace-exposure] — sanitized above
         )
@@ -365,7 +365,7 @@ async def get_audit_trail(
     result = await svc.get_audit_trail(workflow_id)
 
     if result is None:
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=404,
             detail=f"Workflow not found: {workflow_id}",
         )

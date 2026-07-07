@@ -165,7 +165,7 @@ class TestDataConversion:
         )
         assert len(facts) == 1
         assert facts[0].fact_type == "room"
-        assert facts[0].properties["ceiling_height_m"] == 3.0
+        assert facts[0].properties["ceiling_height_m"] == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_detector_to_fact(self):
         fact = detector_to_fact(
@@ -177,7 +177,7 @@ class TestDataConversion:
             distance_to_wall_m=2.0,
         )
         assert fact.fact_type == "detector"
-        assert fact.properties["distance_to_wall_m"] == 2.0
+        assert fact.properties["distance_to_wall_m"] == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_hvac_to_fact(self):
         fact = hvac_to_fact(

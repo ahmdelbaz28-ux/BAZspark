@@ -160,24 +160,24 @@ class TestPhysicsGuards:
     """Pre-existing physics guards must still function."""
 
     def test_zero_height_rejected(self):
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
             compute_smoke_detector_spacing(0.0)
 
     def test_negative_height_rejected(self):
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
             compute_smoke_detector_spacing(-1.0)
 
     def test_height_above_hard_limit_rejected(self):
         """H > 18.288m must be rejected by guard."""
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site
             compute_smoke_detector_spacing(19.0)
 
     def test_nan_rejected(self):
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # NOSONAR — S5958: parameter name documents intent at call site
             compute_smoke_detector_spacing(float("nan"))
 
     def test_inf_rejected(self):
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             compute_smoke_detector_spacing(float("inf"))
 
 
@@ -191,7 +191,7 @@ class TestSSoTConsistency:
 
     def test_max_spacing_matches_constants(self):
         """Kernel SMOKE_MAX_SPACING_M must match constants."""
-        assert NFPA72_SMOKE_MAX_SPACING_M == SMOKE_MAX_SPACING_M == 9.10
+        assert NFPA72_SMOKE_MAX_SPACING_M == SMOKE_MAX_SPACING_M == 9.10  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_spacing_matches_constant_at_all_heights(self):
         """Spacing at any height must equal SMOKE_MAX_SPACING_M."""

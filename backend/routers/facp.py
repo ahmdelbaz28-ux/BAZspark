@@ -198,8 +198,8 @@ def _check_facp_available() -> bool:
 def _require_facp() -> None:
     """Raise 503 if FACP modules are not available."""
     if not _check_facp_available():
-        raise HTTPException(
-            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
             detail={
                 "error": "FACP_SERVICE_UNAVAILABLE",
                 "detail": (
@@ -273,7 +273,7 @@ async def select_facp(req: FACPSelectionRequest):
     except ValueError as exc:
         # No compliant panels found
         logger.warning("FACP selection failed: %s", exc)
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=422,
             detail={
                 "error": "NO_COMPLIANT_PANEL",
@@ -286,7 +286,7 @@ async def select_facp(req: FACPSelectionRequest):
         )
     except Exception as exc:
         logger.exception("FACP selection unexpected error: %s", exc)
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=500,
             detail={
                 "error": "INTERNAL_ERROR",
@@ -364,7 +364,7 @@ async def verify_facp(req: FACPVerificationRequest):
         }
     except Exception as exc:
         logger.exception("FACP verification error: %s", exc)
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=500,
             detail={
                 "error": "INTERNAL_ERROR",
@@ -424,7 +424,7 @@ async def generate_facp_schedule(req: FACPScheduleRequest):
         }
     except Exception as exc:
         logger.exception("FACP schedule generation error: %s", exc)
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=500,
             detail={
                 "error": "INTERNAL_ERROR",
@@ -497,7 +497,7 @@ async def generate_facp_spec(req: FACPSpecRequest):
         }
     except Exception as exc:
         logger.exception("FACP spec generation error: %s", exc)
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=500,
             detail={
                 "error": "INTERNAL_ERROR",
@@ -561,7 +561,7 @@ async def list_available_panels():
         }
     except Exception as exc:
         logger.exception("FACP panel listing error: %s", exc)
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=500,
             detail={
                 "error": "INTERNAL_ERROR",

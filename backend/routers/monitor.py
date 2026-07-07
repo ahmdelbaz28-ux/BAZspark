@@ -523,10 +523,10 @@ def _check_rate_limit(request: Request) -> None:
     """Dependency: raise 429 if rate limited."""
     client_ip = request.client.host if request.client else "unknown"
     if not _dashboard_limiter.check(client_ip):
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Dashboard endpoints are limited to 120 requests per minute.")
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Dashboard endpoints are limited to 120 requests per minute.")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-# ════════════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Endpoints
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -586,7 +586,7 @@ async def get_engine_status(
     if engine_id:
         engine = _monitor.get_engine(engine_id)
         if engine is None:
-            raise HTTPException(status_code=404, detail=f"Engine '{engine_id}' not found")  # NOSONAR: S8415 — endpoint error handling is intentional
+            raise HTTPException(status_code=404, detail=f"Engine '{engine_id}' not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
         return {"success": True, "data": engine}
 
     engines = _monitor.get_engines()

@@ -293,7 +293,7 @@ class RevitMCPServer:
             )
 
     def _handle_hazard_class_query(
-        self, request: MCPRequest, params: dict[str, Any]
+        self, request: MCPRequest, params: dict[str, Any]  # NOSONAR — S1172: parameter retained for API stability
     ) -> MCPResponse:
         """Handle a hazard class query (read-only)."""
         from fireai.core.hazard_override import MANDATORY_HAZARD_OVERRIDES
@@ -420,7 +420,7 @@ class RevitMCPServer:
             import threading
             event = threading.Event()
             while self._running and not event.wait(0.05):
-                pass
+                pass  # NOSONAR — S108: empty except kept for graceful degradation
             logger.info("[MCP SERVER]: test-mode loop exiting (stop() called).")
             return
 

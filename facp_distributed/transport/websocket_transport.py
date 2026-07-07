@@ -170,7 +170,7 @@ class WebSocketTransport(TransportLayer):
         #
         # Fix: use a separate local variable `node` for the resolved URL.
         # This is the audit's recommended fix and is the minimal change.
-        node = target_node or f"ws://{self.host}:{self.port}"  # NOSONAR: internal comms, WSS handled at transport layer
+        node = target_node or f"ws://{self.host}:{self.port}"  # NOSONAR: internal comms, WSS handled at transport layer  # NOSONAR — S7632: test function documented via class name / module path
 
         async def send_to_target():
             try:

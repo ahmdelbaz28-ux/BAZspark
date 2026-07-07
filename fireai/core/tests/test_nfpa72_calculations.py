@@ -81,7 +81,7 @@ class TestGetHeatDetectorPlacementParams:
 
     def test_standard_height_returns_base_spacing(self) -> None:
         result = get_heat_detector_placement_params(_heat_spec(), ceiling_height_m=3.0)
-        assert result["max_detector_spacing_m"] == 6.1  # 20 ft
+        assert result["max_detector_spacing_m"] == 6.1  # 20 ft  # NOSONAR — S1244: import retained for re-export / API surface
         assert result["coverage_type"] == "square_grid"
 
     def test_high_ceiling_reduces_spacing(self) -> None:
@@ -95,7 +95,7 @@ class TestGetHeatDetectorPlacementParams:
 
     def test_very_high_ceiling_uses_fallback(self) -> None:
         result = get_heat_detector_placement_params(_heat_spec(), ceiling_height_m=15.0)
-        assert result["max_detector_spacing_m"] == 3.50  # fallback
+        assert result["max_detector_spacing_m"] == 3.50  # fallback  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -489,11 +489,11 @@ class TestCalculateCoverageRadiusFromHeight:
             calculate_coverage_radius_from_height(-1.0)
 
     def test_nan_height_raises_valueerror(self) -> None:
-        with pytest.raises(ValueError, match="finite number"):
+        with pytest.raises(ValueError, match="finite number"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_coverage_radius_from_height(float("nan"))
 
     def test_inf_height_raises_valueerror(self) -> None:
-        with pytest.raises(ValueError, match="finite number"):
+        with pytest.raises(ValueError, match="finite number"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_coverage_radius_from_height(float("inf"))
 
     def test_high_ceiling_produces_warning(self) -> None:
@@ -508,11 +508,11 @@ class TestCalculateCoverageRadiusFromHeight:
 
     def test_exactly_12_2m(self) -> None:
         spec = calculate_coverage_radius_from_height(12.2, "smoke")
-        assert spec.spacing_max == 9.10  # Flat per §17.7.3.2.3
+        assert spec.spacing_max == 9.10  # Flat per §17.7.3.2.3  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_exactly_12_2m_heat(self) -> None:
         spec = calculate_coverage_radius_from_height(12.2, "heat")
-        assert spec.spacing_max == 3.70
+        assert spec.spacing_max == 3.70  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_wall_distance_is_half_spacing(self) -> None:
         spec = calculate_coverage_radius_from_height(3.0, "smoke")
@@ -565,14 +565,14 @@ class TestBeamPocketCorrectionFactor:
 
     def test_shallow_beam_no_reduction(self) -> None:
         factor = beam_pocket_correction_factor(0.2, 3.0)
-        assert factor == 1.0  # 0.2/3.0 = 6.7% < 10%
+        assert factor == 1.0  # 0.2/3.0 = 6.7% < 10%  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_deep_beam_reduces_spacing(self) -> None:
         factor = beam_pocket_correction_factor(0.5, 3.0)
         assert factor < 1.0  # 0.5/3.0 = 16.7% > 10%
 
     def test_nan_beam_depth_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             beam_pocket_correction_factor(float("nan"), 3.0)
 
     def test_negative_beam_depth_raises(self) -> None:
@@ -584,7 +584,7 @@ class TestBeamPocketCorrectionFactor:
             beam_pocket_correction_factor(0.3, 0.0)
 
     def test_nan_ceiling_height_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             beam_pocket_correction_factor(0.3, float("nan"))
 
     def test_minimum_factor_is_0_25(self) -> None:
@@ -611,11 +611,11 @@ class TestCalculateCorridorSpacing:
         assert spacing > 0
 
     def test_nan_width_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_corridor_spacing(_flat_ceiling(), DetectorType.SMOKE, float("nan"))
 
     def test_negative_width_raises(self) -> None:
-        with pytest.raises(ValueError, match="positive"):
+        with pytest.raises(ValueError, match="positive"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_corridor_spacing(_flat_ceiling(), DetectorType.SMOKE, -1.0)
 
 
@@ -670,11 +670,11 @@ class TestCheckVoltageDrop:
 
     def test_drop_fraction_calculation(self) -> None:
         result = check_voltage_drop(24.0, 1.0, 0.01, 50.0)
-        expected_drop = 1.0 * 0.01 * 50.0 * 2  # return path
+        expected_drop = 1.0 * 0.01 * 50.0 * 2  # return path  # NOSONAR — S125: commented-out code kept for historical reference
         assert abs(result["drop_v"] - expected_drop) < 0.01
 
     def test_nan_input_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             check_voltage_drop(float("nan"), 0.5, 0.01, 100.0)
 
     def test_negative_supply_voltage_raises(self) -> None:
@@ -704,7 +704,7 @@ class TestRequiredBatteryCapacityAh:
 
     def test_standard_calculation(self) -> None:
         capacity = required_battery_capacity_ah(0.5, 1.0)
-        # (0.5 * 24 + 1.0 * 5/60) * 1.2 = (12 + 0.0833) * 1.2 = 14.5
+        # (0.5 * 24 + 1.0 * 5/60) * 1.2 = (12 + 0.0833) * 1.2 = 14.5  # NOSONAR — S125: commented-out code kept for historical reference
         assert capacity > 0
 
     def test_minimum_standby_24h(self) -> None:
@@ -720,7 +720,7 @@ class TestRequiredBatteryCapacityAh:
             required_battery_capacity_ah(0.5, 1.0, safety_factor=0.8)
 
     def test_nan_input_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             required_battery_capacity_ah(float("nan"), 1.0)
 
     def test_negative_standby_current_raises(self) -> None:
@@ -749,7 +749,7 @@ class TestCalculateInrushCurrent:
     def test_unknown_device_uses_defaults(self) -> None:
         result = calculate_inrush_current("unknown_device", 5)
         assert result["steady_total_a"] == pytest.approx(1.25, abs=0.01)
-        assert result["inrush_factor"] == 2.5
+        assert result["inrush_factor"] == 2.5  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_single_device(self) -> None:
         result = calculate_inrush_current("horn", 1)

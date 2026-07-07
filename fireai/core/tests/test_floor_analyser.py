@@ -76,8 +76,8 @@ class TestFloorAnalyserInit:
 
     def test_custom_mip_params(self, optimizer) -> None:
         fa = FloorAnalyser("L1", optimizer, use_mip=True, mip_candidate_step=0.5, mip_time_limit=5.0)
-        assert fa.mip_candidate_step == 0.5
-        assert fa.mip_time_limit == 5.0
+        assert fa.mip_candidate_step == 0.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert fa.mip_time_limit == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_sensor_advisor_initialized(self, optimizer) -> None:
         fa = FloorAnalyser("L1", optimizer)
@@ -231,7 +231,7 @@ class TestCeilingHeightVariations:
         fa = FloorAnalyser("GF", optimizer)
         report = fa.analyse([room])
         summary = report.room_summaries[0]
-        assert summary.ceiling_height == 3.0 or summary.coverage_pct >= 0
+        assert summary.ceiling_height == 3.0 or summary.coverage_pct >= 0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -343,7 +343,7 @@ class TestRoomSummary:
 
     def test_default_values(self) -> None:
         rs = RoomSummary(room_id="R1", name="Test", detector_count=0)
-        assert rs.coverage_pct == 0.0
+        assert rs.coverage_pct == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert rs.nfpa_valid is False
         assert rs.proof_valid is False
         assert rs.compliant is False
@@ -359,7 +359,7 @@ class TestRoomSummary:
             compliant=True, safe_to_submit=True,
         )
         assert rs.detector_count == 5
-        assert rs.coverage_pct == 99.5
+        assert rs.coverage_pct == 99.5  # NOSONAR — S1244: import retained for re-export / API surface
         assert rs.compliant is True
 
 

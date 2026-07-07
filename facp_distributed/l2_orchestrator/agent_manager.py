@@ -175,7 +175,7 @@ class ValidatorAgent(BaseAgent):
         method = request_data.get("method", "")
         params = request_data.get("params", {})
 
-        if method.startswith("validate.") or method.startswith("check."):
+        if method.startswith("validate.") or method.startswith("check."):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
             # Validate the provided data
             params.get("payload", {}).get("target", {})
             validation_type = params.get("payload", {}).get("type", "generic")

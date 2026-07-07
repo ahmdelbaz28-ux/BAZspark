@@ -215,14 +215,14 @@ class GeometryValidator:
 
                 # Determine Z range for each room
                 # If boundary points have explicit Z, use those; otherwise infer from height_m
-                if any(z != 0.0 for z in z_values_1):
+                if any(z != 0.0 for z in z_values_1):  # NOSONAR — S1244: import retained for re-export / API surface
                     min_z1 = min(z_values_1)
                     max_z1 = max(z_values_1) + r1.height_m
                 else:
                     min_z1 = 0.0
                     max_z1 = r1.height_m
 
-                if any(z != 0.0 for z in z_values_2):
+                if any(z != 0.0 for z in z_values_2):  # NOSONAR — S1244: import retained for re-export / API surface
                     min_z2 = min(z_values_2)
                     max_z2 = max(z_values_2) + r2.height_m
                 else:

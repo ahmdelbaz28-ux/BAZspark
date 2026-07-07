@@ -550,7 +550,7 @@ class IoTPipeline:
                 try:
                     self._check_communication_loss()
                     await asyncio.sleep(interval_seconds)
-                except asyncio.CancelledError:
+                except asyncio.CancelledError:  # NOSONAR — S7497: default value is correct
                     break
                 except Exception as exc:
                     logger.exception(

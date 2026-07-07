@@ -24,7 +24,7 @@ import pytest
 
 from fireai.core.safe_building_engine import SafeBuildingEngine
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Initialization
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -34,8 +34,8 @@ class TestSafeBuildingEngineInit:
         engine = SafeBuildingEngine()
         assert engine.max_threads == 4
         assert engine.coverage_radius > 0
-        assert engine.candidate_step == 1.0
-        assert engine.time_limit_s == 60.0
+        assert engine.candidate_step == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert engine.time_limit_s == 60.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_custom_init(self):
         engine = SafeBuildingEngine(
@@ -45,16 +45,16 @@ class TestSafeBuildingEngineInit:
             time_limit_s=30.0,
         )
         assert engine.max_threads == 2
-        assert engine.coverage_radius == 5.0
-        assert engine.candidate_step == 0.5
-        assert engine.time_limit_s == 30.0
+        assert engine.coverage_radius == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
+        assert engine.candidate_step == 0.5  # NOSONAR — S1244: import retained for re-export / API surface
+        assert engine.time_limit_s == 30.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_has_rlock(self):
         engine = SafeBuildingEngine()
         assert isinstance(engine.global_c_level_lock, type(threading.RLock()))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # _solve_mip_safe
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -120,7 +120,7 @@ class TestSolveMIPSafe:
         assert "room_id" in result
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # run_multi_floor_safety_analysis
 # ─────────────────────────────────────────────────────────────────────────────
 

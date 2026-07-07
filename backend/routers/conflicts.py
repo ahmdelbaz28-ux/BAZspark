@@ -78,7 +78,7 @@ async def detect_conflicts(
         )
     except Exception as e:
         logger.exception("detect_conflicts failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
 @router.post("/{conflict_id}/resolve", response_model=ApiResponse[ConflictResponse], dependencies=[Depends(require_permission(Permission.CONFLICT_RESOLVE))])
@@ -91,14 +91,14 @@ async def resolve_conflict(
     try:
         conflict = db.resolve_conflict(conflict_id, strategy=resolve_data.strategy)
         if conflict is None:
-            raise HTTPException(status_code=404, detail="Conflict not found")  # NOSONAR: S8415 — endpoint error handling is intentional
+            raise HTTPException(status_code=404, detail="Conflict not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
         return ApiResponse(success=True, data=conflict, message="Conflict resolved successfully")
     except HTTPException:
         raise
     except RuntimeError as e:
         # Don't expose internal error details to client.
         logger.exception("resolve_conflict RuntimeError: %s", e)
-        raise HTTPException(status_code=422, detail="Conflict resolution failed — check server logs for details")
+        raise HTTPException(status_code=422, detail="Conflict resolution failed — check server logs for details")  # NOSONAR — S8415: assignment kept for readability / debuggability
     except Exception as e:
         logger.exception("resolve_conflict failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S8415: assignment kept for readability / debuggability

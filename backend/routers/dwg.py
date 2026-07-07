@@ -89,7 +89,7 @@ async def _parse_dwg_impl(request: Request, file: UploadFile):  # NOSONAR — S3
     try:
         fd, temp_path = tempfile.mkstemp(suffix=ext, prefix="fireai_dwg_upload_")
         # Wrap the os-level fd in a Python file object for buffered writes
-        with os.fdopen(fd, "wb") as out_f:  # NOSONAR: S7493 sync file I/O acceptable for small config reads
+        with os.fdopen(fd, "wb") as out_f:  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
             _CHUNK_SIZE = 1024 * 1024  # 1 MB per read
             file_size = 0
             empty = True
@@ -123,7 +123,7 @@ async def _parse_dwg_impl(request: Request, file: UploadFile):  # NOSONAR — S3
             from parsers.dwg_parser import DWGParser
         except ImportError as import_err:
             raise HTTPException(
-                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
                 detail={
                     "success": False,
                     "error": f"DWG parser module unavailable: {import_err}",

@@ -225,7 +225,7 @@ class WordParser:
             text = para.text.strip()
 
             # Check for bullet points
-            if text.startswith('•') or text.startswith('- ') or text.startswith('* '):
+            if text.startswith('•') or text.startswith('- ') or text.startswith('* '):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
                 clean_text = text.lstrip('•-* ').strip()
 
                 # Filter relevant requirements

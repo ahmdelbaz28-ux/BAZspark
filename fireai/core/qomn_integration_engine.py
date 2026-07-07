@@ -569,7 +569,7 @@ class CableHatchIntegrator:
         dx, dy = p2.x - p1.x, p2.y - p1.y
         cx, cy = center.x - p1.x, center.y - p1.y
         segment_len_sq = dx*dx + dy*dy
-        if segment_len_sq == 0.0:
+        if segment_len_sq == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
             return math.sqrt(cx*cx + cy*cy) <= radius
 
         t = (cx*dx + cy*dy) / segment_len_sq

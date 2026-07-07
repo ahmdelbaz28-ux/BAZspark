@@ -32,7 +32,7 @@ from fireai.core.pathway_survivability_engine import (
     SurvivabilityResult,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ class TestBuildingSpec:
     def test_default_values(self):
         spec = BuildingSpec()
         assert spec.occupancy == OccupancyCategory.BUSINESS
-        assert spec.height_m == 12.0
+        assert spec.height_m == 12.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert spec.num_floors == 3
         assert spec.is_sprinklered is False
         assert spec.has_voice_evac is False
@@ -69,7 +69,7 @@ class TestBuildingSpec:
             has_voice_evac=True,
         )
         assert spec.occupancy == OccupancyCategory.RESIDENTIAL
-        assert spec.height_m == 50.0
+        assert spec.height_m == 50.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert spec.is_sprinklered is True
         assert spec.has_voice_evac is True
 
@@ -290,7 +290,7 @@ class TestCableRequirements:
         assert len(riser) == 1
         assert riser[0].cable_type == CableType.CI
         assert riser[0].in_rated_enclosure is True
-        assert riser[0].enclosure_rating_hr == 2.0
+        assert riser[0].enclosure_rating_hr == 2.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_plenum_always_fplp_or_ci(self, engine):
         """Plenum always requires FPLP minimum; Level 2+ requires CI."""

@@ -1,3 +1,5 @@
+# NOSONAR — text:S8565: lock file (uv.lock) is committed to the repo; dependency
+# versions ARE predictable. See `uv.lock` at repo root.
 [build-system]
 requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"

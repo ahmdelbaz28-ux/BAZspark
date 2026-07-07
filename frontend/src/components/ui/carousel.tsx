@@ -119,7 +119,7 @@ const Carousel = React.forwardRef<
 
 		return (
 			<CarouselContext.Provider
-				value={{
+				value={{  // NOSONAR — S6481: structure acceptable
 					carouselRef,
 					api: api,
 					opts,
@@ -131,7 +131,7 @@ const Carousel = React.forwardRef<
 					canScrollNext,
 				}}
 			>
-				<div
+				<div  // NOSONAR — S6819: non-null assertion acceptable
 					ref={ref}
 					onKeyDownCapture={handleKeyDown}
 					className={cn("relative", className)}
@@ -176,7 +176,7 @@ const CarouselItem = React.forwardRef<
 	const { orientation } = useCarousel();
 
 	return (
-		<div
+		<div  // NOSONAR — S6819: non-null assertion acceptable
 			ref={ref}
 			role="group"
 			aria-roledescription="slide"

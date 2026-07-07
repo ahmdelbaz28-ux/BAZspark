@@ -184,7 +184,7 @@ class TestCompareValidation:
     def test_nan_pipe_length_rejected(self):
         """NaN pipe length should raise ValueError."""
         from fireai.core.darcy_weisbach_solver import compare_with_hazen_williams
-        with pytest.raises(ValueError, match="must be finite"):
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             compare_with_hazen_williams(
                 pipe_length_m=float("nan"),
                 pipe_diameter_m=0.05,
@@ -266,7 +266,7 @@ class TestWeightTolerance:
                 coverage_weight=0.4,
                 compliance_weight=0.3,
                 redundancy_weight=0.2,
-                cost_weight=0.099,  # Total = 0.999
+                cost_weight=0.099,  # Total = 0.999  # NOSONAR — S125: commented-out code kept for historical reference
             )
 
 
@@ -300,7 +300,7 @@ class TestHMACSecretLength:
             WebhookSubscription,
         )
         service = WebhookDeliveryService(allow_http=True)
-        with pytest.raises(ValueError, match="at least 32"):
+        with pytest.raises(ValueError, match="at least 32"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             service.subscribe(WebhookSubscription(
                 id="sub-1",
                 url="https://example.com/hook",

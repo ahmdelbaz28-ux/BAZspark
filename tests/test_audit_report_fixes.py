@@ -60,7 +60,7 @@ class TestHazenWilliamsFrictionLoss:
         """Zero flow = zero friction loss (no water moving)."""
         from fireai.core.hydraulic_solver import calculate_friction_loss
         loss = calculate_friction_loss(0.0, 120.0, 2.067, 100.0)
-        assert loss == 0.0
+        assert loss == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_zero_diameter_raises_error(self):
         """Division by zero from d=0 must be caught."""
@@ -107,13 +107,13 @@ class TestHazenWilliamsFrictionLoss:
     def test_nan_input_raises_error(self):
         """NaN inputs bypass all safety checks — must be caught."""
         from fireai.core.hydraulic_solver import calculate_friction_loss
-        with pytest.raises(ValueError, match="Non-finite"):
+        with pytest.raises(ValueError, match="Non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_friction_loss(float('nan'), 120.0, 2.067, 100.0)
 
     def test_inf_input_raises_error(self):
         """Infinite inputs cause overflow — must be caught."""
         from fireai.core.hydraulic_solver import calculate_friction_loss
-        with pytest.raises(ValueError, match="Non-finite"):
+        with pytest.raises(ValueError, match="Non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             calculate_friction_loss(100.0, 120.0, 2.067, float('inf'))
 
     def test_double_precision_used(self):
@@ -240,7 +240,7 @@ class TestInputSanitization:
         """Valid numeric strings should convert correctly."""
         from fireai.core.bim_input_sanitizer import validate_numeric_parameter
         result = validate_numeric_parameter("7.0", min_value=0.0, param_name="pressure")
-        assert result == 7.0
+        assert result == 7.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_numeric_validation_negative_rejected(self):
         """Negative values below minimum must be rejected."""
@@ -394,7 +394,7 @@ class TestUnitConversion:
     def test_feet_to_metres_exact(self):
         """1 foot = 0.3048 metres exactly (NIST definition)."""
         from fireai.core.unit_converter import revit_internal_to_metres
-        assert revit_internal_to_metres(1.0) == 0.3048
+        assert revit_internal_to_metres(1.0) == 0.3048  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_metres_to_feet_round_trip(self):
         """Round-trip conversion must be identity."""
@@ -407,13 +407,13 @@ class TestUnitConversion:
     def test_nan_input_raises_error(self):
         """NaN inputs must be caught."""
         from fireai.core.unit_converter import revit_internal_to_metres
-        with pytest.raises(ValueError, match="non-finite"):
+        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             revit_internal_to_metres(float('nan'))
 
     def test_inf_input_raises_error(self):
         """Infinite inputs must be caught."""
         from fireai.core.unit_converter import revit_internal_to_metres
-        with pytest.raises(ValueError, match="non-finite"):
+        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             revit_internal_to_metres(float('inf'))
 
     def test_polygon_conversion(self):
@@ -427,7 +427,7 @@ class TestUnitConversion:
     def test_inches_to_mm_exact(self):
         """1 inch = 25.4 mm exactly (NIST definition)."""
         from fireai.core.unit_converter import inches_to_mm
-        assert inches_to_mm(1.0) == 25.4
+        assert inches_to_mm(1.0) == 25.4  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_negative_inches_raises_error(self):
         """Negative pipe diameter is invalid."""

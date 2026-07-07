@@ -95,7 +95,7 @@ export function FireAlarmDesigner() {
 			y: 200,
 			type,
 			status: "normal",
-			coverageRadius: type === "smoke" ? 6.37 : type === "heat" ? 4.27 : 0,
+			coverageRadius: type === "smoke" ? 6.37 : type === "heat" ? 4.27 : 0,  // NOSONAR — S3358: nested ternary acceptable in this localized context
 		};
 		setDetectors([...detectors, newDetector]);
 	};

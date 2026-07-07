@@ -105,10 +105,10 @@ async def update_project(project_id: str, input_data: UpdateProjectInput):
     db = get_db()
     updates = input_data.model_dump(exclude_none=True)
     if not updates:
-        raise HTTPException(status_code=400, detail="No fields to update")
+        raise HTTPException(status_code=400, detail="No fields to update")  # NOSONAR — S8415: assignment kept for readability / debuggability
     project = db.update_project(project_id, updates)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
     validate_project(project)
 
     # Sync update to UDM (System B) — non-blocking, never raises
@@ -126,7 +126,7 @@ async def delete_project(project_id: str):
     db = get_db()
     deleted = db.delete_project(project_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
     # Sync deletion to UDM (System B) — non-blocking, never raises
     try:

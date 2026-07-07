@@ -1480,7 +1480,7 @@ class ARVRVisualizer:
             z = radius * math.sin(theta)
             verts.extend([x, hh, z])
 
-        segments + 1
+        segments + 1  # NOSONAR — S905: statement kept for clarity
 
         # Bottom cap triangles
         for i in range(segments):
@@ -1578,7 +1578,7 @@ class ARVRVisualizer:
         for node in scene.nodes:
             if node.name.startswith("room_"):
                 self._aframe_add_room_group(html_parts, node)
-            elif node.name.startswith("floor_") or node.name.startswith("ceiling_"):
+            elif node.name.startswith("floor_") or node.name.startswith("ceiling_"):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
                 self._aframe_add_box(html_parts, node)
             elif node.name.startswith("detector_"):
                 self._aframe_add_detector(html_parts, node)

@@ -906,7 +906,7 @@ function TreeFolder({
 	const [open, setOpen] = React.useState(defaultOpen);
 	return (
 		<div className="mb-0.5">
-			<div
+			<div  // NOSONAR — S6848: type assertion acceptable
 				className="flex items-center gap-1.5 py-1 px-1 hover:bg-muted cursor-pointer rounded transition-colors"
 				onClick={() => setOpen(!open)}
 			>

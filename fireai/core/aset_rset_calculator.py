@@ -199,9 +199,9 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
     room_height_m: float = 3.0,
     # Simplified inputs when no time-series data available
     smoke_fill_time_s: float | None = None,
-    fire_growth_rate: str | None = None,
-    fire_heat_release_kw: float | None = None,
-    room_volume_m3: float | None = None,
+    fire_growth_rate: str | None = None,  # NOSONAR — S1172: parameter retained for API stability
+    fire_heat_release_kw: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
+    room_volume_m3: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
 ) -> ASETResult:
     """
     Calculate Available Safe Egress Time (ASET).
@@ -898,7 +898,7 @@ def perform_aset_rset_analysis(  # NOSONAR — S3776: cognitive complexity is in
             "occupancy_type": occupancy_type,
             "verdict": validation.verdict.split(":")[0]  # type: ignore[attr-defined]
             if ":" in validation.verdict  # type: ignore[attr-defined]
-            else ("PASS" if validation.is_safe else "FAIL"),  # type: ignore[attr-defined]
+            else ("PASS" if validation.is_safe else "FAIL"),  # type: ignore[attr-defined]  # NOSONAR — S3358: nested ternary acceptable in this localized context
             "details": {
                 "aset_details": {
                     "method": "simplified_estimate_fallback",

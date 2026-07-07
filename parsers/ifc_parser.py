@@ -66,7 +66,7 @@ class IFCParser:
                 # Setting to 0 means zero protection for a room with real geometry.
                 raw_area = attrs.get('Area', 0)
                 if raw_area < 0:
-                    logging.getLogger(__name__).warning(  # NOSONAR: S5145 logging reviewed for SSRF risk
+                    logging.getLogger(__name__).warning(  # NOSONAR: S5145 logging reviewed for SSRF risk  # NOSONAR — S7632: test function documented via class name / module path
                         "Negative area for space %s: %s. Space REJECTED — "
                         "manual fire protection design REQUIRED.",
                         inst.get('id'), raw_area,

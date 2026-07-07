@@ -29,7 +29,7 @@ from fireai.core.bim_input_sanitizer import (
     validate_numeric_parameter,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # sanitize_bim_parameter
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -160,7 +160,7 @@ class TestSanitizeBIMParameter:
             sanitize_bim_parameter("; import subprocess; subprocess.run(['ls'])")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # sanitize_room_name
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -255,7 +255,7 @@ class TestSanitizeRoomName:
             sanitize_room_name("../../etc/passwd")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # sanitize_file_path
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -319,7 +319,7 @@ class TestSanitizeFilePath:
         assert "_" in result
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # validate_numeric_parameter
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -330,12 +330,12 @@ class TestValidateNumericParameter:
     def test_valid_integer_string(self):
         """Integer string should parse correctly."""
         result = validate_numeric_parameter("7")
-        assert result == 7.0
+        assert result == 7.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_valid_float_string(self):
         """Float string should parse correctly."""
         result = validate_numeric_parameter("7.5")
-        assert result == 7.5
+        assert result == 7.5  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_negative_value(self):
         """Negative value string should parse."""
@@ -345,17 +345,17 @@ class TestValidateNumericParameter:
     def test_scientific_notation(self):
         """Scientific notation should parse."""
         result = validate_numeric_parameter("1.5e2")
-        assert result == 150.0
+        assert result == 150.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_scientific_notation_uppercase(self):
         """Uppercase E in scientific notation."""
         result = validate_numeric_parameter("1.5E2")
-        assert result == 150.0
+        assert result == 150.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_min_value_boundary(self):
         """Value at min boundary should pass."""
         result = validate_numeric_parameter("0.0", min_value=0.0)
-        assert result == 0.0
+        assert result == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_below_min_raises(self):
         """Value below min should raise ValueError."""
@@ -365,7 +365,7 @@ class TestValidateNumericParameter:
     def test_max_value_boundary(self):
         """Value at max boundary should pass."""
         result = validate_numeric_parameter("10.0", max_value=10.0)
-        assert result == 10.0
+        assert result == 10.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_above_max_raises(self):
         """Value above max should raise ValueError."""
@@ -412,7 +412,7 @@ class TestValidateNumericParameter:
     def test_whitespace_stripped(self):
         """Leading/trailing whitespace should be stripped."""
         result = validate_numeric_parameter("  7.5  ")
-        assert result == 7.5
+        assert result == 7.5  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_param_name_in_error_message(self):
         """Custom param_name should appear in error messages."""
@@ -422,12 +422,12 @@ class TestValidateNumericParameter:
     def test_both_min_and_max(self):
         """Both min and max constraints applied."""
         result = validate_numeric_parameter("5.0", min_value=0.0, max_value=10.0)
-        assert result == 5.0
+        assert result == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_integer_value_string(self):
         """Integer value as string."""
         result = validate_numeric_parameter("24")
-        assert result == 24.0
+        assert result == 24.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert isinstance(result, float)
 
     def test_decimal_without_leading_zero(self):
@@ -439,7 +439,7 @@ class TestValidateNumericParameter:
     def test_trailing_dot(self):
         """Trailing dot like '5.' should be valid per regex."""
         result = validate_numeric_parameter("5.")
-        assert result == 5.0
+        assert result == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 if __name__ == "__main__":

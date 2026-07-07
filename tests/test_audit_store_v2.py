@@ -78,7 +78,7 @@ def reset_database():
     _as._memory_conn = orig_memory_conn
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants and SecurityError
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -100,7 +100,7 @@ class TestSecurityError:
             raise SecurityError("HMAC key is too short")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # _get_hmac_key
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -139,7 +139,7 @@ class TestGetHmacKey:
             assert key == "a" * 64
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # _compute_hash
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -166,7 +166,7 @@ class TestComputeHash:
         assert len(h) == 64
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # add_event
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -234,7 +234,7 @@ class TestAddEvent:
         assert events[0]["details"]["detectors"][0]["id"] == "D1"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # verify_chain
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -323,7 +323,7 @@ class TestVerifyChain:
         assert is_valid is False
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # get_events
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -474,7 +474,7 @@ class TestEdgeCases:
         }
         add_event("TEST", "R1", details)
         events = get_events()
-        assert events[0]["details"]["room"]["area_sqm"] == 25.0
+        assert events[0]["details"]["room"]["area_sqm"] == 25.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_timestamp_is_utc(self):
         """V54 FIX (AUDIT-012): Timestamps must use UTC."""

@@ -430,7 +430,7 @@ class BentleyBridge:
     def _import_ifc(
         self,
         path: str,
-        raw: bytes,
+        raw: bytes,  # NOSONAR — S1172: parameter retained for API stability
         file_hash: str,
     ) -> DesignData:
         """

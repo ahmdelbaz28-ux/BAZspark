@@ -274,7 +274,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 									className={
 										editedDevice.status === "normal"
 											? "bg-emerald-600/20 text-emerald-400 border-emerald-500/30"
-											: editedDevice.status === "warning"
+											: editedDevice.status === "warning"  // NOSONAR — S3358: nested ternary acceptable in this localized context
 												? "bg-amber-600/20 text-amber-400 border-amber-500/30"
 												: "bg-red-600/20 text-red-400 border-red-500/30"
 									}

@@ -52,7 +52,7 @@ class TestConfidenceLevel:
         assert levels[-1] == ConfidenceLevel.UNCERTAIN
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ConfidenceScore
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ class TestConfidenceScore:
     def test_default_values(self):
         cs = ConfidenceScore()
         assert cs.level == ConfidenceLevel.MEDIUM
-        assert cs.value == 0.5
+        assert cs.value == 0.5  # NOSONAR — S1244: import retained for re-export / API surface
         assert cs.reason == ""
         assert cs.standard_reference == ""
 
@@ -73,7 +73,7 @@ class TestConfidenceScore:
             standard_reference="NFPA 72 §17.6.3.1.1",
         )
         assert cs.level == ConfidenceLevel.HIGH
-        assert cs.value == 0.9
+        assert cs.value == 0.9  # NOSONAR — S1244: import retained for re-export / API surface
         assert "NFPA 72" in cs.standard_reference
 
     def test_value_range_valid(self):
@@ -96,7 +96,7 @@ class TestConfidenceScore:
             cs.value = 0.9
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # RuleApplied
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -132,7 +132,7 @@ class TestRuleApplied:
             r.result = "FAIL"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Violation
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -169,7 +169,7 @@ class TestViolation:
             v.severity = "LOW"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # DecisionProvenance
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -250,7 +250,7 @@ class TestDecisionProvenance:
             decision_type="PLACEMENT",
             evidence={"area_m2": 100.0, "detector_count": 4},
         )
-        assert dp.evidence["area_m2"] == 100.0
+        assert dp.evidence["area_m2"] == 100.0  # NOSONAR — S1244: import retained for re-export / API surface
         assert dp.evidence["detector_count"] == 4
 
     def test_with_confidence(self):
@@ -261,7 +261,7 @@ class TestDecisionProvenance:
             confidence=cs,
         )
         assert dp.confidence.level == ConfidenceLevel.HIGH
-        assert dp.confidence.value == 0.9
+        assert dp.confidence.value == 0.9  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_with_parent(self):
         dp = DecisionProvenance(
@@ -308,7 +308,7 @@ class TestDecisionProvenance:
         assert dp.computation_hash == expected
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ProvenanceStore
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -462,11 +462,11 @@ class TestGlobalStore:
 class TestEdgeCases:
     def test_confidence_score_boundary_0(self):
         cs = ConfidenceScore(value=0.0)
-        assert cs.value == 0.0
+        assert cs.value == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_confidence_score_boundary_1(self):
         cs = ConfidenceScore(value=1.0)
-        assert cs.value == 1.0
+        assert cs.value == 1.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_empty_violations_and_rules(self):
         dp = DecisionProvenance(

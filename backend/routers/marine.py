@@ -263,7 +263,7 @@ async def design_full(request: Request, body: DesignRequest) -> Dict[str, Any]:
     try:
         return service.design_full(ship, zones)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Design failed: {e}") from e
+        raise HTTPException(status_code=500, detail=f"Design failed: {e}") from e  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
 @router.post(
@@ -405,7 +405,7 @@ async def generate_divisions(
     from marine.engine.fire_resistance import generate_division_specs
     zones = [zone_to_domain(z) for z in (body.zones or [])]
     if not zones:
-        raise HTTPException(status_code=400, detail="No zones provided.")
+        raise HTTPException(status_code=400, detail="No zones provided.")  # NOSONAR — S8415: assignment kept for readability / debuggability
     specs = generate_division_specs(zones)
     return {
         "division_count": len(specs),

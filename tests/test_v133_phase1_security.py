@@ -213,7 +213,7 @@ class TestAuditIntegrity:
         """Context manager should record failure and re-raise."""
         from backend.audit_integrity_helper import audit_write_context
 
-        with pytest.raises(RuntimeError, match="ctx failure"):
+        with pytest.raises(RuntimeError, match="ctx failure"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             with audit_write_context("test_ctx_fail", "test_table"):
                 raise RuntimeError("ctx failure")
 

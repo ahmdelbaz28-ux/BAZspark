@@ -410,7 +410,7 @@ class EventBus:
                 # unacceptable. We catch to survive, but we log to inform.
                 import logging as _logging
 
-                _logging.getLogger(__name__).error(
+                _logging.getLogger(__name__).error(  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
                     "EventBus subscriber error on %s: %s: %s",
                     event_type,
                     type(exc).__name__,

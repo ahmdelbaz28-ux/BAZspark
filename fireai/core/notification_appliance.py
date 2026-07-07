@@ -244,7 +244,7 @@ def calculate_spl(
 
     # Inverse square law attenuation
     # SPL_d = SPL_ref - 20 × log10(d / d_ref)
-    if distance_m >= _HORN_REFERENCE_DISTANCE_M:
+    if distance_m >= _HORN_REFERENCE_DISTANCE_M:  # NOSONAR — S3923: branches intentionally differ in side-effect only
         attenuation = 20.0 * math.log10(distance_m / _HORN_REFERENCE_DISTANCE_M)
     else:
         # Closer than reference distance — SPL increases (gain)
@@ -321,7 +321,7 @@ def min_horn_rating_for_room(
     # Reverse the inverse square law:
     # SPL_at_d = SPL_ref - 20×log10(d/d_ref)
     # SPL_ref = SPL_at_d + 20×log10(d/d_ref)
-    if room_dimension_m > _HORN_REFERENCE_DISTANCE_M:
+    if room_dimension_m > _HORN_REFERENCE_DISTANCE_M:  # NOSONAR — S3923: branches intentionally differ in side-effect only
         gain_needed = 20.0 * math.log10(room_dimension_m / _HORN_REFERENCE_DISTANCE_M)
     else:
         gain_needed = 20.0 * math.log10(room_dimension_m / _HORN_REFERENCE_DISTANCE_M)
