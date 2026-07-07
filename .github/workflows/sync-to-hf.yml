@@ -75,7 +75,6 @@ jobs:
           # If you add a new COPY to the Dockerfile, add the path here too.
           RUNTIME_PATHS=(
             "Dockerfile"
-            "README.md"
             "pyproject.toml"
             "requirements.txt"
             ".dockerignore"
@@ -122,6 +121,19 @@ jobs:
               echo "  ! skipped (not in repo): ${p}"
             fi
           done
+
+          # ── Step 3: copy HF-specific README (with YAML front matter) ─────
+          # IMPORTANT: HF Spaces REQUIRE a YAML front matter block (---\ntitle: ...)
+          # at the top of README.md to configure the Space (sdk, app_port, etc.).
+          # GitHub's README.md does NOT have this front matter, so we use a
+          # dedicated HF_README.md from the repo and write it as README.md on HF.
+          if [ -f "${{ github.workspace }}/HF_README.md" ]; then
+            cp "${{ github.workspace }}/HF_README.md" "hf_space/README.md"
+            echo "  + synced: HF_README.md → README.md (HF front matter preserved)"
+          else
+            echo "  ! WARNING: HF_README.md not found in repo — HF Space will fail to build"
+            exit 1
+          fi
 
           echo ""
           echo "=== HF Space contents after sync ==="
