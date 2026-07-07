@@ -138,6 +138,8 @@ jobs:
         run: |
           # Generate ephemeral session secret for this run (matches ci.yml pattern)
           export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
+          # V207 FIX: Clean stale test artifacts that cause RuntimeError on re-runs
+          rm -rf db/ /tmp/fireai_deploy_test.db /tmp/udm_deploy_test.db
           pip install pytest-timeout
           # Run pytest with timeout, capture output to file
           OUTPUT_FILE=$(mktemp)
