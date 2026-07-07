@@ -98,29 +98,38 @@ jobs:
           # ── Step 2: copy each whitelisted path from GitHub checkout ──────
           for p in "${RUNTIME_PATHS[@]}"; do
             if [ -e "${{ github.workspace }}/${p}" ]; then
-              # IMPORTANT: trailing slash on source matters for rsync semantics!
-              #   rsync -a "src/"  "dst/"   →  copies CONTENTS of src/ into dst/
-              #   rsync -a "src"   "dst/"   →  copies src/ itself into dst/ (creating dst/src/)
-              # We want the former (contents), so the HF tree mirrors GitHub exactly.
-              # For files (non-directories), trailing slash is a no-op — still safe.
-              rsync -a \
-                --exclude='node_modules/' \
-                --exclude='__pycache__/' \
-                --exclude='*.pyc' \
-                --exclude='.venv/' \
-                --exclude='venv/' \
-                --exclude='dist/' \
-                --exclude='build/' \
-                --exclude='.env*' \
-                --exclude='*.db' \
-                --exclude='*.sqlite*' \
-                --exclude='coverage/' \
-                --exclude='.pytest_cache/' \
-                --exclude='.mypy_cache/' \
-                --exclude='.ruff_cache/' \
-                --exclude='.git/' \
-                "${{ github.workspace }}/${p}/" "hf_space/${p}/"
-              echo "  + synced: ${p}/"
+              # IMPORTANT: rsync trailing-slash semantics differ for files vs dirs:
+              #   rsync -a "src/"  "dst/"  →  copies CONTENTS of src/ into dst/  (for dirs)
+              #   rsync -a "src"   "dst"   →  copies src itself into dst's parent (for files)
+              #   rsync -a "src/"  "dst/"  →  FAILS with "change_dir ... Not a directory" (for files)
+              #
+              # So we branch: directories use trailing-slash form, files use plain cp.
+              if [ -d "${{ github.workspace }}/${p}" ]; then
+                # Ensure target dir exists (rsync won't create it for 'src/' form)
+                mkdir -p "hf_space/${p}"
+                rsync -a \
+                  --exclude='node_modules/' \
+                  --exclude='__pycache__/' \
+                  --exclude='*.pyc' \
+                  --exclude='.venv/' \
+                  --exclude='venv/' \
+                  --exclude='dist/' \
+                  --exclude='build/' \
+                  --exclude='.env*' \
+                  --exclude='*.db' \
+                  --exclude='*.sqlite*' \
+                  --exclude='coverage/' \
+                  --exclude='.pytest_cache/' \
+                  --exclude='.mypy_cache/' \
+                  --exclude='.ruff_cache/' \
+                  --exclude='.git/' \
+                  "${{ github.workspace }}/${p}/" "hf_space/${p}/"
+                echo "  + synced (dir): ${p}/"
+              else
+                # Plain file copy — preserves the file at hf_space/${p}
+                cp "${{ github.workspace }}/${p}" "hf_space/${p}"
+                echo "  + synced (file): ${p}"
+              fi
             else
               echo "  ! skipped (not in repo): ${p}"
             fi
