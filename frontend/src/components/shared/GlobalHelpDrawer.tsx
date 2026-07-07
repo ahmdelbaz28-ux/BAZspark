@@ -249,7 +249,7 @@ export function GlobalHelpDrawer({
 													: selectedTopic.stepsEn
 												).map((step, i) => (
 													<li
-														key={i}
+														key={`${i}-${step.substring(0, 20)}`}
 														className="flex gap-3 text-sm text-slate-300"
 													>
 														<span className="shrink-0 w-5 h-5 rounded-full bg-orange-600/20 text-orange-400 flex items-center justify-center text-xs font-bold">

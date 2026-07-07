@@ -102,6 +102,12 @@ export class PageErrorBoundary extends Component<Props, State> {
 									onMouseOut={(e) =>
 										(e.currentTarget.style.backgroundColor = "#ea580c")
 									}
+							onFocus={(e) =>
+								(e.currentTarget.style.backgroundColor = "#c2410c")
+							}
+							onBlur={(e) =>
+								(e.currentTarget.style.backgroundColor = "#ea580c")
+							}
 								>
 									Retry
 								</button>
