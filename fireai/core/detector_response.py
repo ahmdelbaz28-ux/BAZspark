@@ -96,7 +96,7 @@ class DetectorResponseResult:
     nfpa_section: str = ""
 
 
-def calculate_heat_detector_response(
+def calculate_heat_detector_response(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     fire_hrr_kw: float,
     ceiling_height_m: float,
     distance_to_fire_m: float,

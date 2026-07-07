@@ -151,7 +151,7 @@ class AuditTrail:
                 operation="COVERAGE_VERIFICATION",
                 inputs={"detector_count": detector_count, "grid_resolution_m": 0.20},
                 outputs={"coverage_pct": coverage_pct, "worst_case_m": worst_case_m, "status": status},
-                nfpa_reference="NFPA 72 (2022) Section 17.6.3",
+                nfpa_reference="NFPA 72 (2022) Section 17.6.3",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             )
         )
 

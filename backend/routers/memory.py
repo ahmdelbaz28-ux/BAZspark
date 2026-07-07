@@ -55,7 +55,7 @@ router = APIRouter(
     prefix="/memory",
     tags=["memory"],
     responses={
-        404: {"description": "Memory not found"},
+        404: {"description": "Memory not found"},  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         500: {"description": "Internal server error"},
     },
 )

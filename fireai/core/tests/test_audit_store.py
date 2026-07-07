@@ -437,17 +437,17 @@ class TestAddEvent:
     def test_invalid_details_raises(self, memory_db, hmac_key_env) -> None:
         """Non-dict details_dict raises ValueError."""
         with pytest.raises(ValueError, match="must be a dictionary"):
-            add_event("TEST", "R1", "not a dict")
+            add_event("TEST", "R1", "not a dict")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_invalid_details_list_raises(self, memory_db, hmac_key_env) -> None:
         """List details_dict raises ValueError."""
         with pytest.raises(ValueError, match="must be a dictionary"):
-            add_event("TEST", "R1", [1, 2, 3])
+            add_event("TEST", "R1", [1, 2, 3])  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_invalid_details_none_raises(self, memory_db, hmac_key_env) -> None:
         """None details_dict raises ValueError."""
         with pytest.raises(ValueError, match="must be a dictionary"):
-            add_event("TEST", "R1", None)
+            add_event("TEST", "R1", None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_chains_to_genesis(self, memory_db, hmac_key_env) -> None:
         """First event chains to 'GENESIS'."""

@@ -143,7 +143,7 @@ RULE_CEILING_HEIGHT_SPACING = Rule(
                         ),
                     },
                     source="derived",
-                    nfpa_reference="NFPA 72 §17.6.3.1",
+                    nfpa_reference="NFPA 72 §17.6.3.1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 )
             ],
             matched_facts=[f.fact_id for f in facts],
@@ -160,7 +160,7 @@ RULE_CEILING_HEIGHT_SPACING = Rule(
 RULE_COVERAGE_RADIUS = Rule(
     rule_id="NFPA72-002",
     rule_name="Coverage Radius = 0.7 × Spacing",
-    nfpa_reference="NFPA 72 §17.7.4.2.3.1",
+    nfpa_reference="NFPA 72 §17.7.4.2.3.1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     priority=RulePriority.COMPLIANCE_CHECK,
     description=(
         "The coverage radius R = 0.7 × S, where S is the listed spacing. "
@@ -417,7 +417,7 @@ RULE_ELEVATOR_RECALL = Rule(
 RULE_CORRIDOR_SPACING = Rule(
     rule_id="NFPA72-008",
     rule_name="Corridor Reduced Spacing for Narrow Spaces",
-    nfpa_reference="NFPA 72 §17.7.3.1",
+    nfpa_reference="NFPA 72 §17.7.3.1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     priority=RulePriority.COMPLIANCE_CHECK,
     description=(
         "In corridors and narrow spaces, detector spacing along the "

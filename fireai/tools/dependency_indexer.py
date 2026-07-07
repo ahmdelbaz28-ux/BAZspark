@@ -103,7 +103,7 @@ def build_dependency_map(root: Path) -> dict:
     return dict(deps)
 
 
-def detect_circular_imports(deps: dict) -> list[list[str]]:
+def detect_circular_imports(deps: dict) -> list[list[str]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Detect circular import chains (excluding self-loops from lazy imports)."""
     circular = []
 

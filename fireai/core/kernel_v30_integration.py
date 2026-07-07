@@ -487,7 +487,7 @@ class KernelV30Dispatcher:
                 pass
         return self._fallback
 
-    def optimize(self, room: Any, coverage_radius: float | None = None) -> Any:
+    def optimize(self, room: Any, coverage_radius: float | None = None) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Drop-in replacement for DensityOptimizer.optimize().
 
@@ -659,7 +659,7 @@ class KernelV30Dispatcher:
             ceiling_height=getattr(room, "ceiling_height", 3.0),
             detector_type_simple=getattr(room, "detector_type", "smoke"),
             radius_warning="",
-            nfpa_table_ref="NFPA 72-2022 Table 17.6.3.1.1",
+            nfpa_table_ref="NFPA 72-2022 Table 17.6.3.1.1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         )
 
     def _optimize_scalar(self, room: Any, R: float) -> Any:

@@ -59,7 +59,7 @@ class WebSocketTransport(TransportLayer):
                         await websocket.send(json.dumps(response))
                     else:
                         error_response = {
-                            "protocol": "FACP/1.1",
+                            "protocol": "FACP/1.1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                             "id": request_data.get("id", "unknown"),
                             "status": "error",
                             "error": {

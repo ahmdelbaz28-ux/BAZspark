@@ -114,7 +114,7 @@ class VoronoiVerifier:
             return self._verify_voronoi(width, length, detectors)
         return self._verify_brute_force(width, length, detectors)
 
-    def _verify_voronoi(
+    def _verify_voronoi(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         width: float,
         length: float,

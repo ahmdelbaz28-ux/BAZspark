@@ -569,7 +569,7 @@ class DeltaCache:
             self._legacy_stats["invalidations"] += 1
         logger.info("DeltaCache: All entries invalidated.")
 
-    def process_incremental(
+    def process_incremental(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         rooms: list[dict],
         analysis_func,

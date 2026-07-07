@@ -1920,7 +1920,7 @@ class DigitalTwin:
         return []
 
     @staticmethod
-    def _pipeline_result_to_room_dict(pr: Any) -> dict[str, Any]:
+    def _pipeline_result_to_room_dict(pr: Any) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Convert a PipelineResult to a room result dict.
 

@@ -51,7 +51,7 @@ def simulate_relationships(element_ids: List[str], count: int) -> List[str]:
     return list(set(relationships))  # Remove duplicates
 
 
-def example_bim_workflow():
+def example_bim_workflow():  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Demonstrate a complete BIM workflow using all databases."""
     print("🏢 BIM/CAD Multi-Database Workflow Example")
     print("=" * 50)

@@ -104,10 +104,10 @@ class TestMaskSensitive:
         assert mask_sensitive("") == ""
 
     def test_none_returns_empty(self) -> None:
-        assert mask_sensitive(None) == ""
+        assert mask_sensitive(None) == ""  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_non_string_input_converted(self) -> None:
-        result = mask_sensitive(42)
+        result = mask_sensitive(42)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert result == "42"
 
     def test_chain_hash_not_corrupted(self) -> None:

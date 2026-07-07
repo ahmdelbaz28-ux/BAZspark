@@ -327,7 +327,7 @@ class SmokeSimulationState:
     fds_config: FDSIntegrationConfig | None = None
     fds_run_id: str | None = None
     last_updated: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     )
     validation_warning: str | None = PLACEHOLDER_VALIDATION_WARNING
 

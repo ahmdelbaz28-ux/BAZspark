@@ -107,15 +107,15 @@ class TestGuardFinite:
 
     def test_string_rejected(self):
         with pytest.raises(PhysicsGuardError, match="numeric"):
-            _guard_finite("3.14", "test_field")
+            _guard_finite("3.14", "test_field")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_none_rejected(self):
         with pytest.raises(PhysicsGuardError, match="numeric"):
-            _guard_finite(None, "test_field")
+            _guard_finite(None, "test_field")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_list_rejected(self):
         with pytest.raises(PhysicsGuardError, match="numeric"):
-            _guard_finite([1.0], "test_field")
+            _guard_finite([1.0], "test_field")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_error_has_field_and_reason(self):
         with pytest.raises(PhysicsGuardError) as exc_info:

@@ -373,7 +373,7 @@ async def get_report(project_id: str, report_id: str):
 
 
 @router.get("/{report_id}/export", dependencies=[Depends(require_permission(Permission.REPORT_READ))])
-async def export_report(
+async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     project_id: str,
     report_id: str,
     format: str = Query("json", pattern="^(pdf|dxf|json)$"),

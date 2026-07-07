@@ -143,7 +143,7 @@ class EventProcessor:
 
         return self.submit_event(event_data, MessagePriority.HIGH)
 
-    def _processing_worker(self):
+    def _processing_worker(self):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Internal worker thread for processing events"""
         while self.running:
             try:

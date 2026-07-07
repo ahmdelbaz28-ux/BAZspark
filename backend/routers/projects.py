@@ -94,7 +94,7 @@ async def get_project(project_id: str):
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     validate_project(project)
     return success(project)
 

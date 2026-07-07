@@ -53,7 +53,7 @@ class Project(Base):
     )
 
     # Relationships
-    devices = relationship("Device", back_populates="project", cascade="all, delete-orphan")
+    devices = relationship("Device", back_populates="project", cascade="all, delete-orphan")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     connections = relationship("Connection", back_populates="project", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="project", cascade="all, delete-orphan")
 
@@ -64,7 +64,7 @@ class Device(Base):
     __tablename__ = "devices"
 
     id = Column(String, primary_key=True)
-    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     type = Column(String, nullable=False)
     name = Column(String, nullable=False)
     category = Column(String, nullable=False)

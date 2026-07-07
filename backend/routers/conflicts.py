@@ -61,7 +61,7 @@ async def list_conflicts(
         )
     except Exception as e:
         logger.exception("list_conflicts failed: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
 
 @router.post("/detect", response_model=ApiResponse[list], dependencies=[Depends(require_permission(Permission.CONFLICT_READ))])

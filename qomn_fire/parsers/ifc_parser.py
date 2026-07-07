@@ -50,7 +50,7 @@ class IfcParser:
     STEP_PATTERN = re.compile(r"#(\d+)\s*=\s*([A-Z0-9_]+)\s*\(([^)]*)\)\s*;")
 
     @staticmethod
-    def parse_ifc(filepath: str, file_hash: str) -> Result[Building, GeometryError]:
+    def parse_ifc(filepath: str, file_hash: str) -> Result[Building, GeometryError]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Parses IFC file contents. Uses a regular-expression STEP parser
         if native ifcopenshell is not present.

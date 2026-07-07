@@ -62,7 +62,7 @@ class ConversionConfig:
         "Roofs": "Roofs",
         "A-ROOF": "Roofs",
         "Dimensions": "Dimensions",
-        "Text": "Text Notes",
+        "Text": "Text Notes",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         "Furniture": "Furniture",
         "Equipment": "Specialty Equipment",
     })

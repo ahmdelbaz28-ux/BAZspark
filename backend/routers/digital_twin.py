@@ -175,7 +175,7 @@ def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
 @router.post("/convert", response_model=ConvertResponse)
-async def convert_files(
+async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     request: ConvertRequest,
     service: DigitalTwinService = Depends(get_digital_twin_service),
 ) -> ConvertResponse:

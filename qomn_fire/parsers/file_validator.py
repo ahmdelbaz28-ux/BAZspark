@@ -35,7 +35,7 @@ class FileValidator:
     """Validates file existence, readability, size limits, and structural integrity."""
 
     @staticmethod
-    def validate_file(filepath: str) -> Result[str, Union[FileValidationError, CorruptionError]]:
+    def validate_file(filepath: str) -> Result[str, Union[FileValidationError, CorruptionError]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Validates file existence, readability, size limits, and returns file SHA-256 hash.
         Returns Result containing SHA-256 hex digest or error.

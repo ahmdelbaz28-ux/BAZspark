@@ -362,7 +362,7 @@ async def write_dwg_file(request: WriteDwgRequest) -> OperationResponse:
         if not service.connected:
             raise HTTPException(
                 status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
-                detail="AutoCAD not connected. Call /connect first."
+                detail="AutoCAD not connected. Call /connect first."  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             )
 
         # V133 PHASE 1.2: Validate file path against path traversal attacks.

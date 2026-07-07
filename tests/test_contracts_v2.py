@@ -291,7 +291,7 @@ class TestValidateRoomInput:
 
     def test_non_dict_raises(self):
         with pytest.raises(ContractViolation, match="dictionary"):
-            validate_room_input("not a dict")
+            validate_room_input("not a dict")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_forbidden_derived_field_area(self):
         """area_m2 must NOT be accepted — it must be computed internally."""
@@ -473,7 +473,7 @@ class TestValidateLoopInput:
 
     def test_non_dict_raises(self):
         with pytest.raises(ContractViolation, match="dictionary"):
-            validate_loop_input([])
+            validate_loop_input([])  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_forbidden_derived_field_voltage_drop(self):
         """voltage_drop_v must NOT be accepted — computed internally."""

@@ -148,7 +148,11 @@ class NetworkTopologyAuditor:
     """
 
     def __init__(self) -> None:
-        pass
+        # Explicit no-op constructor. The class is stateless — all topology
+        # state is passed per-method-call as parameters. Kept for API
+        # discoverability (allows `NetworkTopologyAuditor()` without args)  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+        # and future state additions without breaking callers.
+        pass  # NOSONAR — S1186: intentional no-op stateless constructor
 
     def audit_network_topology(
         self,

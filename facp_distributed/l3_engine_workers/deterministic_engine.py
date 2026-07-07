@@ -210,7 +210,7 @@ class DeterministicEngine:
             return "unit"
         return "format"
 
-    def _generic_calculation(self, params: Dict[str, Any]) -> Any:
+    def _generic_calculation(self, params: Dict[str, Any]) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Perform a generic calculation"""
         operation = params.get("operation", "add")
         operands = params.get("operands", [])

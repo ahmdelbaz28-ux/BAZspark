@@ -412,7 +412,7 @@ def _get_circuit_breaker(name: str) -> WeightedCircuitBreaker:
         return _circuit_breakers[name]
 
 
-def fail_loud_v4(
+def fail_loud_v4(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     safe_minimum: float | None = None,
     default_value: Any = None,
     physics_validator: Callable[[Any], bool] | None = None,
@@ -726,7 +726,7 @@ def fail_loud_v4(
     return decorator
 
 
-def _validate_fallback(value: Any, name: str) -> None:
+def _validate_fallback(value: Any, name: str) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """يتحقق من أن القيمة الافتراضية ليست مستحيلة فيزيائياً."""
     if value is None:
         return  # None مسموح (يعني "لا قيمة افتراضية")

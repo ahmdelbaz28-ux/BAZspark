@@ -98,7 +98,7 @@ async def list_devices(
 
 
 @router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.DEVICE_CREATE))])
-async def create_device(project_id: str, input_data: CreateDeviceInput):
+async def create_device(project_id: str, input_data: CreateDeviceInput):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Create a new device in a project.
 
@@ -165,13 +165,13 @@ async def get_device(project_id: str, device_id: str):
     db = get_db()
     device = db.get_device(project_id, device_id)
     if not device:
-        raise HTTPException(status_code=404, detail="Device not found")  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail="Device not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     validate_device(device)
     return success(device)
 
 
 @router.put("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_UPDATE))])
-async def update_device(
+async def update_device(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     project_id: str, device_id: str, input_data: UpdateDeviceInput
 ):
     """

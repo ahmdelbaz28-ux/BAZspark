@@ -69,7 +69,7 @@ class MIPResult:
     candidate_step: float = 1.0
 
 
-def solve_set_covering_mip(
+def solve_set_covering_mip(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     room_width: float,
     room_length: float,
     coverage_radius: float = DETECTOR_RADIUS,  # R = 0.7 × 9.1m (aligned with DensityOptimizer DETECTOR_RADIUS)

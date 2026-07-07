@@ -406,12 +406,12 @@ class TestValidateRoomInputInvalid:
 
     def test_non_dict_payload(self):
         with pytest.raises(ContractViolation) as exc_info:
-            validate_room_input("not a dict")
+            validate_room_input("not a dict")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert exc_info.value.field == "payload"
 
     def test_list_payload(self):
         with pytest.raises(ContractViolation) as exc_info:
-            validate_room_input([1, 2, 3])
+            validate_room_input([1, 2, 3])  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert exc_info.value.field == "payload"
 
     # ── Missing required fields ────────────────────────────────────────────

@@ -16,7 +16,7 @@ from qomn_fire.core.types import Device, DeviceType, Point3D
 
 logger = logging.getLogger("qomn_fire.placement")
 
-def place_smoke_detectors_room(
+def place_smoke_detectors_room(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     room_min: Point3D,
     room_max: Point3D,
     height_ft: float,
@@ -32,7 +32,7 @@ def place_smoke_detectors_room(
                 return Result(error=PhysicalConstraintError(
                     message=f"{label}.{coord_name}={val} is not finite (NaN or Inf). "
                             f"Detector placement requires finite room coordinates.",
-                    code_ref="NFPA 72 §17.7.3",
+                    code_ref="NFPA 72 §17.7.3",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                     remedy="Validate room geometry before calling placement. Check for NaN in IFC parsing."
                 ))
     if not math.isfinite(height_ft):

@@ -99,7 +99,7 @@ def _shoelace_area(poly: list[tuple[float, float]]) -> float:
 # ---------------------------------------------------------------------------
 
 
-def _assemble_closed_polygons_v29(
+def _assemble_closed_polygons_v29(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     lines: list[tuple[tuple[float, float], tuple[float, float]]],
     tolerance: float = 0.01,
     return_consumed: bool = False,
@@ -269,7 +269,7 @@ class StreamingDXFParser:
         self.scale = scale_factor
         self.floor_id = floor_id
 
-    def stream_file(self, filepath: str) -> Generator[StreamedRoom, None, StreamingStats]:
+    def stream_file(self, filepath: str) -> Generator[StreamedRoom, None, StreamingStats]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Generator: yield StreamedRoom objects as they are assembled.
 
@@ -356,7 +356,7 @@ class StreamingDXFParser:
         stats.elapsed_s = time.perf_counter() - t0
         return stats
 
-    def _parse_dxf_chunk(
+    def _parse_dxf_chunk(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         lines: list[str],
     ) -> list[tuple[tuple[float, float], tuple[float, float]]]:

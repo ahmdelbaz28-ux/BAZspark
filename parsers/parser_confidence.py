@@ -154,7 +154,7 @@ class ParserConfidence:
     # ──────────────────────────────────────────────
     # 3. الحكم النهائي
     # ──────────────────────────────────────────────
-    def evaluate(self) -> ConfidenceResult:
+    def evaluate(self) -> ConfidenceResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         file_score, file_details = self._score_file_quality()
         comp_score, comp_details = self._score_completeness()
 

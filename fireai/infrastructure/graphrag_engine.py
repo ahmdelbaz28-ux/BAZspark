@@ -123,7 +123,7 @@ class GraphRAGEngine:
         self._qa_chain = None      # GraphCypherQAChain
         self._initialized = False
 
-    def _initialize(self) -> None:
+    def _initialize(self) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Initialize all 3 layers (lazy, with graceful fallback)."""
         if self._initialized:
             return

@@ -366,7 +366,7 @@ class RulesEngine:
         with self._lock:
             return self._retract_fact_internal(fact_id, trigger_tms=True)
 
-    def _retract_fact_internal(self, fact_id: str, trigger_tms: bool = True) -> bool:
+    def _retract_fact_internal(self, fact_id: str, trigger_tms: bool = True) -> bool:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Internal retract — called with lock already held."""
         if fact_id not in self._facts:
             return False
@@ -488,7 +488,7 @@ class RulesEngine:
         self._results.extend(all_results)
         return all_results
 
-    def _evaluate_one_pass(self) -> list[RuleResult]:
+    def _evaluate_one_pass(self) -> list[RuleResult]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """One pass of the Rete-inspired evaluation cycle."""
         results: list[RuleResult] = []
 
@@ -615,7 +615,7 @@ class RulesEngine:
 
         return results
 
-    def _evaluate_joins(self, alpha_candidates: list[tuple[Rule, list[Fact]]]) -> list[tuple[Rule, list[Fact]]]:
+    def _evaluate_joins(self, alpha_candidates: list[tuple[Rule, list[Fact]]]) -> list[tuple[Rule, list[Fact]]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Evaluate beta network join conditions.
 

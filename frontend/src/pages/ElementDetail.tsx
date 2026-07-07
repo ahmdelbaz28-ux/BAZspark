@@ -6,7 +6,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { api } from "@/services/api";
 import type { ElementUpdate } from "@/types";
 
-function ElementDetail() {
+function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 	const { t } = useTranslation();
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();

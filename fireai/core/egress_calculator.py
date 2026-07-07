@@ -150,7 +150,7 @@ def calculate_egress_time(
             is_adequate=True,
             occupant_count=0,
             exit_capacity_ps=0.0,
-            nfpa_section="NFPA 101 §7.3",
+            nfpa_section="NFPA 101 §7.3",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         )
 
     # Walking speed

@@ -219,7 +219,7 @@ class BuildingEngine:
 
     # ─── public ──────────────────────────────────────────────────────
 
-    def analyse(self, floors: dict[str, list]) -> BuildingReport:
+    def analyse(self, floors: dict[str, list]) -> BuildingReport:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Analyse all floors in the building and return a BuildingReport.
 

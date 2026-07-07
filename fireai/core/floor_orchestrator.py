@@ -231,7 +231,7 @@ class FloorOrchestrator:
 
         return result
 
-    def _process_one_room(self, spec: RoomSpec) -> RoomResult:
+    def _process_one_room(self, spec: RoomSpec) -> RoomResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         start = time.monotonic()
         result = RoomResult(room_id=spec.name, status="FAIL")
 

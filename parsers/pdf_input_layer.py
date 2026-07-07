@@ -447,7 +447,7 @@ class PDFInputLayer:
 
         return None
 
-    def _extract_rooms(self, page, page_num: int) -> List[RoomBoundary]:
+    def _extract_rooms(self, page, page_num: int) -> List[RoomBoundary]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Extract room boundaries from page."""
         rooms = []
         text = page.get_text()

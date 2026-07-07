@@ -98,7 +98,7 @@ def _lerp(a: Point3D, b: Point3D, t: float) -> Point3D:
 # Public API
 # ─────────────────────────────────────────────────────────────────────────────
 
-def place_fittings(
+def place_fittings(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     path: RoutePath,
     conduit_type: ConduitType,
     trade_size: TradeSize,

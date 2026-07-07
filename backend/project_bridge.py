@@ -135,7 +135,7 @@ def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
         return False
 
 
-def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool:
+def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Sync a project update from System A to System B.
 
@@ -421,7 +421,7 @@ def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
         return False
 
 
-def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str, Any]) -> bool:
+def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str, Any]) -> bool:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Sync a device update from System A to System B.
 

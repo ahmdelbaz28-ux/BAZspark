@@ -48,7 +48,7 @@ class TestCSRFMiddleware:
 
     def test_validate_none_rejected(self):
         from backend.security_csrf import validate_csrf_token
-        assert validate_csrf_token(None) is False
+        assert validate_csrf_token(None) is False  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_tokens_match_same(self):
         from backend.security_csrf import generate_csrf_token, tokens_match
@@ -117,7 +117,7 @@ class TestPathTraversalDefense:
 
         from backend.routers.autocad import _validate_autocad_file_path
         with pytest.raises(HTTPException) as exc:
-            _validate_autocad_file_path("/tmp/nonexistent_file_12345.dwg")  # NOSONAR: publicly writable dir in test
+            _validate_autocad_file_path("/tmp/nonexistent_file_12345.dwg")  # NOSONAR: publicly writable dir in test  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert exc.value.status_code == 404
 
     def test_disallowed_extension_rejected(self):

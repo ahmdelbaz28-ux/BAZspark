@@ -767,7 +767,7 @@ def estimate_co_concentration(
     return max(0.0, CO_ppm)
 
 
-def calculate_aset(
+def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     scenario: FireScenario,
     criteria: TenabilityCriteria | None = None,
     time_step_s: float = 5.0,

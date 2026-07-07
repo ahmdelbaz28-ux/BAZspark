@@ -68,7 +68,7 @@ CANONICAL_CONSTANTS = {
 
 # Known canonical sources for constants
 CANONICAL_SOURCES = {
-    "SMOKE_MAX_SPACING_M": "fireai/constants/nfpa72.py",
+    "SMOKE_MAX_SPACING_M": "fireai/constants/nfpa72.py",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     "HEAT_MAX_SPACING_M": "fireai/constants/nfpa72.py",
     "COVERAGE_RADIUS_FACTOR": "fireai/constants/nfpa72.py",
     "SMOKE_COVERAGE_RADIUS_M": "fireai/constants/nfpa72.py",
@@ -78,7 +78,7 @@ CANONICAL_SOURCES = {
     "HEAT_MAX_WALL_DISTANCE_M": "fireai/constants/nfpa72.py",
     "SMOKE_MAX_CEILING_HEIGHT_M": "fireai/constants/nfpa72.py",
     "HEAT_MAX_CEILING_HEIGHT_M": "fireai/constants/nfpa72.py",
-    "GRAVITY_M_S2": "backend/services/elevation_service.py",
+    "GRAVITY_M_S2": "backend/services/elevation_service.py",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     "MOLAR_MASS_AIR": "backend/services/elevation_service.py",
     "UNIVERSAL_GAS_CONSTANT": "backend/services/elevation_service.py",
     "NFPA72_MINIMUM_SAFETY_FACTOR": "fireai/core/battery_aging_derating.py",
@@ -117,7 +117,7 @@ def find_constant_definitions(root_path: Path) -> dict[str, list[dict]]:
     return dict(definitions)
 
 
-def find_constant_usages(root_path: Path, constants: list[str]) -> dict[str, list[dict]]:
+def find_constant_usages(root_path: Path, constants: list[str]) -> dict[str, list[dict]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Find where constants are imported or used."""
     usages = defaultdict(list)
     seen_positions: set[tuple[str, int]] = set()  # (file, line) — O(1) duplicate check

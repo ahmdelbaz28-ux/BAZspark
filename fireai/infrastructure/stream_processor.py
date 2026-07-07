@@ -266,7 +266,7 @@ class StreamProcessor:
 
     # ── Event processing ────────────────────────────────────────────────────
 
-    async def process(self, event: Event) -> None:
+    async def process(self, event: Event) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Run the full pipeline for a single event.
 

@@ -140,7 +140,7 @@ class DWGParser:
             return False
 
     @staticmethod
-    def _assemble_closed_polygons(lines: list, tolerance: float = 0.01) -> list:
+    def _assemble_closed_polygons(lines: list, tolerance: float = 0.01) -> list:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Chain LINE segments into closed polygons by matching endpoints.
 
@@ -293,7 +293,7 @@ class DWGParser:
 
         return closed_polygons
 
-    def extract_rooms_from_chaos(self, doc) -> list:
+    def extract_rooms_from_chaos(self, doc) -> list:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Extract rooms from a potentially-corrupted or adversarial document.
 

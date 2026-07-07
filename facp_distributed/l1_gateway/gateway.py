@@ -67,7 +67,7 @@ class L1Gateway:
                     "execution_path": ["L1"],
                     "latency_ms": 0,
                     "node_id": self.node_id,
-                    "engine_version": "FACP/1.1"
+                    "engine_version": "FACP/1.1"  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 }
             ).to_dict()
 

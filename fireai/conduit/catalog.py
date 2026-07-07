@@ -167,7 +167,7 @@ _reg(Fitting(
     developed_length_in=round(math.pi * 4.000 / 2, 3),  # 6.283
     body_length_in=0.0, angle_deg=90.0,
     catalog_number="E90-050", weight_kg=0.045,
-    nec_reference="NEC 358.24",
+    nec_reference="NEC 358.24",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 ))
 
 # EMT ELBOW 90° ¾"  — OD=0.922", R=4.5", L=π×4.5/2=7.0686"
@@ -236,7 +236,7 @@ _reg(Fitting(
     developed_length_in=round(math.pi * 4.500 / 2, 3),  # 7.069
     body_length_in=0.0, angle_deg=90.0,
     catalog_number="P90-050", weight_kg=0.038,
-    nec_reference="NEC 352.24",
+    nec_reference="NEC 352.24",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 ))
 
 _reg(Fitting(
@@ -301,7 +301,7 @@ _reg(Fitting(
     developed_length_in=round(math.pi * 4.500 / 2, 3),
     body_length_in=0.0, angle_deg=90.0,
     catalog_number="R90-050", weight_kg=0.136,
-    nec_reference="NEC 344.24",
+    nec_reference="NEC 344.24",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 ))
 
 _reg(Fitting(

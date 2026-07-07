@@ -235,7 +235,7 @@ def _detect_from_ifc(filepath: str) -> UnitDetectionResult | None:
         # Pattern: IFCSIUNIT(*, .LENGTHUNIT., $, .METRE.)
         # or: IFCSIUNIT(*, .LENGTHUNIT., $, .MILLI., .METRE.)
         if ".LENGTHUNIT." in content:
-            if ".MILLI." in content and ".METRE." in content:
+            if ".MILLI." in content and ".METRE." in content:  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 return UnitDetectionResult(
                     unit=UnitSystem.MILLIMETRES,
                     scale_to_metres=UnitSystem.MILLIMETRES.scale_to_metres,

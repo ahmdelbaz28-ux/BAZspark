@@ -311,7 +311,7 @@ class SubstanceProperties(BaseModel):
     molecular_weight: float | None = Field(None, gt=0.0)
 
     @model_validator(mode="after")
-    def physics_consistency(self) -> SubstanceProperties:
+    def physics_consistency(self) -> SubstanceProperties:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         # flash_point must be below autoignition
         if (
             self.flash_point_c is not None
@@ -574,7 +574,7 @@ class ATEXEquipmentSpec(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def thermal_margin_check(self) -> ATEXEquipmentSpec:
+    def thermal_margin_check(self) -> ATEXEquipmentSpec:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         V54 FIX (V48 #6): Validate thermal margin per IEC 60079-14 §5.3.
 

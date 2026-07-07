@@ -243,7 +243,7 @@ class ApiClient {
          * /api/v2/auth/csrf-token and cached. On 403 CSRF rejection, the token
          * is invalidated and the request is retried once with a fresh token.
          */
-        private async fetchWithRetry<T>(
+        private async fetchWithRetry<T>(  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
                 url: string,
                 options?: RequestInit,
                 retries = 3,

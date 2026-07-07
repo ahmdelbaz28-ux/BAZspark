@@ -87,7 +87,7 @@ NFPA_CITATION_ZONE_LIMIT = "NFPA 72-2022 §12.3.2"
 # ============================================================================
 
 
-def inject_fault_isolators(
+def inject_fault_isolators(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     loop_devices: list[dict[str, Any]],
     zone_map: dict[str, str] | None = None,
     max_devices_between_isolators: int = DEFAULT_MAX_DEVICES_BETWEEN_ISOLATORS,

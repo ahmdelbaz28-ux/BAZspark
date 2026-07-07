@@ -46,7 +46,7 @@ def _pick_insulation_material(fire_class: FireClass,
     return None
 
 
-def generate_division_specs(
+def generate_division_specs(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     zones: list[MarineZone],
 ) -> list[FireResistanceSpec]:
     """

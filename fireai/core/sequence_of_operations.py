@@ -335,7 +335,7 @@ class MatrixRow:
 
 NFPA_REFERENCES: dict[DeviceInputType, list[str]] = {
     DeviceInputType.SMOKE_GENERAL: [
-        "NFPA 72-2022 §10.14",
+        "NFPA 72-2022 §10.14",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         "NFPA 72-2022 §17.6.3",
     ],
     DeviceInputType.SMOKE_ELEVATOR_LOBBY: [

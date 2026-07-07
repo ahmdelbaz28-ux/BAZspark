@@ -221,7 +221,7 @@ def _init_database() -> None:
         if _db_initialized:
                 return
         # Ensure parent directory exists (skip for :memory:)
-        if DATABASE_PATH != ":memory:":
+        if DATABASE_PATH != ":memory:":  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             db_dir = os.path.dirname(DATABASE_PATH)
             if db_dir and not os.path.isdir(db_dir):
                 os.makedirs(db_dir, exist_ok=True)

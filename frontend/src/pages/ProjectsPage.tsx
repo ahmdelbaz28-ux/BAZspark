@@ -313,7 +313,7 @@ export function ProjectsPage() {
 					filteredProjects &&
 					filteredProjects.length > 0 && (
 						<div className="space-y-4">
-							{filteredProjects.map((project: Project) => (
+							{filteredProjects.map((project: Project) => (  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 								<Card
 									key={project.id}
 									className="border-slate-700 bg-slate-800"

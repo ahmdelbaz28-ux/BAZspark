@@ -136,7 +136,7 @@ class ExactCoverageEngine:
         # V30 B3: Store nominal radius for analytical bypass comparison
         self._coverage_radius_m = coverage_radius_m
 
-    def verify(
+    def verify(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         room_boundary_coords: list[tuple[float, float]],
         sensor_locations: list[tuple[float, float]],

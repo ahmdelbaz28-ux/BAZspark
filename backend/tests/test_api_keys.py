@@ -144,4 +144,4 @@ class TestCRUDOperations:
         from backend.api_keys import validate_api_key
 
         assert validate_api_key("") is None
-        assert validate_api_key(None) is None  # type: ignore[arg-type]
+        assert validate_api_key(None) is None  # type: ignore[arg-type]  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)

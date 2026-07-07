@@ -93,7 +93,7 @@ class TestGetWireResistance:
         Passing integer 14 works because get_wire_resistance_ohm_per_m
         does str(awg).strip() internally — so 14 → "14" is valid.
         """
-        r = get_wire_resistance_ohm_per_m(14)
+        r = get_wire_resistance_ohm_per_m(14)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert r == pytest.approx(10.07 / 1000.0, rel=1e-4)
 
     def test_fa_wire_gauges_are_valid(self):

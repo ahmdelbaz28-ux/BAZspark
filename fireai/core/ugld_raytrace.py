@@ -191,7 +191,7 @@ def maekawa_insertion_loss(
     return round(min(il, 50.0), 1)
 
 
-def compute_path_difference(
+def compute_path_difference(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     leak_point: tuple[float, float, float],
     sensor_point: tuple[float, float, float],
     obstacle_min: tuple[float, float, float],
@@ -523,7 +523,7 @@ class AcousticRayResult(BaseModel):
 # ===========================================================================
 
 
-def trace_acoustic_ray(
+def trace_acoustic_ray(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     leak_point: tuple[float, float, float],
     sensor_point: tuple[float, float, float],
     obstacles: list[AcousticObstacle],

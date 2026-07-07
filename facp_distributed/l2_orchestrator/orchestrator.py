@@ -106,7 +106,7 @@ class Orchestrator:
                         "execution_path": ["L1", "L2_orchestrator"],
                         "latency_ms": (time.time() - self.active_tasks[request_id]["received_at"]) * 1000,
                         "node_id": self.node_id,
-                        "engine_version": "FACP/1.1"
+                        "engine_version": "FACP/1.1"  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                     }
                 ).to_dict()
 

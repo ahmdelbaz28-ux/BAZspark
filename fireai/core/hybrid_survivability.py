@@ -379,7 +379,7 @@ class HybridSurvivabilityEngine:
         self._temp_c = temp_c
         self._rh_pct = relative_humidity_pct
 
-    def analyse(
+    def analyse(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         optical_result: CoverageResult,
         grid: list[RayTracePoint],

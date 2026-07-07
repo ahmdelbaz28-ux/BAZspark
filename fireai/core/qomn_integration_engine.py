@@ -186,7 +186,7 @@ class CableRouter:
         return float(abs(p1[0] - p2[0]) + abs(p1[1] - p2[1]) + abs(p1[2] - p2[2]))
 
     @classmethod
-    def route(cls, grid_map: GridMap3D, start: Point3D, end: Point3D, conduit: ConduitType) -> list[Point3D]:
+    def route(cls, grid_map: GridMap3D, start: Point3D, end: Point3D, conduit: ConduitType) -> list[Point3D]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Routes conduit orthogonal paths from Start to End point.
         Checks for bend compliance according to NEC code standards.

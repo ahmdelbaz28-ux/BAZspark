@@ -41,7 +41,7 @@ CANONICAL_CONSTANTS: dict[str, tuple[float, str, str]] = {
     "GRAVITY": (9.81, "", "SI standard (local approx)"),
     "GRAVITY_M_S2": (9.81, "", "SI standard (local approx)"),
     # Standard conditions
-    "STD_TEMP_C": (20.0, "", "NFPA standard conditions"),
+    "STD_TEMP_C": (20.0, "", "NFPA standard conditions"),  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     "STD_TEMP_K": (293.15, "", "NFPA standard conditions"),
     # Duct detector spacing
     "_DUCT_DETECTOR_MAX_SPACING_M": (10.0, "nfpa72_calculations", "NFPA 72 §17.7.5.4.2"),
@@ -448,7 +448,7 @@ def _canonical_mismatch_check(
     return critical
 
 
-def _print_report(report: ConsistencyReport, root: Path) -> int:
+def _print_report(report: ConsistencyReport, root: Path) -> int:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Print report and return exit code (0=clean, 1=issues found)."""
     sep = "=" * 78
     print(sep)

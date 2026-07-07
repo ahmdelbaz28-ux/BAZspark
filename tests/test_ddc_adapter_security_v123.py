@@ -89,7 +89,7 @@ class TestV123BackwardCompatibility:
         """Missing file → FileNotFoundError (benign, preserved from pre-V123)."""
         adapter = DDCAdapter()
         with pytest.raises(FileNotFoundError):
-            adapter.convert("/tmp/v123_does_not_exist_zzz.rvt")
+            adapter.convert("/tmp/v123_does_not_exist_zzz.rvt")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -108,7 +108,7 @@ class TestV123NewDefenses:
         r"""Path with \\x00 → ValueError (V123: previously not checked)."""
         adapter = DDCAdapter()
         with pytest.raises(ValueError, match="null byte"):
-            adapter.convert("/tmp/foo\x00.rvt")
+            adapter.convert("/tmp/foo\x00.rvt")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_leading_dash_rejected(self):
         """Path starting with '-' → ValueError (argument-injection guard)."""

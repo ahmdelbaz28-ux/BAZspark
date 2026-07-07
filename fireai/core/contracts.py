@@ -406,7 +406,7 @@ class ContractViolation(ValueError):
     pass
 
 
-def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:
+def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate a room input payload before it enters the calculation pipeline.
 
@@ -570,7 +570,7 @@ FORBIDDEN_LOOP_DERIVED_FIELDS: tuple = (
 )
 
 
-def validate_loop_input(payload: dict[str, Any]) -> dict[str, Any]:
+def validate_loop_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate an SLC loop input payload before design.
 

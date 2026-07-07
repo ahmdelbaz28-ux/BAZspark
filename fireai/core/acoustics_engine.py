@@ -718,7 +718,7 @@ class AcousticsEngine:
     # ISA-TR84.00.07 — UGLD Ray Trace (Single Sensor)
     # ------------------------------------------------------------------
 
-    def ugld_raytrace(
+    def ugld_raytrace(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         leak_point: tuple[float, float, float],
         sensor_point: tuple[float, float, float],
@@ -952,7 +952,7 @@ class AcousticsEngine:
     # ISA-TR84.00.07 — Multi-Sensor UGLD Coverage
     # ------------------------------------------------------------------
 
-    def ugld_multi_sensor_coverage(
+    def ugld_multi_sensor_coverage(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         leak_points: list[tuple[float, float, float]],
         sensor_points: list[tuple[float, float, float]],

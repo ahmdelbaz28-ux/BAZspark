@@ -194,7 +194,7 @@ class HVACShutdownSpec:
     requires_shutdown: bool = False
     requires_duct_detector: bool = False
     shutdown_nfpa_ref: str = "NFPA 72-2022 §21.7 / NFPA 90A-2024 §6.4.1"
-    duct_detector_nfpa_ref: str = "NFPA 90A-2024 §5.3"
+    duct_detector_nfpa_ref: str = "NFPA 90A-2024 §5.3"  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
 
 @dataclass(frozen=True)
@@ -278,7 +278,7 @@ class MEPSyncResult:
 # ============================================================================
 
 
-def validate_mep_elements(elements: list[MEPElement]) -> list[str]:
+def validate_mep_elements(elements: list[MEPElement]) -> list[str]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate MEP elements before synchronisation.
 

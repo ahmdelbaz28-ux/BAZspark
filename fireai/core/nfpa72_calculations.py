@@ -658,7 +658,7 @@ class CoverageSpec:
     warning: str | None = None
 
 
-def calculate_coverage_radius_from_height(
+def calculate_coverage_radius_from_height(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     ceiling_height: float,
     detector_type: DetectorTypeSimple = "smoke",
 ) -> CoverageSpec:

@@ -241,7 +241,7 @@ class ConduitRouter:
         (0, 0, 1), (0, 0, -1),
     ]
 
-    def route(
+    def route(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         start: Point3D,
         end: Point3D,

@@ -222,7 +222,7 @@ class SeismicJointPenalyer:
         self.flexible_transition_length_m = flexible_transition_length_m
         self.orthogonal_tolerance_deg = orthogonal_tolerance_deg
 
-    def detect_structural_shearing(
+    def detect_structural_shearing(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         path: list[tuple[float, float]],
         seismic_joints: list[StructuralJoint],

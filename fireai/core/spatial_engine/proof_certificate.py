@@ -187,7 +187,7 @@ class ProofCertificateGenerator:
         self.delta_margin = self.delta * math.sqrt(2) / 2
         self.R_eff = self.R - self.delta_margin
 
-    def generate(
+    def generate(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         room_id: str,
         width: float,

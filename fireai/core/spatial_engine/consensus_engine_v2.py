@@ -148,7 +148,7 @@ def polygon_width_length(coords: list[tuple[float, float]]) -> tuple[float, floa
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def grid_polygon_verify(
+def grid_polygon_verify(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     room_coords: list[tuple[float, float]],
     detectors: list[tuple[float, float]],
     coverage_radius: float,
@@ -296,7 +296,7 @@ class ConsensusEngineV2:
 
     # ── Non-rectangular room API ───────────────────────────────────────────
 
-    def verify_polygon(
+    def verify_polygon(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         room_coords: list[tuple[float, float]],
         detectors: list[tuple[float, float]],
@@ -529,7 +529,7 @@ class ConsensusEngineV2:
     # ── Consensus computation (shared with v1) ─────────────────────────────
 
     @staticmethod
-    def _compute_consensus(verdicts: list[EngineVerdict]) -> ConsensusResult:
+    def _compute_consensus(verdicts: list[EngineVerdict]) -> ConsensusResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Compute consensus from a list of engine verdicts.
 

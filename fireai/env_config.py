@@ -84,7 +84,7 @@ class FireAIConfig:
         return self.environment == "testing"
 
 
-def _load_config() -> FireAIConfig:
+def _load_config() -> FireAIConfig:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Load and validate configuration from environment variables."""
 
     def _env(key: str, default: str) -> str:

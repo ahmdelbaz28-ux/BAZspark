@@ -175,7 +175,7 @@ class RBACEngine:
         for node in target_nodes:
             self.distributed_cache[node] = rbac_state
 
-    def sync_with_cluster(self, cluster_rbac_state: Dict[str, Any]):
+    def sync_with_cluster(self, cluster_rbac_state: Dict[str, Any]):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Sync RBAC state with cluster"""
         # Merge cluster state with local state
         cluster_roles = cluster_rbac_state.get("roles", {})

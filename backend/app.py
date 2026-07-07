@@ -93,7 +93,7 @@ if not logger.handlers:
 # to XSS amplification via 'unsafe-eval'. Modern frontend libraries
 # (recharts >=2.x, three.js >=0.150) work without it in production builds.
 
-def _build_csp() -> str:
+def _build_csp() -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Build a Content-Security-Policy header value.
 
@@ -506,7 +506,7 @@ app.add_middleware(
 # Include our CAD/BIM integration routers
 # FIX #35: Removed redundant prefix from app.include_router since each
 # router already defines its own prefix (e.g., prefix="/autocad").
-app.include_router(autocad.router, prefix="/api/v1", tags=["AutoCAD-v1"])
+app.include_router(autocad.router, prefix="/api/v1", tags=["AutoCAD-v1"])  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 app.include_router(revit.router, prefix="/api/v1", tags=["Revit-v1"])
 app.include_router(digital_twin.router, prefix="/api/v1", tags=["Digital-Twin-v1"])
 

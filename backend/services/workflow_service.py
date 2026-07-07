@@ -757,7 +757,7 @@ def node_environmental_context(state: PipelineState) -> PipelineState:
 
 
 @with_stuck_detection
-def node_nfpa_analysis(state: PipelineState) -> PipelineState:
+def node_nfpa_analysis(state: PipelineState) -> PipelineState:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Run NFPA 72 analysis on each room.
 
@@ -901,7 +901,7 @@ def node_nfpa_analysis(state: PipelineState) -> PipelineState:
 
 
 @with_stuck_detection
-def node_conflict_detection(state: PipelineState) -> PipelineState:
+def node_conflict_detection(state: PipelineState) -> PipelineState:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Detect conflicts in detector placement and device routing.
 

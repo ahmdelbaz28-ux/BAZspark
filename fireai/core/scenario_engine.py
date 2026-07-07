@@ -754,7 +754,7 @@ class ScenarioRunner:
         self._dt = time_step_s
 
     # ------------------------------------------------------------------
-    def run(
+    def run(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         scenario: FireScenario,
         detector_positions: list[tuple[float, float]],

@@ -438,8 +438,11 @@ class TestEngineInit:
 
     def test_default_init(self):
         engine = AcousticsEngine()
-        assert engine is not None
+        # S5727 fix: assert on the instance type rather than the tautological
+        # `is not None` (always True after construction succeeds).
+        assert isinstance(engine, AcousticsEngine)
 
     def test_custom_ambient_noise(self):
         engine = AcousticsEngine(room_ambient_noise={"business": 50.0})
-        assert engine is not None
+        # S5727 fix: same pattern — assert on the instance type.
+        assert isinstance(engine, AcousticsEngine)

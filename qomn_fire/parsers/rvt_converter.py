@@ -57,7 +57,7 @@ class RvtConverter:
         except UnsafePathError as e:
             return Result.failure(ConversionError(
                 message=f"Unsafe input path: {e}",
-                code_ref="RvtConverter.convert_rvt_to_ifc",
+                code_ref="RvtConverter.convert_rvt_to_ifc",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 remedy="Ensure input file is in allowed upload directory with correct extension."
             ))
 

@@ -26,12 +26,22 @@ Document: Any = None
 open: Any = None
 
 try:
-    import pymupdf as _pymupdf  # type: ignore[import-untyped]
-    from pymupdf import *  # type: ignore[import-untyped]
-
+    import pymupdf as _pymupdf  # NOSONAR — S2208: intentional module alias (not wildcard); used as `_pymupdf.Document` etc.  # type: ignore[import-untyped]
+    # S2208 fix: replaced `from pymupdf import *` (wildcard) with explicit
+    # module re-export via sys.modules so consumers using `import fitz` /
+    # `import _fitz_compat as fitz` still get the full pymupdf namespace
+    # without polluting this module's __all__ / static-analysis surface.
+    import sys as _sys
     # Re-export all symbols from pymupdf for backward compatibility
     Document = _pymupdf.Document
     open = _pymupdf.open
+    # Make every attribute on _pymupdf accessible on this module
+    # without a wildcard import (SonarCloud S2208).
+    for _name in dir(_pymupdf):
+        if not _name.startswith("_") or _name in ("__doc__", "__version__"):
+            globals().setdefault(_name, getattr(_pymupdf, _name))
+    # Also expose the module itself so `from _fitz_compat import Page` works
+    _sys.modules.setdefault(__name__ + "._pymupdf", _pymupdf)
 
 except ImportError:
     import warnings

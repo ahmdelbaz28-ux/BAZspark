@@ -128,7 +128,10 @@ class TestPydanticSmokePoints:
     def test_smoke_point_model_exists(self):
         """SmokeDensityPointRequest should exist as a Pydantic model."""
         from backend.routers.v2 import SmokeDensityPointRequest
-        assert SmokeDensityPointRequest is not None
+        # S5727 fix: the import itself is the smoke check. Assert on the type
+        # rather than the tautological `is not None` (which SonarCloud flags
+        # because it's always True after a successful import).
+        assert isinstance(SmokeDensityPointRequest, type)
 
     def test_missing_z_raises_422(self):
         """Missing 'z' field should produce 422 (not 500 KeyError)."""

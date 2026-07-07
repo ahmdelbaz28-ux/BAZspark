@@ -123,7 +123,7 @@ class OCRService:
 
         return text
 
-    def _extract_room_names(self, text: str) -> List[Tuple[str, float]]:
+    def _extract_room_names(self, text: str) -> List[Tuple[str, float]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Extract room names and associated area values from text.
 

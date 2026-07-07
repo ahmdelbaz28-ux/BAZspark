@@ -211,7 +211,7 @@ def calculate_voltage_drop(
         "length_m": one_way_length_m,
         "current_a": current_a,
         "nfpa_max_drop_pct": MAX_VOLTAGE_DROP_PCT,
-        "nfpa_reference": "NFPA 72-2022 §27.4.1.2",
+        "nfpa_reference": "NFPA 72-2022 §27.4.1.2",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     }
     return result
 

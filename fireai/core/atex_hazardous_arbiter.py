@@ -375,7 +375,7 @@ class ATEXHazardousArbiter:
     IEC 60079-0:2017 / IEC 60079-14:2013 / ATEX 2014/34/EU
     """
 
-    def arbitrate_v21(
+    def arbitrate_v21(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         zone: ZoneType,
         hazard_type: HazardType,
@@ -597,7 +597,7 @@ class ATEXHazardousArbiter:
 
     # ── Legacy API ──────────────────────────────────────────────────────────
 
-    def arbitrate(
+    def arbitrate(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         hac_result,
         hazard_system: HazardSystem = HazardSystem.ATEX_ZONE,

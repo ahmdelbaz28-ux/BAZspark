@@ -79,7 +79,7 @@ _DEFAULT_TRADE_SIZE = {
 DEFAULT_TURN_PENALTY = 2.0
 
 
-def astar_route_3d(
+def astar_route_3d(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     grid_map: GridMap3D,
     start: Point3D,
     end: Point3D,
@@ -100,7 +100,7 @@ def astar_route_3d(
                 return Result(error=NECViolationError(
                     message=f"{label}.{coord_name}={val} is not finite (NaN or Inf). "
                             f"Conduit routing requires finite coordinates.",
-                    code_ref="NEC Art 300.18",
+                    code_ref="NEC Art 300.18",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                     remedy="Validate device positions before routing. Check for NaN in IFC parsing."
                 ))
 

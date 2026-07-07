@@ -179,15 +179,15 @@ class TestAddEvent:
 
     def test_add_event_invalid_details_raises(self):
         with pytest.raises(ValueError, match="dictionary"):
-            add_event("TEST", "R1", "not a dict")
+            add_event("TEST", "R1", "not a dict")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_add_event_none_details_raises(self):
         with pytest.raises(ValueError, match="dictionary"):
-            add_event("TEST", "R1", None)
+            add_event("TEST", "R1", None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_add_event_list_details_raises(self):
         with pytest.raises(ValueError, match="dictionary"):
-            add_event("TEST", "R1", [1, 2, 3])
+            add_event("TEST", "R1", [1, 2, 3])  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_add_event_stores_data(self):
         add_event("DETECTOR_PLACEMENT", "R1", {"count": 5, "type": "smoke"})

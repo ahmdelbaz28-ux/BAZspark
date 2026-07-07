@@ -53,7 +53,7 @@ def upgrade() -> None:
         sa.Column('properties', sa.Text, nullable=False, server_default='{}'),
         sa.Column('created_at', sa.Text, nullable=False),
         sa.Column('updated_at', sa.Text, nullable=False),
-        sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ondelete='CASCADE'),  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         if_not_exists=True,
     )
 

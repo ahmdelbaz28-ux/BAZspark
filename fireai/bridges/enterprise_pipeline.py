@@ -247,7 +247,7 @@ class EnterpriseOrchestrator:
             is_sprinklered=is_sprinklered,
         )
 
-    def run_full_check(
+    def run_full_check(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         acoustic_params: dict[str, Any] | None = None,
         battery_params: dict[str, Any] | None = None,

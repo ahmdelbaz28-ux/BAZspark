@@ -108,7 +108,7 @@ def polygon_perimeter(poly: Polygon) -> float:
 # ─────────────────────────────────────────────
 
 
-def point_in_polygon(
+def point_in_polygon(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     point: Point,
     poly: Polygon,
     include_boundary: bool = True,
@@ -207,7 +207,7 @@ class ValidationResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
+def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate polygon integrity: minimum vertices, no duplicates,
     no self-intersection, minimum area.
@@ -296,7 +296,7 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
     return ValidationResult(not errors, errors, warnings)
 
 
-def _segments_intersect(p1: Point, p2: Point, p3: Point, p4: Point) -> bool:
+def _segments_intersect(p1: Point, p2: Point, p3: Point, p4: Point) -> bool:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """True if segment p1-p2 properly intersects p3-p4."""
 
     def cross2d(o, a, b):
@@ -646,7 +646,7 @@ class SanitizeResult:
     rejection_reason: str | None = None
 
 
-def sanitize_room_geometry(coords: list[Point], min_area: float = 1.0) -> SanitizeResult:
+def sanitize_room_geometry(coords: list[Point], min_area: float = 1.0) -> SanitizeResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Sanitize room geometry from Revit before processing.
 

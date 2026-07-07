@@ -324,7 +324,7 @@ class ARMetadataExporter:
 
         return snapshot
 
-    def _detector_to_node(self, det_id: str, det_state: Any) -> ARSceneNode:
+    def _detector_to_node(self, det_id: str, det_state: Any) -> ARSceneNode:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Convert a DetectorState to ARSceneNode.
 

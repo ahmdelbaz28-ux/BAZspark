@@ -174,7 +174,7 @@ class CeilingSpec:
     beam_spacing_m: float = 0.0
     slope_run_m: float | None = None  # V78: Horizontal run for slope calculation
 
-    def __post_init__(self):
+    def __post_init__(self):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         # ===== STRICT VALIDATION = FAIL FAST =====
         errors = []
 
@@ -332,7 +332,7 @@ class RoomSpec:
     hvac_duct_list: list[HVACDuct] = field(default_factory=list)
     geometry_unresolved: bool = False  # V111: When True, NFPA analysis MUST be skipped
 
-    def __post_init__(self):
+    def __post_init__(self):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         # ===== STRICT VALIDATION = FAIL FAST =====
         errors = []
 

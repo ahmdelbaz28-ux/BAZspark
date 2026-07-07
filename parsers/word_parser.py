@@ -82,7 +82,10 @@ class WordParser:
     ]
 
     def __init__(self):
-        pass
+        # Explicit no-op constructor — class is stateless, patterns are
+        # class-level constants. Constructor exists for consistent
+        # instantiation API across all parsers in this package.
+        pass  # NOSONAR — S1186: intentional no-op stateless constructor
 
     def parse(self, file_path: str) -> WordParseResult:
         """

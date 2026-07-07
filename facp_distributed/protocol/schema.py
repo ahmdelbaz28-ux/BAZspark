@@ -1,7 +1,7 @@
 """FACP Distributed Protocol Schema Definitions"""
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 
@@ -15,7 +15,7 @@ class FACPDistributedSchema:
         return {
             "type": "object",
             "properties": {
-                "protocol": {"type": "string", "const": "FACP/1.1"},
+                "protocol": {"type": "string", "const": "FACP/1.1"},  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 "type": {"type": "string", "const": "request"},
                 "id": {"type": "string"},
                 "timestamp": {"type": "string", "format": "date-time"},
@@ -107,7 +107,8 @@ class FACPDistributedSerializationHelper:
             "protocol": "FACP/1.1",
             "type": "request",
             "id": str(uuid.uuid4()),
-            "timestamp": datetime.utcnow().isoformat(),
+            # Timezone-aware UTC timestamp (avoids the deprecated naive-UTC API).
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": source,
             "target": target,
             "execution_state": execution_state,

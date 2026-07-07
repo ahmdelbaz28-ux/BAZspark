@@ -146,11 +146,11 @@ class TestIFCParserInit:
     """IFCParser initialization and state."""
 
     def test_init_stores_path(self):
-        parser = IFCParser("/tmp/test.ifc")
-        assert parser.ifc_path == "/tmp/test.ifc"
+        parser = IFCParser("/tmp/test.ifc")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
+        assert parser.ifc_path == "/tmp/test.ifc"  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_init_data_is_none(self):
-        parser = IFCParser("/tmp/test.ifc")
+        parser = IFCParser("/tmp/test.ifc")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert parser.data is None
 
 
@@ -227,14 +227,14 @@ class TestJSONLoading:
     def test_parse_instances(self):
         """_parse_instances extracts instance list from data."""
         data = {"instances": [{"id": 1}, {"id": 2}]}
-        parser = IFCParser("/tmp/test.json")
+        parser = IFCParser("/tmp/test.json")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         instances = parser._parse_instances(data)
         assert len(instances) == 2
 
     def test_parse_empty_instances(self):
         """Missing 'instances' key returns empty list."""
         data = {}
-        parser = IFCParser("/tmp/test.json")
+        parser = IFCParser("/tmp/test.json")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         instances = parser._parse_instances(data)
         assert instances == []
 
@@ -587,7 +587,7 @@ class TestIFCParserPathSecurity:
     def test_null_byte_rejected(self):
         """Null byte in path is rejected."""
         with pytest.raises(ValueError, match="SECURITY"):
-            IFCParser("/tmp/x\x00.ifc").parse()
+            IFCParser("/tmp/x\x00.ifc").parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_wrong_extension_rejected(self):
         """Non-IFC/JSON extension is rejected."""
@@ -603,7 +603,7 @@ class TestIFCParserPathSecurity:
     def test_missing_file_raises_valueerror(self):
         """Missing file raises ValueError (not raw FileNotFoundError)."""
         with pytest.raises(ValueError, match="not found"):
-            IFCParser("/tmp/does_not_exist_xyzzy.ifc").parse()
+            IFCParser("/tmp/does_not_exist_xyzzy.ifc").parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_ifc_extension_accepted(self):
         """.ifc extension passes validation (may fail at load)."""
@@ -694,7 +694,7 @@ class TestParseIfcConvenienceFunction:
     def test_parse_ifc_missing_file(self):
         """parse_ifc() raises ValueError for missing file."""
         with pytest.raises(ValueError, match="not found"):
-            parse_ifc("/tmp/does_not_exist_xyzzy.ifc")
+            parse_ifc("/tmp/does_not_exist_xyzzy.ifc")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

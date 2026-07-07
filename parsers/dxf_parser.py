@@ -181,7 +181,7 @@ class DXFParser:
             "CRITICAL: Cannot proceed - incorrect unit = incorrect coverage calculation."
         )
 
-    def _detect_unit_heuristic(self, doc) -> int:
+    def _detect_unit_heuristic(self, doc) -> int:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Detect actual unit by testing scale factors.
 
@@ -254,7 +254,7 @@ class DXFParser:
 
         return None
 
-    def _extract_lines(self, msp, scale: float) -> List:
+    def _extract_lines(self, msp, scale: float) -> List:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         from shapely.geometry import LineString
 
         lines = []

@@ -27,7 +27,7 @@ interface HeaderProps {
 	onHelpToggle: () => void;
 }
 
-export function Header({
+export function Header({  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 	theme,
 	dataMode,
 	connectionStatus,

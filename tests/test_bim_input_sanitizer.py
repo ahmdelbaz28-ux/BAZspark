@@ -85,17 +85,17 @@ class TestSanitizeBIMParameter:
     def test_non_string_raises(self):
         """Non-string input must raise ValueError."""
         with pytest.raises(ValueError, match="string"):
-            sanitize_bim_parameter(42)
+            sanitize_bim_parameter(42)  # NOSONAR — S5655: intentional wrong-type arg to test rejection
 
     def test_none_input_raises(self):
         """None input must raise ValueError."""
         with pytest.raises(ValueError, match="string"):
-            sanitize_bim_parameter(None)
+            sanitize_bim_parameter(None)  # NOSONAR — S5655: intentional wrong-type arg to test rejection
 
     def test_integer_input_raises(self):
         """Integer input must raise ValueError."""
         with pytest.raises(ValueError, match="string"):
-            sanitize_bim_parameter(100)
+            sanitize_bim_parameter(100)  # NOSONAR — S5655: intentional wrong-type arg to test rejection
 
     # ── Injection attack patterns ──
 
@@ -206,12 +206,12 @@ class TestSanitizeRoomName:
     def test_non_string_raises(self):
         """Non-string input must raise ValueError."""
         with pytest.raises(ValueError, match="string"):
-            sanitize_room_name(42)
+            sanitize_room_name(42)  # NOSONAR — S5655: intentional wrong-type arg
 
     def test_none_raises(self):
         """None input must raise ValueError."""
         with pytest.raises(ValueError, match="string"):
-            sanitize_room_name(None)
+            sanitize_room_name(None)  # NOSONAR — S5655: intentional wrong-type arg
 
     def test_xss_blocked(self):
         """XSS in room name must be blocked."""
@@ -291,12 +291,12 @@ class TestSanitizeFilePath:
     def test_non_string_raises(self):
         """Non-string input must raise ValueError."""
         with pytest.raises(ValueError, match="string"):
-            sanitize_file_path(42)
+            sanitize_file_path(42)  # NOSONAR — S5655: intentional wrong-type arg
 
     def test_none_raises(self):
         """None input must raise ValueError."""
         with pytest.raises(ValueError, match="string"):
-            sanitize_file_path(None)
+            sanitize_file_path(None)  # NOSONAR — S5655: intentional wrong-type arg
 
     def test_special_chars_stripped(self):
         """Non-whitelisted characters are stripped from paths."""
@@ -375,12 +375,12 @@ class TestValidateNumericParameter:
     def test_non_string_raises(self):
         """Non-string input must raise ValueError."""
         with pytest.raises(ValueError, match="string"):
-            validate_numeric_parameter(42.0)
+            validate_numeric_parameter(42.0)  # NOSONAR — S5655: intentional wrong-type arg
 
     def test_none_raises(self):
         """None input must raise ValueError."""
         with pytest.raises(ValueError, match="string"):
-            validate_numeric_parameter(None)
+            validate_numeric_parameter(None)  # NOSONAR — S5655: intentional wrong-type arg
 
     def test_invalid_numeric_string_raises(self):
         """Non-numeric string must raise ValueError."""

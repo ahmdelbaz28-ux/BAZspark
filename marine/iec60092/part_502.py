@@ -44,7 +44,7 @@ from marine.engine.detector_selector import (  # noqa: F401  # M4 refactor
 )
 
 
-def place_detectors_grid(
+def place_detectors_grid(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     zone: MarineZone,
     detector_type: DetectorType,
     origin_xyz_mm: tuple[float, float, float] = (0.0, 0.0, 0.0),

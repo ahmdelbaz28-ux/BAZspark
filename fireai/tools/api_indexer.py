@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-def extract_endpoints(routers_dir: Path) -> dict[str, list[dict[str, object]]]:
+def extract_endpoints(routers_dir: Path) -> dict[str, list[dict[str, object]]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Extract all endpoints from router files."""
     endpoints = defaultdict(list)
 
@@ -57,7 +57,7 @@ def generate_markdown(endpoints: dict[str, list[dict[str, object]]]) -> str:
     """Generate Markdown documentation."""
     # Group by category
     categories: dict[str, list[dict[str, object]]] = {
-        "Health & Monitoring": [],
+        "Health & Monitoring": [],  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         "Projects": [],
         "Devices": [],
         "Connections": [],

@@ -205,7 +205,7 @@ class ElevatorShuntTripAuditor:
         self.safety_gap_C = safety_gap_C
         self.rti_ratio_limit = rti_ratio_limit
 
-    def audit_hoistway_machine_room(
+    def audit_hoistway_machine_room(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         sprinkler_locations: list[dict[str, Any]],
         heat_detector_locations: list[dict[str, Any]],

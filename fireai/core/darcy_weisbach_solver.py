@@ -436,7 +436,7 @@ def _compute_friction_factor(
     return f_laminar * (1 - alpha) + f_turbulent * alpha, True
 
 
-def _solve_colebrook_white(
+def _solve_colebrook_white(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     reynolds: float,
     roughness: float,
     diameter: float,

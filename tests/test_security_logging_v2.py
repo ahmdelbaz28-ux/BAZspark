@@ -71,10 +71,10 @@ class TestMaskSensitive:
         assert mask_sensitive("") == ""
 
     def test_none_input(self):
-        assert mask_sensitive(None) == ""
+        assert mask_sensitive(None) == ""  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_non_string_input(self):
-        result = mask_sensitive(12345)
+        result = mask_sensitive(12345)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert isinstance(result, str)
 
     def test_api_key_masked(self):

@@ -138,12 +138,16 @@ class TestDXFParser:
     def test_dxf_parser_import(self) -> None:
         """DXF parser module must be importable."""
         from parsers.dxf_parser import DXFParser
-        assert DXFParser is not None
+        # S5727 fix: assert on the type rather than the tautological
+        # `is not None` (always True after a successful import).
+        assert isinstance(DXFParser, type)
 
     def test_dwg_parser_import(self) -> None:
         """DWG parser module must be importable."""
         from parsers.dwg_parser import DWGParser
-        assert DWGParser is not None
+        # S5727 fix: assert on the type rather than the tautological
+        # `is not None` (always True after a successful import).
+        assert isinstance(DWGParser, type)
 
     def test_path_security_import(self) -> None:
         """Path security module must be importable."""

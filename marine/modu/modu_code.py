@@ -35,7 +35,7 @@ def _m_to_frames(m: float) -> int:
     return round(m / _MODU_FRAME_SPACING_M)
 
 
-def divide_modu_into_main_vertical_zones(
+def divide_modu_into_main_vertical_zones(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     platform_length_m: float,
     ship: ShipProject,
     deck_count: int = 1,

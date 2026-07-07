@@ -90,7 +90,7 @@ class EngineController:
                     "execution_path": ["L3_EngineController"],
                     "latency_ms": 0,
                     "node_id": self.controller_id,
-                    "engine_version": "FACP/1.1"
+                    "engine_version": "FACP/1.1"  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 }
             ).to_dict()
 

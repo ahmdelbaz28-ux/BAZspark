@@ -218,7 +218,7 @@ async def list_bim_providers() -> dict[str, Any]:
 
 
 @router.post("/bim/extract-rooms", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
-async def extract_rooms(req: BIMExtractRoomsRequest) -> dict[str, Any]:
+async def extract_rooms(req: BIMExtractRoomsRequest) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Extract rooms via configured BIM provider.
 

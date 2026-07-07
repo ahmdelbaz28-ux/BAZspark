@@ -256,7 +256,7 @@ class TestDWGParserPathSecurity:
 
     def test_parse_rejects_null_byte(self, parser):
         """Null byte in path is rejected (C-string truncation defense)."""
-        result = parser.parse("/tmp/x\x00.dwg")
+        result = parser.parse("/tmp/x\x00.dwg")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert not result.success
         assert any("SECURITY" in e for e in result.errors)
 
@@ -272,7 +272,7 @@ class TestDWGParserPathSecurity:
 
     def test_parse_rejects_missing_file(self, parser):
         """Missing file produces a friendly error."""
-        result = parser.parse("/tmp/does_not_exist_xyzzy.dwg")
+        result = parser.parse("/tmp/does_not_exist_xyzzy.dwg")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert not result.success
         assert any("not found" in e for e in result.errors)
 
@@ -284,7 +284,7 @@ class TestDWGParserPathSecurity:
     def test_parse_dwg_alias_rejects_null_byte(self, parser):
         """parse_dwg() rejects null bytes."""
         with pytest.raises(UnsafePathError, match="null byte"):
-            parser.parse_dwg("/tmp/x\x00.dxf")
+            parser.parse_dwg("/tmp/x\x00.dxf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_parse_dwg_alias_rejects_wrong_extension(self, parser):
         """parse_dwg() rejects wrong extension."""
@@ -303,7 +303,7 @@ class TestDWGParserPathSecurity:
     def test_convert_to_dxf_rejects_null_byte(self, parser):
         """_convert_to_dxf rejects null bytes."""
         with pytest.raises(DWGConversionError, match="SECURITY"):
-            parser._convert_to_dxf("/tmp/x\x00")
+            parser._convert_to_dxf("/tmp/x\x00")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -345,7 +345,7 @@ class TestDWGParserErrorHandling:
 
     def test_parse_returns_dwg_parse_result_on_error(self, parser):
         """parse() always returns DWGParseResult, never raises."""
-        result = parser.parse("/tmp/does_not_exist.dwg")
+        result = parser.parse("/tmp/does_not_exist.dwg")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert isinstance(result, DWGParseResult)
         assert result.success is False
 

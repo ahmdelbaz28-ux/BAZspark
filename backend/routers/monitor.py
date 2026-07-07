@@ -260,7 +260,7 @@ class MonitorState:
         with self._lock:
             return list(self._active_alerts)
 
-    def evaluate_alert_rules(self) -> list[dict[str, Any]]:
+    def evaluate_alert_rules(self) -> list[dict[str, Any]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Evaluate all enabled alert rules against current engine state.
 

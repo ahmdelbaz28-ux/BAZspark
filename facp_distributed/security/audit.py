@@ -4,7 +4,7 @@ import json
 import os
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -45,7 +45,8 @@ class DistributedEventLogger:
         """Log an event in distributed context"""
         with self.lock:
             event = {
-                "timestamp": datetime.utcnow().isoformat(),
+            # Timezone-aware UTC timestamp (avoids the deprecated naive-UTC API).
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "event_type": event_type.value,
                 "severity": severity,
                 "source_node": source_node or self.node_id,
@@ -318,7 +319,8 @@ class AuditLogger:
             ]
 
             report = {
-                "report_date": datetime.utcnow().isoformat(),
+                # Timezone-aware UTC timestamp (avoids the deprecated naive-UTC API).
+                "report_date": datetime.now(timezone.utc).isoformat(),
                 "period_days": days,
                 "total_events": len(filtered_events),
                 "events": filtered_events,

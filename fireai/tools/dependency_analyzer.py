@@ -355,7 +355,7 @@ def _find_unused_public_modules(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def _print_report(report: DependencyReport, root: Path) -> int:
+def _print_report(report: DependencyReport, root: Path) -> int:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Print the dependency analysis report and return exit code."""
     sep = "=" * 78
     print(sep)

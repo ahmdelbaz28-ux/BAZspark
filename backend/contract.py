@@ -43,7 +43,7 @@ class ContractViolation(Exception):
         super().__init__(f"Contract violation on {endpoint}: {', '.join(violations)}")
 
 
-def _validate_fields(
+def _validate_fields(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     data: dict[str, Any],
     required: dict[str, type],
     optional: dict[str, type] | None = None,
@@ -102,7 +102,7 @@ def validate_project(data: dict[str, Any]) -> dict[str, Any]:
         "author": str,
         "deviceCount|elementCount": int,
         "connectionCount": int,
-        "createdAt|createdTimestamp": str,
+        "createdAt|createdTimestamp": str,  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         "updatedAt|lastModifiedTimestamp": str,
         "metadata": dict,
     }
@@ -112,7 +112,7 @@ def validate_project(data: dict[str, Any]) -> dict[str, Any]:
         # V115: Log but do NOT raise — both naming conventions are valid in production.
         # Raising would break ALL System A endpoints that use database.py.
         logger.warning(
-            "Contract violation logged but not raised. "
+            "Contract violation logged but not raised. "  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             "This may indicate a naming convention mismatch between System A and System B."
         )
     return data

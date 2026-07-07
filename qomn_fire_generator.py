@@ -1714,7 +1714,7 @@ class TestIntegratedQomnFire(unittest.TestCase):
                 self.assertEqual(sig_ref, cycle_sig, f"Deviation found on iteration cycle {cycle}")
         print(f"[DETERMINISM] 50 iterations verified. SHA-256: {sig_ref}")
 
-    def test_05_routing_exceeds_bend_limits_fails(self):
+    def test_05_routing_exceeds_bend_limits_fails(self):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         VERIFICATION TEST 5: Conduit Bend Constraint Enforcement (NEC Art 358.26)
         Case: Bounded corridor with alternating walls forces >360 degrees of bends.

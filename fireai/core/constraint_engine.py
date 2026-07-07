@@ -605,7 +605,7 @@ class ConstraintEngine:
             # means a data error (L=-1.0) would pass the fastening check.
             # Negative length must be flagged, not silently accepted.
             return ConstraintResult(
-                constraint_name="Cable Fastening Interval",
+                constraint_name="Cable Fastening Interval",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 source=ConstraintSource.NEC_760_24_A.value,
                 is_satisfied=False,
                 actual_value=cable_length_m,

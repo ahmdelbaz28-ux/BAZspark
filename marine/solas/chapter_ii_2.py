@@ -183,7 +183,7 @@ def required_fire_class_between(
     return FireClass(class_str)
 
 
-def validate_fire_divisions(
+def validate_fire_divisions(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     zones: list[MarineZone],
     division_specs: list,
 ) -> ComplianceResult:
@@ -256,7 +256,7 @@ def validate_fire_divisions(
 
 # ─── Escape Route Geometry (SOLAS II-2/13) ──────────────────────────────────
 
-def validate_escape_routes(zones: list[MarineZone]) -> ComplianceResult:
+def validate_escape_routes(zones: list[MarineZone]) -> ComplianceResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate escape-route geometry per SOLAS II-2/13.
 

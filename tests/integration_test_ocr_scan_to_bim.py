@@ -25,7 +25,7 @@ class TestOCRScanToBIMIntegration:
             'success': True,
             'audit_trail': {
                 'timestamp': 1234567890.0,
-                'file_path': '/mock/path/test.pdf',
+                'file_path': '/mock/path/test.pdf',  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 'confidence_score': 85.0,
                 'requires_human_review': True
             },

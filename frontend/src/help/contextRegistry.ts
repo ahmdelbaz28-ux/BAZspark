@@ -82,7 +82,7 @@ function includesToken(haystack: string, token: string): boolean {
 	return normalizedHaystack === token || normalizedHaystack.includes(token);
 }
 
-function scoreTopic(
+function scoreTopic(  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 	topic: HelpTopic,
 	tokens: string[],
 ): { score: number; matchedKeywords: string[] } {

@@ -226,7 +226,7 @@ class CSRFMiddleware:
         # authoritative; _DEV_ALLOW_HTTP_COOKIES is only a module-level default.
         self.dev_allow_http = bool(dev_allow_http) if dev_allow_http is not None else _DEV_ALLOW_HTTP_COOKIES
 
-    async def __call__(
+    async def __call__(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         scope: MutableMapping,
         receive: Callable,

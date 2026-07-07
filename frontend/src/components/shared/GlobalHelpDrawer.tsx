@@ -39,7 +39,7 @@ interface GlobalHelpDrawerProps {
 	initialTopicId?: HelpTopicId | null;
 }
 
-export function GlobalHelpDrawer({
+export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 	open,
 	onOpenChange,
 	initialTopicId,

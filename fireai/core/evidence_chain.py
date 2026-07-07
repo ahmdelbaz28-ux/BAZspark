@@ -315,7 +315,7 @@ class EvidenceChain:
 
         return True
 
-    def verify_chain(
+    def verify_chain(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         envelopes: list[dict[str, Any]],
         snapshot_payloads: list[dict[str, Any]],

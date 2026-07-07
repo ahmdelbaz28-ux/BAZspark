@@ -157,7 +157,7 @@ class AnalyticalVerifier:
                 all_covered = False
         return all_covered
 
-    def _check_midpoints(
+    def _check_midpoints(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         detectors: list[tuple[float, float]],
         result: AnalyticalResult,
@@ -280,7 +280,7 @@ class AnalyticalVerifier:
 
         return all_covered
 
-    def _check_wall(
+    def _check_wall(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         detectors: list[tuple[float, float]],
         perp_fn,

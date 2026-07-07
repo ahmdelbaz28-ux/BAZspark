@@ -158,7 +158,7 @@ class TestCalculateEgressTime:
 
     def test_float_occupant_count_raises(self):
         with pytest.raises(ValueError, match="non-negative integer"):
-            calculate_egress_time(occupant_count=10.5, travel_distance_m=30.0)
+            calculate_egress_time(occupant_count=10.5, travel_distance_m=30.0)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_negative_travel_distance_raises(self):
         with pytest.raises(ValueError, match="non-negative finite"):

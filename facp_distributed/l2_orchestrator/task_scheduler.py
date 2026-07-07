@@ -335,7 +335,7 @@ class TaskScheduler:
 
         return False
 
-    def handle_worker_failure(self, worker_id: str):
+    def handle_worker_failure(self, worker_id: str):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Handle the failure of a worker by rescheduling its tasks"""
         with self.lock:
             if worker_id in self.worker_task_queues:

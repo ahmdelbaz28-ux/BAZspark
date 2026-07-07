@@ -162,7 +162,7 @@ def get_internal_area(
     return Result.ok(area)
 
 
-def calculate_fill(
+def calculate_fill(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     conduit_type: ConduitType,
     trade_size: TradeSize,
     cable_diameters_in: list[float],

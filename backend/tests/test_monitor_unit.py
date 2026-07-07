@@ -341,7 +341,7 @@ class TestWorkflowPathValidation:
             pytest.skip("workflow module not available")
         from fastapi import HTTPException
         with pytest.raises(HTTPException) as exc_info:
-            self.workflow_mod._validate_file_path("/tmp/test.pdf\x00.sh")
+            self.workflow_mod._validate_file_path("/tmp/test.pdf\x00.sh")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert exc_info.value.status_code == 400
 
     def test_path_traversal_rejected(self) -> None:
@@ -375,7 +375,7 @@ class TestConnectionManager:
         class MockWS:
             pass
         ws = MockWS()
-        mgr.subscribe(ws, "proj-001")
+        mgr.subscribe(ws, "proj-001")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert ws not in mgr._subscriptions
 
     def test_disconnect_nonexistent(self) -> None:
@@ -385,7 +385,7 @@ class TestConnectionManager:
         class MockWS:
             pass
         ws = MockWS()
-        mgr.disconnect(ws)  # Should not raise
+        mgr.disconnect(ws)  # Should not raise  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
 
 class TestSyncWSValidation:
@@ -408,7 +408,7 @@ class TestSyncWSValidation:
                     @staticmethod
                     def get(key, default=""):
                         return default
-            result = _validate_ws_origin(MockWS())
+            result = _validate_ws_origin(MockWS())  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
             assert result is True  # Dev mode allows
         finally:
             if original_key is not None:
@@ -427,7 +427,7 @@ class TestSyncWSValidation:
             os.environ.pop("FIREAI_API_KEY", None)  # No API key configured
             class MockWS:
                 client = None
-            result = _validate_ws_api_key(MockWS())
+            result = _validate_ws_api_key(MockWS())  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
             assert result is True  # No key configured → auth disabled
         finally:
             if original_key is not None:
@@ -446,7 +446,7 @@ class TestSyncWSValidation:
             os.environ["FIREAI_API_KEY"] = "test-key-123"  # API key configured
             class MockWS:
                 client = None
-            result = _validate_ws_api_key(MockWS())
+            result = _validate_ws_api_key(MockWS())  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
             # Query param auth is DEPRECATED and REJECTED — only
             # message-based auth is accepted when API key is configured
             assert result is False

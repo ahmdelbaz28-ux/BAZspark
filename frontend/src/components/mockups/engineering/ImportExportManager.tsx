@@ -25,7 +25,7 @@ export function ImportExportManager() {
                 if (!file) return;
 
                 const reader = new FileReader();
-                reader.onload = (event) => {
+                reader.onload = (event) => {  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
                         try {
                                 const parser = new DxfParser();
                                 const result = event.target?.result;

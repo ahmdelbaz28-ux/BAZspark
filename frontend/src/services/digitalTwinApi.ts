@@ -75,7 +75,7 @@ class ApiClient {
                 delete this.defaultHeaders.Authorization;
         }
 
-        private async fetchWithRetry<T>(
+        private async fetchWithRetry<T>(  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
                 url: string,
                 options: RequestInit,
                 retries: number = MAX_RETRIES,

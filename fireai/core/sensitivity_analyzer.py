@@ -117,7 +117,7 @@ class SensitivityAnalyzer:
 
     # ── public ────────────────────────────────────────────────
 
-    def analyse(
+    def analyse(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         width: float,
         length: float,

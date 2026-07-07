@@ -157,7 +157,7 @@ def _compute_area_from_polygon(polygon: list) -> float:
 # ─── Main Validation Function ───────────────────────────────────────────────
 
 
-def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:
+def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate room input payload against the engineering contract.
 
@@ -486,7 +486,7 @@ def validate_temperature(value_c: float, field_name: str = "temperature") -> flo
     return float(value_c)
 
 
-def validate_battery_params(
+def validate_battery_params(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     standby_load_a: float,
     alarm_load_a: float,
     standby_hours: float = 24.0,

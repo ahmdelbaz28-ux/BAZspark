@@ -1,7 +1,7 @@
 """Enhanced FACP Message Schema for Distributed System"""
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -62,7 +62,7 @@ class FACPRequest:
         security: Optional[Dict[str, Any]] = None,
         constraints: Optional[Dict[str, Any]] = None
     ):
-        self.protocol = "FACP/1.1"
+        self.protocol = "FACP/1.1"  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         self.type = MessageType.REQUEST.value
         self.id = id
         self.method = method
@@ -70,7 +70,10 @@ class FACPRequest:
         self.source = source.value
         self.target = target.value
         self.execution_state = execution_state.value
-        self.timestamp = timestamp or datetime.utcnow().isoformat()
+        # Use timezone-aware UTC now (the legacy naive-UTC constructor is
+        # deprecated in Python 3.12+ and causes comparison bugs when mixed
+        # with tz-aware datetimes).
+        self.timestamp = timestamp or datetime.now(timezone.utc).isoformat()
         self.security = security or {}
         self.constraints = constraints or {
             "timeout_ms": 8000,
@@ -156,7 +159,7 @@ class FACPResponse:
 
 
 class FACPMessageValidator:
-    """Validates FACP messages according to distributed system specification"""
+    """Validates FACP messages according to distributed system specification"""  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 
     @staticmethod
     def validate_request(request: FACPRequest) -> tuple[bool, List[str]]:

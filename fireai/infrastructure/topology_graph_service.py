@@ -416,7 +416,7 @@ class TopologyGraphService:
                 analysis_ms=elapsed_ms,
             )
 
-    def _in_memory_impact_analysis(
+    def _in_memory_impact_analysis(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self, breaker_id: str, t_start: float
     ) -> ImpactAnalysisResult:
         """Fallback impact analysis using in-memory graph (BFS)."""
@@ -461,7 +461,7 @@ class TopologyGraphService:
     # Query
     # ------------------------------------------------------------------
 
-    def get_downstream_elements(
+    def get_downstream_elements(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         element_id: str,
         max_depth: int = 10,

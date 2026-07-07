@@ -142,7 +142,7 @@ def _get_kernel():
                                 "The QOMN-FIRE engineering kernel is not available. "
                                 "The fireai.core.qomn_kernel module could not be imported."
                             ),
-                            "missing_module": "fireai.core.qomn_kernel",
+                            "missing_module": "fireai.core.qomn_kernel",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                             "action": (
                                 "Install the fireai package with the QOMN kernel. "
                                 "Check server logs for detailed import error."
@@ -375,7 +375,7 @@ async def place_detectors(req: RoomRequest):
                         "The fireai.core.device_placement module could not be imported."
                     ),
                     "missing_module": "fireai.core.device_placement",
-                    "action": "Install the fireai package. Check server logs for details.",
+                    "action": "Install the fireai package. Check server logs for details.",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 },
             )
 

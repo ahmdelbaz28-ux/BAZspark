@@ -107,7 +107,7 @@ class TestSanitizeString:
 
     def test_rejects_non_string(self):
         with pytest.raises(ValueError, match="must be a string"):
-            sanitize_string(123)
+            sanitize_string(123)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_rejects_long_string(self):
         with pytest.raises(ValueError, match="too long"):

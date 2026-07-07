@@ -1047,7 +1047,7 @@ class TestFailedResult:
 
     def test_non_dict_payload(self) -> None:
         import time
-        pr = _failed_result("run-5", "not_a_dict", [], [], [], time.perf_counter())
+        pr = _failed_result("run-5", "not_a_dict", [], [], [], time.perf_counter())  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert pr.room_id == "UNKNOWN"
 
 

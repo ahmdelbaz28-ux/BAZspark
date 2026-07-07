@@ -382,7 +382,7 @@ class TestErrorHandling:
         """Initialize must compute SHA-256 of the input file."""
         # Allow test_data directory for path traversal check
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        monkeypatch.setenv("FIREAI_DATA_DIRS", f"/tmp/fireai_uploads:/data:/uploads:{project_root}")  # NOSONAR: publicly writable dir in test
+        monkeypatch.setenv("FIREAI_DATA_DIRS", f"/tmp/fireai_uploads:/data:/uploads:{project_root}")  # NOSONAR: publicly writable dir in test  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         # Use the actual test file that exists
         sample_state["file_path"] = "test_data/hybrid/single_office.pdf"
         if os.path.exists(sample_state["file_path"]):
@@ -403,7 +403,7 @@ class TestWorkflowIntegration:
     def _allow_test_data_dir(self, monkeypatch):
         """Allow test_data directory for path traversal security check."""
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        monkeypatch.setenv("FIREAI_DATA_DIRS", f"/tmp/fireai_uploads:/data:/uploads:{project_root}")  # NOSONAR: publicly writable dir in test
+        monkeypatch.setenv("FIREAI_DATA_DIRS", f"/tmp/fireai_uploads:/data:/uploads:{project_root}")  # NOSONAR: publicly writable dir in test  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     @pytest.mark.asyncio
     async def test_full_workflow_with_pdf(self, service):

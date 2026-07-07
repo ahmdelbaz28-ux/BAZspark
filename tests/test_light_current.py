@@ -129,11 +129,11 @@ class TestValidateFinite:
 
     def test_string_rejected(self):
         with pytest.raises(ContractViolation, match="finite"):
-            _validate_finite("3.14", "test_field")
+            _validate_finite("3.14", "test_field")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_none_rejected(self):
         with pytest.raises(ContractViolation, match="finite"):
-            _validate_finite(None, "test_field")
+            _validate_finite(None, "test_field")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
 
 class TestValidatePositive:

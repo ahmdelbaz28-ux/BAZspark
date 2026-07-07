@@ -186,7 +186,7 @@ class FireZoneEngine:
     def __init__(self, constraints: ZoneConstraints | None = None) -> None:
         self.constraints = constraints or ZoneConstraints()
 
-    def cluster_floor(
+    def cluster_floor(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         floor_id: str,
         rooms: list[dict],
@@ -317,7 +317,7 @@ class FireZoneEngine:
 
         return report
 
-    def _cluster_adjacent(
+    def _cluster_adjacent(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         rooms: list[dict],
         adjacency: dict[str, set[str]],

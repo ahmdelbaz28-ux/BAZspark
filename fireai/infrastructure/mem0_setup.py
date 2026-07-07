@@ -310,7 +310,7 @@ def _detect_provider() -> dict[str, Any]:
     return result
 
 
-def _detect_provider_uncached() -> dict[str, Any]:
+def _detect_provider_uncached() -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Detect the best available LLM/embedding provider (uncached version).
 

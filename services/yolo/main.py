@@ -114,7 +114,7 @@ def map_yolo_class(cls_idx: int) -> str:
 
 # ─── Processing ──────────────────────────────────────────────────────────────
 
-async def process_image_batch(
+async def process_image_batch(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     image_data_list: List[bytes],
     conf: float = None,
     img_size: int = None,

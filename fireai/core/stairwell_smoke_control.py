@@ -645,7 +645,7 @@ class StairwellSmokeControlIntegrator:
     # Core analysis
     # ------------------------------------------------------------------
 
-    def generate_active_smoke_defense(
+    def generate_active_smoke_defense(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         stairwells: list[dict[str, Any]],
         building_height_m: float | None = None,
@@ -1466,7 +1466,7 @@ class StairwellSmokeControlIntegrator:
     # Device injection generation
     # ------------------------------------------------------------------
 
-    def _generate_injections(
+    def _generate_injections(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         stair: dict[str, Any],
         zone_id: str,

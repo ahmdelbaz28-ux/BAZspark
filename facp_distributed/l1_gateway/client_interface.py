@@ -44,7 +44,7 @@ class ClientInterface:
                     return JSONResponse(
                         status_code=400,
                         content={
-                            "protocol": "FACP/1.1",
+                            "protocol": "FACP/1.1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                             "id": request_data.get("id", "unknown"),
                             "status": "error",
                             "error": {

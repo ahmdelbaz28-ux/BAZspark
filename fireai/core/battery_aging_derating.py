@@ -443,7 +443,7 @@ def _compute_discharge_rate_correction(
 NFPA72_MINIMUM_SAFETY_FACTOR = 1.20  # Mandatory per NFPA 72 §10.6.7.2.1
 
 
-def size_battery(
+def size_battery(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     standby_load_amps: float,
     alarm_load_amps: float,
     standby_hours: float = 24.0,

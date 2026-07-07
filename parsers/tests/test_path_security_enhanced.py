@@ -28,7 +28,7 @@ class TestValidateInputPathNone:
     def test_none_input_raises(self):
         """Test that validate_input_path(None) raises UnsafePathError."""
         with pytest.raises(UnsafePathError, match="non-empty string"):
-            validate_input_path(None)
+            validate_input_path(None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_empty_string_rejected(self, monkeypatch):
         """Test that empty string is rejected as unsafe."""
@@ -116,12 +116,12 @@ class TestValidateInputPathNullBytes:
     def test_null_byte_rejected(self):
         """Test that paths with null bytes are rejected."""
         with pytest.raises(UnsafePathError, match="null byte"):
-            validate_input_path("/tmp/test.pdf\x00.sh")
+            validate_input_path("/tmp/test.pdf\x00.sh")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_null_byte_in_middle(self):
         """Test null byte in middle of path."""
         with pytest.raises(UnsafePathError, match="null byte"):
-            validate_input_path("/tmp/\x00test.dxf")
+            validate_input_path("/tmp/\x00test.dxf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
 
 class TestValidateInputPathArgumentInjection:

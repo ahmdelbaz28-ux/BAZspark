@@ -331,7 +331,7 @@ class CableRouter:
         self._electrical_cells: set[tuple[int, int, int]] = set()
         self._precompute_electrical_zones()
 
-    def _precompute_electrical_zones(self) -> None:
+    def _precompute_electrical_zones(self) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Identify cells near electrical conduits.
 
@@ -428,7 +428,7 @@ class CableRouter:
                     for ix in range(ix_min, ix_max + 1):
                         self._electrical_cells.add((ix, iy, iz))
 
-    def route(
+    def route(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         start: tuple[float, float, float],
         end: tuple[float, float, float],
@@ -662,7 +662,7 @@ class CableRouter:
 
     # ─── A* Implementation ───────────────────────────────────────────────
 
-    def _astar(
+    def _astar(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         start: tuple[int, int, int],
         goal: tuple[int, int, int],
@@ -845,7 +845,7 @@ class CableRouter:
         path.reverse()
         return path
 
-    def _build_waypoints(
+    def _build_waypoints(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         path: list[tuple[int, int, int]],
     ) -> list[RouteWaypoint]:

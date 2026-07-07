@@ -96,7 +96,7 @@ class EngineWorker:
                     "execution_path": ["L3_EngineWorker"],
                     "latency_ms": 0,
                     "node_id": self.worker_id,
-                    "engine_version": "FACP/1.1"
+                    "engine_version": "FACP/1.1"  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 }
             ).to_dict()
 

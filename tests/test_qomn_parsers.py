@@ -511,7 +511,7 @@ class TestDwgConverter(unittest.TestCase):
         """Missing source DWG must be rejected."""
         from qomn_fire.parsers.dwg_converter import DwgConverter
 
-        res = DwgConverter.convert_dwg_to_dxf("/nonexistent/file.dwg", "/tmp/out.dxf")
+        res = DwgConverter.convert_dwg_to_dxf("/nonexistent/file.dwg", "/tmp/out.dxf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         self.assertTrue(res.is_failure)
 
 

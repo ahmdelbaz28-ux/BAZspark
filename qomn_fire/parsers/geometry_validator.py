@@ -50,7 +50,7 @@ class GeometryValidator:
         return abs(area) / 2.0
 
     @classmethod
-    def validate_building(cls, b: Building) -> Result[Building, Union[GeometryError, UnitError]]:
+    def validate_building(cls, b: Building) -> Result[Building, Union[GeometryError, UnitError]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Enforces strict compliance rules against raw extracted spatial entities.
 

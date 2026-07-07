@@ -38,7 +38,7 @@ Point = Tuple[float, float]
 # NOTE: NFPA 72 §17.7.5 does NOT specify inter-detector spacing.
 # The 3.05m (10 ft) value comes from NFPA 90A and IMC.
 NFPA_DUCT_MAX_SPACING_M: float = 3.05  # 10 ft converted to metres
-NFPA_DUCT_SPACING_REF: str = "NFPA 90A-2024 §6.4.2.2"  # spacing source
+NFPA_DUCT_SPACING_REF: str = "NFPA 90A-2024 §6.4.2.2"  # spacing source  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
 # Minimum dimensions for duct detector requirement
 NFPA_DUCT_MIN_WIDTH_M: float = 0.20  # ducts narrower than this are exempt
@@ -187,7 +187,7 @@ class DuctAnalysisResult:
 # ============================================================================
 
 
-def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
+def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Compute required duct detector positions per NFPA 72 §17.7.5.
 

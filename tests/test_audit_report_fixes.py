@@ -234,7 +234,7 @@ class TestInputSanitization:
         """Non-string inputs must raise ValueError."""
         from fireai.core.bim_input_sanitizer import sanitize_bim_parameter
         with pytest.raises(ValueError, match="must be a string"):
-            sanitize_bim_parameter(12345)
+            sanitize_bim_parameter(12345)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_numeric_validation_valid(self):
         """Valid numeric strings should convert correctly."""

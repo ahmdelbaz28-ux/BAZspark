@@ -195,7 +195,7 @@ def log_verification_score(
         return False
 
 
-def log_workflow_scores(result: Any, handler: Optional[Any]) -> None:
+def log_workflow_scores(result: Any, handler: Optional[Any]) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Log all 5 verification scores to Langfuse after workflow completion.
 

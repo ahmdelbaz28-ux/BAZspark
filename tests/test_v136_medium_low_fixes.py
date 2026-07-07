@@ -62,7 +62,9 @@ class TestCSRFWebSocket:
     def test_csrf_middleware_imports_cleanly(self):
         """CSRF middleware should import without errors."""
         from backend.security_csrf import CSRFMiddleware
-        assert CSRFMiddleware is not None
+        # S5727 fix: assert on the type rather than the tautological
+        # `is not None` (always True after a successful import).
+        assert isinstance(CSRFMiddleware, type)
 
 
 # ---------------------------------------------------------------------------

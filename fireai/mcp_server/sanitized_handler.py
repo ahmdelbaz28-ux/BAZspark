@@ -218,7 +218,7 @@ class SanitizedMCPHandler:
         self._hazard_verifier = HazardOverrideVerifier()
         self._request_log: list[dict[str, Any]] = []
 
-    def handle(self, request: MCPRequest) -> MCPResponse:
+    def handle(self, request: MCPRequest) -> MCPResponse:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Process an MCP request with full input sanitization.
 

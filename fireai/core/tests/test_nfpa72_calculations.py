@@ -91,7 +91,7 @@ class TestGetHeatDetectorPlacementParams:
 
     def test_none_spec_raises_valueerror(self) -> None:
         with pytest.raises(ValueError, match="HeatDetectorSpec is required"):
-            get_heat_detector_placement_params(None, ceiling_height_m=3.0)
+            get_heat_detector_placement_params(None, ceiling_height_m=3.0)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_very_high_ceiling_uses_fallback(self) -> None:
         result = get_heat_detector_placement_params(_heat_spec(), ceiling_height_m=15.0)
@@ -482,7 +482,7 @@ class TestCalculateCoverageRadiusFromHeight:
 
     def test_none_height_raises_typeerror(self) -> None:
         with pytest.raises(TypeError, match="must be a float"):
-            calculate_coverage_radius_from_height(None)
+            calculate_coverage_radius_from_height(None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_negative_height_raises_valueerror(self) -> None:
         with pytest.raises(ValueError, match="must be positive"):

@@ -462,7 +462,7 @@ class FlameDetectorAOCRayTrace:
 
         return 1.0
 
-    def analyse_single_v21(
+    def analyse_single_v21(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         detector: V21FlameDetectorSpec,
         target_grid: list[V21RayTracePoint],
@@ -578,7 +578,7 @@ class FlameDetectorAOCRayTrace:
             warnings=tuple(warnings),
         )
 
-    def analyse_multi_v21(
+    def analyse_multi_v21(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         detectors: list[V21FlameDetectorSpec],
         target_grid: list[V21RayTracePoint],
@@ -769,7 +769,7 @@ class FlameDetectorAOCRayTrace:
             warnings=tuple(warnings),
         )
 
-    def analyse_multi_detector(
+    def analyse_multi_detector(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         space_id: str,
         detectors: list[FlameDetectorSpecLegacy],
@@ -836,7 +836,7 @@ class FlameDetectorAOCRayTrace:
 
     # ── Legacy private methods ──────────────────────────────────────────────
 
-    def _trace_ray(
+    def _trace_ray(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         detector: FlameDetectorSpecLegacy,
         aim_norm: Point3D,

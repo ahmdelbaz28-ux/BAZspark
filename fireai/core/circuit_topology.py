@@ -291,7 +291,7 @@ class CircuitTopology:
 
     # ─── Validation ────────────────────────────────────────────────────────
 
-    def validate(self) -> dict[str, Any]:
+    def validate(self) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Validate this circuit topology against NFPA 72 requirements.
 

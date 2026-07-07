@@ -361,7 +361,7 @@ class ApiKeyMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
 
-    async def __call__(
+    async def __call__(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         scope: Scope,
         receive: Receive,

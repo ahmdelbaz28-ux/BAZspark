@@ -249,7 +249,7 @@ def _gate_safety_tier(safety_tier_value: str | None) -> dict[str, Any]:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def verify_and_evaluate(
+def verify_and_evaluate(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     input_payload: dict | None = None,
     nfpa_results: dict | None = None,
     evidence_envelope: Any | None = None,

@@ -269,7 +269,7 @@ class TestHazardOverrideVerifier:
         """None room name → default to safe minimum."""
         verifier = HazardOverrideVerifier()
         result = verifier.verify_and_override(
-            room_name=None,
+            room_name=None,  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
             ml_predicted_hazard="light_hazard",
         )
         assert result.override_applied is True

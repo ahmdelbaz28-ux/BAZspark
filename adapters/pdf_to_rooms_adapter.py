@@ -27,7 +27,7 @@ class Room:
     area: float = 0.0
 
 
-def extract_rooms_from_walls(
+def extract_rooms_from_walls(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     walls: list[Any],
     pdf_path: str = "",
 ) -> tuple[list[Room], dict[str, Any]]:

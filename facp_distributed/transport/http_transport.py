@@ -77,7 +77,7 @@ class HTTPTransport(TransportLayer):
                     handler = self.handlers[method]
                     return await handler(request_data) if asyncio.iscoroutinefunction(handler) else handler(request_data)
                 return {
-                    "protocol": "FACP/1.1",
+                    "protocol": "FACP/1.1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                     "id": request_data.get("id", "unknown"),
                     "status": "error",
                     "error": {

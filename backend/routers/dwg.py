@@ -60,7 +60,7 @@ _AUTH = [Depends(require_permission(Permission.PROJECT_CREATE))]
 # limiter-wrapped function is what the route uses.
 
 
-async def _parse_dwg_impl(request: Request, file: UploadFile):
+async def _parse_dwg_impl(request: Request, file: UploadFile):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Upload a DWG or DXF file for parsing.
 

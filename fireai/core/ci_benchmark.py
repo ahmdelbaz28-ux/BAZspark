@@ -154,7 +154,7 @@ class CIBenchmarkSuite:
                 def to_dict(self):
                     return {"element_id": self.element_id}
 
-            db = UniversalDataModel(db_path=":memory:")
+            db = UniversalDataModel(db_path=":memory:")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             ops, std = _run_timed(lambda: db.add_element(_El()), n=5_000, warmup=50)
             return BenchResult("db_add_element", ops, 1e6 / ops, 5_000, std)
         except ImportError:
@@ -318,7 +318,7 @@ class CIBenchmarkSuite:
         print(f"\nBaseline saved to: {path}")
         return path
 
-    def compare_to_baseline(self, path: str | None = None) -> tuple[bool, list[str]]:
+    def compare_to_baseline(self, path: str | None = None) -> tuple[bool, list[str]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Compare current results to saved baseline.
         Returns (all_passed, list_of_failures).

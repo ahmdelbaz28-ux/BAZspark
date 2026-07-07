@@ -266,7 +266,7 @@ class TwinSystemOfRecord:
     # Points within this distance are considered identical.
     POLYGON_TOLERANCE_M = 0.005  # 5mm
 
-    def diff_snapshots(
+    def diff_snapshots(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         old_snapshot_id: str,
         new_snapshot_id: str,

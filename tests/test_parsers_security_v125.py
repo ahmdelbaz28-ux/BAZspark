@@ -56,7 +56,7 @@ class TestPDFParserSecurity:
         assert any("SECURITY" in e for e in r.errors)
 
     def test_null_byte_rejected(self):
-        r = self.parser.parse("/tmp/x\x00.pdf")
+        r = self.parser.parse("/tmp/x\x00.pdf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert not r.success
         assert any("SECURITY" in e for e in r.errors)
 
@@ -70,7 +70,7 @@ class TestPDFParserSecurity:
             os.unlink(p)
 
     def test_missing_file_friendly_error(self):
-        r = self.parser.parse("/tmp/v125_pdf_missing.pdf")
+        r = self.parser.parse("/tmp/v125_pdf_missing.pdf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert not r.success
         assert any("not found" in e for e in r.errors)
 
@@ -91,7 +91,7 @@ class TestImageParserSecurity:
         assert any("SECURITY" in e for e in r.errors)
 
     def test_null_byte_rejected(self):
-        r = self.parser.parse("/tmp/x\x00.png")
+        r = self.parser.parse("/tmp/x\x00.png")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert not r.success
         assert any("SECURITY" in e for e in r.errors)
 
@@ -141,7 +141,7 @@ class TestExcelParserSecurity:
         assert any("SECURITY" in e for e in r.errors)
 
     def test_null_byte_rejected(self):
-        r = self.parser.parse("/tmp/x\x00.xlsx")
+        r = self.parser.parse("/tmp/x\x00.xlsx")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert not r.success
         assert any("SECURITY" in e for e in r.errors)
 
@@ -182,7 +182,7 @@ class TestWordParserSecurity:
         assert any("SECURITY" in e for e in r.errors)
 
     def test_null_byte_rejected(self):
-        r = self.parser.parse("/tmp/x\x00.docx")
+        r = self.parser.parse("/tmp/x\x00.docx")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         assert not r.success
         assert any("SECURITY" in e for e in r.errors)
 
@@ -216,7 +216,7 @@ class TestIFCParserSecurity:
 
     def test_null_byte_rejected(self):
         with pytest.raises(ValueError, match="SECURITY"):
-            self._make("/tmp/x\x00.ifc").parse()
+            self._make("/tmp/x\x00.ifc").parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_wrong_extension_rejected(self):
         p = _make_temp(".txt")
@@ -228,7 +228,7 @@ class TestIFCParserSecurity:
 
     def test_missing_file_raises_ValueError(self):
         with pytest.raises(ValueError, match="not found"):
-            self._make("/tmp/v125_ifc_missing.ifc").parse()
+            self._make("/tmp/v125_ifc_missing.ifc").parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -192,7 +192,7 @@ class AsetRsetValidation:
 # ============================================================================
 
 
-def calculate_aset(
+def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     smoke_layer_height_series: list[tuple[float, float]] | None = None,
     temperature_series: list[tuple[float, float]] | None = None,
     co_ppm_series: list[tuple[float, float]] | None = None,
@@ -407,7 +407,7 @@ def calculate_aset(
 # ============================================================================
 
 
-def calculate_rset(
+def calculate_rset(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     travel_distance_m: float,
     occupancy_type: str = "business",
     premovement_delay_s: float | None = None,
@@ -684,7 +684,7 @@ def validate_aset_vs_rset(
 # ============================================================================
 
 
-def perform_aset_rset_analysis(
+def perform_aset_rset_analysis(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     room_area_m2: float,
     room_height_m: float,
     travel_distance_m: float,

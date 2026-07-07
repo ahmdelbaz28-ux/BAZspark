@@ -297,7 +297,7 @@ _FRAMEWORKS: dict[HazardSystem, RegulatoryFrameworkLegacy] = {
             "EN 13463 (non-electrical)",
         ),
         atex_directive="2014/34/EU",
-        iec_standard="IEC 60079-0",
+        iec_standard="IEC 60079-0",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         zone_based=True,
         requires_notified_body=True,
         equipment_marking="Ex",

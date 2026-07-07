@@ -840,7 +840,7 @@ if __name__ == "__main__":
     lc6.transition_to(RoomState.ANALYZING, "Start", "system")
     lc6.transition_to(RoomState.OPTIMIZED, "Done", "system")
     lc6.transition_to(RoomState.VERIFYING, "Verify", "system")
-    lc6.transition_to(RoomState.VERIFIED, "3/3 PASS", "system")
+    lc6.transition_to(RoomState.VERIFIED, "3/3 PASS", "system")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     lc6.transition_to(RoomState.CERTIFYING, "Generate cert", "system")
     lc6.transition_to(RoomState.CERTIFIED, "SHA-256 sealed", "system")
     lc6.transition_to(

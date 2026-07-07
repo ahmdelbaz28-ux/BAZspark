@@ -57,7 +57,7 @@ class DwgConverter:
         except UnsafePathError as e:
             return Result.failure(ConversionError(
                 message=f"Unsafe input path: {e}",
-                code_ref="DwgConverter.convert_dwg_to_dxf",
+                code_ref="DwgConverter.convert_dwg_to_dxf",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 remedy="Ensure input file is in allowed upload directory with correct extension."
             ))
 

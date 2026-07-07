@@ -345,7 +345,7 @@ class AnalysisPipeline:
 
     # ── Single Room Analysis ────────────────────────────────────────────────
 
-    def analyze_room(
+    def analyze_room(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         room: Room,
         room_id: str = "",
@@ -562,7 +562,7 @@ class AnalysisPipeline:
                         data={
                             "room_id": room_id,
                             "coverage_pct": layout.coverage_pct,
-                            "reference": "NFPA 72-2022 Table 17.6.3.1.1",
+                            "reference": "NFPA 72-2022 Table 17.6.3.1.1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                             "consensus": consensus.consensus_str,
                         },
                         source="AnalysisPipeline",

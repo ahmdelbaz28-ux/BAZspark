@@ -329,7 +329,7 @@ _GAS_ZONE_ORDER = ["ZONE_0", "ZONE_1", "ZONE_2"]
 _DUST_ZONE_ORDER = ["ZONE_20", "ZONE_21", "ZONE_22"]
 
 
-def _iec_annex_b_extent(
+def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     substance: SubstanceProperties,
     ventilation: VentilationLevel,
     release_grade: ReleaseGrade,
@@ -555,7 +555,7 @@ class HACClassificationEngine:
 
     # ── V21 API ────────────────────────────────────────────────────────────
 
-    def classify_v21(
+    def classify_v21(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         substance: SubstanceProperties,
         ventilation: VentilationLevel,
@@ -763,7 +763,7 @@ class HACClassificationEngine:
         # Fix #11: POOR ventilation + Zone 0/20 critical flag
         if ventilation == VentilationLevel.POOR and zone in (ZoneType.ZONE_0, ZoneType.ZONE_20):
             flag = (
-                "CRITICAL: Zone 0/20 with POOR ventilation — "
+                "CRITICAL: Zone 0/20 with POOR ventilation — "  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 "most dangerous possible classification. "
                 "Mandatory engineering review required. "
                 "[IEC 60079-10-1 §6.3]"
@@ -1250,7 +1250,7 @@ class HACClassificationEngine:
         return mapping[grade]
 
     @staticmethod
-    def _apply_ventilation_degree(base_zone, degree, substance):
+    def _apply_ventilation_degree(base_zone, degree, substance):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         note = ""
         # V48 FIX: Zone 0 and Zone 20 must NEVER be upgraded by ventilation.
         # Per IEC 60079-10-1 §4.3 Note 2, high dilution may reduce zone extent

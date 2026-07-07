@@ -170,10 +170,15 @@ class _NoOpTraceContext:
         return self
 
     def __exit__(self, *args: Any) -> None:
-        pass
+        # Empty by design — _NoOpTraceContext is a drop-in replacement for
+        # LangWatch's context manager when LangWatch is not installed.
+        # Nothing to clean up because __enter__ allocated no resources.
+        pass  # NOSONAR — S1186: intentional no-op for graceful degradation
 
     def update(self, **kwargs: Any) -> None:
-        pass
+        # Empty by design — _NoOpTraceContext ignores trace metadata
+        # updates when LangWatch is not installed.
+        pass  # NOSONAR — S1186: intentional no-op for graceful degradation
 
     def span(self, name: str, **kwargs: Any) -> _NoOpTraceContext:
         return self

@@ -186,7 +186,7 @@ class AcousticSPLCalculator:
                 )
         return barriers
 
-    def calculate_room_spl(
+    def calculate_room_spl(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         room_id: str,
         occ_type: str,

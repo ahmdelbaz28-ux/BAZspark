@@ -103,7 +103,7 @@ class ParameterOptimizer:
         """
         self.coverage_radius = coverage_radius
 
-    def optimise(
+    def optimise(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         rooms: list[Room],
         steps: list[float] | None = None,

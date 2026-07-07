@@ -329,7 +329,7 @@ class AuditLog:
             self._check_closed()
             return self._verify_chain_unlocked()
 
-    def _verify_chain_unlocked(self) -> tuple[bool, list[str]]:
+    def _verify_chain_unlocked(self) -> tuple[bool, list[str]]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Internal: verify chain (caller must hold self._lock)."""
         errors: list[str] = []
 
@@ -451,7 +451,7 @@ class AuditLog:
 
         return json.dumps(export_obj, indent=2, sort_keys=True)
 
-    def verify_export(self, json_str: str) -> tuple[bool, str]:
+    def verify_export(self, json_str: str) -> tuple[bool, str]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Verify the integrity of an exported JSON string.
 

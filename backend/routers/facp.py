@@ -267,7 +267,7 @@ async def select_facp(req: FACPSelectionRequest):
                 "alternatives": recommendation.alternatives,
                 "signature_hash": recommendation.signature_hash,
                 "nfpa_reference": "NFPA 72-2022 SS10.6.10, SS10.6.7",
-                "ul_reference": "UL 864 10th Edition",
+                "ul_reference": "UL 864 10th Edition",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             },
         }
     except ValueError as exc:

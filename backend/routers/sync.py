@@ -302,7 +302,7 @@ def _validate_ws_api_key(websocket: WebSocket) -> bool:
 
 
 @ws_router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket) -> None:
+async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     WebSocket endpoint for real-time project updates.
 

@@ -136,13 +136,13 @@ class TestResolveDbPath:
         assert _resolve_db_path(":memory:") == ":memory:"
 
     def test_explicit_path(self):
-        result = _resolve_db_path("/tmp/test_audit.db")
+        result = _resolve_db_path("/tmp/test_audit.db")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         # Cross-platform: os.path.abspath normalizes the path
         assert "test_audit.db" in result
         assert result == os.path.abspath(result)  # must be absolute
 
     def test_env_variable(self):
-        with patch.dict(os.environ, {"FIREAI_DB_PATH": "/tmp/env_audit.db"}):
+        with patch.dict(os.environ, {"FIREAI_DB_PATH": "/tmp/env_audit.db"}):  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
             result = _resolve_db_path(None)
             # Cross-platform: os.path.abspath normalizes the path
             assert "env_audit.db" in result

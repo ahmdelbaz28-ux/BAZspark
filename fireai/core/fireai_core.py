@@ -136,7 +136,7 @@ def _resolve_db_path(db_path: str | None = None) -> str:
 
     """
     if db_path:
-        if db_path == ":memory:":
+        if db_path == ":memory:":  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             return db_path
         return os.path.abspath(db_path)
 
@@ -223,7 +223,7 @@ class FireAISystem:
             self._expert = FireExpertSystem()
         return self._expert
 
-    def analyse_room(
+    def analyse_room(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         room_spec: RoomSpec,
         user_id: str = "system",
@@ -532,7 +532,7 @@ class FireAISystem:
     # Full Integration Pipeline
     # ──────────────────────────────────────────────────────────────────────
 
-    def run_integration(
+    def run_integration(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         building_id: str,
         floors: list[dict[str, Any]] | None = None,

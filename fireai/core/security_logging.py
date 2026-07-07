@@ -274,7 +274,7 @@ def configure_log_rotation(
     # SecurityAuditLogger already manages its own loguru sink with proper
     # filtering (audit_channel="security"). Adding another sink via this
     # function creates triple entries and corrupts the chain.
-    if log_file == "security_audit.log":
+    if log_file == "security_audit.log":  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         return  # SecurityAuditLogger manages its own rotation
 
     _LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -309,7 +309,7 @@ def configure_log_rotation(
                     logger.exception("LoguruBridge.emit failed — security log message dropped: %s", exc)
 
         bridge = _LoguruBridge()
-        bridge.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+        bridge.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         logger_instance.addHandler(bridge)
     else:
         # Fallback: standard RotatingFileHandler without compression

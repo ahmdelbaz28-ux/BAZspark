@@ -230,7 +230,7 @@ class TestG4WallDistance:
     """G4: No dead-air-space wall distance violations."""
 
     def test_none_violations_fails(self) -> None:
-        result = _gate_wall_distance(None)
+        result = _gate_wall_distance(None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert result["passed"] is False
         assert "not checked" in result["reason"].lower()
 

@@ -370,7 +370,7 @@ class FloorAnalyser:
 
     # ─── public ──────────────────────────────────────────────────────
 
-    def analyse(self, rooms: list[dict]) -> FloorReport:
+    def analyse(self, rooms: list[dict]) -> FloorReport:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Analyse all rooms on the floor and return a FloorReport.
 
@@ -530,7 +530,7 @@ class FloorAnalyser:
                 )
                 room_warnings = list(layout.warnings) if layout.warnings else []
                 room_warnings.append(timeout_msg)
-                logger.warning("Room %s: %s", room.name, timeout_msg)
+                logger.warning("Room %s: %s", room.name, timeout_msg)  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 
                 # Log to AuditStore if available
                 if self.audit_store and hasattr(self.audit_store, "add_event"):

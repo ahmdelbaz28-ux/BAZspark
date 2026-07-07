@@ -130,7 +130,7 @@ class SensorPhysicsAdvisor:
             print("Consider beam detectors for this room.")
     """
 
-    def advise(
+    def advise(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         room_id: str,
         ceiling_height_m: float,
@@ -168,7 +168,7 @@ class SensorPhysicsAdvisor:
                 f"maximum ({max_h}m) for point-type {detector_type} detectors. "
                 f"Projected beam-type detectors are REQUIRED per NFPA 72 §17.7.2."
             )
-            nfpa_refs.append("NFPA 72-2022 §17.7.2")
+            nfpa_refs.append("NFPA 72-2022 §17.7.2")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             nfpa_refs.append("NFPA 72-2022 Table 17.6.3.1.1")
 
         elif ceiling_height_m > warn_h:

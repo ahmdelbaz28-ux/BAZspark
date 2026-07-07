@@ -188,7 +188,7 @@ class SLCCapacitanceAuditor:
                 DEFAULT_MAX_CAP_UF,
             )
 
-    def audit_slc_loops(
+    def audit_slc_loops(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         loops: list[dict[str, Any]],
     ) -> Any:

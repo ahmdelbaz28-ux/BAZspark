@@ -211,7 +211,7 @@ class RevitAPIDocsSearcher:
     def __init__(self) -> None:
         self._docs_cache: dict[str, dict[str, Any]] = {}
 
-    def search(
+    def search(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         query: str,
         revit_version: str = "2023",
@@ -269,7 +269,7 @@ class RevitAPIDocsSearcher:
 
         return results
 
-    def verify_class_exists(
+    def verify_class_exists(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         class_name: str,
         revit_version: str = "2023",

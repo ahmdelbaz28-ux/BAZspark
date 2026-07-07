@@ -249,7 +249,7 @@ class TestIfcFileProvider:
         """V135 F-10: write_devices now raises NotImplementedError (was silent stub)."""
         p = IfcFileProvider()
         with pytest.raises(NotImplementedError, match="not yet implemented"):
-            p.write_devices([{"device_id": "TEST"}], target="/tmp/test.ifc")  # NOSONAR: publicly writable dir in test
+            p.write_devices([{"device_id": "TEST"}], target="/tmp/test.ifc")  # NOSONAR: publicly writable dir in test  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_health_check_returns_dict(self):
         p = IfcFileProvider()

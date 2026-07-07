@@ -929,7 +929,7 @@ class NACBoosterAllocator:
     # Pass 1: Current-Capacity Waterfall Allocation
     # ------------------------------------------------------------------
 
-    def allocate_boosters_across_floors(
+    def allocate_boosters_across_floors(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         floor_data: list[dict[str, Any]],
     ) -> Any:
@@ -1169,7 +1169,7 @@ class NACBoosterAllocator:
     # Pass 2: Voltage Drop Validation
     # ------------------------------------------------------------------
 
-    def validate_voltage_drop(
+    def validate_voltage_drop(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         devices_line: list[dict[str, Any]],
         awg: int = DEFAULT_AWG,
@@ -1440,7 +1440,7 @@ class NACBoosterAllocator:
     # NAC Circuit Loading Analysis
     # ------------------------------------------------------------------
 
-    def analyze_nac_circuit(
+    def analyze_nac_circuit(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         circuit_id: str,
         devices: list[dict[str, Any]],

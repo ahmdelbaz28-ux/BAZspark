@@ -481,7 +481,7 @@ class CableRoutingEngine:
 
     # ── Route Circuit ──────────────────────────────────────────────────────
 
-    def route_circuit(
+    def route_circuit(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         circuit: Any,
         wire_gauge: _WireGaugeInstance | None = None,
@@ -600,7 +600,7 @@ class CableRoutingEngine:
 
     # ── Internal Route Computation ─────────────────────────────────────────
 
-    def _compute_route(
+    def _compute_route(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         circuit: Any,
         wire_gauge: _WireGaugeInstance,

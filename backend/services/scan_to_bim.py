@@ -285,7 +285,7 @@ class ScanToBIMService:
             notes=notes
         )
 
-    def process_scan(self, file_path: str | Path, lang: str = "eng+ara") -> ScanToBIMResult:
+    def process_scan(self, file_path: str | Path, lang: str = "eng+ara") -> ScanToBIMResult:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Process a scanned document to extract BIM-ready room data.
 

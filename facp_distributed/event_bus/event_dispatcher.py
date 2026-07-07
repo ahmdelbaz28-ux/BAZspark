@@ -354,7 +354,7 @@ class EventDispatcher:
                 return True
         return False
 
-    def update_listener_filters(self, listener_id: str, event_types: Optional[List[str]] = None,
+    def update_listener_filters(self, listener_id: str, event_types: Optional[List[str]] = None,  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
                                node_filters: Optional[List[str]] = None) -> bool:
         """Update filters for a listener"""
         with self.lock:

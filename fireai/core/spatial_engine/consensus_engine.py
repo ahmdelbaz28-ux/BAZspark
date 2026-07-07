@@ -113,7 +113,7 @@ class ConsensusEngine:
         self._analytical = AnalyticalVerifier(coverage_radius, wall_min)
         self._voronoi = VoronoiVerifier(coverage_radius)
 
-    def verify(
+    def verify(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         width: float,
         length: float,

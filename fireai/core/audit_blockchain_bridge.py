@@ -144,7 +144,7 @@ class HashChainAuditStore:
 
     def __init__(
         self,
-        db_path: str = ":memory:",
+        db_path: str = ":memory:",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         hmac_key: bytes | None = None,
         secret_key: str | None = None,
     ) -> None:

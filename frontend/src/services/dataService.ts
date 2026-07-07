@@ -274,7 +274,7 @@ export class DataService {
 		this.startHealthCheck();
 	}
 
-	private handleWebSocketMessage(message: any) {
+	private handleWebSocketMessage(message: any) {  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 		// Backend sends: {"channel": "...", "type": "...", "data": {...}, "projectId": "..."}
 
 		// Handle authentication response

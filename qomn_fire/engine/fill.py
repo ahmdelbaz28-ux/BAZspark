@@ -148,7 +148,7 @@ FIRE_ALARM_CABLE_AREAS = {
     "FPLR 12-2C": 20.0,   # FPLR 12 AWG 2-conductor cable
 }
 
-def calculate_conduit_fill(
+def calculate_conduit_fill(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     conduit_size: str,
     wire_gauge: str,
     wire_count: int,
@@ -175,7 +175,7 @@ def calculate_conduit_fill(
     if wire_count <= 0:
         return Result(error=ConduitFillError(
             message="Wire count must be a positive integer.",
-            code_ref="NEC Ch.9 Table 1",
+            code_ref="NEC Ch.9 Table 1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             remedy="Increase wire count parameter above zero."
         ))
 

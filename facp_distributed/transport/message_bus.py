@@ -140,7 +140,7 @@ class RedisMessageBus(MessageBusTransport):
         message_str = json.dumps(message)
         self.redis_client.publish(topic, message_str)
 
-    def subscribe(self, topic: str, handler: Callable):
+    def subscribe(self, topic: str, handler: Callable):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Subscribe to a Redis channel"""
         if not self.pubsub:
             raise RuntimeError("Not connected to Redis")

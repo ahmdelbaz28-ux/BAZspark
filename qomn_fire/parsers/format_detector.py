@@ -57,7 +57,7 @@ class FormatDetector:
     OLE_SIGNATURE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
     @staticmethod
-    def detect_format_and_version(filepath: str) -> Result[Tuple[str, str], FormatError]:
+    def detect_format_and_version(filepath: str) -> Result[Tuple[str, str], FormatError]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Reads first bytes of a file to detect format and version.
         Returns Result containing (format, version) or FormatError.

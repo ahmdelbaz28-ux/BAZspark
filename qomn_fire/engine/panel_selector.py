@@ -79,7 +79,7 @@ class SelectionEngine:
         return battery_size, derating_details
 
     @classmethod
-    def select_panel(cls, req: ProjectRequirements) -> Result[PanelRecommendation, FACPSelectionError]:
+    def select_panel(cls, req: ProjectRequirements) -> Result[PanelRecommendation, FACPSelectionError]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         # Enforce code capacity margins (20% spare capacity per NFPA 72 §10.6.10.2)
         required_points = req.device_count * 1.2
         # V54 FIX F2: NAC circuits sized by exact count, NOT 1.2x

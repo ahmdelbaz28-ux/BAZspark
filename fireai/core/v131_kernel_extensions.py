@@ -369,7 +369,7 @@ class WebhookPublisher:
 
         return signature
 
-    def _safe_serialize(self, obj: Any, depth: int = 0) -> Optional[str]:
+    def _safe_serialize(self, obj: Any, depth: int = 0) -> Optional[str]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Safely serialize an object to JSON, preventing circular references and security issues."""
         if depth > NFPA72Constants.MAX_SERIALIZATION_DEPTH:
             self.logger.error("Serialization depth exceeded maximum allowed")

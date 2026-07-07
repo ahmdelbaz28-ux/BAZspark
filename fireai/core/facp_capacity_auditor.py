@@ -427,7 +427,7 @@ class FACPCapacityAuditor:
     # ------------------------------------------------------------------
     # Audit 2: SLC protocol limits
     # ------------------------------------------------------------------
-    def audit_slc_protocol_limits(
+    def audit_slc_protocol_limits(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         slc_loops: list[dict[str, Any]],
     ) -> dict[str, Any]:

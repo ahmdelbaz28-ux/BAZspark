@@ -153,10 +153,10 @@ class TestParameterOptimizationResult:
             best_config=best,
             all_configs=[best],
             recommendation="Test",
-            saved_to="/tmp/test.json",
+            saved_to="/tmp/test.json",  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         )
         table = result.table()
-        assert "/tmp/test.json" in table
+        assert "/tmp/test.json" in table  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

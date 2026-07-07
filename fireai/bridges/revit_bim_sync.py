@@ -208,7 +208,7 @@ class RevitAPIBridge:
                 f"Revit live extraction failed: {exc}. Ensure running inside Revit process with API access."
             )
 
-    def _extract_ifc(self, filepath: str) -> list[BIMRoom]:
+    def _extract_ifc(self, filepath: str) -> list[BIMRoom]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Extract rooms from IFC file via ifcopenshell."""
         try:
             import ifcopenshell

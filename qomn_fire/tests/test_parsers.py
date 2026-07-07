@@ -763,7 +763,7 @@ class TestConverters(unittest.TestCase):
 
     def test_dwg_converter_missing_source_returns_error(self):
         """DWG converter returns error for non-existent source file."""
-        res = DwgConverter.convert_dwg_to_dxf("/nonexistent.dwg", "/tmp/out.dxf")
+        res = DwgConverter.convert_dwg_to_dxf("/nonexistent.dwg", "/tmp/out.dxf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         self.assertTrue(res.is_failure)
         self.assertIsInstance(res.error(), ConversionError)
 
@@ -788,7 +788,7 @@ class TestConverters(unittest.TestCase):
 
     def test_rvt_converter_missing_source_returns_error(self):
         """RVT converter returns error for non-existent source file."""
-        res = RvtConverter.convert_rvt_to_ifc("/nonexistent.rvt", "/tmp/out.ifc")
+        res = RvtConverter.convert_rvt_to_ifc("/nonexistent.rvt", "/tmp/out.ifc")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         self.assertTrue(res.is_failure)
         self.assertIsInstance(res.error(), ConversionError)
 

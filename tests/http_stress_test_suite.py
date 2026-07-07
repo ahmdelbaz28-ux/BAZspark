@@ -77,7 +77,7 @@ def test_health_no_auth() -> None:
     print("\n[HTTP TEST 1] Health Endpoints Reachable Without Auth")
     try:
         client = _get_client()
-        for path in ["/health", "/api/v1/health", "/api/v2/health"]:
+        for path in ["/health", "/api/v1/health", "/api/v2/health"]:  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             r = client.get(path)
             if r.status_code == 200:
                 record(f"health_{path}", "PASS",
@@ -98,7 +98,7 @@ def test_cache_mgmt_requires_admin() -> None:
         client = _get_client()
 
         # No auth → 401 (must authenticate — stricter than old 403 default-VIEWER)
-        r = client.get("/api/v1/cache/stats")
+        r = client.get("/api/v1/cache/stats")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         if r.status_code == 401:
             record("cache_stats_no_auth", "PASS",
                    "No-auth → 401 (must authenticate — stricter than old 403)")
@@ -247,7 +247,7 @@ def test_cors_preflight() -> None:
         client = _get_client()
         # OPTIONS request should not require auth
         r = client.options(
-            "/api/v1/projects",
+            "/api/v1/projects",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             headers={
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "GET",

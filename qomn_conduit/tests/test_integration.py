@@ -125,9 +125,10 @@ class TestFullPipelineIntegration:
         path = orthogonal_astar(
             start=Point3D(0.0, 0.0, 3.0),
             end=Point3D(10.0, 5.0, 3.0),
-            obstacles=[BoundingBox(x_min=4.8, y_min=1.8, z_min=2.8,
-                                  x_max=5.2, y_max=2.2, z_max=3.2,
-                                  label="wall")] if False else None,
+            # S5797 fix: removed `[...] if False else None` (constant expression).
+            # The intent was to test the no-obstacles path; passing None directly
+            # is the cleaner way to express that.
+            obstacles=None,
             grid_resolution=0.5,
         )
         assert path.is_ok()

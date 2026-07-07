@@ -479,7 +479,7 @@ class TestAnalyzeRoomInvalidPayload:
 
     def test_none_payload(self):
         """Passing None must not raise — pipeline captures the error."""
-        result = analyze_room(None)
+        result = analyze_room(None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
         assert result.success is False
 
     def test_invalid_payload_produces_stage0_error(self):

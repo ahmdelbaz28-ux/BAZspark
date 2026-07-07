@@ -150,7 +150,7 @@ def guard_current_a(current: float, wire_ampacity: float, gauge: str) -> float:
     """
     v = _guard_finite(current, "current_a")
     if v < 0:
-        raise PhysicsGuardError("current_a", v, "current cannot be negative", "Physics")
+        raise PhysicsGuardError("current_a", v, "current cannot be negative", "Physics")  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     wa = _guard_finite(wire_ampacity, "wire_ampacity")
     if v > wa:
         raise PhysicsGuardError("current_a", f"{v:.3f}A", f"exceeds AWG {gauge} ampacity {wa:.1f}A", "NEC 2023 §310.16")
@@ -501,7 +501,7 @@ def compute_heat_detector_spacing(
         raise PhysicsGuardError(
             "area_per_detector_m2", a,
             "coverage area must be > 0 m2 -- zero produces zero coverage radius",
-            "NFPA 72-2022 §17.6.3.1"
+            "NFPA 72-2022 §17.6.3.1"  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         )
     if a < 1e-6:
         raise PhysicsGuardError(

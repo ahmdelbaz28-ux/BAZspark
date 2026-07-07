@@ -153,7 +153,7 @@ try:
         _schema = _app.openapi()
         for _path in _schema.get("paths", {}):
             # Collect /api/* paths that are NOT under /api/v1/ or /api/v2/
-            if _path.startswith("/api/") and not _path.startswith("/api/v1/") and not _path.startswith("/api/v2/"):
+            if _path.startswith("/api/") and not _path.startswith("/api/v1/") and not _path.startswith("/api/v2/"):  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 # Strip path params ({project_id} etc.) for prefix matching
                 _NON_VERSIONED_API_PATHS.add(_path.split("/{")[0])
         _logging.disable(_logging.NOTSET)

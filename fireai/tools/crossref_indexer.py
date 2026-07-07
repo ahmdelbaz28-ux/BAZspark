@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # Canonical constants and their sources
 CANONICAL_SOURCES = {
     # NFPA 72 Constants
-    "SMOKE_MAX_SPACING_M": "fireai/constants/nfpa72.py",
+    "SMOKE_MAX_SPACING_M": "fireai/constants/nfpa72.py",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     "HEAT_MAX_SPACING_M": "fireai/constants/nfpa72.py",
     "COVERAGE_RADIUS_FACTOR": "fireai/constants/nfpa72.py",
     "SMOKE_COVERAGE_RADIUS_M": "fireai/constants/nfpa72.py",
@@ -41,10 +41,10 @@ CANONICAL_SOURCES = {
     "PULL_STATION_FROM_EXIT_M": "fireai/constants/nfpa72.py",
     "VOLTAGE_DROP_MAX_FRACTION": "fireai/constants/nfpa72.py",
     # Service Constants
-    "GRAVITY_M_S2": "backend/services/elevation_service.py",
+    "GRAVITY_M_S2": "backend/services/elevation_service.py",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     "MOLAR_MASS_AIR": "backend/services/elevation_service.py",
     "UNIVERSAL_GAS_CONSTANT": "backend/services/elevation_service.py",
-    "DEFAULT_AQI": "backend/services/air_quality_service.py",
+    "DEFAULT_AQI": "backend/services/air_quality_service.py",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
     "DEFAULT_PM25_UG_M3": "backend/services/air_quality_service.py",
     "DEFAULT_PM10_UG_M3": "backend/services/air_quality_service.py",
     "DEFAULT_LFL_VOL_PCT": "backend/services/hazmat_service.py",

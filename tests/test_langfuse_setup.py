@@ -126,9 +126,9 @@ class TestFailSafeContract:
         monkeypatch.delenv("LANGFUSE_HOST", raising=False)
         langfuse_setup._langfuse_available = None
         # Try with None handler, bad score name, weird value
-        langfuse_setup.log_verification_score(None, "test_score", 1.0)
-        langfuse_setup.log_verification_score(None, "", None)
-        langfuse_setup.log_verification_score(None, None, None)
+        langfuse_setup.log_verification_score(None, "test_score", 1.0)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+        langfuse_setup.log_verification_score(None, "", None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
+        langfuse_setup.log_verification_score(None, None, None)  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_log_workflow_scores_never_raises(self, monkeypatch):
         """log_workflow_scores() must NEVER raise, even with bad input."""

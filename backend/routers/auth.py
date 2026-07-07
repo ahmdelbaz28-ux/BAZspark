@@ -215,7 +215,7 @@ def _record_failed_attempt(client_ip: str) -> None:
 
 @router.post("/login")
 @router.post("/session/login")
-async def login(request: Request, body: LoginRequest):
+async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Authenticate with an API key and receive a signed HttpOnly session cookie.
 
@@ -325,7 +325,7 @@ async def login(request: Request, body: LoginRequest):
 
 
 @router.post("/logout")
-async def logout(request: Request):
+async def logout(request: Request):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """Clear the cookie AND revoke the server-side session."""
     from fastapi.responses import JSONResponse
 

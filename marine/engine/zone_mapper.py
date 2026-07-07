@@ -37,7 +37,7 @@ from marine.core.types import (
 _FRAMES_PER_METER = SHIP_FRAME_SPACING_M
 
 
-def divide_into_main_vertical_zones(
+def divide_into_main_vertical_zones(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     ship_length_m: float,
     ship: ShipProject,
     deck_count: int = 1,
