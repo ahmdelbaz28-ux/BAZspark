@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- BAZSPARK favicon: orange flame on dark navy rounded square -->
+  <rect width="32" height="32" rx="6" fill="#0B1B2B"/>
+  <!-- Flame shape -->
+  <path d="M16 5 C 18 9, 22 11, 22 17 C 22 22, 19 26, 16 26 C 13 26, 10 22, 10 17 C 10 13, 13 11, 14 8 C 14.5 9.5, 15 10, 16 5 Z" fill="#F59E0B"/>
+  <!-- Inner flame highlight -->
+  <path d="M16 11 C 17 13, 19 14, 19 18 C 19 21, 17.5 23, 16 23 C 14.5 23, 13 21, 13 18 C 13 16, 14.5 15, 16 11 Z" fill="#FBBF24"/>
+  <!-- Spark dot -->
+  <circle cx="16" cy="18" r="2" fill="#FEF3C7"/>
+</svg>

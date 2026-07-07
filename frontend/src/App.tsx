@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import CommandPalette from "@/components/command/CommandPalette";
+import { RouteGuard } from "@/components/auth/RouteGuard";
+import { UserMenu } from "@/components/auth/UserMenu";
 import AppShell from "@/components/layout/AppShell";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import { ContextualHelpButton } from "@/components/shared/ContextualHelpButton";
@@ -10,6 +12,7 @@ import { GlobalHelpDrawer } from "@/components/shared/GlobalHelpDrawer";
 import type { HelpTopicId } from "@/help/types";
 import { ROUTE_HELP_MAP } from "@/help/types";
 import { useHealth } from "@/hooks/useApi";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { FireAlarmDesigner } from "./components/mockups/engineering/FireAlarmDesigner";
 import { AutoCADDrawPage } from "./pages/AutoCADDrawPage";
 // V140 Phase 6: New pages for comprehensive API coverage
@@ -26,6 +29,8 @@ import ElementDetail from "./pages/ElementDetail";
 import Elements from "./pages/Elements";
 import { EngineeringPage } from "./pages/EngineeringPage";
 import { FireAlarmPage } from "./pages/FireAlarmPage";
+import { LoginPage } from "./pages/LoginPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { RevitCreatePage } from "./pages/RevitCreatePage";
@@ -36,6 +41,20 @@ import "./i18n";
 import "./styles/globals.css";
 import "./styles/typography.css";
 
+/**
+ * V193 (R1): Wrap the entire app in AuthProvider so any component can read
+ * the authentication state via useAuth(). The provider performs an initial
+ * GET /auth/me check on mount and exposes login/logout actions.
+ *
+ * V193 (R1): Routes are split into two groups:
+ *   1. PUBLIC routes — /login (and future /signup, /forgot-key). These render
+ *      WITHOUT the AppShell (full-screen, no sidebar).
+ *   2. PROTECTED routes — everything else. Each is wrapped in <RouteGuard>
+ *      which redirects to /login?from=<path> if the user is not authenticated.
+ *
+ * V193 (R13): A catch-all "*" route renders <NotFoundPage/> for unknown paths
+ * (previously the SPA silently returned 200 with empty content).
+ */
 function App() {
 	const { t, i18n } = useTranslation();
 	const { connected } = useHealth();
@@ -75,8 +94,26 @@ function App() {
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [location.pathname]);
 
-	// Define routes
-	const routes = [
+	// V193 (R10): Skip-link for keyboard users to bypass the sidebar.
+	// First focusable element on every page. WCAG 2.4.1 (Level A) requirement.
+	const SkipLink = (
+		<a
+			href="#main-content"
+			className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-orange-500 focus:text-white focus:px-4 focus:py-2 focus:rounded focus:shadow-lg focus:outline-none"
+		>
+			Skip to main content
+		</a>
+	);
+
+	// PUBLIC routes — rendered without the AppShell (full-screen)
+	const publicRoutes = (
+		<Routes>
+			<Route path="/login" element={<LoginPage />} />
+		</Routes>
+	);
+
+	// PROTECTED routes — wrapped in RouteGuard, rendered inside AppShell
+	const protectedRoutes = [
 		{ path: "/", element: <Navigate to="/dashboard" /> },
 		{ path: "/dashboard", element: <DashboardPage /> },
 		{ path: "/projects", element: <ProjectsPage /> },
@@ -107,49 +144,78 @@ function App() {
 		{ path: "/digital-twin/history", element: <DigitalTwinHistoryPage /> },
 	];
 
+	// Determine if we're on a public route (no AppShell)
+	const isPublicRoute = location.pathname === "/login";
+
 	return (
-		<div className="h-screen bg-slate-950 text-slate-100">
-			<AppShell
-				isConnected={connected}
-				backendUrl={import.meta.env.VITE_API_URL || "/api/v1"}
-				environment={import.meta.env.MODE || "development"}
-				currentLanguage={i18n.language}
-				onLanguageChange={(lng: string) => i18n.changeLanguage(lng)}
-				onHelpOpen={() => {
-					setMagicHelpTopic(null);
-					setHelpOpen(true);
-				}}
-				onSearchOpen={() => setCommandPaletteOpen(true)}
-			>
-				<main className="flex-1 overflow-auto relative">
-					<Routes>
-						{routes.map((route) => (
-							<Route
-								key={route.path}
-								path={route.path}
-								element={route.element}
-							/>
-						))}
-					</Routes>
-					{/* V140 Phase 7: Contextual Help button — floats in top-right of every page */}
-					<div className="fixed top-16 right-4 z-30">
-						<ContextualHelpButton />
-					</div>
-				</main>
-			</AppShell>
-			{/* V140 Phase 7: Global Help Drawer with full tree + user guide */}
-			<GlobalHelpDrawer
-				open={helpOpen}
-				onOpenChange={setHelpOpen}
-				initialTopicId={magicHelpTopic}
-			/>
-			<CommandPalette
-				open={commandPaletteOpen}
-				onOpenChange={setCommandPaletteOpen}
-			/>
-			<OnboardingTour />
-			<Toaster position="bottom-right" />
-		</div>
+		<AuthProvider>
+			<div className="h-screen bg-slate-950 text-slate-100">
+				{SkipLink}
+				{isPublicRoute ? (
+					publicRoutes
+				) : (
+					<AppShell
+						isConnected={connected}
+						backendUrl={import.meta.env.VITE_API_URL || "/api/v1"}
+						environment={import.meta.env.MODE || "development"}
+						currentLanguage={i18n.language}
+						onLanguageChange={(lng: string) => i18n.changeLanguage(lng)}
+						onHelpOpen={() => {
+							setMagicHelpTopic(null);
+							setHelpOpen(true);
+						}}
+						onSearchOpen={() => setCommandPaletteOpen(true)}
+					>
+						<main
+							id="main-content"
+							className="flex-1 overflow-auto relative"
+							tabIndex={-1}
+						>
+							<Routes>
+								{protectedRoutes.map((route) => (
+									<Route
+										key={route.path}
+										path={route.path}
+										element={
+											<RouteGuard>{route.element}</RouteGuard>
+										}
+									/>
+								))}
+								{/* V193 (R13): 404 catch-all */}
+								<Route
+									path="*"
+									element={
+										<RouteGuard>
+											<NotFoundPage />
+										</RouteGuard>
+									}
+								/>
+							</Routes>
+							{/* V140 Phase 7: Contextual Help button — floats in top-right of every page */}
+							<div className="fixed top-16 right-4 z-30">
+								<ContextualHelpButton />
+							</div>
+							{/* V193 (R1): User menu / sign-out in top-right */}
+							<div className="fixed top-3 right-4 z-30">
+								<UserMenu />
+							</div>
+						</main>
+					</AppShell>
+				)}
+				{/* V140 Phase 7: Global Help Drawer with full tree + user guide */}
+				<GlobalHelpDrawer
+					open={helpOpen}
+					onOpenChange={setHelpOpen}
+					initialTopicId={magicHelpTopic}
+				/>
+				<CommandPalette
+					open={commandPaletteOpen}
+					onOpenChange={setCommandPaletteOpen}
+				/>
+				<OnboardingTour />
+				<Toaster position="bottom-right" />
+			</div>
+		</AuthProvider>
 	);
 }
 
