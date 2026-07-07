@@ -338,7 +338,38 @@ async def lifespan(app: FastAPI):
     /api/health endpoint reports core_modules="loaded" instead of "unavailable".
     Previously set_core_modules_loaded() was defined but never invoked —
     health status was always "degraded" even when everything was working.
+
+    V193 (R2) FIX: Validate FIREAI_SESSION_SECRET at startup. If missing or
+    too short (<43 chars = 256 bits), hard-fail with a clear error message.
+    Previously, the secret was only validated lazily when the auth router
+    tried to register — and the auth router's failure was swallowed by
+    _safe_include_router, leaving the app running with NO auth endpoints
+    and NO visible error. This is the PRIMARY defense; the _safe_include_router
+    re-raise (for CRITICAL_ROUTERS) is the SECONDARY defense.
     """
+    # V193 (R2): Hard-fail at startup if session secret is misconfigured.
+    # This is the ROOT-CAUSE fix for the silent auth-router failure that
+    # allowed the app to start in a broken state.
+    import os as _os
+    _secret = _os.environ.get("FIREAI_SESSION_SECRET", "")
+    if not _secret:
+        raise RuntimeError(
+            "FIREAI_SESSION_SECRET environment variable is not set. "
+            "The session secret is REQUIRED for authentication. "
+            "Generate one with: python3 -m backend.session_secret generate "
+            "and set it via FIREAI_SESSION_SECRET env var (or "
+            "FIREAI_SESSION_SECRET_FILE for Docker/K8s)."
+        )
+    if len(_secret) < 43:
+        raise RuntimeError(
+            f"FIREAI_SESSION_SECRET is too short: {len(_secret)} chars. "
+            f"Minimum is 43 chars (256 bits of entropy). "
+            f"Current value appears to be a placeholder or truncated. "
+            f"Generate a strong one with: "
+            f"python3 -c \"import secrets; print(secrets.token_urlsafe(64))\" "
+            f"and set it as FIREAI_SESSION_SECRET."
+        )
+
     logger.info("Starting CAD/BIM Integration Platform...")
     # HOTFIX C-2: Mark core modules as loaded so health check reports "ok".
     try:
@@ -489,7 +520,32 @@ app.include_router(digital_twin.router, prefix="/api/v1", tags=["Digital-Twin-v1
 # has an unmet optional dependency (e.g. shapely, ezdxf), it's skipped
 # with a warning instead of crashing the whole app.
 def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "") -> None:
-    """Import a router module and register it. Skip silently if unavailable."""
+    """Import a router module and register it. Skip silently if unavailable.
+
+    V193 (R2) FIX — ROOT CAUSE of silent auth-router failure:
+      Previously this function swallowed ALL exceptions (including
+      ValueError from session-secret validation) and only logged a
+      WARNING. When FIREAI_SESSION_SECRET was < 43 chars, the auth
+      router raised ValueError, was silently dropped, and all /auth/*
+      endpoints returned 404. The frontend couldn't authenticate and
+      the entire app was unusable — with NO visible error.
+
+      Per agent.md Rule 1 (ABSOLUTE TRUTH) and Rule 13 (HONEST
+      SELF-ASSESSMENT), mission-critical routers (auth, api_keys)
+      MUST NOT be silently skipped. We now RE-RAISE for those, and
+      for everything else we still log+continue (graceful
+      degradation for optional routers like `workflow` which needs
+      langgraph).
+
+      The startup-time session-secret validation (below in this file)
+      is the PRIMARY defense — it hard-fails before the app starts
+      accepting requests. This re-raise is the SECONDARY defense in
+      case the secret check is bypassed.
+    """
+    # Mission-critical routers — failure to register is a launch blocker.
+    # Re-raise so the app crashes loudly instead of running in a broken state.
+    CRITICAL_ROUTERS = frozenset({"auth", "api_keys"})
+
     try:
         import importlib
         mod = importlib.import_module(f"backend.routers.{module_name}")
@@ -515,8 +571,22 @@ def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "
             app.include_router(mod.ws_router, tags=[tag or module_name.title()])
             logger.debug("Registered ws_router from: %s (no prefix — preserves /ws root path)", module_name)
     except ImportError as e:
+        # Optional dependency missing (e.g. langgraph for workflow router).
+        # Safe to skip — feature is unavailable but app still works.
         logger.warning("Router '%s' skipped (optional dependency missing): %s", module_name, e)
     except Exception as e:
+        # Any other exception (ValueError, RuntimeError, etc.) on a
+        # CRITICAL router = launch blocker. Re-raise so the app fails fast.
+        if module_name in CRITICAL_ROUTERS:
+            logger.error(
+                "CRITICAL router '%s' failed to register: %s — aborting startup. "
+                "This router is mission-critical; the app cannot function safely without it. "
+                "Fix the underlying issue (likely FIREAI_SESSION_SECRET is missing or too short — "
+                "minimum 43 chars / 256 bits).",
+                module_name, e,
+            )
+            raise
+        # Non-critical router: log and continue (graceful degradation)
         logger.warning("Router '%s' registration failed: %s", module_name, e)
 
 # Register the missing routers. Order matters for route precedence, but

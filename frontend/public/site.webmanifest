@@ -1,0 +1,26 @@
+{
+  "name": "BAZSPARK Digital Twin",
+  "short_name": "BAZSPARK",
+  "description": "Safety-Critical Fire Alarm Engineering Platform",
+  "icons": [
+    {
+      "src": "/favicon-16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#0f172a",
+  "background_color": "#0B1B2B",
+  "display": "standalone",
+  "start_url": "/dashboard"
+}
