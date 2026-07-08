@@ -428,3 +428,4 @@ postman_collection*.json
 # Backup files
 *.sonarbak
 *.bak
+
