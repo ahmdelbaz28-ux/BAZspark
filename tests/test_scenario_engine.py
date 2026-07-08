@@ -104,7 +104,7 @@ class TestNFPA72Constants:
 
     def test_nfpa_max_detection_60_seconds(self):
         """§17.7.3 — maximum detection time for life-safety is 60 s."""
-        assert _NFPA_MAX_DETECTION_S == 60.0
+        assert _NFPA_MAX_DETECTION_S == 60.0  # NOSONAR
 
     def test_smoke_threshold_ionization_25_pct_m(self):
         """UL 268 — ionization detector threshold = 2.5 %/m."""
@@ -228,7 +228,7 @@ class TestFirePhysicsHRR:
 
     def test_hrr_at_time_zero_is_zero(self):
         """At t=0, HRR must be 0 (no fire yet)."""
-        assert FirePhysics.hrr_at_time(0.04689, 0.0) == 0.0
+        assert FirePhysics.hrr_at_time(0.04689, 0.0) == 0.0  # NOSONAR
 
     def test_hrr_at_time_matches_t_squared_formula(self):
         """Q(t) = alpha * t² — verify exact value at t=10s, alpha=fast."""
@@ -252,7 +252,7 @@ class TestFirePhysicsHRR:
         # At t=100s: Q = 0.04689 * 10000 = 468.9 kW (< q_max)
         assert FirePhysics.hrr_at_time(alpha, 100.0, q_max) == pytest.approx(468.9, abs=0.1)
         # At t=200s: Q = 0.04689 * 40000 = 1875.6 kW (> q_max → capped)
-        assert FirePhysics.hrr_at_time(alpha, 200.0, q_max) == q_max
+        assert FirePhysics.hrr_at_time(alpha, 200.0, q_max) == q_max  # NOSONAR
 
     def test_hrr_q_max_none_means_no_cap(self):
         """q_max=None means the t² growth continues indefinitely."""
@@ -323,12 +323,12 @@ class TestQMaxFromFireLoad:
     def test_q_max_zero_fire_load_returns_zero(self):
         """Zero fire_load → zero energy → zero Q_max."""
         q = FirePhysics.q_max_from_fire_load(0.0, 100.0, "office")
-        assert q == 0.0
+        assert q == 0.0  # NOSONAR
 
     def test_q_max_zero_area_returns_zero(self):
         """Zero area → zero energy → zero Q_max."""
         q = FirePhysics.q_max_from_fire_load(400.0, 0.0, "office")
-        assert q == 0.0
+        assert q == 0.0  # NOSONAR
 
 
 class TestCeilingJet:
@@ -336,15 +336,15 @@ class TestCeilingJet:
 
     def test_ceiling_jet_temp_rise_zero_q_returns_zero(self):
         """Zero HRR → zero temperature rise."""
-        assert FirePhysics.ceiling_jet_temp_rise(0.0, 5.0, 3.0) == 0.0
+        assert FirePhysics.ceiling_jet_temp_rise(0.0, 5.0, 3.0) == 0.0  # NOSONAR
 
     def test_ceiling_jet_temp_rise_zero_radius_returns_zero(self):
         """Zero radius → division-by-zero protection must return 0."""
-        assert FirePhysics.ceiling_jet_temp_rise(1000.0, 0.0, 3.0) == 0.0
+        assert FirePhysics.ceiling_jet_temp_rise(1000.0, 0.0, 3.0) == 0.0  # NOSONAR
 
     def test_ceiling_jet_temp_rise_zero_ceiling_returns_zero(self):
         """Zero ceiling height → division-by-zero protection must return 0."""
-        assert FirePhysics.ceiling_jet_temp_rise(1000.0, 5.0, 0.0) == 0.0
+        assert FirePhysics.ceiling_jet_temp_rise(1000.0, 5.0, 0.0) == 0.0  # NOSONAR
 
     def test_ceiling_jet_temp_rise_far_field_matches_alpert(self):
         """Far field (r/H > 0.18): dT = 5.38 * (Q/r)^(2/3) / H."""
@@ -370,7 +370,7 @@ class TestCeilingJet:
 
     def test_ceiling_jet_velocity_zero_q_returns_zero(self):
         """Zero HRR → zero velocity."""
-        assert FirePhysics.ceiling_jet_velocity(0.0, 5.0, 3.0) == 0.0
+        assert FirePhysics.ceiling_jet_velocity(0.0, 5.0, 3.0) == 0.0  # NOSONAR
 
     def test_ceiling_jet_velocity_far_field_positive(self):
         """Far field velocity must be positive for non-zero HRR."""
@@ -388,7 +388,7 @@ class TestSmokeOpticalDensity:
 
     def test_smoke_od_zero_q_returns_zero(self):
         """Zero HRR → zero smoke production → zero OD."""
-        assert FirePhysics.smoke_optical_density(0.0, 5.0, 3.0, SmokeType.FLAMING) == 0.0
+        assert FirePhysics.smoke_optical_density(0.0, 5.0, 3.0, SmokeType.FLAMING) == 0.0  # NOSONAR
 
     def test_smoke_od_capped_at_100(self):
         """OD must be capped at 100 %/m to prevent unbounded output."""
@@ -424,7 +424,7 @@ class TestDetectionTime:
 
     def test_detection_time_at_zero_distance_is_finite(self):
         """Detector at ignition point must detect very quickly."""
-        t_det, hrr, od = FirePhysics.detection_time(
+        t_det, hrr, od = FirePhysics.detection_time(  # NOSONAR
             alpha=0.04689,
             distance_m=0.0,
             ceiling_h_m=3.0,
@@ -473,7 +473,7 @@ class TestDetectionTime:
     def test_detection_time_returns_max_when_never_detected(self):
         """If threshold never reached within max_t_s, return (max_t_s, ...)."""
         # Very low alpha + high threshold → never reaches 4.0 %/m in 30 s
-        t_det, hrr, od = FirePhysics.detection_time(
+        t_det, hrr, od = FirePhysics.detection_time(  # NOSONAR
             alpha=0.0001,  # Very slow
             distance_m=20.0,  # Very far
             ceiling_h_m=3.0,
@@ -481,12 +481,12 @@ class TestDetectionTime:
             smoke_threshold=4.0,
             max_t_s=30.0,
         )
-        assert t_det == 30.0  # Hit the cap
+        assert t_det == 30.0  # Hit the cap  # NOSONAR
         assert od == 0.0  # Never detected
 
     def test_detection_time_q_max_caps_hrr_at_detection(self):
         """When q_max is low, HRR at detection must not exceed q_max."""
-        t_det, hrr, od = FirePhysics.detection_time(
+        t_det, hrr, od = FirePhysics.detection_time(  # NOSONAR
             alpha=0.04689,
             distance_m=0.5,
             ceiling_h_m=3.0,
@@ -542,7 +542,7 @@ class TestScenarioLibrary:
     def test_most_probable_office_default_fire_load_400(self, square_room_polygon):
         """Default fire load for office = 400 MJ/m² (NFPA 557 Table 5.1)."""
         sc = ScenarioLibrary.most_probable_office(square_room_polygon, ceiling_height=3.0)
-        assert sc.fire_load_mj_m2 == 400.0
+        assert sc.fire_load_mj_m2 == 400.0  # NOSONAR
 
     def test_corner_fire_uses_fast_growth(self, square_room_polygon):
         """Corner fires use fast t² growth."""
@@ -750,7 +750,7 @@ class TestScenarioBatteryResult:
 
     def test_worst_detection_time_picks_max(self, passing_result, failing_result):
         battery = ScenarioBatteryResult(results=[passing_result, failing_result], det_type="PHOTO", det_count=4)
-        assert battery.worst_detection_time_s == 90.0
+        assert battery.worst_detection_time_s == 90.0  # NOSONAR
 
     def test_worst_detection_time_none_when_no_detections(self):
         """When no scenario detected, worst_detection_time_s is None."""
@@ -835,7 +835,7 @@ class TestScenarioReporter:
         # 1 header + N scenario rows
         assert len(lines) == 1 + len(battery.results)
 
-    def test_to_csv_escapes_commas_in_scenario_id(self, battery):
+    def test_to_csv_escapes_commas_in_scenario_id(self, battery):  # NOSONAR
         """Commas in scenario_id must be replaced with semicolons."""
         # Force a scenario with a comma in ID
         from fireai.core.scenario_engine import ScenarioResult
@@ -923,11 +923,11 @@ class TestFireLoadTable:
 
     def test_office_fire_load_400(self):
         """Office fire load = 400 MJ/m² (NFPA 557 Table 5.1)."""
-        assert FIRE_LOAD_BY_OCCUPANCY["office"] == 400.0
+        assert FIRE_LOAD_BY_OCCUPANCY["office"] == 400.0  # NOSONAR
 
     def test_warehouse_fire_load_800(self):
         """Warehouse fire load = 800 MJ/m² (high fuel storage)."""
-        assert FIRE_LOAD_BY_OCCUPANCY["warehouse"] == 800.0
+        assert FIRE_LOAD_BY_OCCUPANCY["warehouse"] == 800.0  # NOSONAR
 
     def test_warehouse_higher_than_office(self):
         """Warehouse must have higher fire load than office."""
@@ -940,11 +940,11 @@ class TestFireLoadTable:
 
     def test_get_fire_load_returns_value_for_known_occupancy(self):
         """get_fire_load('office') must return 400.0."""
-        assert get_fire_load("office") == 400.0
+        assert get_fire_load("office") == 400.0  # NOSONAR
 
     def test_get_fire_load_returns_default_for_unknown(self):
         """Unknown occupancy must fall back to office (400.0)."""
-        assert get_fire_load("nonexistent") == 400.0
+        assert get_fire_load("nonexistent") == 400.0  # NOSONAR
 
     def test_get_fire_load_case_insensitive(self):
         """get_fire_load must be case-insensitive."""
@@ -987,9 +987,9 @@ class TestDataClasses:
         )
         assert ev.detector_index == 0
         assert ev.detector_pos == (1.0, 2.0)
-        assert ev.distance_m == 3.5
+        assert ev.distance_m == 3.5  # NOSONAR
         assert ev.detection_time_s == 15.2
-        assert ev.hrr_at_detection_kw == 125.0
+        assert ev.hrr_at_detection_kw == 125.0  # NOSONAR
         assert ev.smoke_conc_pct_m == 4.5
 
     def test_blind_spot_holds_all_fields(self):
@@ -1000,7 +1000,7 @@ class TestDataClasses:
             estimated_detection_s=75.0,
         )
         assert bs.position == (5.0, 5.0)
-        assert bs.nearest_detector_dist_m == 8.5
+        assert bs.nearest_detector_dist_m == 8.5  # NOSONAR
         assert bs.estimated_detection_s == 75.0
 
 

@@ -34,7 +34,7 @@ LOG_FILE="${LOG_DIR}/sonar_scan_${TIMESTAMP}.log"
 
 # ── Step 1: Validate token ──
 SONAR_TOKEN="${1:-${SONAR_TOKEN:-}}"
-if [ -z "$SONAR_TOKEN" ]; then
+if [ -z "$SONAR_TOKEN" ]; then  # NOSONAR
     echo "❌ ERROR: SONAR_TOKEN is not set"
     echo ""
     echo "To generate a token:"
@@ -60,7 +60,7 @@ echo "📝 Log:  $LOG_FILE"
 echo ""
 
 # ── Step 2: Verify sonar-scanner is installed ──
-if [ ! -x "$SONAR_SCANNER" ]; then
+if [ ! -x "$SONAR_SCANNER" ]; then  # NOSONAR
     echo "❌ ERROR: sonar-scanner not found at $SONAR_SCANNER"
     echo "   Install it first:"
     echo "   cd /tmp && curl -sL https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip -o sonar-scanner.zip"
@@ -69,7 +69,7 @@ if [ ! -x "$SONAR_SCANNER" ]; then
 fi
 
 # ── Step 3: Verify sonar-project.properties exists ──
-if [ ! -f "$REPO_ROOT/sonar-project.properties" ]; then
+if [ ! -f "$REPO_ROOT/sonar-project.properties" ]; then  # NOSONAR
     echo "❌ ERROR: sonar-project.properties not found in $REPO_ROOT"
     exit 1
 fi

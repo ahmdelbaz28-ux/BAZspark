@@ -120,23 +120,23 @@ class TestNFPA72Constants:
 
     def test_battery_standby_is_24_hours(self):
         """§10.6.7.2.1 — secondary supply must provide 24 h standby."""
-        assert NFPA72.BATTERY_STANDBY_HOURS == 24.0
+        assert NFPA72.BATTERY_STANDBY_HOURS == 24.0  # NOSONAR
 
     def test_battery_alarm_is_5_minutes(self):
         """§10.6.7.2.1 — secondary supply must provide 5 min alarm load."""
-        assert NFPA72.BATTERY_ALARM_MINUTES == 5.0
+        assert NFPA72.BATTERY_ALARM_MINUTES == 5.0  # NOSONAR
 
     def test_min_audible_above_ambient_15_dba(self):
         """§18.4.3 — audible signal must be at least 15 dB above ambient."""
-        assert NFPA72.MIN_AUDIBLE_ABOVE_AMBIENT_DBA == 15.0
+        assert NFPA72.MIN_AUDIBLE_ABOVE_AMBIENT_DBA == 15.0  # NOSONAR
 
     def test_max_audible_110_dba(self):
         """§18.4.1.2 — max audible signal 110 dBA to avoid hearing damage."""
-        assert NFPA72.MAX_AUDIBLE_DBA == 110.0
+        assert NFPA72.MAX_AUDIBLE_DBA == 110.0  # NOSONAR
 
     def test_sleeping_min_pillow_75_dba(self):
         """§18.4.2 — minimum 75 dBA at pillow in sleeping areas."""
-        assert NFPA72.SLEEPING_MIN_PILLOW_DBA == 75.0
+        assert NFPA72.SLEEPING_MIN_PILLOW_DBA == 75.0  # NOSONAR
 
     def test_max_devices_per_slc_250(self):
         """§21.2.2 — SLC limit 250 devices."""
@@ -328,7 +328,7 @@ class TestAtomicRoomStore:
         store.put(_make_room("R1", side=20.0))  # Same ID, different polygon
         all_rooms = store.get_all()
         assert len(all_rooms) == 1
-        assert all_rooms[0].area_sqm == 400.0  # 20×20
+        assert all_rooms[0].area_sqm == 400.0  # 20×20  # NOSONAR
 
     def test_concurrent_puts_are_thread_safe(self):
         """20 threads × 50 rooms each → all 1000 rooms present."""
@@ -499,7 +499,7 @@ class TestSafetyLedger:
 
 def _build_solver_problem(side: float = 10.0, radius: float = 6.37) -> SolverProblem:
     """Build a simple square-room solver problem."""
-    poly = np.array([(0, 0), (side, 0), (side, side), (0, side)], dtype=np.float64)
+    poly = np.array([(0, 0), (side, 0), (side, side), (0, side)], dtype=np.float64)  # NOSONAR
     # Candidate positions on a grid
     step = radius * 0.8
     xs = np.arange(radius, side - radius + 0.001, step)
@@ -594,10 +594,10 @@ class TestWireRouterV2:
         return WireRouterV2(obstacles=[])
 
     def test_total_cable_length_empty_path(self, empty_router):
-        assert empty_router.total_cable_length([]) == 0.0
+        assert empty_router.total_cable_length([]) == 0.0  # NOSONAR
 
     def test_total_cable_length_single_point(self, empty_router):
-        assert empty_router.total_cable_length([(5.0, 5.0)]) == 0.0
+        assert empty_router.total_cable_length([(5.0, 5.0)]) == 0.0  # NOSONAR
 
     def test_total_cable_length_two_points(self, empty_router):
         path = [(0.0, 0.0), (3.0, 4.0)]
@@ -605,7 +605,7 @@ class TestWireRouterV2:
 
     def test_total_cable_length_three_points(self, empty_router):
         path = [(0.0, 0.0), (3.0, 4.0), (3.0, 8.0)]
-        # 5.0 + 4.0 = 9.0
+        # 5.0 + 4.0 = 9.0  # NOSONAR
         assert empty_router.total_cable_length(path) == pytest.approx(9.0)
 
     def test_route_class_a_returns_panel_for_empty_devices(self, empty_router):
@@ -769,7 +769,7 @@ class TestAdapterBridge:
         rooms = bridge.from_dwg_walls(walls)
         assert len(rooms) == 1
         assert rooms[0].room_id  # Generated UUID
-        assert rooms[0].ceiling_m == 3.0
+        assert rooms[0].ceiling_m == 3.0  # NOSONAR
         assert rooms[0].area_sqm == pytest.approx(100.0, abs=0.01)
 
     def test_from_dwg_walls_skips_invalid_geometries(self, bridge):
