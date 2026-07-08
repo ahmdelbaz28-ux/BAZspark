@@ -835,6 +835,7 @@ class TransientStabilityResult:
 
 def simulate_transient_stability(
     mechanical_power_pu: float = 0.8,  # P_m in per-unit
+    electrical_power_max_pu: float = 1.8,  # P_e_max in per-unit (E×V/X; typical 1.5-2.5 pu)
     h_constant_s: float = 4.0,  # Inertia constant H (typical 3-7s for steam)
     system_frequency_hz: float = 60.0,
     actual_clearing_time_s: float = 0.1,  # Fault clearing time to evaluate
