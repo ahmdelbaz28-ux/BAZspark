@@ -113,13 +113,29 @@ jobs:
 
             # Daily limit hit — Vercel free plan caps at 100 deploys/day
             if echo "$BODY" | grep -q "api-deployments-free-per-day"; then
+              # V143 FIX: Extract the reset timestamp and convert to human-readable
+              RESET_MS=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('error',{}).get('limit',{}).get('reset','?'))" 2>/dev/null || echo "?")
+              if [ "$RESET_MS" != "?" ]; then
+                RESET_HUMAN=$(python3 -c "from datetime import datetime, timezone; print(datetime.fromtimestamp($RESET_MS/1000, tz=timezone.utc).isoformat())" 2>/dev/null || echo "unknown")
+              else
+                RESET_HUMAN="unknown"
+              fi
               echo "⚠️  WARNING: Vercel free plan daily limit reached (100 deploys/day)"
+              echo "   Limit resets at: $RESET_HUMAN"
               echo "   The Vercel GitHub webhook should auto-deploy once the limit resets."
               echo "   If this persists for >24h, escalate to Vercel Pro plan or fix the webhook."
+              echo "   See OPS_RUNBOOK.md Task 1 for instructions to re-link the webhook."
               echo "daily_limit_hit=true" >> "$GITHUB_OUTPUT"
               echo "http_code=$HTTP_CODE" >> "$GITHUB_OUTPUT"
-              # Exit 0: this is a known free-plan limitation, not a failure
-              exit 0
+              echo "reset_time=$RESET_HUMAN" >> "$GITHUB_OUTPUT"
+              # V143 FIX: Exit 1 (not 0) — the deployment did NOT happen.
+              # The previous behavior (exit 0) masked the failure, making the
+              # workflow appear successful when no deployment occurred. This
+              # caused operators to miss the issue for weeks. Now the failure
+              # is visible in the GitHub Actions UI, prompting action.
+              # NOTE: This does NOT block the build — the workflow runs on
+              # push to main, so even if it fails, the commit is already pushed.
+              exit 1
             fi
 
             # Auth errors — don't retry, fail immediately
@@ -149,6 +165,7 @@ jobs:
           INSPECTOR_URL: ${{ steps.trigger.outputs.inspector_url }}
           DAILY_LIMIT_HIT: ${{ steps.trigger.outputs.daily_limit_hit }}
           HTTP_CODE: ${{ steps.trigger.outputs.http_code }}
+          RESET_TIME: ${{ steps.trigger.outputs.reset_time }}
           SHA: ${{ github.sha }}
           RUN_ID: ${{ github.run_id }}
         run: |
@@ -161,11 +178,21 @@ jobs:
             echo "| HTTP Status | ${HTTP_CODE:-N/A} |"
 
             if [ -n "$DAILY_LIMIT_HIT" ] && [ "$DAILY_LIMIT_HIT" = "true" ]; then
-              echo "| Outcome | ⚠️ Daily limit hit (free plan) |"
+              echo "| Outcome | ❌ Daily limit hit (no deployment) |"
+              if [ -n "$RESET_TIME" ] && [ "$RESET_TIME" != "unknown" ]; then
+                echo "| Limit resets at | ${RESET_TIME} |"
+              fi
               echo ""
-              echo "> Vercel free plan caps at 100 deploys/day. The GitHub→Vercel webhook"
-              echo "> will auto-deploy once the limit resets. No action required unless"
-              echo "> this persists for >24h."
+              echo "> ❌ **Vercel free plan daily limit reached (100 deploys/day).**"
+              echo "> The deployment did NOT happen. Two options:"
+              echo "> "
+              echo "> 1. **Wait for reset** — the limit resets in ~24h"
+              echo "> 2. **Re-link the Vercel GitHub webhook** (recommended) — follow"
+              echo ">    \`OPS_RUNBOOK.md\` Task 1 to re-link the integration. Once the"
+              echo ">    webhook is active, native Vercel deployments do NOT count"
+              echo ">    against the API quota."
+              echo "> "
+              echo "> See workflow logs: [run ${RUN_ID}](https://github.com/${{ github.repository }}/actions/runs/${RUN_ID})"
             elif [ -n "$DEPLOY_ID" ] && [ "$DEPLOY_ID" != "unknown" ]; then
               echo "| Deploy ID | \`${DEPLOY_ID}\` |"
               if [ -n "$DEPLOY_URL" ]; then
