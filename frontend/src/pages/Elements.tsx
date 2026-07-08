@@ -65,7 +65,7 @@ function Elements() {
                 },
         });
 
-        const totalPages = data && data.items ? Math.ceil(data.total / PAGE_SIZE) : 1;
+        const totalPages = data?.items ? Math.ceil(data.total / PAGE_SIZE) : 1;
 
         // V207 FIX: Defensive check — data.items may be undefined if the API returns
         // an unexpected shape (e.g., empty array instead of { items: [], total: 0 }).
