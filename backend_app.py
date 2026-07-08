@@ -1,4 +1,4 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 """
 backend_app.py - FireAI QOMN + Analyze API Application Entry Point
 ====================================================================

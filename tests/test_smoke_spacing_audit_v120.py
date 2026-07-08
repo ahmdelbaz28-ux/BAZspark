@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 tests/test_smoke_spacing_audit_v120.py — V130 Flat Smoke Spacing Audit Tests
 =============================================================================

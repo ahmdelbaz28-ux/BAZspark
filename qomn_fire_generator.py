@@ -1,4 +1,4 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 """
 QOMN-FIRE: MASTER INTEGRATED WORKSPACE GENERATOR
 Author: Chief Fire Protection Engineer & Safety-Critical Systems Architect
