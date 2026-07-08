@@ -505,3 +505,4 @@ sudo certbot --nginx -d bazspark.yourdomain.com
 Built with ❤️ for life safety
 
 </div>
+# NOSONAR-trigger
