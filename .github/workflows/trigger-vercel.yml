@@ -1,0 +1,63 @@
+name: Trigger Vercel Deploy
+
+# V207 FIX: The GitHub→Vercel webhook was returning 404 (the Vercel deploy
+# hook ID 'kHEPjW3IYR' is no longer valid). This workflow is a fallback:
+# it triggers a Vercel deployment via the Vercel REST API on every push
+# to main, ensuring the production deployment stays in sync with GitHub.
+#
+# Once the Vercel GitHub integration webhook is fixed (re-linked via
+# vercel.com dashboard), this workflow can be disabled or removed.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trigger-vercel:
+    name: Trigger Vercel production deployment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel deploy via API
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_DEPLOY_TOKEN }}
+          PROJECT_ID: prj_Y6Qr828DXS83tWF1LntFakyofMrf
+          TEAM_ID: team_eeEYqzXI8zkrTo62cUOTMVmS
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "ERROR: VERCEL_DEPLOY_TOKEN secret is not set"
+            echo "Create it at: https://vercel.com/account/tokens"
+            echo "Then add as GitHub secret: VERCEL_DEPLOY_TOKEN"
+            exit 1
+          fi
+
+          echo "Triggering Vercel deployment for $SHA..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://api.vercel.com/v13/deployments?projectId=${PROJECT_ID}&teamId=${TEAM_ID}" \
+            -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\":\"revit\",\"target\":\"production\",\"gitSource\":{\"type\":\"github\",\"org\":\"ahmdelbaz28-ux\",\"repo\":\"revit\",\"ref\":\"main\",\"sha\":\"${SHA}\"}}")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          echo "HTTP response: $HTTP_CODE"
+          echo "Body: $BODY"
+
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+            DEPLOY_ID=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id','?'))" 2>/dev/null || echo "?")
+            echo "SUCCESS: Deployment $DEPLOY_ID triggered"
+          elif echo "$BODY" | grep -q "api-deployments-free-per-day"; then
+            echo "WARNING: Vercel free plan daily limit reached (100 deployments/day)"
+            echo "The Vercel webhook should auto-deploy once the limit resets."
+            exit 0
+          else
+            echo "FAIL: Could not trigger deployment"
+            exit 1
+          fi
