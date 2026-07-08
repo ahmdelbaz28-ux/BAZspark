@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 test_v133_phase2_3_ai.py — Tests for PHASE 2 (LangWatch) and PHASE 3 (Smithery MCP).
 

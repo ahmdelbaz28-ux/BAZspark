@@ -1,4 +1,4 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 """
 fitz.py — PyMuPDF compatibility shim.
 

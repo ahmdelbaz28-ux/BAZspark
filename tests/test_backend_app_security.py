@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 tests/test_backend_app_security.py — V127 SAFETY: backend_app.py CORS hardening
 ================================================================================

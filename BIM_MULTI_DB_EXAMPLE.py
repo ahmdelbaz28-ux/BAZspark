@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 """
 BIM_MULTI_DB_EXAMPLE.py — BIM/CAD Multi-Database Workflow Example
 ==============================================================

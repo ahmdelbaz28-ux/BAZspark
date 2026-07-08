@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 test_v141_vector_topology.py — Tests for Qdrant Vector Memory + Neo4j Topology.
 
