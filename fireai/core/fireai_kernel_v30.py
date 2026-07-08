@@ -262,10 +262,19 @@ class VectorEngine:
         """
         Returns bool mask [G] — True where point is within radius of any detector.
         Chunked to stay within L3 cache.
+
+        V143 FIX: Handle empty detector array explicitly. `dist2.min(axis=1)`
+        raises `ValueError: zero-size array to reduction operation minimum
+        which has no identity` when `detectors_xy` has shape (0,2). Fail-safe:
+        no detectors = no coverage (return all-False mask).
         """
         G = grid_xy.shape[0]
         R2 = radius * radius + 1e-10
         out = np.zeros(G, dtype=np.bool_)
+
+        # Fail-safe: no detectors → no coverage (do NOT raise)
+        if detectors_xy.shape[0] == 0:
+            return out
 
         for start in range(0, G, self.CHUNK_SIZE):
             chunk = grid_xy[start : start + self.CHUNK_SIZE]  # NOSONAR — S1192: duplicated literal acceptable in this localized context
@@ -845,8 +854,17 @@ class LedgerEntry:
     signature: str = ""
 
     def to_canonical_bytes(self) -> bytes:
-        """Deterministic serialisation for hashing."""
-        d = {k: v for k, v in self.__dict__.items() if k != "entry_hash"}
+        """
+        Deterministic serialisation for hashing.
+
+        V143 FIX: Must exclude BOTH `entry_hash` AND `signature`.
+        - `entry_hash` is computed FROM the canonical bytes, so including it
+          would create a circular dependency.
+        - `signature` is computed FROM `entry_hash`, so including it would
+          change the canonical bytes on every verify_chain() call, breaking
+          the entire audit trail (NFPA 72 §10.6.1 tamper-evidence).
+        """
+        d = {k: v for k, v in self.__dict__.items() if k not in ("entry_hash", "signature")}
         return json.dumps(d, sort_keys=True, ensure_ascii=True).encode()
 
     def to_dict(self) -> dict[str, Any]:
@@ -1104,7 +1122,10 @@ class WireRouterV2:
 
     def _line_clear(self, a: tuple[float, float], b: tuple[float, float]) -> bool:
         """Vectorized LOS check using pre-built segment arrays."""
-        if not self._segs:
+        # V143 FIX: `if not ndarray` raises ValueError for arrays with >1
+        # element. Use explicit None check. This was a latent bug that
+        # crashed any Class A/B routing call with non-empty obstacles.
+        if self._segs is None:
             return True
 
         ax, ay = a

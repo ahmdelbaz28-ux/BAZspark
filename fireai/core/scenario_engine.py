@@ -257,6 +257,15 @@ class ScenarioResult:
     grid_points_tested: int
     compute_time_s: float
 
+    # V143 FIX: `margin_s` field was MISSING from this dataclass, but it is
+    # passed by ScenarioRunner.run() (line 917) and read by summary_dict()
+    # (line 1065), to_text() (line 1097), and to_csv() (line 1131). This
+    # caused `TypeError: ScenarioResult.__init__() got an unexpected keyword
+    # argument 'margin_s'` on EVERY scenario run — the entire scenario
+    # engine was non-functional. Field added per NFPA 72 §17.7.3 reporting
+    # requirement (margin = nfpa_time_limit_s - first_detection_time_s).
+    margin_s: float | None = None  # Time margin: positive = pass, negative = fail
+
     # Audit
     nfpa_clause: str = "NFPA 72-2022 §17.7.3"
     warnings: list[str] = field(default_factory=list)
