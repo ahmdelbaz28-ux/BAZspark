@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 sequence_of_operations.py — NFPA 72 §14.4 Cause & Effect Matrix Generator.
 ==========================================================================

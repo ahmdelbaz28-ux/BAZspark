@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 fireai/core/qomn_kernel.py — QOMN-FIRE Deterministic Engineering Kernel
 QOMN-FIRE: Zero-Defect Fire Alarm & Light Current Engineering Kernel.

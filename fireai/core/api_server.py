@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 """
 api_server.py — FastAPI REST wrapper for FireAI
 Based on V10 Enhanced + LearningStore.

@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 fireai/core/pdf_report.py  V1.0 — Building-level NFPA 72-2022 PDF Report.
 ========================================================================
