@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 v17_core/acoustic_calculator.py — NFPA 72 §18.4 Audible Notification Compliance.
 =================================================================================

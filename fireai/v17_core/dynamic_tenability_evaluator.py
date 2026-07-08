@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 v17_core/dynamic_tenability_evaluator.py — NFPA 101 §9.3 ASET vs RSET.
 ======================================================================
