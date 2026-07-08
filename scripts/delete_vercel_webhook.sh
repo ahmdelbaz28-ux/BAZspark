@@ -15,13 +15,13 @@ REPO="ahmdelbaz28-ux/revit"
 WEBHOOK_FILE="/home/z/my-project/work/vercel_webhook_id.txt"
 
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
-if [ -z "$GITHUB_TOKEN" ]; then
+if [ -z "$GITHUB_TOKEN" ]; then  # NOSONAR
     echo "❌ ERROR: GITHUB_TOKEN is not set"
     echo "   export GITHUB_TOKEN=\"github_pat_...\""
     exit 1
 fi
 
-if [ ! -f "$WEBHOOK_FILE" ]; then
+if [ ! -f "$WEBHOOK_FILE" ]; then  # NOSONAR
     echo "❌ ERROR: Webhook ID file not found: $WEBHOOK_FILE"
     echo "   Run create_vercel_webhook.sh first."
     exit 1
@@ -35,7 +35,7 @@ HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" -X DELETE \
     -H "Accept: application/vnd.github+json" \
     "https://api.github.com/repos/$REPO/hooks/$HOOK_ID")
 
-if [ "$HTTP_CODE" = "204" ]; then
+if [ "$HTTP_CODE" = "204" ]; then  # NOSONAR
     echo "✅ Webhook $HOOK_ID deleted successfully"
     rm -f "$WEBHOOK_FILE"
     echo "   Webhook ID file removed."

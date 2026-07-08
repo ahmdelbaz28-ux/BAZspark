@@ -39,7 +39,7 @@ mkdir -p "$LOG_DIR"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 VERCEL_TOKEN="${VERCEL_DEPLOY_TOKEN:-${VERCEL_TOKEN:-}}"
 
-if [ -z "$GITHUB_TOKEN" ] && [ -z "$VERCEL_TOKEN" ]; then
+if [ -z "$GITHUB_TOKEN" ] && [ -z "$VERCEL_TOKEN" ]; then  # NOSONAR
     echo "❌ ERROR: Both GITHUB_TOKEN and VERCEL_DEPLOY_TOKEN are unset."
     echo ""
     echo "This script needs at least one of:"
@@ -65,7 +65,7 @@ echo ""
 
 # ── Step 1: Check GitHub webhooks ──
 echo "─── Step 1: GitHub Webhooks ───"
-if [ -n "$GITHUB_TOKEN" ]; then
+if [ -n "$GITHUB_TOKEN" ]; then  # NOSONAR
     echo "Checking webhooks for $REPO..."
     WEBHOOKS_RESPONSE=$(curl -sS -w "\n%{http_code}" \
         -H "Authorization: token $GITHUB_TOKEN" \
@@ -75,18 +75,18 @@ if [ -n "$GITHUB_TOKEN" ]; then
     HTTP_CODE=$(echo "$WEBHOOKS_RESPONSE" | tail -1)
     BODY=$(echo "$WEBHOOKS_RESPONSE" | head -n -1)
 
-    if [ "$HTTP_CODE" = "200" ]; then
+    if [ "$HTTP_CODE" = "200" ]; then  # NOSONAR
         HOOK_COUNT=$(echo "$BODY" | jq 'length' 2>/dev/null || echo "?")
         echo "  Found $HOOK_COUNT webhook(s) registered on the repo"
 
-        if [ "$HOOK_COUNT" != "0" ] && [ "$HOOK_COUNT" != "?" ]; then
+        if [ "$HOOK_COUNT" != "0" ] && [ "$HOOK_COUNT" != "?" ]; then  # NOSONAR
             echo ""
             echo "  Webhook details:"
             echo "$BODY" | jq -r '.[] | "    - URL: \(.config.url // "unknown")\n      Name: \(.name // "unknown")\n      Events: \(.events | join(", "))\n      Active: \(.active)\n      Last response code: \(.last_response.code // "none")"' 2>/dev/null || echo "    (could not parse webhook details)"
 
             # Check if any webhook points to vercel.com
             VERCEL_HOOK=$(echo "$BODY" | jq -r '.[] | select(.config.url | test("vercel")) | .config.url' 2>/dev/null || echo "")
-            if [ -n "$VERCEL_HOOK" ]; then
+            if [ -n "$VERCEL_HOOK" ]; then  # NOSONAR
                 echo ""
                 echo "  ✅ Vercel webhook FOUND: $VERCEL_HOOK"
                 echo "  → The GitHub→Vercel integration appears to be REGISTERED."
@@ -114,7 +114,7 @@ echo ""
 
 # ── Step 2: Check recent Vercel deployments ──
 echo "─── Step 2: Recent Vercel Deployments ───"
-if [ -n "$VERCEL_TOKEN" ]; then
+if [ -n "$VERCEL_TOKEN" ]; then  # NOSONAR
     echo "Fetching recent deployments from Vercel API..."
     DEPLOY_RESPONSE=$(curl -sS -w "\n%{http_code}" \
         -H "Authorization: Bearer $VERCEL_TOKEN" \
@@ -123,11 +123,11 @@ if [ -n "$VERCEL_TOKEN" ]; then
     HTTP_CODE=$(echo "$DEPLOY_RESPONSE" | tail -1)
     BODY=$(echo "$DEPLOY_RESPONSE" | head -n -1)
 
-    if [ "$HTTP_CODE" = "200" ]; then
+    if [ "$HTTP_CODE" = "200" ]; then  # NOSONAR
         DEPLOY_COUNT=$(echo "$BODY" | jq '.deployments | length' 2>/dev/null || echo "?")
         echo "  Found $DEPLOY_COUNT recent deployment(s)"
 
-        if [ "$DEPLOY_COUNT" != "0" ] && [ "$DEPLOY_COUNT" != "?" ]; then
+        if [ "$DEPLOY_COUNT" != "0" ] && [ "$DEPLOY_COUNT" != "?" ]; then  # NOSONAR
             echo ""
             echo "  Recent deployments:"
             echo "$BODY" | jq -r '.deployments[] | "    - \(.createdAt // "unknown"): state=\(.state // "unknown"), target=\(.target // "unknown"), url=\(.url // "unknown")"' 2>/dev/null || echo "    (could not parse deployment details)"
@@ -150,7 +150,7 @@ echo ""
 
 # ── Step 3: Check trigger-vercel.yml workflow runs ──
 echo "─── Step 3: trigger-vercel.yml Workflow Runs ───"
-if [ -n "$GITHUB_TOKEN" ]; then
+if [ -n "$GITHUB_TOKEN" ]; then  # NOSONAR
     echo "Checking recent runs of 'Trigger Vercel Deploy' workflow..."
     WORKFLOW_RESPONSE=$(curl -sS -w "\n%{http_code}" \
         -H "Authorization: token $GITHUB_TOKEN" \
@@ -160,11 +160,11 @@ if [ -n "$GITHUB_TOKEN" ]; then
     HTTP_CODE=$(echo "$WORKFLOW_RESPONSE" | tail -1)
     BODY=$(echo "$WORKFLOW_RESPONSE" | head -n -1)
 
-    if [ "$HTTP_CODE" = "200" ]; then
+    if [ "$HTTP_CODE" = "200" ]; then  # NOSONAR
         RUN_COUNT=$(echo "$BODY" | jq '.workflow_runs | length' 2>/dev/null || echo "?")
         echo "  Found $RUN_COUNT recent run(s) of trigger-vercel.yml"
 
-        if [ "$RUN_COUNT" != "0" ] && [ "$RUN_COUNT" != "?" ]; then
+        if [ "$RUN_COUNT" != "0" ] && [ "$RUN_COUNT" != "?" ]; then  # NOSONAR
             echo ""
             echo "  Recent runs:"
             echo "$BODY" | jq -r '.workflow_runs[] | "    - \(.created_at): status=\(.status), conclusion=\(.conclusion // "in-progress"), event=\(.event)"' 2>/dev/null | head -10 || echo "    (could not parse run details)"

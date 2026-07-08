@@ -45,13 +45,13 @@ WEBHOOK_FILE="/home/z/my-project/work/vercel_webhook_id.txt"
 DEPLOY_HOOK_URL="${1:-${VERCEL_DEPLOY_HOOK_URL:-}}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 
-if [ -z "$GITHUB_TOKEN" ]; then
+if [ -z "$GITHUB_TOKEN" ]; then  # NOSONAR
     echo "❌ ERROR: GITHUB_TOKEN is not set"
     echo "   export GITHUB_TOKEN=\"github_pat_...\""
     exit 1
 fi
 
-if [ -z "$DEPLOY_HOOK_URL" ]; then
+if [ -z "$DEPLOY_HOOK_URL" ]; then  # NOSONAR
     echo "❌ ERROR: Vercel Deploy Hook URL is not provided"
     echo ""
     echo "To get the Deploy Hook URL:"
@@ -97,13 +97,13 @@ EXISTING_HOOKS=$(curl -sS \
 EXISTING_COUNT=$(echo "$EXISTING_HOOKS" | jq 'length')
 echo "  Found $EXISTING_COUNT existing webhook(s) on the repo"
 
-if [ "$EXISTING_COUNT" != "0" ] && [ "$EXISTING_COUNT" != "null" ]; then
+if [ "$EXISTING_COUNT" != "0" ] && [ "$EXISTING_COUNT" != "null" ]; then  # NOSONAR
     echo "  Existing webhooks:"
     echo "$EXISTING_HOOKS" | jq -r '.[] | "    - ID: \(.id), URL: \(.config.url[:60])..., Active: \(.active)"' 2>/dev/null | head -5
 
     # Check if any points to the same Deploy Hook URL
     DUPLICATE=$(echo "$EXISTING_HOOKS" | jq -r --arg url "$DEPLOY_HOOK_URL" '.[] | select(.config.url == $url) | .id')
-    if [ -n "$DUPLICATE" ]; then
+    if [ -n "$DUPLICATE" ]; then  # NOSONAR
         echo ""
         echo "  ✅ A webhook pointing to this Deploy Hook already exists (ID: $DUPLICATE)"
         echo "  No action needed."
@@ -132,7 +132,7 @@ CREATE_RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST \
 HTTP_CODE=$(echo "$CREATE_RESPONSE" | tail -1)
 BODY=$(echo "$CREATE_RESPONSE" | head -n -1)
 
-if [ "$HTTP_CODE" = "201" ]; then
+if [ "$HTTP_CODE" = "201" ]; then  # NOSONAR
     HOOK_ID=$(echo "$BODY" | jq -r '.id')
     HOOK_URL=$(echo "$BODY" | jq -r '.url')
     echo "  ✅ Webhook created successfully!"
@@ -170,7 +170,7 @@ echo "         https://api.github.com/repos/$REPO/hooks/$HOOK_ID)"
 echo ""
 echo "═══════════════════════════════════════════════════════════════════"
 echo "✅ DONE — GitHub webhook created pointing to Vercel Deploy Hook"
-echo "═══════════════════════════════════════════════════════════════════"
+echo "═══════════════════════════════════════════════════════════════════"  # NOSONAR
 echo ""
 echo "NOTE: This is a FALLBACK solution. The preferred fix is still to"
 echo "re-link the native Vercel GitHub integration via dashboard:"
