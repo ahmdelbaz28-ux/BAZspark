@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 backend/services/memory_service.py — Mem0-based Memory Layer for FireAI (V76).
 

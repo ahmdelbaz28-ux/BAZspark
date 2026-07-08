@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 test_basebyright.py — Comprehensive tests for the BASEBYRIGHT framework itself.
 ===============================================================================
