@@ -1,0 +1,12 @@
+# Cloudflare Pages configuration for BAZSPARK frontend
+name = "bazspark-frontend"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "dist"
+
+[build]
+command = "npm run build"
+cwd = "."
+
+[vars]
+VITE_API_URL = "/api/v1"
+VITE_APP_VERSION = "8.1.0"
