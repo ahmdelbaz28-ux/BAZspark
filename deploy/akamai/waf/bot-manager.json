@@ -1,0 +1,127 @@
+{
+  "_comment": "Akamai Bot Manager configuration. Detects and categorizes bots into: HUMAN, BROWSER_BOT, GOOD_BOT, BAD_BOT. The backend reads Akamai-Bot-Score (0-100) via backend/akamai_middleware.py and rejects high scores on /api/v1/auth/*. See docs/AKAMAI_DEPLOYMENT_GUIDE.md.",
+  "configName": "BAZSPARK-BOT-MANAGER",
+  "mode": "DETECTION_AND_BLOCKING",
+  "detectionMechanisms": [
+    {
+      "type": "JAVASCRIPT_CHALLENGE",
+      "enabled": true,
+      "appliesTo": ["/api/v1/auth/login", "/api/v1/auth/reset-password"],
+      "comments": "JS challenge defeats simple curl-based credential stuffing. Real browsers solve it transparently."
+    },
+    {
+      "type": "CAPTCHA",
+      "enabled": true,
+      "appliesTo": ["/api/v1/auth/login"],
+      "trigger": "AFTER_3_FAILED_LOGINS_PER_IP_PER_HOUR",
+      "comments": "Show CAPTCHA after 3 failed logins — balances UX and security."
+    },
+    {
+      "type": "DEVICE_FINGERPRINT",
+      "enabled": true,
+      "comments": "Persistent device ID across sessions — catches credential stuffing across IP rotation."
+    },
+    {
+      "type": "TLS_FINGERPRINTING",
+      "enabled": true,
+      "comments": "JA3/JA4 fingerprinting — detects curl/python-requests impersonating browsers."
+    },
+    {
+      "type": "BEHAVIORAL_ANALYSIS",
+      "enabled": true,
+      "comments": "Akamai ML model detects anomalous request patterns (rapid navigation, no pauses)."
+    }
+  ],
+  "botCategories": [
+    {
+      "name": "HUMAN",
+      "score": "0-20",
+      "action": "ALLOW",
+      "comments": "Real users via real browsers."
+    },
+    {
+      "name": "BROWSER_BOT",
+      "score": "21-40",
+      "action": "ALLOW",
+      "comments": "Browser extensions performing automated actions on behalf of user (e.g., password managers)."
+    },
+    {
+      "name": "GOOD_BOT",
+      "score": "41-60",
+      "action": "ALLOW_IF_WHITELISTED",
+      "whitelist": [
+        {
+          "name": "Googlebot",
+          "header": "User-Agent contains \"Googlebot\"",
+          "verifyBy": "DNS reverse lookup to googlebot.com",
+          "comments": "If bazspark.com has marketing pages — currently no SEO content, can disable."
+        },
+        {
+          "name": "Bingbot",
+          "header": "User-Agent contains \"bingbot\"",
+          "verifyBy": "DNS reverse lookup to search.msn.com"
+        },
+        {
+          "name": "Akamai uptime monitor",
+          "ips": "Akamai internal IPs (auto-allowed)"
+        },
+        {
+          "name": "HF Space healthcheck",
+          "ips": "HuggingFace Spaces IP ranges (fetch from huggingface.co/api/spaces/{namespace}/{name}/runtime)",
+          "comments": "Allow HF Space internal healthcheck to bypass bot detection."
+        },
+        {
+          "name": "Vercel cron",
+          "ips": "Vercel IP ranges (https://vercel.com/docs/edge-network/regions/ip-ranges)"
+        }
+      ]
+    },
+    {
+      "name": "SUSPICIOUS_BOT",
+      "score": "61-80",
+      "action": "CHALLENGE",
+      "comments": "Show CAPTCHA — let the user prove they're human."
+    },
+    {
+      "name": "BAD_BOT",
+      "score": "81-100",
+      "action": "BLOCK",
+      "comments": "Block outright — known malicious bots, scrapers, credential stuffers."
+    }
+  ],
+  "headerInjection": {
+    "enabled": true,
+    "headers": [
+      {
+        "name": "Akamai-Bot-Score",
+        "value": "${bot_score}",
+        "comments": "Integer 0-100 — backend/akamai_middleware.py reads this and rejects >30 on auth endpoints."
+      },
+      {
+        "name": "Akamai-Bot-Category",
+        "value": "${bot_category}",
+        "comments": "HUMAN / BROWSER_BOT / GOOD_BOT / SUSPICIOUS_BOT / BAD_BOT — for logging."
+      },
+      {
+        "name": "Akamai-Bot-Preview",
+        "value": "${bot_preview}",
+        "comments": "JSON blob with detection signals — for debugging only, do NOT log to DB."
+      }
+    ]
+  },
+  "alertThresholds": {
+    "credentialStuffing": {
+      "threshold": 50,
+      "window": "5m",
+      "action": "ALERT_AND_BLOCK_IP_FOR_1H",
+      "comments": "50 distinct usernames from same IP in 5 min = credential stuffing attack."
+    },
+    "distributedAttack": {
+      "threshold": 500,
+      "window": "10m",
+      "across": "MULTIPLE_IPS",
+      "action": "ALERT_SEC_TEAM",
+      "comments": "500 failed logins across multiple IPs in 10 min = coordinated attack."
+    }
+  }
+}

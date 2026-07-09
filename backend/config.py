@@ -59,6 +59,29 @@ class Config:
     REDIS_PASSWORD: Optional[str] = os.environ.get("REDIS_PASSWORD")
     REDIS_DB: int = int(os.environ.get("REDIS_DB", 0))
 
+    # ── Akamai Edge Integration ────────────────────────────────────────────
+    # When AKAMAI_ENABLED=true, the backend trusts Akamai headers
+    # (True-Client-IP, Akamai-Internal, Akamai-Bot-Score, Akamai-Geo-Country)
+    # and rejects direct origin access in production.
+    # See backend/akamai_middleware.py for the full integration.
+    AKAMAI_ENABLED: bool = os.environ.get("AKAMAI_ENABLED", "false").lower() in (
+        "true", "1", "yes", "on",
+    )
+    # Shared secret injected by Akamai EdgeWorker / Property Manager.
+    # When set, requests without this header are rejected in production.
+    AKAMAI_REQUIRE_ORIGIN_TOKEN: str = os.environ.get(
+        "AKAMAI_REQUIRE_ORIGIN_TOKEN", ""
+    ).strip()
+    # Comma-separated ISO 3166-1 alpha-2 country codes to block (e.g. "CN,RU,IR,KP")
+    AKAMAI_BLOCKED_COUNTRIES: str = os.environ.get("AKAMAI_BLOCKED_COUNTRIES", "")
+    # Bot score threshold (0-100, 0=human, 100=bot) for sensitive endpoints.
+    # Requests above this score on /api/v1/auth/* are rejected.
+    AKAMAI_ALLOWED_BOT_SCORE: int = int(os.environ.get("AKAMAI_ALLOWED_BOT_SCORE", "30"))
+    # Forward Akamai's X-RateLimit-* response headers to the client
+    AKAMAI_RATE_LIMIT_HEADER: bool = os.environ.get(
+        "AKAMAI_RATE_LIMIT_HEADER", "true"
+    ).lower() in ("true", "1", "yes", "on")
+
     # Additional settings
     ENVIRONMENT: str = os.environ.get("FIREAI_ENV", "development")
     DEBUG: bool = ENVIRONMENT.lower() == "development"

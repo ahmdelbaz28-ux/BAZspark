@@ -73,6 +73,14 @@ from backend.security_middleware import (
     SecurityHeadersMiddleware,
 )
 
+# V207 (2026-07-09): Akamai Edge integration middleware.
+# Reads True-Client-IP / Akamai-Internal / Akamai-Bot-Score / Akamai-Geo-Country
+# headers injected by Akamai Property Manager. When AKAMAI_ENABLED=false (default),
+# the middleware is a no-op pass-through — zero overhead on HF Space / Vercel
+# without Akamai, full protection when Akamai is deployed in front.
+# Pure ASGI (no body buffering) — see agent.md BUG-34 fix.
+from backend.akamai_middleware import AkamaiIntegrationMiddleware
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -481,6 +489,15 @@ else:
 # We want SecurityHeadersMiddleware to be outermost so it always adds
 # headers regardless of which inner middleware handled the request.
 app.add_middleware(SecurityHeadersMiddleware)
+
+# V207 (2026-07-09): Akamai Edge integration — must be SECOND outermost
+# (just inside SecurityHeadersMiddleware) so it can:
+#   1. Overwrite X-Forwarded-For with True-Client-IP BEFORE ApiKeyMiddleware
+#      reads it for audit logging.
+#   2. Reject direct origin access / geo-blocked / bot-score-exceeded requests
+#      BEFORE ApiKeyMiddleware spends cycles validating their API keys.
+# When AKAMAI_ENABLED=false, this is a no-op pass-through.
+app.add_middleware(AkamaiIntegrationMiddleware)
 
 # V129: CorrelationIdMiddleware — adds X-Correlation-ID to every request
 # for end-to-end audit tracing. Pure ASGI (no body buffering).

@@ -1,0 +1,37 @@
+{
+  "_comment": "Hostname configuration for Akamai Property. POST to /papi/v1/edgehostnames?contractId={CONTRACT_ID}&groupId={GROUP_ID}. Each hostname must be verified via DNS CNAME to {EDGE_HOSTNAME}.edgeservices.net.",
+  "hostnames": [
+    {
+      "cnameFrom": "api.bazspark.com",
+      "cnameTo": "{EDGE_HOSTNAME}.edgeservices.net",
+      "certProvisioningType": "CPS_MANAGED",
+      "certCertificateId": "{CERTIFICATE_ID}",
+      "useDefaultTtl": true,
+      "comments": "Primary API + frontend hostname — TLS terminated at Akamai edge via CPS-managed cert."
+    },
+    {
+      "cnameFrom": "www.bazspark.com",
+      "cnameTo": "{EDGE_HOSTNAME}.edgeservices.net",
+      "certProvisioningType": "CPS_MANAGED",
+      "certCertificateId": "{CERTIFICATE_ID}",
+      "useDefaultTtl": true,
+      "comments": "WWW redirect to apex — handled by Edge Redirector behavior in property-main.json."
+    }
+  ],
+  "dnsInstructions": [
+    {
+      "record": "api.bazspark.com",
+      "type": "CNAME",
+      "target": "{EDGE_HOSTNAME}.edgeservices.net",
+      "ttl": "3600",
+      "notes": "Apex/naked domain requires ANAME/ALIAS record at DNS provider (not standard CNAME)."
+    },
+    {
+      "record": "bazspark.com",
+      "type": "A",
+      "target": "23.x.x.x (Akamai-provided VIP)",
+      "ttl": "3600",
+      "notes": "Akamai provides 2-4 anycast IPs for apex records — fetch via /papi/v1/edgehostnames API."
+    }
+  ]
+}
