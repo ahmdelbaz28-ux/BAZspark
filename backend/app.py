@@ -81,6 +81,12 @@ from backend.security_middleware import (
 # Pure ASGI (no body buffering) — see agent.md BUG-34 fix.
 from backend.akamai_middleware import AkamaiIntegrationMiddleware
 
+# V208 (2026-07-09): Cloudflare Edge integration middleware.
+# Reads CF-Connecting-IP / CF-RAY / CF-IPCountry headers injected by Cloudflare
+# proxy. When CF_ENABLED=false (default), the middleware is a no-op pass-through.
+# Complements Akamai middleware — both can be enabled simultaneously for multi-CDN.
+from backend.cloudflare_middleware import CloudflareIntegrationMiddleware
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -498,6 +504,11 @@ app.add_middleware(SecurityHeadersMiddleware)
 #      BEFORE ApiKeyMiddleware spends cycles validating their API keys.
 # When AKAMAI_ENABLED=false, this is a no-op pass-through.
 app.add_middleware(AkamaiIntegrationMiddleware)
+
+# V208 (2026-07-09): Cloudflare Edge integration — third outermost.
+# Reads CF-Connecting-IP / CF-RAY / CF-IPCountry headers. Same pattern as Akamai.
+# When CF_ENABLED=false, this is a no-op pass-through.
+app.add_middleware(CloudflareIntegrationMiddleware)
 
 # V129: CorrelationIdMiddleware — adds X-Correlation-ID to every request
 # for end-to-end audit tracing. Pure ASGI (no body buffering).

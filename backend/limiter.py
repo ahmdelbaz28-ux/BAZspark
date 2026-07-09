@@ -36,30 +36,36 @@ def get_remote_address(request: Request) -> str:
     """Get the client IP address for rate limiting.
 
     Priority:
-      1. True-Client-IP (Akamai — set after edge authentication)
-      2. X-Forwarded-For (first hop — for non-Akamai proxies)
-      3. request.client.host (direct connection — local dev)
+      1. CF-Connecting-IP (Cloudflare — set after edge authentication)
+      2. True-Client-IP (Akamai — set after edge authentication)
+      3. X-Forwarded-For (first hop — for other proxies)
+      4. request.client.host (direct connection — local dev)
 
     Returns "0.0.0.0" if no IP can be determined (should never happen
     in practice, but prevents a None key_func crash if it does).
     """
-    # 1. Akamai True-Client-IP — the canonical client IP behind Akamai Edge
+    # 1. Cloudflare CF-Connecting-IP — canonical client IP behind Cloudflare
+    cf_ip = request.headers.get("CF-Connecting-IP")
+    if cf_ip:
+        ip = cf_ip.strip().split(",")[0].strip()
+        if ip:
+            return ip
+
+    # 2. Akamai True-Client-IP — canonical client IP behind Akamai
     true_client_ip = request.headers.get("True-Client-IP")
     if true_client_ip:
-        # Strip whitespace and take the first IP in case of a chain
-        # (Akamai should set a single IP, but be defensive)
         ip = true_client_ip.strip().split(",")[0].strip()
         if ip:
             return ip
 
-    # 2. X-Forwarded-For — first hop (set by other proxies / load balancers)
+    # 3. X-Forwarded-For — first hop (set by other proxies / load balancers)
     xff = request.headers.get("X-Forwarded-For")
     if xff:
         ip = xff.split(",")[0].strip()
         if ip:
             return ip
 
-    # 3. Direct connection (local dev, or no proxy in front)
+    # 4. Direct connection (local dev, or no proxy in front)
     if request.client and request.client.host:
         return request.client.host
 
