@@ -29,8 +29,10 @@ import { DigitalTwinPage } from "./pages/DigitalTwinPage";
 import ElementDetail from "./pages/ElementDetail";
 import Elements from "./pages/Elements";
 import { EngineeringPage } from "./pages/EngineeringPage";
+import { FACPPage } from "./pages/FACPPage";
 import { FireAlarmPage } from "./pages/FireAlarmPage";
 import { LoginPage } from "./pages/LoginPage";
+import { MarinePage } from "./pages/MarinePage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ReportsPage } from "./pages/ReportsPage";
@@ -124,6 +126,8 @@ function App() {
                 { path: "/dashboard", element: <DashboardPage /> },
                 { path: "/projects", element: <ProjectsPage /> },
                 { path: "/engineering", element: <EngineeringPage /> },
+                { path: "/marine", element: <MarinePage /> },
+                { path: "/facp", element: <FACPPage /> },
                 { path: "/reports", element: <ReportsPage /> },
                 { path: "/settings", element: <SettingsPage /> },
                 { path: "/settings/cad", element: <CADSettingsPage /> },

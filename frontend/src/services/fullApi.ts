@@ -368,12 +368,18 @@ export const llmApi = {
 // ─── FACP API ───────────────────────────────────────────────────────────────
 
 export const facpApi = {
-        /** POST /facp/select — Select FACP panel */
+        /** POST /facp/select — Select FACP panel (V216 FIX: aligned schema) */
         select: (data: {
-                building_type: string;
-                total_devices: number;
-                total_zones: number;
-                notification_appliances: number;
+                device_count: number;
+                nac_circuit_count: number;
+                building_size_m2: number;
+                building_floors: number;
+                requires_network?: boolean;
+                requires_voice?: boolean;
+                requires_releasing?: boolean;
+                jurisdiction?: string;
+                preferred_manufacturer?: string | null;
+                min_temperature_c?: number;
         }) =>
                 apiCall("/facp/select", {
                         method: "POST",
@@ -769,8 +775,12 @@ export const autocadApi = {
 // ─── Digital Twin API ───────────────────────────────────────────────────────
 
 export const digitalTwinApi = {
-        /** POST /digital-twin/convert */
-        convert: (data: { source_file: string; target_format: string }) =>
+        /** POST /digital-twin/convert — V216 FIX: aligned field names with backend ConvertRequest */
+        convert: (data: {
+                source_filepath: string;
+                target_filepath: string;
+                conversion_type: string;
+        }) =>
                 apiCall("/digital-twin/convert", {
                         method: "POST",
                         body: JSON.stringify(data),

@@ -130,47 +130,72 @@ export function DigitalTwinPage() {
                 setConversionResult(null);
 
                 try {
-                        // V194 (TD-1) FIX: Wire to real backend conversion API.
-                        // Was previously a 3-second setTimeout that returned fake random data.
-                        // Now calls POST /api/v1/digital-twin/convert with the selected file.
-                        // The endpoint accepts multipart/form-data OR JSON; we use FormData
-                        // to upload the file directly. Falls back to simulated result if the
-                        // backend is unreachable (e.g., in pure-frontend dev demos).
-                        const formData = new FormData();
-                        formData.append("file", selectedFile);
-                        formData.append(
-                                "conversion_type",
+                        // V216 FIX: Upload file first, then convert via JSON (was sending FormData
+                        // to a JSON-only endpoint — backend returned 422).
+                        // Step 1: Upload the file to get a server-side filepath.
+                        const uploadEndpoint =
                                 conversionType === "autocad_to_revit"
-                                        ? "autocad_to_revit"
-                                        : "revit_to_autocad",
-                        );
-                        formData.append(
-                                "target_filepath",
-                                conversionType === "autocad_to_revit"
-                                        ? "output.rvt"
-                                        : "output.dwg",
-                        );
+                                        ? "/autocad/upload"
+                                        : "/revit/upload_rvt";
+                        const apiKey = sessionStorage.getItem("fireai_settings");
+                        const apiKeyStr = apiKey ? JSON.parse(apiKey).apiKey : "";
+                        const uploadFormData = new FormData();
+                        uploadFormData.append("file", selectedFile);
 
-                        const apiUrl =
-                                import.meta.env.VITE_API_URL || "/api/v1";
-                        const resp = await fetch(`${apiUrl}/digital-twin/convert`, {
+                        const apiUrl = import.meta.env.VITE_API_URL || "/api/v1";
+                        const uploadResp = await fetch(`${apiUrl}${uploadEndpoint}`, {
                                 method: "POST",
-                                body: formData,
+                                headers: apiKeyStr ? { "X-API-Key": apiKeyStr } : {},
+                                body: uploadFormData,
                                 credentials: "same-origin",
                         });
 
-                        if (!resp.ok) {
-                                const errBody = await resp
+                        if (!uploadResp.ok) {
+                                const errBody = await uploadResp
                                         .json()
-                                        .catch(() => ({ detail: resp.statusText }));
+                                        .catch(() => ({ detail: uploadResp.statusText }));
                                 throw new Error(
-                                        errBody.detail ||
-                                                errBody.message ||
-                                                `HTTP ${resp.status}`,
+                                        `Upload failed: ${errBody.detail || errBody.message || `HTTP ${uploadResp.status}`}`,
                                 );
                         }
 
-                        const body = await resp.json();
+                        const uploadBody = await uploadResp.json();
+                        const serverFilepath =
+                                uploadBody.data?.file_path ||
+                                uploadBody.data?.filepath ||
+                                uploadBody.data?.temp_path ||
+                                selectedFile.name; // fallback to filename
+
+                        // Step 2: Convert via JSON (correct schema).
+                        const convertResp = await fetch(`${apiUrl}/digital-twin/convert`, {
+                                method: "POST",
+                                headers: {
+                                        "Content-Type": "application/json",
+                                        ...(apiKeyStr ? { "X-API-Key": apiKeyStr } : {}),
+                                },
+                                body: JSON.stringify({
+                                        source_filepath: serverFilepath,
+                                        target_filepath:
+                                                conversionType === "autocad_to_revit"
+                                                        ? "output.rvt"
+                                                        : "output.dwg",
+                                        conversion_type: conversionType,
+                                }),
+                                credentials: "same-origin",
+                        });
+
+                        if (!convertResp.ok) {
+                                const errBody = await convertResp
+                                        .json()
+                                        .catch(() => ({ detail: convertResp.statusText }));
+                                throw new Error(
+                                        errBody.detail ||
+                                                errBody.message ||
+                                                `HTTP ${convertResp.status}`,
+                                );
+                        }
+
+                        const body = await convertResp.json();
                         const apiData = body.data || body;
 
                         const result: ConversionResult = {
