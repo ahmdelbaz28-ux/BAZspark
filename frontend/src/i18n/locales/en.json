@@ -1315,5 +1315,15 @@
 		"delete": "Delete",
 		"loading": "Loading element...",
 		"notFound": "Element not found"
+	},
+	"ai": {
+		"title": "Ask AI Copilot",
+		"subtitle": "Engineering assistant — NFPA 72 & NEC",
+		"askButton": "Ask AI",
+		"welcome": "Ask me anything about fire alarm engineering",
+		"welcomeDesc": "NFPA 72 spacing, voltage drop, battery sizing, FACP selection, and more",
+		"placeholder": "Ask about NFPA 72, voltage drop, battery sizing...",
+		"clearChat": "Clear chat",
+		"disclaimer": "⚠️ AI-generated — verify against NFPA 72 code before use"
 	}
 }
