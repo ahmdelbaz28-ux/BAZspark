@@ -417,11 +417,17 @@ async def get_config(
     dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))],
 )
 async def update_config(
-    config: ConversionConfig,
+    request: ConfigureRequest,
     config_mgr: ConversionConfigManager = Depends(get_config_manager),  # NOSONAR - python:S8410
 ) -> OperationResponse:
-    """Update conversion configuration."""
+    """Update conversion configuration.
+
+    V221 FIX: Was taking ConversionConfig (@dataclass) as body param —
+    FastAPI cannot parse @dataclass as request body. Changed to
+    ConfigureRequest (Pydantic BaseModel) like POST /configure.
+    """
     try:
+        config = ConversionConfig.from_dict(request.config)
         config_mgr.save(config)
 
         return OperationResponse(

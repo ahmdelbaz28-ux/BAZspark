@@ -41,8 +41,9 @@ export const digitalTwinService = {
         configure: (config: Record<string, unknown>) =>
                 digitalTwinApi.configure(config),
 
-        /** POST /digital-twin/rollback/{version_id} — Rollback to version */
-        rollback: (versionId: string) => digitalTwinApi.rollback(versionId),
+        /** POST /digital-twin/rollback/{version_id} — Rollback to version (V221: needs targetFile) */
+        rollback: (versionId: string, targetFile: string) =>
+                digitalTwinApi.rollback(versionId, targetFile),
 
         /** GET /digital-twin/mappings — Get available mappings */
         getMappings: () => digitalTwinApi.getMappings(),
