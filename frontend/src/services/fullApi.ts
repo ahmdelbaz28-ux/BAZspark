@@ -117,37 +117,6 @@ async function apiCall<T>(
 // ─── Engineering API (QOMN) ─────────────────────────────────────────────────
 
 export const qomnApi = {
-        /** POST /qomn/smoke-spacing — Calculate NFPA 72 smoke detector spacing */
-        smokeSpacing: (data: { ceiling_height_m: number }) =>
-                apiCall("/qomn/smoke-spacing", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** POST /qomn/heat-spacing — Calculate heat detector spacing */
-        heatSpacing: (data: {
-                ceiling_height_m: number;
-                area_per_detector_m2: number;
-        }) =>
-                apiCall("/qomn/heat-spacing", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** POST /qomn/battery — Calculate battery requirements (NFPA 72 §10.6.7.2.1) */
-        battery: (data: {
-                standby_load_a: number;
-                alarm_load_a: number;
-                standby_hours?: number;
-                alarm_minutes?: number;
-                safety_factor?: number;
-                efficiency?: number;
-        }) =>
-                apiCall("/qomn/battery", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
         /** POST /qomn/voltage-drop — Calculate voltage drop (NEC Ch.9 Table 8) */
         voltageDrop: (data: {
                 current_a: number;
@@ -161,52 +130,8 @@ export const qomnApi = {
                         body: JSON.stringify(data),
                 }),
 
-        /** POST /qomn/place-detectors — Place detectors in a room */
-        placeDetectors: (data: {
-                room_id: string;
-                width_m: number;
-                length_m: number;
-                ceiling_height_m: number;
-                ceiling_type?: string;
-                occupancy_type?: string;
-                detector_type?: string;
-                is_sleeping_area?: boolean;
-                slope_degrees?: number;
-                exit_doors?: Array<{ x_m: number; y_m: number; door_width_m: number }>;
-        }) =>
-                apiCall("/qomn/place-detectors", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** POST /qomn/place-duct — Place duct detector */
-        placeDuct: (data: {
-                duct_id: string;
-                width_m: number;
-                height_m: number;
-                velocity_m_s: number;
-        }) =>
-                apiCall("/qomn/place-duct", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** GET /qomn/audit — Get QOMN audit trail */
-        getAudit: () => apiCall("/qomn/audit"),
-
-        /** GET /qomn/physics-guards — Get physics guard status */
-        getPhysicsGuards: () => apiCall("/qomn/physics-guards"),
-
-        /** GET /qomn/constants — Get QOMN constants */
-        getConstants: () => apiCall("/qomn/constants"),
-
-        /** POST /qomn/golden-tests — Run golden tests */
-        runGoldenTests: (data: { test_ids?: string[] }) =>
-                apiCall("/qomn/golden-tests", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
 };
+
 
 // ─── LLM / AI Copilot API ────────────────────────────────────────────────────
 
@@ -223,19 +148,6 @@ export interface LLMChatResponse {
 }
 
 export const llmApi = {
-        /** POST /llm/chat — Send a message to the AI Copilot */
-        chat: (data: {
-                prompt: string;
-                system?: string;
-                model?: string;
-                temperature?: number;
-                max_tokens?: number;
-        }) =>
-                apiCall<LLMChatResponse>("/llm/chat", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
         /**
          * POST /llm/chat/stream — Stream a chat completion via SSE.
          * Calls onChunk for each token, onDone when complete, onError on failure.
@@ -343,26 +255,6 @@ export const llmApi = {
                         body: JSON.stringify(data),
                 }),
 
-        /** POST /llm/compliance-narrative — Draft a compliance narrative */
-        complianceNarrative: (data: {
-                project_name: string;
-                building_description: string;
-                calculations_summary: Record<string, unknown>;
-                audience?: string;
-        }) =>
-                apiCall<LLMChatResponse>("/llm/compliance-narrative", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** GET /llm/health — Check LLM service status */
-        health: () => apiCall<{
-                available: boolean;
-                primary: { name: string; available: boolean; base_url: string; model: string };
-                fallback: { name: string; enabled: boolean; available: boolean; base_url: string; model: string };
-                timeout_s: number;
-                max_tokens: number;
-        }>("/llm/health"),
 };
 
 // ─── FACP API ───────────────────────────────────────────────────────────────
@@ -386,30 +278,6 @@ export const facpApi = {
                         body: JSON.stringify(data),
                 }),
 
-        /** POST /facp/verify — Verify FACP selection */
-        verify: (data: { panel_id: string; requirements: Record<string, unknown> }) =>
-                apiCall("/facp/verify", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** POST /facp/schedule — Generate FACP schedule */
-        schedule: (data: {
-                panel_id: string;
-                zones: Array<Record<string, unknown>>;
-        }) =>
-                apiCall("/facp/schedule", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** POST /facp/spec — Generate FACP specification */
-        spec: (data: { panel_id: string; project_info: Record<string, unknown> }) =>
-                apiCall("/facp/spec", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
         /** GET /facp/panels — List all FACP panels */
         getPanels: () => apiCall("/facp/panels"),
 };
@@ -418,7 +286,6 @@ export const facpApi = {
 
 export const environmentApi = {
         /** GET /environment/countries */
-        getCountries: () => apiCall("/environment/countries"),
 
         /** GET /environment/weather?lat=&lon= */
         getWeather: (lat: number, lon: number) =>
@@ -427,10 +294,6 @@ export const environmentApi = {
         /** GET /environment/geocode?address= */
         geocode: (address: string) =>
                 apiCall(`/environment/geocode?address=${encodeURIComponent(address)}`),
-
-        /** GET /environment/region?lat=&lon= */
-        getRegion: (lat: number, lon: number) =>
-                apiCall(`/environment/region?lat=${lat}&lon=${lon}`),
 
         /** GET /environment/elevation?lat=&lon= */
         getElevation: (lat: number, lon: number) =>
@@ -451,13 +314,6 @@ export const environmentApi = {
         /** GET /environment/hazmat/known */
         getKnownHazmat: () => apiCall("/environment/hazmat/known"),
 
-        /** GET /environment/context?lat=&lon= */
-        getContext: (lat: number, lon: number) =>
-                apiCall(`/environment/context?lat=${lat}&lon=${lon}`),
-
-        /** GET /environment/full-context?lat=&lon= */
-        getFullContext: (lat: number, lon: number) =>
-                apiCall(`/environment/full-context?lat=${lat}&lon=${lon}`),
 };
 
 // ─── Revit API ──────────────────────────────────────────────────────────────
@@ -787,7 +643,6 @@ export const digitalTwinApi = {
                 }),
 
         /** GET /digital-twin/history */
-        getHistory: () => apiCall("/digital-twin/history"),
 
         /** POST /digital-twin/configure */
         configure: (data: Record<string, unknown>) =>
@@ -858,7 +713,6 @@ export const monitorApi = {
         },
 
         /** GET /monitor/alerts */
-        getAlerts: () => apiCall("/monitor/alerts"),
 };
 
 // ─── Workflow API ───────────────────────────────────────────────────────────
@@ -897,7 +751,6 @@ export const workflowApi = {
                 }),
 
         /** GET /workflow/{workflow_id}/audit */
-        getAudit: (workflowId: string) => apiCall(`/workflow/${workflowId}/audit`),
 };
 
 // ─── Memory API ─────────────────────────────────────────────────────────────
@@ -928,158 +781,11 @@ export const memoryApi = {
                 apiCall(`/memory/${memoryId}`, { method: "DELETE" }),
 
         /** GET /memory/{memory_id}/history */
-        getHistory: (memoryId: string) => apiCall(`/memory/${memoryId}/history`),
 };
 
 // ─── V2 API (generative, BIM, IFC43, AR, webhooks, topology, graphrag) ──────
 
 export const v2Api = {
-        /** POST /generative/design */
-        generativeDesign: (data: {
-                room_polygon: Array<[number, number]>;
-                detector_type: string;
-                constraints?: Record<string, unknown>;
-        }) =>
-                apiCall("/generative/design", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** GET /bim/providers */
-        getBimProviders: () => apiCall("/bim/providers", {}, API_V2_BASE),
-
-        /** POST /bim/extract-rooms */
-        extractBimRooms: (data: { source: string; provider?: string }) =>
-                apiCall(
-                        "/bim/extract-rooms",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
-
-        /** GET /bim/health */
-        getBimHealth: () => apiCall("/bim/health", {}, API_V2_BASE),
-
-        /** POST /ifc43/map-detector */
-        mapDetector: (data: Record<string, unknown>) =>
-                apiCall(
-                        "/ifc43/map-detector",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
-
-        /** POST /ifc43/map-project */
-        mapProject: (data: Record<string, unknown>) =>
-                apiCall(
-                        "/ifc43/map-project",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
-
-        /** POST /ar/export — Export AR metadata */
-        exportAr: (data: { project_id: string; elements?: string[] }) =>
-                apiCall(
-                        "/ar/export",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
-
-        /** POST /webhooks/subscribe */
-        subscribeWebhook: (data: {
-                url: string;
-                event_types: string[];
-                secret?: string;
-        }) =>
-                apiCall(
-                        "/webhooks/subscribe",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
-
-        /** GET /webhooks/subscriptions */
-        getWebhookSubscriptions: () =>
-                apiCall("/webhooks/subscriptions", {}, API_V2_BASE),
-
-        /** DELETE /webhooks/subscriptions/{sub_id} */
-        deleteWebhookSubscription: (subId: string) =>
-                apiCall(
-                        `/webhooks/subscriptions/${subId}`,
-                        { method: "DELETE" },
-                        API_V2_BASE,
-                ),
-
-        /** POST /webhooks/publish */
-        publishWebhook: (data: { event_type: string; payload: unknown }) =>
-                apiCall(
-                        "/webhooks/publish",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
-
-        /** POST /smoke-simulation/state */
-        setSmokeSimulationState: (data: Record<string, unknown>) =>
-                apiCall(
-                        "/smoke-simulation/state",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
-
-        /** POST /topology/element */
-        addTopologyElement: (data: Record<string, unknown>) =>
-                apiCall(
-                        "/topology/element",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
-
-        /** POST /topology/connection */
-        addTopologyConnection: (data: Record<string, unknown>) =>
-                apiCall(
-                        "/topology/connection",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
-
-        /** POST /topology/impact */
-        analyzeTopologyImpact: (data: { element_id: string }) =>
-                apiCall(
-                        "/topology/impact",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
-
-        /** GET /topology/health */
-        getTopologyHealth: () => apiCall("/topology/health", {}, API_V2_BASE),
-
         /** POST /graphrag/knowledge */
         ingestGraphragKnowledge: (data: Record<string, unknown>) =>
                 apiCall(
@@ -1115,9 +821,6 @@ export const v2Api = {
 
         /** GET /graphrag/health */
         getGraphragHealth: () => apiCall("/graphrag/health", {}, API_V2_BASE),
-
-        /** GET /auth/csrf-token */
-        getCsrfToken: () => apiCall("/auth/csrf-token", {}, API_V2_BASE),
 };
 
 // ─── Marine API ─────────────────────────────────────────────────────────────
@@ -1136,13 +839,6 @@ export const marineApi = {
                         body: JSON.stringify(data),
                 }),
 
-        /** POST /marine/ship/design */
-        designShip: (data: Record<string, unknown>) =>
-                apiCall("/marine/ship/design", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
         /** POST /marine/zones/divide */
         divideZones: (data: Record<string, unknown>) =>
                 apiCall("/marine/zones/divide", {
@@ -1157,13 +853,6 @@ export const marineApi = {
                         body: JSON.stringify(data),
                 }),
 
-        /** POST /marine/alarm-logic/generate */
-        generateAlarmLogic: (data: Record<string, unknown>) =>
-                apiCall("/marine/alarm-logic/generate", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
         /** POST /marine/detection/design */
         designDetection: (data: Record<string, unknown>) =>
                 apiCall("/marine/detection/design", {
@@ -1171,94 +860,5 @@ export const marineApi = {
                         body: JSON.stringify(data),
                 }),
 
-        /** POST /marine/divisions/generate */
-        generateDivisions: (data: Record<string, unknown>) =>
-                apiCall("/marine/divisions/generate", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** POST /marine/power/design */
-        designPower: (data: Record<string, unknown>) =>
-                apiCall("/marine/power/design", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** POST /marine/integrations/scada */
-        integrateScada: (data: Record<string, unknown>) =>
-                apiCall("/marine/integrations/scada", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** POST /marine/integrations/etap */
-        integrateEtap: (data: Record<string, unknown>) =>
-                apiCall("/marine/integrations/etap", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** POST /marine/integrations/dxf */
-        exportDxf: (data: Record<string, unknown>) =>
-                apiCall("/marine/integrations/dxf", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** POST /marine/integrations/revit */
-        exportRevit: (data: Record<string, unknown>) =>
-                apiCall("/marine/integrations/revit", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
 };
 
-// ─── API Keys (Admin) ───────────────────────────────────────────────────────
-
-// ─── Exports API ────────────────────────────────────────────────────────────
-
-// ─── DWG Parser API ─────────────────────────────────────────────────────────
-
-// ─── Analyze API ────────────────────────────────────────────────────────────
-
-// ─── Health & Cache API ─────────────────────────────────────────────────────
-
-export const systemApi = {
-        /** GET /health */
-        health: () => apiCall("/health", {}, "/api"),
-
-        /** GET /health/statistics */
-        healthStatistics: () => apiCall("/health/statistics", {}, "/api"),
-
-        /** GET /reports/statistics */
-        reportsStatistics: () => apiCall("/reports/statistics", {}, "/api"),
-
-        // V215 FIX: Removed clearCache() and cacheStats() — /cache/* endpoints
-        // don't exist in the backend (were returning 404). If cache management
-        // is needed, add a proper backend router first.
-};
-
-// ─── Unified Export ─────────────────────────────────────────────────────────
-
-export const fullApi = {
-        // Core CRUD (re-export from existing api.ts for backward compat)
-        core: coreApi,
-        digitalTwin: digitalTwinApiClient,
-
-        // All API modules
-        qomn: qomnApi,
-        facp: facpApi,
-        environment: environmentApi,
-        revit: revitApi,
-        autocad: autocadApi,
-        digitalTwinLegacy: digitalTwinApi,
-        monitor: monitorApi,
-        workflow: workflowApi,
-        memory: memoryApi,
-        v2: v2Api,
-        marine: marineApi,
-        system: systemApi,
-};
-
-export default fullApi;
