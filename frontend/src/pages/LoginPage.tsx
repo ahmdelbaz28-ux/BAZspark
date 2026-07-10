@@ -1,27 +1,19 @@
 /**
  * LoginPage.tsx — API-key based login with session cookie.
  *
- * V201 (UI Overhaul): Restored a polished, branded login experience.
- *   - Two-column layout on desktop: brand panel + form panel
- *   - Subtle gradient + fire-themed decorative elements
- *   - Clear visual hierarchy with feature highlights
- *   - RTL-aware (mirrors layout when document.dir === "rtl")
- *   - Mobile-first: stacks vertically on small screens
+ * V210 (Login Animation Overhaul): Polished, cinematic login experience.
+ *   - Animated flame logo (pulse + glow)
+ *   - Floating sparkles rising from bottom
+ *   - Staggered fade-in for brand panel + form card
+ *   - Glow-pulse on form card border
+ *   - Shimmer effect on submit button hover
+ *   - Animated gradient background
  *
  * Why API key (not username/password)?
  *   The backend auth model is API-key based (backend/routers/auth.py).
  *   API keys are issued by an admin and stored as bcrypt hashes. The login
  *   endpoint accepts {api_key: "..."} and returns {role: "admin|engineer|viewer"}.
  *   There is no username/password table.
- *
- * UX:
- *   - Single password-style input (the API key)
- *   - Show/Hide toggle (API keys are sensitive)
- *   - Inline error messages for 401 / 429 / network errors
- *   - "Remember this key on this device" checkbox (stores in sessionStorage
- *     as a convenience for dev — the cookie is the real auth token)
- *   - Redirect to /dashboard on success
- *   - Redirect to original ?from= URL if present
  */
 
 import {
@@ -36,7 +28,7 @@ import {
 	ShieldCheck,
 	Zap,
 } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -57,9 +49,9 @@ import { login } from "@/services/api";
 const APP_VERSION = "v1.55.0";
 
 const FEATURES: Array<{
-	icon: typeof ShieldCheck;
-	title: string;
-	description: string;
+	readonly icon: typeof ShieldCheck;
+	readonly title: string;
+	readonly description: string;
 }> = [
 	{
 		icon: ShieldCheck,
@@ -78,6 +70,14 @@ const FEATURES: Array<{
 	},
 ];
 
+/** Floating sparkle particle positions (generated once, stable across renders). */
+interface Sparkle {
+	readonly left: number;
+	readonly delay: number;
+	readonly duration: number;
+	readonly size: number;
+}
+
 export function LoginPage() {
 	const [searchParams] = useSearchParams();
 	const { isAuthenticated, loading: ctxLoading } = useAuth();
@@ -87,6 +87,18 @@ export function LoginPage() {
 	const [remember, setRemember] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	// Generate stable sparkle positions (memoized — no re-randomize on re-render)
+	const sparkles = useMemo<Sparkle[]>(
+		() =>
+			Array.from({ length: 18 }, () => ({
+				left: Math.random() * 100,
+				delay: Math.random() * 8,
+				duration: 6 + Math.random() * 6,
+				size: 2 + Math.random() * 4,
+			})),
+		[],
+	);
 
 	// If already authenticated, redirect to dashboard (or ?from=)
 	if (!ctxLoading && isAuthenticated) {
@@ -139,14 +151,16 @@ export function LoginPage() {
 
 	return (
 		<div className="min-h-screen w-full flex items-stretch justify-center bg-slate-950 relative overflow-hidden">
-			{/* Decorative background: subtle radial gradient + grid pattern */}
+			{/* Animated radial gradient background */}
 			<div
-				className="absolute inset-0 pointer-events-none opacity-60"
+				className="absolute inset-0 pointer-events-none opacity-70 animate-gradient-shift"
 				style={{
 					background:
-						"radial-gradient(ellipse at 20% 30%, rgba(249, 115, 22, 0.15), transparent 60%), radial-gradient(ellipse at 80% 70%, rgba(220, 38, 38, 0.10), transparent 60%)",
+						"radial-gradient(ellipse at 20% 30%, rgba(249, 115, 22, 0.18), transparent 60%), radial-gradient(ellipse at 80% 70%, rgba(220, 38, 38, 0.12), transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(234, 88, 12, 0.08), transparent 50%)",
+					backgroundSize: "200% 200%",
 				}}
 			/>
+			{/* Grid pattern overlay */}
 			<div
 				className="absolute inset-0 pointer-events-none opacity-[0.04]"
 				style={{
@@ -156,12 +170,31 @@ export function LoginPage() {
 				}}
 			/>
 
+			{/* Floating sparkles — rise from bottom to top */}
+			<div className="absolute inset-0 pointer-events-none overflow-hidden">
+				{sparkles.map((s, i) => (
+					<div
+						key={i}
+						className="absolute rounded-full bg-orange-400/60"
+						style={{
+							left: `${s.left}%`,
+							bottom: "-10px",
+							width: `${s.size}px`,
+							height: `${s.size}px`,
+							animation: `sparkle-float ${s.duration}s linear ${s.delay}s infinite`,
+							boxShadow: "0 0 6px rgba(249, 115, 22, 0.8)",
+						}}
+					/>
+				))}
+			</div>
+
 			{/* Two-column container */}
 			<div className="relative w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-8 p-4 sm:p-6 lg:p-8 items-center">
 				{/* LEFT: Brand / marketing panel (hidden on small screens) */}
-				<div className="hidden lg:flex flex-col justify-center pr-8">
+				<div className="hidden lg:flex flex-col justify-center pr-8 animate-fade-in-left">
+					{/* Animated flame logo */}
 					<div className="flex items-center gap-3 mb-8">
-						<div className="h-14 w-14 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+						<div className="h-14 w-14 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/40 animate-flame-pulse">
 							<Flame className="h-8 w-8 text-white" />
 						</div>
 						<div>
@@ -177,7 +210,7 @@ export function LoginPage() {
 					<h2 className="text-4xl font-bold text-slate-50 leading-tight mb-4">
 						Design, validate, and
 						<br />
-						<span className="bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+						<span className="bg-gradient-to-r from-orange-400 via-amber-400 to-red-500 bg-clip-text text-transparent">
 							certify fire alarm systems
 						</span>
 						<br />
@@ -191,9 +224,13 @@ export function LoginPage() {
 					</p>
 
 					<div className="space-y-4 max-w-md">
-						{FEATURES.map((feature) => (
-							<div key={feature.title} className="flex items-start gap-3">
-								<div className="h-9 w-9 rounded-lg bg-slate-800/80 border border-slate-700/50 flex items-center justify-center shrink-0">
+						{FEATURES.map((feature, idx) => (
+							<div
+								key={feature.title}
+								className="flex items-start gap-3 animate-fade-in-up"
+								style={{ animationDelay: `${0.3 + idx * 0.15}s` }}
+							>
+								<div className="h-9 w-9 rounded-lg bg-slate-800/80 border border-slate-700/50 flex items-center justify-center shrink-0 transition-transform hover:scale-110 hover:border-orange-500/50">
 									<feature.icon className="h-5 w-5 text-orange-400" />
 								</div>
 								<div>
@@ -210,11 +247,11 @@ export function LoginPage() {
 				</div>
 
 				{/* RIGHT: Login form panel */}
-				<div className="w-full max-w-md mx-auto lg:ml-auto">
+				<div className="w-full max-w-md mx-auto lg:ml-auto animate-fade-in-up">
 					{/* Mobile brand header (visible only on small screens) */}
 					<div className="lg:hidden text-center mb-6">
 						<div className="inline-flex items-center gap-2 mb-2">
-							<div className="h-10 w-10 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+							<div className="h-10 w-10 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/40 animate-flame-pulse">
 								<Flame className="h-6 w-6 text-white" />
 							</div>
 							<span className="text-2xl font-bold text-slate-50">BAZSPARK</span>
@@ -224,7 +261,7 @@ export function LoginPage() {
 						</p>
 					</div>
 
-					<Card className="bg-slate-900/80 backdrop-blur-sm border-slate-700/70 shadow-2xl shadow-black/40">
+					<Card className="bg-slate-900/80 backdrop-blur-sm border-slate-700/70 shadow-2xl shadow-black/40 animate-glow-pulse animate-border-glow">
 						<CardHeader className="space-y-1">
 							<CardTitle className="text-slate-50 flex items-center gap-2 text-xl">
 								<LogIn className="h-5 w-5 text-orange-500" />
@@ -239,7 +276,7 @@ export function LoginPage() {
 						<form onSubmit={handleSubmit}>
 							<CardContent className="space-y-4">
 								{error && (
-									<Alert variant="destructive">
+									<Alert variant="destructive" className="animate-fade-in-up">
 										<AlertCircle className="h-4 w-4" />
 										<AlertTitle>Authentication failed</AlertTitle>
 										<AlertDescription>{error}</AlertDescription>
@@ -250,8 +287,8 @@ export function LoginPage() {
 									<Label htmlFor="api-key" className="text-slate-200">
 										API Key
 									</Label>
-									<div className="relative">
-										<KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+									<div className="relative group">
+										<KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none transition-colors group-focus-within:text-orange-400" />
 										<Input
 											id="api-key"
 											type={showKey ? "text" : "password"}
@@ -261,13 +298,13 @@ export function LoginPage() {
 											value={apiKey}
 											onChange={(e) => setApiKey(e.target.value)}
 											disabled={submitting}
-											className="bg-slate-800/80 border-slate-600 text-slate-100 pl-10 pr-10 font-mono focus-visible:ring-orange-500/50 focus-visible:border-orange-500/50"
+											className="bg-slate-800/80 border-slate-600 text-slate-100 pl-10 pr-10 font-mono focus-visible:ring-orange-500/50 focus-visible:border-orange-500/50 transition-all"
 											aria-describedby="api-key-help"
 										/>
 										<button
 											type="button"
 											onClick={() => setShowKey(!showKey)}
-											className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-1 rounded"
+											className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-400 transition-colors p-1 rounded"
 											aria-label={showKey ? "Hide API key" : "Show API key"}
 											tabIndex={-1}
 										>
@@ -303,7 +340,7 @@ export function LoginPage() {
 							<CardFooter className="flex flex-col gap-3">
 								<Button
 									type="submit"
-									className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-lg shadow-orange-500/30 transition-all"
+									className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-lg shadow-orange-500/30 transition-all hover:shadow-orange-500/50 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
 									disabled={submitting || !apiKey.trim()}
 								>
 									{submitting ? (
