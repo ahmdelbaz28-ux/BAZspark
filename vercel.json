@@ -1,35 +1,11 @@
 {
 	"$schema": "https://openapi.vercel.sh/vercel.json",
 	"framework": "vite",
-	"installCommand": "cd frontend && npm ci --no-audit --no-fund",
 	"buildCommand": "cd frontend && npm run build",
 	"outputDirectory": "frontend/dist",
+	"installCommand": "cd frontend && npm install --no-audit --no-fund",
 	"rewrites": [
-		{
-			"source": "/api/(.*)",
-			"destination": "https://ahmdelbaz28-bazspark.hf.space/api/$1"
-		},
+		{ "source": "/api/(.*)", "destination": "https://ahmdelbaz28-bazspark.hf.space/api/$1" },
 		{ "source": "/((?!api/).*)", "destination": "/" }
-	],
-	"headers": [
-		{
-			"source": "/(.*)",
-			"headers": [
-				{ "key": "X-Frame-Options", "value": "DENY" },
-				{ "key": "X-Content-Type-Options", "value": "nosniff" },
-				{
-					"key": "Referrer-Policy",
-					"value": "strict-origin-when-cross-origin"
-				},
-				{
-					"key": "Permissions-Policy",
-					"value": "camera=(), microphone=(), geolocation=()"
-				},
-				{
-					"key": "Content-Security-Policy",
-					"value": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
-				}
-			]
-		}
 	]
 }
