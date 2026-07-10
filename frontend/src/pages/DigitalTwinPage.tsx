@@ -253,7 +253,7 @@ export function DigitalTwinPage() {
                 try {
                         // V140 Phase 5: Call real Digital Twin API
                         toast.info(`Rolling back to version ${versionId}...`);
-                        await digitalTwinApi.rollback(versionId);
+                        await digitalTwinApi.rollback(versionId, `output_${versionId}.rvt`);
                         toast.success("Rollback completed successfully");
                         fetchVersionHistory();
                 } catch (error) {

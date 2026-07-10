@@ -319,11 +319,11 @@ export const environmentApi = {
 // ─── Revit API ──────────────────────────────────────────────────────────────
 
 export const revitApi = {
-        /** POST /revit/connect */
-        connect: (data: { visible?: boolean; force_new?: boolean } = {}) =>
+        /** POST /revit/connect — V221 FIX: send {method} not {visible, force_new} */
+        connect: (method: string = "auto") =>
                 apiCall("/revit/connect", {
                         method: "POST",
-                        body: JSON.stringify(data),
+                        body: JSON.stringify({ method }),
                 }),
 
         /** POST /revit/disconnect */
@@ -346,8 +346,12 @@ export const revitApi = {
                         body: JSON.stringify(data),
                 }),
 
-        /** POST /revit/document/close */
-        closeDocument: () => apiCall("/revit/document/close", { method: "POST" }),
+        /** POST /revit/document/close — V221 FIX: send {save_changes} body */
+        closeDocument: (saveChanges: boolean = true) =>
+                apiCall("/revit/document/close", {
+                        method: "POST",
+                        body: JSON.stringify({ save_changes: saveChanges }),
+                }),
 
         /** POST /revit/read_rvt */
         readRvt: (data: { filepath: string }) =>
@@ -471,11 +475,11 @@ export const revitApi = {
                         body: JSON.stringify(data),
                 }),
 
-        /** PUT /revit/elements/{element_id}/parameters */
+        /** PUT /revit/elements/{element_id}/parameters — V221 FIX: wrap in {parameters} */
         updateElementParameters: (elementId: string, data: Record<string, unknown>) =>
                 apiCall(`/revit/elements/${elementId}/parameters`, {
                         method: "PUT",
-                        body: JSON.stringify(data),
+                        body: JSON.stringify({ parameters: data }),
                 }),
 
         /** DELETE /revit/elements/{element_id} */
@@ -569,8 +573,13 @@ export const autocadApi = {
                         body: JSON.stringify(data),
                 }),
 
-        /** POST /autocad/draw_polyline */
-        drawPolyline: (data: { points: number[][]; layer?: string }) =>
+        /** POST /autocad/draw_polyline — V221 FIX: points→vertices, add color/closed */
+        drawPolyline: (data: {
+                vertices: number[][];
+                layer?: string;
+                color?: number;
+                closed?: boolean;
+        }) =>
                 apiCall("/autocad/draw_polyline", {
                         method: "POST",
                         body: JSON.stringify(data),
@@ -583,12 +592,13 @@ export const autocadApi = {
                         body: JSON.stringify(data),
                 }),
 
-        /** POST /autocad/draw_text */
+        /** POST /autocad/draw_text — V221 FIX: point→insertion_point, add color */
         drawText: (data: {
-                point: number[];
                 text: string;
+                insertion_point: number[];
                 height?: number;
                 layer?: string;
+                color?: number;
         }) =>
                 apiCall("/autocad/draw_text", {
                         method: "POST",
@@ -598,8 +608,8 @@ export const autocadApi = {
         /** GET /autocad/status */
         getStatus: () => apiCall("/autocad/status"),
 
-        /** POST /autocad/save */
-        save: (data: { filepath?: string }) =>
+        /** POST /autocad/save — V221 FIX: filepath required (was optional) */
+        save: (data: { filepath: string }) =>
                 apiCall("/autocad/save", {
                         method: "POST",
                         body: JSON.stringify(data),
@@ -642,18 +652,22 @@ export const digitalTwinApi = {
                         body: JSON.stringify(data),
                 }),
 
-        /** GET /digital-twin/history */
+        /** GET /digital-twin/history — V221 FIX: restored (was accidentally removed in V220) */
+        getHistory: () => apiCall("/digital-twin/history"),
 
-        /** POST /digital-twin/configure */
+        /** POST /digital-twin/configure — V221 FIX: wrap config in {config: ...} */
         configure: (data: Record<string, unknown>) =>
                 apiCall("/digital-twin/configure", {
                         method: "POST",
-                        body: JSON.stringify(data),
+                        body: JSON.stringify({ config: data }),
                 }),
 
-        /** POST /digital-twin/rollback/{version_id} */
-        rollback: (versionId: string) =>
-                apiCall(`/digital-twin/rollback/${versionId}`, { method: "POST" }),
+        /** POST /digital-twin/rollback/{version_id} — V221 FIX: send {target_file} body */
+        rollback: (versionId: string, targetFile: string) =>
+                apiCall(`/digital-twin/rollback/${versionId}`, {
+                        method: "POST",
+                        body: JSON.stringify({ target_file: targetFile }),
+                }),
 
         /** GET /digital-twin/mappings */
         getMappings: () => apiCall("/digital-twin/mappings"),
@@ -671,11 +685,11 @@ export const digitalTwinApi = {
         /** GET /digital-twin/config */
         getConfig: () => apiCall("/digital-twin/config"),
 
-        /** PUT /digital-twin/config */
+        /** PUT /digital-twin/config — V221 FIX: wrap config in {config: ...} */
         setConfig: (data: Record<string, unknown>) =>
                 apiCall("/digital-twin/config", {
                         method: "PUT",
-                        body: JSON.stringify(data),
+                        body: JSON.stringify({ config: data }),
                 }),
 
         /** GET /digital-twin/download/{filename} */
@@ -750,7 +764,8 @@ export const workflowApi = {
                         body: JSON.stringify(data || {}),
                 }),
 
-        /** GET /workflow/{workflow_id}/audit */
+        /** GET /workflow/{workflow_id}/audit — V221 FIX: restored (accidentally removed in V220) */
+        getAudit: (workflowId: string) => apiCall(`/workflow/${workflowId}/audit`),
 };
 
 // ─── Memory API ─────────────────────────────────────────────────────────────
