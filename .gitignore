@@ -435,3 +435,4 @@ postman_collection*.json
 .dev.vars
 .mf/
 test.ledger
+quick_shots.cjs
