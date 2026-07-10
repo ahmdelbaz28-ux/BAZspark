@@ -22,6 +22,7 @@ import {
         CloudSun,
         Brain,
         Network,
+        Workflow as WorkflowIcon,
         Settings2,
         ShieldCheck,
 } from "lucide-react";
@@ -165,6 +166,12 @@ const navItems: NavItem[] = [
                 defaultLabel: "GraphRAG",
                 icon: Network,
                 path: "/graphrag",
+        },
+        {
+                labelKey: "nav.workflow",
+                defaultLabel: "Workflows",
+                icon: WorkflowIcon,
+                path: "/workflow",
         },
         {
                 labelKey: "nav.elements",

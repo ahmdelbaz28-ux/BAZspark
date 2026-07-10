@@ -1216,80 +1216,11 @@ export const marineApi = {
 
 // ─── API Keys (Admin) ───────────────────────────────────────────────────────
 
-export const apiKeysApi = {
-        /** GET /admin/keys */
-        list: () => apiCall("/admin/keys"),
-
-        /** POST /admin/keys */
-        create: (data: { role: string; description?: string; expires_at?: string }) =>
-                apiCall("/admin/keys", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** DELETE /admin/keys/{key_hash} */
-        delete: (keyHash: string) =>
-                apiCall(`/admin/keys/${keyHash}`, { method: "DELETE" }),
-
-        /** PUT /admin/keys/{key_hash} */
-        update: (keyHash: string, data: { role?: string; description?: string }) =>
-                apiCall(`/admin/keys/${keyHash}`, {
-                        method: "PUT",
-                        body: JSON.stringify(data),
-                }),
-
-        /** GET /admin/keys/roles */
-        getRoles: () => apiCall("/admin/keys/roles"),
-};
-
 // ─── Exports API ────────────────────────────────────────────────────────────
-
-export const exportsApi = {
-        /** GET /projects/{project_id}/export/dxf */
-        exportDxf: (projectId: string) =>
-                apiCall<Blob>(`/projects/${projectId}/export/dxf`),
-
-        /** GET /projects/{project_id}/export/revit */
-        exportRevit: (projectId: string) =>
-                apiCall<Blob>(`/projects/${projectId}/export/revit`),
-
-        /** GET /projects/{project_id}/export/ifc */
-        exportIfc: (projectId: string, version: string = "IFC4") =>
-                apiCall<Blob>(`/projects/${projectId}/export/ifc?version=${version}`),
-};
 
 // ─── DWG Parser API ─────────────────────────────────────────────────────────
 
-export const dwgApi = {
-        /** POST /parse-dwg — Upload and parse DWG/DXF file */
-        parseDwg: (file: File) => {
-                const formData = new FormData();
-                formData.append("file", file);
-                return apiCall("/parse-dwg", {
-                        method: "POST",
-                        body: formData,
-                        headers: {},
-                });
-        },
-};
-
 // ─── Analyze API ────────────────────────────────────────────────────────────
-
-export const analyzeApi = {
-        /** POST /analyze/battery */
-        analyzeBattery: (data: Record<string, unknown>) =>
-                apiCall("/analyze/battery", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-
-        /** POST /analyze/voltage */
-        analyzeVoltage: (data: Record<string, unknown>) =>
-                apiCall("/analyze/voltage", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
-};
 
 // ─── Health & Cache API ─────────────────────────────────────────────────────
 
@@ -1327,10 +1258,6 @@ export const fullApi = {
         memory: memoryApi,
         v2: v2Api,
         marine: marineApi,
-        apiKeys: apiKeysApi,
-        exports: exportsApi,
-        dwg: dwgApi,
-        analyze: analyzeApi,
         system: systemApi,
 };
 

@@ -45,6 +45,7 @@ import { RevitCreatePage } from "./pages/RevitCreatePage";
 import { RevitElementsPage } from "./pages/RevitElementsPage";
 import { RevitPage } from "./pages/RevitPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { WorkflowPage } from "./pages/WorkflowPage";
 import "./i18n";
 import "./styles/globals.css";
 import "./styles/typography.css";
@@ -137,6 +138,7 @@ function App() {
                 { path: "/monitor", element: <MonitorPage /> },
                 { path: "/memory", element: <MemoryPage /> },
                 { path: "/graphrag", element: <GraphRAGPage /> },
+                { path: "/workflow", element: <WorkflowPage /> },
                 { path: "/reports", element: <ReportsPage /> },
                 { path: "/reports/generate", element: <ReportGeneratorPage /> },
                 { path: "/settings", element: <SettingsPage /> },
