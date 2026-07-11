@@ -23,6 +23,8 @@ set -euo pipefail
 : "${GH_REPO:?GH_REPO is required (owner/repo)}"
 
 API="https://api.github.com/repos/${GH_REPO}/actions"
+export API
+export GH_PAT GH_REPO
 
 # ── 1. Ensure Python deps for the encryption step ────────────────────────
 python3 - <<'PY'
