@@ -625,5 +625,83 @@ class TestV213SimulationModeFlag:
         assert service.simulation_mode is False  # honest failure, not sim
 
 
+class TestV214NoMockDwgData:
+    """V214 regression tests: write_dwg() and save() must NEVER write
+    "MOCK DWG DATA" or "MOCK SAVED DWG" to disk. Previously, in simulation
+    mode, these methods wrote fake 13/14-byte text files and returned True
+    — the UI reported success while no real DWG was produced.
+
+    Now they must:
+      - return False in simulation mode (honest failure)
+      - NOT create any file on disk in simulation mode
+      - NOT contain the literal strings "MOCK DWG DATA" or "MOCK SAVED DWG"
+        as actual file writes (only in docstrings as historical notes)
+    """
+
+    def test_write_dwg_in_simulation_returns_false(self, tmp_path):
+        """write_dwg in simulation mode must return False (not True)."""
+        service = AutoCADService()
+        service.connected = True
+        service.acad_app = None  # simulation mode
+        service.simulation_mode = True
+
+        out_path = str(tmp_path / "fake.dwg")
+        result = service.write_dwg(out_path, [{"entity_type": "LINE", "start_point": [0, 0, 0], "end_point": [1, 0, 0]}])
+
+        assert result is False, "write_dwg must return False in simulation mode"
+        # The fake file must NOT have been created
+        import os
+        assert not os.path.exists(out_path), (
+            "write_dwg must NOT create a file in simulation mode — found: " + out_path
+        )
+
+    def test_save_in_simulation_returns_false(self, tmp_path):
+        """save() in simulation mode must return False (not True)."""
+        service = AutoCADService()
+        service.connected = True
+        service.acad_doc = None  # simulation mode
+        service.simulation_mode = True
+
+        out_path = str(tmp_path / "fake_saved.dwg")
+        result = service.save(out_path)
+
+        assert result is False, "save must return False in simulation mode"
+        import os
+        assert not os.path.exists(out_path), (
+            "save must NOT create a file in simulation mode — found: " + out_path
+        )
+
+    def test_write_dwg_not_connected_returns_false(self, tmp_path):
+        """write_dwg when not connected must return False."""
+        service = AutoCADService()
+        out_path = str(tmp_path / "fake.dwg")
+        result = service.write_dwg(out_path, [])
+        assert result is False
+
+    def test_save_not_connected_returns_false(self, tmp_path):
+        """save() when not connected must return False."""
+        service = AutoCADService()
+        out_path = str(tmp_path / "fake.dwg")
+        result = service.save(out_path)
+        assert result is False
+
+    def test_no_mock_dwg_strings_in_source(self):
+        """The source file must NOT contain actual f.write('MOCK DWG DATA')
+        or f.write('MOCK SAVED DWG') calls. The strings may appear in
+        docstrings (as historical notes) but never as actual writes.
+        """
+        import re
+        src_path = "backend/services/autocad_service.py"
+        with open(src_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Match f.write("MOCK...") or f.write('MOCK...') — actual write calls
+        write_mock_pattern = re.compile(r'f\.write\(\s*["\']MOCK\s+(DWG DATA|SAVED DWG)["\']\s*\)')
+        matches = write_mock_pattern.findall(content)
+        assert matches == [], (
+            f"Found {len(matches)} actual f.write('MOCK ...') calls in {src_path}: {matches}"
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

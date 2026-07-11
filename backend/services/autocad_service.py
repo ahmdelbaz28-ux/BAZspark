@@ -473,12 +473,26 @@ class AutoCADService:
         """
         Write entities to a DWG file.
 
+        V214 FIX (Rule 1 — Truthfulness): Previously, in simulation mode (no
+        real AutoCAD COM handle), this method wrote the literal string
+        ``"MOCK DWG DATA"`` (13 plain-text bytes) to disk and returned True —
+        the UI reported "Successfully wrote DWG file" while the file was
+        NOT a valid DWG and could not be opened by AutoCAD. This is a
+        safety-critical deception: an engineer may believe a shop drawing
+        was produced when nothing real exists.
+
+        Now, in simulation mode, the method returns False honestly so the
+        caller (router) surfaces a 503/500 error to the client. The client
+        can then fall back to DXF export (via ezdxf, which is cross-platform
+        and produces a real DXF file) instead of requesting a fake DWG.
+
         Args:
             filepath: Path to save the DWG file (MUST be validated by caller).
             entities: List of entity dictionaries to write
 
         Returns:
-            bool: True if write successful, False otherwise
+            bool: True if write successful, False otherwise (including
+            simulation mode — there is no real AutoCAD to write the file).
 
         """
         try:
@@ -493,14 +507,17 @@ class AutoCADService:
                 return False
 
             if not self.acad_app:
-                # Simulation mode fallback
-                logger.info("Writing DWG file %s in SIMULATION mode", filepath)
-                output_dir = os.path.dirname(filepath)
-                if output_dir:
-                    os.makedirs(output_dir, exist_ok=True)
-                with open(filepath, "w", encoding="utf-8") as f:
-                    f.write("MOCK DWG DATA")
-                return True
+                # V214: Simulation mode cannot write a real DWG — return False
+                # honestly so the caller can surface an error or fall back to
+                # DXF export (ezdxf, cross-platform). Writing a fake "MOCK DWG
+                # DATA" file and returning True was a safety-critical deception.
+                logger.warning(
+                    "write_dwg %s skipped: simulation mode (no acad_app). "
+                    "Returning False honestly — no DWG file was written. "
+                    "Use DXF export (ezdxf) for cross-platform output instead.",
+                    filepath,
+                )
+                return False
 
             # Create directory if it doesn't exist
             output_dir = os.path.dirname(filepath)
@@ -835,11 +852,21 @@ class AutoCADService:
         """
         Save the active document to a file.
 
+        V214 FIX (Rule 1 — Truthfulness): Previously, in simulation mode (no
+        real AutoCAD document), this method wrote the literal string
+        ``"MOCK SAVED DWG"`` (14 plain-text bytes) to disk and returned
+        True — the UI reported "Document saved successfully" while no real
+        DWG was produced. This is a safety-critical deception.
+
+        Now, in simulation mode, the method returns False honestly so the
+        caller surfaces an error to the client.
+
         Args:
             filepath: Path to save the document
 
         Returns:
-            bool: True if save successful, False otherwise
+            bool: True if save successful, False otherwise (including
+            simulation mode — there is no real document to save).
 
         """
         try:
@@ -847,14 +874,16 @@ class AutoCADService:
                 logger.error("AutoCAD service not connected. Cannot save document.")
                 return False
             if not self.acad_doc:
-                # Simulation mode fallback
-                logger.info("Saving document to %s in SIMULATION mode", filepath)
-                output_dir = os.path.dirname(filepath)
-                if output_dir:
-                    os.makedirs(output_dir, exist_ok=True)
-                with open(filepath, "w", encoding="utf-8") as f:
-                    f.write("MOCK SAVED DWG")
-                return True
+                # V214: Simulation mode cannot save — there is no real document.
+                # Writing a fake "MOCK SAVED DWG" file and returning True was
+                # a safety-critical deception.
+                logger.warning(
+                    "save %s skipped: simulation mode (no acad_doc). "
+                    "Returning False honestly — no DWG file was saved. "
+                    "Connect to a real AutoCAD instance to save documents.",
+                    filepath,
+                )
+                return False
 
             # Create directory if it doesn't exist
             output_dir = os.path.dirname(filepath)
