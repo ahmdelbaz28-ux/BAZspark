@@ -18,6 +18,7 @@ import {
         LayoutDashboard,
         PencilRuler,
         Settings,
+        Shield,
         CloudSun,
         Brain,
         Network,
@@ -152,6 +153,12 @@ const navItems: NavItem[] = [
                 defaultLabel: "Monitor",
                 icon: Activity,
                 path: "/monitor",
+        },
+        {
+                labelKey: "nav.selfHealing",
+                defaultLabel: "Self-Healing",
+                icon: Shield,
+                path: "/self-healing",
         },
         {
                 labelKey: "nav.memory",

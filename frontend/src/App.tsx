@@ -49,6 +49,7 @@ import { ReportsPage } from "./pages/ReportsPage";
 import { RevitCreatePage } from "./pages/RevitCreatePage";
 import { RevitElementsPage } from "./pages/RevitElementsPage";
 import { RevitPage } from "./pages/RevitPage";
+import { SelfHealingPage } from "./pages/SelfHealingPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { WorkflowPage } from "./pages/WorkflowPage";
 import "./i18n";
@@ -141,6 +142,7 @@ function App() {
                 { path: "/mining", element: <MiningPage /> },
                 { path: "/api-keys", element: <ApiKeysPage /> },
                 { path: "/exports", element: <ExportsPage /> },
+                { path: "/self-healing", element: <SelfHealingPage /> },
                 { path: "/facp", element: <FACPPage /> },
                 { path: "/environment", element: <EnvironmentPage /> },
                 { path: "/monitor", element: <MonitorPage /> },
