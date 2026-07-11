@@ -17,6 +17,7 @@ import { ROUTE_HELP_MAP } from "@/help/types";
 import { useHealth } from "@/hooks/useApi";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { FireAlarmDesigner } from "./components/mockups/engineering/FireAlarmDesigner";
+import { ApiKeysPage } from "./pages/ApiKeysPage";
 import { AutoCADDrawPage } from "./pages/AutoCADDrawPage";
 // V140 Phase 6: New pages for comprehensive API coverage
 import { AutoCADPage } from "./pages/AutoCADPage";
@@ -32,6 +33,7 @@ import { DigitalTwinPage } from "./pages/DigitalTwinPage";
 import ElementDetail from "./pages/ElementDetail";
 import Elements from "./pages/Elements";
 import { EngineeringPage } from "./pages/EngineeringPage";
+import { ExportsPage } from "./pages/ExportsPage";
 import { FACPPage } from "./pages/FACPPage";
 import { FireAlarmPage } from "./pages/FireAlarmPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -137,6 +139,8 @@ function App() {
                 { path: "/engineering", element: <EngineeringPage /> },
                 { path: "/marine", element: <MarinePage /> },
                 { path: "/mining", element: <MiningPage /> },
+                { path: "/api-keys", element: <ApiKeysPage /> },
+                { path: "/exports", element: <ExportsPage /> },
                 { path: "/facp", element: <FACPPage /> },
                 { path: "/environment", element: <EnvironmentPage /> },
                 { path: "/monitor", element: <MonitorPage /> },
