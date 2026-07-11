@@ -178,11 +178,16 @@ jobs:
 
           # 1. Push the PR code into the sandbox via tarball
           #    upload_file(src: str | bytes, dst: str) — accepts a path or bytes, NOT a file object
+          #    V208: include .git/ so setuptools-scm can infer the version (pyproject.toml uses
+          #    setuptools_scm[toml] for dynamic versioning). Without .git, `pip install -e .` fails
+          #    with "LookupError: setuptools-scm was unable to detect version".
           print("▶ Packaging PR source into tarball…", flush=True)
           subprocess.run(
-              ["tar", "--exclude=.git", "--exclude=node_modules",
+              ["tar", "--exclude=node_modules",
                "--exclude=__pycache__", "--exclude=.venv",
-               "--exclude=db/*.db", "-czf", "/tmp/pr-src.tar.gz", "."],
+               "--exclude=db/*.db",
+               # NOTE: .git IS included (setuptools-scm needs it)
+               "-czf", "/tmp/pr-src.tar.gz", "."],
               check=True,
           )
           sb.fs.upload_file("/tmp/pr-src.tar.gz", "/tmp/pr-src.tar.gz")
@@ -190,11 +195,13 @@ jobs:
           # NOTE: python:3.12-slim has pip but it may be old. Upgrade first, then install.
           # Do NOT pipe through `tail` here — it hides install failures (V208 lesson).
           # Capture full output and tail it AFTER, so we can see errors.
+          # V208: set SETUPTOOLS_SCM_PRETEND_VERSION as a fallback in case .git is incomplete.
           rc, so, se = run(
               "mkdir -p /workspace && cd /workspace && "
               "tar -xzf /tmp/pr-src.tar.gz && "
               "python -m ensurepip --upgrade 2>&1 || true && "
               "python -m pip install --upgrade pip setuptools wheel 2>&1 && "
+              "SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0-ci "
               "python -m pip install -e . ruff mypy bandit pytest pytest-cov pytest-asyncio pytest-timeout 2>&1",
               timeout=900,
           )
