@@ -533,5 +533,153 @@ class TestV213SimulationModeFlag:
                     del sys.modules[mod_name]
 
 
+class TestV214ReadRvtNoHardcodedElements:
+    """V214 regression tests: read_rvt() must NEVER return the hardcoded
+    fake elements (id 12345 "Basic Wall", id 12346 "Generic Floor",
+    id 12347 "Interior Door").
+
+    Previously, read_rvt() returned these 3 fake elements for ANY .rvt file
+    — regardless of actual file contents. This is a safety-critical deception.
+
+    Now read_rvt() in simulation mode returns:
+      - success: False (honest failure)
+      - elements: [] (empty — no fabrication)
+      - count: 0
+      - error: clear message explaining alternatives (IFC export or Revit API)
+      - simulation_mode: True
+
+    In API mode (real Revit document), it reads actual elements via
+    FilteredElementCollector.
+    """
+
+    def test_read_rvt_in_simulation_returns_failure(self):
+        """read_rvt in simulation mode must return success=False (not True
+        with fake elements)."""
+        import tempfile
+        service = RevitService()
+        service.connect(method='simulation')
+        assert service.simulation_mode is True
+
+        # Create a fake .rvt file
+        with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as f:
+            f.write(b"FAKE_RVT_CONTENT")
+            rvt_path = f.name
+
+        try:
+            result = service.read_rvt(rvt_path)
+            assert result["success"] is False, (
+                "read_rvt must return success=False in simulation mode"
+            )
+            assert result["count"] == 0
+            assert result["elements"] == []
+            assert "error" in result
+            assert result.get("simulation_mode") is True
+        finally:
+            if os.path.exists(rvt_path):
+                os.unlink(rvt_path)
+
+    def test_read_rvt_does_not_fabricate_12345_12346_12347(self):
+        """read_rvt must NEVER return elements with ids 12345/12346/12347
+        (the old hardcoded fake values).
+        """
+        import tempfile
+        service = RevitService()
+        service.connect(method='simulation')
+
+        with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as f:
+            f.write(b"FAKE_RVT_CONTENT")
+            rvt_path = f.name
+
+        try:
+            result = service.read_rvt(rvt_path)
+            ids = [str(e.get("id", "")) for e in result.get("elements", [])]
+            assert "12345" not in ids, f"Hardcoded id 12345 found in: {ids}"
+            assert "12346" not in ids, f"Hardcoded id 12346 found in: {ids}"
+            assert "12347" not in ids, f"Hardcoded id 12347 found in: {ids}"
+        finally:
+            if os.path.exists(rvt_path):
+                os.unlink(rvt_path)
+
+    def test_read_rvt_does_not_fabricate_basic_wall_generic_floor_interior_door(self):
+        """read_rvt must NEVER return the old fake element names."""
+        import tempfile
+        service = RevitService()
+        service.connect(method='simulation')
+
+        with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as f:
+            f.write(b"FAKE_RVT_CONTENT")
+            rvt_path = f.name
+
+        try:
+            result = service.read_rvt(rvt_path)
+            names = [str(e.get("name", "")) for e in result.get("elements", [])]
+            assert "Basic Wall" not in names, f"Fake 'Basic Wall' found in: {names}"
+            assert "Generic Floor" not in names, f"Fake 'Generic Floor' found in: {names}"
+            assert "Interior Door" not in names, f"Fake 'Interior Door' found in: {names}"
+        finally:
+            if os.path.exists(rvt_path):
+                os.unlink(rvt_path)
+
+    def test_read_rvt_error_mentions_ifc_alternative(self):
+        """The error message must mention IFC as an alternative for reading
+        Revit data cross-platform.
+        """
+        import tempfile
+        service = RevitService()
+        service.connect(method='simulation')
+
+        with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as f:
+            f.write(b"FAKE_RVT_CONTENT")
+            rvt_path = f.name
+
+        try:
+            result = service.read_rvt(rvt_path)
+            error = result.get("error", "")
+            assert "IFC" in error or "ifcopenshell" in error.lower(), (
+                f"Error must mention IFC alternative, got: {error}"
+            )
+        finally:
+            if os.path.exists(rvt_path):
+                os.unlink(rvt_path)
+
+    def test_read_rvt_nonexistent_file_returns_failure(self):
+        """Reading a non-existent file must return success=False (not crash
+        and not return fake elements).
+        """
+        import tempfile
+        service = RevitService()
+        nonexistent = os.path.join(tempfile.gettempdir(), "nonexistent_v214_test.rvt")
+        if os.path.exists(nonexistent):
+            os.unlink(nonexistent)
+
+        result = service.read_rvt(nonexistent)
+        assert result["success"] is False
+        assert result["count"] == 0
+        assert result["elements"] == []
+        assert "not found" in result["error"].lower() or "no such file" in result["error"].lower()
+
+    def test_no_hardcoded_12345_in_source(self):
+        """The source file must NOT contain the old hardcoded element dicts
+        with ids 12345/12346/12347 as actual return values.
+        """
+        import re
+        src_path = "backend/services/revit_service.py"
+        with open(src_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Look for "id": "12345" or "id": "12346" or "id": "12347" in code
+        # (not in docstrings)
+        hardcoded_pattern = re.compile(r'"id":\s*"1234[567]"')
+        lines_with_matches = []
+        for i, line in enumerate(content.split('\n'), 1):
+            stripped = line.strip()
+            if hardcoded_pattern.search(line) and not stripped.startswith('#') and not stripped.startswith('"'):
+                lines_with_matches.append((i, stripped))
+
+        assert lines_with_matches == [], (
+            f"Found hardcoded 12345/12346/12347 in {src_path}: {lines_with_matches}"
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

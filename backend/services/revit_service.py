@@ -585,78 +585,101 @@ class RevitService:
         """
         Read elements from an RVT file.
 
-        Args:
-            filepath: Path to the RVT file to read (MUST be validated by caller
-                      via _validate_file_path or equivalent).
+        V214 FIX (Rule 1 — Truthfulness): Previously this method returned 3
+        hardcoded fake elements (id 12345 "Basic Wall", id 12346 "Generic
+        Floor", id 12347 "Interior Door") for ANY .rvt file — regardless of
+        actual file contents. This is a safety-critical deception: downstream
+        code (digital twin conversion, fire alarm placement) would operate
+        on fake geometry.
 
-        Returns:
-            Dictionary containing elements data and metadata
+        RVT is a proprietary closed binary format — it CANNOT be parsed
+        without Revit API (pythonnet on Windows) or Autodesk Platform
+        Services (cloud). The real solutions are:
 
+          1. If connected to a real Revit instance (API mode, Windows):
+             Use FilteredElementCollector to read actual elements.
+          2. If the file is actually an IFC (Revit can export to IFC):
+             Use fireai.bridges.ifc_headless_bridge.HeadlessIFCBridge
+             which is cross-platform and real (ifcopenshell).
+          3. Otherwise: return success=False with an honest error.
+
+        Now this method:
+          - If API mode + real _revit_doc: reads actual elements via
+            FilteredElementCollector (real Revit API call)
+          - If simulation mode: returns success=False with a clear error
+            explaining the alternatives (export to IFC, or use Windows+
+            pythonnet+Revit)
+          - Never fabricates fake elements
         """
         try:
             # V141.4 SECURITY FIX (CodeQL: py/path-injection):
-            # Use validate_input_path as the SOLE authority for path safety.
-            # The previous code had a fallback that called os.path.realpath()
-            # and only checked for ".." — this is insufficient because:
-            #   1. It doesn't verify the path is inside an allowed base directory
-            #   2. Symlinks can bypass ".." checks
-            #   3. CodeQL correctly flagged os.path.exists/getsize/open on
-            #      the unvalidated path as path-injection vulnerabilities.
-            # Now: if validate_input_path raises, we propagate the error
-            # (fail-closed). No fallback that could be exploited.
             from parsers._path_security import validate_input_path
-            # V141.4.1 FIX (Devin review): validate_input_path returns a Path
-            # object. Convert to str for JSON serialization in the return dict.
             safe_path = validate_input_path(filepath)
             filepath = str(safe_path)
 
-            # After validation, filepath is guaranteed safe (resolved + inside
-            # allowed base). CodeQL should recognize the validated path.
             file_size = os.path.getsize(filepath)
 
-            # Simulate reading elements from the file
-            elements = [
-                {
-                    "id": "12345",
-                    "name": "Basic Wall",
-                    "category": "Walls",
-                    "level": "Level 1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
-                    "length": 5000.0,
-                    "height": 3000.0,
-                    "width": 200.0,
-                    "location_curve": [[0, 0, 0], [5000, 0, 0]],
-                    "parameters": {"mark": "W1"}
-                },
-                {
-                    "id": "12346",
-                    "name": "Generic Floor",
-                    "category": "Floors",
-                    "level": "Level 1",
-                    "area": 25.0,
-                    "boundary": [[0, 0, 0], [5000, 0, 0], [5000, 5000, 0], [0, 5000, 0]],
-                    "parameters": {"mark": "F1"}
-                },
-                {
-                    "id": "12347",
-                    "name": "Interior Door",
-                    "category": "Doors",
-                    "level": "Level 1",
-                    "width": 900.0,
-                    "height": 2100.0,
-                    "location_point": [2500, 0, 0],
-                    "parameters": {"mark": "D1"}
-                }
-            ]
+            # V214: If we have a real Revit document, read actual elements
+            if self._connection_method == ConnectionMethod.API and self._revit_doc is not None:
+                try:
+                    from Autodesk.Revit.DB import FilteredElementCollector  # type: ignore[import-not-found]
+                    elements = []
+                    collector = FilteredElementCollector(self._revit_doc).WhereElementIsNotElementType()
+                    for elem in collector:
+                        try:
+                            elem_data = self._extract_element_data(elem)
+                            if elem_data:
+                                elements.append(elem_data)
+                        except Exception:
+                            continue
+                    logger.info(
+                        "Read %d real elements from Revit document (API mode)",
+                        len(elements),
+                    )
+                    return {
+                        "success": True,
+                        "elements": elements,
+                        "count": len(elements),
+                        "source_file": filepath,
+                        "file_size": file_size,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "source": "revit_api_filtered_element_collector",
+                    }
+                except ImportError as ie:
+                    logger.warning(
+                        "Could not import FilteredElementCollector (%s) — "
+                        "falling back to error.", ie
+                    )
+                except Exception as e:
+                    logger.exception("Real Revit element read failed: %s", e)
 
-            logger.info("Simulated reading %s elements from %s", len(elements), filepath)
-
+            # V214: Simulation mode — return honest failure
+            logger.warning(
+                "read_rvt %s failed: simulation mode (no real Revit document). "
+                "Returning empty result with success=False — no fake elements "
+                "will be fabricated. RVT is a closed proprietary format that "
+                "cannot be parsed without Revit API. Alternatives: "
+                "(1) export the RVT to IFC from Revit, then read the IFC via "
+                "fireai.bridges.ifc_headless_bridge; "
+                "(2) connect to a real Revit instance on Windows with pythonnet.",
+                filepath,
+            )
             return {
-                "success": True,
-                "elements": elements,
-                "count": len(elements),
+                "success": False,
+                "error": (
+                    "Cannot read RVT file in simulation mode — RVT is a "
+                    "closed proprietary format requiring Revit API. "
+                    "Alternatives: (1) Export to IFC from Revit and read "
+                    "the IFC file (cross-platform, supported via ifcopenshell); "
+                    "(2) Connect to a real Revit instance on Windows with "
+                    "pythonnet to enable FilteredElementCollector."
+                ),
+                "elements": [],
+                "count": 0,
                 "source_file": filepath,
                 "file_size": file_size,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "simulation_mode": True,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
         except FileNotFoundError:
