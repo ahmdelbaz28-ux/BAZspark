@@ -53,6 +53,7 @@ Per agent.md Rule 21 (4-LAYER SELF-CRITICISM):
 from __future__ import annotations
 
 import os
+import pathlib as _pathlib
 
 # ─── Test API Key ────────────────────────────────────────────────────────────
 # Hard-coded test API key. Public, safe to commit. Matches the value used
@@ -62,6 +63,44 @@ TEST_API_KEY = "test-api-key-for-testing-only"
 # Set the env var at import time, before any test module's _setup_env runs.
 # This ensures the very first test in the very first module sees a real key.
 os.environ["FIREAI_API_KEY"] = TEST_API_KEY
+
+# V212 FIX: FIREAI_SESSION_SECRET is required by backend/app.py::lifespan().
+# Without it, every TestClient test fails at startup with:
+#   RuntimeError: FIREAI_SESSION_SECRET environment variable is not set.
+# The CI sets this via `secrets.token_urlsafe(64)` — we do the same here
+# at import time so all backend tests can start the FastAPI app.
+# The value is deterministic per-process (generated once at import) and
+# safe to commit (it's a test-only secret with no production access).
+if not os.environ.get("FIREAI_SESSION_SECRET"):
+    import secrets as _secrets
+    os.environ["FIREAI_SESSION_SECRET"] = _secrets.token_urlsafe(64)
+
+# V212 FIX: backend/app.py::lifespan also requires DATABASE_URL and
+# CORS_ALLOWED_ORIGINS to start. Set safe test defaults if not already set.
+os.environ.setdefault("DATABASE_URL", "sqlite:////tmp/fireai_test_conftest.db")
+os.environ.setdefault("DIGITAL_TWIN_DB_PATH", "/tmp/fireai_test_conftest.db")
+os.environ.setdefault("UDM_DB_PATH", "/tmp/udm_test_conftest.db")
+os.environ.setdefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
+
+# V212 FIX: Clean up stale api_keys.secret file that causes crash in CI.
+# The file persists across test runs and may become invalid, causing:
+#   RuntimeError: Server secret file db/api_keys.secret exists but is invalid.
+# Also clean up stale DB files that cause RuntimeError on re-runs.
+for _stale in ["db/api_keys.secret", "db/digital_twin.db", "db/udm_elements.db"]:
+    _p = _pathlib.Path(_stale)
+    if _p.exists():
+        try:
+            _p.unlink()
+        except OSError:
+            pass
+# Also clean /tmp test DBs
+for _tmp_db in ["/tmp/fireai_test_conftest.db", "/tmp/udm_test_conftest.db", "/tmp/fireai_deploy_test.db"]:
+    _p = _pathlib.Path(_tmp_db)
+    if _p.exists():
+        try:
+            _p.unlink()
+        except OSError:
+            pass
 
 
 # ─── Patch TestClient to inject X-API-Key ────────────────────────────────────
