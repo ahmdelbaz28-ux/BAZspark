@@ -171,7 +171,7 @@ export function ComponentLibrary() {
 											{cat.children.map((child) => (
 												<div
 												role="button"
-												tabIndex=0
+												tabIndex={0}
 													key={child}
 													className={`py-1.5 px-2 text-xs rounded-md cursor-pointer transition-colors ${activeCategory === child ? "bg-primary/20 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"}`}
 													onClick={() => setActiveCategory(child)}
@@ -224,7 +224,7 @@ export function ComponentLibrary() {
 							{components.map((comp) => (
 								<div
 								role="button"
-								tabIndex=0
+								tabIndex={0}
 									key={comp.id}
 									className={`group bg-card border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,168,255,0.1)] cursor-pointer flex flex-col ${selectedComp === comp.id ? "border-primary shadow-[0_0_10px_rgba(0,168,255,0.2)]" : "border-border/60"}`}
 									onClick={() => setSelectedComp(comp.id)}

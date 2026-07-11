@@ -431,7 +431,7 @@ function NavItem({
 	return (
 		<div
 		role="button"
-		tabIndex=0
+		tabIndex={0}
 			className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors group ${active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-white/5 hover:text-white"}`}
 			onClick={onClick}
 		onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick } }}
