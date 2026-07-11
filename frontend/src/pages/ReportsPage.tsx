@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { ExplainButton } from "@/components/ai/ExplainButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getApiKey } from "@/services/apiKey";
 import {
         Card,
         CardContent,
@@ -93,8 +94,7 @@ export function ReportsPage() {
                 setAhjGenerating(true);
                 setAhjDownloadUrl(null);
                 try {
-                        // V214 self-critique: import getApiKey for auth
-                        const { getApiKey } = await import("@/services/apiKey");
+                        // V214 self-critique fix: use static import (not dynamic import)
                         const ahjHeaders: Record<string, string> = { "Content-Type": "application/json" };
                         const apiKey = getApiKey();
                         if (apiKey) {

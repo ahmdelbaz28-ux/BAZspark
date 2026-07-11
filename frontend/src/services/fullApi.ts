@@ -801,41 +801,83 @@ export const memoryApi = {
 // ─── V2 API (generative, BIM, IFC43, AR, webhooks, topology, graphrag) ──────
 
 export const v2Api = {
+        // ── GraphRAG (already wired in GraphRAGPage) ──
         /** POST /graphrag/knowledge */
         ingestGraphragKnowledge: (data: Record<string, unknown>) =>
-                apiCall(
-                        "/graphrag/knowledge",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
+                apiCall("/graphrag/knowledge", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
 
         /** POST /graphrag/ask */
         askGraphrag: (data: { question: string; context?: string }) =>
-                apiCall(
-                        "/graphrag/ask",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
+                apiCall("/graphrag/ask", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
 
         /** POST /graphrag/search */
         searchGraphrag: (data: { query: string; limit?: number }) =>
-                apiCall(
-                        "/graphrag/search",
-                        {
-                                method: "POST",
-                                body: JSON.stringify(data),
-                        },
-                        API_V2_BASE,
-                ),
+                apiCall("/graphrag/search", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
 
         /** GET /graphrag/health */
         getGraphragHealth: () => apiCall("/graphrag/health", {}, API_V2_BASE),
+
+        // ── V214: Newly wired V2 endpoints ──
+
+        /** POST /generative/design — Generative design optimization */
+        generativeDesign: (data: Record<string, unknown>) =>
+                apiCall("/generative/design", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** GET /bim/providers — List available BIM providers */
+        getBimProviders: () => apiCall("/bim/providers", {}, API_V2_BASE),
+
+        /** POST /bim/extract-rooms — Extract rooms from BIM model */
+        extractBimRooms: (data: Record<string, unknown>) =>
+                apiCall("/bim/extract-rooms", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** GET /bim/health — BIM provider health check */
+        getBimHealth: () => apiCall("/bim/health", {}, API_V2_BASE),
+
+        /** POST /ifc43/map-detector — Map fire alarm detector to IFC 4.3 */
+        mapDetectorToIfc43: (data: Record<string, unknown>) =>
+                apiCall("/ifc43/map-detector", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** POST /ifc43/map-project — Map entire project to IFC 4.3 */
+        mapProjectToIfc43: (data: Record<string, unknown>) =>
+                apiCall("/ifc43/map-project", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** POST /ar/export — Export AR visualization data */
+        exportAr: (data: Record<string, unknown>) =>
+                apiCall("/ar/export", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** POST /webhooks/subscribe — Subscribe to webhook events */
+        subscribeWebhook: (data: Record<string, unknown>) =>
+                apiCall("/webhooks/subscribe", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** GET /webhooks/subscriptions — List webhook subscriptions */
+        getWebhookSubscriptions: () => apiCall("/webhooks/subscriptions", {}, API_V2_BASE),
+
+        /** DELETE /webhooks/subscriptions/{id} — Delete webhook subscription */
+        deleteWebhookSubscription: (subId: string) =>
+                apiCall(`/webhooks/subscriptions/${subId}`, { method: "DELETE" }, API_V2_BASE),
+
+        /** POST /webhooks/publish — Publish event to webhooks */
+        publishWebhook: (data: Record<string, unknown>) =>
+                apiCall("/webhooks/publish", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** POST /smoke-simulation/state — Run smoke simulation state */
+        runSmokeSimulation: (data: Record<string, unknown>) =>
+                apiCall("/smoke-simulation/state", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** POST /topology/element — Add element to topology graph */
+        addTopologyElement: (data: Record<string, unknown>) =>
+                apiCall("/topology/element", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** POST /topology/connection — Add connection to topology graph */
+        addTopologyConnection: (data: Record<string, unknown>) =>
+                apiCall("/topology/connection", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** POST /topology/impact — Analyze topology impact */
+        analyzeTopologyImpact: (data: Record<string, unknown>) =>
+                apiCall("/topology/impact", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** GET /topology/health — Topology service health check */
+        getTopologyHealth: () => apiCall("/topology/health", {}, API_V2_BASE),
 };
 
 // ─── Marine API ─────────────────────────────────────────────────────────────
@@ -850,6 +892,13 @@ export const marineApi = {
         /** POST /marine/ship/validate */
         validateShip: (data: Record<string, unknown>) =>
                 apiCall("/marine/ship/validate", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /marine/ship/design */
+        designShip: (data: Record<string, unknown>) =>
+                apiCall("/marine/ship/design", {
                         method: "POST",
                         body: JSON.stringify(data),
                 }),
@@ -871,6 +920,55 @@ export const marineApi = {
         /** POST /marine/detection/design */
         designDetection: (data: Record<string, unknown>) =>
                 apiCall("/marine/detection/design", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /marine/alarm-logic/generate */
+        generateAlarmLogic: (data: Record<string, unknown>) =>
+                apiCall("/marine/alarm-logic/generate", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /marine/divisions/generate */
+        generateDivisions: (data: Record<string, unknown>) =>
+                apiCall("/marine/divisions/generate", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /marine/power/design */
+        designPower: (data: Record<string, unknown>) =>
+                apiCall("/marine/power/design", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /marine/integrations/scada */
+        integrateScada: (data: Record<string, unknown>) =>
+                apiCall("/marine/integrations/scada", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /marine/integrations/etap */
+        integrateEtap: (data: Record<string, unknown>) =>
+                apiCall("/marine/integrations/etap", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /marine/integrations/dxf */
+        exportDxf: (data: Record<string, unknown>) =>
+                apiCall("/marine/integrations/dxf", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /marine/integrations/revit */
+        exportRevit: (data: Record<string, unknown>) =>
+                apiCall("/marine/integrations/revit", {
                         method: "POST",
                         body: JSON.stringify(data),
                 }),
