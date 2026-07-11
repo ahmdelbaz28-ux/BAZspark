@@ -123,12 +123,13 @@ jobs:
                   "PIP_NO_CACHE_DIR": "1",
                   "CI": "true",
               },
-              resources=Resources(cpu=2, memory=4, disk=10),
+              # V209: bump disk 10→20GB (npm ci + node_modules + Playwright deps need space)
+              resources=Resources(cpu=2, memory=4, disk=20),
               public=False,
               # Auto-evict after 1h (Daytona session limit) as a safety net
               auto_stop_interval=3600,
           )
-          print("▶ Creating Daytona sandbox (image=python:3.12-slim, 2vCPU/4GB/10GB)…", flush=True)
+          print("▶ Creating Daytona sandbox (image=python:3.12-slim, 2vCPU/4GB/20GB)…", flush=True)
           sb = client.create(params, timeout=300)
           print(f"✓ Sandbox created: id={sb.id}", flush=True)
 
@@ -191,18 +192,24 @@ jobs:
               check=True,
           )
           sb.fs.upload_file("/tmp/pr-src.tar.gz", "/tmp/pr-src.tar.gz")
-          print("▶ Extracting + installing deps in sandbox…", flush=True)
-          # NOTE: python:3.12-slim has pip but it may be old. Upgrade first, then install.
+          print("▶ Extracting + installing deps in sandbox (V209: + Node.js + libgeos + shapely)…", flush=True)
+          # V209: install system deps (Node.js 20 for tsc, libgeos-dev for shapely, gcc for building C exts)
+          # BEFORE pip install. python:3.12-slim doesn't include any of these.
           # Do NOT pipe through `tail` here — it hides install failures (V208 lesson).
-          # Capture full output and tail it AFTER, so we can see errors.
           # V208: set SETUPTOOLS_SCM_PRETEND_VERSION as a fallback in case .git is incomplete.
           rc, so, se = run(
+              "export DEBIAN_FRONTEND=noninteractive && "
+              "apt-get update -qq && "
+              "apt-get install -y --no-install-recommends curl ca-certificates gnupg libgeos-dev gcc && "
+              "curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && "
+              "apt-get install -y --no-install-recommends nodejs && "
+              "node --version && npm --version && "
               "mkdir -p /workspace && cd /workspace && "
               "tar -xzf /tmp/pr-src.tar.gz && "
               "python -m ensurepip --upgrade 2>&1 || true && "
               "python -m pip install --upgrade pip setuptools wheel 2>&1 && "
               "SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0 "
-              "python -m pip install -e . ruff mypy bandit pytest pytest-cov pytest-asyncio pytest-timeout 2>&1",
+              "python -m pip install -e . ruff mypy bandit pytest pytest-cov pytest-asyncio pytest-timeout shapely 2>&1",
               timeout=900,
           )
           install_log = (so + se)[-3000:]
@@ -236,10 +243,10 @@ jobs:
           )
           results["pytest"] = {"rc": rc, "out": so[-3000:], "err": se[-500:]}
 
-          # 5. Frontend: typecheck (Node + npm ci may exceed budget; gate behind a flag)
+          # 5. Frontend: typecheck (V209: Node.js 20 now installed in the sandbox)
           rc, so, se = run(
               "cd /workspace/frontend && "
-              "(npm ci --no-audit --no-fund >/dev/null 2>&1 || npm install --no-audit --no-fund >/dev/null 2>&1) && "
+              "(npm ci --no-audit --no-fund 2>&1 | tail -5 || npm install --no-audit --no-fund 2>&1 | tail -5) && "
               "npx tsc -p tsconfig.json --noEmit 2>&1 | tail -30",
               timeout=600,
           )
