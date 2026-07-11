@@ -429,25 +429,50 @@ class AutoCADService:
                 }
 
             if self.connected and not self.acad_app:
-                # Simulation mode fallback
-                logger.info("Reading DWG file %s in SIMULATION mode", filepath)
+                # V214 FIX (Rule 1 — Truthfulness): Previously, in simulation
+                # mode, this method returned two hardcoded fake entities
+                # (handle "H1" AcDbLine on layer WALLS, handle "H2"
+                # AcDbBlockReference on layer DEVICES) and reported success.
+                # This is a safety-critical deception: downstream code (digital
+                # twin conversion, fire alarm placement) would operate on fake
+                # geometry and produce invalid engineering results.
+                #
+                # Now, in simulation mode, the method returns success=False
+                # honestly with a clear error message. Callers (router +
+                # digital_twin_service) already handle False correctly:
+                #   - router raises HTTPException(400)
+                #   - digital_twin_service raises RuntimeError
+                # so the user gets an honest error instead of fake data.
+                #
+                # To read DWG files without AutoCAD, install LibreDWG
+                # (dwg2dxf binary) or ODA File Converter — see
+                # qomn_fire/parsers/dwg_converter.py which handles real
+                # DWG→DXF conversion via those binaries + ezdxf parsing.
+                logger.warning(
+                    "read_dwg %s failed: simulation mode (no acad_app). "
+                    "Returning empty result with success=False — no fake "
+                    "entities will be fabricated. Install LibreDWG "
+                    "(dwg2dxf) or connect to a real AutoCAD instance to "
+                    "read DWG files.",
+                    filepath,
+                )
                 return {
-                    "success": True,
+                    "success": False,
+                    "error": (
+                        "Cannot read DWG file in simulation mode — no real "
+                        "AutoCAD COM handle is available. Install LibreDWG "
+                        "(dwg2dxf binary) or connect to a real AutoCAD "
+                        "instance. Alternatively, convert the DWG to DXF "
+                        "and use the DXF parser (ezdxf, cross-platform)."
+                    ),
                     "metadata": {
                         "filename": os.path.basename(filepath),
                         "size": os.path.getsize(filepath),
-                        "simulated": True
+                        "simulation_mode": True,
                     },
-                    "layers": [{"name": "0"}, {"name": "WALLS"}, {"name": "DEVICES"}],
-                    "entities": [
-                        {"handle": "H1", "object_name": "AcDbLine", "layer": "WALLS", "color": 1},
-                        {"handle": "H2", "object_name": "AcDbBlockReference", "layer": "DEVICES", "name": "FACP", "color": 2}
-                    ],
-                    "blocks": {
-                        "FACP": [{"handle": "H2_1", "object_name": "AcDbCircle", "layer": "DEVICES"}]
-                    },
-                    "count": 2,
-                    "source_file": filepath
+                    "entities": [],
+                    "count": 0,
+                    "source_file": filepath,
                 }
 
             # If not connected, we can't read the file through COM

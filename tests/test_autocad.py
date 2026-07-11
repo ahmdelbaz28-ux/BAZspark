@@ -703,5 +703,161 @@ class TestV214NoMockDwgData:
         )
 
 
+class TestV214NoHardcodedReadDwgEntities:
+    """V214 regression tests: read_dwg() in simulation mode must NOT return
+    hardcoded fake entities (H1 AcDbLine, H2 AcDbBlockReference). Previously,
+    simulation mode fabricated 2 fake entities and reported success —
+    downstream code (digital twin conversion, fire alarm placement) would
+    operate on fake geometry.
+
+    Now read_dwg() in simulation mode returns:
+      - success: False (honest failure)
+      - entities: [] (empty — no fabrication)
+      - count: 0
+      - error: clear message explaining how to read DWG without AutoCAD
+    """
+
+    def test_read_dwg_in_simulation_returns_failure(self, tmp_path):
+        """read_dwg in simulation mode must return success=False (not True)."""
+        # Create a fake DWG file to satisfy the file-exists check
+        dwg_path = str(tmp_path / "test.dwg")
+        with open(dwg_path, "wb") as f:
+            f.write(b"AC1015_FAKE_DWG_CONTENT")
+
+        service = AutoCADService()
+        service.connected = True
+        service.acad_app = None  # simulation mode
+        service.simulation_mode = True
+
+        result = service.read_dwg(dwg_path)
+
+        assert result["success"] is False, (
+            "read_dwg must return success=False in simulation mode, not True"
+        )
+        assert result["count"] == 0, (
+            f"read_dwg must return count=0 in simulation mode, got {result['count']}"
+        )
+        assert result["entities"] == [], (
+            "read_dwg must return empty entities list in simulation mode"
+        )
+        assert "error" in result, "read_dwg must include an error message"
+        assert "simulation" in result["error"].lower() or "LibreDWG" in result["error"], (
+            f"Error message must explain simulation mode / LibreDWG, got: {result['error']}"
+        )
+
+    def test_read_dwg_in_simulation_does_not_fabricate_h1_h2(self, tmp_path):
+        """read_dwg in simulation mode must NOT return the old hardcoded
+        entities with handles 'H1' and 'H2'.
+        """
+        dwg_path = str(tmp_path / "test.dwg")
+        with open(dwg_path, "wb") as f:
+            f.write(b"AC1015_FAKE")
+
+        service = AutoCADService()
+        service.connected = True
+        service.acad_app = None
+        service.simulation_mode = True
+
+        result = service.read_dwg(dwg_path)
+
+        entities = result.get("entities", [])
+        handles = [e.get("handle", "") for e in entities]
+        assert "H1" not in handles, (
+            f"Hardcoded handle 'H1' must not appear in simulation mode, got handles: {handles}"
+        )
+        assert "H2" not in handles, (
+            f"Hardcoded handle 'H2' must not appear in simulation mode, got handles: {handles}"
+        )
+
+    def test_read_dwg_in_simulation_does_not_fabricate_layers(self, tmp_path):
+        """read_dwg in simulation mode must NOT return the old hardcoded
+        layers list (WALLS, DEVICES).
+        """
+        dwg_path = str(tmp_path / "test.dwg")
+        with open(dwg_path, "wb") as f:
+            f.write(b"AC1015_FAKE")
+
+        service = AutoCADService()
+        service.connected = True
+        service.acad_app = None
+        service.simulation_mode = True
+
+        result = service.read_dwg(dwg_path)
+
+        layers = result.get("layers", [])
+        layer_names = [l.get("name", "") for l in layers]
+        # The old code returned [{"name": "0"}, {"name": "WALLS"}, {"name": "DEVICES"}]
+        assert "WALLS" not in layer_names, (
+            f"Hardcoded layer 'WALLS' must not appear in simulation mode, got: {layer_names}"
+        )
+        assert "DEVICES" not in layer_names, (
+            f"Hardcoded layer 'DEVICES' must not appear in simulation mode, got: {layer_names}"
+        )
+
+    def test_read_dwg_in_simulation_includes_metadata(self, tmp_path):
+        """read_dwg in simulation mode must include metadata with
+        simulation_mode=True so clients can surface the truth.
+        """
+        dwg_path = str(tmp_path / "test.dwg")
+        with open(dwg_path, "wb") as f:
+            f.write(b"AC1015_FAKE")
+
+        service = AutoCADService()
+        service.connected = True
+        service.acad_app = None
+        service.simulation_mode = True
+
+        result = service.read_dwg(dwg_path)
+
+        metadata = result.get("metadata", {})
+        assert metadata.get("simulation_mode") is True, (
+            "Metadata must include simulation_mode=True for client visibility"
+        )
+        assert "filename" in metadata
+        assert "size" in metadata
+
+    def test_read_dwg_not_connected_returns_failure(self, tmp_path):
+        """read_dwg when not connected must return success=False with empty
+        entities (this was already the case before V214 — verify no regression).
+        """
+        dwg_path = str(tmp_path / "test.dwg")
+        with open(dwg_path, "wb") as f:
+            f.write(b"AC1015_FAKE")
+
+        service = AutoCADService()
+        # Not connected at all
+        result = service.read_dwg(dwg_path)
+
+        assert result["success"] is False
+        assert result["count"] == 0
+        assert result["entities"] == []
+
+    def test_no_hardcoded_h1_h2_in_source(self):
+        """The source file must NOT contain the old hardcoded entity dicts
+        with handles 'H1' / 'H2' as actual return values (only in docstrings
+        as historical notes).
+        """
+        import re
+        src_path = "backend/services/autocad_service.py"
+        with open(src_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Match "handle": "H1" or "handle": "H2" as dict values (actual code)
+        # These may appear in docstrings (as quotes) but not as actual dict literals.
+        # We look for the pattern inside a return dict: {"handle": "H1"
+        hardcoded_pattern = re.compile(r'"\s*handle\s*"\s*:\s*"H[12]"')
+        matches = hardcoded_pattern.findall(content)
+        # Filter out matches that are inside docstrings (lines starting with # or """)
+        # by checking if the line is a comment or docstring
+        lines_with_matches = []
+        for i, line in enumerate(content.split('\n'), 1):
+            if hardcoded_pattern.search(line) and not line.strip().startswith('#') and not line.strip().startswith('"'):
+                lines_with_matches.append((i, line.strip()))
+
+        assert lines_with_matches == [], (
+            f"Found hardcoded H1/H2 entity dicts in {src_path} (lines: {lines_with_matches})"
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
