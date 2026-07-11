@@ -1,3 +1,9 @@
+/**
+ * AICopilot.tsx - AI Engineering Copilot with real LLM integration
+ * 
+ * V223: Replaced mock UI with real LLM API calls via llmApi.chatStream().
+ * Uses the same SSE streaming pattern as AskAiSheet.tsx.
+ */
 
 import {
 	AlertTriangle,
@@ -14,15 +20,191 @@ import {
 	Settings,
 	X,
 	Zap,
+	Loader2,
+	Bot,
+	User,
+	AlertCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { llmApi } from "@/services/fullApi";
+import { useToast } from "@/hooks/use-toast";
+
+interface ChatMessage {
+	role: "user" | "assistant";
+	content: string;
+	isStreaming?: boolean;
+	model?: string;
+}
+
+const SYSTEM_PROMPT =
+	"You are a licensed fire-protection engineering assistant for the BAZSPARK platform. " +
+	"Answer questions about NFPA 72, NEC, fire alarm system design, voltage drop, battery sizing, " +
+	"detector placement, and FACP selection. Be precise, cite code sections, and flag non-compliance. " +
+	"If unsure, say so. Never invent code requirements.";
+
+const QUICK_COMMANDS = [
+	"Compliance Check",
+	"Load Calculation",
+	"Arc Flash Study",
+	"Cable Sizing",
+	"Short Circuit Analysis",
+	"Coordination Study",
+	"Generate SLD",
+	"Export Report",
+];
 
 export function AICopilot() {
+	const { toast } = useToast();
 	const [isListening, setIsListening] = useState(true);
+	const [messages, setMessages] = useState<ChatMessage[]>([]);
+	const [input, setInput] = useState("");
+	const [loading, setLoading] = useState(false);
+	const scrollRef = useRef<HTMLDivElement>(null);
+	const inputRef = useRef<HTMLInputElement>(null);
+	const abortRef = useRef<AbortController | null>(null);
+
+	// Auto-scroll to bottom on new messages
+	useEffect(() => {
+		if (scrollRef.current) {
+			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+		}
+	}, [messages, loading]);
+
+	const sendMessage = useCallback(async (content: string) => {
+		if (!content.trim() || loading) return;
+
+		// Abort any in-flight request
+		if (abortRef.current) {
+			abortRef.current.abort();
+		}
+
+		const controller = new AbortController();
+		abortRef.current = controller;
+
+		const userMessage: ChatMessage = {
+			role: "user",
+			content: content.trim(),
+		};
+
+		setMessages((prev) => [
+			...prev,
+			userMessage,
+			{ role: "assistant", content: "", isStreaming: true },
+		]);
+		setLoading(true);
+
+		try {
+			await llmApi.chatStream(
+				{
+					prompt: content.trim(),
+					system: SYSTEM_PROMPT,
+					temperature: 0.1,
+					max_tokens: 1500,
+				},
+				controller.signal,
+				// onChunk
+				(chunk: string) => {
+					setMessages((prev) => {
+						const updated = [...prev];
+						const lastMsg = updated[updated.length - 1];
+						if (lastMsg && lastMsg.role === "assistant" && lastMsg.isStreaming) {
+							updated[updated.length - 1] = {
+								...lastMsg,
+								content: lastMsg.content + chunk,
+							};
+						}
+						return updated;
+					});
+				},
+				// onDone
+				(done: { content: string; model: string; source: string }) => {
+					setMessages((prev) => {
+						const updated = [...prev];
+						const lastMsg = updated[updated.length - 1];
+						if (lastMsg && lastMsg.role === "assistant") {
+							updated[updated.length - 1] = {
+								...lastMsg,
+								content: done.content || lastMsg.content,
+								model: done.model,
+								isStreaming: false,
+							};
+						}
+						return updated;
+					});
+				},
+				// onError
+				(errMsg: string) => {
+					setMessages((prev) => {
+						const updated = [...prev];
+						const lastMsg = updated[updated.length - 1];
+						if (lastMsg && lastMsg.role === "assistant" && lastMsg.isStreaming) {
+							updated[updated.length - 1] = {
+								...lastMsg,
+								content: lastMsg.content || `(Error: ${errMsg})`,
+								isStreaming: false,
+							};
+						}
+						return updated;
+					});
+					toast({
+						title: "AI Error",
+						description: errMsg,
+						variant: "destructive",
+					});
+				},
+			);
+		} catch (err: unknown) {
+			if (controller.signal.aborted) return;
+			const msg =
+				err instanceof Error ? err.message : "Failed to get AI response";
+			setMessages((prev) => {
+				const last = prev[prev.length - 1];
+				if (last && last.role === "assistant" && last.isStreaming && !last.content) {
+					return prev.slice(0, -1);
+				}
+				return prev;
+			});
+			toast({
+				title: "AI Error",
+				description: msg,
+				variant: "destructive",
+			});
+		} finally {
+			if (abortRef.current === controller) {
+				abortRef.current = null;
+			}
+			setLoading(false);
+		}
+	}, [loading, toast]);
+
+	const handleSubmit = useCallback(
+		(e: React.FormEvent) => {
+			e.preventDefault();
+			if (!input.trim() || loading) return;
+			sendMessage(input);
+			setInput("");
+		},
+		[input, loading, sendMessage],
+	);
+
+	const handleQuickCommand = useCallback(
+		(cmd: string) => {
+			if (loading) return;
+			sendMessage(cmd);
+		},
+		[loading, sendMessage],
+	);
+
+	const clearChat = useCallback(() => {
+		if (abortRef.current) {
+			abortRef.current.abort();
+		}
+		setMessages([]);
+	}, []);
 
 	return (
 		<div className="w-screen h-screen flex justify-end bg-background/50 font-sans dark text-foreground overflow-hidden backdrop-blur-sm">
@@ -43,6 +225,15 @@ export function AICopilot() {
 						</div>
 					</div>
 					<div className="flex items-center gap-2">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8 text-muted-foreground hover:text-white"
+							onClick={clearChat}
+							disabled={messages.length === 0 || loading}
+						>
+							<Trash2 className="h-4 w-4" />
+						</Button>
 						<Button
 							variant="ghost"
 							size="icon"
@@ -105,156 +296,71 @@ export function AICopilot() {
 				</div>
 
 				{/* Chat History */}
-				<ScrollArea className="flex-1 p-4">
+				<ScrollArea className="flex-1 p-4" ref={scrollRef}>
 					<div className="space-y-6">
-						{/* Message 1: User */}
-						<div className="flex flex-col gap-1 items-end">
-							<div className="bg-primary/20 text-white px-4 py-3 rounded-md rounded-tr-sm text-sm max-w-[85%] border border-primary/20 backdrop-blur-md">
-								Check the electrical panel LP-3A for NEC 2023 compliance
-							</div>
-						</div>
-						{/* Message 2: AI */}
-						<div className="flex gap-3">
-							<div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center border border-primary/50 shrink-0 shadow-[0_0_10px_rgba(0,168,255,0.2)]">
-								<Zap className="h-4 w-4 text-primary" />
-							</div>
-							<div className="flex flex-col gap-2 w-full">
-								<div className="bg-[#1a1d24] border border-white/10 px-4 py-3 rounded-md rounded-tl-sm text-sm text-foreground/90">
-									<p className="mb-2">
-										Analyzing panel{" "}
-										<span className="font-mono text-primary">LP-3A</span>...
-									</p>
-									<p className="text-warning font-medium flex items-center gap-1 mb-2">
-										<AlertTriangle className="h-4 w-4" /> Found 2 compliance
-										issues:
-									</p>
-									<ol className="list-decimal pl-4 space-y-1 mb-3 text-muted-foreground">
-										<li>
-											Neutral bar spacing does not meet 408.36 requirements.
-										</li>
-										<li>Missing AFCI protection on branch circuits.</li>
-									</ol>
-									<p className="text-xs text-muted-foreground italic">
-										Generating compliance report...
-									</p>
+						{messages.length === 0 && (
+							<div className="flex flex-col items-center justify-center py-8 text-center">
+								<div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+									<Bot className="w-6 h-6 text-primary" />
 								</div>
-								<div className="flex gap-2 flex-wrap">
-									<Button
-										variant="outline"
-										size="sm"
-										className="h-7 text-xs bg-transparent border-white/10 hover:bg-white/5"
-									>
-										<Eye className="w-3 h-3 mr-1" /> View Issues
-									</Button>
-									<Button
-										variant="outline"
-										size="sm"
-										className="h-7 text-xs bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
-									>
-										<CheckCircle2 className="w-3 h-3 mr-1" /> Auto-Fix
-									</Button>
-									<Button
-										variant="outline"
-										size="sm"
-										className="h-7 text-xs bg-transparent border-white/10 hover:bg-white/5"
-									>
-										<FileText className="w-3 h-3 mr-1" /> Generate Report
-									</Button>
-								</div>
+								<p className="text-white/70 text-sm font-medium mb-1">
+									Ask me anything about engineering
+								</p>
+								<p className="text-muted-foreground text-xs max-w-xs">
+									NFPA 72 spacing, voltage drop, battery sizing, FACP selection, and more
+								</p>
 							</div>
-						</div>
-						{/* Message 3: User */}
-						<div className="flex flex-col gap-1 items-end">
-							<div className="bg-primary/20 text-white px-4 py-3 rounded-md rounded-tr-sm text-sm max-w-[85%] border border-primary/20 backdrop-blur-md">
-								Generate a load calculation for building Tower-B
-							</div>
-						</div>
-						{/* Message 4: AI */}
-						<div className="flex gap-3">
-							<div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center border border-primary/50 shrink-0 shadow-[0_0_10px_rgba(0,168,255,0.2)]">
-								<Zap className="h-4 w-4 text-primary" />
-							</div>
-							<div className="flex flex-col gap-2 w-full">
-								<div className="bg-[#1a1d24] border border-white/10 px-4 py-3 rounded-md rounded-tl-sm text-sm text-foreground/90">
-									<p className="mb-3">
-										Running load calculation for{" "}
-										<span className="font-mono text-primary">Tower-B</span>...
-									</p>
+						)}
 
-									<div className="bg-black/50 border border-white/5 rounded-md overflow-hidden mb-3">
-										<div className="grid grid-cols-2 text-xs border-b border-white/5">
-											<div className="p-2 text-muted-foreground">
-												Total connected load:
-											</div>
-											<div className="p-2 font-mono text-white text-right">
-												2,847 kVA
-											</div>
-										</div>
-										<div className="grid grid-cols-2 text-xs border-b border-white/5">
-											<div className="p-2 text-muted-foreground">Demand load:</div>
-											<div className="p-2 font-mono text-primary text-right">
-												1,923 kVA
-											</div>
-										</div>
-										<div className="grid grid-cols-2 text-xs bg-primary/5">
-											<div className="p-2 text-foreground/90 font-medium">
-												Rec. service size:
-											</div>
-											<div className="p-2 font-mono text-success text-right font-bold">
-												2,500A @ 480V 3Φ
-											</div>
+						{messages.map((msg, idx) => (
+							msg.role === "user" ? (
+								<div key={idx} className="flex flex-col gap-1 items-end">
+									<div className="bg-primary/20 text-white px-4 py-3 rounded-md rounded-tr-sm text-sm max-w-[85%] border border-primary/20 backdrop-blur-md">
+										{msg.content}
+									</div>
+								</div>
+							) : (
+								<div key={idx} className="flex gap-3">
+									<div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center border border-primary/50 shrink-0 shadow-[0_0_10px_rgba(0,168,255,0.2)]">
+										<Zap className="h-4 w-4 text-primary" />
+									</div>
+									<div className="flex flex-col gap-2 w-full">
+										<div className="bg-[#1a1d24] border border-white/10 px-4 py-3 rounded-md rounded-tl-sm text-sm text-foreground/90">
+											{msg.isStreaming && !msg.content ? (
+												<div className="flex items-center gap-1.5">
+													<span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+													<span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+													<span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" />
+												</div>
+											) : (
+												<>
+													<p className="whitespace-pre-wrap break-words">
+														{msg.content}
+														{msg.isStreaming && (
+															<span className="inline-block w-1.5 h-4 bg-slate-500 ml-0.5 animate-pulse align-text-bottom" />
+														)}
+													</p>
+													{!msg.isStreaming && msg.model && (
+														<p className="text-[10px] text-muted-foreground mt-2">
+															Model: {msg.model}
+														</p>
+													)}
+												</>
+											)}
 										</div>
 									</div>
+								</div>
+							)
+						))}
 
-									<Button
-										variant="link"
-										className="h-auto p-0 text-xs text-primary"
-									>
-										See full breakdown <ArrowRight className="w-3 h-3 ml-1" />
-									</Button>
-								</div>
+						{/* Error state */}
+						{messages.length > 0 && !loading && messages[messages.length - 1]?.content?.startsWith("(Error:") && (
+							<div className="flex items-start gap-2 text-sm text-danger bg-red-950/30 border border-red-900/50 rounded-lg p-3">
+								<AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+								<span>Failed to get AI response. Please try again.</span>
 							</div>
-						</div>
-						{/* Message 5: AI (responding to current voice) */}
-						<div className="flex gap-3">
-							<div className="w-8 h-8 rounded bg-primary flex items-center justify-center border border-primary shrink-0 shadow-[0_0_15px_rgba(0,168,255,0.5)]">
-								<Zap className="h-4 w-4 text-background" />
-							</div>
-							<div className="flex flex-col gap-2 w-full">
-								<div className="bg-[#1a1d24] border border-primary/30 shadow-[0_0_15px_rgba(0,168,255,0.05)] px-4 py-3 rounded-md rounded-tl-sm text-sm text-foreground/90">
-									<p className="mb-2">
-										Routing optimization complete. Optimal path found.
-									</p>
-									<div className="bg-emerald-500/10 border border-success/30 text-success px-3 py-2 rounded text-xs mb-3 flex items-start gap-2">
-										<CheckSquare className="w-4 h-4 shrink-0 mt-0.5" />
-										<div>
-											<strong className="block mb-1">
-												Option A (Recommended)
-											</strong>
-											Saves 23m of cable tray vs current manual routing.
-										</div>
-									</div>
-									<p className="text-sm text-white">
-										Apply this route to the BIM model?
-									</p>
-								</div>
-								<div className="flex gap-2">
-									<Button
-										size="sm"
-										className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90 flex-1"
-									>
-										Apply Route
-									</Button>
-									<Button
-										variant="outline"
-										size="sm"
-										className="h-8 text-xs bg-transparent border-white/10 hover:bg-white/5 flex-1"
-									>
-										View Options (3)
-									</Button>
-								</div>
-							</div>
-						</div>
+						)}
+
 						<div className="h-4" /> {/* spacer */}
 					</div>
 				</ScrollArea>
@@ -262,28 +368,21 @@ export function AICopilot() {
 				{/* Quick Commands */}
 				<div className="p-4 border-t border-white/5 bg-[#0f1115]">
 					<div className="flex flex-wrap gap-2 mb-3 max-h-24 overflow-y-auto pr-2 scrollbar-thin">
-						{[
-							"Compliance Check",
-							"Load Calculation",
-							"Arc Flash Study",
-							"Cable Sizing",
-							"Short Circuit Analysis",
-							"Coordination Study",
-							"Generate SLD",
-							"Export Report",
-						].map((cmd) => (
+						{QUICK_COMMANDS.map((cmd) => (
 							<Badge
 								key={cmd}
 								variant="outline"
 								className="bg-[#1a1d24] border-white/10 text-foreground/90 hover:bg-primary/20 hover:text-primary hover:border-primary/30 cursor-pointer font-normal py-1 px-3"
+								onClick={() => handleQuickCommand(cmd)}
 							>
 								{cmd}
 							</Badge>
 						))}
 					</div>
 
-					<div className="relative flex items-center">
+					<form onSubmit={handleSubmit} className="relative flex items-center">
 						<Button
+							type="button"
 							size="icon"
 							variant="ghost"
 							className="absolute left-1 h-8 w-8 text-muted-foreground z-10"
@@ -291,17 +390,27 @@ export function AICopilot() {
 							<Plus className="h-4 w-4" />
 						</Button>
 						<Input
+							ref={inputRef}
+							value={input}
+							onChange={(e) => setInput(e.target.value)}
 							className="pl-10 pr-10 bg-[#1a1d24] border-white/10 text-sm h-10 rounded-full focus-visible:ring-primary/50"
 							placeholder="Type a command or ask a question..."
+							disabled={loading}
 						/>
 						<Button
+							type="submit"
 							size="icon"
 							variant="ghost"
+							disabled={!input.trim() || loading}
 							className="absolute right-1 h-8 w-8 text-primary z-10 hover:bg-primary/10 rounded-full"
 						>
-							<Send className="h-4 w-4" />
+							{loading ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								<Send className="h-4 w-4" />
+							)}
 						</Button>
-					</div>
+					</form>
 				</div>
 
 				{/* Settings Bar */}
@@ -316,7 +425,7 @@ export function AICopilot() {
 					</div>
 					<div className="flex items-center gap-1 text-emerald-500">
 						<div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>{" "}
-						Connected
+						{loading ? "Thinking..." : "Connected"}
 					</div>
 				</div>
 			</div>
