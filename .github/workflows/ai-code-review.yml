@@ -123,8 +123,9 @@ jobs:
                   "PIP_NO_CACHE_DIR": "1",
                   "CI": "true",
               },
-              # V209: bump disk 10→20GB (npm ci + node_modules + Playwright deps need space)
-              resources=Resources(cpu=2, memory=4, disk=20),
+              # V209: disk stays at 10GB (Daytona cloud max per sandbox).
+              # npm ci + node_modules fit within 10GB if we clean up apt cache + pip cache.
+              resources=Resources(cpu=2, memory=4, disk=10),
               public=False,
               # Auto-evict after 1h (Daytona session limit) as a safety net
               auto_stop_interval=3600,
@@ -203,9 +204,11 @@ jobs:
               "apt-get install -y --no-install-recommends curl ca-certificates gnupg libgeos-dev gcc && "
               "curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && "
               "apt-get install -y --no-install-recommends nodejs && "
+              "rm -rf /var/lib/apt/lists/* && "
               "node --version && npm --version && "
               "mkdir -p /workspace && cd /workspace && "
               "tar -xzf /tmp/pr-src.tar.gz && "
+              "rm -f /tmp/pr-src.tar.gz && "
               "python -m ensurepip --upgrade 2>&1 || true && "
               "python -m pip install --upgrade pip setuptools wheel 2>&1 && "
               "SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0 "
