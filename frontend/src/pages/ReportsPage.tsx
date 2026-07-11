@@ -28,7 +28,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { calculateBatteryRequirements } from "@/engine/BatteryCalculator";
 import { calculateCoverage } from "@/engine/CoverageEngine";
-import { useGenerateReport, useReports } from "@/hooks/useApi";
+import { useGenerateReport, useProjects, useReports } from "@/hooks/useApi";
 
 // ============================================================================
 // ReportsPage Component
@@ -42,6 +42,9 @@ export function ReportsPage() {
                 error: reportsError,
                 refetch: refetchReports,
         } = useReports(null); // Pass null as projectId
+        // V214 self-critique fix: fetch real projects instead of hardcoded "default-project-id"
+        const { data: projects } = useProjects();
+        const firstProjectId = projects && projects.length > 0 ? projects[0].id : null;
         const {
                 mutate: generateReport,
                 loading: generating,
@@ -57,9 +60,13 @@ export function ReportsPage() {
         });
 
         const handleGenerate = async () => {
-                // Use a default project ID or null if no project context is needed
+                // V214 self-critique fix: use real project ID, not hardcoded "default-project-id"
+                if (!firstProjectId) {
+                        alert("No project found. Create a project first.");
+                        return;
+                }
                 const result = await generateReport({
-                        projectId: "default-project-id", // Use a default project ID
+                        projectId: firstProjectId,
                         data: {
                                 type: reportType,
                                 execution_params: execParams,
@@ -78,12 +85,16 @@ export function ReportsPage() {
         const [ahjDownloadUrl, setAhjDownloadUrl] = useState<string | null>(null);
 
         const handleGenerateAhj = async () => {
+                // V214 self-critique fix: use real project ID
+                if (!firstProjectId) {
+                        alert("No project found. Create a project first.");
+                        return;
+                }
                 setAhjGenerating(true);
                 setAhjDownloadUrl(null);
                 try {
-                        const projectId = "default-project-id";
                         const response = await fetch(
-                                `/api/v1/projects/${projectId}/reports/ahj-submittal`,
+                                `/api/v1/projects/${firstProjectId}/reports/ahj-submittal`,
                                 {
                                         method: "POST",
                                         headers: { "Content-Type": "application/json" },
@@ -453,18 +464,11 @@ export function ReportsPage() {
                                                                                 <SelectItem value="nfpa72_coverage">
                                                                                         {t("reports.coverageAnalysis") || "NFPA 72 Coverage Analysis"}
                                                                                 </SelectItem>
-                                                                                <SelectItem value="short_circuit">
-                                                                                        {t("reports.shortCircuitStudy") || "Short Circuit Study"}
-                                                                                </SelectItem>
-                                                                                <SelectItem value="load_calculation">
-                                                                                        {t("reports.loadFlowAnalysis") || "Load Calculation"}
-                                                                                </SelectItem>
-                                                                                <SelectItem value="conduit_fill">
-                                                                                        {t("reports.conduitFill") || "Conduit Fill Analysis"}
-                                                                                </SelectItem>
-                                                                                <SelectItem value="boq">
-                                                                                        {t("reports.billOfQuantities") || "Bill of Quantities"}
-                                                                                </SelectItem>
+                                                                                {/* Self-critique: short_circuit, load_calculation, conduit_fill,
+                                                                                    boq are listed in the backend docstring but have NO implementation —
+                                                                                    they all fall through to _generate_generic_report() (count-only).
+                                                                                    Removed to avoid misleading the user. Use AHJ Submittal button
+                                                                                    above for full compliance document. */}
                                                                         </SelectContent>
                                                                 </Select>
                                                         </div>
