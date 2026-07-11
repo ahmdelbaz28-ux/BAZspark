@@ -53,6 +53,7 @@ Per agent.md Rule 21 (4-LAYER SELF-CRITICISM):
 from __future__ import annotations
 
 import os
+import pathlib as _pathlib
 
 # ─── Test API Key ────────────────────────────────────────────────────────────
 # Hard-coded test API key. Public, safe to commit. Matches the value used
@@ -85,7 +86,6 @@ os.environ.setdefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://loca
 # The file persists across test runs and may become invalid, causing:
 #   RuntimeError: Server secret file db/api_keys.secret exists but is invalid.
 # Also clean up stale DB files that cause RuntimeError on re-runs.
-import pathlib as _pathlib
 for _stale in ["db/api_keys.secret", "db/digital_twin.db", "db/udm_elements.db"]:
     _p = _pathlib.Path(_stale)
     if _p.exists():
