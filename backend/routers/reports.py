@@ -1117,16 +1117,46 @@ async def generate_ahj_submittal(project_id: str, request: AhjSubmittalRequest):
                 room=room,
                 detector_type=detector_type,
             )
-            # Run consensus engine if available
+            # V214 FIX: Run consensus engine with REAL verification.
+            # Previously ConsensusEngine() was called without the required
+            # coverage_radius argument → TypeError → caught → consensus=None.
+            # The AHJ document claimed "Triple Verification System" but the
+            # consensus column always showed "N/A". Now we pass the correct
+            # coverage_radius from the layout and call verify() with the
+            # room dimensions + detector positions.
             consensus = None
             try:
                 from fireai.core.spatial_engine.consensus_engine import ConsensusEngine
-                _consensus_engine = ConsensusEngine()  # noqa: F841 — reserved for future use
-                # consensus_engine.analyze may need specific args — wrap in try
-                # and skip if signature differs.
-                consensus = None  # placeholder; consensus requires multi-engine setup
-            except Exception:
-                consensus = None
+                consensus_engine = ConsensusEngine(
+                    coverage_radius=layout.coverage_radius,
+                )
+                # Extract detector (x, y) positions from the layout
+                detector_positions = [
+                    (float(d[0]), float(d[1])) for d in layout.detectors
+                ]
+                consensus = consensus_engine.verify(
+                    width=room.width,
+                    length=room.length,
+                    detectors=detector_positions,
+                    grid_proof_valid=layout.proof_valid,
+                    grid_coverage_pct=layout.coverage_pct,
+                )
+                logger.info(
+                    "AHJ consensus for room '%s': confidence=%s, verdict=%s",
+                    room.name,
+                    getattr(consensus, "confidence", "N/A"),
+                    getattr(consensus, "verdict", "N/A"),
+                )
+            except ImportError:
+                logger.warning(
+                    "ConsensusEngine not available — consensus will be None "
+                    "for room '%s'.", room.name,
+                )
+            except Exception as cons_err:
+                logger.warning(
+                    "Consensus verification failed for room '%s': %s",
+                    room.name, cons_err,
+                )
 
             doc.add_room_result(room, layout, consensus)
         except Exception as room_err:
