@@ -188,10 +188,21 @@ class RevitService:
         self._revit_doc = None
         self._uiapp = None
         self._uidoc = None
+        # V213: Explicit simulation flag. True when connect() fell back to
+        # the simulation path (no real Revit instance acquired). Clients and
+        # tests can read this to know that create_wall/floor/door will
+        # return None (no real document is open).
+        self._simulation_mode = False
 
         # RevitAPIDocGen data
         self._api_data_cache: List[Dict[str, Any]] = []
         self._api_data_loaded = False
+
+    @property
+    def simulation_mode(self) -> bool:
+        """V213: True when the service is in simulation mode (no real Revit
+        document is bound)."""
+        return self._simulation_mode
 
     @property
     def connected(self) -> bool:
@@ -256,31 +267,162 @@ class RevitService:
             return False
 
     def _connect_via_api(self) -> bool:
-        """Connect via Revit API (requires Revit + pythonnet)."""
+        """
+        Connect via Revit API (requires Revit + pythonnet on Windows).
+
+        V213 FIX (Rule 1 — Truthfulness): Previously this method set
+        ``_connected = True`` without actually acquiring a Revit application
+        handle — every subsequent ``create_wall()`` / ``create_floor()``
+        would hit the ``if not self._revit_doc: return None`` guard and
+        silently fail, despite the connect endpoint reporting success.
+
+        Now this method attempts to bind to a running Revit instance via
+        ``Marshal.GetActiveObject("Revit.Application")`` (Windows COM
+        automation). If Revit is not running, or pythonnet is not
+        installed, or we are on a non-Windows platform, the method falls
+        back to simulation mode HONESTLY — setting ``_simulation_mode =
+        True`` so clients can surface the truth.
+
+        Returns:
+            True if connected (real or simulation). False only on
+            explicit user-requested failure (currently never).
+
+        """
         if not HAS_REVIT_API:
-            logger.warning("Revit API not available, using simulation")
+            logger.warning(
+                "Revit API not available (no pythonnet or not Windows). "
+                "Falling back to SIMULATION mode honestly."
+            )
             return self._connect_simulation()
 
+        # Try to acquire a real Revit application handle via COM automation.
+        # This requires Revit to be running on the same machine.
         try:
-            logger.info("Connected to Revit via API")
+            import clr  # noqa: F401
+            from System.Runtime.InteropServices import Marshal  # type: ignore[import-not-found]
+        except ImportError as ie:
+            logger.warning(
+                "Could not import Marshal from System.Runtime.InteropServices "
+                "(%s). Falling back to SIMULATION mode.", ie
+            )
+            return self._connect_simulation()
+        except Exception as ge:
+            logger.warning(
+                "CLR/Marshal access failed (%s). Falling back to SIMULATION mode.", ge
+            )
+            return self._connect_simulation()
+
+        # Attempt to bind to a running Revit instance.
+        # "Revit.Application" is the COM ProgID for the Revit application.
+        # Different Revit versions may use versioned ProgIDs (e.g.
+        # "Revit.Application.2024") — we try the generic one first, then
+        # a few versioned ones.
+        prog_ids = [
+            "Revit.Application",
+            "Revit.Application.2025",
+            "Revit.Application.2024",
+            "Revit.Application.2023",
+            "Revit.Application.2022",
+            "Revit.Application.2021",
+            "Revit.Application.2020",
+        ]
+        revit_app_com = None
+        for prog_id in prog_ids:
+            try:
+                revit_app_com = Marshal.GetActiveObject(prog_id)
+                logger.info("Bound to running Revit via ProgID: %s", prog_id)
+                break
+            except Exception as e:
+                # Try next ProgID
+                logger.debug("ProgID %s not available: %s", prog_id, e)
+                continue
+
+        if revit_app_com is None:
+            logger.warning(
+                "No running Revit instance found (tried %d ProgIDs). "
+                "Falling back to SIMULATION mode. Start Revit and open a "
+                "document to enable real API operations.",
+                len(prog_ids),
+            )
+            return self._connect_simulation()
+
+        # Wrap the COM object in a Revit UIApplication and pull the active
+        # document. This is the critical step that was missing — without
+        # setting _revit_doc, every create_wall/floor/door call hits the
+        # ``if not self._revit_doc: return None`` guard.
+        try:
+            from Autodesk.Revit.UI import UIApplication  # type: ignore[import-not-found]
+            self._uiapp = UIApplication(revit_app_com)
+            self._revit_app = self._uiapp.Application
+            try:
+                self._uidoc = self._uiapp.ActiveUIDocument
+            except Exception as uidoc_err:
+                logger.warning("Could not get ActiveUIDocument: %s", uidoc_err)
+                self._uidoc = None
+            if self._uidoc is not None:
+                self._revit_doc = self._uidoc.Document
+                logger.info(
+                    "Revit API connection established. Active document: %s",
+                    getattr(self._revit_doc, "Title", "<untitled>"),
+                )
+            else:
+                # No active document — still connected to the app, but
+                # create_* operations will need an open document. Set
+                # _revit_doc to None (the honest value).
+                self._revit_doc = None
+                logger.warning(
+                    "Revit API connected but no active document is open. "
+                    "create_wall/floor/door will return None until a "
+                    "document is opened."
+                )
             self._connected = True
+            self._simulation_mode = False  # V213: real connection
             self._connection_method = ConnectionMethod.API
             return True
+        except ImportError as ie:
+            logger.warning(
+                "Could not import Autodesk.Revit.UI.UIApplication (%s). "
+                "RevitAPIUI assembly may not be loaded. Falling back to "
+                "SIMULATION mode.", ie
+            )
+            return self._connect_simulation()
         except Exception as e:
-            logger.exception("API connection failed: %s", e)
+            logger.exception(
+                "Failed to wrap Revit COM object in UIApplication: %s. "
+                "Falling back to SIMULATION mode.", e
+            )
             return self._connect_simulation()
 
     def _connect_via_macro(self) -> bool:
-        """Connect via Revit Macro (free, runs inside Revit)."""
-        logger.info("Connected via Macro mode")
+        """Connect via Revit Macro (free, runs inside Revit).
+
+        V213: This is still SIMULATION ONLY — there is no macro script
+        execution code. The simulation_mode flag is set honestly so clients
+        know no real Revit operations will occur.
+        """
+        logger.warning(
+            "MACRO mode is SIMULATION ONLY — no Revit macro script is "
+            "actually executed. Use method='api' on Windows with Revit "
+            "running for real operations."
+        )
         self._connected = True
+        self._simulation_mode = True  # V213: honest
         self._connection_method = ConnectionMethod.MACRO
         return True
 
     def _connect_simulation(self) -> bool:
-        """Connect in simulation mode (no Revit needed)."""
-        logger.info("Connected in SIMULATION mode")
+        """Connect in simulation mode (no Revit needed).
+
+        V213: Sets _simulation_mode = True honestly so clients can surface
+        the truth that no real Revit operations will occur.
+        """
+        logger.warning(
+            "Revit SIMULATION mode engaged — no real Revit instance is "
+            "bound. create_wall/floor/door will return None. Use "
+            "method='api' on Windows with Revit running for real operations."
+        )
         self._connected = True
+        self._simulation_mode = True  # V213: honest
         self._connection_method = ConnectionMethod.SIMULATION
         return True
 
@@ -292,6 +434,7 @@ class RevitService:
             self._uiapp = None
             self._uidoc = None
             self._connected = False
+            self._simulation_mode = False  # V213: reset
             self._connection_method = None
             logger.info("Disconnected from Revit")
             return True
@@ -442,78 +585,101 @@ class RevitService:
         """
         Read elements from an RVT file.
 
-        Args:
-            filepath: Path to the RVT file to read (MUST be validated by caller
-                      via _validate_file_path or equivalent).
+        V214 FIX (Rule 1 — Truthfulness): Previously this method returned 3
+        hardcoded fake elements (id 12345 "Basic Wall", id 12346 "Generic
+        Floor", id 12347 "Interior Door") for ANY .rvt file — regardless of
+        actual file contents. This is a safety-critical deception: downstream
+        code (digital twin conversion, fire alarm placement) would operate
+        on fake geometry.
 
-        Returns:
-            Dictionary containing elements data and metadata
+        RVT is a proprietary closed binary format — it CANNOT be parsed
+        without Revit API (pythonnet on Windows) or Autodesk Platform
+        Services (cloud). The real solutions are:
 
+          1. If connected to a real Revit instance (API mode, Windows):
+             Use FilteredElementCollector to read actual elements.
+          2. If the file is actually an IFC (Revit can export to IFC):
+             Use fireai.bridges.ifc_headless_bridge.HeadlessIFCBridge
+             which is cross-platform and real (ifcopenshell).
+          3. Otherwise: return success=False with an honest error.
+
+        Now this method:
+          - If API mode + real _revit_doc: reads actual elements via
+            FilteredElementCollector (real Revit API call)
+          - If simulation mode: returns success=False with a clear error
+            explaining the alternatives (export to IFC, or use Windows+
+            pythonnet+Revit)
+          - Never fabricates fake elements
         """
         try:
             # V141.4 SECURITY FIX (CodeQL: py/path-injection):
-            # Use validate_input_path as the SOLE authority for path safety.
-            # The previous code had a fallback that called os.path.realpath()
-            # and only checked for ".." — this is insufficient because:
-            #   1. It doesn't verify the path is inside an allowed base directory
-            #   2. Symlinks can bypass ".." checks
-            #   3. CodeQL correctly flagged os.path.exists/getsize/open on
-            #      the unvalidated path as path-injection vulnerabilities.
-            # Now: if validate_input_path raises, we propagate the error
-            # (fail-closed). No fallback that could be exploited.
             from parsers._path_security import validate_input_path
-            # V141.4.1 FIX (Devin review): validate_input_path returns a Path
-            # object. Convert to str for JSON serialization in the return dict.
             safe_path = validate_input_path(filepath)
             filepath = str(safe_path)
 
-            # After validation, filepath is guaranteed safe (resolved + inside
-            # allowed base). CodeQL should recognize the validated path.
             file_size = os.path.getsize(filepath)
 
-            # Simulate reading elements from the file
-            elements = [
-                {
-                    "id": "12345",
-                    "name": "Basic Wall",
-                    "category": "Walls",
-                    "level": "Level 1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
-                    "length": 5000.0,
-                    "height": 3000.0,
-                    "width": 200.0,
-                    "location_curve": [[0, 0, 0], [5000, 0, 0]],
-                    "parameters": {"mark": "W1"}
-                },
-                {
-                    "id": "12346",
-                    "name": "Generic Floor",
-                    "category": "Floors",
-                    "level": "Level 1",
-                    "area": 25.0,
-                    "boundary": [[0, 0, 0], [5000, 0, 0], [5000, 5000, 0], [0, 5000, 0]],
-                    "parameters": {"mark": "F1"}
-                },
-                {
-                    "id": "12347",
-                    "name": "Interior Door",
-                    "category": "Doors",
-                    "level": "Level 1",
-                    "width": 900.0,
-                    "height": 2100.0,
-                    "location_point": [2500, 0, 0],
-                    "parameters": {"mark": "D1"}
-                }
-            ]
+            # V214: If we have a real Revit document, read actual elements
+            if self._connection_method == ConnectionMethod.API and self._revit_doc is not None:
+                try:
+                    from Autodesk.Revit.DB import FilteredElementCollector  # type: ignore[import-not-found]
+                    elements = []
+                    collector = FilteredElementCollector(self._revit_doc).WhereElementIsNotElementType()
+                    for elem in collector:
+                        try:
+                            elem_data = self._extract_element_data(elem)
+                            if elem_data:
+                                elements.append(elem_data)
+                        except Exception:
+                            continue
+                    logger.info(
+                        "Read %d real elements from Revit document (API mode)",
+                        len(elements),
+                    )
+                    return {
+                        "success": True,
+                        "elements": elements,
+                        "count": len(elements),
+                        "source_file": filepath,
+                        "file_size": file_size,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "source": "revit_api_filtered_element_collector",
+                    }
+                except ImportError as ie:
+                    logger.warning(
+                        "Could not import FilteredElementCollector (%s) — "
+                        "falling back to error.", ie
+                    )
+                except Exception as e:
+                    logger.exception("Real Revit element read failed: %s", e)
 
-            logger.info("Simulated reading %s elements from %s", len(elements), filepath)
-
+            # V214: Simulation mode — return honest failure
+            logger.warning(
+                "read_rvt %s failed: simulation mode (no real Revit document). "
+                "Returning empty result with success=False — no fake elements "
+                "will be fabricated. RVT is a closed proprietary format that "
+                "cannot be parsed without Revit API. Alternatives: "
+                "(1) export the RVT to IFC from Revit, then read the IFC via "
+                "fireai.bridges.ifc_headless_bridge; "
+                "(2) connect to a real Revit instance on Windows with pythonnet.",
+                filepath,
+            )
             return {
-                "success": True,
-                "elements": elements,
-                "count": len(elements),
+                "success": False,
+                "error": (
+                    "Cannot read RVT file in simulation mode — RVT is a "
+                    "closed proprietary format requiring Revit API. "
+                    "Alternatives: (1) Export to IFC from Revit and read "
+                    "the IFC file (cross-platform, supported via ifcopenshell); "
+                    "(2) Connect to a real Revit instance on Windows with "
+                    "pythonnet to enable FilteredElementCollector."
+                ),
+                "elements": [],
+                "count": 0,
                 "source_file": filepath,
                 "file_size": file_size,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "simulation_mode": True,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
         except FileNotFoundError:
@@ -535,10 +701,36 @@ class RevitService:
 
     def write_rvt(self, filepath: str, elements: List[Dict[str, Any]]) -> bool:
         """
-        Write elements to an RVT file.
+        Write elements to a file that Revit can import.
+
+        V214 FIX (Rule 1 — Truthfulness): Previously this method wrote a
+        plain-text file starting with ``# Revit Model File`` — NOT a real
+        RVT file. The .rvt extension was misleading; the file could not be
+        opened by Revit. This is a safety-critical deception.
+
+        RVT is a closed proprietary format that CANNOT be written without
+        Revit API. The real solutions are:
+
+          1. If connected to a real Revit instance (API mode, Windows):
+             Create elements via Revit API (Wall.Create, etc.) inside a
+             transaction, then call doc.SaveAs(filepath).
+          2. Otherwise: Write a real IFC4 file via ifcopenshell (cross-
+             platform). Revit can import IFC files natively (File → Open →
+             IFC). This is the supported write path for non-Windows
+             environments.
+
+        Now this method:
+          - If API mode + real _revit_doc: creates elements via Revit API
+            and saves the document (real RVT output)
+          - Otherwise: writes a real IFC4 file via ifcopenshell with
+            IfcBuildingElementProxy entities for each element. The file
+            extension is changed to .ifc when using this path.
+          - Never writes a fake "# Revit Model File" text file
 
         Args:
-            filepath: Path to save the RVT file (MUST be validated by caller).
+            filepath: Path to save the file (MUST be validated by caller).
+                     If the path ends in .rvt and we're in simulation mode,
+                     the extension is changed to .ifc.
             elements: List of element dictionaries to write
 
         Returns:
@@ -547,52 +739,181 @@ class RevitService:
         """
         try:
             # V141.4 SECURITY FIX (CodeQL: py/path-injection):
-            # Use validate_output_path for OUTPUT paths (file may not exist
-            # yet). This is the dedicated security function for write
-            # operations — it resolves symlinks and verifies the path is
-            # inside an allowed base directory. After validation, the path
-            # is guaranteed safe for file operations.
             from parsers._path_security import validate_output_path
             safe_path = validate_output_path(filepath, parser_name="revit_write_rvt")
             filepath = str(safe_path)
 
-            if not self.connected:
-                logger.warning("Not connected to Revit. Writing to file in simulation mode.")
-
-            # Create directory if it doesn't exist (filepath is validated above)
+            # Create directory if it doesn't exist
             output_dir = os.path.dirname(filepath)
             if output_dir:
                 os.makedirs(output_dir, exist_ok=True)
 
-            # In a real implementation, we would create elements in Revit and save the document
-            # For now, we'll create a simple representation of the elements
-            logger.info("Simulated writing %s elements to %s", len(elements), filepath)
+            # V214: If we have a real Revit document, create elements via API
+            if self._connection_method == ConnectionMethod.API and self._revit_doc is not None:
+                try:
+                    from Autodesk.Revit.DB import (  # type: ignore[import-not-found]
+                        Transaction,
+                        FilteredElementCollector,
+                        Level,
+                    )
+                    tx = Transaction(self._revit_doc, "FireAI: Write Elements")
+                    tx.Start()
+                    try:
+                        # Create elements via Revit API
+                        # (Element creation methods like Wall.Create, Floor.Create
+                        # are called here based on element category)
+                        created_count = 0
+                        skipped_count = 0
+                        for elem in elements:
+                            try:
+                                # Delegate to create_wall/create_floor/etc.
+                                # based on category. V214 self-critique: only
+                                # walls are fully implemented in API mode;
+                                # floors/columns/doors are logged as skipped
+                                # (not silently ignored).
+                                cat = elem.get("category", "").lower()
+                                if cat == "walls":
+                                    self.create_wall(
+                                        start_point=elem.get("location_curve", [[0,0,0],[1,0,0]])[0],
+                                        end_point=elem.get("location_curve", [[0,0,0],[1,0,0]])[1],
+                                        level=elem.get("level", "Level 1"),
+                                    )
+                                    created_count += 1
+                                elif cat in ("floors", "doors", "columns", "beams"):
+                                    logger.warning(
+                                        "write_rvt API mode: %s creation not yet implemented "
+                                        "for element %s — skipped. Use IFC export path for "
+                                        "full element creation.",
+                                        cat, elem.get("id", "?"),
+                                    )
+                                    skipped_count += 1
+                                else:
+                                    logger.warning(
+                                        "write_rvt API mode: unknown category '%s' for "
+                                        "element %s — skipped.",
+                                        cat, elem.get("id", "?"),
+                                    )
+                                    skipped_count += 1
+                            except Exception:
+                                skipped_count += 1
+                                continue
+                        logger.info(
+                            "write_rvt API mode: created %d elements, skipped %d",
+                            created_count, skipped_count,
+                        )
+                        tx.Commit()
+                        self._revit_doc.SaveAs(filepath)
+                        logger.info(
+                            "Wrote %d elements to real RVT file via Revit API: %s",
+                            created_count, filepath,
+                        )
+                        return True
+                    except Exception as create_err:
+                        tx.RollBack()
+                        logger.exception("Revit API element creation failed: %s", create_err)
+                        return False
+                except ImportError:
+                    logger.warning("Revit API not available — falling back to IFC export")
 
-            # Create a basic RVT-like file structure (this is just a simulation)
-            # In reality, this would require Revit API calls to create actual elements
-            with open(filepath, 'w') as f:
-                f.write("# Revit Model File\n")
-                f.write("# Generated by CAD/BIM Integration System\n")
-                f.write(f"# Elements Count: {len(elements)}\n")
-                f.write(f"# Timestamp: {datetime.now(timezone.utc).isoformat()}\n\n")
+            # V214: Simulation mode — write a REAL IFC4 file via ifcopenshell
+            # Revit can import IFC natively (File → Open → IFC).
+            try:
+                import ifcopenshell
+                import ifcopenshell.api
+            except ImportError as ie:
+                logger.error(
+                    "Cannot write file: neither Revit API (not Windows) nor "
+                    "ifcopenshell (%s) is available. Install ifcopenshell: "
+                    "pip install ifcopenshell", ie
+                )
+                return False
 
-                for i, element in enumerate(elements):
-                    f.write(f"Element_{i}:\n")
-                    f.write(f"  Type: {element.get('category', 'Unknown')}\n")
-                    f.write(f"  Name: {element.get('name', 'Unnamed')}\n")
-                    f.write(f"  ID: {element.get('id', 'Unknown')}\n")
-                    f.write(f"  Level: {element.get('level', 'Level 1')}\n")
-                    # Add other properties as needed
-                    for key, value in element.items():
-                        if key not in ['category', 'name', 'id', 'level']:
-                            f.write(f"  {key}: {value}\n")
-                    f.write("\n")
+            # Change .rvt extension to .ifc for honest file type
+            if filepath.lower().endswith(".rvt"):
+                ifc_path = filepath[:-4] + ".ifc"
+            else:
+                ifc_path = filepath
 
-            logger.info("Successfully wrote %s elements to %s", len(elements), filepath)
+            # Create a new IFC4 model
+            model = ifcopenshell.file(schema="IFC4")
+
+            # Create project/site/building/storey hierarchy (required by IFC spec)
+            project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject", name="FireAI Export")
+            site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite", name="Site")
+            building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding", name="Building")
+            storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey", name="Ground Floor")
+
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[site], relating_object=project)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[building], relating_object=site)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[storey], relating_object=building)
+
+            # Add each element as an IfcBuildingElementProxy
+            for elem in elements:
+                try:
+                    name = str(elem.get("name", "Unnamed"))
+                    proxy = ifcopenshell.api.run(
+                        "root.create_entity", model,
+                        ifc_class="IfcBuildingElementProxy",
+                        name=name,
+                    )
+                    # Assign to storey
+                    ifcopenshell.api.run(
+                        "spatial.assign_container", model,
+                        products=[proxy],
+                        relating_structure=storey,
+                    )
+                    # Add properties as pset
+                    pset = ifcopenshell.api.run(
+                        "pset.add_pset", model,
+                        product=proxy,
+                        name="Pset_FireAI_Element",
+                    )
+                    props = {}
+                    if "id" in elem:
+                        props["ElementID"] = str(elem["id"])
+                    if "category" in elem:
+                        props["Category"] = str(elem["category"])
+                    if "level" in elem:
+                        props["Level"] = str(elem["level"])
+                    # Add any other scalar properties
+                    for k, v in elem.items():
+                        if k not in ("id", "category", "level", "name") and isinstance(v, (str, int, float, bool)):
+                            props[k] = str(v)
+                    if props:
+                        ifcopenshell.api.run(
+                            "pset.edit_pset", model,
+                            pset=pset,
+                            properties=props,
+                        )
+                except Exception as elem_err:
+                    logger.warning("Failed to add element %s to IFC: %s", elem.get("name", "?"), elem_err)
+                    continue
+
+            # Write the IFC file
+            model.write(ifc_path)
+            logger.info(
+                "Wrote %d elements to real IFC4 file: %s (Revit can import via File → Open → IFC)",
+                len(elements), ifc_path,
+            )
+
+            # V214 self-critique fix: Do NOT write a fake .rvt file with a
+            # redirect notice — that was confusing (user opens .rvt in Revit
+            # and it fails). Instead, write ONLY the .ifc file and log clearly
+            # that the output is IFC format (not RVT). The caller can check
+            # the log or compare the output path extension to know what was
+            # actually written.
+            if filepath.lower().endswith(".rvt") and ifc_path != filepath:
+                logger.info(
+                    "write_rvt: caller requested .rvt but actual output is .ifc "
+                    "(RVT requires Revit API). Output written to: %s. "
+                    "Revit can import IFC natively via File → Open → IFC.",
+                    ifc_path,
+                )
+
             return True
 
         except Exception as e:
-            logger.exception("Error writing RVT file %s: %s", filepath, e)
+            logger.exception("Error writing RVT/IFC file %s: %s", filepath, e)
             return False
 
     def create_wall(self, start_point: List[float], end_point: List[float],  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
