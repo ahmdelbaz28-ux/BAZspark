@@ -7,7 +7,7 @@
  */
 
 import { Battery, Cable, Zap } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExplainButton } from "@/components/ai/ExplainButton";
 import { Badge } from "@/components/ui/badge";
@@ -60,11 +60,21 @@ export function EngineeringPage() {
                 alarmMinutes: "5",
         });
 
-        const [_apiLoading, setApiLoading] = useState(false);
-        const [_apiError, setApiError] = useState<string | null>(null);
+        const [apiLoading, setApiLoading] = useState(false);
+        const [apiError, setApiError] = useState<string | null>(null);
+        const [apiResult, setApiResult] = useState<{
+                voltage_drop_v: number;
+                drop_pct: number;
+                is_compliant: boolean;
+                nec_section: string;
+                computation_hash: string;
+        } | null>(null);
 
-        const calculateVoltageDrop = useCallback(() => {
-                // Local fallback calculation
+        const calculateVoltageDropLocal = useCallback(() => {
+                // Local FALLBACK calculation only — used when QOMN API is unavailable.
+                // V214 FIX: This is NOT the primary calculation. The primary path
+                // is calculateVoltageDropViaApi() which calls the real QOMN kernel
+                // with NEC Table 8 + HMAC-SHA256 audit hash.
                 const current = parseFloat(voltageDropInputs.current);
                 const length = parseFloat(voltageDropInputs.length);
                 const cableSize = parseFloat(voltageDropInputs.cableSize);
@@ -91,28 +101,42 @@ export function EngineeringPage() {
                 };
         }, [voltageDropInputs]);
 
-        // V215 FIX: Call real QOMN API with CORRECT schema (was silently falling back)
-        const _calculateVoltageDropViaApi = useCallback(async () => {
+        // V214 FIX: Call real QOMN API — this is the PRIMARY calculation path.
+        // Previously this function had a leading underscore (_calculateVoltageDropViaApi)
+        // making it "private" and it was NEVER invoked from the render path.
+        // The page silently used local placeholder formulas instead, bypassing
+        // the entire QOMN audit chain (no NEC Table 8, no HMAC-SHA256 hash).
+        const calculateVoltageDropViaApi = useCallback(async () => {
+                const current = parseFloat(voltageDropInputs.current);
+                const length = parseFloat(voltageDropInputs.length);
+                if (Number.isNaN(current) || Number.isNaN(length) || current <= 0 || length <= 0) {
+                        return; // Skip if inputs invalid
+                }
                 setApiLoading(true);
                 setApiError(null);
                 try {
                         const result = await qomnApi.voltageDrop({
-                                current_a: parseFloat(voltageDropInputs.current),
-                                length_m: parseFloat(voltageDropInputs.length),
+                                current_a: current,
+                                length_m: length,
                                 awg_gauge: voltageDropInputs.cableSize || "12",
                                 supply_voltage_v: parseFloat(voltageDropInputs.voltage) || 24.0,
                         });
-                        return result;
+                        setApiResult(result as any);
                 } catch (err) {
-                        const msg = err instanceof Error ? err.message : "API calculation failed";
+                        const msg = err instanceof Error ? err.message : "QOMN API calculation failed";
                         setApiError(msg);
-                        // NO silent fallback — surface the error so the engineer knows
-                        // the backend audit hash is missing (life-safety requirement)
-                        throw err;
+                        setApiResult(null);
+                        // Do NOT silently fall back — surface the error so the engineer
+                        // knows the backend audit hash is missing (life-safety requirement)
                 } finally {
                         setApiLoading(false);
                 }
         }, [voltageDropInputs]);
+
+        // V214 FIX: Call the API whenever inputs change
+        useEffect(() => {
+                calculateVoltageDropViaApi();
+        }, [calculateVoltageDropViaApi]);
 
         const calculateCableSizing = () => {
                 // Placeholder calculation
@@ -186,7 +210,23 @@ export function EngineeringPage() {
                 };
         };
 
-        const vDropResult = calculateVoltageDrop();
+        // V214 FIX: Use API result (primary) or local fallback (secondary)
+        const localVDrop = calculateVoltageDropLocal();
+        const vDropResult = apiResult
+                ? {
+                        percentage: apiResult.drop_pct,
+                        absolute: apiResult.voltage_drop_v,
+                        // Include audit trail fields for transparency
+                        nec_section: apiResult.nec_section,
+                        computation_hash: apiResult.computation_hash,
+                        is_compliant: apiResult.is_compliant,
+                        source: "QOMN API (audited)" as const,
+                  }
+                : {
+                        percentage: localVDrop.percentage,
+                        absolute: localVDrop.absolute,
+                        source: "Local fallback (unaudited)" as const,
+                  };
         const cableResult = calculateCableSizing();
         const batteryResult = calculateBatteryRequirements();
 

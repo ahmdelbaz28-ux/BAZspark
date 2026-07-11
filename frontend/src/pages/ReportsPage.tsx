@@ -48,7 +48,7 @@ export function ReportsPage() {
                 error: generateError,
         } = useGenerateReport(); // Assuming useGenerateReport exists
 
-        const [reportType, setReportType] = useState("comprehensive");
+        const [reportType, setReportType] = useState("voltage_drop");
         const [execParams, setExecParams] = useState({
                 kernel_coverage: "full",
                 deterministic_analysis: true,
@@ -67,6 +67,43 @@ export function ReportsPage() {
                 });
                 if (result) {
                         refetchReports();
+                }
+        };
+
+        // V214 FIX: AHJ submittal handler — calls POST /api/v1/projects/{id}/reports/ahj-submittal
+        // This endpoint generates a real NFPA 72 compliance proof document (markdown)
+        // with 6 sections: header, design criteria, room summary, detailed results,
+        // consensus summary, engineer certification.
+        const [ahjGenerating, setAhjGenerating] = useState(false);
+        const [ahjDownloadUrl, setAhjDownloadUrl] = useState<string | null>(null);
+
+        const handleGenerateAhj = async () => {
+                setAhjGenerating(true);
+                setAhjDownloadUrl(null);
+                try {
+                        const projectId = "default-project-id";
+                        const response = await fetch(
+                                `/api/v1/projects/${projectId}/reports/ahj-submittal`,
+                                {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                                designer: "FireAI Engineer",
+                                                jurisdiction: "AHJ",
+                                                nfpa_edition: "2022",
+                                        }),
+                                },
+                        );
+                        if (!response.ok) {
+                                throw new Error(`AHJ submittal failed: ${response.status}`);
+                        }
+                        const blob = await response.blob();
+                        const url = URL.createObjectURL(blob);
+                        setAhjDownloadUrl(url);
+                } catch (err) {
+                        console.error("AHJ submittal error:", err);
+                } finally {
+                        setAhjGenerating(false);
                 }
         };
 
@@ -399,35 +436,34 @@ export function ReportsPage() {
                                                                                 <SelectValue />
                                                                         </SelectTrigger>
                                                                         <SelectContent className="bg-card border-border">
-                                                                                <SelectItem value="voltage-drop">
-                                                                                        {t("reports.voltageDropAnalysis")}
+                                                                                {/* V214 FIX: Values must match backend report_type strings exactly.
+                                                                                    Backend (reports.py:645-651) accepts: voltage_drop, nfpa72_coverage,
+                                                                                    nfpa72_battery, cable_sizing. Anything else falls through to generic
+                                                                                    count-only report. Old values used hyphens (voltage-drop) which NEVER
+                                                                                    matched — every report silently fell through to generic. */}
+                                                                                <SelectItem value="voltage_drop">
+                                                                                        {t("reports.voltageDropAnalysis") || "Voltage Drop Analysis"}
                                                                                 </SelectItem>
-                                                                                <SelectItem value="short-circuit">
-                                                                                        {t("reports.shortCircuitStudy")}
+                                                                                <SelectItem value="cable_sizing">
+                                                                                        {t("reports.cableSizingReport") || "Cable Sizing Report"}
                                                                                 </SelectItem>
-                                                                                <SelectItem value="cable-sizing">
-                                                                                        {t("reports.cableSizingReport")}
+                                                                                <SelectItem value="nfpa72_battery">
+                                                                                        {t("reports.batteryCalculations") || "NFPA 72 Battery Calculation"}
                                                                                 </SelectItem>
-                                                                                <SelectItem value="load-flow">
-                                                                                        {t("reports.loadFlowAnalysis")}
+                                                                                <SelectItem value="nfpa72_coverage">
+                                                                                        {t("reports.coverageAnalysis") || "NFPA 72 Coverage Analysis"}
                                                                                 </SelectItem>
-                                                                                <SelectItem value="comprehensive">
-                                                                                        {t("reports.comprehensiveReport")}
+                                                                                <SelectItem value="short_circuit">
+                                                                                        {t("reports.shortCircuitStudy") || "Short Circuit Study"}
                                                                                 </SelectItem>
-                                                                                <SelectItem value="nfpa-compliance">
-                                                                                        {t("reports.nfpaCompliance")}
+                                                                                <SelectItem value="load_calculation">
+                                                                                        {t("reports.loadFlowAnalysis") || "Load Calculation"}
                                                                                 </SelectItem>
-                                                                                <SelectItem value="battery-calculations">
-                                                                                        {t("reports.batteryCalculations")}
+                                                                                <SelectItem value="conduit_fill">
+                                                                                        {t("reports.conduitFill") || "Conduit Fill Analysis"}
                                                                                 </SelectItem>
-                                                                                <SelectItem value="coverage-analysis">
-                                                                                        {t("reports.coverageAnalysis")}
-                                                                                </SelectItem>
-                                                                                <SelectItem value="cause-effect">
-                                                                                        {t("reports.causeEffectMatrix")}
-                                                                                </SelectItem>
-                                                                                <SelectItem value="cable-schedule">
-                                                                                        {t("reports.cableSchedule")}
+                                                                                <SelectItem value="boq">
+                                                                                        {t("reports.billOfQuantities") || "Bill of Quantities"}
                                                                                 </SelectItem>
                                                                         </SelectContent>
                                                                 </Select>
@@ -507,6 +543,35 @@ export function ReportsPage() {
                                                                 </>
                                                         )}
                                                 </Button>
+
+                                                {/* V214 FIX: AHJ Submittal button — generates real NFPA 72
+                                                     compliance proof document via POST /reports/ahj-submittal */}
+                                                <Button
+                                                        className="bg-primary hover:bg-primary/90 text-white border-none ml-2"
+                                                        onClick={handleGenerateAhj}
+                                                        disabled={ahjGenerating}
+                                                >
+                                                        {ahjGenerating ? (
+                                                                <>
+                                                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                                        Generating AHJ...
+                                                                </>
+                                                        ) : (
+                                                                <>
+                                                                        <FileText className="h-4 w-4 mr-1" />
+                                                                        AHJ Submittal
+                                                                </>
+                                                        )}
+                                                </Button>
+                                                {ahjDownloadUrl && (
+                                                        <a
+                                                                href={ahjDownloadUrl}
+                                                                download="AHJ_submittal.md"
+                                                                className="ml-2 text-sm text-primary hover:underline"
+                                                        >
+                                                                Download AHJ Document
+                                                        </a>
+                                                )}
                                         </CardContent>
                                 </Card>
 
