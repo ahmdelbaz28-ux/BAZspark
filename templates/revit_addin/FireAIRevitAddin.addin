@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!--
+  FireAIRevitAddin.addin — Revit add-in registration file.
+  Copy this file to: %APPDATA%\Autodesk\Revit\Addins\2024\FireAIRevitAddin.addin
+  (The .csproj build target does this automatically on build.)
+-->
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>FireAI Revit Add-in</Name>
+    <Assembly>FireAI\FireAIRevitAddin.dll</Assembly>
+    <FullClassName>FireAI.RevitAddin.FireAIApplication</FullClassName>
+    <ClientId>A1B2C3D4-E5F6-7890-ABCD-EF1234567890</ClientId>
+    <VendorId>BAZSPARK</VendorId>
+    <VendorDescription>FireAI / BAZSPARK — Safety-Critical Fire Alarm Engineering</VendorDescription>
+    <Text>FireAI: Thread-safe Revit integration for fire alarm design.</Text>
+  </AddIn>
+</RevitAddIns>
