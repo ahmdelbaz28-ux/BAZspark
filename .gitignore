@@ -436,3 +436,9 @@ postman_collection*.json
 .mf/
 test.ledger
 quick_shots.cjs
+
+# Revit API data files (too large for git, downloaded on demand)
+revit_data/RevitAPI*.json
+
+# Coverage reports (regenerated on each test run)
+reports/coverage.json
