@@ -7,6 +7,7 @@ import {
         Activity,
         Activity as ActivityIcon,
         Battery,
+        Cable,
         Calculator,
         Download,
         FileText,
@@ -187,10 +188,10 @@ export function ReportGeneratorPage() {
                                 return <Battery className="h-4 w-4" />;
                         case "voltage_drop":
                                 return <Zap className="h-4 w-4" />;
-                        case "complete_compliance":
-                                return <ShieldAlert className="h-4 w-4" />;
-                        case "cause_effect":
-                                return <ActivityIcon className="h-4 w-4" />;
+                        case "cable_sizing":
+                                return <Cable className="h-4 w-4" />;
+                        case "conduit_fill":
+                                return <Ruler className="h-4 w-4" />;
                         case "cable_schedule":
                                 return <Ruler className="h-4 w-4" />;
                         default:

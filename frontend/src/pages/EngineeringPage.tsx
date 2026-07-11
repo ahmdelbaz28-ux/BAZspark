@@ -133,9 +133,13 @@ export function EngineeringPage() {
                 }
         }, [voltageDropInputs]);
 
-        // V214 FIX: Call the API whenever inputs change
+        // V214 FIX: Call the API whenever inputs change — with 500ms debounce
+        // to avoid hammering the backend on every keystroke.
         useEffect(() => {
-                calculateVoltageDropViaApi();
+                const timer = setTimeout(() => {
+                        calculateVoltageDropViaApi();
+                }, 500);
+                return () => clearTimeout(timer);
         }, [calculateVoltageDropViaApi]);
 
         const calculateCableSizing = () => {
