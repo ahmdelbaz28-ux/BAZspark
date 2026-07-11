@@ -26,6 +26,9 @@ import {
         Settings2,
         Info,
         Zap,
+        Pickaxe,
+        Key,
+        Download,
 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
@@ -73,6 +76,13 @@ const navItems: NavItem[] = [
                 defaultLabel: "Marine",
                 icon: Ship,
                 path: "/marine",
+        },
+        {
+                labelKey: "nav.mining",
+                defaultLabel: "Mining",
+                icon: Pickaxe,
+                path: "/mining",
+                dataOnboarding: "nav-mining",
         },
         {
                 labelKey: "nav.fireAlarmDesigner",
@@ -143,6 +153,13 @@ const navItems: NavItem[] = [
                 dataOnboarding: "nav-reports",
         },
         {
+                labelKey: "nav.exports",
+                defaultLabel: "Exports",
+                icon: Download,
+                path: "/exports",
+                dataOnboarding: "nav-exports",
+        },
+        {
                 labelKey: "nav.environment",
                 defaultLabel: "Environment",
                 icon: CloudSun,
@@ -202,6 +219,13 @@ const navItems: NavItem[] = [
                 icon: Settings,
                 path: "/settings",
                 dataOnboarding: "nav-settings",
+        },
+        {
+                labelKey: "nav.apiKeys",
+                defaultLabel: "API Keys",
+                icon: Key,
+                path: "/api-keys",
+                dataOnboarding: "nav-api-keys",
         },
 ];
 
