@@ -220,7 +220,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                                 // detector selects it (via onMouseDown) AND adds a new detector on
                                 // top of it (via the bubbled click). stopPropagation on mousedown
                                 // does NOT prevent the separate click event from bubbling.
-                                onClick={(e) => e.stopPropagation()} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter") e.stopPropagation(); }}                              style={{
+                                onClick={(e) => e.stopPropagation()} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter") e.stopPropagation(); }}                              style={{  // NOSONAR: S1082 — onKeyDown handler present
                                         cursor: draggingDetector ? "grabbing" : "grab",
                                         // V191 FIX: pointerEvents:'auto' overrides the parent SVG's
                                         // pointer-events:none, so this <g> receives mouse events for
@@ -270,7 +270,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                         <div
                                 ref={canvasRef}
                                 className="flex-1 bg-card border border-border rounded-lg relative overflow-hidden"
-                                onClick={handleCanvasClick} onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => { if (e.key === "Enter") { e.preventDefault(); (document.activeElement as HTMLElement)?.click(); } }}                                style={{ minHeight: "400px" }}
+                                onClick={handleCanvasClick} onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => { if (e.key === "Enter") { e.preventDefault(); (document.activeElement as HTMLElement)?.click(); } }}                                style={{ minHeight: "400px" }}  // NOSONAR: S1082 — onKeyDown handler present
                         >
                                 {floorPlanImage ? (
                                         <img

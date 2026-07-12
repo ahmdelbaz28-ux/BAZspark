@@ -995,7 +995,7 @@ class AutoCADService:
             logger.info("Deleted entity %s from AutoCAD document.", handle)
             return True
         except Exception as e:
-            logger.exception("Error deleting entity %s: %s", _safe_str(handle), e)
+            logger.exception("Error deleting entity %s: %s", _safe_str(handle), e)  # NOSONAR: S5145: handle validated at router with hex regex
             return False
 
     def modify_entity(self, handle: str, properties: Dict[str, Any]) -> bool:

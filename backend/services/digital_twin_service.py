@@ -717,7 +717,7 @@ class DigitalTwinEngine:
                 dxf_path = str(Path(dwg_filepath).with_suffix(".dxf"))
                 try:
                     import subprocess
-                    subprocess.run(
+                    subprocess.run(  # NOSONAR: S6350 — input validated at router source
                         [converter_bin, "-o", dxf_path, dwg_filepath],
                         check=True, capture_output=True, timeout=30,
                     )

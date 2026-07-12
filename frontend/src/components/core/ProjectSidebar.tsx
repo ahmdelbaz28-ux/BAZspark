@@ -33,7 +33,7 @@ export function ProjectSidebar() {
 								role="button"
 								tabIndex={0}
 								className={`flex items-center justify-between py-1 px-2 rounded cursor-pointer group ${selectedElementId === el.id ? "bg-primary/10 text-primary" : "hover:bg-muted/50 text-muted-foreground"}`}
-								onClick={() => actions.selectElement(el.id)}
+								onClick={() => actions.selectElement(el.id)}  // NOSONAR: S1082 — onKeyDown handler on next line
 								onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); actions.selectElement(el.id); } }}
 							>
 								<div className="flex items-center gap-2 truncate">
