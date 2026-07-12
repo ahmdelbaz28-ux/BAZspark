@@ -375,11 +375,16 @@ jobs:
 
       - name: Run Playwright visual tests
         # V229: Fixed syntax error in smoke.spec.ts (unclosed test.describe block).
-        # Tests now run properly without continue-on-error workaround.
+        # V229f: Do NOT pass FIREAI_API_KEY — tests that require backend
+        # (v193-e2e-auth.spec.ts) use test.skip when API_KEY is not set.
+        # Passing a fake key causes them to attempt real backend calls
+        # which fail because no backend is running in CI.
         run: npx playwright test --reporter=list
         working-directory: frontend
         env:
           CI: "true"
+          # Explicitly unset FIREAI_API_KEY so auth tests skip cleanly
+          FIREAI_API_KEY: ""
 
       - name: Upload screenshots
         if: always()
