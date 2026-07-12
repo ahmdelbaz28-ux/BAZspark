@@ -75,7 +75,7 @@ export function Header({
 			// Realistic jitter: 18–36 ms
 			setLatency(Math.round(18 + crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 18));
 			setPacketLoss(
-				crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF < 0.05 ? parseFloat((crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 0.4).toFixed(1)) : 0,
+				crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF < 0.05 ? Number.parseFloat((crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 0.4).toFixed(1)) : 0,
 			);
 		}, 1000);
 

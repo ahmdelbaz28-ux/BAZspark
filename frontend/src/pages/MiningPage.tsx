@@ -68,7 +68,7 @@ export function MiningPage() {
                 setLoading(true);
                 try {
                         const result = await miningApi.methaneCheck({
-                                concentration_pct: parseFloat(methanePct),
+                                concentration_pct: Number.parseFloat(methanePct),
                         });
                         setMethaneResult(result as Record<string, unknown>);
                         toast.success(`Methane hazard: ${result.hazard_level}`);
@@ -83,7 +83,7 @@ export function MiningPage() {
                 setLoading(true);
                 try {
                         const result = await miningApi.ventilationCheck({
-                                airflow_m3_s: parseFloat(airflow),
+                                airflow_m3_s: Number.parseFloat(airflow),
                                 location_type: ventLocation,
                         });
                         setVentResult(result as Record<string, unknown>);
@@ -99,7 +99,7 @@ export function MiningPage() {
                 setLoading(true);
                 try {
                         const result = await miningApi.coCheck({
-                                co_ppm: parseFloat(coPpm),
+                                co_ppm: Number.parseFloat(coPpm),
                         });
                         setCoResult(result as Record<string, unknown>);
                         toast.success(`CO hazard: ${result.hazard_level}`);
@@ -114,8 +114,8 @@ export function MiningPage() {
                 setLoading(true);
                 try {
                         const result = await miningApi.conveyorSuppression({
-                                belt_length_m: parseFloat(beltLength),
-                                belt_width_m: parseFloat(beltWidth),
+                                belt_length_m: Number.parseFloat(beltLength),
+                                belt_width_m: Number.parseFloat(beltWidth),
                         });
                         setConveyorResult(result as Record<string, unknown>);
                         toast.success("Suppression design generated");
@@ -132,11 +132,11 @@ export function MiningPage() {
                         const result = await miningApi.complianceReport({
                                 mine_name: mineName,
                                 section_name: sectionName,
-                                methane_pct: parseFloat(methanePct),
-                                co_ppm: parseFloat(coPpm),
-                                airflow_m3_s: parseFloat(airflow),
-                                conveyor_length_m: parseFloat(beltLength),
-                                conveyor_width_m: parseFloat(beltWidth),
+                                methane_pct: Number.parseFloat(methanePct),
+                                co_ppm: Number.parseFloat(coPpm),
+                                airflow_m3_s: Number.parseFloat(airflow),
+                                conveyor_length_m: Number.parseFloat(beltLength),
+                                conveyor_width_m: Number.parseFloat(beltWidth),
                         });
                         setReportResult(result as Record<string, unknown>);
                         toast.success(`Overall status: ${result.overall_status}`);

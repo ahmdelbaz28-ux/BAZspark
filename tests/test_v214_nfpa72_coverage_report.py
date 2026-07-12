@@ -51,10 +51,10 @@ class TestV214Nfpa72CoverageRealSpacing:
         result = _generate_nfpa72_coverage_report(devices, "2026-01-01")
 
         smoke = result["detectorSummary"]["smokeDetectors"]
-        assert smoke["maxSpacingM"] == 9.1
+        assert smoke["maxSpacingM"] == 9.1  # NOSONAR: S1244 — float comparison in test
         assert "§17.7.3.2.3" in smoke["nfpaSection"]
         # Coverage radius = 0.7 × 9.1 = 6.37m
-        assert smoke["coverageRadiusM"] == 6.37
+        assert smoke["coverageRadiusM"] == 6.37  # NOSONAR: S1244 — float comparison in test
         # Coverage area = π × 6.37² ≈ 127.4 m²
         assert smoke["coverageAreaPerDetectorM2"] > 127
         assert smoke["coverageAreaPerDetectorM2"] < 128
@@ -65,10 +65,10 @@ class TestV214Nfpa72CoverageRealSpacing:
         result = _generate_nfpa72_coverage_report(devices, "2026-01-01")
 
         heat = result["detectorSummary"]["heatDetectors"]
-        assert heat["maxSpacingM"] == 6.1
+        assert heat["maxSpacingM"] == 6.1  # NOSONAR: S1244 — float comparison in test
         assert "§17.6.3.5.1" in heat["nfpaSection"]
         # Coverage radius = 0.7 × 6.1 = 4.27m
-        assert heat["coverageRadiusM"] == 4.27
+        assert heat["coverageRadiusM"] == 4.27  # NOSONAR: S1244 — float comparison in test
 
     def test_coverage_report_flags_devices_missing_coordinates(self):
         """Devices with x=None or y=None must be counted as
@@ -126,9 +126,9 @@ class TestV214Nfpa72CoverageRealSpacing:
 
         assert "spacingConstants" in result
         sc = result["spacingConstants"]
-        assert sc["smokeMaxSpacingM"] == 9.1
-        assert sc["heatMaxSpacingM"] == 6.1
-        assert sc["coverageRadiusFactor"] == 0.7
+        assert sc["smokeMaxSpacingM"] == 9.1  # NOSONAR: S1244 — float comparison in test
+        assert sc["heatMaxSpacingM"] == 6.1  # NOSONAR: S1244 — float comparison in test
+        assert sc["coverageRadiusFactor"] == 0.7  # NOSONAR: S1244 — float comparison in test
         assert "source" in sc
 
     def test_coverage_report_includes_disclaimer(self):

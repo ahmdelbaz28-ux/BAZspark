@@ -627,7 +627,7 @@ export function DigitalTwinPage() {
                                                                                         type="number"
                                                                                         value={levelHeight}
                                                                                         onChange={(e) =>
-                                                                                                setLevelHeight(parseInt(e.target.value, 10))
+                                                                                                setLevelHeight(Number.parseInt(e.target.value, 10))
                                                                                         }
                                                                                         className="bg-card border-border text-foreground"
                                                                                 />

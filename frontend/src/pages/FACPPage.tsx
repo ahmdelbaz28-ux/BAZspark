@@ -63,15 +63,15 @@ export function FACPPage() {
 		setResult(null);
 		try {
 			const res = await facpApi.select({
-				device_count: parseInt(form.device_count),
-				nac_circuit_count: parseInt(form.nac_circuit_count),
-				building_size_m2: parseFloat(form.building_size_m2),
-				building_floors: parseInt(form.building_floors),
+				device_count: Number.parseInt(form.device_count),
+				nac_circuit_count: Number.parseInt(form.nac_circuit_count),
+				building_size_m2: Number.parseFloat(form.building_size_m2),
+				building_floors: Number.parseInt(form.building_floors),
 				requires_network: form.requires_network,
 				requires_voice: form.requires_voice,
 				requires_releasing: form.requires_releasing,
 				jurisdiction: form.jurisdiction,
-				min_temperature_c: parseFloat(form.min_temperature_c),
+				min_temperature_c: Number.parseFloat(form.min_temperature_c),
 			});
 			setResult(res as Record<string, unknown>);
 		} catch (err) {

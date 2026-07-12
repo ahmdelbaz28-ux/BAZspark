@@ -174,7 +174,7 @@ export function ComponentLibrary() {
                                                                                                         tabIndex={0}
                                                                                                         key={child}
                                                                                                         className={`py-1.5 px-2 text-xs rounded-md cursor-pointer transition-colors ${activeCategory === child ? "bg-primary/20 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"}`}
-                                                                                                        onClick={() => setActiveCategory(child)}  // NOSONAR: S1082 — onKeyDown handler on next line
+                                                                                                        onClick={() => setActiveCategory(child)}
                                                                                                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActiveCategory(child); } }}
                                                                                                 >
                                                                                                         {child}
@@ -227,7 +227,7 @@ export function ComponentLibrary() {
                                                                         tabIndex={0}
                                                                         key={comp.id}
                                                                         className={`group bg-card border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,168,255,0.1)] cursor-pointer flex flex-col ${selectedComp === comp.id ? "border-primary shadow-[0_0_10px_rgba(0,168,255,0.2)]" : "border-border/60"}`}
-                                                                        onClick={() => setSelectedComp(comp.id)}  // NOSONAR: S1082 — onKeyDown handler on next line
+                                                                        onClick={() => setSelectedComp(comp.id)}
                                                                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedComp(comp.id); } }}
                                                                 >
                                                                         <div className="h-32 bg-[#1a1d24] relative flex items-center justify-center p-4 border-b border-border/50">

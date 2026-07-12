@@ -911,7 +911,7 @@ function TreeFolder({
 				role="button"
 				tabIndex={0}
 				className="flex items-center gap-1.5 py-1 px-1 hover:bg-muted cursor-pointer rounded transition-colors"
-				onClick={() => setOpen(!open)}  // NOSONAR: S1082 — onKeyDown handler on next line
+				onClick={() => setOpen(!open)}
 				onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(!open); } }}
 			>
 				<Triangle

@@ -87,9 +87,9 @@ export function calculateBatteryRequirements(
 	}
 
 	return {
-		totalStandbyCurrent: parseFloat(totalStandbyCurrent.toFixed(2)),
-		totalAlarmCurrent: parseFloat(totalAlarmCurrent.toFixed(2)),
-		requiredCapacity: parseFloat(requiredCapacity.toFixed(2)),
+		totalStandbyCurrent: Number.parseFloat(totalStandbyCurrent.toFixed(2)),
+		totalAlarmCurrent: Number.parseFloat(totalAlarmCurrent.toFixed(2)),
+		requiredCapacity: Number.parseFloat(requiredCapacity.toFixed(2)),
 		recommendedBattery,
 		compliance: {
 			meetsNFPA27_6_2: true,

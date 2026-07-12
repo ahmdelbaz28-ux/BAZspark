@@ -363,7 +363,7 @@ export function SettingsPage() {
 										type="number"
 										value={passwordExpiry}
 										onChange={(e) =>
-											setPasswordExpiry(parseInt(e.target.value, 10))
+											setPasswordExpiry(Number.parseInt(e.target.value, 10))
 										}
 										className="bg-card border-border text-foreground"
 									/>
@@ -404,7 +404,7 @@ export function SettingsPage() {
 											type="number"
 											value={apiTimeout}
 											onChange={(e) =>
-												setApiTimeout(parseInt(e.target.value, 10))
+												setApiTimeout(Number.parseInt(e.target.value, 10))
 											}
 											className="bg-card border-border text-foreground"
 										/>
@@ -420,7 +420,7 @@ export function SettingsPage() {
 											type="number"
 											value={retryAttempts}
 											onChange={(e) =>
-												setRetryAttempts(parseInt(e.target.value, 10))
+												setRetryAttempts(Number.parseInt(e.target.value, 10))
 											}
 											className="bg-card border-border text-foreground"
 										/>

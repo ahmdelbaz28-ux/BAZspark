@@ -606,7 +606,7 @@ export function PythonSwagger() {
 									role="button"
 									tabIndex={0}
 									className="bg-card px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-card transition-colors"
-									onClick={() => toggleSwagger("Projects")}  // NOSONAR: S1082 — onKeyDown handler on next line
+									onClick={() => toggleSwagger("Projects")}
 									onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSwagger("Projects"); } }}
 								>
 									<h3 className="font-bold text-sm text-foreground">Projects</h3>
@@ -711,7 +711,7 @@ export function PythonSwagger() {
 										role="button"
 										tabIndex={0}
 										className="bg-card px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-card transition-colors"
-										onClick={() => toggleSwagger(group.name)}  // NOSONAR: S1082 — onKeyDown handler on next line
+										onClick={() => toggleSwagger(group.name)}
 										onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSwagger(group.name); } }}
 									>
 										<h3 className="font-bold text-sm text-foreground">

@@ -57,7 +57,7 @@ export function EnvironmentPage() {
 	const handleWeather = async () => {
 		setLoading(true);
 		try {
-			const res = await environmentApi.getWeather(parseFloat(lat), parseFloat(lon));
+			const res = await environmentApi.getWeather(Number.parseFloat(lat), Number.parseFloat(lon));
 			setWeather(res as Record<string, unknown>);
 		} catch (err) {
 			toast({
@@ -73,7 +73,7 @@ export function EnvironmentPage() {
 	const handleElevation = async () => {
 		setLoading(true);
 		try {
-			const res = await environmentApi.getElevation(parseFloat(lat), parseFloat(lon));
+			const res = await environmentApi.getElevation(Number.parseFloat(lat), Number.parseFloat(lon));
 			setElevation(res as Record<string, unknown>);
 		} catch (err) {
 			toast({
@@ -89,7 +89,7 @@ export function EnvironmentPage() {
 	const handleAirQuality = async () => {
 		setLoading(true);
 		try {
-			const res = await environmentApi.getAirQuality(parseFloat(lat), parseFloat(lon));
+			const res = await environmentApi.getAirQuality(Number.parseFloat(lat), Number.parseFloat(lon));
 			setAirQuality(res as Record<string, unknown>);
 		} catch (err) {
 			toast({
@@ -105,7 +105,7 @@ export function EnvironmentPage() {
 	const handleSevereWeather = async () => {
 		setLoading(true);
 		try {
-			const res = await environmentApi.getSevereWeather(parseFloat(lat), parseFloat(lon));
+			const res = await environmentApi.getSevereWeather(Number.parseFloat(lat), Number.parseFloat(lon));
 			setSevereWeather(res as Record<string, unknown>);
 		} catch (err) {
 			toast({
