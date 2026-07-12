@@ -141,7 +141,7 @@ jobs:
           export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
           # V207 FIX: Clean stale test artifacts that cause RuntimeError on re-runs
           rm -rf db/ /tmp/fireai_deploy_test.db /tmp/udm_deploy_test.db
-          pip install pytest-timeout slowapi tenacity
+          pip install pytest-timeout slowapi tenacity openpyxl
           # V229: Run pytest properly — all dependencies now installed.
           # Tests pass: 584+ passed, 6 skipped, 0 failed (verified locally).
           # No more || true or non-blocking workarounds.
