@@ -63,8 +63,10 @@ templates/
 nginx/
 traefik/
 
-# Services (not used on Vercel)
-services/
+# Services (root-level Docker services, not used on Vercel)
+# NOTE: leading slash ensures we only ignore the top-level /services/ directory,
+# NOT frontend/src/services/ which contains the frontend API client modules.
+/services/
 
 # Test helpers
 frontend/src/test/
