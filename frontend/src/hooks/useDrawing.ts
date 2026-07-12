@@ -152,7 +152,12 @@ const DEFAULT_STYLE: ElementStyle = {
 };
 
 function generateId(): string {
-        return `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        // V216 FIX (SonarCloud S2245): use crypto.randomUUID() for cryptographically
+        // secure unique IDs. The el_ prefix and Date.now() are kept for sortability.
+        const uuid = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+                ? crypto.randomUUID()
+                : `fallback-${Math.random().toString(36).slice(2, 11)}`; // NOSONAR — fallback only
+        return `el_${Date.now()}_${uuid}`;
 }
 
 function snapToGrid(value: number, gridSize: number): number {

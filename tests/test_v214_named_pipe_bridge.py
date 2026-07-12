@@ -107,7 +107,12 @@ class TestV214PythonNamedPipeClient:
     def test_client_class_exists(self):
         """RevitNamedPipeClient class must exist."""
         from fireai.mcp_server.named_pipe_client import RevitNamedPipeClient
-        assert RevitNamedPipeClient is not None
+        # V216 FIX (SonarCloud python:S5727): `is not None` after a successful
+        # import is always True (identity check tautology). Verify the symbol
+        # is actually a class with the expected interface instead.
+        assert isinstance(RevitNamedPipeClient, type)
+        assert hasattr(RevitNamedPipeClient, "__init__")
+        assert hasattr(RevitNamedPipeClient, "is_available")
 
     def test_client_is_available_returns_false_on_non_windows(self):
         """On non-Windows, is_available() must return False (not crash)."""

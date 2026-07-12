@@ -1089,8 +1089,8 @@ def _healing_wrapper(
         def wrapper(self, *args, **kwargs):
             try:
                 return method(self, *args, **kwargs)
-            except (PhysicsGuardError, ValueError, TypeError, ZeroDivisionError,
-                    KeyError, IndexError) as exc:
+            except (ValueError, TypeError, ZeroDivisionError,
+                    KeyError, IndexError) as exc:  # V216 FIX (S5713): PhysicsGuardError subclasses ValueError
                 # Import self-healing engine (lazy to avoid circular imports)
                 try:
                     from fireai.core.qomn_self_healing_engine import (  # noqa: F401

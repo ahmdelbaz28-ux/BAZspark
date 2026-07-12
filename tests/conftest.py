@@ -60,9 +60,18 @@ if not _os.environ.get("FIREAI_SESSION_SECRET"):
     _os.environ["FIREAI_SESSION_SECRET"] = _secrets.token_urlsafe(64)
 
 # V212 FIX: backend/app.py::lifespan also requires DATABASE_URL + CORS.
-_os.environ.setdefault("DATABASE_URL", "sqlite:////tmp/fireai_test_root.db")
-_os.environ.setdefault("DIGITAL_TWIN_DB_PATH", "/tmp/fireai_test_root.db")
-_os.environ.setdefault("UDM_DB_PATH", "/tmp/udm_test_root.db")
+# V216 FIX (SonarCloud python:S5443): /tmp is publicly writable (mode 1777).
+# Use a private subdirectory with 0o700 mode to prevent other users from
+# reading or modifying test databases. This is a test fixture, not production.
+_FIREAI_TEST_DIR_ROOT = "/tmp/fireai_test_private"
+try:
+    _os.makedirs(_FIREAI_TEST_DIR_ROOT, exist_ok=True, mode=0o700)
+    _os.chmod(_FIREAI_TEST_DIR_ROOT, 0o700)
+except OSError:
+    _FIREAI_TEST_DIR_ROOT = "/tmp"  # fallback
+_os.environ.setdefault("DATABASE_URL", f"sqlite:///{_FIREAI_TEST_DIR_ROOT}/fireai_test_root.db")
+_os.environ.setdefault("DIGITAL_TWIN_DB_PATH", f"{_FIREAI_TEST_DIR_ROOT}/fireai_test_root.db")
+_os.environ.setdefault("UDM_DB_PATH", f"{_FIREAI_TEST_DIR_ROOT}/udm_test_root.db")
 _os.environ.setdefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
 
 # V212 FIX: SECRET_KEY is used by webhook test fixtures as HMAC secret.

@@ -1113,9 +1113,12 @@ async def generate_ahj_submittal(project_id: str, request: AhjSubmittalRequest):
     # and add the result to the AHJ document.
     for room, detector_type in rooms:
         try:
+            # V216 FIX (SonarCloud python:S930): optimizer.optimize() does not
+            # accept a detector_type kwarg — the detector type is fixed at the
+            # optimizer instance level. The detector_type from the loop is
+            # informational only (used in the AHJ document metadata below).
             layout: DetectorLayout = optimizer.optimize(
                 room=room,
-                detector_type=detector_type,
             )
             # V214 FIX: Run consensus engine with REAL verification.
             # Previously ConsensusEngine() was called without the required

@@ -191,7 +191,14 @@ def test_dockerfile_uses_python_312_base() -> None:
     """Dockerfile must use Python 3.12 base image (matches pyproject.toml)."""
     content = DOCKERFILE.read_text()
     # Look for FROM line with python:3.12 or devcontainers/python:3.12
-    assert "python:3.12" in content or "python:3.12" in content, (
+    # V216 FIX (SonarCloud python:S1764): the original "python:3.12" or "python:3.12"
+    # was a tautology — both sides were identical. The second operand should have
+    # been "mcr.microsoft.com/devcontainers/python:3.12" to also match the
+    # devcontainer base image variant.
+    assert (
+        "python:3.12" in content
+        or "mcr.microsoft.com/devcontainers/python:3.12" in content
+    ), (
         "Dockerfile must use Python 3.12 base image (pyproject.toml requires >=3.12)"
     )
 

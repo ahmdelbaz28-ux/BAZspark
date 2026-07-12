@@ -47,7 +47,7 @@ class VentilationResult:
     resistance_n_s2_m8: float
     air_velocity_m_s: float | None = None
     is_compliant: bool = False
-    violations: list[str] = None
+    violations: list[str] | None = None  # V216 FIX (S5890): was `list[str] = None`
 
     def __post_init__(self):
         if self.violations is None:

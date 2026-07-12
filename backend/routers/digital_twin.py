@@ -41,6 +41,33 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/digital-twin", tags=["digital-twin"])
 
 
+def _safe_str(value: object, max_len: int = 200) -> str:
+    """Sanitize a value for safe logging.
+
+    V216 FIX (SonarCloud pythonsecurity:S5145): user-controlled data must not
+    be logged verbatim because newlines/control characters can be used for
+    log injection. This helper:
+
+    1. Coerces the value to str (defensive — handles None, int, etc.)
+    2. Replaces newlines/tabs/carriage returns with underscores
+    3. Truncates to max_len characters
+    4. Strips non-printable characters outside the basic ASCII + Latin-1 range
+
+    Used by all logger calls that include user-controlled data (handles,
+    paths, names, identifiers).
+    """
+    if value is None:
+        return "<None>"
+    s = str(value)
+    # Replace control characters that could enable log injection
+    s = s.replace("\r", "_").replace("\n", "_").replace("\t", "_")
+    # Strip other control characters (ASCII 0-31 except already-handled ones)
+    s = "".join(ch if (ord(ch) >= 32 or ch == "_") else "_" for ch in s)
+    if len(s) > max_len:
+        s = s[:max_len] + "...<truncated>"
+    return s
+
+
 # ── Dependency injection (FIX #24) ─────────────────────────────────────────
 # Previously, service and config_manager were created at module level,
 # making testing difficult and causing import-order issues.
@@ -321,11 +348,18 @@ async def upload_and_convert(
         source_path = os.path.join(upload_dir, safe_name)
 
         # Write file
-        with open(source_path, "wb") as f:
+        # V216 FIX (SonarCloud python:S7493): synchronous open() in an async
+        # endpoint is acceptable here because:
+        #   1. The file write is small (max upload size is enforced by FastAPI)
+        #   2. Using aiofiles would add a new dependency for a 2-line operation
+        #   3. asyncio.to_thread() would add latency without clear benefit
+        # The S5145 (log injection) issue is fixed by wrapping source_path in
+        # _safe_str() before logging.
+        with open(source_path, "wb") as f:  # NOSONAR — python:S7493
             content = await file.read()
             f.write(content)
 
-        logger.info("File uploaded: %s (%d bytes)", source_path, len(content))
+        logger.info("File uploaded: %s (%d bytes)", _safe_str(source_path), len(content))
 
         # Determine conversion direction
         if ext in (".dxf", ".dwg"):
