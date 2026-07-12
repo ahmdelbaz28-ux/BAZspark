@@ -610,6 +610,19 @@ async def write_rvt_file(request: WriteRvtRequest) -> Dict[str, Any]:
     # FIX: Path traversal validation
     _validate_file_path(request.filepath)
 
+    # V217 FIX (SonarCloud S5145): validate element categories and IDs at source.
+    # These flow into logger calls in revit_service.py write_rvt(). Validate
+    # with a whitelist to break the taint flow.
+    _SAFE_CATEGORY_RE = re.compile(r'^[a-zA-Z0-9_\- ]{1,64}$')
+    _SAFE_ID_RE = re.compile(r'^[a-zA-Z0-9_\-]{1,128}$')
+    for elem in (request.elements or []):
+        cat = elem.get("category", "") if isinstance(elem, dict) else ""
+        eid = elem.get("id", "") if isinstance(elem, dict) else ""
+        if cat and not _SAFE_CATEGORY_RE.match(str(cat)):
+            raise HTTPException(status_code=400, detail=f"Invalid element category: {cat[:50]}")
+        if eid and not _SAFE_ID_RE.match(str(eid)):
+            raise HTTPException(status_code=400, detail=f"Invalid element id: {eid[:50]}")
+
     success = svc.write_rvt(request.filepath, request.elements)
     if success:
         return {"success": True, "message": "File written successfully"}
