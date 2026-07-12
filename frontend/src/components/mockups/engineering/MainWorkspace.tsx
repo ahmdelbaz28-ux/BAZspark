@@ -84,7 +84,7 @@ export function MainWorkspace() {
                                                                 <button
                                                                         key={tab}
                                                                         className={`px-3 py-1 rounded-sm transition-colors ${activeTab === tab ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted"}`}
-                                                                        onClick={() => setActiveTab(tab)} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveTab(tab))(); }}                                                            >  // NOSONAR: S1082 — onKeyDown handler present
+                                                                        onClick={() => setActiveTab(tab)} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveTab(tab))(); }}                                                            >
                                                                         {tab}
                                                                 </button>
                                                         ))}
@@ -144,7 +144,7 @@ export function MainWorkspace() {
                                                         variant="ghost"
                                                         size="icon"
                                                         className="h-5 w-5"
-                                                        onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} onKeyDown={(e) => { if (e.key === "Enter") (() => setIsSidebarCollapsed(!isSidebarCollapsed))(); }}                                          >  // NOSONAR: S1082 — onKeyDown handler present
+                                                        onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} onKeyDown={(e) => { if (e.key === "Enter") (() => setIsSidebarCollapsed(!isSidebarCollapsed))(); }}                                          >
                                                         <Menu className="h-3 w-3" />
                                                 </Button>
                                         </div>
@@ -158,17 +158,17 @@ export function MainWorkspace() {
                                                                                 title="Single Line Diagram (SLD)"
                                                                                 type="dwg"
                                                                                 active={activeFile === "SLD"}
-                                                                                onClick={() => setActiveFile("SLD")} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile("SLD"))(); }}                                                                      />  // NOSONAR: S1082 — onKeyDown handler present
+                                                                                onClick={() => setActiveFile("SLD")} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile("SLD"))(); }}                                                                      />
                                                                         <FileNode
                                                                                 title="Cabling Network"
                                                                                 type="dwg"
                                                                                 active={activeFile === "Cabling"}
-                                                                                onClick={() => setActiveFile("Cabling")} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile("Cabling"))(); }}                                                                      />  // NOSONAR: S1082 — onKeyDown handler present
+                                                                                onClick={() => setActiveFile("Cabling")} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile("Cabling"))(); }}                                                                      />
                                                                         <FileNode
                                                                                 title="Connected Devices"
                                                                                 type="dwg"
                                                                                 active={activeFile === "Devices"}
-                                                                                onClick={() => setActiveFile("Devices")} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile("Devices"))(); }}                                                                      />  // NOSONAR: S1082 — onKeyDown handler present
+                                                                                onClick={() => setActiveFile("Devices")} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile("Devices"))(); }}                                                                      />
                                                                 </TreeNode>
                                                                 <TreeNode title="Project Elements" defaultOpen>
                                                                         <TreeNode title="SLD Elements">
@@ -185,7 +185,7 @@ export function MainWorkspace() {
                                                                                 title="Report Manager"
                                                                                 type="xlsx"
                                                                                 active={activeFile === "Reports"}
-                                                                                onClick={() => setActiveFile("Reports")} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile("Reports"))(); }}                                                                      />  // NOSONAR: S1082 — onKeyDown handler present
+                                                                                onClick={() => setActiveFile("Reports")} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile("Reports"))(); }}                                                                      />
                                                                 </TreeNode>
                                                                 <TreeNode title="System Settings" defaultOpen>
                                                                         <FileNode title="Preferences" type="xlsx" />
@@ -197,13 +197,13 @@ export function MainWorkspace() {
                                                         <div className="flex flex-col items-center gap-4 py-4">
                                                                 <FileText
                                                                         className="h-5 w-5 text-muted-foreground cursor-pointer"
-                                                                        onClick={() => setIsSidebarCollapsed(false)} onKeyDown={(e) => { if (e.key === "Enter") (() => setIsSidebarCollapsed(false))(); }}                                                              />  // NOSONAR: S1082 — onKeyDown handler present
+                                                                        onClick={() => setIsSidebarCollapsed(false)} onKeyDown={(e) => { if (e.key === "Enter") (() => setIsSidebarCollapsed(false))(); }}                                                              />
                                                                 <Zap
                                                                         className="h-5 w-5 text-muted-foreground cursor-pointer"
-                                                                        onClick={() => setIsSidebarCollapsed(false)} onKeyDown={(e) => { if (e.key === "Enter") (() => setIsSidebarCollapsed(false))(); }}                                                              />  // NOSONAR: S1082 — onKeyDown handler present
+                                                                        onClick={() => setIsSidebarCollapsed(false)} onKeyDown={(e) => { if (e.key === "Enter") (() => setIsSidebarCollapsed(false))(); }}                                                              />
                                                                 <Layout
                                                                         className="h-5 w-5 text-muted-foreground cursor-pointer"
-                                                                        onClick={() => setIsSidebarCollapsed(false)} onKeyDown={(e) => { if (e.key === "Enter") (() => setIsSidebarCollapsed(false))(); }}                                                              />  // NOSONAR: S1082 — onKeyDown handler present
+                                                                        onClick={() => setIsSidebarCollapsed(false)} onKeyDown={(e) => { if (e.key === "Enter") (() => setIsSidebarCollapsed(false))(); }}                                                              />
                                                         </div>
                                                 )}
                                         </ScrollArea>
@@ -239,7 +239,7 @@ export function MainWorkspace() {
                                                         <div
                                                                 key={file}
                                                                 className={`px-4 py-2 text-xs border-r flex items-center gap-2 cursor-pointer ${activeFile === file ? "bg-[#0f1115] text-primary border-t-2 border-t-primary" : "text-muted-foreground hover:bg-muted"}`}
-                                                                onClick={() => setActiveFile(file)} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile(file))(); }}                                                        >  // NOSONAR: S1082 — onKeyDown handler present
+                                                                onClick={() => setActiveFile(file)} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile(file))(); }}                                                        >
                                                                 {file.endsWith(".dwg") ? (
                                                                         <Layout className="h-3 w-3" />
                                                                 ) : (
@@ -557,7 +557,7 @@ export function MainWorkspace() {
                                         role="button"
                                         tabIndex={0}
                                         className="h-7 flex items-center justify-between px-2 border-b cursor-pointer select-none shrink-0 bg-red-950/10"
-                                        onClick={() =>                                          !isErrorLogPinned && setIsErrorLogExpanded(!isErrorLogExpanded)                                 }  // NOSONAR: S1082 — onKeyDown handler on next line
+                                        onClick={() =>                                          !isErrorLogPinned && setIsErrorLogExpanded(!isErrorLogExpanded)                                 }
                                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!isErrorLogPinned) setIsErrorLogExpanded(!isErrorLogExpanded); } }}
                                 >
                                         <div className="flex items-center gap-3">
@@ -793,7 +793,7 @@ function TreeNode({
                 <div className="select-none">
                         <div
                                 className="flex items-center gap-1 py-1 hover:bg-muted/50 cursor-pointer rounded px-1"
-                                onClick={() => setOpen(!open)} onKeyDown={(e) => { if (e.key === "Enter") (() => setOpen(!open))(); }}                  >  // NOSONAR: S1082 — onKeyDown handler present
+                                onClick={() => setOpen(!open)} onKeyDown={(e) => { if (e.key === "Enter") (() => setOpen(!open))(); }}                  >
                                 <Triangle
                                         className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : "rotate-90"}`}
                                 />
@@ -830,7 +830,7 @@ function FileNode({
         return (
                 <div
                         className={`flex items-center gap-2 py-1 px-2 rounded cursor-pointer ${active ? "bg-primary/10 text-primary" : "hover:bg-muted/50 text-muted-foreground"}`}
-                        onClick={onClick} onKeyDown={onKeyDown} tabIndex={0} role="button">  // NOSONAR: S1082 — onKeyDown handler present
+                        onClick={onClick} onKeyDown={onKeyDown} tabIndex={0} role="button">
                         <FileText className={`h-4 w-4 ${color}`} />
                         <span className={`text-xs truncate ${active ? "font-medium" : ""}`}>
                                 {title}

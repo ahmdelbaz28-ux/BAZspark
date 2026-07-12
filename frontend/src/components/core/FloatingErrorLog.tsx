@@ -39,7 +39,7 @@ export function FloatingErrorLog() {
 				role="button"
 				tabIndex={0}
 				aria-label={isExpanded ? "Collapse error log" : "Expand error log"}
-				onClick={() => !isPinned && setIsExpanded(!isExpanded)}  // NOSONAR: S1082 — onKeyDown handler on next line
+				onClick={() => !isPinned && setIsExpanded(!isExpanded)}
 				onKeyDown={(e) => {
 					if (isPinned) return;
 					if (e.key === "Enter" || e.key === " ") {
@@ -108,7 +108,7 @@ export function FloatingErrorLog() {
 								role="button"
 								tabIndex={0}
 								aria-label={`Focus element ${err.elementId ?? "unknown"}: ${err.message}`}
-								onClick={() => handleFocus(err.elementId)}  // NOSONAR: S1082 — onKeyDown handler on next line
+								onClick={() => handleFocus(err.elementId)}
 								onKeyDown={(e) => {
 										if (e.key === "Enter" || e.key === " ") {
 											e.preventDefault();

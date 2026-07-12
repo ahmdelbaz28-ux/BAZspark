@@ -77,13 +77,13 @@ class TestV214MethaneCalculator:
         result = MethaneCalculator.analyze_layering(2.0, 1.0, 0.5)
         assert result.is_stratified is True
         assert result.layering_index > 1.5
-        assert result.roof_concentration_pct == 2.0
+        assert result.roof_concentration_pct == 2.0  # NOSONAR: S1244 — float comparison in test
 
     def test_dilution_airflow(self):
         from fireai.mining.core.methane_calculator import MethaneCalculator
         # Dilute 2% to 1% with current 10 m³/s → need 20 m³/s
         result = MethaneCalculator.dilution_airflow_required(2.0, 1.0, 10.0)
-        assert result == 20.0
+        assert result == 20.0  # NOSONAR: S1244 — float comparison in test
 
 
 class TestV214VentilationCalculator:

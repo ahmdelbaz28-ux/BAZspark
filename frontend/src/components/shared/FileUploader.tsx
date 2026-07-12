@@ -78,7 +78,7 @@ export function FileUploader({
 				}}
 				onDragLeave={() => setDragging(false)}
 				onDrop={handleDrop}
-				onClick={() => inputRef.current?.click()}  // NOSONAR: S1082 — onKeyDown handler on next line
+				onClick={() => inputRef.current?.click()}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.key === " ") {
 						e.preventDefault();

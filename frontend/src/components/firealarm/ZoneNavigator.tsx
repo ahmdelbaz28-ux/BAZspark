@@ -164,7 +164,7 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                                                         role="button"
                                                         tabIndex={0}
                                                         aria-label={`Select device ${device.name}`}
-                                                        onClick={() => onDeviceSelect(device.id)}  // NOSONAR: S1082 — onKeyDown handler on next line
+                                                        onClick={() => onDeviceSelect(device.id)}
                                                         onKeyDown={(e) => {
                                                                 if (e.key === "Enter" || e.key === " ") {
                                                                         e.preventDefault();

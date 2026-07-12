@@ -421,8 +421,8 @@ function CreateElementModal({
                                 description: description || undefined,
                                 material: material || undefined,
                                 fire_rating: fireRating || undefined,
-                                height: height ? parseFloat(height) : undefined,
-                                width: width ? parseFloat(width) : undefined,
+                                height: height ? Number.parseFloat(height) : undefined,
+                                width: width ? Number.parseFloat(width) : undefined,
                                 load_bearing: loadBearing,
                         };
 

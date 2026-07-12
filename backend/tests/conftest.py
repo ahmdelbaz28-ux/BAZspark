@@ -77,15 +77,12 @@ if not os.environ.get("FIREAI_SESSION_SECRET"):
 
 # V212 FIX: backend/app.py::lifespan also requires DATABASE_URL and
 # CORS_ALLOWED_ORIGINS to start. Set safe test defaults if not already set.
-# V216 FIX (SonarCloud python:S5443): /tmp is publicly writable (mode 1777).
-# Use a private subdirectory with 0o700 mode to prevent other users from
-# reading or modifying test databases. This is a test fixture, not production.
-_FIREAI_TEST_DIR = "/tmp/fireai_test_private"  # NOSONAR: S5443 — test fixture only, directory created with mode=0o700
-try:
-    os.makedirs(_FIREAI_TEST_DIR, exist_ok=True, mode=0o700)
-    os.chmod(_FIREAI_TEST_DIR, 0o700)  # ensure mode is set even if dir existed
-except OSError:
-    _FIREAI_TEST_DIR = "/tmp"  # fallback if mkdir fails (CI may have restrictions)  # NOSONAR: S5443 — test fixture only, directory created with mode=0o700
+# V220 FIX (SonarCloud python:S5443): use tempfile.mkdtemp() which creates
+# a PRIVATE temp directory with mode 0o700 on Linux/Mac. This is the only
+# SonarCloud-recognized pattern for safe temp directory creation. Hardcoded
+# /tmp paths are flagged regardless of mode because /tmp itself is 1777.
+import tempfile as _tempfile_mod
+_FIREAI_TEST_DIR = _tempfile_mod.mkdtemp(prefix="fireai_test_")
 os.environ.setdefault("DATABASE_URL", f"sqlite:///{_FIREAI_TEST_DIR}/fireai_test_conftest.db")
 os.environ.setdefault("DIGITAL_TWIN_DB_PATH", f"{_FIREAI_TEST_DIR}/fireai_test_conftest.db")
 os.environ.setdefault("UDM_DB_PATH", f"{_FIREAI_TEST_DIR}/udm_test_conftest.db")
@@ -102,15 +99,11 @@ for _stale in ["db/api_keys.secret", "db/digital_twin.db", "db/udm_elements.db"]
             _p.unlink()
         except OSError:
             pass
-# Also clean /tmp test DBs (V216: now under private subdir)
+# Also clean test DBs from previous runs (V220: now under mkdtemp dir)
 for _tmp_db in [
     f"{_FIREAI_TEST_DIR}/fireai_test_conftest.db",
     f"{_FIREAI_TEST_DIR}/udm_test_conftest.db",
     f"{_FIREAI_TEST_DIR}/fireai_deploy_test.db",
-    # Legacy paths from before V216 — clean them up too
-    "/tmp/fireai_test_conftest.db",  # NOSONAR: S5443 — test fixture only, directory created with mode=0o700
-    "/tmp/udm_test_conftest.db",  # NOSONAR: S5443 — test fixture only, directory created with mode=0o700
-    "/tmp/fireai_deploy_test.db",  # NOSONAR: S5443 — test fixture only, directory created with mode=0o700
 ]:
     _p = _pathlib.Path(_tmp_db)
     if _p.exists():

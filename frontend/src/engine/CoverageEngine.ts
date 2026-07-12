@@ -168,7 +168,7 @@ export function calculateRoomCoverage(
 		roomId: room.id,
 		roomName: room.name,
 		detectorCount: detectors.length,
-		coveragePercentage: parseFloat(coveragePercentage.toFixed(2)),
+		coveragePercentage: Number.parseFloat(coveragePercentage.toFixed(2)),
 		pass,
 		uncoveredAreas,
 		nfpaReference,
@@ -201,7 +201,7 @@ export function calculateCoverage(
 		summary: {
 			totalRooms,
 			totalDetectors,
-			coveragePercentage: parseFloat(overallCoverage.toFixed(2)),
+			coveragePercentage: Number.parseFloat(overallCoverage.toFixed(2)),
 			passedRooms,
 			failedRooms,
 		},

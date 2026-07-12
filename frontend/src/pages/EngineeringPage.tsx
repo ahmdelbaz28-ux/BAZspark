@@ -75,10 +75,10 @@ export function EngineeringPage() {
                 // V214 FIX: This is NOT the primary calculation. The primary path
                 // is calculateVoltageDropViaApi() which calls the real QOMN kernel
                 // with NEC Table 8 + HMAC-SHA256 audit hash.
-                const current = parseFloat(voltageDropInputs.current);
-                const length = parseFloat(voltageDropInputs.length);
-                const cableSize = parseFloat(voltageDropInputs.cableSize);
-                const voltage = parseFloat(voltageDropInputs.voltage);
+                const current = Number.parseFloat(voltageDropInputs.current);
+                const length = Number.parseFloat(voltageDropInputs.length);
+                const cableSize = Number.parseFloat(voltageDropInputs.cableSize);
+                const voltage = Number.parseFloat(voltageDropInputs.voltage);
 
                 if (
                         Number.isNaN(current) ||
@@ -96,8 +96,8 @@ export function EngineeringPage() {
                 const percentage = (voltageDrop / voltage) * 100;
 
                 return {
-                        percentage: parseFloat(percentage.toFixed(2)),
-                        absolute: parseFloat(voltageDrop.toFixed(3)),
+                        percentage: Number.parseFloat(percentage.toFixed(2)),
+                        absolute: Number.parseFloat(voltageDrop.toFixed(3)),
                 };
         }, [voltageDropInputs]);
 
@@ -107,8 +107,8 @@ export function EngineeringPage() {
         // The page silently used local placeholder formulas instead, bypassing
         // the entire QOMN audit chain (no NEC Table 8, no HMAC-SHA256 hash).
         const calculateVoltageDropViaApi = useCallback(async () => {
-                const current = parseFloat(voltageDropInputs.current);
-                const length = parseFloat(voltageDropInputs.length);
+                const current = Number.parseFloat(voltageDropInputs.current);
+                const length = Number.parseFloat(voltageDropInputs.length);
                 if (Number.isNaN(current) || Number.isNaN(length) || current <= 0 || length <= 0) {
                         return; // Skip if inputs invalid
                 }
@@ -119,7 +119,7 @@ export function EngineeringPage() {
                                 current_a: current,
                                 length_m: length,
                                 awg_gauge: voltageDropInputs.cableSize || "12",
-                                supply_voltage_v: parseFloat(voltageDropInputs.voltage) || 24.0,
+                                supply_voltage_v: Number.parseFloat(voltageDropInputs.voltage) || 24.0,
                         });
                         setApiResult(result as any);
                 } catch (err) {
@@ -144,9 +144,9 @@ export function EngineeringPage() {
 
         const calculateCableSizing = () => {
                 // Placeholder calculation
-                const loadCurrent = parseFloat(cableSizingInputs.loadCurrent);
-                const length = parseFloat(cableSizingInputs.length);
-                const ambientTemp = parseFloat(cableSizingInputs.ambientTemp);
+                const loadCurrent = Number.parseFloat(cableSizingInputs.loadCurrent);
+                const length = Number.parseFloat(cableSizingInputs.length);
+                const ambientTemp = Number.parseFloat(cableSizingInputs.ambientTemp);
 
                 if (
                         Number.isNaN(loadCurrent) ||
@@ -169,20 +169,20 @@ export function EngineeringPage() {
 
                 return {
                         recommendedSize: recommendedSize.toFixed(1),
-                        baseAmpacity: parseFloat(baseAmpacity.toFixed(2)),
-                        deratingFactor: parseFloat(deratingFactor.toFixed(2)),
-                        finalAmpacity: parseFloat(finalAmpacity.toFixed(2)),
+                        baseAmpacity: Number.parseFloat(baseAmpacity.toFixed(2)),
+                        deratingFactor: Number.parseFloat(deratingFactor.toFixed(2)),
+                        finalAmpacity: Number.parseFloat(finalAmpacity.toFixed(2)),
                 };
         };
 
         const calculateBatteryRequirements = () => {
                 // Placeholder calculation
-                const standbyDevices = parseInt(batteryCalcInputs.standbyDevices, 10);
-                const standbyCurrent = parseFloat(batteryCalcInputs.standbyCurrent);
-                const alarmDevices = parseInt(batteryCalcInputs.alarmDevices, 10);
-                const alarmCurrent = parseFloat(batteryCalcInputs.alarmCurrent);
-                const standbyHours = parseFloat(batteryCalcInputs.standbyHours);
-                const alarmMinutes = parseFloat(batteryCalcInputs.alarmMinutes);
+                const standbyDevices = Number.parseInt(batteryCalcInputs.standbyDevices, 10);
+                const standbyCurrent = Number.parseFloat(batteryCalcInputs.standbyCurrent);
+                const alarmDevices = Number.parseInt(batteryCalcInputs.alarmDevices, 10);
+                const alarmCurrent = Number.parseFloat(batteryCalcInputs.alarmCurrent);
+                const standbyHours = Number.parseFloat(batteryCalcInputs.standbyHours);
+                const alarmMinutes = Number.parseFloat(batteryCalcInputs.alarmMinutes);
 
                 if (
                         Number.isNaN(standbyDevices) ||
@@ -207,9 +207,9 @@ export function EngineeringPage() {
                 const requiredCapacity = (standbyCapacity + alarmCapacity) * 1.2; // 20% safety factor
 
                 return {
-                        totalStandbyCurrent: parseFloat(totalStandbyCurrent.toFixed(2)),
-                        totalAlarmCurrent: parseFloat(totalAlarmCurrent.toFixed(2)),
-                        requiredCapacity: parseFloat(requiredCapacity.toFixed(2)),
+                        totalStandbyCurrent: Number.parseFloat(totalStandbyCurrent.toFixed(2)),
+                        totalAlarmCurrent: Number.parseFloat(totalAlarmCurrent.toFixed(2)),
+                        requiredCapacity: Number.parseFloat(requiredCapacity.toFixed(2)),
                         recommendedBattery: `24V ${Math.ceil(requiredCapacity)}Ah Lead Acid`,
                 };
         };

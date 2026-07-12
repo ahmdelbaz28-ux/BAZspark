@@ -99,7 +99,7 @@ class TestV214SelfHealingNormalOperation:
         kernel = SelfHealingQOMNKernel()
         result = kernel.smoke_detector_spacing(3.0)
         assert "listed_spacing_m" in result
-        assert result["listed_spacing_m"] == 9.1  # NFPA 72 flat spacing
+        assert result["listed_spacing_m"] == 9.1  # NFPA 72 flat spacing  # NOSONAR: S1244 — float comparison in test
 
 
 class TestV214SelfHealingErrorRecovery:
@@ -112,7 +112,7 @@ class TestV214SelfHealingErrorRecovery:
         assert result.get("healed") is True
         assert "healing_error" in result
         assert result.get("healing_tier") == 1
-        assert result["voltage_drop_v"] == 0.0  # safe fallback
+        assert result["voltage_drop_v"] == 0.0  # safe fallback  # NOSONAR: S1244 — float comparison in test
 
     def test_voltage_drop_zero_length_heals(self):
         """Zero length should trigger healing, not crash."""
@@ -132,14 +132,14 @@ class TestV214SelfHealingErrorRecovery:
         kernel = SelfHealingQOMNKernel()
         result = kernel.battery_capacity(-1.0, 3.0)
         assert result.get("healed") is True
-        assert result["required_ah"] == 0.0  # safe fallback
+        assert result["required_ah"] == 0.0  # safe fallback  # NOSONAR: S1244 — float comparison in test
 
     def test_smoke_detector_spacing_zero_height_heals(self):
         """Zero ceiling height should trigger healing, not crash."""
         kernel = SelfHealingQOMNKernel()
         result = kernel.smoke_detector_spacing(0.0)
         assert result.get("healed") is True
-        assert result["listed_spacing_m"] == 9.1  # safe fallback (NFPA 72 flat)
+        assert result["listed_spacing_m"] == 9.1  # safe fallback (NFPA 72 flat)  # NOSONAR: S1244 — float comparison in test
 
     def test_smoke_detector_spacing_negative_height_heals(self):
         """Negative ceiling height should trigger healing, not crash."""
@@ -239,7 +239,7 @@ class TestV214SelfHealingFallbackQuality:
         A non-zero fallback could mask a real problem."""
         kernel = SelfHealingQOMNKernel()
         result = kernel.voltage_drop(-1.0, 30.0, "14", 24.0, 10.0)
-        assert result["voltage_drop_v"] == 0.0
+        assert result["voltage_drop_v"] == 0.0  # NOSONAR: S1244 — float comparison in test
         assert result["is_compliant"] is False  # Marked non-compliant
 
     def test_battery_fallback_is_zero(self):
@@ -248,7 +248,7 @@ class TestV214SelfHealingFallbackQuality:
         which is safer than a fabricated non-zero value."""
         kernel = SelfHealingQOMNKernel()
         result = kernel.battery_capacity(-1.0, 3.0)
-        assert result["required_ah"] == 0.0
+        assert result["required_ah"] == 0.0  # NOSONAR: S1244 — float comparison in test
 
     def test_smoke_spacing_fallback_is_9_1m(self):
         """Smoke detector spacing fallback should be 9.1m (NFPA 72 flat).
@@ -256,13 +256,13 @@ class TestV214SelfHealingFallbackQuality:
         doesn't over-space detectors (which would leave gaps in coverage)."""
         kernel = SelfHealingQOMNKernel()
         result = kernel.smoke_detector_spacing(0.0)
-        assert result["listed_spacing_m"] == 9.1
-        assert result["coverage_radius_m"] == 6.37  # 0.7 × 9.1
+        assert result["listed_spacing_m"] == 9.1  # NOSONAR: S1244 — float comparison in test
+        assert result["coverage_radius_m"] == 6.37  # 0.7 × 9.1  # NOSONAR: S1244 — float comparison in test
 
     def test_heat_spacing_fallback_is_6_1m(self):
         """Heat detector spacing fallback should be 6.1m (NFPA 72 standard).
         This is conservative — using it ensures adequate detector density."""
         kernel = SelfHealingQOMNKernel()
         result = kernel.heat_detector_spacing(0.0, 25.0)
-        assert result["listed_spacing_m"] == 6.1
-        assert result["coverage_radius_m"] == 4.27  # 0.7 × 6.1
+        assert result["listed_spacing_m"] == 6.1  # NOSONAR: S1244 — float comparison in test
+        assert result["coverage_radius_m"] == 4.27  # 0.7 × 6.1  # NOSONAR: S1244 — float comparison in test

@@ -69,10 +69,10 @@ class TestV214CableSizingRealAmpacity:
 
         assert conn["verification"] == "computed"
         assert conn["awg_gauge"] == "16"
-        assert conn["nec_ampacity_a"] == 13.0
+        assert conn["nec_ampacity_a"] == 13.0  # NOSONAR: S1244 — float comparison in test
         assert conn["is_adequate"] is True
         # 0.1A × 1.25 = 0.125A derated
-        assert conn["derated_current_a"] == 0.125
+        assert conn["derated_current_a"] == 0.125  # NOSONAR: S1244 — float comparison in test
         assert result["adequateConnections"] == 1
         assert result["inadequateConnections"] == 0
 
@@ -99,10 +99,10 @@ class TestV214CableSizingRealAmpacity:
 
         assert conn["verification"] == "computed"
         assert conn["awg_gauge"] == "18"
-        assert conn["nec_ampacity_a"] == 7.0
+        assert conn["nec_ampacity_a"] == 7.0  # NOSONAR: S1244 — float comparison in test
         assert conn["is_adequate"] is False
         # 10A × 1.25 = 12.5A derated > 7A ampacity
-        assert conn["derated_current_a"] == 12.5
+        assert conn["derated_current_a"] == 12.5  # NOSONAR: S1244 — float comparison in test
         assert result["inadequateConnections"] == 1
         assert result["adequateConnections"] == 0
 
@@ -130,8 +130,8 @@ class TestV214CableSizingRealAmpacity:
 
         assert conn["verification"] == "computed"
         # 12W / 24V = 0.5A; 0.5A × 1.25 = 0.625A derated
-        assert conn["load_current_a"] == 0.5
-        assert conn["derated_current_a"] == 0.625
+        assert conn["load_current_a"] == 0.5  # NOSONAR: S1244 — float comparison in test
+        assert conn["derated_current_a"] == 0.625  # NOSONAR: S1244 — float comparison in test
         assert conn["is_adequate"] is True  # 15A >> 0.625A
 
     def test_cable_sizing_skips_unmappable_cable(self):
@@ -202,7 +202,7 @@ class TestV214CableSizingRealAmpacity:
         assert "NEC" in result["standard"]
         assert "310.16" in result["standard"]  # ampacity table
         assert "210.19" in result["standard"]  # continuous load derating
-        assert result["deratingFactor"] == 1.25
+        assert result["deratingFactor"] == 1.25  # NOSONAR: S1244 — float comparison in test
         assert "continuous" in result["deratingRationale"].lower()
 
     def test_cable_sizing_includes_utilization_pct(self):

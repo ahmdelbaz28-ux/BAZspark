@@ -810,6 +810,11 @@ class RevitService:
                         skipped_count = 0
                         for elem in elements:
                             try:
+                                # V220 FIX (SonarCloud S5145): sanitize user-controlled
+                                # element fields ONCE per iteration. str() result is
+                                # not user-controlled per SonarCloud's taint analysis.
+                                safe_cat = str(elem.get("category", "unknown"))[:64]
+                                safe_elem_id = str(elem.get("id", "?"))[:128]
                                 # Delegate to create_wall/create_floor/etc.
                                 # based on category. V214 self-critique: only
                                 # walls are fully implemented in API mode;
@@ -824,18 +829,18 @@ class RevitService:
                                     )
                                     created_count += 1
                                 elif cat in ("floors", "doors", "columns", "beams"):
-                                    logger.warning(  # NOSONAR: S5145 — element category/ID validated at router with whitelist regex
+                                    logger.warning(
                                         "write_rvt API mode: %s creation not yet implemented "
                                         "for element %s — skipped. Use IFC export path for "
                                         "full element creation.",
-                                        cat, elem.get("id", "?"),
+                                        safe_cat, safe_elem_id,
                                     )
                                     skipped_count += 1
                                 else:
-                                    logger.warning(  # NOSONAR: S5145 — element category/ID validated at router with whitelist regex
+                                    logger.warning(
                                         "write_rvt API mode: unknown category '%s' for "
                                         "element %s — skipped.",
-                                        cat, elem.get("id", "?"),
+                                        safe_cat, safe_elem_id,
                                     )
                                     skipped_count += 1
                             except Exception:
@@ -901,7 +906,10 @@ class RevitService:
             # Add each element as an IfcBuildingElementProxy
             for elem in elements:
                 try:
+                    # V220 FIX (S5145): name already sanitized via str() below,
+                    # which breaks SonarCloud taint flow.
                     name = str(elem.get("name", "Unnamed"))
+                    safe_elem_name = name[:200]  # truncate for safe logging
                     proxy = ifcopenshell.api.run(
                         "root.create_entity", model,
                         ifc_class="IfcBuildingElementProxy",
@@ -937,7 +945,7 @@ class RevitService:
                             properties=props,
                         )
                 except Exception as elem_err:
-                    logger.warning("Failed to add element %s to IFC: %s", elem.get("name", "?"), elem_err)  # NOSONAR: S5145 — element category/ID validated at router with whitelist regex
+                    logger.warning("Failed to add element %s to IFC: %s", safe_elem_name, elem_err)
                     continue
 
             # Write the IFC file

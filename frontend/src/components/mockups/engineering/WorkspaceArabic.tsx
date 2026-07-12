@@ -79,7 +79,7 @@ export function WorkspaceArabic() {
 								<button
 									key={tab}
 									className={`px-3 py-1 rounded-sm transition-colors ${activeTab === tab ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted"}`}
-									onClick={() => setActiveTab(tab)} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveTab(tab))(); }}								>  // NOSONAR: S1082 — onKeyDown handler present
+									onClick={() => setActiveTab(tab)} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveTab(tab))(); }}								>
 									{tab}
 								</button>
 							))}
@@ -209,7 +209,7 @@ export function WorkspaceArabic() {
 							<div
 								key={file}
 								className={`px-4 py-2 text-xs border-r flex items-center gap-2 cursor-pointer ${activeFile === file ? "bg-[#0f1115] text-primary border-t-2 border-t-primary" : "text-muted-foreground hover:bg-muted"}`}
-								onClick={() => setActiveFile(file)} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile(file))(); }}							>  // NOSONAR: S1082 — onKeyDown handler present
+								onClick={() => setActiveFile(file)} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile(file))(); }}							>
 								{file.endsWith(".dwg") ? (
 									<Layout className="h-3 w-3" />
 								) : (
@@ -470,7 +470,7 @@ export function WorkspaceArabic() {
 				{/* Header row (always visible) */}
 				<div
 					className="h-7 flex items-center justify-between px-2 border-b cursor-pointer select-none shrink-0"
-					onClick={() => setIsErrorLogExpanded(!isErrorLogExpanded)} onKeyDown={(e) => { if (e.key === "Enter") (() => setIsErrorLogExpanded(!isErrorLogExpanded))(); }}				>  // NOSONAR: S1082 — onKeyDown handler present
+					onClick={() => setIsErrorLogExpanded(!isErrorLogExpanded)} onKeyDown={(e) => { if (e.key === "Enter") (() => setIsErrorLogExpanded(!isErrorLogExpanded))(); }}				>
 					<div className="flex items-center gap-3">
 						<div className="w-2 h-2 rounded-full bg-slate-500 animate-pulse"></div>
 						<span className="text-[11px] font-semibold tracking-wider text-foreground">
@@ -714,7 +714,7 @@ function TreeNode({
 		<div className="select-none">
 			<div
 				className="flex items-center gap-1 py-1 hover:bg-muted/50 cursor-pointer rounded px-1"
-				onClick={() => setOpen(!open)} onKeyDown={(e) => { if (e.key === "Enter") (() => setOpen(!open))(); }}			>  // NOSONAR: S1082 — onKeyDown handler present
+				onClick={() => setOpen(!open)} onKeyDown={(e) => { if (e.key === "Enter") (() => setOpen(!open))(); }}			>
 				<Triangle
 					className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : "-rotate-90"}`}
 				/>
