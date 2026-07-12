@@ -246,11 +246,22 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
                 import anyio  # NOSONAR: S7493 sync file I/O acceptable for small config reads  # NOSONAR — S7632: test function documented via class name / module path
                 async with await anyio.open_file(source_filepath, "w", encoding="utf-8") as f:
                     await f.write("MOCK SOURCE DATA")
+        else:
+            # V217 FIX (SonarCloud S5145): validate user-supplied filepath
+            # at source to break taint flow into logger calls in
+            # digital_twin_service.py. Only allow alphanumeric, /, \, ., _, -.
+            import re as _re_v217
+            if not _re_v217.match(r'^[a-zA-Z0-9/\\._\- ]{1,512}$', source_filepath):
+                raise HTTPException(status_code=400, detail="Invalid source_filepath: contains forbidden characters")
 
         target_filepath = request.target_filepath
         if not target_filepath:
             temp_dir = tempfile.gettempdir()
             target_filepath = os.path.join(temp_dir, f"sample_target.{target_format.lower()}")
+        else:
+            # V217 FIX: same validation for target_filepath
+            if not _re_v217.match(r'^[a-zA-Z0-9/\\._\- ]{1,512}$', target_filepath):
+                raise HTTPException(status_code=400, detail="Invalid target_filepath: contains forbidden characters")
 
         if conversion_type == "autocad_to_revit":
             result = service.convert_autocad_to_revit(
@@ -339,11 +350,35 @@ async def upload_and_convert(
                 ),
             )
 
+        # V217 FIX (SonarCloud pythonsecurity:S5145 + S6350):
+        # The user-controlled filename flows into logger calls (S5145 log injection)
+        # AND into subprocess arguments (S6350 command injection). Wrapping it in
+        # _safe_str() at the sink does NOT break SonarCloud's taint analysis.
+        #
+        # The root-cause fix is to VALIDATE the filename at the source with a
+        # strict whitelist regex. If the filename contains anything other than
+        # [a-zA-Z0-9._-], we reject the request with 400. This breaks the taint
+        # flow for ALL downstream sinks (logger, subprocess, file path) at once.
+        #
+        # This is the correct security pattern: validate at the trust boundary,
+        # not at the sink.
+        import re as _re
+        _SAFE_FILENAME_RE = _re.compile(r'^[a-zA-Z0-9._\- ]{1,255}$')
+        if not _SAFE_FILENAME_RE.match(original_name):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Filename contains invalid characters. "
+                    "Only letters, numbers, dots, hyphens, underscores, "
+                    "and spaces are allowed (max 255 chars)."
+                ),
+            )
+
         # Save uploaded file to uploads directory
         upload_dir = os.getenv("FIREAI_UPLOAD_DIR", "uploads")
         os.makedirs(upload_dir, exist_ok=True)
 
-        # Sanitize filename
+        # Sanitize filename — basename strips any path traversal
         safe_name = os.path.basename(original_name)
         source_path = os.path.join(upload_dir, safe_name)
 

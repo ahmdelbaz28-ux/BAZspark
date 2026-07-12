@@ -661,6 +661,11 @@ async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) ->
 @router.delete("/entity/{handle}", response_model=DeleteEntityResponse)  # NOSONAR - python:S8409
 async def delete_entity(handle: str) -> DeleteEntityResponse:
     """Delete an AutoCAD entity by handle."""
+    # V217 FIX (SonarCloud S5145): validate handle at source — AutoCAD handles
+    # are hex strings (e.g. "1A2F"). Reject anything else to break the taint
+    # flow from URL path → logger calls in autocad_service.py.
+    if not re.match(r'^[0-9A-Fa-f]{1,16}$', handle):
+        raise HTTPException(status_code=400, detail="Invalid handle: must be 1-16 hex chars")
     try:
         service = get_autocad_service()
 
@@ -688,6 +693,9 @@ async def delete_entity(handle: str) -> DeleteEntityResponse:
 @router.put("/entity/{handle}", response_model=OperationResponse)  # NOSONAR - python:S8409
 async def update_entity(handle: str, request: ModifyEntityRequest) -> OperationResponse:
     """Update an AutoCAD entity's properties."""
+    # V217 FIX (SonarCloud S5145): validate handle at source
+    if not re.match(r'^[0-9A-Fa-f]{1,16}$', handle):
+        raise HTTPException(status_code=400, detail="Invalid handle: must be 1-16 hex chars")
     try:
         service = get_autocad_service()
 
