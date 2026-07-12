@@ -59,6 +59,7 @@ function InputGroupAddon({
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
 	return (
 		<div
+			tabIndex={0}
 			role="group"
 			data-slot="input-group-addon"
 			data-align={align}
@@ -69,6 +70,7 @@ function InputGroupAddon({
 				}
 				e.currentTarget.parentElement?.querySelector("input")?.focus();
 			}}
+			onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.parentElement?.querySelector("input")?.focus(); } }}
 			{...props}
 		/>
 	);

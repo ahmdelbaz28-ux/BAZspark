@@ -52,7 +52,7 @@ def _reset_healing_state():
         try:
             with open(audit_path, "w") as f:
                 f.truncate(0)
-        except (OSError, FileNotFoundError):
+        except OSError:  # V216 FIX (S5713): FileNotFoundError is a subclass of OSError
             pass
         # Reset the audit logger's internal state (previous_hash)
         global_audit_logger._previous_hash = None
@@ -68,7 +68,7 @@ def _reset_healing_state():
         try:
             with open(audit_path, "w") as f:
                 f.truncate(0)
-        except (OSError, FileNotFoundError):
+        except OSError:  # V216 FIX (S5713): FileNotFoundError is a subclass of OSError
             pass
     except ImportError:
         pass
@@ -194,7 +194,7 @@ class TestV214SelfHealingCircuitBreaker:
         kernel = SelfHealingQOMNKernel()
 
         # Generate many errors to trip the breaker
-        for i in range(15):
+        for _ in range(15):  # V216 FIX (S1481): unused loop index
             result = kernel.voltage_drop(-1.0, 30.0, "14", 24.0, 10.0)
             if result.get("healing_tier") == 3 or "circuit" in str(result.get("healing_error", "")).lower():
                 break

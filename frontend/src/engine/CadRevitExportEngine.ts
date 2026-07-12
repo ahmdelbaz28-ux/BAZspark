@@ -484,11 +484,13 @@ export function exportToIFC(
 // ============================================================================
 
 function generateGUID(): string {
-	return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-		const r = (Math.random() * 16) | 0;
-		const v = c === "x" ? r : (r & 0x3) | 0x8;
-		return v.toString(16);
-	});
+	// V216 FIX (SonarCloud S2245): use crypto.randomUUID() instead of Math.random()
+	// crypto.randomUUID() is RFC 4122 v4 compliant and cryptographically secure.
+	// Fallback to a timestamp-based ID if crypto is unavailable (very old browsers).
+	if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+		return crypto.randomUUID();
+	}
+	return `fallback-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`; // NOSONAR — fallback only
 }
 
 export function prepareExportProject(

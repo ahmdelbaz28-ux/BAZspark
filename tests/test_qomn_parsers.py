@@ -552,7 +552,8 @@ class TestDwgConverter(unittest.TestCase):
         # Mock shutil.which to return a fake path for dwg2dxf
         # Mock subprocess.run to write a fake DXF file (simulating real conversion)
         def fake_run(cmd, check, capture_output, timeout):
-            # cmd = ["dwg2dxf", "-o", output_dxf_path, dwg_path]
+            # V216 FIX (SonarCloud S125): reworded to not look like code.
+            # Expected command structure: dwg2dxf -o <output_dxf_path> <dwg_path>
             if len(cmd) >= 4 and cmd[0] == "dwg2dxf":
                 with open(cmd[2], "w", encoding="utf-8") as f:
                     f.write("0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nEOF\n")
@@ -588,11 +589,12 @@ class TestDwgConverter(unittest.TestCase):
             return None  # dwg2dxf not available
 
         def fake_run(cmd, check, capture_output, timeout):
-            # cmd = ["ODAFileConverter", input_dir, output_dir, "ACAD2010", "DXF_0"]
+            # V216 FIX (SonarCloud S125 + S1481): reworded comment to not look
+            # like code, and removed unused `input_basename` variable.
+            # Expected command structure: ODAFileConverter <input_dir> <output_dir> ACAD2010 DXF_0
             if len(cmd) >= 5 and cmd[0] == "ODAFileConverter":
                 # Simulate ODA writing output.dxf in the output dir
                 output_dir = cmd[2]
-                input_basename = os.path.splitext(os.path.basename(cmd[1] + "/" + os.path.basename(dwg_path)))[0]
                 # Actually ODA keeps the basename: oda_test.dxf
                 oda_out = os.path.join(output_dir, "oda_test.dxf")
                 with open(oda_out, "w", encoding="utf-8") as f:
