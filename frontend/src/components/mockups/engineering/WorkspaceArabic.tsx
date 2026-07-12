@@ -44,6 +44,23 @@ export function WorkspaceArabic() {
 	const [activeFile, setActiveFile] = useState("Tower-B-Electrical.dwg");
 	const [isErrorLogExpanded, setIsErrorLogExpanded] = useState(true);
 
+	const ERROR_LOG_ENTRIES: { level: "ERROR" | "WARN" | "INFO"; time: string; source: string; message: string }[] = [
+								{ level: "ERROR", time: "14:47:03", source: "NEC Compliance", message: "لوحة LP-3A: تباعد شريط المحايد يخالف NEC §408.36 — المسافة 38مم < 50مم مطلوب" },
+								{ level: "ERROR", time: "14:46:51", source: "Load Calculator", message: "MDB-B محملة زائداً: الطلب 978A يتجاوز تقييم الحافلة 800A (122.3%)" },
+								{ level: "ERROR", time: "14:45:22", source: "Arc Flash", message: "لوحة LP-3A: ملصق وميض القوس مفقود. طاقة الحادثة 52.4 cal/cm² — مطلوب PPE الفئة 4" },
+								{ level: "WARN", time: "14:44:10", source: "BIM Sync", message: "IFC export: 3 elements skipped — unsupported geometry type (IFCBSPLINECURVE)" },
+								{ level: "WARN", time: "14:43:38", source: "Clash Detection", message: "5 new soft clashes detected in MEP zone — Level 2, Grid C–E / 3–6" },
+								{ level: "WARN", time: "14:42:15", source: "Cable Sizing", message: "Cable run EL-C-047: voltage drop 4.8% approaching 5% limit" },
+								{ level: "WARN", time: "14:41:02", source: "File System", message: "Auto-save delayed 12s — large file lock on BIM-Model.rvt" },
+								{ level: "WARN", time: "14:40:30", source: "Collaboration", message: "User Marcus Williams connection timeout — changes may not be synced" },
+								{ level: "INFO", time: "14:38:44", source: "System", message: "BIM model synchronized with Revit v14 — 2,847 elements updated" },
+								{ level: "INFO", time: "14:37:21", source: "Analysis", message: "Load flow converged — Newton-Raphson, 7 iterations, tolerance 0.0001 pu" },
+								{ level: "INFO", time: "14:36:05", source: "Compliance", message: "NFPA 72 check complete — 127 items passed, 2 warnings" },
+								{ level: "INFO", time: "14:35:00", source: "System", message: "Auto-save complete — 5 files, 47MB" },
+
+	];
+
+
 	return (
 		<div
 			dir="rtl"
@@ -535,79 +552,10 @@ export function WorkspaceArabic() {
 				>
 					<ScrollArea className="h-full w-full font-mono text-xs">
 						<div className="flex flex-col">
-							<LogEntry
-								level="ERROR"
-								time="14:47:03"
-								source="NEC Compliance"
-								message="لوحة LP-3A: تباعد شريط المحايد يخالف NEC §408.36 — المسافة 38مم < 50مم مطلوب"
-							/>
-							<LogEntry
-								level="ERROR"
-								time="14:46:51"
-								source="Load Calculator"
-								message="MDB-B محملة زائداً: الطلب 978A يتجاوز تقييم الحافلة 800A (122.3%)"
-							/>
-							<LogEntry
-								level="ERROR"
-								time="14:45:22"
-								source="Arc Flash"
-								message="لوحة LP-3A: ملصق وميض القوس مفقود. طاقة الحادثة 52.4 cal/cm² — مطلوب PPE الفئة 4"
-							/>
-							<LogEntry
-								level="WARN"
-								time="14:44:10"
-								source="BIM Sync"
-								message="IFC export: 3 elements skipped — unsupported geometry type (IFCBSPLINECURVE)"
-							/>
-							<LogEntry
-								level="WARN"
-								time="14:43:38"
-								source="Clash Detection"
-								message="5 new soft clashes detected in MEP zone — Level 2, Grid C–E / 3–6"
-							/>
-							<LogEntry
-								level="WARN"
-								time="14:42:15"
-								source="Cable Sizing"
-								message="Cable run EL-C-047: voltage drop 4.8% approaching 5% limit"
-							/>
-							<LogEntry
-								level="WARN"
-								time="14:41:02"
-								source="File System"
-								message="Auto-save delayed 12s — large file lock on BIM-Model.rvt"
-							/>
-							<LogEntry
-								level="WARN"
-								time="14:40:30"
-								source="Collaboration"
-								message="User Marcus Williams connection timeout — changes may not be synced"
-							/>
-							<LogEntry
-								level="INFO"
-								time="14:38:44"
-								source="System"
-								message="BIM model synchronized with Revit v14 — 2,847 elements updated"
-							/>
-							<LogEntry
-								level="INFO"
-								time="14:37:21"
-								source="Analysis"
-								message="Load flow converged — Newton-Raphson, 7 iterations, tolerance 0.0001 pu"
-							/>
-							<LogEntry
-								level="INFO"
-								time="14:36:05"
-								source="Compliance"
-								message="NFPA 72 check complete — 127 items passed, 2 warnings"
-							/>
-							<LogEntry
-								level="INFO"
-								time="14:35:00"
-								source="System"
-								message="Auto-save complete — 5 files, 47MB"
-							/>
-						</div>
+							{ERROR_LOG_ENTRIES.map((entry, i) => (
+								<LogEntry key={i} level={entry.level} time={entry.time} source={entry.source} message={entry.message} />
+							))}
+</div>
 					</ScrollArea>
 				</div>
 			</div>
