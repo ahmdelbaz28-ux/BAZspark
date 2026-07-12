@@ -157,7 +157,7 @@ export function ContextPanel({
 				role="button"
 				tabIndex={0}
 				aria-label="Close context panel"
-				onClick={handleClose}
+				onClick={handleClose}  // NOSONAR: S1082 — onKeyDown handler on next line
 				onKeyDown={(e) => {
 						if (e.key === "Enter" || e.key === " ") {
 							e.preventDefault();
