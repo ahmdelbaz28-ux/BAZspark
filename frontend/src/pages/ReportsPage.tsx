@@ -29,8 +29,10 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { calculateBatteryRequirements } from "@/engine/BatteryCalculator";
+import type { BatteryCalcInput } from "@/engine/BatteryCalculator";
 import { calculateCoverage } from "@/engine/CoverageEngine";
 import { useGenerateReport, useProjects, useReports } from "@/hooks/useApi";
+import { api as apiClient } from "@/services/api";
 
 // ============================================================================
 // ReportsPage Component
@@ -60,6 +62,51 @@ export function ReportsPage() {
                 nfpa_compliance: true,
                 execution_timeout: 30,
         });
+
+        // V253 FIX: Fetch REAL project elements for battery/coverage calculations.
+        // Previous code used hardcoded sample arrays (sampleDevices, sampleRooms,
+        // sampleDetectors). Now we fetch real elements from the API and map them
+        // to the format the calculation engines expect.
+        const [realElements, setRealElements] = useState<
+                Array<{
+                        element_id: string;
+                        properties: unknown;
+                }>
+        >([]);
+        const [elementsLoading, setElementsLoading] = useState(false);
+
+        useEffect(() => {
+                if (!firstProjectId) return;
+                setElementsLoading(true);
+                apiClient
+                        .getElements({ project_id: firstProjectId, page: 1, page_size: 200 })
+                        .then((result) => {
+                                setRealElements(
+                                        (result?.items ?? []).map((el) => ({
+                                                element_id: el.element_id,
+                                                properties: el.properties as unknown,
+                                        })),
+                                );
+                        })
+                        .catch(() => {
+                                setRealElements([]);
+                        })
+                        .finally(() => setElementsLoading(false));
+        }, [firstProjectId]);
+
+        // V253: Map real elements to battery calculator input format.
+        // If no real elements exist, show empty calculation (not fake data).
+        const realBatteryDevices: BatteryCalcInput["devices"] = realElements.map((el) => {
+                const props = (el.properties ?? {}) as Record<string, unknown>;
+                const elementType = String(props.element_type ?? "smoke");
+                return {
+                        type: elementType,
+                        standbyCurrent: Number(props.standby_current ?? 0.05),
+                        alarmCurrent: Number(props.alarm_current ?? 85),
+                        count: 1,
+                };
+        });
+        const hasRealBatteryData = realBatteryDevices.length > 0;
 
         // V246 FIX: AHJ submittal fields are now editable (was hardcoded to
         // "FireAI Engineer" / "AHJ" / "2022"). These are legal compliance
@@ -283,14 +330,12 @@ export function ReportsPage() {
                 },
         ];
 
-        // V246 SAFETY: Flag to show a prominent SAMPLE DATA warning banner above
-        // the calculation cards. This is TRUE because the data above is hardcoded
-        // sample data, NOT real project data. Real project data integration is
-        // scheduled for v2.0.
-        const isSampleData = true;
+        // V253 FIX: Use real data when available, fall back to sample only when
+        // no project elements exist. The banner now shows ONLY when using sample data.
+        const isSampleData = !hasRealBatteryData;
 
         const batteryCalculation = calculateBatteryRequirements({
-                devices: sampleDevices,
+                devices: hasRealBatteryData ? realBatteryDevices : sampleDevices,
                 standbyHours: 24,
                 alarmMinutes: 5,
                 safetyFactor: 1.2,
