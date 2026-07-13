@@ -30,6 +30,10 @@ services:
       - FIREAI_DATA_DIRS=${FIREAI_DATA_DIRS:-/tmp/fireai_uploads:/data:/uploads}
       - FIREAI_ALLOWED_UPLOAD_DIRS=${FIREAI_ALLOWED_UPLOAD_DIRS:-/tmp:/var/tmp:/var/fireai/uploads}
       - FIREAI_DWG_MAX_FILE_SIZE_BYTES=${FIREAI_DWG_MAX_FILE_SIZE_BYTES:-104857600}
+      # V254 FIX: Wire REDIS_URL to the fireai container so session store
+      # and rate limiter use Redis (not in-memory per-worker). Without this,
+      # login succeeds but the next request 401s (different worker, no session).
+      - REDIS_URL=${REDIS_URL:-redis://fireai-redis:6379/0}
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
       - LANGFUSE_HOST=${LANGFUSE_HOST:-https://cloud.langfuse.com}
