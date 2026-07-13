@@ -5,7 +5,6 @@
 
 import {
         Activity,
-        Activity as ActivityIcon,
         Battery,
         Cable,
         Calculator,
@@ -15,7 +14,6 @@ import {
         Plus,
         RefreshCw,
         Ruler,
-        ShieldAlert,
         Zap,
 } from "lucide-react";
 import { useState } from "react";

@@ -24,9 +24,8 @@
  *   - Health & Cache
  */
 
-import { ApiError, api as coreApi } from "./api";  // NOSONAR: typescript:S1128
+import { ApiError } from "./api";
 import { getApiKey } from "./apiKey";
-import { api as digitalTwinApiClient } from "./digitalTwinApi";  // NOSONAR: typescript:S1128
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
