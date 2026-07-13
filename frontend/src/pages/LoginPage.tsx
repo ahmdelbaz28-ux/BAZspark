@@ -119,7 +119,7 @@ export function LoginPage() {
                 <div
                         className="min-h-screen w-full relative overflow-hidden"
                         style={{ backgroundColor: "#0a0a0a" }}
-                        
+                        role="main"
                         aria-label="BAZSPARK login"
                 >
                         {/* Engineering CAD animated background (left half)
