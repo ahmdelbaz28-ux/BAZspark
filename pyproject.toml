@@ -114,7 +114,7 @@ parsing = [
 docs = [
     "mkdocs>=1.4.0,<2.0.0",
     "mkdocs-material>=9.0.0,<10.0.0",
-    "mkdocstrings[python]>=0.22.0,<1.0.0",
+    "mkdocstrings[python]>=0.22.0,<2.0.0",
 ]
 # V141.2 FIX (Adversarial Audit — Missing Dependencies):
 # The following libraries are used by integration modules but were never
