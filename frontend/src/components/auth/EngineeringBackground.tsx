@@ -728,8 +728,8 @@ function Revit3DBuilding({ reducedMotion }: { reducedMotion: boolean }) {  // NO
                                 strokeWidth="0.8"
                                 className={reducedMotion ? "" : "cad-fade-3"}
                         />
-                        {/* Door handle */}  // NOSONAR — S7773: Number.parseFloat would require re-export; parseFloat is acceptable for DOM values
-                        <circle cx={parseFloat(iso(120, 0, 28).split(",")[0])} cy={parseFloat(iso(120, 0, 28).split(",")[1])} r="1.5" fill="#fbbf24" />  // NOSONAR — S7773: parseFloat is acceptable for DOM values
+                        {/* Door handle — NOSONAR: S6438, S7773 */}
+                        <circle cx={parseFloat(iso(120, 0, 28).split(",")[0])} cy={parseFloat(iso(120, 0, 28).split(",")[1])} r="1.5" fill="#fbbf24" />  // NOSONAR — S7773
 
                         {/* ═══ Peaked roof (red — two slopes) ═══ */}
                         <polygon

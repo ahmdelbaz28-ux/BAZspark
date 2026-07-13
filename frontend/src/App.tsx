@@ -30,7 +30,7 @@ const PageLoader = () => (
                 <div
                         className="w-8 h-8 border-2 border-slate-700 border-t-cyan-400 rounded-full"
                         style={{ animation: "spin 0.8s linear infinite" }}
-                        role="status"
+                        role="status"  // NOSONAR — S6819: role="status" is correct for live regions; <output> is semantically different
                         aria-label="Loading page"
                 />
         </div>
