@@ -96,20 +96,50 @@ export function ApiKeysPage() {
         };
 
         const handleDelete = async (keyHash: string) => {
-                if (!confirm("Delete this API key? This cannot be undone.")) return;
-                try {
-                        const apiKey = getApiKey();
-                        const headers: Record<string, string> = {};
-                        if (apiKey) headers["X-API-Key"] = apiKey;
-                        const resp = await fetch(`/api/v1/admin/keys/${keyHash}`, {
-                                method: "DELETE",
-                                headers,
+                // V253 FIX: Replaced confirm() with a non-blocking toast confirmation.
+                // The user must click the "Delete" button in the toast to confirm.
+                // This avoids the blocking browser confirm() dialog which is not
+                // production-quality and can't be styled.
+                let confirmed = false;
+                const deletePromise = new Promise<void>((resolve, reject) => {
+                        toast("Delete this API key? This cannot be undone.", {
+                                duration: 10000,
+                                action: {
+                                        label: "Delete",
+                                        onClick: () => {
+                                                confirmed = true;
+                                                const apiKey = getApiKey();
+                                                const headers: Record<string, string> = {};
+                                                if (apiKey) headers["X-API-Key"] = apiKey;
+                                                fetch(`/api/v1/admin/keys/${keyHash}`, {
+                                                        method: "DELETE",
+                                                        headers,
+                                                })
+                                                        .then((resp) => {
+                                                                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                                                                toast.success("API key deleted");
+                                                                resolve();
+                                                        })
+                                                        .catch((err) => {
+                                                                toast.error(`Failed to delete: ${err.message}`);
+                                                                reject(err);
+                                                        });
+                                        },
+                                },
+                                cancel: {
+                                        label: "Cancel",
+                                        onClick: () => reject(new Error("Cancelled")),
+                                },
+                                onDismiss: () => {
+                                        if (!confirmed) reject(new Error("Cancelled"));
+                                },
                         });
-                        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                        toast.success("API key deleted");
+                });
+                try {
+                        await deletePromise;
                         fetchKeys();
-                } catch (err) {
-                        toast.error(`Delete failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                } catch {
+                        // User cancelled or error — no action needed
                 }
         };
 
