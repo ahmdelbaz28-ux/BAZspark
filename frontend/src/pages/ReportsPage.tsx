@@ -411,7 +411,7 @@ export function ReportsPage() {
                                                                                         link.click();
                                                                                         link.remove();
                                                                                         URL.revokeObjectURL(url);
-                                                                                } catch (err) {
+                                                                                } catch {
                                                                                         // V247 FIX: Show user-facing toast (was silent console.error)
                                                                                         toast.error("Download failed. Please try again.");
                                                                                 }
