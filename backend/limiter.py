@@ -28,8 +28,13 @@ Akamai integration (added 2026-07-09):
 
 from __future__ import annotations
 
+import logging
+import os
+
 from slowapi import Limiter
 from starlette.requests import Request
+
+logger = logging.getLogger(__name__)
 
 
 def get_remote_address(request: Request) -> str:
@@ -73,7 +78,27 @@ def get_remote_address(request: Request) -> str:
     return "0.0.0.0"
 
 
-# Configure rate limiter with the Akamai-aware key function
-limiter = Limiter(key_func=get_remote_address)
+# V248 FIX: Configure rate limiter with Redis storage when available.
+# Without storage_uri, slowapi defaults to in-memory storage which is
+# per-worker. With N uvicorn workers, the effective rate limit becomes N×
+# the configured limit (each worker has its own counter).
+# When REDIS_URL is set, all workers share a single counter via Redis.
+_redis_url = os.getenv("REDIS_URL")
+if _redis_url:
+    # Use Redis for distributed rate limiting (production)
+    limiter = Limiter(
+        key_func=get_remote_address,
+        storage_uri=_redis_url,
+        strategy="fixed-window",
+    )
+    logger.info("Rate limiter using Redis storage at %s", _redis_url)
+else:
+    # In-memory storage (development only — per-worker, not shared)
+    limiter = Limiter(key_func=get_remote_address)
+    logger.warning(
+        "REDIS_URL not set — rate limiter using in-memory storage. "
+        "Rate limits are per-worker and will be N×configured with N workers. "
+        "Set REDIS_URL for production."
+    )
 
 __all__ = ["get_remote_address", "limiter"]

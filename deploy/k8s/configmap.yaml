@@ -11,13 +11,17 @@ data:
   LOG_LEVEL: "WARNING"
   FIREAI_MEMORY_LLM_PROVIDER: "gemini"
   FIREAI_MEMORY_LLM_MODEL: "gemini-2.0-flash"
-  DATABASE_URL: "postgresql+asyncpg://fireai:$(DB_PASSWORD)@fireai-db:5432/fireai"
-  REDIS_URL: "redis://:$(REDIS_PASSWORD)@fireai-redis:6379/0"
+  # V248 FIX: DATABASE_URL and REDIS_URL are now in secret.yaml (not ConfigMap)
+  # to avoid leaking passwords via `kubectl describe pod`. The full URLs with
+  # credentials are assembled at runtime from the individual DB_HOST, DB_PORT,
+  # DB_NAME, DB_USER (ConfigMap) and DB_PASSWORD (Secret) env vars.
   WORKER_MODE: "default"
   API_HOST: "0.0.0.0"
   API_PORT: "8000"
   API_WORKERS: "4"
-  CORS_ORIGINS: "https://fireai.example.com"
+  # V248 FIX: Correct env var name — backend reads CORS_ALLOWED_ORIGINS
+  # (was CORS_ORIGINS, which the backend ignores → CORS check skipped in prod)
+  CORS_ALLOWED_ORIGINS: "https://fireai.example.com"
   DB_HOST: "fireai-db"
   DB_PORT: "5432"
   DB_NAME: "fireai"

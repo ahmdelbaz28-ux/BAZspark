@@ -140,6 +140,23 @@ repos:
           --allow-pseudo-licenses
         ]
 
+  # Stage 8: Secret Scanning (V248 FIX — was missing entirely)
+  # Gitleaks detects hardcoded secrets, API keys, passwords, tokens.
+  # Docs previously claimed this was configured but it wasn't.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+        name: Detect hardcoded secrets (gitleaks)
+
+  # detect-secrets catches secrets that gitleaks might miss (complementary)
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: Detect secrets (detect-secrets)
+        args: ['--baseline', '.secrets.baseline']
+
 # Configuration for the entire pre-commit system
 default_language_version:
   python: python3.12

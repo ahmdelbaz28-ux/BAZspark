@@ -15,20 +15,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-<<<<<<< Updated upstream
+# V248 FIX: Resolved git merge conflict. Kept the non-root user + .dockerignore
+# approach (Updated upstream) which is more secure. The "Stashed changes"
+# version (COPY main.py .) is redundant since COPY . . already includes main.py.
 # S6470 fix: .dockerignore (added in this commit) filters secrets/VCS/caches
-# so the recursive copy is safe. Copying explicitly-listed files would
-# require updating the Dockerfile every time a new runtime file is added;
-# the .dockerignore approach is the Docker community standard.
+# so the recursive copy is safe.
 # NOSONAR — S6470: recursive COPY is safe because .dockerignore excludes
 # .git, .env, *.md, secrets, caches, tests, etc. (see services/doctr/.dockerignore).
 COPY . .
 # Create non-root user for security (S6471)
 RUN useradd -m -u 1000 appuser
 USER appuser
-=======
-COPY main.py .
->>>>>>> Stashed changes
 
 EXPOSE 8000
 
