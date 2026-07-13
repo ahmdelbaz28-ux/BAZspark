@@ -25,6 +25,12 @@ on:
       - '.github/workflows/ci-build-gate.yml'
   workflow_dispatch:
 
+# V248 FIX: Least-privilege permissions — was missing.
+permissions:
+  contents: read
+  checks: write
+  pull-requests: read
+
 jobs:
   frontend-build:
     name: Frontend Build + TypeCheck
