@@ -28,16 +28,22 @@ except ImportError:
 class Config:
     """Centralized configuration for all database connections."""
 
-    # PostgreSQL Configuration (Primary Database)
+    # V254 FIX: Unified database paths. Previously DATABASE_URL defaulted to
+    # relative "sqlite:///./db/digital_twin.db" (CWD-dependent, outside /app/data
+    # volume) while DIGITAL_TWIN_DB_PATH defaulted to an absolute path. This
+    # caused data loss on container restart. Now both default to /app/data/.
+    _DEFAULT_DB_DIR = os.environ.get("FIREAI_DATA_DIR", "/app/data")
+    _DEFAULT_DB_PATH = os.path.join(_DEFAULT_DB_DIR, "digital_twin.db")
+
     DATABASE_URL: str = os.environ.get(
         "DATABASE_URL",
-        "sqlite:///./db/digital_twin.db"  # Default fallback
+        f"sqlite:///{_DEFAULT_DB_PATH}"  # Default: absolute path inside /app/data
     )
 
     # Digital Twin Database Path (for the existing system)
     DIGITAL_TWIN_DB_PATH: str = os.environ.get(
         "DIGITAL_TWIN_DB_PATH",
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "db", "digital_twin.db")
+        _DEFAULT_DB_PATH  # Same path as DATABASE_URL — no more divergence
     )
 
     # Qdrant Configuration (Vector Database)

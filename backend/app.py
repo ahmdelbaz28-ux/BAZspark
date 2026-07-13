@@ -394,6 +394,22 @@ async def lifespan(app: FastAPI):
         logger.info("Core modules marked as loaded for health check")
     except ImportError as exc:
         logger.warning("Could not import set_core_modules_loaded: %s", exc)
+
+    # V254 FIX: Validate configuration at startup.
+    # Config.validate_config() exists but was NEVER called — meaning
+    # invalid DATABASE_URL, missing required settings, etc. were silently
+    # accepted. Now we call it and log warnings for any issues.
+    try:
+        from backend.config import Config
+        issues = Config.validate_config()
+        if issues:
+            for issue in issues:
+                logger.warning("Config issue: %s", issue)
+        else:
+            logger.info("Configuration validated — no issues found")
+    except Exception as exc:
+        logger.warning("Config validation skipped (import failed): %s", exc)
+
     yield
     logger.info("Shutting down CAD/BIM Integration Platform...")
 
@@ -712,6 +728,13 @@ def _register_v2_router() -> None:
         logger.warning("V2 router registration failed: %s", e)
 
 _register_v2_router()
+
+# V254 CRITICAL FIX: Actually call _register_csrf_middleware().
+# This function was defined but NEVER called — meaning CSRF protection
+# was completely disabled in production despite the code existing.
+# Frontend was fetching CSRF tokens (wasting requests) and backend was
+# not enforcing them (zero CSRF defense).
+_register_csrf_middleware()
 
 
 # ── V133 (PHASE 1.1): CSRF Protection (Double Submit Cookie) ────────────
