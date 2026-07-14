@@ -1,5 +1,3 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 backend/routers/auth.py — Session-based authentication with signed HttpOnly cookies.
 
@@ -36,14 +34,13 @@ Endpoints:
 Compliance: agent.md ANTI-DECEPTION — every claim verified by tests.
 """
 
-from __future__ import annotations
-
 import hashlib
 import logging
 import os
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -91,9 +88,9 @@ _FAILED_ATTEMPT_WINDOW = 300  # 5 minutes
 
 class LoginRequest(BaseModel):
     """Request body for POST /auth/login."""
-    api_key: str | None = Field(None, min_length=1, description="FireAI API key (must be non-empty if provided)")
-    username: str | None = None
-    password: str | None = None
+    api_key: Optional[str] = Field(None, min_length=1, description="FireAI API key (must be non-empty if provided)")
+    username: Optional[str] = None
+    password: Optional[str] = None
 
 
 class LoginResponse(BaseModel):
@@ -142,7 +139,7 @@ def _create_session_token(session_id: str) -> str:
     return f"{session_id}.{signature}"
 
 
-def _verify_session_token(token: str) -> str | None:
+def _verify_session_token(token: str) -> Optional[str]:
     """
     Verify a session token and return the session_id if valid.
 
@@ -239,7 +236,7 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
             raise HTTPException(status_code=400, detail="API key is required")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
     # Validate the API key
-    role: Role | None = None
+    role: Optional[Role] =  None
     env_key = os.getenv("FIREAI_API_KEY")
     if env_key and _hmac.compare_digest(api_key, env_key):
         role = Role.ADMIN
@@ -367,7 +364,7 @@ async def get_current_user(request: Request):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def validate_session_cookie(cookie_value: str) -> str | None:
+def validate_session_cookie(cookie_value: str) -> Optional[str]:
     """
     Validate a session cookie value and return the role if valid.
 

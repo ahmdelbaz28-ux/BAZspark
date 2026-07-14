@@ -41,13 +41,14 @@ References
 
 """
 
+from typing import Optional
 # V141 FIX: Removed __future__ annotations to fix Pydantic forward ref resolution.
 # With __future__ annotations, Dict[str, Any] becomes ForwardRef('Dict[str, Any]')
 # which Pydantic cannot resolve at runtime for FastAPI model parsing.
 # Removing it forces actual type resolution at import time.
 
 import logging
-from typing import Any, Dict
+Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -85,8 +86,8 @@ class GenerativeDesignRequest(BaseModel):
 class BIMExtractRoomsRequest(BaseModel):
     """Request body for /api/v2/bim/extract-rooms."""
 
-    source: str | None = Field(None, description="File path or URL")
-    provider: str | None = Field(None, description="Provider name (default: env var)")
+    source: Optional[str] =  Field(None, description="File path or URL")
+    provider: Optional[str] =  Field(None, description="Provider name (default: env var)")
 
 
 class IFC43MapDetectorRequest(BaseModel):
@@ -133,7 +134,7 @@ class WebhookPublishRequest(BaseModel):
     event_type: str
     source: str
     data: dict[str, Any]
-    trace_id: str | None = None
+    trace_id: Optional[str] =  None
 
 
 class SmokeDensityPointRequest(BaseModel):
@@ -158,7 +159,7 @@ class SmokeSimulationStateRequest(BaseModel):
         default_factory=list, max_length=10000
     )
     visibility_at_height: dict[float, float] = Field(default_factory=dict)
-    fds_run_id: str | None = None
+    fds_run_id: Optional[str] =  None
 
 
 # ---------------------------------------------------------------------------

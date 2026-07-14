@@ -15,8 +15,6 @@ can choose between (a) low-level kernel calls (/api/qomn/...) or
 (b) project-scoped analyze calls (this router).
 """
 
-from __future__ import annotations
-
 import logging
 from typing import Any
 

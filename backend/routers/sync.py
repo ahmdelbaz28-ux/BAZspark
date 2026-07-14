@@ -17,8 +17,6 @@ client must send a valid API key in the first message or as a
 query parameter.
 """
 
-from __future__ import annotations
-
 import asyncio
 import hmac as _hmac
 import json

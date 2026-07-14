@@ -13,8 +13,6 @@ LIFE-SAFETY NOTE: Honest health reporting is critical. A false-green
 health endpoint misleads deployment probes and operators.
 """
 
-from __future__ import annotations
-
 import logging
 import time
 

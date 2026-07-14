@@ -9,8 +9,6 @@ Their electrical parameters (voltage, current, load) are used in
 circuit calculations that directly affect life safety.
 """
 
-from __future__ import annotations
-
 import logging
 import uuid
 

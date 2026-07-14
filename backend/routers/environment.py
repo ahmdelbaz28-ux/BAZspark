@@ -1,6 +1,7 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
+from typing import Optional
 backend/routers/environment.py — Environmental data endpoints for FireAI.
 
 Provides real-time weather, geocoding, regulatory region, elevation,
@@ -27,8 +28,6 @@ LIFE-SAFETY NOTE:
   unavailable. Engineering calculations MUST NEVER be blocked by
   external API failures.
 """
-
-from __future__ import annotations
 
 import asyncio
 import logging
@@ -607,7 +606,7 @@ async def get_full_phase2_context(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),  # NOSONAR - python:S8410
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),  # NOSONAR - python:S8410
     is_indoor: bool = Query(True, description="Indoor or outdoor environment"),  # NOSONAR - python:S8410
-    material: str | None = Query(  # NOSONAR - python:S8410
+    material: Optional[str] =  Query(  # NOSONAR - python:S8410
         None, max_length=200,
         description="Optional hazardous material name for HAC data"
     ),
@@ -658,19 +657,19 @@ async def get_full_phase2_context(
     weather, geo_result, elevation, air_quality, severe_weather = results
 
     # Handle exceptions from parallel fetches
-    if isinstance(weather, Exception):
+    if isinstance(weather, BaseException):
         logger.warning("Weather fetch failed: %s", weather)
         weather = weather_svc._get_default(lat, lon)
 
-    if isinstance(elevation, Exception):
+    if isinstance(elevation, BaseException):
         logger.warning("Elevation fetch failed: %s", elevation)
         elevation = elev_svc._get_default(lat, lon)
 
-    if isinstance(air_quality, Exception):
+    if isinstance(air_quality, BaseException):
         logger.warning("Air quality fetch failed: %s", air_quality)
         air_quality = aq_svc._get_default(lat, lon)
 
-    if isinstance(severe_weather, Exception):
+    if isinstance(severe_weather, BaseException):
         logger.warning("Severe weather fetch failed: %s", severe_weather)
         severe_weather = sw_svc._get_default(lat, lon)
 
@@ -773,15 +772,17 @@ async def get_full_phase2_context(
 
     # Add hazmat data if requested
     if hazmat_data:
-        response["data"]["hazmat"] = {
-            "name": hazmat_data.name,
-            "lfl_vol_pct": hazmat_data.lfl_vol_pct,
-            "ufl_vol_pct": hazmat_data.ufl_vol_pct,
-            "flash_point_c": hazmat_data.flash_point_c,
-            "auto_ignition_c": hazmat_data.auto_ignition_c,
-            "material_group": hazmat_data.material_group.value,
-            "temperature_class": hazmat_data.temperature_class.value,
-            "source": hazmat_data.source,
-        }
+        data_dict = response["data"]
+        if isinstance(data_dict, dict):
+            data_dict["hazmat"] = {
+                "name": hazmat_data.name,
+                "lfl_vol_pct": hazmat_data.lfl_vol_pct,
+                "ufl_vol_pct": hazmat_data.ufl_vol_pct,
+                "flash_point_c": hazmat_data.flash_point_c,
+                "auto_ignition_c": hazmat_data.auto_ignition_c,
+                "material_group": hazmat_data.material_group.value,
+                "temperature_class": hazmat_data.temperature_class.value,
+                "source": hazmat_data.source,
+            }
 
     return response

@@ -18,8 +18,6 @@ STRESS-TEST FIX #5 (DWG DoS):
     this in practice, and the lower limit reduces per-request risk.
 """
 
-from __future__ import annotations
-
 import logging
 import os
 import tempfile

@@ -1,6 +1,7 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
+from typing import Optional
 backend/routers/facp.py — FACP Selection & Compliance REST API.
 ================================================================
 REST endpoints for the Fire Alarm Control Panel selection engine.
@@ -30,8 +31,6 @@ SAFETY NOTE:
   All selection results include a cryptographic signature hash for
   deterministic verification and audit trail purposes.
 """
-
-from __future__ import annotations
 
 import logging
 
@@ -87,7 +86,7 @@ class FACPSelectionRequest(BaseModel):
         "US",
         description="Jurisdiction code: US, Canada, FDNY, etc."
     )
-    preferred_manufacturer: str | None = Field(
+    preferred_manufacturer: Optional[str] =  Field(
         None,
         description="Preferred FACP manufacturer (e.g., NOTIFIER, SIEMENS, SIMPLEX)"
     )
@@ -113,7 +112,7 @@ class FACPVerificationRequest(BaseModel):
     requires_voice: bool = False
     requires_releasing: bool = False
     jurisdiction: str = "US"
-    preferred_manufacturer: str | None = None
+    preferred_manufacturer: Optional[str] =  None
     min_temperature_c: float = Field(20.0, ge=-40.0, le=60.0)
     # Panel recommendation fields to verify
     recommended_model: str = Field(..., description="Model name of the panel to verify")
@@ -165,7 +164,7 @@ class FACPSpecRequest(BaseModel):
 
 # ── Helper: Safe FACP module import ──────────────────────────────────────────
 
-_facp_available: bool | None = None
+_facp_available: Optional[bool] =  None
 
 
 def _check_facp_available() -> bool:

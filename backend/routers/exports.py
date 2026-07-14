@@ -12,8 +12,6 @@ LIFE-SAFETY NOTE: Exported data must be traceable. Each export includes
 metadata about the project, export timestamp, and software version.
 """
 
-from __future__ import annotations
-
 import contextlib
 import io
 import json

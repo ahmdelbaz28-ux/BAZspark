@@ -9,10 +9,9 @@ FIX: Uses get_db_service() dependency injection instead of creating
 a new DatabaseService() per request (which leaked DB connections).
 """
 
-from __future__ import annotations
-
 import logging
 import math
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -36,8 +35,8 @@ router = APIRouter(prefix="/conflicts", tags=["conflicts"])
 
 @router.get("", response_model=ApiResponse[PaginatedData[ConflictResponse]], dependencies=[Depends(require_permission(Permission.CONFLICT_READ))])
 async def list_conflicts(
-    resolved: bool | None = Query(None, description="Filter by resolution status"),  # NOSONAR - python:S8410
-    conflict_type: str | None = Query(None, description="Filter by conflict type"),  # NOSONAR - python:S8410
+    resolved: Optional[bool] =  Query(None, description="Filter by resolution status"),  # NOSONAR - python:S8410
+    conflict_type: Optional[str] =  Query(None, description="Filter by conflict type"),  # NOSONAR - python:S8410
     page: int = Query(1, ge=1, description="Page number"),  # NOSONAR - python:S8410
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),  # NOSONAR - python:S8410
     db: DatabaseService = Depends(get_db_service),  # NOSONAR - python:S8410

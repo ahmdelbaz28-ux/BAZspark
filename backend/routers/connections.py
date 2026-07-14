@@ -8,9 +8,8 @@ devices. The cable size and length parameters are used in voltage drop
 calculations per NFPA 72-2022 §27.4.1.2.
 """
 
-from __future__ import annotations
-
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -115,9 +114,9 @@ async def update_connection(
     request: Request,
     project_id: str,
     connection_id: str,
-    cableSize: str | None = None,  # NOSONAR - python:S117
-    length: float | None = None,
-    connection_type: str | None = None,  # FIX #14: Renamed 'type' to 'connection_type' — 'type' shadows built-in
+    cableSize: Optional[str] =  None,  # NOSONAR - python:S117
+    length: Optional[float] =  None,
+    connection_type: Optional[str] =  None,  # FIX #14: Renamed 'type' to 'connection_type' — 'type' shadows built-in
 ):
     """
     Update an existing connection in a project.
