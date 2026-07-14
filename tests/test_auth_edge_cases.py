@@ -30,7 +30,7 @@ def _setup_env() -> Generator[None, None, None]:
     """Set test environment."""
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = "test_key_edge_cases"
-    from backend.session_store import _mem_sessions, _mem_failed, _mem_lock
+    from backend.session_store import _mem_failed, _mem_lock, _mem_sessions
     with _mem_lock:
         _mem_sessions.clear()
         _mem_failed.clear()
@@ -54,7 +54,7 @@ class TestSessionExpiry:
     def test_expired_session_returns_401(self, client: TestClient) -> None:
         """An expired session should return 401."""
         client.cookies.clear()
-        from backend.session_store import _mem_sessions, _mem_lock
+        from backend.session_store import _mem_lock, _mem_sessions
 
         # Login
         resp = client.post(
@@ -79,7 +79,7 @@ class TestSessionExpiry:
     def test_expired_session_removed_from_store(self, client: TestClient) -> None:
         """Expired sessions should be cleaned up from the store."""
         client.cookies.clear()
-        from backend.session_store import _mem_sessions, _mem_lock
+        from backend.session_store import _mem_lock, _mem_sessions
 
         # Login
         client.post(
@@ -147,7 +147,7 @@ class TestConcurrentSessions:
         )
 
         # Both should be in session store
-        from backend.session_store import _mem_sessions, _mem_lock
+        from backend.session_store import _mem_lock, _mem_sessions
         with _mem_lock:
             store_len = len(_mem_sessions)
         assert store_len >= 2, \
@@ -156,7 +156,7 @@ class TestConcurrentSessions:
     def test_logout_one_session_does_not_affect_other(self, client: TestClient) -> None:
         """Logging out one session should not invalidate the other."""
         client.cookies.clear()
-        from backend.session_store import _mem_sessions, _mem_lock
+        from backend.session_store import _mem_lock, _mem_sessions
 
         # First login
         client.post(
