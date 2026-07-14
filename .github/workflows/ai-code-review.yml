@@ -112,15 +112,16 @@ jobs:
           DAYTONA_API_URL: https://app.daytona.io/api
           DAYTONA_TARGET: us
         run: |
-          set -euo pipefail
-
           # Diagnostic: verify the API key is present (print length only, never the value)
           API_KEY_LEN=${#DAYTONA_API_KEY}
           echo "DAYTONA_API_KEY length: ${API_KEY_LEN}"
           if [ "${API_KEY_LEN}" -lt 10 ]; then
-            echo "::error::DAYTONA_API_TOKEN secret is empty or too short. Please set it in repo Settings > Secrets."
-            exit 1
+            echo "::warning::DAYTONA_API_TOKEN secret is empty or too short. Skipping review sandbox provision."
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+
+          set -euo pipefail
 
           python <<'PY'
           import os, sys, pathlib
@@ -128,10 +129,12 @@ jobs:
           api_key = os.environ.get("DAYTONA_API_KEY", "").strip()
           api_url = os.environ.get("DAYTONA_API_URL", "https://app.daytona.io/api").strip()
 
-          # Guard: fail fast with a clear message if API key is missing
+          # Guard: skip if API key is missing
           if not api_key:
-              print("ERROR: DAYTONA_API_KEY is empty. Set the DAYTONA_API_TOKEN repo secret.", file=sys.stderr)
-              sys.exit(1)
+              print("WARNING: DAYTONA_API_KEY is empty. Skipping review sandbox provision.", file=sys.stderr)
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("skipped=true\n")
+              sys.exit(0)
 
           print(f"API key present: length={len(api_key)}, prefix={api_key[:6]}...", flush=True)
           print(f"API URL: {api_url}", flush=True)
@@ -172,11 +175,13 @@ jobs:
           # Persist sandbox ID for downstream steps
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"id={sb.id}\n")
+              f.write("skipped=false\n")
           pathlib.Path("/tmp/sandbox_id.txt").write_text(sb.id)
           PY
 
       - name: Run validation matrix in sandbox
         id: matrix
+        if: steps.sandbox.outputs.skipped != 'true'
         env:
           DAYTONA_API_KEY: ${{ secrets.DAYTONA_API_TOKEN }}
           DAYTONA_API_URL: https://app.daytona.io/api
@@ -300,7 +305,7 @@ jobs:
           PY
 
       - name: Post structured review comment
-        if: always()
+        if: always() && steps.sandbox.outputs.skipped != 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -354,15 +359,19 @@ jobs:
             lines.push('---');
             lines.push('_Sandbox auto-evicts after job completion. Re-run by pushing to the PR branch._');
 
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              body: lines.join('\n'),
-            });
+            try {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: lines.join('\n'),
+              });
+            } catch (err) {
+              core.warning(`Failed to post PR comment: ${err.message}`);
+            }
 
       - name: Teardown sandbox
-        if: always()
+        if: always() && steps.sandbox.outputs.skipped != 'true'
         env:
           DAYTONA_API_KEY: ${{ secrets.DAYTONA_API_TOKEN }}
           DAYTONA_API_URL: https://app.daytona.io/api
