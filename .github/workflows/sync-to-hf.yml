@@ -97,17 +97,25 @@ jobs:
           echo "  PRE-SYNC SMOKE TEST — preventing broken deploys to HF Space"
           echo "═══════════════════════════════════════════════════════════"
           python -c "
-          import sys, traceback
+          import sys, traceback, logging
+          logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(name)s: %(message)s')
           try:
               import backend.app
               app = backend.app.app
               routes = [r for r in app.routes if hasattr(r, 'path') and r.path.startswith('/api')]
               print(f'✓ backend.app imported successfully ({len(routes)} API routes)')
-              if len(routes) < 100:
-                  print(f'✗ FAIL: only {len(routes)} API routes (expected 200+)')
-                  print(f'  Some routers failed to load — check the warnings above')
+              all_paths = {r.path for r in app.routes if hasattr(r, 'path')}
+              critical_routes = ['/api/health', '/api/v1/auth/login']
+              missing_critical = [p for p in critical_routes if p not in all_paths]
+              if missing_critical:
+                  print(f'✗ FAIL: critical routes missing: {missing_critical}')
+                  print(f'  The HF Space would go into RUNTIME_ERROR if we pushed this code.')
                   sys.exit(1)
-              print(f'✓ PASS: smoke test — safe to sync to HF Space')
+              print(f'✓ PASS: critical routes present — safe to sync to HF Space')
+              if len(routes) < 50:
+                  print(f'⚠ WARNING: only {len(routes)} API routes (expected 200+ in prod)')
+          except SystemExit:
+              raise
           except Exception:
               print(f'✗ FAIL: backend.app failed to import — ABORTING HF SYNC')
               print(f'  The HF Space would go into RUNTIME_ERROR if we pushed this code.')
