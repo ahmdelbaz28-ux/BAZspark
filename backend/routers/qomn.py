@@ -28,8 +28,6 @@ STANDARDS:
   QOMN Specification §3 — System architecture
 """
 
-from __future__ import annotations
-
 import logging
 import threading
 from typing import Any, NoReturn

@@ -10,8 +10,6 @@ Provides CRUD operations for API keys with role-based access control:
   GET    /api/admin/keys/roles   → List available roles and permissions
 """
 
-from __future__ import annotations
-
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request

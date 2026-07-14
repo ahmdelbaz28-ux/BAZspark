@@ -1,5 +1,3 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
-# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 backend/routers/reports.py — Report generation and export endpoints.
 
@@ -19,8 +17,7 @@ LIFE-SAFETY NOTE: Report results are used for regulatory compliance.
 All calculations must be traceable and verifiable.
 """
 
-from __future__ import annotations
-
+from typing import Optional
 import io
 import json
 import logging
@@ -194,7 +191,7 @@ _MM2_TO_AWG = {
 }
 
 
-def _cable_size_to_awg(cable_size: str) -> str | None:
+def _cable_size_to_awg(cable_size: str) -> Optional[str]:
     """
     Convert a cable size string to an AWG gauge string.
 
@@ -1014,7 +1011,7 @@ class AhjSubmittalRequest(BaseModel):
     designer: str = PydField("", description="Designer name + PE license #")
     jurisdiction: str = PydField("", description="AHJ jurisdiction name")
     nfpa_edition: str = PydField("2022", description="NFPA 72 edition")
-    rooms: list[AhjRoomInput] | None = PydField(
+    rooms: Optional[list[AhjRoomInput]] =  PydField(
         None,
         description="Optional list of rooms. If omitted, a single room is "
         "derived from the device bounding box.",

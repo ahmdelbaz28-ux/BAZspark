@@ -48,7 +48,7 @@ import os
 import time
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, TypedDict
+from typing import Any, TypedDict, Callable, TypeVar
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, StateGraph
@@ -68,7 +68,8 @@ try:
 except ImportError:
     STUCK_DETECTION_AVAILABLE = False
     # Fallback: no-op decorator
-    def with_stuck_detection(func):
+    _F = TypeVar("_F", bound=Callable[..., Any])
+    def with_stuck_detection(func: _F) -> _F:
         return func
 
 try:
@@ -270,7 +271,7 @@ def node_initialize(state: PipelineState) -> PipelineState:
     # Generate workflow ID
     workflow_id = f"wf_{sha256_hash.hexdigest()[:12]}_{int(time.time())}"
 
-    updates = {
+    updates: dict[str, Any] = {
         "file_sha256": sha256_hash.hexdigest(),
         "file_type": file_type,
         "workflow_id": workflow_id,
@@ -326,7 +327,7 @@ def node_parse(state: PipelineState) -> PipelineState:
         elif file_type in ("dxf", "dwg"):
             from parsers.dwg_parser import DWGParser
             parser = DWGParser()
-            parsed = parser.parse(file_path)
+            parsed = parser.parse_dwg(file_path)
             if parsed:
                 rooms = [
                     {
@@ -349,7 +350,7 @@ def node_parse(state: PipelineState) -> PipelineState:
         parse_warnings.append("No rooms extracted — building has zero fire protection zones")
         parse_success = False
 
-    updates = {
+    updates: dict[str, Any] = {
         "rooms": rooms,
         "parse_warnings": parse_warnings,
         "parse_success": parse_success,
@@ -485,7 +486,7 @@ def node_validate(state: PipelineState) -> PipelineState:
 
     validation_result["all_passed"] = validation_passed
 
-    updates = {
+    updates: dict[str, Any] = {
         "validation_result": validation_result,
         "validation_passed": validation_passed,
         "validation_evidence": validation_evidence,
@@ -883,7 +884,7 @@ def node_nfpa_analysis(state: PipelineState) -> PipelineState:  # NOSONAR — S3
     )
     nfpa_compliant = rooms_failing == 0 and coverage_pct >= 99.0
 
-    updates = {
+    updates: dict[str, Any] = {
         "nfpa_results": nfpa_results,
         "total_detectors": total_detectors,
         "coverage_pct": round(coverage_pct, 2),
@@ -1039,7 +1040,7 @@ def node_conflict_detection(state: PipelineState) -> PipelineState:  # NOSONAR �
         1 for c in conflicts if c.get("source") == "memory"
     )
 
-    updates = {
+    updates: dict[str, Any] = {
         "conflicts": conflicts,
         "conflict_count": len(conflicts),
         "has_critical_conflicts": has_critical,
@@ -1113,7 +1114,7 @@ def node_human_review_gate(state: PipelineState) -> PipelineState:
                 "action_required": "Verify detector placement meets NFPA 72",
             })
 
-    updates = {
+    updates: dict[str, Any] = {
         "review_required": review_required,
         "review_items": review_items,
     }
@@ -1268,7 +1269,7 @@ def node_generate_report(state: PipelineState) -> PipelineState:
     except Exception as e:
         logger.warning("Procedural trace storage failed: %s", e)
 
-    updates = {
+    updates: dict[str, Any] = {
         "report": report,
         "report_sha256": report_sha256,
         "report_generated_utc": generated_utc,  # V85: Timestamp outside report dict for determinism
@@ -1473,7 +1474,8 @@ class WorkflowService:
         )
         os.makedirs(checkpoint_dir, exist_ok=True)
         self._checkpoint_db_path = os.path.join(checkpoint_dir, "workflow_checkpoints.db")
-        self._checkpointer = None  # Lazy-init in async context
+        self._checkpointer: Any = None  # Lazy-init in async context
+        self._checkpointer_ctx: Any = None
         self._graph = build_fireai_workflow()
         # V88 FIX: Compile graph synchronously (without checkpointer) so that
         # _graph_compiled is not None after __init__. This fixes the test
@@ -2066,8 +2068,8 @@ class WorkflowService:
 
             # If checkpoint recovery succeeded, store the recovered state
             if checkpoint_state is not None:
-                recovered_state = (
-                    checkpoint_state if isinstance(checkpoint_state, dict) else {}
+                recovered_state: PipelineState = (
+                    checkpoint_state if isinstance(checkpoint_state, dict) else {}  # type: ignore[assignment]
                 )
 
                 # Log the recovery event

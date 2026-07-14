@@ -1,6 +1,7 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
+from typing import Optional
 FireAI Digital Twin - Connections V2 Router.
 ============================================
 Relationship-based connections for the UniversalDataModel.
@@ -13,8 +14,6 @@ FIX #13: Uses Dependency Injection (get_db_service) instead of creating
 a new DatabaseService() per request, which leaked database connections.
 FIX #28: Does not expose connection_id in error messages.
 """
-
-from __future__ import annotations
 
 import logging
 import math
@@ -41,9 +40,9 @@ router = APIRouter(prefix="/connections", tags=["connections-v2"])
 
 @router.get("", response_model=ApiResponse[PaginatedData[ConnectionResponse]], dependencies=[Depends(require_permission(Permission.CONNECTION_READ))])
 async def list_connections(
-    project_id: str | None = Query(None, description="Filter by project ID"),  # NOSONAR - python:S8410
-    element_id: str | None = Query(None, description="Filter by element ID"),  # NOSONAR - python:S8410
-    relationship_type: str | None = Query(None, description="Filter by relationship type"),  # NOSONAR - python:S8410
+    project_id: Optional[str] =  Query(None, description="Filter by project ID"),  # NOSONAR - python:S8410
+    element_id: Optional[str] =  Query(None, description="Filter by element ID"),  # NOSONAR - python:S8410
+    relationship_type: Optional[str] =  Query(None, description="Filter by relationship type"),  # NOSONAR - python:S8410
     page: int = Query(1, ge=1, description="Page number"),  # NOSONAR - python:S8410
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),  # NOSONAR - python:S8410
     db: DatabaseService = Depends(get_db_service),  # NOSONAR - python:S8410

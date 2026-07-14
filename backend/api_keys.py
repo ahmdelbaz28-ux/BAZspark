@@ -20,13 +20,16 @@ import threading
 import time
 from pathlib import Path
 
+from typing import Any
+
 # Import bcrypt for stronger password hashing
 # V187 Pyright fix: initialize bcrypt to None so Pyright doesn't flag it as
 # "possibly unbound" when the import fails. All bcrypt usage is guarded by
 # the HAS_BCRYPT flag, so this is type-safe.
-bcrypt = None  # type: ignore[assignment]
+bcrypt: Any = None
 try:
-    import bcrypt  # type: ignore[no-redef]
+    import bcrypt as bcrypt_module
+    bcrypt = bcrypt_module
     HAS_BCRYPT = True
 except ImportError:
     HAS_BCRYPT = False
@@ -96,9 +99,9 @@ def _get_dummy_bcrypt_hash() -> str:
         return _DUMMY_BCRYPT_HASH_REAL
     if HAS_BCRYPT:
         # Cost factor 12 — matches the cost used by _hash_key
-        _DUMMY_BCRYPT_HASH_REAL = bcrypt.hashpw(  # type: ignore[union-attr]
+        _DUMMY_BCRYPT_HASH_REAL = bcrypt.hashpw(
             b"dummy_value_for_timing_equalization_only",
-            bcrypt.gensalt(rounds=12),  # type: ignore[union-attr]
+            bcrypt.gensalt(rounds=12),
         ).decode("utf-8")
     return _DUMMY_BCRYPT_HASH_REAL
 
@@ -121,7 +124,7 @@ def _timing_safe_dummy_verify(key: str) -> None:
     dummy = _get_dummy_bcrypt_hash()
     # This will return False but take ~250ms, matching the valid-key path
     normalized = _normalize_key_for_bcrypt(key)
-    bcrypt.checkpw(normalized, dummy.encode())  # type: ignore[union-attr]
+    bcrypt.checkpw(normalized, dummy.encode())
 
 # ── STRESS-TEST FIX #1: fast O(1) lookup index ─────────────────────────────
 # A deterministic HMAC-SHA256 over (server_secret, key) is used as the dict
@@ -209,7 +212,7 @@ _VALIDATED_KEY_CACHE_TTL = float(os.getenv("FIREAI_KEY_CACHE_TTL", "300"))
 _REDIS_KEY_CACHE_PREFIX = "bazspark:apikey:"
 
 
-def _get_redis_for_key_cache():
+def _get_redis_for_key_cache() -> Any:
     """Get Redis client for API key cache. Returns None if unavailable."""
     try:
         from backend.session_store import _get_redis
@@ -296,7 +299,7 @@ def _hash_key(key: str) -> str:
     """
     if HAS_BCRYPT:
         normalized = _normalize_key_for_bcrypt(key)
-        return bcrypt.hashpw(normalized, bcrypt.gensalt()).decode('utf-8')  # type: ignore[union-attr]
+        return bcrypt.hashpw(normalized, bcrypt.gensalt()).decode('utf-8')
     # Fallback: HMAC-SHA256 with random salt
     salt = secrets.token_hex(16)
     h = hmac.new(salt.encode(), key.encode(), hashlib.sha256).hexdigest()
@@ -318,7 +321,7 @@ def _verify_key(key: str, hashed_key: str) -> bool:
     try:
         if HAS_BCRYPT and hashed_key.startswith('$2'):
             normalized = _normalize_key_for_bcrypt(key)
-            return bcrypt.checkpw(normalized, hashed_key.encode())  # type: ignore[union-attr]
+            return bcrypt.checkpw(normalized, hashed_key.encode())
         if hashed_key.startswith("hmac-sha256$"):
             # FIX #30: Verify HMAC-SHA256 with salt
             try:
@@ -340,20 +343,23 @@ def _verify_key(key: str, hashed_key: str) -> bool:
         return False
 
 
-def _load_keys() -> dict:
+def _load_keys() -> dict[str, Any]:
     """Load API keys from the JSON file."""
     path = Path(_get_keys_file_path())
     if not path.exists():
         return {}
     try:
         with open(path) as f:
-            return json.load(f)
+            data = json.load(f)
+            if isinstance(data, dict):
+                return data
+            return {}
     except (json.JSONDecodeError, OSError) as e:
         logger.warning("Failed to load API keys file: %s", e)
         return {}
 
 
-def _save_keys(keys: dict) -> None:
+def _save_keys(keys: dict[str, Any]) -> None:
     """
     Save API keys to the JSON file.
 
@@ -425,7 +431,7 @@ def add_api_key(key: str, role: Role, description: str = "") -> str:
             # Update role/description instead of creating duplicate
             existing = keys[lookup]
             # Preserve backward compat: existing entry may not have bcrypt_hash
-            key_hash = existing.get("bcrypt_hash", existing.get("key_hash", ""))
+            key_hash = str(existing.get("bcrypt_hash") or existing.get("key_hash") or "")
         else:
             key_hash = _hash_key(key)
         keys[lookup] = {

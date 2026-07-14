@@ -15,15 +15,14 @@ All endpoints are rate-limited and include real data from the database,
 event bus, and security logging system.
 """
 
-from __future__ import annotations
-
+from typing import Optional
 import asyncio
 import logging
 import threading
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timezone
-from typing import Any
+Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
@@ -44,7 +43,7 @@ router = APIRouter(tags=["monitor"])
 class MonitorState:
     """Singleton holding all monitoring state with thread-safe access."""
 
-    _instance: MonitorState | None = None
+    _instance: Optional[MonitorState] =  None
     _lock = threading.Lock()
 
     def __new__(cls) -> MonitorState:
@@ -185,7 +184,7 @@ class MonitorState:
                 for e in self._engines.values()
             ]
 
-    def get_engine(self, engine_id: str) -> dict[str, Any] | None:
+    def get_engine(self, engine_id: str) -> Optional[dict[str, Any]]:
         with self._lock:
             e = self._engines.get(engine_id)
             return dict(e) if e else None
@@ -215,8 +214,8 @@ class MonitorState:
             self._agent_activity.appendleft(activity)
 
     def get_agent_activity(
-        self, limit: int = 50, agent_id: str | None = None,
-        activity_type: str | None = None,
+        self, limit: int = 50, agent_id: Optional[str] = None,
+        activity_type: Optional[str] = None,
     ) -> list[dict[str, Any]]:
         with self._lock:
             results = list(self._agent_activity)
@@ -241,8 +240,8 @@ class MonitorState:
                 self._security_alerts = self._security_alerts[-500:]
 
     def get_security_alerts(
-        self, limit: int = 50, severity: str | None = None,
-        resolved: bool | None = None,
+        self, limit: int = 50, severity: Optional[str] = None,
+        resolved: Optional[bool] =  None,
     ) -> list[dict[str, Any]]:
         with self._lock:
             results = list(self._security_alerts)
@@ -574,7 +573,7 @@ async def get_metrics(request: Request):
 @router.get("/api/v1/monitor/engine-status", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
 async def get_engine_status(
     request: Request,
-    engine_id: str | None = Query(None, description="Filter by engine ID"),  # NOSONAR - python:S8410
+    engine_id: Optional[str] = Query(None, description="Filter by engine ID"),  # NOSONAR - python:S8410
 ):
     """
     GET /api/v1/monitor/engine-status — Per-engine status and health.
@@ -615,8 +614,8 @@ async def get_engine_status(
 async def get_agent_activity(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Max records to return"),  # NOSONAR - python:S8410
-    agent_id: str | None = Query(None, description="Filter by agent ID"),  # NOSONAR - python:S8410
-    activity_type: str | None = Query(None, description="Filter by activity type"),  # NOSONAR - python:S8410
+    agent_id: Optional[str] = Query(None, description="Filter by agent ID"),  # NOSONAR - python:S8410
+    activity_type: Optional[str] = Query(None, description="Filter by activity type"),  # NOSONAR - python:S8410
 ):
     """
     GET /api/v1/monitor/agent-activity — Agent activity log.
@@ -646,8 +645,8 @@ async def get_agent_activity(
 async def get_security_alerts(
     request: Request,
     limit: int = Query(50, ge=1, le=500, description="Max alerts to return"),  # NOSONAR - python:S8410
-    severity: str | None = Query(None, pattern="^(low|medium|high|critical)$"),  # NOSONAR - python:S8410
-    resolved: bool | None = Query(None, description="Filter by resolved state"),  # NOSONAR - python:S8410
+    severity: Optional[str] = Query(None, pattern="^(low|medium|high|critical)$"),  # NOSONAR - python:S8410
+    resolved: Optional[bool] =  Query(None, description="Filter by resolved state"),  # NOSONAR - python:S8410
 ):
     """
     GET /api/v1/monitor/security-alerts — Active and historical security alerts.

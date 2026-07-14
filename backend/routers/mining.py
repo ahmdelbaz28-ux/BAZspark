@@ -10,8 +10,7 @@ V214: Exposes the fireai.mining module via HTTP endpoints:
   GET  /api/v1/mining/standards            — List supported standards
 """
 
-from __future__ import annotations
-
+from typing import Optional
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -39,7 +38,7 @@ class VentilationCheckRequest(BaseModel):
     """Request for MSHA ventilation compliance check."""
     airflow_m3_s: float = Field(..., ge=0, description="Airflow in m³/s")
     location_type: str = Field("working_face", description="working_face, last_open_crosscut, or belt_entry")
-    cross_sectional_area_m2: float | None = Field(None, description="For velocity check")
+    cross_sectional_area_m2: Optional[float] =  Field(None, description="For velocity check")
 
 
 class CoCheckRequest(BaseModel):

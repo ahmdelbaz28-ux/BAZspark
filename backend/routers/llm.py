@@ -19,11 +19,10 @@ The LLM is **advisory only**. It never overrides deterministic NFPA 72
 calculations. All responses include a ``source`` field and a ``disclaimer``
 reminding the engineer that AI output must be verified against the published code.
 """
-from __future__ import annotations
-
+from typing import Optional
 import json
 import logging
-from typing import Any, AsyncGenerator, Dict
+from typing import Any, AsyncGenerator, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -86,12 +85,12 @@ class ChatRequest(BaseModel):
                 max_length=8000,
                 description="The user's question or instruction to the LLM.",
         )
-        system: str | None = Field(
+        system: Optional[str] =  Field(
                 None,
                 max_length=2000,
                 description="Optional system message to set the assistant's persona.",
         )
-        model: str | None = Field(
+        model: Optional[str] =  Field(
                 None,
                 description="Override the default model (e.g. 'z-ai/glm-4.7-flash-free').",
         )
@@ -101,7 +100,7 @@ class ChatRequest(BaseModel):
                 le=2.0,
                 description="Sampling temperature. Low values = more deterministic.",
         )
-        max_tokens: int | None = Field(
+        max_tokens: Optional[int] =  Field(
                 None,
                 ge=1,
                 le=8000,

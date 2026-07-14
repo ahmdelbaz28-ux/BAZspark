@@ -30,6 +30,7 @@ SECURITY FIXES APPLIED:
 - FIX #34: Removed dummy function
 """
 
+from typing import Optional
 import logging
 import os
 import re

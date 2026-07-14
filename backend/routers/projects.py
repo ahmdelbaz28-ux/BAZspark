@@ -8,8 +8,6 @@ engineering data. Deletion cascades to all child devices, connections,
 and reports.
 """
 
-from __future__ import annotations
-
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request

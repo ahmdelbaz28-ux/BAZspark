@@ -26,6 +26,7 @@ Endpoints:
     GET  /marine/fire-classes         — List SOLAS fire division classes
 """
 
+from typing import Optional
 # Evaluation at compile-time for rate-limiter wrapper compatibility
 
 from typing import Any, Dict, List, Optional
@@ -551,8 +552,7 @@ def zone_to_domain(zr: ZoneRequest) -> MarineZone:
 
 __all__ = ["router"]
 
-# Rebuild Pydantic models to resolve forward references under from __future__ import annotations
-ShipProjectRequest.model_rebuild()
+# Rebuild Pydantic models to resolve forward references under ShipProjectRequest.model_rebuild()
 ZoneRequest.model_rebuild()
 DesignRequest.model_rebuild()
 PowerDesignRequest.model_rebuild()

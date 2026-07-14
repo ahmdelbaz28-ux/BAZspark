@@ -20,6 +20,7 @@ FIXES APPLIED:
 - FIX #33: Proper multi-line imports
 """
 
+from typing import Optional
 import logging
 import os
 from datetime import datetime, timezone

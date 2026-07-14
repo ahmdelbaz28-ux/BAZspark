@@ -1,7 +1,5 @@
 """FireAI Backend API Routers."""
 
-from __future__ import annotations
-
 import logging as _logging
 from typing import TYPE_CHECKING
 

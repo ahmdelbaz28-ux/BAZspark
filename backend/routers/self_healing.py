@@ -7,8 +7,6 @@ V214: Exposes the self-healing engine's internal state:
   POST /api/v1/self-healing/reset   — Reset circuit breaker (admin only)
 """
 
-from __future__ import annotations
-
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
