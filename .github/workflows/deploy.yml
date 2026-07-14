@@ -154,7 +154,6 @@ jobs:
               --timeout=300 \
               --timeout-method=signal \
               --continue-on-collection-errors \
-              --ignore=tests/test_auth_security.py \
               -q 2>&1 | tee "$OUTPUT_FILE"
           EXIT_CODE=${PIPESTATUS[0]}
 

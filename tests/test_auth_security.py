@@ -29,12 +29,14 @@ def _setup_env() -> Generator[None, None, None]:
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = "test_key_for_security_audit"
     # Clear session store between tests
-    from backend.routers import auth as auth_module
-    auth_module._SESSION_STORE.clear()
-    auth_module._FAILED_ATTEMPTS.clear()
+    from backend.session_store import _mem_sessions, _mem_failed, _mem_lock
+    with _mem_lock:
+        _mem_sessions.clear()
+        _mem_failed.clear()
     yield
-    auth_module._SESSION_STORE.clear()
-    auth_module._FAILED_ATTEMPTS.clear()
+    with _mem_lock:
+        _mem_sessions.clear()
+        _mem_failed.clear()
 
 
 @pytest.fixture(scope="module")
