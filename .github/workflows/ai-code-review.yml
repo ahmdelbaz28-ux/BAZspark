@@ -85,33 +85,56 @@ jobs:
           PIP_NO_CACHE_DIR: "1"
         run: |
           python -m pip install --upgrade pip
-          # Prefer the new `daytona` package; fall back to `daytona_sdk` (deprecated alias)
-          pip install "daytona>=0.10.0" || pip install "daytona-sdk>=0.10.0"
+          # Pin to a working version range; 0.196.x is latest stable
+          pip install "daytona>=0.10.0,<1.0.0" || pip install "daytona-sdk>=0.10.0"
           pip install PyGithub httpx
+          # Verify installation
+          python -c "import daytona; print('daytona SDK version:', daytona.__version__)"
 
       - name: Provision Daytona sandbox
         id: sandbox
         env:
-          # The Daytona SDK reads these env vars directly (DaytonaConfig auto-loads them)
+          # The Daytona SDK reads DAYTONA_API_KEY from env (maps to secrets.DAYTONA_API_TOKEN)
           DAYTONA_API_KEY: ${{ secrets.DAYTONA_API_TOKEN }}
           DAYTONA_API_URL: https://app.daytona.io/api
           DAYTONA_TARGET: us
         run: |
           set -euo pipefail
+
+          # Diagnostic: verify the API key is present (print length only, never the value)
+          API_KEY_LEN=${#DAYTONA_API_KEY}
+          echo "DAYTONA_API_KEY length: ${API_KEY_LEN}"
+          if [ "${API_KEY_LEN}" -lt 10 ]; then
+            echo "::error::DAYTONA_API_TOKEN secret is empty or too short. Please set it in repo Settings > Secrets."
+            exit 1
+          fi
+
           python <<'PY'
           import os, sys, pathlib
+
+          api_key = os.environ.get("DAYTONA_API_KEY", "").strip()
+          api_url = os.environ.get("DAYTONA_API_URL", "https://app.daytona.io/api").strip()
+
+          # Guard: fail fast with a clear message if API key is missing
+          if not api_key:
+              print("ERROR: DAYTONA_API_KEY is empty. Set the DAYTONA_API_TOKEN repo secret.", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"API key present: length={len(api_key)}, prefix={api_key[:6]}...", flush=True)
+          print(f"API URL: {api_url}", flush=True)
 
           # Support both `daytona` (new) and `daytona_sdk` (deprecated) packages
           try:
               from daytona import Daytona, CreateSandboxFromImageParams, Resources, DaytonaConfig
+              print("Using: daytona package", flush=True)
           except ImportError:
               from daytona_sdk import Daytona, CreateSandboxFromImageParams, Resources, DaytonaConfig
+              print("Using: daytona_sdk package (deprecated fallback)", flush=True)
 
-          # SDK reads DAYTONA_API_KEY / DAYTONA_API_URL / DAYTONA_TARGET from env.
-          # Pass config explicitly too for belt-and-suspenders robustness.
+          # Explicitly pass api_key and api_url to DaytonaConfig for robustness
           config = DaytonaConfig(
-              api_key=os.environ["DAYTONA_API_KEY"],
-              api_url=os.environ["DAYTONA_API_URL"],
+              api_key=api_key,
+              api_url=api_url,
           )
           client = Daytona(config)
 
@@ -123,16 +146,15 @@ jobs:
                   "PIP_NO_CACHE_DIR": "1",
                   "CI": "true",
               },
-              # V209: disk stays at 10GB (Daytona cloud max per sandbox).
-              # npm ci + node_modules fit within 10GB if we clean up apt cache + pip cache.
+              # disk=10GB (Daytona cloud max per sandbox)
               resources=Resources(cpu=2, memory=4, disk=10),
               public=False,
-              # Auto-evict after 1h (Daytona session limit) as a safety net
+              # Auto-evict after 1h as a safety net
               auto_stop_interval=3600,
           )
-          print("▶ Creating Daytona sandbox (image=python:3.12-slim, 2vCPU/4GB/20GB)…", flush=True)
+          print("Creating Daytona sandbox (image=python:3.12-slim, 2vCPU/4GB/10GB)...", flush=True)
           sb = client.create(params, timeout=300)
-          print(f"✓ Sandbox created: id={sb.id}", flush=True)
+          print(f"Sandbox created: id={sb.id}", flush=True)
 
           # Persist sandbox ID for downstream steps
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:

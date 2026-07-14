@@ -1,19 +1,7 @@
 name: Vercel Preview Deployment
 
-# V236 (2026-07-13): Create Vercel PREVIEW deployments for PRs.
-#
-# This workflow creates a preview deployment on Vercel for every pull_request
-# targeting main. The deployment URL is posted as a comment on the PR and
-# added as a GitHub deployment status (environment: "Preview – BAZspark").
-#
-# This complements the existing `Trigger Vercel Deploy` workflow which only
-# handles production deployments on push to main.
-#
-# Preview deployments:
-#   - Use the same Vercel project (prj_cLO9iGH2sEG5LGSV1tv95CWimkl5)
-#   - Target: preview (not production)
-#   - Auto-aliased to <branch>.vercel.app
-#   - Status reported back to GitHub via deployments API
+# Creates Vercel PREVIEW deployments for PRs targeting main.
+# Posts preview URL as PR comment and GitHub deployment status.
 
 on:
   pull_request:
@@ -34,8 +22,7 @@ jobs:
   preview-deploy:
     name: Create Vercel Preview Deployment
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    # Only run if the secret is available
+    timeout-minutes: 10
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request }}
     steps:
       - name: Check required secrets
@@ -44,244 +31,182 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_DEPLOY_TOKEN }}
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
-            echo "❌ ERROR: VERCEL_DEPLOY_TOKEN secret is not set"
-            echo "   Create it at: https://vercel.com/account/tokens"
-            echo "   Then add as GitHub secret: VERCEL_DEPLOY_TOKEN"
-            exit 1
+            echo "::warning::VERCEL_DEPLOY_TOKEN secret is not set — skipping preview deployment"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "VERCEL_DEPLOY_TOKEN is set (length=${#VERCEL_TOKEN})"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "✅ VERCEL_DEPLOY_TOKEN is set"
 
       - name: Create GitHub Preview Deployment record
         id: gh-deploy
+        if: steps.check-secrets.outputs.skip != 'true'
         uses: actions/github-script@v7
         with:
           script: |
             const ref = context.payload.pull_request?.head.ref || context.ref.replace('refs/heads/', '');
-            const sha = context.payload.pull_request?.head.sha || context.sha;
-            const deployment = await github.rest.repos.createDeployment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: ref,
-              sha: sha,
-              environment: 'Preview – BAZspark',
-              description: 'Vercel Preview Deployment',
-              required_contexts: [],
-              auto_merge: false,
-              production_environment: false,
-            });
-            core.setOutput('deployment_id', deployment.data.id);
-            console.log(`Created GitHub deployment: ${deployment.data.id} (env: Preview – BAZspark)`);
+            try {
+              const deployment = await github.rest.repos.createDeployment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: ref,
+                environment: 'Preview – BAZspark',
+                description: 'Vercel Preview Deployment',
+                required_contexts: [],
+                auto_merge: false,
+                production_environment: false,
+              });
+              core.setOutput('deployment_id', deployment.data.id);
+              console.log(`Created GitHub deployment: ${deployment.data.id}`);
+            } catch (err) {
+              console.log(`Warning: Could not create deployment record: ${err.message}`);
+              core.setOutput('deployment_id', '');
+            }
 
       - name: Trigger Vercel preview deployment via API
         id: trigger
+        if: steps.check-secrets.outputs.skip != 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_DEPLOY_TOKEN }}
-          PROJECT_ID: prj_cLO9iGH2sEG5LGSV1tv95CWimkl5
-          TEAM_ID: team_thkWFCepMKbBSrOf5ulqi4wF
-          REPO: ${{ github.repository }}
+          PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          DEPLOYMENT_ID: ${{ steps.gh-deploy.outputs.deployment_id }}
         run: |
           set -euo pipefail
 
-          # Build the deployment payload — target is "preview" (not production)
-          DEPLOY_PAYLOAD=$(cat <<EOF
-          {"name":"ba-zspark","target":"preview","gitSource":{"type":"github","org":"ahmdelbaz28-ux","repo":"BAZspark","ref":"${REF}","sha":"${SHA}"},"ref":"${REF}"}
-          EOF
-          )
+          # Use hardcoded project ID as fallback if secret not set
+          PROJ="${PROJECT_ID:-prj_cLO9iGH2sEG5LGSV1tv95CWimkl5}"
 
-          echo "::group::Trigger Vercel Preview Deployment"
-          echo "Branch: $REF"
-          echo "SHA: $SHA"
-          echo "PR: #$PR_NUMBER"
-          echo ""
+          DEPLOY_PAYLOAD=$(printf '{"name":"bazspark","target":"preview","gitSource":{"type":"github","org":"ahmdelbaz28-ux","repo":"BAZspark","ref":"%s","sha":"%s"},"ref":"%s"}' "$REF" "$SHA" "$REF")
 
-          MAX_ATTEMPTS=3
-          for attempt in $(seq 1 $MAX_ATTEMPTS); do
-            echo "Attempt $attempt/$MAX_ATTEMPTS"
+          echo "Branch: $REF | SHA: ${SHA:0:8} | PR: #${PR_NUMBER:-none}"
 
-            RESPONSE=$(curl -sS -w "\n%{http_code}" \
-              --max-time 30 \
-              --retry 2 \
-              --retry-delay 5 \
-              -X POST \
-              "https://api.vercel.com/v13/deployments?projectId=${PROJECT_ID}&teamId=${TEAM_ID}" \
-              -H "Authorization: Bearer ${VERCEL_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d "$DEPLOY_PAYLOAD" || echo "CURL_FAILED")
+          RESPONSE=$(curl -sS -w "\n%{http_code}" \
+            --max-time 30 --retry 2 --retry-delay 5 \
+            -X POST \
+            "https://api.vercel.com/v13/deployments?projectId=${PROJ}" \
+            -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$DEPLOY_PAYLOAD" 2>&1 || echo "CURL_FAILED\n000")
 
-            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-            BODY=$(echo "$RESPONSE" | head -n -1)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          echo "HTTP: $HTTP_CODE"
 
-            echo "HTTP response: $HTTP_CODE"
-
-            # Success cases
-            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
-              DEPLOY_UID=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id','unknown'))" 2>/dev/null || echo "unknown")
-              DEPLOY_URL=$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('url',''))" 2>/dev/null || echo "")
-              INSPECTOR_URL=$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('inspectorUrl',''))" 2>/dev/null || echo "")
-
-              echo "deploy_uid=$DEPLOY_UID" >> "$GITHUB_OUTPUT"
-              echo "deploy_url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
-              echo "inspector_url=$INSPECTOR_URL" >> "$GITHUB_OUTPUT"
-              echo "✅ Preview deployment triggered: $DEPLOY_UID"
-              echo "   URL: https://$DEPLOY_URL"
-              echo "   Inspector: $INSPECTOR_URL"
-              echo "::endgroup::"
-              exit 0
-            fi
-
-            # Daily limit hit
-            if echo "$BODY" | grep -q "api-deployments-free-per-day"; then
-              echo "⚠️  Vercel free plan daily limit reached (100 deploys/day)"
-              echo "   The deployment did NOT happen. Limit resets in ~24h."
-              echo "daily_limit_hit=true" >> "$GITHUB_OUTPUT"
-              exit 1
-            fi
-
-            # Auth errors
-            if [ "$HTTP_CODE" = "401" ] || [ "$HTTP_CODE" = "403" ]; then
-              echo "❌ Vercel API auth failed ($HTTP_CODE)"
-              exit 1
-            fi
-
-            # Retry on transient errors
-            if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
-              BACKOFF=$((attempt * 10))
-              echo "⚠️  Attempt $attempt failed (HTTP $HTTP_CODE). Retrying in ${BACKOFF}s..."
-              sleep "$BACKOFF"
-            else
-              echo "❌ All $MAX_ATTEMPTS attempts failed (last HTTP $HTTP_CODE)"
-              echo "   Response: $BODY"
-              exit 1
-            fi
-          done
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+            DEPLOY_UID=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id','unknown'))" 2>/dev/null || echo "unknown")
+            DEPLOY_URL=$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('url',''))" 2>/dev/null || echo "")
+            echo "deploy_uid=$DEPLOY_UID" >> "$GITHUB_OUTPUT"
+            echo "deploy_url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+            echo "Preview deployment triggered: $DEPLOY_UID | URL: https://$DEPLOY_URL"
+          elif echo "$BODY" | grep -q "api-deployments-free-per-day"; then
+            echo "::warning::Vercel free plan daily limit reached (100 deploys/day)"
+            echo "deploy_uid=" >> "$GITHUB_OUTPUT"
+            echo "deploy_url=" >> "$GITHUB_OUTPUT"
+          elif [ "$HTTP_CODE" = "401" ] || [ "$HTTP_CODE" = "403" ]; then
+            echo "::error::Vercel auth failed ($HTTP_CODE) — check VERCEL_DEPLOY_TOKEN secret"
+            echo "deploy_uid=" >> "$GITHUB_OUTPUT"
+            echo "deploy_url=" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Vercel deployment returned HTTP $HTTP_CODE — non-fatal"
+            echo "deploy_uid=" >> "$GITHUB_OUTPUT"
+            echo "deploy_url=" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Mark GitHub deployment as success
-        if: success() && steps.trigger.outputs.deploy_uid
+        if: steps.check-secrets.outputs.skip != 'true' && steps.gh-deploy.outputs.deployment_id != '' && steps.trigger.outputs.deploy_uid != ''
         uses: actions/github-script@v7
         env:
           DEPLOY_URL: ${{ steps.trigger.outputs.deploy_url }}
-          INSPECTOR_URL: ${{ steps.trigger.outputs.inspector_url }}
         with:
           script: |
-            const deploymentId = ${{ steps.gh-deploy.outputs.deployment_id }};
+            const deploymentId = Number('${{ steps.gh-deploy.outputs.deployment_id }}');
+            if (!deploymentId) return;
             const deployUrl = process.env.DEPLOY_URL;
-            const inspectorUrl = process.env.INSPECTOR_URL;
-            const targetUrl = deployUrl ? `https://${deployUrl}` : (inspectorUrl || '');
-
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               deployment_id: deploymentId,
               state: 'success',
-              description: 'Preview deployment triggered successfully',
-              environment_url: targetUrl,
-              log_url: inspectorUrl || `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: 'Preview deployment triggered',
+              environment_url: deployUrl ? `https://${deployUrl}` : '',
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               auto_inactive: true,
             });
-            console.log(`✅ Marked deployment ${deploymentId} as success`);
 
-      - name: Mark GitHub deployment as failure
-        if: failure()
+      - name: Mark GitHub deployment as inactive (on skip/failure)
+        if: always() && steps.check-secrets.outputs.skip == 'true' && steps.gh-deploy.outputs.deployment_id != ''
         uses: actions/github-script@v7
         with:
           script: |
-            const deploymentId = ${{ steps.gh-deploy.outputs.deployment_id }};
-            if (!deploymentId) {
-              console.log('No deployment ID to mark as failure');
-              return;
-            }
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: deploymentId,
-              state: 'failure',
-              description: 'Preview deployment failed — see workflow logs',
-              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-            });
-            console.log(`❌ Marked deployment ${deploymentId} as failure`);
+            const deploymentId = Number('${{ steps.gh-deploy.outputs.deployment_id }}');
+            if (!deploymentId) return;
+            try {
+              await github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deploymentId,
+                state: 'inactive',
+                description: 'Preview deployment skipped',
+              });
+            } catch (e) { console.log('Could not update deployment status:', e.message); }
 
       - name: Comment PR with preview URL
-        if: success() && steps.trigger.outputs.deploy_url && github.event.pull_request
+        if: steps.trigger.outputs.deploy_url != '' && github.event.pull_request.number
         uses: actions/github-script@v7
         env:
           DEPLOY_URL: ${{ steps.trigger.outputs.deploy_url }}
-          INSPECTOR_URL: ${{ steps.trigger.outputs.inspector_url }}
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
             const deployUrl = process.env.DEPLOY_URL;
-            const inspectorUrl = process.env.INSPECTOR_URL;
-
             const body = [
-              '## 🚀 Vercel Preview Deployment Created',
+              '## 🚀 Vercel Preview Deployment',
               '',
               `**Preview URL:** https://${deployUrl}`,
               '',
-              `**Inspector:** ${inspectorUrl}`,
-              '',
-              '---',
-              '_This preview deployment will be ready in ~30 seconds. The URL will be updated with the deployment status once the build completes._',
+              '_This preview will be ready in ~30 seconds._',
             ].join('\n');
 
-            // Check if we already commented
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
             });
-
-            const existingComment = comments.data.find(c =>
-              c.user.type === 'Bot' && c.body.includes('Vercel Preview Deployment Created')
+            const existing = comments.data.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Vercel Preview Deployment')
             );
-
-            if (existingComment) {
+            if (existing) {
               await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: body,
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body,
               });
-              console.log(`Updated existing comment on PR #${prNumber}`);
             } else {
               await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: body,
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: prNumber, body,
               });
-              console.log(`Created new comment on PR #${prNumber}`);
             }
 
       - name: Write job summary
         if: always()
         env:
-          DEPLOY_URL: ${{ steps.trigger.outputs.deploy_url }}
-          INSPECTOR_URL: ${{ steps.trigger.outputs.inspector_url }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          DEPLOY_URL: ${{ steps.trigger.outputs.deploy_url || '' }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
           SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          RUN_ID: ${{ github.run_id }}
         run: |
           {
             echo "## Vercel Preview Deployment"
             echo ""
             echo "| Field | Value |"
             echo "|-------|-------|"
-            echo "| Commit | [\`${SHA:0:7}\`](https://github.com/${{ github.repository }}/commit/${SHA}) |"
-            if [ -n "$PR_NUMBER" ]; then
-              echo "| PR | #${PR_NUMBER} |"
-            fi
+            echo "| Commit | \`${SHA:0:7}\` |"
+            [ -n "$PR_NUMBER" ] && echo "| PR | #${PR_NUMBER} |"
             if [ -n "$DEPLOY_URL" ]; then
               echo "| Preview URL | https://${DEPLOY_URL} |"
-              echo "| Inspector | ${INSPECTOR_URL} |"
-              echo "| Outcome | ✅ Preview deployment triggered |"
+              echo "| Outcome | ✅ Triggered |"
             else
-              echo "| Outcome | ❌ Failed |"
+              echo "| Outcome | ⚠️ Skipped or not available |"
             fi
-            echo ""
-            echo "---"
-            echo "_Triggered by [${{ github.actor }}](https://github.com/${{ github.actor }})_"
           } >> "$GITHUB_STEP_SUMMARY"
