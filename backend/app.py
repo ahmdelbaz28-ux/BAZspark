@@ -55,19 +55,19 @@ from slowapi.errors import RateLimitExceeded
 # the middleware is a no-op pass-through — zero overhead on HF Space / Vercel
 # without Akamai, full protection when Akamai is deployed in front.
 # Pure ASGI (no body buffering) — see agent.md BUG-34 fix.
-from backend.akamai_middleware import AkamaiIntegrationMiddleware
+from .akamai_middleware import AkamaiIntegrationMiddleware
 
 # V129: Auth dependency for cache management endpoints (was public).
-from backend.auth import require_permission
+from .auth import require_permission
 
 # V208 (2026-07-09): Cloudflare Edge integration middleware.
 # Reads CF-Connecting-IP / CF-RAY / CF-IPCountry headers injected by Cloudflare
 # proxy. When CF_ENABLED=false (default), the middleware is a no-op pass-through.
 # Complements Akamai middleware — both can be enabled simultaneously for multi-CDN.
-from backend.cloudflare_middleware import CloudflareIntegrationMiddleware
+from .cloudflare_middleware import CloudflareIntegrationMiddleware
 
 # Import rate limiter from centralized module (avoids circular import)
-from backend.limiter import limiter
+from .limiter import limiter
 
 # Import multi-database service
 from backend.multi_db_service import get_multi_db_service

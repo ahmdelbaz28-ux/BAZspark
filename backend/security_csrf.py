@@ -95,6 +95,12 @@ CSRF_EXEMPT_PATHS = frozenset({
     "/docs",
     "/redoc",
     "/openapi.json",
+    # Auth endpoints: login creates the session (no existing cookie to
+    # double-submit), and logout destroys a session — neither is a
+    # cross-site forgery target.
+    "/api/v1/auth/login",
+    "/api/v1/auth/logout",
+    "/api/v1/auth/session/login",
 })
 
 # V135 F-35 FIX: Removed dead CSRF_SAFE_CONTENT_TYPES constant.

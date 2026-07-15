@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 backend/routers/reports.py — Report generation and export endpoints.
 

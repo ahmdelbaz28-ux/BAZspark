@@ -1,10 +1,10 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# File-level issue suppression removed per AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 fireai/analytics/predictive_analytics.py — Forecasting Engine.
 ================================================================
 Holt-Winters exponential smoothing for time-series forecasting with
-moving-average fallback. Produces JSON-serialisable forecast reports
+machine learning fallback using sklearn. Produces JSON-serialisable forecast reports
 with confidence intervals.
 """
 
@@ -18,6 +18,21 @@ from datetime import datetime, timezone
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# Try to import ML libraries, fallback to basic implementation if not available
+try:
+    import numpy as np
+    import pandas as pd
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.linear_model import LinearRegression
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.metrics import mean_absolute_error
+    ML_AVAILABLE = True
+except ImportError:
+    logger.warning("ML libraries (sklearn, numpy, pandas) not available - using basic statistical methods")
+    ML_AVAILABLE = False
+    np = None
+    pd = None
 
 
 # ── data classes ──────────────────────────────────────────────────────────────
@@ -256,6 +271,104 @@ class PredictiveAnalyticsEngine:
         self.gamma = gamma
         self.season_period = season_period
 
+    def _ml_predict_failure(self, device_history: list[DeviceEvent]) -> FailurePrediction | None:
+        """ML-based failure prediction using sklearn if available."""
+        if not ML_AVAILABLE:
+            return None
+        
+        try:
+            # Prepare features from device history
+            events_sorted = sorted(device_history, key=lambda e: e.timestamp)
+            now = datetime.now(timezone.utc)
+            
+            # Extract numerical features
+            time_since_last_event = [(now - e.timestamp).total_seconds() / 3600.0 for e in events_sorted]
+            event_types_encoded = [1 if e.event_type == "alarm" else 
+                                 2 if e.event_type == "trouble" else 
+                                 3 if e.event_type == "maintenance" else 
+                                 4 if e.event_type == "test" else 5 for e in events_sorted]
+            
+            # Create feature matrix
+            if len(events_sorted) < 3:
+                # Not enough data for ML approach
+                return None
+            
+            # Use the last N events to predict next failure
+            n_features = min(len(events_sorted), 10)  # Use at most 10 most recent events
+            features = []
+            labels = []
+            
+            # Create sliding window features for ML training
+            for i in range(len(events_sorted) - 1):
+                window_events = events_sorted[max(0, i - n_features + 1):i + 1]
+                
+                # Feature engineering
+                avg_time_between_events = np.mean([
+                    (window_events[j+1].timestamp - window_events[j].timestamp).total_seconds() / 3600.0
+                    for j in range(len(window_events) - 1)
+                ]) if len(window_events) > 1 else 0
+                
+                failure_count = len([e for e in window_events if e.event_type == "failure"])
+                trouble_count = len([e for e in window_events if e.event_type in ("trouble", "maintenance")])
+                
+                features.append([avg_time_between_events, failure_count, trouble_count])
+                
+                # Label: time to next failure (or current time if no failure)
+                next_event = events_sorted[i + 1]
+                time_to_next = (next_event.timestamp - window_events[-1].timestamp).total_seconds() / 3600.0
+                labels.append(time_to_next)
+            
+            if len(features) < 2:
+                return None
+            
+            # Train model
+            X = np.array(features)
+            y = np.array(labels)
+            
+            model = RandomForestRegressor(n_estimators=10, random_state=42)
+            model.fit(X, y)
+            
+            # Prepare features for prediction (current state)
+            latest_events = events_sorted[-n_features:]
+            avg_time_between_latest = np.mean([
+                (latest_events[j+1].timestamp - latest_events[j].timestamp).total_seconds() / 3600.0
+                for j in range(len(latest_events) - 1)
+            ]) if len(latest_events) > 1 else 0
+            
+            latest_failure_count = len([e for e in latest_events if e.event_type == "failure"])
+            latest_trouble_count = len([e for e in latest_events if e.event_type in ("trouble", "maintenance")])
+            
+            current_features = np.array([[avg_time_between_latest, latest_failure_count, latest_trouble_count]])
+            
+            predicted_ttf = max(model.predict(current_features)[0], 24.0)  # Minimum 24 hours
+            
+            # Estimate confidence from model performance
+            predictions = model.predict(X)
+            mae = mean_absolute_error(y, predictions)
+            confidence_lower = max(predicted_ttf - mae, 24.0)
+            confidence_upper = predicted_ttf + mae
+            
+            # Determine failure mode
+            if latest_failure_count > 0:
+                failure_mode = "recurring_failure_pattern"
+            elif latest_trouble_count > 3:
+                failure_mode = "maintenance_deficit"
+            else:
+                failure_mode = "normal_operation"
+            
+            return FailurePrediction(
+                device_id=events_sorted[0].device_id,
+                predicted_ttf_hours=round(float(predicted_ttf), 2),
+                confidence_lower=round(float(confidence_lower), 2),
+                confidence_upper=round(float(confidence_upper), 2),
+                probability=min(max(latest_failure_count / max(len(events_sorted), 1), 0.001), 0.99),
+                failure_mode=failure_mode,
+                features_used=["avg_time_between_events", "failure_count", "trouble_count"],
+            )
+        except Exception as e:
+            logger.warning(f"ML-based failure prediction failed: {e}, falling back to statistical method")
+            return None
+
     def predict_failure(self, device_history: list[DeviceEvent]) -> FailurePrediction:
         if not device_history:
             return FailurePrediction(
@@ -267,7 +380,14 @@ class PredictiveAnalyticsEngine:
                 failure_mode="insufficient_data",
                 features_used=[],
             )
-
+        
+        # Try ML-based prediction first if available
+        if ML_AVAILABLE:
+            ml_result = self._ml_predict_failure(device_history)
+            if ml_result is not None:
+                return ml_result
+        
+        # Fall back to statistical method
         device_id = device_history[0].device_id
         events_sorted = sorted(device_history, key=lambda e: e.timestamp)
         now = datetime.now(timezone.utc)

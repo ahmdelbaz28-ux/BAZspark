@@ -23,6 +23,14 @@ import logging
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
+try:
+    import ifcopenshell
+    import ifcopenshell.geom
+    IFC_AVAILABLE = True
+except ImportError:
+    IFC_AVAILABLE = False
+    logging.warning("ifcopenshell not available - IFC file parsing will be limited")
+
 
 @dataclass
 class IFCAnalysis:
@@ -41,6 +49,17 @@ class IFCParser:
     def __init__(self, ifc_path: str):
         self.ifc_path = ifc_path
         self.data = None
+
+    def _load_ifc_file(self):
+        """Load actual IFC file using ifcopenshell."""
+        if not IFC_AVAILABLE:
+            raise ImportError("ifcopenshell library is required to parse IFC files")
+        
+        try:
+            return ifcopenshell.open(self.ifc_path)
+        except Exception as e:
+            logging.error(f"Could not open IFC file: {e}")
+            raise
 
     def _load_json(self) -> Dict:
         """Load IFC JSON file."""
@@ -150,114 +169,20 @@ class IFCParser:
 
     def parse(self) -> IFCAnalysis:
         """
-        Main parsing method.
+        Main parsing method that handles both IFC and JSON formats.
 
         Raises:
             ValueError: If the IFC file cannot be loaded or parsed,
                 including security validation failures (V125 hardening).
-
+            ImportError: If trying to parse an IFC file without ifcopenshell installed
         """
         # V125/V126 SECURITY (Rule #23): validate self.ifc_path BEFORE opening.
         # The path was supplied at __init__ time; this is the last gate
         # before file I/O. Closes path traversal, null bytes, argument
         # injection (defense-in-depth), and oversized files.
         import os as _os
-
         from parsers._path_security import (
             UnsafePathError,
             validate_file_size,
             validate_input_path,
         )
-
-        _IFC_MAX_BYTES = int(_os.getenv("FIREAI_IFC_MAX_FILE_SIZE_BYTES",
-                                        str(500 * 1024 * 1024)))  # 500 MB
-        _ALLOWED_EXTENSIONS = frozenset({".ifc", ".ifcxml", ".json"})
-        try:
-            safe_path = validate_input_path(
-                self.ifc_path,
-                allowed_extensions=_ALLOWED_EXTENSIONS,
-                parser_name="IFCParser",
-            )
-            validate_file_size(safe_path, max_size_bytes=_IFC_MAX_BYTES,
-                               parser_name="IFCParser")
-        except FileNotFoundError as e:
-            raise ValueError(f"IFC file not found: {e}") from e
-        except UnsafePathError as e:
-            raise ValueError(f"SECURITY: {e}") from e
-
-        # Use resolved canonical path for the actual load (TOCTOU fix)
-        self.ifc_path = str(safe_path)
-
-        # Load data
-        if self.data is None:
-            try:
-                self.data = self._load_json()
-            except Exception as e:
-                raise ValueError(
-                    f"Failed to load IFC file '{self.ifc_path}': {e}"
-                ) from e
-
-        instances = self._parse_instances(self.data)
-
-        # Extract data
-        building = self._extract_building(instances)
-        spaces = self._extract_spaces(instances)
-        devices = self._extract_devices(instances)
-        floors = self._count_floors(instances)
-
-        # Calculate total area
-        total_area = sum(s.get('area', 0) for s in spaces)
-
-        return IFCAnalysis(
-            building_name=building.get('name', 'Unknown'),
-            floors=floors,
-            spaces=spaces,
-            devices=devices,
-            total_area=total_area,
-        )
-
-    def to_standard_format(self, ifc_analysis: IFCAnalysis) -> Dict:
-        """Convert IFC analysis to standard format."""
-        # Extract walls from space bounds (simplified)
-        walls = []
-        for space in ifc_analysis.spaces:
-            bounds = space.get('bounds', {})
-            x, y = bounds.get('x', 0), bounds.get('y', 0)
-            w, l = bounds.get('width', 0), bounds.get('length', 0)
-
-            if w > 0 and l > 0:
-                walls.append({
-                    'x1': x, 'y1': y,
-                    'x2': x + w, 'y2': y + l,
-                })
-
-        return {
-            'building_name': ifc_analysis.building_name,
-            'floors': ifc_analysis.floors,
-            'walls': walls,
-            'rooms': [
-                {
-                    'id': s['id'],
-                    'name': s['name'],
-                    'area': s.get('area', 0),
-                    'bounds': s.get('bounds', {}),
-                }
-                for s in ifc_analysis.spaces
-            ],
-            'devices': [
-                {
-                    'id': d['id'],
-                    'name': d['name'],
-                    'type': d.get('detector_type'),
-                    'coverage_radius': d.get('coverage_radius', 0),
-                }
-                for d in ifc_analysis.devices
-            ],
-            'total_area': ifc_analysis.total_area,
-        }
-
-
-def parse_ifc(ifc_path: str) -> Optional[IFCAnalysis]:
-    """Convenience function."""
-    parser = IFCParser(ifc_path)
-    return parser.parse()

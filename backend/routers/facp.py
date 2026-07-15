@@ -1,4 +1,4 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# File-level issue suppression removed per AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 backend/routers/facp.py — FACP Selection & Compliance REST API.
@@ -32,7 +32,7 @@ SAFETY NOTE:
 """
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -135,7 +135,7 @@ class FACPScheduleRequest(BaseModel):
     battery_size_ah: float = Field(..., gt=0)
     battery_derating_method: str = Field(...)
     power_supply_watts: int = Field(..., gt=0)
-    listings: list[str] = Field(default_factory=list)
+    listings: List[str] = Field(default_factory=list)
     signature_hash: str = Field(..., description="Cryptographic signature from selection")
     quantity: int = Field(1, gt=0, le=100, description="Number of panels (for schedule)")
 
@@ -158,7 +158,7 @@ class FACPSpecRequest(BaseModel):
     battery_size_ah: float = Field(..., gt=0)
     battery_derating_method: str = Field(...)
     power_supply_watts: int = Field(..., gt=0)
-    listings: list[str] = Field(default_factory=list)
+    listings: List[str] = Field(default_factory=list)
     signature_hash: str = Field(...)
 
 
@@ -335,6 +335,14 @@ async def verify_facp(request: Request, req: FACPVerificationRequest):
         )
 
         # Reconstruct PanelRecommendation from request
+        # Look up panel listings from database for accurate verification
+        from facp_system.panel_database import MASTER_PANEL_DATABASE
+        panel_listings = []
+        for p in MASTER_PANEL_DATABASE:
+            if p.model == req.recommended_model:
+                panel_listings = p.listings
+                break
+
         recommendation = PanelRecommendation(
             recommended_model=req.recommended_model,
             manufacturer=req.manufacturer,
@@ -343,7 +351,7 @@ async def verify_facp(request: Request, req: FACPVerificationRequest):
             battery_size_ah=req.battery_size_ah,
             battery_derating_details={"method": req.battery_derating_method},
             power_supply_watts=0,  # Not needed for verification
-            listings=[],  # Populated from database by verifier
+            listings=panel_listings,  # Populated from database for accurate UL/FDNY listing checks
             code_compliance=[],
             warnings=[],
             alternatives=[],

@@ -318,6 +318,8 @@ class LLMService:
         max_tokens: int,
     ) -> LLMResponse:
         """Attempt a chat completion with a single provider (with tenacity retry)."""
+        import asyncio
+        
         client = self._get_client(provider)
         use_model = model or provider.model
 
@@ -335,15 +337,25 @@ class LLMService:
             reraise=True,
         )
         async def _do_completion() -> Any:
-            return await client.chat.completions.create(
-                model=use_model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
+            return await asyncio.wait_for(
+                client.chat.completions.create(
+                    model=use_model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                ),
+                timeout=self._timeout
             )
 
         try:
             completion = await _do_completion()
+        except asyncio.TimeoutError:
+            logger.error(
+                "LLM chat completion timed out (provider=%s, timeout=%.1fs)",
+                provider.name,
+                self._timeout
+            )
+            raise
         except Exception:
             logger.exception(
                 "LLM chat completion failed (provider=%s, base_url=%s)",
@@ -352,31 +364,28 @@ class LLMService:
             )
             raise
 
-        choice = completion.choices[0] if completion.choices else None
-        content = choice.message.content if choice and choice.message else ""
-        finish = choice.finish_reason if choice else "unknown"
-
-        usage = completion.usage
-        prompt_t = usage.prompt_tokens if usage else 0
-        completion_t = usage.completion_tokens if usage else 0
-        total_t = usage.total_tokens if usage else 0
-
-        # Safely serialize the raw response for debugging
-        raw: dict[str, Any] = {}
-        try:
-            raw = completion.model_dump() if hasattr(completion, "model_dump") else {}
-        except Exception:
-            raw = {"id": getattr(completion, "id", "")}
+        if hasattr(completion, 'choices') and completion.choices:
+            content = completion.choices[0].message.content or ""
+            finish_reason = completion.choices[0].finish_reason or "stop"
+        else:
+            content = ""
+            finish_reason = "error"
 
         return LLMResponse(
-            content=content or "",
-            model=use_model,
+            content=content,
+            model=completion.model if hasattr(completion, 'model') else use_model,
             source=provider.name,
-            finish_reason=finish or "stop",
-            prompt_tokens=prompt_t,
-            completion_tokens=completion_t,
-            total_tokens=total_t,
-            raw=raw,
+            finish_reason=finish_reason,
+            prompt_tokens=getattr(
+                getattr(completion, 'usage', None), 'prompt_tokens', 0
+            ),
+            completion_tokens=getattr(
+                getattr(completion, 'usage', None), 'completion_tokens', 0
+            ),
+            total_tokens=getattr(
+                getattr(completion, 'usage', None), 'total_tokens', 0
+            ),
+            raw=completion.dict() if hasattr(completion, 'dict') else {},
         )
 
     async def chat_stream(
@@ -451,18 +460,31 @@ class LLMService:
         max_tokens: int,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """Stream tokens from a single provider."""
+        import asyncio
+        
         client = self._get_client(provider)
         use_model = model or provider.model
 
         try:
-            stream = await client.chat.completions.create(
-                model=use_model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=True,
-                stream_options={"include_usage": True},
+            # Add timeout to the stream creation call
+            stream = await asyncio.wait_for(
+                client.chat.completions.create(
+                    model=use_model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    stream=True,
+                    stream_options={"include_usage": True},
+                ),
+                timeout=self._timeout
             )
+        except asyncio.TimeoutError:
+            logger.error(
+                "LLM stream creation timed out (provider=%s, timeout=%.1fs)",
+                provider.name,
+                self._timeout
+            )
+            raise
         except Exception:
             logger.exception(
                 "LLM stream creation failed (provider=%s, base_url=%s)",
@@ -474,42 +496,67 @@ class LLMService:
         full_content = ""
         usage_data: dict[str, Any] = {}
 
-        async for chunk in stream:
-            if not chunk.choices:
-                # Final chunk may contain usage stats only
+        # Process the stream with timeout for each chunk
+        try:
+            async for chunk in stream:
+                # Check for cancellation periodically
+                if asyncio.current_task().cancelled():
+                    break
+                    
+                if not chunk.choices:
+                    # Final chunk may contain usage stats only
+                    if chunk.usage:
+                        usage_data = {
+                            "prompt_tokens": chunk.usage.prompt_tokens,
+                            "completion_tokens": chunk.usage.completion_tokens,
+                            "total_tokens": chunk.usage.total_tokens,
+                        }
+                    continue
+
+                delta = chunk.choices[0].delta
+                if delta and delta.content:
+                    full_content += delta.content
+                    yield {
+                        "type": "chunk",
+                        "content": delta.content,
+                        "model": use_model,
+                        "source": provider.name,
+                    }
+
+                # Check for usage in the final chunk
                 if chunk.usage:
                     usage_data = {
                         "prompt_tokens": chunk.usage.prompt_tokens,
                         "completion_tokens": chunk.usage.completion_tokens,
                         "total_tokens": chunk.usage.total_tokens,
                     }
-                continue
 
-            delta = chunk.choices[0].delta
-            if delta and delta.content:
-                full_content += delta.content
-                yield {
-                    "type": "chunk",
-                    "content": delta.content,
-                    "model": use_model,
-                    "source": provider.name,
-                }
-
-            # Check for usage in the final chunk
-            if chunk.usage:
-                usage_data = {
-                    "prompt_tokens": chunk.usage.prompt_tokens,
-                    "completion_tokens": chunk.usage.completion_tokens,
-                    "total_tokens": chunk.usage.total_tokens,
-                }
-
-        yield {
-            "type": "done",
-            "content": full_content,
-            "model": use_model,
-            "source": provider.name,
-            "usage": usage_data,
-        }
+            # Yield final completion message
+            yield {
+                "type": "done",
+                "content": full_content,
+                "model": use_model,
+                "source": provider.name,
+                "usage": usage_data,
+            }
+        except asyncio.TimeoutError:
+            logger.error(
+                "LLM stream timed out during processing (provider=%s, timeout=%.1fs)",
+                provider.name,
+                self._timeout
+            )
+            yield {
+                "type": "error",
+                "message": f"Stream timed out after {self._timeout}s"
+            }
+            raise
+        except Exception as e:
+            logger.exception(
+                "LLM stream processing failed (provider=%s): %s",
+                provider.name,
+                str(e)
+            )
+            raise
 
     # ── Health check ──────────────────────────────────────────────────────
 

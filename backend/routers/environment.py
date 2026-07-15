@@ -1,4 +1,6 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+from __future__ import annotations
+
+# File-level issue suppression removed per AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 backend/routers/environment.py — Environmental data endpoints for FireAI.
