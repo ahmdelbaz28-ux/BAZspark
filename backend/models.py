@@ -13,7 +13,7 @@ from __future__ import annotations
 import math
 import uuid
 from datetime import datetime, timezone
-from typing import Literal, TypeVar
+from typing import Literal, TypeVar, Optional, Dict, Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -125,6 +125,20 @@ class Device(BaseModel):
         if v < 0:
             raise ValueError("Value must be non-negative")
         return v
+
+
+class DeviceCreate(BaseModel):
+    name: str = Field(default="", min_length=1)
+    type: str = Field(default="", min_length=1)
+    category: str = Field(default="", min_length=1)
+    x: float
+    y: float
+    z: Optional[float] = Field(default=0.0)
+    rotation: Optional[float] = Field(default=0.0)
+    voltage: float = Field(ge=0, default=0.0)
+    current: float = Field(ge=0, default=0.0)
+    load: float = Field(ge=0, default=0.0)
+    properties: Optional[Dict[str, Any]] = Field(default=None)
 
 
 class CreateDeviceInput(BaseModel):

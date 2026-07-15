@@ -547,7 +547,7 @@ async def get_full_environmental_context(
     )
 
     # Handle weather errors
-    if isinstance(weather, Exception):
+    if isinstance(weather, BaseException):
         logger.warning("Weather fetch failed: %s", weather)
         weather = weather_svc._get_default(lat, lon)
 

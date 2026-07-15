@@ -126,17 +126,16 @@ def _hash_secret(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
-def _create_session_token(session_id: str) -> str:
+def _create_session_token(session_id: str, expires_at: int) -> str:
     """
-    Create a signed session token: session_id.HMAC_signature.
+    Create a signed session token: session_id.expires_at.HMAC_signature.
 
-    Uses SessionSecretManager.sign() which supports:
-      - Multiple secrets (for zero-downtime rotation)
-      - File-based secrets (Docker/K8s)
-      - Validation (minimum entropy)
+    Includes expiration time in the token payload to prevent usage of expired tokens
+    even if server-side session store hasn't been cleared yet.
     """
-    signature = _SECRET_MANAGER.sign(session_id)
-    return f"{session_id}.{signature}"
+    payload = f"{session_id}.{expires_at}"
+    signature = _SECRET_MANAGER.sign(payload)
+    return f"{payload}.{signature}"
 
 
 def _verify_session_token(token: str) -> Optional[str]:
@@ -144,33 +143,39 @@ def _verify_session_token(token: str) -> Optional[str]:
     Verify a session token and return the session_id if valid.
 
     Returns None if:
-      - Token format is invalid (missing signature)
-      - HMAC signature does not match (tampered or wrong secret)
-      - Session ID is not in the session store (expired or revoked)
+      - Token format is invalid
+      - HMAC signature does not match
+      - Token has expired (client-side check)
+      - Session ID is not in the session store
     """
     if "." not in token:
         return None
 
-    parts = token.split(".", 1)
-    if len(parts) != 2:
+    parts = token.split(".", 2)
+    if len(parts) != 3:
         return None
 
-    session_id, signature = parts
-    if not session_id or not signature:
+    session_id, expires_at_str, signature = parts
+    try:
+        expires_at = int(expires_at_str)
+    except ValueError:
         return None
 
-    # Verify signature against primary AND previous secrets (rotation support)
-    if not _SECRET_MANAGER.verify_signature(session_id, signature):
+    # Client-side expiration check (token-level)
+    if time.time() > expires_at:
         return None
 
-    # Check that session exists in store (not expired/revoked)
+    # Verify signature against primary AND previous secrets
+    if not _SECRET_MANAGER.verify_signature(f"{session_id}.{expires_at}", signature):
+        return None
+
+    # Check that session exists in store (server-side validation)
     session_id_hash = _hash_secret(session_id)
     session = _session_store.get(session_id_hash)
     if session is None:
         return None
 
-    # V244: Expiry is checked inside session_store.get(), but we keep this
-    # as a safety net for the in-memory fallback path.
+    # Server-side expiration check (session store)
     if time.time() > session.get("expires_at", 0):
         _session_store.delete(session_id_hash)
         return None
@@ -238,12 +243,13 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     # Validate the API key
     role: Optional[Role] =  None
     env_key = os.getenv("FIREAI_API_KEY")
-    if env_key and _hmac.compare_digest(api_key, env_key):
+    if env_key and api_key and _hmac.compare_digest(api_key, env_key):
         role = Role.ADMIN
     else:
-        info = _validate_api_key(api_key)
-        if info is not None:
-            role = info.role
+        if api_key:
+            info = _validate_api_key(api_key)
+            if info is not None:
+                role = info.role
 
     if role is None:
         _record_failed_attempt(client_ip)
@@ -264,7 +270,10 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     # V244: Store session via the hybrid Redis/in-memory session_store.
     # If REDIS_URL is set, the session persists across restarts and is
     # shared across workers. Otherwise, falls back to in-memory.
-    api_key_hash = _hash_secret(api_key)
+    if api_key:
+        api_key_hash = _hash_secret(api_key)
+    else:
+        api_key_hash = ""
     expires_at_epoch = time.time() + _COOKIE_MAX_AGE_SECONDS
     _session_store.set(
         session_id_hash,
@@ -279,7 +288,7 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     )
 
     # Create signed token
-    token = _create_session_token(session_id)
+    token = _create_session_token(session_id, int(expires_at_epoch))
 
     # Build Set-Cookie header
     is_production = os.getenv("FIREAI_ENV", "production").lower() in ("production", "prod")
