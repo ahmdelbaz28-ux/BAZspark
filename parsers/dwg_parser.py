@@ -19,7 +19,6 @@ import os
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import List, Optional
 
 from parsers._path_security import (
@@ -116,7 +115,7 @@ class DWGParser:
         # Try each converter in order of preference
         for converter_cmd in self._available_converters:
             try:
-                result = subprocess.run(  # noqa: S603 — command from known list, not user input
+                subprocess.run(  # noqa: S603 — command from known list, not user input
                     [converter_cmd, "--help"], capture_output=True, timeout=5
                 )
                 # If command exists (doesn't raise FileNotFoundError) and returns help or succeeds
@@ -464,7 +463,7 @@ class DWGParser:
         import time
 
         start = time.monotonic()
-        result = DWGParseResult(source_file=dwg_path, success=False)
+        result = DWGParseResult(source_file=dwg_path, success=False)  # noqa: F841
 
         # V122 SECURITY: Validate path BEFORE any file/subprocess access.
         # This catches argument injection, path traversal, null bytes,
@@ -637,15 +636,15 @@ class DWGParser:
                     "DXF",  # output format
                     "0"  # recurse (0 = no, 1 = yes)
                 ]
-                
+
                 # Execute the conversion
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-                
+
                 if result.returncode != 0:
                     raise DWGConversionError(
                         f"{self._active_converter} conversion failed: {result.stderr}"
                     )
-                
+
                 # Find the converted DXF file in the output directory
                 import glob
                 dxf_files = glob.glob(os.path.join(output_dir, "*.dxf"))
@@ -653,7 +652,7 @@ class DWGParser:
                     raise DWGConversionError(
                         f"No DXF file found after {self._active_converter} conversion"
                     )
-                
+
                 # Move the converted file to expected location
                 import shutil
                 shutil.move(dxf_files[0], dxf_path)
@@ -663,12 +662,12 @@ class DWGParser:
 
             # Execute the conversion command
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            
+
             if result.returncode != 0:
                 raise DWGConversionError(
                     f"DWG conversion failed: {result.stderr} (stdout: {result.stdout})"
                 )
-                
+
             return dxf_path
 
         except subprocess.TimeoutExpired:
