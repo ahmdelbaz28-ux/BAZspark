@@ -21,7 +21,7 @@ Extracted data:
 import json
 import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 try:
     import ifcopenshell
@@ -54,7 +54,7 @@ class IFCParser:
         """Load actual IFC file using ifcopenshell."""
         if not IFC_AVAILABLE:
             raise ImportError("ifcopenshell library is required to parse IFC files")
-        
+
         try:
             return ifcopenshell.open(self.ifc_path)
         except Exception as e:
@@ -180,9 +180,3 @@ class IFCParser:
         # The path was supplied at __init__ time; this is the last gate
         # before file I/O. Closes path traversal, null bytes, argument
         # injection (defense-in-depth), and oversized files.
-        import os as _os
-        from parsers._path_security import (
-            UnsafePathError,
-            validate_file_size,
-            validate_input_path,
-        )

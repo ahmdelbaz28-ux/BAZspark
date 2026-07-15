@@ -107,7 +107,6 @@ class RevitNamedPipeDispatcher:
     def _ping(self) -> bool:
         """Quick connectivity test — try to open the pipe."""
         try:
-            import win32pipe  # type: ignore
             import win32file  # type: ignore
             h = win32file.CreateFile(
                 self.PIPE_NAME,
@@ -123,9 +122,9 @@ class RevitNamedPipeDispatcher:
 
     def send(self, action: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Send a command and return the response dict."""
-        import win32pipe  # type: ignore
-        import win32file  # type: ignore
         import pywintypes  # type: ignore
+        import win32file  # type: ignore
+        import win32pipe  # type: ignore
 
         payload = json.dumps({"command_id": str(time.time()),
                               "action": action, "params": params})

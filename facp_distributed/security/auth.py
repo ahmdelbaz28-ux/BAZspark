@@ -1,5 +1,6 @@
 """Authentication System for Distributed FACP"""
 import hashlib
+import os
 import secrets
 import time
 from enum import Enum
@@ -8,7 +9,6 @@ from typing import Any, Dict, Optional
 import jwt  # PyJWT
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-import os
 
 
 class UserRole(Enum):
@@ -34,13 +34,13 @@ class TokenManager:
                 public_exponent=65537,
                 key_size=2048
             )
-        
+
         if public_key_path and os.path.exists(public_key_path):
             with open(public_key_path, "rb") as key_file:
                 self.public_key = serialization.load_pem_public_key(key_file.read())
         else:
             self.public_key = self.private_key.public_key()
-        
+
         self.active_tokens = {}  # token_hash -> token_data
         self.revoked_tokens = set()  # Set of revoked token hashes
 
@@ -65,8 +65,8 @@ class TokenManager:
 
         # Create token string using JWT with RS256 algorithm
         token_str = jwt.encode(
-            token_data, 
-            self.private_key, 
+            token_data,
+            self.private_key,
             algorithm="RS256"
         )
 
@@ -90,8 +90,8 @@ class TokenManager:
 
             # Decode JWT token using public key (RS256)
             token_data = jwt.decode(
-                token, 
-                self.public_key, 
+                token,
+                self.public_key,
                 algorithms=["RS256"],
                 options={
                     "require": ["exp", "iat", "nbf"],
@@ -116,7 +116,7 @@ class TokenManager:
                 token_hash = hashlib.sha256(token.encode()).hexdigest()
                 if token_hash in self.active_tokens:
                     del self.active_tokens[token_hash]
-            except:
+            except Exception:
                 pass  # Ignore errors during cleanup
             return False, None
         except jwt.InvalidTokenError:
@@ -179,3 +179,5 @@ class AuthProvider:
 
         if not requested_perms.issubset(granted_perms):
             return False, None
+
+        return True, user_data

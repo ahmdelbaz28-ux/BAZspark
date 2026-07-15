@@ -41,9 +41,10 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
-from pydantic import BaseModel
+from backend.auth import require_permission
 from backend.rbac import Permission
 from backend.services.autocad_service import AutoCADService
+from fireai.core.fireai_api import limiter
 
 # V133 PHASE 1.2: Path traversal protection — same shared helper used by revit.py.
 # Per OWASP Path Traversal Cheat Sheet. Prevents ../../etc/passwd, null-byte

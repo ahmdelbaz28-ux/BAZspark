@@ -1,6 +1,3 @@
-import os
-import json
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -10,10 +7,10 @@ ADDIN_DIR = REPO_ROOT / "revit_addin" / "BazSparkRevitBridge"
 def test_revit_addin_structure():
     """Verify that the C# Revit Add-in bridge project files are present and match specifications."""
     assert ADDIN_DIR.exists()
-    
+
     csproj = ADDIN_DIR / "BazSparkRevitBridge.csproj"
     assert csproj.exists()
-    
+
     content = csproj.read_text(encoding="utf-8")
     assert "RevitAPI" in content
     assert "RevitAPIUI" in content
@@ -54,16 +51,15 @@ def test_revit_addin_structure():
 def test_local_agent_named_pipe_routing():
     """Verify the local agent routes commands via Named Pipe dispatcher when available."""
     from scripts.local_agent import RevitNamedPipeDispatcher, _dispatch_revit
-    
-    dispatcher = RevitNamedPipeDispatcher()
-    
+
+
     # Force available=True
     with patch.object(RevitNamedPipeDispatcher, "available", True):
         # Mock the send method to verify it is called
         mock_send = MagicMock(return_value={"success": True, "data": {"id": 123}})
         with patch.object(RevitNamedPipeDispatcher, "send", new=mock_send):
             res = _dispatch_revit("create_wall", {"start_point": [0,0], "end_point": [10,10]})
-            
+
             assert res == {"success": True, "data": {"id": 123}}
             mock_send.assert_called_once_with(
                 "create_wall",
