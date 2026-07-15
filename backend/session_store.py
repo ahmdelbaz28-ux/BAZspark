@@ -260,6 +260,53 @@ class SessionStore:
         with _mem_lock:
             _mem_failed.pop(client_ip, None)
 
+    def clear_all_sessions(self) -> None:
+        """Clear all active sessions - for testing purposes only."""
+        redis = _get_redis()
+        if redis is not None:
+            try:
+                # Delete all keys with the session prefix
+                session_keys = redis.keys(f"{_SESSION_PREFIX}*")
+                if session_keys:
+                    redis.delete(*session_keys)
+                return
+            except Exception as e:
+                logger.warning("Redis KEYS/DELETE failed (%s) — falling back to in-memory", e)
+
+        # In-memory fallback
+        with _mem_lock:
+            _mem_sessions.clear()
+
+    def clear_all_failed_attempts(self) -> None:
+        """Clear all failed login attempts - for testing purposes only."""
+        redis = _get_redis()
+        if redis is not None:
+            try:
+                # Delete all keys with the failed attempts prefix
+                failed_keys = redis.keys(f"{_FAILED_PREFIX}*")
+                if failed_keys:
+                    redis.delete(*failed_keys)
+                return
+            except Exception as e:
+                logger.warning("Redis KEYS/DELETE failed (%s) — falling back to in-memory", e)
+
+        # In-memory fallback
+        with _mem_lock:
+            _mem_failed.clear()
+
+    def get_session_count(self) -> int:
+        """Get the count of active sessions - for testing purposes only."""
+        redis = _get_redis()
+        if redis is not None:
+            try:
+                return len(redis.keys(f"{_SESSION_PREFIX}*"))
+            except Exception as e:
+                logger.warning("Redis KEYS failed (%s) — falling back to in-memory", e)
+
+        # In-memory fallback
+        with _mem_lock:
+            return len(_mem_sessions)
+
     def cleanup_expired(self) -> int:
         """
         Remove expired sessions from the in-memory store.
@@ -286,6 +333,6 @@ class SessionStore:
         return removed
 
 
-# ── Singleton ──────────────────────────────────────────────────────────────
-
+# Singleton instance for import
 session_store = SessionStore()
+

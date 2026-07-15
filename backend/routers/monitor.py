@@ -753,3 +753,27 @@ async def start_metric_collector(interval_seconds: int = 15) -> None:
             logger.exception("Metric collector error: %s", e)
 
         await asyncio.sleep(interval_seconds)
+
+
+@router.get("/api/v1/monitor/uptime", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+async def get_uptime_robot_status(request: Request):
+    """
+    GET /api/v1/monitor/uptime — Retrieve keep-awake heartbeat and UptimeRobot stats.
+    """
+    _check_rate_limit(request)
+    from backend.services.uptime_service import get_uptime_service
+    svc = get_uptime_service()
+
+    # Query UptimeRobot API for live monitor details
+    uptime_api_res = await svc.fetch_monitor_status()
+    local_status = svc.get_local_status()
+
+    return {
+        "success": True,
+        "data": {
+            "local_keep_awake": local_status,
+            "external_uptime_robot": uptime_api_res
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
