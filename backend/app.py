@@ -35,6 +35,7 @@ V129 INFRASTRUCTURE SECURITY HARDENING (2026-06-18):
     production deployments MUST use a reverse proxy: nginx, traefik, AWS ALB)
 """
 
+import asyncio
 import logging
 import os
 import sys
