@@ -410,7 +410,24 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("Config validation skipped (import failed): %s", exc)
 
+    # Start the UptimeRobot Keep-Awake Heartbeat Loop
+    try:
+        from backend.services.uptime_service import get_uptime_service
+        asyncio.create_task(get_uptime_service().start_heartbeat_loop())
+        logger.info("UptimeRobot keep-awake heartbeat loop initiated")
+    except Exception as exc:
+        logger.warning("Could not start UptimeRobot keep-awake heartbeat: %s", exc)
+
     yield
+    # Stop the UptimeRobot Keep-Awake Heartbeat Loop
+    try:
+        from backend.services.uptime_service import get_uptime_service
+        # We run it synchronously or create task during shutdown
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.create_task(get_uptime_service().stop_heartbeat_loop())
+    except Exception as exc:
+        logger.warning("Could not stop UptimeRobot keep-awake heartbeat cleanly: %s", exc)
     logger.info("Shutting down CAD/BIM Integration Platform...")
 
 # Create FastAPI app with lifespan
