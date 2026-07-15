@@ -165,22 +165,19 @@ class RevitAPIBridge:
         """Extract rooms from live Revit session."""
         try:
             import clr
-            import sys
-            
+
             # Add references to required Revit API assemblies
             clr.AddReference("RevitAPI")
             clr.AddReference("RevitAPIUI")
-            
+
             import Autodesk.Revit.DB as DB
-            import Autodesk.Revit.UI as UI
-            
+
             # Attempt to get active Revit application
             # This will only work when running inside the Revit process
             try:
                 # For pyRevit or Revit add-ins
-                import __window__
                 from pyrevit import HOST_APP
-                
+
                 # Get the active document from the current Revit session
                 doc = HOST_APP.doc
             except (ImportError, AttributeError):
