@@ -8,11 +8,7 @@ on:
       - develop
     tags:
       - 'v*'
-  pull_request:
-    branches:
-      - main
-    types:
-      - closed
+
 
 env:
   REGISTRY: ghcr.io
@@ -360,8 +356,8 @@ jobs:
     permissions:
       contents: read
       packages: write
-    needs: deploy-staging
-    if: github.ref == 'refs/heads/main'
+    needs: build
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     environment:
       name: production
       url: https://fireai.example.com

@@ -50,6 +50,8 @@ import os as _os
 
 _os.environ.setdefault("FIREAI_MCP_NO_STDIN", "1")
 _os.environ.setdefault("FIREAI_HMAC_SECRET_KEY", "test_hmac_secret_key_123456")
+_os.environ.setdefault("FIREAI_CSRF_DISABLED", "1")
+_os.environ.setdefault("FIREAI_ENV", "development")
 
 # V212 FIX: FIREAI_SESSION_SECRET is required by backend/app.py::lifespan().
 # Without it, TestClient-based tests in tests/ fail at startup with:

@@ -31,8 +31,8 @@ export default defineConfig({
         retries: process.env.CI ? 2 : 0,
         workers: process.env.CI ? 1 : undefined,
         reporter: [["html", { outputFolder: "playwright-report" }], ["list"]],
-        use: {
-                baseURL: "http://localhost:4173",
+                use: {
+                baseURL: "http://127.0.0.1:4173",
                 trace: "on-first-retry",
                 screenshot: "only-on-failure",
                 video: "retain-on-failure",
@@ -43,15 +43,25 @@ export default defineConfig({
         projects: [
                 {
                         name: "chromium",
-                        use: { ...devices["Desktop Chrome"] },
+                        use: {
+                                ...devices["Desktop Chrome"],
+                                launchOptions: {
+                                        args: [
+                                                "--disable-gpu",
+                                                "--disable-software-rasterizer",
+                                                "--disable-dev-shm-usage",
+                                                "--no-sandbox",
+                                        ],
+                                },
+                        },
                 },
         ],
         webServer: {
                 // V207 FIX: Use `vite preview` (production build) on port 4173 to match baseURL.
                 // Previously used `npm run dev` on port 5173, but baseURL is 4173 → ERR_CONNECTION_REFUSED.
                 // The CI workflow runs `npm run build` before Playwright, so dist/ exists.
-                command: "npm run preview -- --port 4173 --strictPort",
-                url: "http://localhost:4173",
+                command: "npm run preview -- --port 4173 --strictPort --host 127.0.0.1",
+                url: "http://127.0.0.1:4173",
                 reuseExistingServer: !process.env.CI,
                 timeout: 60_000,
                 cwd: ".",
