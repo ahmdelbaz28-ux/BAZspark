@@ -1,4 +1,4 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# File-level issue suppression removed per AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 backend/routers/digital_twin.py — Digital Twin Conversion Endpoints.
@@ -20,9 +20,9 @@ FIXES APPLIED:
 - FIX #33: Proper multi-line imports
 """
 
-from typing import Optional
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -72,13 +72,23 @@ def _safe_resolve_upload_path(filename: str) -> str:
     path never starts with an absolute path. Now both are resolved
     to absolute paths before comparison.
     """
+    # Validate filename at source to prevent path traversal
+    if not re.match(r'^[a-zA-Z0-9._\- ]{1,255}$', filename):
+        raise HTTPException(
+            status_code=400,
+            detail="Filename contains invalid characters. Only letters, numbers, dots, hyphens, underscores, and spaces are allowed."
+        )
+
     upload_dir = os.getenv("FIREAI_UPLOAD_DIR", "uploads")
+    os.makedirs(upload_dir, exist_ok=True)  # Ensure upload directory exists
+
     # Resolve BOTH to absolute paths
     abs_upload = os.path.abspath(upload_dir)
     resolved = os.path.abspath(os.path.join(upload_dir, filename))
+
     # Verify the resolved path is still within upload_dir
     if not resolved.startswith(abs_upload):
-        raise HTTPException(status_code=400, detail="Invalid file path")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(status_code=400, detail="Invalid file path")
     return resolved
 
 
@@ -230,8 +240,7 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
             # V217 FIX (SonarCloud S5145): validate user-supplied filepath
             # at source to break taint flow into logger calls in
             # digital_twin_service.py. Only allow alphanumeric, /, \, ., _, -.
-            import re as _re_v217
-            if not _re_v217.match(r'^[a-zA-Z0-9/\\._\- ]{1,512}$', source_filepath):
+            if not re.match(r'^[a-zA-Z0-9/\\._\- ]{1,512}$', source_filepath):
                 raise HTTPException(status_code=400, detail="Invalid source_filepath: contains forbidden characters")
 
         target_filepath = request.target_filepath
@@ -240,7 +249,7 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
             target_filepath = os.path.join(temp_dir, f"sample_target.{target_format.lower()}")
         else:
             # V217 FIX: same validation for target_filepath
-            if not _re_v217.match(r'^[a-zA-Z0-9/\\._\- ]{1,512}$', target_filepath):
+            if not re.match(r'^[a-zA-Z0-9/\\._\- ]{1,512}$', target_filepath):
                 raise HTTPException(status_code=400, detail="Invalid target_filepath: contains forbidden characters")
 
         if conversion_type == "autocad_to_revit":
@@ -347,8 +356,7 @@ async def upload_and_convert(
         #
         # This is the correct security pattern: validate at the trust boundary,
         # not at the sink.
-        import re as _re
-        _SAFE_FILENAME_RE = _re.compile(r'^[a-zA-Z0-9._\- ]{1,255}$')
+        _SAFE_FILENAME_RE = re.compile(r'^[a-zA-Z0-9._\- ]{1,255}$')
         if not _SAFE_FILENAME_RE.match(original_name):
             raise HTTPException(
                 status_code=400,
@@ -364,7 +372,8 @@ async def upload_and_convert(
         os.makedirs(upload_dir, exist_ok=True)
 
         # Sanitize filename — basename strips any path traversal
-        safe_name = os.path.basename(original_name)
+        # Use the validated filename directly since we already validated it
+        safe_name = original_name  # Already validated by _SAFE_FILENAME_RE
         source_path = os.path.join(upload_dir, safe_name)
 
         # Write file
@@ -431,6 +440,12 @@ async def upload_and_convert(
     except HTTPException:
         raise
     except Exception as e:
+        # Clean up uploaded file if conversion fails
+        try:
+            if 'source_path' in locals() and os.path.exists(source_path):
+                os.remove(source_path)
+        except Exception:
+            pass
         raise _safe_error(500, "Upload and convert failed", e)
 
 

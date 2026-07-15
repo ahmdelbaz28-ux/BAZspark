@@ -1,20 +1,20 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# File-level issue suppression removed per AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
-revit_bim_sync.py — BIM/Revit Sync Without Revit API Dependency.
+revit_bim_sync.py — BIM/Revit Sync With Revit API Dependency.
 ================================================================
-SURGICAL FIX: revit-connector/ existed but required Windows + Revit API.
-This meant the connector was useless in CI, cloud, and Linux environments.
+SURGICAL FIX: Enhanced revit-connector/ to properly integrate with Revit API.
+This ensures that when Revit is available, the connector can communicate with it.
 
 What was broken:
-  - revit-connector/src/exporter.py assumed revit.Application was available
-  - revit-connector/src/translator.py imported Autodesk.Revit.DB directly
-  - No IFC/gbXML fallback when Revit API unavailable
-  - No way to test connector without Revit license
+  - revit-connector/src/exporter.py assumed revit.Application was available but didn't establish connection
+  - revit-connector/src/translator.py imported Autodesk.Revit.DB directly without checking availability
+  - No proper error handling when Revit API unavailable
+  - No fallback mechanisms when Revit is not running
 
 What this file does:
-  1. Provides RevitBIMSyncAdapter with Revit-API-optional architecture
-  2. When Revit API available: live bidirectional sync
+  1. Provides RevitBIMSyncAdapter with Revit-API-mandatory architecture
+  2. When Revit API available: establishes proper connection and performs live bidirectional sync
   3. When NOT available: IFC 2x3 / gbXML file-based sync (works everywhere)
   4. JSON schema bridge for CI/cloud testing without Revit
   5. Room geometry extraction that works from DXF/IFC/JSON (no Revit needed)
@@ -164,13 +164,36 @@ class RevitAPIBridge:
     def _extract_revit_live(self) -> list[BIMRoom]:
         """Extract rooms from live Revit session."""
         try:
+            import clr
+            import sys
+            
+            # Add references to required Revit API assemblies
+            clr.AddReference("RevitAPI")
+            clr.AddReference("RevitAPIUI")
+            
             import Autodesk.Revit.DB as DB
             import Autodesk.Revit.UI as UI
+            
+            # Attempt to get active Revit application
+            # This will only work when running inside the Revit process
+            try:
+                # For pyRevit or Revit add-ins
+                import __window__
+                from pyrevit import HOST_APP
+                
+                # Get the active document from the current Revit session
+                doc = HOST_APP.doc
+            except (ImportError, AttributeError):
+                # Alternative method - try to connect to Revit via COM or other means
+                # Note: Direct connection to Revit from external Python is not possible
+                # without being inside the Revit process or using Revit API in-process
+                raise RuntimeError(
+                    "Cannot connect to Revit externally. "
+                    "Revit API access requires running inside Revit process (e.g., via pyRevit) "
+                    "or as a Revit add-in. For external processing, use IFC export option."
+                )
 
-            # Get active document
-            uiapp = UI.UIApplication(None)  # Current Revit process
-            doc = uiapp.ActiveUIDocument.Document
-
+            # If we get here, we have a valid document reference
             collector = DB.FilteredElementCollector(doc)
             rooms = collector.OfCategory(DB.BuiltInCategory.OST_Rooms).WhereElementIsNotElementType().ToElements()
 
@@ -205,9 +228,15 @@ class RevitAPIBridge:
                 )
             return result
 
+        except ImportError as exc:
+            raise RuntimeError(
+                f"Revit API libraries not available: {exc}. "
+                f"Ensure running inside Revit with API access, or use alternative format (IFC/DXF/JSON)."
+            )
         except Exception as exc:
             raise RuntimeError(
-                f"Revit live extraction failed: {exc}. Ensure running inside Revit process with API access."
+                f"Revit live extraction failed: {exc}. Ensure running inside Revit process with API access. "
+                f"For external processing, export to IFC/DXF and use file-based import."
             )
 
     def _extract_ifc(self, filepath: str) -> list[BIMRoom]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm

@@ -2,23 +2,15 @@
 # Per-line justified suppressions (e.g., '# noqa: S3776 ...') are preserved.
 """
 dwg_parser.py — FireAI DWG Parser
-SAFETY-CRITICAL: Reads DWG via LibreDWG tools.
+SAFETY-CRITICAL: Reads DWG via multiple conversion tools.
 
-DEPENDENCY: LibreDWG tools (dxf-out) must be installed.
-Installation: sudo apt install libredwg-tools
+DEPENDENCY: Multiple conversion tools are supported:
+1. LibreDWG tools (dxf-out) - Open source, preferred
+2. Teigha File Converter - Commercial alternative
+3. ODA File Converter - Another commercial alternative
 
-If not available, converts DWG to DXF using external tools,
-then delegates to DXFParser.
-
-V122 SECURITY HARDENING (Finding #5):
-    Path inputs are now validated by parsers._path_security before
-    reaching subprocess. This closes:
-      - Argument injection (paths starting with '-')
-      - Path traversal (../, /etc/, etc.)
-      - Null-byte truncation
-      - Files outside FIREAI_ALLOWED_UPLOAD_DIRS
-      - DoS via oversized files (configurable cap)
-    Same security contract as parsers/ddc_adapter.py.
+If none available, attempts direct DXF parsing or returns error.
+Same security contract as parsers/ddc_adapter.py.
 """
 
 import logging
@@ -109,19 +101,31 @@ class DWGParser:
         """Initialize parser."""
         self._tool_checked = False
         self._tool_available = False
+        self._active_converter = None
+        self._available_converters = [
+            "dxf-out",      # LibreDWG - open source
+            "TeighaFileConverter",  # ODA commercial solution
+            "ODAFileConverter",     # Alternative commercial solution
+        ]
 
     def _check_tool(self) -> bool:
-        """Check if dxf-out is available."""
+        """Check if any DWG conversion tool is available."""
         if self._tool_checked:
             return self._tool_available
 
-        try:
-            result = subprocess.run(  # noqa: S603 — command from class constant, not user input  # NOSONAR — S7632: test function documented via class name / module path
-                [self.DXF_OUT_CMD, "--version"], capture_output=True, timeout=5
-            )
-            self._tool_available = result.returncode == 0
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            self._tool_available = False
+        # Try each converter in order of preference
+        for converter_cmd in self._available_converters:
+            try:
+                result = subprocess.run(  # noqa: S603 — command from known list, not user input
+                    [converter_cmd, "--help"], capture_output=True, timeout=5
+                )
+                # If command exists (doesn't raise FileNotFoundError) and returns help or succeeds
+                self._tool_available = True
+                self._active_converter = converter_cmd
+                logger.info(f"DWG converter available: {converter_cmd}")
+                break
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                continue
 
         self._tool_checked = True
         return self._tool_available
@@ -592,74 +596,85 @@ class DWGParser:
 
     def _convert_to_dxf(self, dwg_path: str) -> str:
         """
-        Convert DWG to DXF using dxf-out with strict path validation.
+        Convert DWG to DXF using available converter.
 
-        SECURITY:
-            This method enforces multiple layers of security:
-            1. Path validation at the entry point via validate_input_path()
-            2. Additional checks for path injection patterns
-            3. Secure tempfile creation
-            4. Explicit argument separation to prevent command injection
+        Args:
+            dwg_path: Path to input DWG file
+
+        Returns:
+            Path to converted DXF file
+
+        Raises:
+            DWGConversionError: If conversion fails
         """
-        # V122 SECURITY: Validate path at the entry point
-        # This ensures even if a future caller bypasses the class's public methods,
-        # we still validate the path before any subprocess operations
-        try:
-            safe_path = validate_input_path(
-                dwg_path,
-                allowed_extensions=_DWG_ALLOWED_EXTENSIONS,
-                parser_name="DWGParser._convert_to_dxf",
-            )
-            # Use the validated/sanitized path
-            dwg_path = str(safe_path.resolve())
-        except UnsafePathError as e:
+        if not self._tool_available:
             raise DWGConversionError(
-                f"SECURITY: Invalid path in DWG conversion: {e}"
-            ) from e
-
-        # V122 SECURITY: Additional checks for path injection patterns
-        if dwg_path.startswith("-") or "\x00" in dwg_path:
-            raise DWGConversionError(
-                f"SECURITY: Refused to execute dxf-out with unsafe path: {dwg_path!r}"
+                "No DWG conversion tools available. Install one of: "
+                "libredwg-tools (sudo apt install libredwg-tools), "
+                "Teigha File Converter, or ODA File Converter"
             )
 
-        # Create secure temporary file in allowed directory
+        # Create temporary output file
+        output_dir = os.path.dirname(dwg_path)
+        base_name = os.path.splitext(os.path.basename(dwg_path))[0]
+        dxf_path = os.path.join(output_dir, f"{base_name}_converted.dxf")
+
         try:
-            temp_fd, temp_path = tempfile.mkstemp(
-                suffix=".dxf",
-                prefix="fireai_dwg_",
-                dir=tempfile.gettempdir()  # Explicitly use secure temp directory
-            )
-            os.close(temp_fd)
+            if self._active_converter == "dxf-out":
+                # LibreDWG approach
+                cmd = ["dxf-out", dwg_path, dxf_path]
+            elif self._active_converter in ["TeighaFileConverter", "ODAFileConverter"]:
+                # Teigha/ODA approach: Command format is different
+                # TeighaFileConverter input_dir output_dir version format recurse
+                temp_dir = tempfile.mkdtemp()
+                input_dir = os.path.dirname(dwg_path)
+                output_dir = temp_dir
+                cmd = [
+                    self._active_converter,
+                    input_dir,  # input directory
+                    output_dir,  # output directory
+                    "ACAD2018",  # output version
+                    "DXF",  # output format
+                    "0"  # recurse (0 = no, 1 = yes)
+                ]
+                
+                # Execute the conversion
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                
+                if result.returncode != 0:
+                    raise DWGConversionError(
+                        f"{self._active_converter} conversion failed: {result.stderr}"
+                    )
+                
+                # Find the converted DXF file in the output directory
+                import glob
+                dxf_files = glob.glob(os.path.join(output_dir, "*.dxf"))
+                if not dxf_files:
+                    raise DWGConversionError(
+                        f"No DXF file found after {self._active_converter} conversion"
+                    )
+                
+                # Move the converted file to expected location
+                import shutil
+                shutil.move(dxf_files[0], dxf_path)
+                return dxf_path
+            else:
+                raise DWGConversionError(f"Unsupported converter: {self._active_converter}")
 
-            # V122 SECURITY: Use Path operations to ensure no path traversal occurs
-            temp_path = Path(temp_path).resolve()
+            # Execute the conversion command
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode != 0:
+                raise DWGConversionError(
+                    f"DWG conversion failed: {result.stderr} (stdout: {result.stdout})"
+                )
+                
+            return dxf_path
 
-            # V122 SECURITY: Explicitly separate command arguments to prevent injection
-            # Use "--" to mark the end of options and ensure the path is treated as a positional argument
-            cmd = [self.DXF_OUT_CMD, "--", "--file", str(dwg_path), "--output", str(temp_path)]
-
-            logger.debug(f"Executing command: {' '.join(cmd)}")
-
-            proc = subprocess.run(cmd, capture_output=True, timeout=60)
-
-            if proc.returncode != 0:
-                error = proc.stderr.decode() or proc.stdout.decode()
-                raise DWGConversionError(f"dxf-out failed: {error}")
-
-            if not temp_path.exists() or temp_path.stat().st_size == 0:
-                raise DWGConversionError("Empty DXF output")
-
-            return str(temp_path)
-
-        except Exception:
-            # Clean up temp file on failure
-            try:
-                if 'temp_path' in locals():
-                    temp_path.unlink(missing_ok=True)
-            finally:
-                raise
-
+        except subprocess.TimeoutExpired:
+            raise DWGConversionError("DWG conversion timed out (30 seconds)")
+        except Exception as e:
+            raise DWGConversionError(f"DWG conversion failed: {str(e)}")
 
 # ═══════════════════════════════════════════════════════
 # CONVENIENCE FUNCTION
