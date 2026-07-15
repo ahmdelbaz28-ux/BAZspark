@@ -827,6 +827,13 @@ async def create_window(request: Request, body: CreateWindowRequest) -> ElementR
 @limiter.limit("30/minute")
 async def create_column(request: Request, body: CreateColumnRequest) -> ElementResponse:
     """Create a structural column."""
+    if has_active_agent():
+        res = await send_agent_command("revit", "create_column", {
+            "location_point": body.location_point, "height": body.height,
+            "level": body.level, "column_type": body.column_type
+        })
+        return ElementResponse(**res)
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
@@ -849,6 +856,13 @@ async def create_column(request: Request, body: CreateColumnRequest) -> ElementR
 @limiter.limit("30/minute")
 async def create_beam(request: Request, body: CreateBeamRequest) -> ElementResponse:
     """Create a structural beam."""
+    if has_active_agent():
+        res = await send_agent_command("revit", "create_beam", {
+            "start_point": body.start_point, "end_point": body.end_point,
+            "level": body.level, "beam_type": body.beam_type
+        })
+        return ElementResponse(**res)
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
@@ -871,6 +885,13 @@ async def create_beam(request: Request, body: CreateBeamRequest) -> ElementRespo
 @limiter.limit("30/minute")
 async def create_family(request: Request, body: CreateFamilyRequest) -> ElementResponse:
     """Create a generic family instance."""
+    if has_active_agent():
+        res = await send_agent_command("revit", "create_family", {
+            "family_name": body.family_name, "category": body.category,
+            "location_point": body.location_point, "level": body.level, "parameters": body.parameters
+        })
+        return ElementResponse(**res)
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
@@ -902,6 +923,11 @@ async def update_parameters(
     body: ParameterUpdateRequest
 ) -> Dict[str, Any]:
     """Update element parameters."""
+    if has_active_agent():
+        return await send_agent_command("revit", "update_parameters", {
+            "element_id": element_id, "parameters": body.parameters
+        })
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
@@ -921,6 +947,9 @@ async def update_parameters(
 @limiter.limit("30/minute")
 async def delete_element(request: Request, element_id: str) -> Dict[str, Any]:
     """Delete an element."""
+    if has_active_agent():
+        return await send_agent_command("revit", "delete_element", {"element_id": element_id})
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
@@ -938,6 +967,10 @@ async def delete_element(request: Request, element_id: str) -> Dict[str, Any]:
 @router.get("/views", response_model=ElementsResponse, tags=["revit"])  # NOSONAR - python:S8409
 async def get_views() -> ElementsResponse:
     """Get all views in the project."""
+    if has_active_agent():
+        res = await send_agent_command("revit", "get_views", {})
+        return ElementsResponse(**res)
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
@@ -949,6 +982,10 @@ async def get_views() -> ElementsResponse:
 @router.get("/levels", response_model=ElementsResponse, tags=["revit"])  # NOSONAR - python:S8409
 async def get_levels() -> ElementsResponse:
     """Get all levels in the project."""
+    if has_active_agent():
+        res = await send_agent_command("revit", "get_levels", {})
+        return ElementsResponse(**res)
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
@@ -960,6 +997,10 @@ async def get_levels() -> ElementsResponse:
 @router.get("/grids", response_model=ElementsResponse, tags=["revit"])  # NOSONAR - python:S8409
 async def get_grids() -> ElementsResponse:
     """Get all grids in the project."""
+    if has_active_agent():
+        res = await send_agent_command("revit", "get_grids", {})
+        return ElementsResponse(**res)
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
@@ -971,6 +1012,10 @@ async def get_grids() -> ElementsResponse:
 @router.get("/worksets", response_model=ElementsResponse, tags=["revit"])  # NOSONAR - python:S8409
 async def get_worksets() -> ElementsResponse:
     """Get all worksets in the project."""
+    if has_active_agent():
+        res = await send_agent_command("revit", "get_worksets", {})
+        return ElementsResponse(**res)
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
@@ -1101,6 +1146,11 @@ async def execute_ai_command(request: Request, body: AICommandRequest) -> Dict[s
     - "Search api Wall.Create"
 
     """
+    if has_active_agent():
+        return await send_agent_command("revit", "execute_ai_command", {
+            "command": body.command, "context": body.context
+        })
+
     svc = get_revit_service()
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
