@@ -22,24 +22,21 @@ USAGE:
 
 import asyncio
 import logging
-import threading
 import time
 from functools import wraps
-from typing import Callable, Type, Optional, Tuple, Any, TypeVar, ParamSpec
+from typing import Any, Callable, Optional, Tuple, Type
 
 from tenacity import (
+    after_log,
+    before_sleep_log,
     retry,
-    stop_after_attempt,
-    wait_exponential,
-    wait_random_exponential,
     retry_if_exception_type,
     retry_if_result,
+    stop_after_attempt,
     stop_after_delay,
-    before_sleep_log,
-    after_log,
+    wait_exponential,
+    wait_random_exponential,
 )
-from tenacity.wait import wait_fixed
-from tenacity.stop import stop_never
 
 
 class CircuitBreakerOpenError(Exception):
@@ -50,7 +47,7 @@ class CircuitBreakerOpenError(Exception):
 class CircuitBreaker:
     """
     Simple circuit breaker implementation to prevent cascading failures.
-    
+
     When failures exceed the threshold, the circuit opens and subsequent
     calls fail fast without attempting the operation.
     """
@@ -70,12 +67,12 @@ class CircuitBreaker:
         if self.opened_at is None:
             self.opened_at = time.time()
             return True
-            
+
         elapsed = time.time() - self.opened_at
         if elapsed > self.reset_timeout:
             await self.reset()
             return False
-            
+
         return True
 
     async def record_failure(self) -> None:
@@ -100,7 +97,7 @@ class CircuitBreaker:
             result = await func(*args, **kwargs)
             await self.reset()
             return result
-        except Exception as e:
+        except Exception:
             await self.record_failure()
             raise
 
@@ -285,3 +282,31 @@ def async_network_retry(
         ConnectionError,
         OSError,
     )
+):
+    """
+    Async version of network retry decorator.
+
+    Args:
+        max_attempts: Maximum number of retry attempts
+        max_delay: Maximum delay between retries in seconds
+        multiplier: Multiplier for exponential backoff
+        exceptions: Tuple of exception types to retry on
+
+    """
+    def retry_decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            return await retry(
+                stop=stop_after_attempt(max_attempts),
+                wait=wait_exponential(
+                    multiplier=multiplier,
+                    min=1,
+                    max=max_delay
+                ),
+                retry=retry_if_exception_type(exceptions),
+                before_sleep=before_sleep_log(logger, logging.WARNING),
+                after=after_log(logger, logging.INFO),
+                reraise=True,
+            )(func)(*args, **kwargs)
+        return wrapper
+    return retry_decorator

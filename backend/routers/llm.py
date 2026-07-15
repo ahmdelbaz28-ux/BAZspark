@@ -19,7 +19,6 @@ The LLM is **advisory only**. It never overrides deterministic NFPA 72
 calculations. All responses include a ``source`` field and a ``disclaimer``
 reminding the engineer that AI output must be verified against the published code.
 """
-from typing import Optional
 import json
 import logging
 from typing import Any, AsyncGenerator, Dict, Optional

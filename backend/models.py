@@ -13,7 +13,7 @@ from __future__ import annotations
 import math
 import uuid
 from datetime import datetime, timezone
-from typing import Literal, TypeVar, Optional, Dict, Any
+from typing import Any, Dict, Literal, Optional, TypeVar
 
 from pydantic import BaseModel, Field, field_validator
 

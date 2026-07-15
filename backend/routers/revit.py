@@ -50,7 +50,6 @@ ENDPOINTS:
 - POST /api/revit/execute - Execute AI command
 """
 
-from typing import Optional
 import logging
 import os
 import re

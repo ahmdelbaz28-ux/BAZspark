@@ -522,13 +522,13 @@ class DatabaseService:
             cursor = self._safe_db_execute(sql, tuple(element_ids))
             rows = cursor.fetchall()
             # Build result dict; elements not in rows get None (no project association)
-            result: dict[str, str | None] = {eid: None for eid in element_ids}
+            result: dict[str, str | None] = dict.fromkeys(element_ids)
             for row in rows:
                 result[row[0]] = row[1]
             return result
         except Exception:
             # Fallback: return empty mapping (each element gets None)
-            return {eid: None for eid in element_ids}
+            return dict.fromkeys(element_ids)
 
     # ──────────────────────────────────────────────────────────────────────────
     # Element CRUD

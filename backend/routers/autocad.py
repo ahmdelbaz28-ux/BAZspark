@@ -30,16 +30,23 @@ SECURITY FIXES APPLIED:
 - FIX #34: Removed dummy function
 """
 
-from typing import Optional
 import logging
 import os
 import re
 import tempfile
 import threading
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from typing import Optional
+```
+<arg_key>task_progress</arg_key>
+<arg_value>- [ ] Fix backend/routers/autocad.py - sort/organize imports (I001)
+- [ ] Fix backend/db_service.py - replace dict comprehensions with dict.fromkeys (C420)
+- [ ] Fix backend/database.py - remove whitespace from blank lines (W293)
+- [ ] Fix backend/app.py - sort/organize imports (I001)
+- [ ] Fix backend/api_keys.py - sort/organize imports (I001)
 from pydantic import BaseModel
 
 # V130 SECURITY FIX: Add auth dependencies for AutoCAD write/upload endpoints.

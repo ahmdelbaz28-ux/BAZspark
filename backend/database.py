@@ -382,7 +382,7 @@ class Database:
                     user_agent TEXT
                 )
             """)
-            
+
             # ── Additional indexes for audit log performance ─────────
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id)")
@@ -519,7 +519,7 @@ class Database:
                     user_agent TEXT
                 )
             """)
-            
+
             # ── Additional indexes for audit log performance ─────────────
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id)")

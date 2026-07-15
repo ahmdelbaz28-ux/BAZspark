@@ -19,12 +19,12 @@ LIFE-SAFETY NOTE: Report results are used for regulatory compliance.
 All calculations must be traceable and verifiable.
 """
 
-from typing import Optional
 import io
 import json
 import logging
 import uuid
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse

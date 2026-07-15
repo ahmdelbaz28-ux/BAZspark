@@ -121,15 +121,15 @@ def _sanitize_log_detail(detail: str) -> str:
     """Sanitize log details to prevent PII exposure."""
     if not detail:
         return detail
-    
+
     # Remove potentially sensitive information
     import re
-    
+
     # Remove anything that looks like API keys, tokens, passwords, etc.
     sanitized = re.sub(r'[A-Z0-9]{32,}', '[REDACTED_LONG_TOKEN]', detail, flags=re.IGNORECASE)
     sanitized = re.sub(r'(?:api[_-]?key|token|password|secret|auth)[\s:=]+[^\s,;.!]+', r'\1: [REDACTED]', sanitized, flags=re.IGNORECASE)
     sanitized = re.sub(r'bearer\s+[a-zA-Z0-9\-\._~\+\/]+=*', 'Bearer [REDACTED]', sanitized, flags=re.IGNORECASE)
-    
+
     return sanitized
 
 

@@ -49,6 +49,24 @@ from fastapi.responses import JSONResponse, Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
+# Import multi-database service
+from backend.multi_db_service import get_multi_db_service
+from backend.rbac import Permission
+
+# Import our CAD/BIM integration routers
+from backend.routers import autocad, digital_twin, revit
+from backend.routers import health as health_router_module
+
+# V129: Security middleware — SecurityHeadersMiddleware adds X-Frame-Options,
+# X-Content-Type-Options, HSTS, CSP, Referrer-Policy, Permissions-Policy to
+# every HTTP response. CorrelationIdMiddleware adds X-Correlation-ID for
+# end-to-end audit tracing (NFPA 72 §14.2.4 compliance).
+from backend.security_middleware import (
+    ApiKeyMiddleware,
+    CorrelationIdMiddleware,
+    SecurityHeadersMiddleware,
+)
+
 # V207 (2026-07-09): Akamai Edge integration middleware.
 # Reads True-Client-IP / Akamai-Internal / Akamai-Bot-Score / Akamai-Geo-Country
 # headers injected by Akamai Property Manager. When AKAMAI_ENABLED=false (default),
@@ -68,24 +86,6 @@ from .cloudflare_middleware import CloudflareIntegrationMiddleware
 
 # Import rate limiter from centralized module (avoids circular import)
 from .limiter import limiter
-
-# Import multi-database service
-from backend.multi_db_service import get_multi_db_service
-from backend.rbac import Permission
-
-# Import our CAD/BIM integration routers
-from backend.routers import autocad, digital_twin, revit
-from backend.routers import health as health_router_module
-
-# V129: Security middleware — SecurityHeadersMiddleware adds X-Frame-Options,
-# X-Content-Type-Options, HSTS, CSP, Referrer-Policy, Permissions-Policy to
-# every HTTP response. CorrelationIdMiddleware adds X-Correlation-ID for
-# end-to-end audit tracing (NFPA 72 §14.2.4 compliance).
-from backend.security_middleware import (
-    ApiKeyMiddleware,
-    CorrelationIdMiddleware,
-    SecurityHeadersMiddleware,
-)
 
 # Configure logging
 logging.basicConfig(

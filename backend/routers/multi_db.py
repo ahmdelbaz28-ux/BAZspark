@@ -14,7 +14,6 @@ These endpoints enable advanced BIM/CAD operations leveraging
 multiple database technologies.
 """
 
-from typing import Optional
 import logging
 from typing import Dict, List, Optional
 
