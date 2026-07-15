@@ -4,13 +4,13 @@ Revision ID: 004
 Revises: 003
 Create Date: 2026-06-17
 
-This migration adds an audit_log table to track all changes to 
+This migration adds an audit_log table to track all changes to
 safety-critical operations in the fire alarm system. This is required
 for compliance with NFPA 72 standards for documentation of system changes.
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers
 revision = '004'
@@ -36,7 +36,7 @@ def upgrade() -> None:
         sa.Column('user_agent', sa.Text),
         if_not_exists=True,
     )
-    
+
     # Add indexes for performance
     op.create_index('idx_audit_log_timestamp', 'audit_log', ['timestamp'], if_not_exists=True)
     op.create_index('idx_audit_log_user', 'audit_log', ['user_id'], if_not_exists=True)

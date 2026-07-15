@@ -5,10 +5,9 @@ Tests for the UptimeRobot keep-awake heartbeat loop and monitor query endpoints.
 """
 from __future__ import annotations
 
-import asyncio
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -49,6 +48,7 @@ class TestUptimeService:
     async def test_ping_heartbeat_failure(self):
         """Test handling single heartbeat ping network error."""
         import httpx
+
         from backend.services.uptime_service import UptimeService
 
         mock_client = MagicMock()

@@ -9,11 +9,10 @@ Tests verify:
 """
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -105,7 +104,7 @@ class TestCommandForwarding:
 
     def _bypass_auth(self):
         """Context manager that patches ApiKeyMiddleware to always pass."""
-        from unittest.mock import patch, AsyncMock
+        from unittest.mock import patch
 
         async def passthrough(request, call_next):
             return await call_next(request)
@@ -206,7 +205,7 @@ class TestAgentWebSocketAuth:
                 with client.websocket_connect("/api/v1/agent/ws?api_key=invalid-key") as ws:
                     # Server should close immediately on invalid key
                     try:
-                        data = ws.receive_text()
+                        ws.receive_text()
                     except Exception:
                         pass  # Connection closed — expected
             except Exception:

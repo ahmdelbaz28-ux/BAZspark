@@ -1,14 +1,10 @@
-import pytest
 from fastapi.testclient import TestClient
 
 from backend.app import app
 from backend.services.fds_queue_service import (
-    FDSJobStatus,
-    get_fds_job_status,
-    handle_fds_webhook,
-    list_fds_jobs,
-    submit_fds_job,
     _compute_webhook_secret,
+    get_fds_job_status,
+    submit_fds_job,
 )
 
 client = TestClient(app)

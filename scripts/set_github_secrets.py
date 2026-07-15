@@ -1,8 +1,9 @@
-import os
 import base64
+import os
+
 import requests
-from nacl import public
 from dotenv import load_dotenv
+from nacl import public
 
 # Load .env file
 load_dotenv()
@@ -60,15 +61,15 @@ def main():
 
         print(f"Encrypting and pushing secret {name}...")
         encrypted_value = encrypt(public_key, value)
-        
+
         payload = {
             "encrypted_value": encrypted_value,
             "key_id": key_id
         }
-        
+
         put_url = f"{API_URL}/{name}"
         put_resp = requests.put(put_url, headers=headers, json=payload)
-        
+
         if put_resp.status_code in (201, 204):
             print(f"SUCCESS: Secret {name} set successfully (HTTP {put_resp.status_code})")
         else:
