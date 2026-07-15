@@ -26,9 +26,7 @@ Endpoints:
     GET  /marine/fire-classes         — List SOLAS fire division classes
 """
 
-from typing import Optional
 # Evaluation at compile-time for rate-limiter wrapper compatibility
-
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request

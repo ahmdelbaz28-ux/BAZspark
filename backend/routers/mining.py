@@ -10,8 +10,8 @@ V214: Exposes the fireai.mining module via HTTP endpoints:
   GET  /api/v1/mining/standards            — List supported standards
 """
 
-from typing import Optional
 import logging
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field

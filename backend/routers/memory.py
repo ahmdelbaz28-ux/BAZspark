@@ -24,9 +24,8 @@ LIFE-SAFETY DESIGN PRINCIPLE:
 Reference: agent.md Rules 1-21, Priority Hierarchy
 """
 
-from typing import Optional
-
 import logging
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 

@@ -319,7 +319,7 @@ class LLMService:
     ) -> LLMResponse:
         """Attempt a chat completion with a single provider (with tenacity retry)."""
         import asyncio
-        
+
         client = self._get_client(provider)
         use_model = model or provider.model
 
@@ -464,7 +464,7 @@ class LLMService:
     ) -> AsyncGenerator[dict[str, Any], None]:
         """Stream tokens from a single provider."""
         import asyncio
-        
+
         client = self._get_client(provider)
         use_model = model or provider.model
 
@@ -505,7 +505,7 @@ class LLMService:
                 # Check for cancellation periodically
                 if asyncio.current_task().cancelled():
                     break
-                    
+
                 if not chunk.choices:
                     # Final chunk may contain usage stats only
                     if chunk.usage:
