@@ -198,62 +198,13 @@ jobs:
           "
 
       - name: Run test suite with coverage
-        # V159 FIX (Rule 17 — Root-Cause Analysis): pytest-cov 4.1.0 + coverage 7.x
-        # have a known atexit hang after all tests pass. The process stays alive
-        # for 14+ minutes writing .coverage data, blocking the CI gate.
-        #
-        # V159.1-V159.5 attempted fixes (COVERAGE_CORE=sysmon, timeout-minutes,
-        # --no-cov-branch, .coveragerc.ci with branch=False, timeout 25 min) all
-        # failed because the root cause is coverage 7.x's SQLite-backed .coverage
-        # data file flush at exit. This is a known performance issue with large
-        # codebases (53k+ lines) that cannot be fixed without upgrading pytest-cov
-        # to 5.0+ (requires pyproject.toml pin change + full validation cycle).
-        #
-        # V159.6 FIX (root-cause, pragmatic): Disable coverage entirely in CI.
-        # The CI gate's purpose is to verify tests pass, not to measure coverage.
-        # Coverage measurement is a development-time concern, not a deployment gate.
-        # The --cov-fail-under=40 requirement is removed because we're not measuring
-        # coverage at all. Local development still uses full coverage (pyproject.toml
-        # [tool.coverage] settings preserved).
-        #
-        # Evidence across V159.1-V159.5 (5 attempts):
-        # - pytest always completes successfully (7198 passed, 0 failed, ~11 min)
-        # - atexit hang ranges from 9.5 to 14.5 min regardless of branch setting
-        # - Total time always exceeds 20 min, hitting even 25 min timeout
-        #
-        # This fix is reversible: when pytest-cov is upgraded to 5.0+, re-add
-        # --cov flags and --cov-fail-under=40.
-        #
-        # No test files modified (Rule 10). CI workflow config only.
-        #
-        # V165-V170 FIX HISTORY: All attempted fixes failed (see agent.md).
-        # V170 (atexit+os._exit+pytest.main) revealed NEW root cause:
-        # pytest.main() hangs at 99% (not at interpreter shutdown).
-        # The hang is in a TEST, not in Python's shutdown.
-        #
-        # V171 FIX (PRAGMATIC ROOT-CAUSE): Use `timeout` command with
-        # --signal=SIGKILL to force-kill the entire process tree.
-        # Accept exit code 137 (SIGKILL) as SUCCESS if pytest reached 99%+
-        # (verified by checking if test output contains "passed" or progress
-        # reached the last test file).
-        #
-        # This is pragmatic because:
-        # 1. The tests DO pass (verified in Run #741-743: 7198 passed)
-        # 2. The hang is AFTER tests complete (interpreter shutdown)
-        # 3. We cannot fix the hang without identifying which test leaves
-        #    a non-daemon thread (would require extensive debugging)
-        # 4. The CI gate's purpose is to verify tests pass — they DO pass
-        #
-        # The `timeout --signal=KILL` sends SIGKILL (cannot be caught)
-        # which kills the process immediately. We then check if pytest
-        # output contains "passed" to determine success.
-        #
-        # V207 FIX: Added FIREAI_SESSION_SECRET + FIREAI_API_KEY + CORS +
-        # DATABASE_URL env vars. Backend tests (test_auth_edge_cases.py,
-        # test_v192_lifecycle.py, etc.) require these to start the FastAPI app
-        # via TestClient lifespan. Without them, tests fail with RuntimeError
-        # at app startup. Matches the env vars already set in ci-build-gate.yml.
-        timeout-minutes: 15
+        # V274 FIX: pytest-cov upgraded to >=5.0.0 in pyproject.toml,
+        # resolving the pytest-cov 4.1.0 + coverage 7.x atexit hang.
+        # Coverage is now re-enabled in CI. The --cov-fail-under=40
+        # threshold from pyproject.toml [tool.coverage] applies.
+        # The `timeout --signal=KILL` workaround from V159-V171 is
+        # removed; pytest should exit cleanly.
+        timeout-minutes: 20
         env:
           PYTEST_ADDOPTS: "--color=no"
           FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
@@ -262,57 +213,25 @@ jobs:
           DATABASE_URL: "sqlite:////tmp/fireai_ci_test.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_ci_test.db"
           UDM_DB_PATH: "/tmp/udm_ci_test.db"
-          # V207 FIX: SECRET_KEY is used by webhook test fixtures as HMAC secret.
           SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
         run: |
-          # If FIREAI_SESSION_SECRET_CI secret is not set, generate one for this run.
-          # This allows the workflow to function even before the secret is configured.
+          # If FIREAI_SESSION_SECRET is not set, generate one for this run.
           if [ -z "$FIREAI_SESSION_SECRET" ]; then
             export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
             echo "Generated ephemeral FIREAI_SESSION_SECRET for this run"
           fi
-          # V207 FIX: Clean stale test artifacts that cause RuntimeError on re-runs
+          # Clean stale test artifacts that cause RuntimeError on re-runs
           rm -rf db/ /tmp/fireai_ci_test.db /tmp/udm_ci_test.db
           pip install pytest-timeout
-          # Run pytest with timeout, capture output to file
-          OUTPUT_FILE=$(mktemp)
-          timeout --signal=KILL 600 \
-            python -m pytest tests/ backend/tests/ \
-              --tb=short \
-              -p no:cacheprovider \
-              --no-cov \
-              --timeout=300 \
-              --timeout-method=signal \
-              -q 2>&1 | tee "$OUTPUT_FILE"
-          EXIT_CODE=${PIPESTATUS[0]}
-
-          echo "pytest exit code: $EXIT_CODE"
-
-          # Exit code 0 = all tests passed, process exited cleanly
-          if [ "$EXIT_CODE" -eq 0 ]; then
-            echo "PASS: pytest completed successfully"
-            rm -f "$OUTPUT_FILE"
-            exit 0
-          fi
-
-          # Exit code 137 = SIGKILL (timeout killed the hung process)
-          # Check if tests actually passed before the hang
-          if [ "$EXIT_CODE" -eq 137 ]; then
-            if grep -q "passed" "$OUTPUT_FILE"; then
-              echo "PASS: tests completed successfully (process killed during shutdown)"
-              rm -f "$OUTPUT_FILE"
-              exit 0
-            else
-              echo "FAIL: process killed but tests did not complete"
-              rm -f "$OUTPUT_FILE"
-              exit 1
-            fi
-          fi
-
-          # Any other exit code = test failure or error
-          echo "FAIL: pytest exited with code $EXIT_CODE"
-          rm -f "$OUTPUT_FILE"
-          exit $EXIT_CODE
+          # Run pytest with coverage (pytest-cov >=5.0.0 resolves atexit hang)
+          python -m pytest tests/ backend/tests/ \
+            --tb=short \
+            -p no:cacheprovider \
+            --cov \
+            --cov-report=term-missing \
+            --timeout=300 \
+            --timeout-method=signal \
+            -q
 
       - name: Upload coverage report
         # V159.6 FIX: Coverage is now disabled in CI (see step above). This step
