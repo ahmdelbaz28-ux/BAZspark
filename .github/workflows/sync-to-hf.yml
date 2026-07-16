@@ -121,18 +121,24 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
-      - name: Clone HuggingFace Space
+      - name: Check HF token availability
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Clone HF Space into a sibling directory using token auth
-          git clone "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}" hf_space
-          # Print HF commit SHA for traceability (before sync)
-          (cd hf_space && git rev-parse --short HEAD) | tee hf_before_sha.txt
-          echo "HF before-sync SHA: $(cat hf_before_sha.txt)"
+          if [ -z "${HF_TOKEN}" ]; then
+            echo "HF_TOKEN is not configured in repository secrets — skipping HuggingFace sync."
+            echo "To enable sync, add HF_TOKEN secret with write scope on https://huggingface.co/settings/tokens"
+            exit 0
+          fi
+          echo "HF_TOKEN is configured — proceeding with HuggingFace sync"
+        
 
       - name: Sync runtime files (whitelist + exclude junk)
         run: |
+          if [ ! -d hf_space ]; then
+            echo "Skipping HF sync — hf_space directory not present."
+            exit 0
+          fi
           # ── Whitelist of runtime paths that must exist on HF ──────────────
           # MUST match the COPY statements in the HF Dockerfile.
           # If you add a new COPY to the Dockerfile, add the path here too.
@@ -222,10 +228,15 @@ jobs:
           ls -la hf_space/ | head -30
 
       - name: Commit & push to HuggingFace
+        if: ${{ env.HF_TOKEN != '' && env.HF_TOKEN != null }}
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           GH_SHA: ${{ github.sha }}
         run: |
+          if [ ! -d hf_space ]; then
+            echo "Skipping HF push — hf_space directory not present."
+            exit 0
+          fi
           cd hf_space
 
           # Stage all changes (including deletions from the wipe step)
