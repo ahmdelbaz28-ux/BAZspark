@@ -55,17 +55,17 @@ import os
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-# Re-export CorrelationIdMiddleware for a single import surface.
-# Lazy import to avoid circular dependency if backend.request_context
-# ever imports from this module in the future.
-from backend.request_context import CorrelationIdMiddleware
-
 # Lazy accessor for validate_session_cookie — avoids circular import
 # (backend/routers/auth.py imports _validate_api_key from this module).
 # The first call triggers a normal import which is cached by Python's
 # import system, so subsequent calls are free. The lazy accessor is
 # called inside ApiKeyMiddleware.__call__ instead of a bare import.
 from backend.rbac import Role as _Role
+
+# Re-export CorrelationIdMiddleware for a single import surface.
+# Lazy import to avoid circular dependency if backend.request_context
+# ever imports from this module in the future.
+from backend.request_context import CorrelationIdMiddleware
 
 
 def _get_validate_session_cookie():

@@ -39,8 +39,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 /**
- * BrandNetworkBackground component renders floating orange/rose sensor network nodes
- * that connect dynamically, combined with rising flame particles/sparks.
+ * BrandNetworkBackground — Chaotic Particle System
+ *
+ * Renders a chaotic canvas of:
+ * - Morphing node shapes (circle ↔ triangle ↔ square ↔ hexagon)
+ * - Falling data stream characters (Matrix-style code rain)
+ * - Motion trails behind active particles
+ * - HSL color cycling across the full spectrum over time
  */
 function BrandNetworkBackground() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -62,114 +67,366 @@ function BrandNetworkBackground() {
 		};
 		window.addEventListener("resize", handleResize);
 
-		interface NodeParticle {
+		// ─── Global time for color cycling ────────────────────────────
+		let globalTime = 0;
+
+		// ─── Shape types ──────────────────────────────────────────────
+		type ShapeType = "circle" | "triangle" | "square" | "hexagon";
+		const SHAPE_ORDER: ShapeType[] = ["circle", "triangle", "square", "hexagon"];
+
+		// ─── Draw a polygon by number of sides ────────────────────────
+		function drawPolygon(
+			ctx: CanvasRenderingContext2D,
+			cx: number,
+			cy: number,
+			radius: number,
+			sides: number,
+			rotation = 0,
+		) {
+			if (sides < 3) {
+				ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+				return;
+			}
+			ctx.moveTo(
+				cx + radius * Math.cos(rotation),
+				cy + radius * Math.sin(rotation),
+			);
+			for (let i = 1; i <= sides; i++) {
+				const angle = rotation + (i * Math.PI * 2) / sides;
+				ctx.lineTo(cx + radius * Math.cos(angle), cy + radius * Math.sin(angle));
+			}
+			ctx.closePath();
+		}
+
+		// ─── Shape → side count with interpolation ───────────────────
+		function getSidesForShape(shape: ShapeType): number {
+			switch (shape) {
+				case "circle":
+					return 0; // arc
+				case "triangle":
+					return 3;
+				case "square":
+					return 4;
+				case "hexagon":
+					return 6;
+			}
+		}
+
+		// ─── Draw morphed shape between two shapes ────────────────────
+		function drawMorphedShape(
+			ctx: CanvasRenderingContext2D,
+			cx: number,
+			cy: number,
+			radius: number,
+			morphProgress: number,
+			shapeA: ShapeType,
+			shapeB: ShapeType,
+			rotation: number,
+		) {
+			// Interpolate side count
+			const sidesA = getSidesForShape(shapeA);
+			const sidesB = getSidesForShape(shapeB);
+			let sides = sidesA + (sidesB - sidesA) * morphProgress;
+
+			// Build vertices (interpolated)
+			if (sides < 3) {
+				// Treat as circle (arc)
+				ctx.beginPath();
+				ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+				ctx.fill();
+				if (radius > 2) {
+					ctx.stroke();
+				}
+				return;
+			}
+
+			const integerSides = Math.round(sides);
+			// For fractional morph between shapes with same side count, interpolate radii
+			ctx.beginPath();
+			const vertexAngleStart = rotation;
+			ctx.moveTo(
+				cx + radius * Math.cos(vertexAngleStart),
+				cy + radius * Math.sin(vertexAngleStart),
+			);
+			for (let i = 1; i <= integerSides; i++) {
+				const angle = vertexAngleStart + (i * Math.PI * 2) / integerSides;
+				ctx.lineTo(cx + radius * Math.cos(angle), cy + radius * Math.sin(angle));
+			}
+			ctx.closePath();
+			ctx.fill();
+			if (radius > 2) {
+				ctx.stroke();
+			}
+		}
+
+		// ─── Morphed particle ─────────────────────────────────────────
+		interface MorphedNode {
 			x: number;
 			y: number;
 			vx: number;
 			vy: number;
 			radius: number;
+			shapeA: ShapeType;
+			shapeB: ShapeType;
+			morphProgress: number; // 0-1
+			morphSpeed: number;
+			rotation: number;
+			rotationSpeed: number;
+			// Trail history
+			trail: { x: number; y: number }[];
+			// HSL hue offset for this particle
+			hueOffset: number;
 		}
 
-		interface SparkParticle {
+		// ─── Data stream droplet ──────────────────────────────────────
+		interface DataStream {
 			x: number;
 			y: number;
-			vx: number;
-			vy: number;
-			radius: number;
-			alpha: number;
-			decay: number;
-			color: string;
+			speed: number;
+			chars: string[];
+			length: number;
+			opacity: number;
+			hue: number;
 		}
 
-		const nodesCount = Math.min(30, Math.floor((width * height) / 40000));
-		const nodes: NodeParticle[] = [];
+		// ─── Glitch burst ─────────────────────────────────────────────
+		interface GlitchBurst {
+			x: number;
+			y: number;
+			life: number;
+			maxLife: number;
+			segments: { dx: number; dy: number; w: number; h: number; alpha: number }[];
+		}
+
+		// ─── Node count ───────────────────────────────────────────────
+		const nodesCount = Math.min(40, Math.floor((width * height) / 35000));
+		const nodes: MorphedNode[] = [];
 		for (let i = 0; i < nodesCount; i++) {
+			const r = Math.random() * 3.5 + 1.5;
 			nodes.push({
 				x: Math.random() * width,
 				y: Math.random() * height,
-				vx: (Math.random() - 0.5) * 0.35,
-				vy: (Math.random() - 0.5) * 0.35,
-				radius: Math.random() * 1.5 + 1.2,
+				vx: (Math.random() - 0.5) * 0.6,
+				vy: (Math.random() - 0.5) * 0.6,
+				radius: r,
+				shapeA: SHAPE_ORDER[Math.floor(Math.random() * SHAPE_ORDER.length)],
+				shapeB: SHAPE_ORDER[Math.floor(Math.random() * SHAPE_ORDER.length)],
+				morphProgress: Math.random(),
+				morphSpeed: 0.003 + Math.random() * 0.012,
+				rotation: Math.random() * Math.PI * 2,
+				rotationSpeed: (Math.random() - 0.5) * 0.02,
+				trail: [],
+				hueOffset: Math.random() * 360,
 			});
 		}
 
-		const sparks: SparkParticle[] = [];
-		const maxSparks = 50;
-
-		const spawnSpark = () => {
-			if (sparks.length >= maxSparks) return;
-			sparks.push({
+		// ─── Data streams ─────────────────────────────────────────────
+		const streamCount = Math.min(12, Math.floor((width * height) / 80000));
+		const streams: DataStream[] = [];
+		const STREAM_CHARS = "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン";
+		for (let i = 0; i < streamCount; i++) {
+			const len = 4 + Math.floor(Math.random() * 10);
+			const chars: string[] = [];
+			for (let j = 0; j < len; j++) {
+				chars.push(STREAM_CHARS[Math.floor(Math.random() * STREAM_CHARS.length)]);
+			}
+			streams.push({
 				x: Math.random() * width,
-				y: height + 10,
-				vx: (Math.random() - 0.5) * 0.8,
-				vy: -Math.random() * 1.6 - 0.6,
-				radius: Math.random() * 1.4 + 0.6,
-				alpha: 1,
-				decay: Math.random() * 0.007 + 0.003,
-				color: Math.random() > 0.4 ? "rgba(244, 63, 94, " : "rgba(249, 115, 22, ", // rose or orange
+				y: Math.random() * -height,
+				speed: 1.5 + Math.random() * 4,
+				chars,
+				length: len,
+				opacity: 0.08 + Math.random() * 0.2,
+				hue: Math.random() * 360,
 			});
-		};
+		}
 
+		// ─── Glitch bursts ────────────────────────────────────────────
+		const glitches: GlitchBurst[] = [];
+
+		function spawnGlitch() {
+			const numSegments = 3 + Math.floor(Math.random() * 6);
+			const segments = [];
+			const gx = Math.random() * width;
+			const gy = Math.random() * height;
+			for (let i = 0; i < numSegments; i++) {
+				segments.push({
+					dx: (Math.random() - 0.5) * 60,
+					dy: (Math.random() - 0.5) * 8,
+					w: 4 + Math.random() * 30,
+					h: 2 + Math.random() * 4,
+					alpha: 0.4 + Math.random() * 0.6,
+				});
+			}
+			glitches.push({ x: gx, y: gy, life: 0, maxLife: 6 + Math.random() * 10, segments });
+		}
+
+		let glitchTimer = 0;
+
+		// ─── Anim loop ────────────────────────────────────────────────
 		const animate = () => {
-			ctx.clearRect(0, 0, width, height);
+			globalTime += 0.005;
+			const hueBase = (globalTime * 60) % 360; // Slowly cycle hue
 
-			// 1. Draw connecting lines between nodes
+			// Semi-transparent clear for motion trails (fade effect)
+			ctx.fillStyle = "rgba(5, 7, 15, 0.18)";
+			ctx.fillRect(0, 0, width, height);
+
+			// ═══════════ 1. DATA STREAMS ═══════════
+			ctx.font = "10px monospace";
+			for (const stream of streams) {
+				stream.y += stream.speed;
+				if (stream.y > height + 20) {
+					stream.y = -stream.length * 14;
+					stream.x = Math.random() * width;
+					stream.hue = (stream.hue + 30 + Math.random() * 60) % 360;
+					// Refresh chars
+					for (let j = 0; j < stream.length; j++) {
+						stream.chars[j] = STREAM_CHARS[Math.floor(Math.random() * STREAM_CHARS.length)];
+					}
+				}
+
+				for (let j = 0; j < stream.length; j++) {
+					const charY = stream.y - j * 12;
+					if (charY < -10 || charY > height + 10) continue;
+
+					// Lead character is brightest (cyan/green), rest fade
+					const fade = 1 - j / stream.length;
+					const charOpacity = stream.opacity * fade * 0.7;
+					if (charOpacity < 0.01) continue;
+
+					// Lead char in bright cyan, trail chars in stream hue
+					if (j === 0) {
+						ctx.fillStyle = `hsla(${(stream.hue + 180) % 360}, 100%, 70%, ${stream.opacity * 0.9})`;
+					} else if (j === 1) {
+						ctx.fillStyle = `hsla(${stream.hue}, 80%, 50%, ${charOpacity * 1.2})`;
+					} else {
+						ctx.fillStyle = `hsla(${stream.hue}, 60%, 40%, ${charOpacity})`;
+					}
+					ctx.fillText(stream.chars[j], stream.x, charY);
+				}
+			}
+
+			// ═══════════ 2. MORPHED NODES + TRAILS + CONNECTIONS ═══════════
 			for (let i = 0; i < nodes.length; i++) {
-				const n1 = nodes[i];
-				n1.x += n1.vx;
-				n1.y += n1.vy;
+				const n = nodes[i];
 
-				if (n1.x < 0 || n1.x > width) n1.vx *= -1;
-				if (n1.y < 0 || n1.y > height) n1.vy *= -1;
+				// Update position
+				n.x += n.vx;
+				n.y += n.vy;
 
+				if (n.x < -20 || n.x > width + 20) n.vx *= -1;
+				if (n.y < -20 || n.y > height + 20) n.vy *= -1;
+
+				// Clamp
+				n.x = Math.max(-20, Math.min(width + 20, n.x));
+				n.y = Math.max(-20, Math.min(height + 20, n.y));
+
+				// Update rotation
+				n.rotation += n.rotationSpeed;
+
+				// Update morph progress
+				n.morphProgress += n.morphSpeed;
+				if (n.morphProgress >= 1) {
+					n.morphProgress = 0;
+					n.shapeA = n.shapeB;
+					n.shapeB = SHAPE_ORDER[Math.floor(Math.random() * SHAPE_ORDER.length)];
+					// Ensure different from shapeA
+					if (n.shapeB === n.shapeA) {
+						n.shapeB = SHAPE_ORDER[(SHAPE_ORDER.indexOf(n.shapeA) + 1 + Math.floor(Math.random() * 2)) % SHAPE_ORDER.length];
+					}
+				}
+
+				// Record trail (max 12 points)
+				n.trail.push({ x: n.x, y: n.y });
+				if (n.trail.length > 12) n.trail.shift();
+
+				// Draw trail (fading tail behind each particle)
+				if (n.trail.length > 1) {
+					for (let t = 1; t < n.trail.length; t++) {
+						const trailFade = t / n.trail.length;
+						const trailAlpha = trailFade * 0.15;
+						ctx.strokeStyle = `hsla(${(hueBase + n.hueOffset) % 360}, 80%, 55%, ${trailAlpha})`;
+						ctx.lineWidth = n.radius * 0.5 * trailFade;
+						ctx.beginPath();
+						ctx.moveTo(n.trail[t - 1].x, n.trail[t - 1].y);
+						ctx.lineTo(n.trail[t].x, n.trail[t].y);
+						ctx.stroke();
+					}
+				}
+
+				// Draw connections between nearby nodes (with hue cycling)
 				for (let j = i + 1; j < nodes.length; j++) {
 					const n2 = nodes[j];
-					const dx = n1.x - n2.x;
-					const dy = n1.y - n2.y;
+					const dx = n.x - n2.x;
+					const dy = n.y - n2.y;
 					const dist = Math.sqrt(dx * dx + dy * dy);
-					if (dist < 140) {
-						ctx.strokeStyle = `rgba(244, 63, 94, ${(1 - dist / 140) * 0.065})`;
-						ctx.lineWidth = 0.8;
+					if (dist < 160) {
+						const fade = 1 - dist / 160;
+						const connHue = (hueBase + n.hueOffset * 0.5 + n2.hueOffset * 0.5) % 360;
+						ctx.strokeStyle = `hsla(${connHue}, 80%, 60%, ${fade * 0.08})`;
+						ctx.lineWidth = 0.6 + fade * 0.6;
 						ctx.beginPath();
-						ctx.moveTo(n1.x, n1.y);
+						ctx.moveTo(n.x, n.y);
 						ctx.lineTo(n2.x, n2.y);
 						ctx.stroke();
 					}
 				}
 
-				// Render individual sensor node
-				ctx.fillStyle = "rgba(244, 63, 94, 0.25)";
-				ctx.beginPath();
-				ctx.arc(n1.x, n1.y, n1.radius, 0, Math.PI * 2);
-				ctx.fill();
+				// Draw the morphed node
+				const hue = (hueBase + n.hueOffset) % 360;
+				ctx.fillStyle = `hsla(${hue}, 90%, 60%, 0.35)`;
+				ctx.strokeStyle = `hsla(${hue}, 90%, 70%, 0.5)`;
+				ctx.lineWidth = 0.8;
+
+				drawMorphedShape(
+					ctx,
+					n.x,
+					n.y,
+					n.radius,
+					n.morphProgress,
+					n.shapeA,
+					n.shapeB,
+					n.rotation,
+				);
+
+				// Glow aura for larger particles
+				if (n.radius > 2.5) {
+					const outerGlow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.radius * 4);
+					outerGlow.addColorStop(0, `hsla(${hue}, 90%, 60%, 0.08)`);
+					outerGlow.addColorStop(1, `hsla(${hue}, 90%, 60%, 0)`);
+					ctx.fillStyle = outerGlow;
+					ctx.beginPath();
+					ctx.arc(n.x, n.y, n.radius * 4, 0, Math.PI * 2);
+					ctx.fill();
+				}
 			}
 
-			// 2. Manage fire safety sparks
-			if (Math.random() < 0.18) {
-				spawnSpark();
+			// ═══════════ 3. GLITCH BURSTS ═══════════
+			glitchTimer++;
+			if (glitchTimer > 60 + Math.random() * 120) {
+				glitchTimer = 0;
+				spawnGlitch();
 			}
 
-			for (let i = sparks.length - 1; i >= 0; i--) {
-				const s = sparks[i];
-				s.x += s.vx;
-				s.y += s.vy;
-				s.alpha -= s.decay;
-
-				if (s.alpha <= 0 || s.x < 0 || s.x > width || s.y < -10) {
-					sparks.splice(i, 1);
+			for (let i = glitches.length - 1; i >= 0; i--) {
+				const g = glitches[i];
+				g.life++;
+				if (g.life >= g.maxLife) {
+					glitches.splice(i, 1);
 					continue;
 				}
+				const lifeRatio = g.life / g.maxLife;
+				const alpha = 1 - lifeRatio;
 
-				ctx.fillStyle = `${s.color}${s.alpha})`;
-				ctx.beginPath();
-				ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
-				ctx.fill();
+				for (const seg of g.segments) {
+					// Glitch rect
+					ctx.fillStyle = `hsla(${(hueBase + 180) % 360}, 100%, 60%, ${seg.alpha * alpha * 0.15})`;
+					ctx.fillRect(g.x + seg.dx, g.y + seg.dy, seg.w, seg.h);
 
-				if (s.radius > 1.1) {
-					ctx.fillStyle = `${s.color}${s.alpha * 0.12})`;
-					ctx.beginPath();
-					ctx.arc(s.x, s.y, s.radius * 3.5, 0, Math.PI * 2);
-					ctx.fill();
+					// Secondary displaced copy
+					ctx.fillStyle = `hsla(${(hueBase + 240) % 360}, 100%, 50%, ${seg.alpha * alpha * 0.08})`;
+					ctx.fillRect(g.x + seg.dx + 4, g.y + seg.dy, seg.w, seg.h);
 				}
 			}
 
