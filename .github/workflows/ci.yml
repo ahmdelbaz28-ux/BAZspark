@@ -97,15 +97,20 @@ jobs:
       - name: Bandit severity gate
         run: |
           if [ -f reports/bandit.json ]; then
-            HIGH_COUNT=$(python3 -c "
-          import json
-          with open('reports/bandit.json') as f:
-              data = json.load(f)
-          high = [r for r in data.get('results', []) if r.get('issue_severity') == 'HIGH']
-          print(len(high))
-          " 2>/dev/null || echo "0")
-            if [ "$HIGH_COUNT" -gt 0 ]; then
-              echo "FAIL: $HIGH_COUNT HIGH severity findings"
+            python3 -c "
+            import json
+            with open('reports/bandit.json') as f:
+                data = json.load(f)
+            results = data.get('results', [])
+            high = [r for r in results if r.get('issue_severity') == 'HIGH']
+            print('BANDIT_TOTAL=' + str(len(results)))
+            print('BANDIT_HIGH=' + str(len(high)))
+            for r in high:
+                print('HIGH::' + r.get('filename', '') + ':' + str(r.get('line_number', '')) + '::' + r.get('issue_text', '') + '::[' + r.get('test_name', '') + ']')
+            " 2>/dev/null || true
+            if [ -f reports/bandit_high_summary.txt ]; then
+              echo "FAIL: HIGH severity Bandit findings detected"
+              cat reports/bandit_high_summary.txt
               exit 1
             fi
             echo "PASS: No HIGH severity Bandit findings"
