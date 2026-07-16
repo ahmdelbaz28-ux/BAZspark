@@ -146,27 +146,10 @@ jobs:
         run: bandit -r fireai/ qomn_conduit/ -f json -o reports/bandit.json -ll || true
 
       - name: Unit tests
-        # V170 FIX (TRUE ROOT-CAUSE): atexit + os._exit in Python wrapper.
-        # Do NOT call sys.exit() — it triggers threading._shutdown() before atexit.
-        # See ci.yml V170 for full root-cause analysis.
-        #
-        # V207 FIX (HONEST FIX): The previous os._exit() wrapper SUPPRESSED ALL
-        # TEST OUTPUT. When tests failed, the CI log showed only "exit code 2"
-        # with zero information about WHICH tests failed or WHY. This made
-        # debugging impossible and hid real bugs (ProofCertificate, API
-        # mismatches, etc.) for weeks.
-        #
-        # The new approach mirrors ci.yml's Gate 2: use `timeout --signal=KILL`
-        # with `tee` to capture output. Exit 137 (SIGKILL) is accepted as
-        # success if the output contains "passed" (tests completed before the
-        # known atexit hang). All other non-zero exits are real failures and
-        # the full test output is visible in the CI log.
-        #
-        # V207 FIX 2: Added FIREAI_SESSION_SECRET + FIREAI_API_KEY + CORS +
-        # DATABASE_URL env vars. Backend tests require these to start the
-        # FastAPI app via TestClient lifespan. Without them, tests fail with
-        # RuntimeError at app startup.
-        timeout-minutes: 15
+        # V274 FIX: pytest-cov upgraded to >=5.0.0 resolving atexit hang.
+        # The `timeout --signal=KILL` workaround is removed; pytest should
+        # exit cleanly with full coverage reporting.
+        timeout-minutes: 20
         env:
           PYTEST_ADDOPTS: "--color=no"
           FIREAI_API_KEY: ci-test-admin-key
@@ -174,69 +157,23 @@ jobs:
           DATABASE_URL: "sqlite:////tmp/fireai_deploy_test.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_deploy_test.db"
           UDM_DB_PATH: "/tmp/udm_deploy_test.db"
-          # V207 FIX: SECRET_KEY is used by webhook test fixtures as HMAC secret.
-          # Must be ≥32 chars per NIST SP 800-107 (enforced by webhook_service.py).
           SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
         run: |
           # Generate ephemeral session secret for this run (matches ci.yml pattern)
           export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
-          # V207 FIX: Clean stale test artifacts that cause RuntimeError on re-runs
+          # Clean stale test artifacts that cause RuntimeError on re-runs
           rm -rf db/ /tmp/fireai_deploy_test.db /tmp/udm_deploy_test.db
           pip install pytest-timeout slowapi tenacity openpyxl
-          # V229: Run pytest properly — all dependencies now installed.
-          # Tests pass: 584+ passed, 6 skipped, 0 failed (verified locally).
-          # No more || true or non-blocking workarounds.
-          OUTPUT_FILE=$(mktemp)
-          timeout --signal=KILL 600 \
-            python -m pytest tests/ backend/tests/ \
-              --tb=short \
-              -p no:cacheprovider \
-              --no-cov \
-              --timeout=300 \
-              --timeout-method=signal \
-              --continue-on-collection-errors \
-              -q 2>&1 | tee "$OUTPUT_FILE"
-          EXIT_CODE=${PIPESTATUS[0]}
-
-          echo "pytest exit code: $EXIT_CODE"
-
-          # Exit code 0 = all tests passed, process exited cleanly
-          if [ "$EXIT_CODE" -eq 0 ]; then
-            echo "PASS: pytest completed successfully"
-            rm -f "$OUTPUT_FILE"
-            exit 0
-          fi
-
-          # Exit code 137 = SIGKILL (timeout killed the hung process)
-          # Check if tests actually passed before the hang
-          if [ "$EXIT_CODE" -eq 137 ]; then
-            if grep -q "passed" "$OUTPUT_FILE"; then
-              echo "PASS: tests completed successfully (process killed during shutdown)"
-              rm -f "$OUTPUT_FILE"
-              exit 0
-            else
-              echo "FAIL: process killed but tests did not complete"
-              rm -f "$OUTPUT_FILE"
-              exit 1
-            fi
-          fi
-
-          # Exit code 1 with mostly-passed = collection errors (attr renames), treat as pass
-          if [ "$EXIT_CODE" -eq 1 ]; then
-            PASSED=$(grep -oP '\d+ passed' "$OUTPUT_FILE" | grep -oP '\d+' || echo "0")
-            FAILED=$(grep -oP '\d+ failed' "$OUTPUT_FILE" | grep -oP '\d+' || echo "0")
-            if [ "$PASSED" -gt 100 ] && [ "$FAILED" -eq 0 ]; then
-              echo "PASS: $PASSED tests passed, 0 failures (collection errors only - non-blocking)"
-              rm -f "$OUTPUT_FILE"
-              exit 0
-            fi
-          fi
-
-          # Any other exit code = test failure
-          echo "FAIL: pytest exited with code $EXIT_CODE"
-          cat "$OUTPUT_FILE" | tail -50
-          rm -f "$OUTPUT_FILE"
-          exit $EXIT_CODE
+          # Run pytest with coverage (pytest-cov >=5.0.0 resolves atexit hang)
+          python -m pytest tests/ backend/tests/ \
+            --tb=short \
+            -p no:cacheprovider \
+            --cov \
+            --cov-report=term-missing \
+            --timeout=300 \
+            --timeout-method=signal \
+            --continue-on-collection-errors \
+            -q
 
 
       - name: Build frontend

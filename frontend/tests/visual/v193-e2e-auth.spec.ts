@@ -11,7 +11,7 @@
  *   1. Unauthenticated access to /dashboard redirects to /login
  *   2. Unauthenticated access to /projects redirects to /login
  *   3. /login page renders with correct elements
- *   4. Sign In button enables when API key is entered
+ *   4. INITIALIZE SESSION button enables when API key is entered
  *   5. Invalid API key shows error message          ← was skipped, now runs
  *   6. Valid login redirects to dashboard           ← was skipped, now runs
  *   7. Skip-link is present and focusable           ← was skipped, now runs
@@ -26,21 +26,18 @@ import { installApiMock } from "./helpers/authMock";
 
 /**
  * Helper: perform login via the UI using the auth mock.
- * Fills the API key field and clicks Sign In.
+ * Fills the API key field and clicks the INITIALIZE SESSION button.
  * The mock's /auth/login endpoint returns 200 for any non-invalid key.
  */
 async function loginViaUI(page: Page, apiKey = "test-engineer-key") {
         await page.goto("/login");
         await page.waitForLoadState("networkidle");
 
-        // V236: Use #api-key selector (getByLabel('API Key') matches both the
-        // <label> and the input's placeholder 'Enter your API key', causing
-        // strict mode violation in Playwright)
         const apiKeyInput = page.locator("#api-key");
         await apiKeyInput.fill(apiKey);
 
-        // Click Sign In
-        await page.getByRole("button", { name: "Sign In" }).click();
+        // Click the INITIALIZE SESSION button
+        await page.getByRole("button", { name: /INITIALIZE SESSION/i }).click();
 
         // Wait for redirect to dashboard (or ?from= target)
         await page.waitForURL(/\/dashboard/, { timeout: 10000 });
@@ -57,9 +54,8 @@ test("unauthenticated access to /dashboard redirects to /login", async ({ page }
         await expect(page).toHaveURL(/\/login/);
         await expect(page).toHaveURL(/from=%2Fdashboard/);
 
-        // V236: Login page should be visible — use .first() because 'Sign In'
-        // appears in both the page title and the button.
-        await expect(page.getByText(/welcome back/i).first()).toBeVisible({ timeout: 5000 });
+        // Login page should be visible — check for the brand logo and heading
+        await expect(page.getByLabel(/BAZSPARK logo/i)).toBeVisible({ timeout: 5000 });
         // Verify API Key input exists (use #api-key selector to be specific)
         await expect(page.locator("#api-key")).toBeVisible();
 });
@@ -82,36 +78,35 @@ test("login page renders with correct elements", async ({ page }) => {
         // V246: 'BAZSPARK' wordmark is split into two spans ("BAZ" + "SPARK")
         // by BazSparkWordmark component. Use the logo's aria-label instead.
         await expect(page.getByLabel(/BAZSPARK logo/i)).toBeVisible({ timeout: 10000 });
-        await expect(page.getByText("Safety-Critical Fire Alarm Engineering Platform")).toBeVisible();
+        await expect(page.getByText(/Autonomous 3D Routing/i)).toBeVisible();
 
-        // 'Welcome back' heading (more specific than 'sign in' which also matches the button)
-        await expect(page.getByRole("heading", { name: /welcome back/i })).toBeVisible();
+        // 'System Access' heading on the right panel
+        await expect(page.getByRole("heading", { name: /System Access/i })).toBeVisible();
 
         // V236: API Key input — use #api-key selector (label text 'API Key' also
         // matches the input's placeholder 'Enter your API key', causing strict mode violation)
         await expect(page.locator("#api-key")).toBeVisible();
 
         // Remember checkbox
-        await expect(page.getByLabel(/remember/i)).toBeVisible();
+        await expect(page.getByLabel(/persistent secure connection/i)).toBeVisible();
 
-        // Sign In button (disabled until input has value)
-        const signInButton = page.getByRole("button", { name: "Sign In" });
+        // INITIALIZE SESSION button (disabled until input has value)
+        const signInButton = page.getByRole("button", { name: /INITIALIZE SESSION/i });
         await expect(signInButton).toBeDisabled();
 
         // Show/hide toggle
         await expect(page.getByRole("button", { name: /show api key/i })).toBeVisible();
 });
 
-// ─── Test 4: Sign In button enables when API key is entered ─────────────────
-test("Sign In button enables when API key is entered", async ({ page }) => {
+// ─── Test 4: INITIALIZE SESSION button enables when API key is entered ──────
+test("INITIALIZE SESSION button enables when API key is entered", async ({ page }) => {
         await installApiMock(page);
         await page.goto("/login");
         await page.waitForLoadState("networkidle");
 
-        const signInButton = page.getByRole("button", { name: "Sign In" });
+        const signInButton = page.getByRole("button", { name: /INITIALIZE SESSION/i });
         await expect(signInButton).toBeDisabled();
 
-        // V236: Use #api-key selector instead of getByLabel (strict mode violation)
         await page.locator("#api-key").fill("some-test-key");
         await expect(signInButton).toBeEnabled();
 });
@@ -125,11 +120,11 @@ test("invalid API key shows error message", async ({ page }) => {
 
         // V236: Use #api-key selector instead of getByLabel (strict mode violation)
         await page.locator("#api-key").fill("invalid-key-1234567890");
-        await page.getByRole("button", { name: "Sign In" }).click();
+        await page.getByRole("button", { name: /INITIALIZE SESSION/i }).click();
 
         // Should show error alert (not redirect)
         await expect(page.getByRole("alert")).toBeVisible({ timeout: 5000 });
-        await expect(page.getByText(/invalid api key|unable to reach the server/i)).toBeVisible();
+        await expect(page.getByText(/invalid authorization key|unable to reach the server/i)).toBeVisible();
 
         // Should still be on /login
         await expect(page).toHaveURL(/\/login/);
