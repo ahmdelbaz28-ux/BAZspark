@@ -1,0 +1,15 @@
+/* Dark mode overrides for design system tokens */
+.dark {
+  /* Dark mode overrides */
+  --color-background: #0a0e17;
+  --color-foreground: #e8f0fe;
+  --color-card: rgba(17, 24, 39, 0.6);
+  --color-card-foreground: #e8f0fe;
+  --color-muted: rgba(255, 255, 255, 0.05);
+  --color-muted-foreground: #94a3b8;
+  --color-accent: #22d3ee;
+  --color-accent-foreground: #070b12;
+  --color-border: rgba(31, 45, 68, 0.5);
+  --color-input: rgba(31, 45, 68, 0.5);
+  --color-ring: #22d3ee;
+}
