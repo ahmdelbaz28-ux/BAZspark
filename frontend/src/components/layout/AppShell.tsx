@@ -1,7 +1,7 @@
 import type React from "react";
 import Sidebar from "./Sidebar";
 import StatusBar from "./StatusBar";
-import TopBar from "./TopBar";
+import Navigation from "@/components/layout/Navigation";
 
 interface AppShellProps {
 	children: React.ReactNode;
@@ -45,13 +45,7 @@ const AppShell: React.FC<AppShellProps> = ({
 			<Sidebar />
 
 			<div className="flex-1 flex flex-col min-w-0">
-				<TopBar
-					isConnected={isConnected}
-					onHelpOpen={onHelpOpen}
-					onSearchOpen={onSearchOpen}
-					currentLanguage={currentLanguage}
-					onLanguageChange={onLanguageChange}
-				/>
+				<Navigation />
 
 				<main className="flex-1 overflow-auto bg-background relative">
 					<div className="relative z-10">{children}</div>

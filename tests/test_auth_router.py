@@ -23,12 +23,20 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-@pytest.fixture(autouse=True)
-def _setup_env() -> Generator[None, None, None]:
-    """Set test environment."""
+@pytest.fixture(scope="module", autouse=True)
+def _setup_env_module() -> None:
+    """Set test environment BEFORE module-scoped fixtures import the app.
+    
+    Module-scoped autouse runs before other module-scoped fixtures in this
+    file (pytest executes fixtures in definition order within same scope).
+    This ensures env vars are set before `client` imports backend.app,
+    which evaluates config.DATABASE_URL at class definition time.
+    """
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = "test_key_for_auth_123"
-    return  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+    # Use SQLite for tests to avoid psycopg2 dependency
+    os.environ["DATABASE_URL"] = "sqlite:///./test_db_auth.db"
+    os.environ["FIREAI_CSRF_DISABLED"] = "1"
 
 
 @pytest.fixture(scope="module")
@@ -111,23 +119,31 @@ class TestAuthMe:
 class TestCookieAuth:
     """Verify the cookie authenticates API requests (no X-API-Key header needed)."""
 
-    def test_create_project_with_cookie_returns_201(self, client: TestClient) -> None:
+    def test_create_project_with_cookie_returns_201(self) -> None:
         """After login, POST /projects should work with cookie + CSRF token."""
+        # Use a FRESH TestClient to avoid any cross-test cookie contamination.
+        # With scope="module", cookies from previous tests (including logout)
+        # may interfere with this test's session state.
+        from backend.app import app as _app
+        fresh_client = TestClient(_app)
         # Login to get session cookie
-        client.post(
+        fresh_client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_auth_123"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+            json={"api_key": "test_key_for_auth_123"},
         )
+        # Verify cookie auth works for a simple GET first
+        me_resp = fresh_client.get("/api/v1/auth/me")
+        assert me_resp.status_code == 200, me_resp.text
         # Get CSRF token (sets CSRF cookie + returns token in body)
-        csrf_resp = client.get("/api/v2/auth/csrf-token")
+        csrf_resp = fresh_client.get("/api/v2/auth/csrf-token")
         assert csrf_resp.status_code == 200, csrf_resp.text
         csrf_token = csrf_resp.json().get("csrf_token", "")
         assert csrf_token, "CSRF token endpoint did not return a token"
         # The CSRF cookie is set with Secure flag; TestClient over HTTP will not
         # store/send Secure cookies. Inject it directly so the middleware sees it.
-        client.cookies.set("__Host-fireai_csrf_token", csrf_token)
+        fresh_client.cookies.set("__Host-fireai_csrf_token", csrf_token)
         # Create project with CSRF token header — TestClient sends cookies automatically
-        resp = client.post(
+        resp = fresh_client.post(
             "/api/v1/projects",
             json={"name": "cookie-auth-test", "description": "test", "author": "audit"},
             headers={"X-CSRF-Token": csrf_token},

@@ -60,6 +60,20 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 # ever imports from this module in the future.
 from backend.request_context import CorrelationIdMiddleware
 
+# Lazy accessor for validate_session_cookie — avoids circular import
+# (backend/routers/auth.py imports _validate_api_key from this module).
+# The first call triggers a normal import which is cached by Python's
+# import system, so subsequent calls are free. The lazy accessor is
+# called inside ApiKeyMiddleware.__call__ instead of a bare import.
+from backend.rbac import Role as _Role
+
+
+def _get_validate_session_cookie():
+    """Lazy accessor for validate_session_cookie to avoid circular import."""
+    from backend.routers.auth import validate_session_cookie
+    return validate_session_cookie
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -421,25 +435,25 @@ class ApiKeyMiddleware:
                             if k.strip() == "fireai_session":
                                 cookie_token = v.strip()
                                 # Validate the signed session token
-                                try:
-                                    from backend.routers.auth import validate_session_cookie
-                                    role_from_cookie = validate_session_cookie(cookie_token)
-                                    if role_from_cookie is not None:
-                                        # Session is valid — set role directly
-                                        from backend.rbac import Role as _Role
-                                        try:
-                                            role = _Role(role_from_cookie)
-                                        except ValueError:
-                                            role = None
-                                        if role is not None:
-                                            scope.setdefault("state", {})
-                                            scope["state"]["fireai_role"] = role
-                                            scope["fireai_role"] = role
-                                            # Skip the API key validation below — session is authenticated
-                                            await self.app(scope, receive, send)
-                                            return
-                                except ImportError:
-                                    pass  # auth module not available — fall through to 401
+                                # Use lazy accessor to avoid circular import with
+                                # backend/routers/auth.py (which imports from this module).
+                                # The lazy accessor defers import to call time (after both
+                                # modules are fully loaded), so ImportError cannot fire here.
+                                _validate_cookie_fn = _get_validate_session_cookie()
+                                role_from_cookie = _validate_cookie_fn(cookie_token)
+                                if role_from_cookie is not None:
+                                    # Session is valid — set role directly
+                                    try:
+                                        role = _Role(role_from_cookie)
+                                    except ValueError:
+                                        role = None
+                                    if role is not None:
+                                        scope.setdefault("state", {})
+                                        scope["state"]["fireai_role"] = role
+                                        scope["fireai_role"] = role
+                                        # Skip the API key validation below — session is authenticated
+                                        await self.app(scope, receive, send)
+                                        return
                                 break
 
             # Also accept FIREAI_API_KEY env var bypass for server-side
@@ -449,7 +463,6 @@ class ApiKeyMiddleware:
             role = None
             if api_key and env_key and _hmac.compare_digest(api_key, env_key):
                 # Env var bypass — grant admin role (env key is the admin key)
-                from backend.rbac import Role as _Role
                 role = _Role.ADMIN
             elif api_key:
                 # Validate via RBAC key store

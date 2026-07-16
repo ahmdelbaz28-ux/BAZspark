@@ -1,9 +1,10 @@
-import { Globe, HelpCircle, Search, Settings } from "lucide-react";
+import { Globe, HelpCircle, Search, Settings, Sun, Moon } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { ContextualHelpButton } from "@/components/shared/ContextualHelpButton";
+import { useTheme } from "@/contexts/ThemeContext";
 import { BazSparkLogo } from "@/components/auth/BazSparkLogo";
 
 interface TopBarProps {
@@ -44,6 +45,7 @@ const TopBar: React.FC<TopBarProps> = ({
         onLanguageChange,
 }) => {
         const location = useLocation();
+        const { dark, toggle } = useTheme();
         const [langOpen, setLangOpen] = useState(false);
         const langRef = useRef<HTMLDivElement>(null);
 
@@ -117,6 +119,17 @@ const TopBar: React.FC<TopBarProps> = ({
                         >
                                 <Settings className="h-[18px] w-[18px]" />
                         </Link>
+
+{/* Dark mode toggle */}
+<button
+  onClick={toggle}
+  aria-label="Toggle dark mode"
+  className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
+>
+  {dark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+</button>
+
+{/* Language selector */}
 
                         {/* Language selector */}
                         <div className="relative" ref={langRef}>
