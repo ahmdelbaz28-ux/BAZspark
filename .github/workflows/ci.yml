@@ -430,7 +430,7 @@ jobs:
           pip-audit --skip-editable -f json -o reports/pip-audit.json 2>/dev/null || true
           if [ -f reports/pip-audit.json ]; then
             echo "Audit report generated (informational only)"
-            python3 -c "import json; d=json.load(open('reports/pip-audit.json')); print(f'Found {len(d.get(chr(118)+chr(117)+chr(108)+chr(110)+chr(115),d.get(chr(100)+chr(101)+chr(112)+chr(115),[])))} items in audit')" 2>/dev/null || echo "Audit complete"
+            python3 -c "import json; d=json.load(open('reports/pip-audit.json')); print(f'Found {len(d.get(\"vulns\",d.get(\"deps\",[])))} items in audit')" 2>/dev/null || echo "Audit complete"
           fi
           echo "Dependency audit complete (non-blocking)"
 
