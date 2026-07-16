@@ -84,7 +84,7 @@ if not os.environ.get("FIREAI_SESSION_SECRET"):
 import tempfile as _tempfile_mod
 
 _FIREAI_TEST_DIR = _tempfile_mod.mkdtemp(prefix="fireai_test_")
-os.environ.setdefault("DATABASE_URL", f"sqlite:///{_FIREAI_TEST_DIR}/fireai_test_conftest.db")
+os.environ["DATABASE_URL"] = f"sqlite:///{_FIREAI_TEST_DIR}/fireai_test_conftest.db"
 os.environ.setdefault("DIGITAL_TWIN_DB_PATH", f"{_FIREAI_TEST_DIR}/fireai_test_conftest.db")
 os.environ.setdefault("UDM_DB_PATH", f"{_FIREAI_TEST_DIR}/udm_test_conftest.db")
 os.environ.setdefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")

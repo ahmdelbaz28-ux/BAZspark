@@ -68,7 +68,11 @@ if not _os.environ.get("FIREAI_SESSION_SECRET"):
 import tempfile as _tempfile_root_mod
 
 _FIREAI_TEST_DIR_ROOT = _tempfile_root_mod.mkdtemp(prefix="fireai_root_test_")
-_os.environ.setdefault("DATABASE_URL", f"sqlite:///{_FIREAI_TEST_DIR_ROOT}/fireai_test_root.db")
+# FORCE SQLite for all tests. The .env file (loaded by backend/config.py at import time)
+# may set DATABASE_URL to the production Supabase PostgreSQL URL, which cannot be
+# resolved from this machine (project paused). Using direct assignment instead of
+# setdefault guarantees SQLite regardless of load order.
+_os.environ["DATABASE_URL"] = f"sqlite:///{_FIREAI_TEST_DIR_ROOT}/fireai_test_root.db"
 _os.environ.setdefault("DIGITAL_TWIN_DB_PATH", f"{_FIREAI_TEST_DIR_ROOT}/fireai_test_root.db")
 _os.environ.setdefault("UDM_DB_PATH", f"{_FIREAI_TEST_DIR_ROOT}/udm_test_root.db")
 _os.environ.setdefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
