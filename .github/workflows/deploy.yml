@@ -152,6 +152,7 @@ jobs:
         timeout-minutes: 20
         env:
           PYTEST_ADDOPTS: "--color=no"
+          FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
           FIREAI_API_KEY: ci-test-admin-key
           CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
           DATABASE_URL: "sqlite:////tmp/fireai_deploy_test.db"
@@ -159,8 +160,10 @@ jobs:
           UDM_DB_PATH: "/tmp/udm_deploy_test.db"
           SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
         run: |
-          # Generate ephemeral session secret for this run (matches ci.yml pattern)
-          export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
+          # Ensure ephemeral session secret is set (overrides from env if not)
+          if [ -z "$FIREAI_SESSION_SECRET" ]; then
+            export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
+          fi
           # Clean stale test artifacts that cause RuntimeError on re-runs
           rm -rf db/ /tmp/fireai_deploy_test.db /tmp/udm_deploy_test.db
           pip install pytest-timeout slowapi tenacity openpyxl

@@ -179,19 +179,14 @@ jobs:
           "
 
       - name: Run pytest
-        # V207 FIX: Added CORS_ALLOWED_ORIGINS + DATABASE_URL + DIGITAL_TWIN_DB_PATH +
-        # UDM_DB_PATH env vars. Backend tests (test_auth_edge_cases.py, test_v192_lifecycle.py,
-        # test_api_endpoints.py, etc.) require these to start the FastAPI app via TestClient
-        # lifespan. Without them, tests fail with RuntimeError at app startup.
+        # V274 FIX: pytest-cov upgraded to >=5.0.0 for atexit hang fix.
+        # Added --timeout=300 to prevent runaway tests from blocking CI.
+        # FIREAI_SESSION_SECRET is already in GITHUB_ENV from step above.
         env:
-          FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
           FIREAI_API_KEY: ci-test-admin-key
           CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
           DATABASE_URL: "sqlite:////tmp/fireai_buildgate_test.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_buildgate_test.db"
           UDM_DB_PATH: "/tmp/udm_buildgate_test.db"
-          # V207 FIX: SECRET_KEY is used by webhook test fixtures as HMAC secret.
           SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
-        # V229: Run pytest properly — all dependencies now installed (slowapi + tenacity)
-        # Tests pass: 584 passed, 6 skipped, 0 failed (verified locally)
-        run: pytest backend/tests/ -v --tb=short --continue-on-collection-errors
+        run: pytest backend/tests/ -v --tb=short --timeout=300 --continue-on-collection-errors

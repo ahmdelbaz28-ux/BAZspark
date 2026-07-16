@@ -205,8 +205,8 @@ test("logout clears session and redirects to /login", async ({ page }) => {
         await expect(page).toHaveURL(/\/dashboard/);
 
         // Click the user menu (top-right)
-        // V242: The user menu button may have different aria-labels. Try several.
-        const userMenuBtn = page.getByRole("button", { name: /user menu|admin|account|profile/i }).first();
+        // The DropdownMenuTrigger renders a <Button> with aria-label="User menu"
+        const userMenuBtn = page.locator('[aria-label="User menu"]');
         await expect(userMenuBtn).toBeVisible({ timeout: 5000 });
         await userMenuBtn.click();
 
