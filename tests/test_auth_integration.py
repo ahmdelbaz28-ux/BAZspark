@@ -8,6 +8,10 @@ def client(monkeypatch):
     """Create a test client with a known API key."""
     monkeypatch.setenv("FIREAI_API_KEY", "test-admin-key")
     monkeypatch.setenv("FIREAI_ENV", "development")
+    # Force SQLite — the Supabase PostgreSQL host is not resolvable (project paused).
+    # The root conftest already sets this, but being explicit here ensures correct
+    # behavior even if backend/config.py is imported out of order.
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///./test_db_auth_int.db")
     from backend.app import app
     return TestClient(app)
 
