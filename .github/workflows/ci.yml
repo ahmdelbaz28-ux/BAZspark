@@ -153,6 +153,7 @@ jobs:
           pip install opencv-python-headless
           pip install prometheus_client
           pip install langgraph langgraph-checkpoint-sqlite
+          pip install pytest-timeout pytest-xdist
 
       - name: Set FIREAI_SESSION_SECRET (required since V193/V207)
         run: echo "FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" >> $GITHUB_ENV
@@ -234,6 +235,7 @@ jobs:
             --cov-report=html:reports/coverage_html \
             --timeout=120 \
             --timeout-method=signal \
+            -n auto \
             -q
 
       - name: Upload coverage report
