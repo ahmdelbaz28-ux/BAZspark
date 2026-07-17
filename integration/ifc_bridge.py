@@ -553,12 +553,21 @@ def run_compliance_on_ifc(ifc_path: str) -> dict:
 
     # Basic compliance verification: check NFPA 72 spacing
     class _ComplianceOracle:
-        def verify_truth(self, room, devices):  # NOSONAR — S1172: parameter retained for API stability
+        def verify_truth(self, room, devices, obstructions=None):  # S1172: retained for API stability
             violations = []
             # Stub: check each device is within room
             for d in devices:
                 if d.position and room.geometry and not room.geometry.covers(d.position):
                     violations.append({"type": "DEVICE_OUTSIDE_ROOM", "device_id": d.id, "room_id": room.id})
+            # Flag devices that fall within a known obstruction volume
+            for d in devices:
+                for obs in (obstructions or []):
+                    if obs.geometry and d.position and obs.geometry.covers(d.position):
+                        violations.append({
+                            "type": "DEVICE_IN_OBSTRUCTION",
+                            "device_id": d.id,
+                            "room_id": room.id,
+                        })
             return {"room_id": room.id, "violations": violations, "compliant": len(violations) == 0}
 
     oracle = _ComplianceOracle()
@@ -566,7 +575,7 @@ def run_compliance_on_ifc(ifc_path: str) -> dict:
     all_results = []
 
     for room in rooms:
-        result = oracle.verify_truth(room, devices, obstructions)  # NOSONAR - python:S930
+        result = oracle.verify_truth(room, devices, obstructions)
         all_results.append(result)
         all_violations.extend(result["violations"])
 

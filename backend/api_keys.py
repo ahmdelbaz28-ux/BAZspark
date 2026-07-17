@@ -239,7 +239,7 @@ def _load_server_secret() -> bytes:
             if len(_SERVER_SECRET) >= 32:
                 return _SERVER_SECRET
         # Generate a new 32-byte secret
-        path.parent.mkdir(parents=True, exist_ok=True)
+        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         _SERVER_SECRET = secrets.token_bytes(32)
         # STRICT FIX D: O_CREAT|O_EXCL — atomic create-or-fail
         try:
@@ -367,7 +367,7 @@ def _save_keys(keys: dict[str, Any]) -> None:
     crashes mid-write or interleaved writes from concurrent admin ops.
     """
     path = Path(_get_keys_file_path())
-    path.parent.mkdir(parents=True, exist_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     tmp_path = path.with_suffix(path.suffix + ".tmp")
     # Write to temp file
     fd = os.open(str(tmp_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)

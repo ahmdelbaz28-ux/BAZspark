@@ -143,7 +143,7 @@ class UniversalDataModel:
             abs_path = os.path.abspath(db_path)
             db_dir = os.path.dirname(abs_path)
             if db_dir:
-                os.makedirs(db_dir, exist_ok=True)
+                os.makedirs(db_dir, exist_ok=True, mode=0o700)
 
         self._conn = sqlite3.connect(
             db_path,

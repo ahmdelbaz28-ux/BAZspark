@@ -80,7 +80,7 @@ def _safe_resolve_upload_path(filename: str) -> str:
         )
 
     upload_dir = os.getenv("FIREAI_UPLOAD_DIR", "uploads")
-    os.makedirs(upload_dir, exist_ok=True)  # Ensure upload directory exists
+    os.makedirs(upload_dir, exist_ok=True, mode=0o700)  # Ensure upload directory exists
 
     # Resolve BOTH to absolute paths
     abs_upload = os.path.abspath(upload_dir)
@@ -369,7 +369,7 @@ async def upload_and_convert(
 
         # Save uploaded file to uploads directory
         upload_dir = os.getenv("FIREAI_UPLOAD_DIR", "uploads")
-        os.makedirs(upload_dir, exist_ok=True)
+        os.makedirs(upload_dir, exist_ok=True, mode=0o700)
 
         # Sanitize filename — basename strips any path traversal
         # Use the validated filename directly since we already validated it
