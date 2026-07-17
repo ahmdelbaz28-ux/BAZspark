@@ -34,7 +34,7 @@ jobs:
       matrix:
         python-version: ["3.12"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
@@ -204,7 +204,7 @@ jobs:
           - dockerfile: deploy/docker/Dockerfile.nginx
             target: nginx
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
@@ -256,7 +256,7 @@ jobs:
       name: staging
       url: https://staging.fireai.example.com
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
@@ -318,7 +318,7 @@ jobs:
       name: production
       url: https://fireai.example.com
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
