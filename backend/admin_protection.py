@@ -110,7 +110,7 @@ def _audit_log(
             "detail": _sanitize_log_detail(detail)[:200],
         }
         log_path = Path(AUDIT_LOG_FILE)
-        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         with log_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
     except Exception as e:

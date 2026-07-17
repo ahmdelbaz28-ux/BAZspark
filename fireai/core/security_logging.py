@@ -279,7 +279,7 @@ def configure_log_rotation(
     if log_file == "security_audit.log":  # NOSONAR — S1192: duplicated literal acceptable in this localized context
         return  # SecurityAuditLogger manages its own rotation
 
-    _LOG_DIR.mkdir(parents=True, exist_ok=True)
+    _LOG_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
     log_path = _LOG_DIR / log_file
 
     if _LOGURU_AVAILABLE:
@@ -354,7 +354,7 @@ def configure_timed_rotation(
     if log_file == "security_audit.log":
         return
 
-    _LOG_DIR.mkdir(parents=True, exist_ok=True)
+    _LOG_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
     log_path = _LOG_DIR / log_file
 
     if _LOGURU_AVAILABLE:
@@ -484,7 +484,7 @@ class SecurityAuditLogger:
         backup_count: int = _DEFAULT_BACKUP_COUNT,
     ) -> None:
         self._log_dir = log_dir or _LOG_DIR
-        self._log_dir.mkdir(parents=True, exist_ok=True)
+        self._log_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self._log_path = self._log_dir / "security_audit.log"
 
         # V102 FIX: Thread-safe lock for chain hash integrity (same pattern

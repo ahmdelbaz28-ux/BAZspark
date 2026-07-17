@@ -8,11 +8,19 @@ Complete example showing how to use the multi-database system for
 BIM/CAD applications with PostgreSQL, Qdrant, Neo4j, and Redis.
 """
 
-import random
 import secrets
 from typing import Dict, List
 
 from backend.multi_db_service import get_multi_db_service
+
+
+def _rand_float(low: float, high: float) -> float:
+    """Cryptographically-sourced float in [low, high).
+
+    Replaces random.uniform/random.random (S2245 — weak PRNG) with the
+    secrets module so no predictable RNG is used, even in demo data.
+    """
+    return low + (secrets.randbelow(1_000_000) / 1_000_000) * (high - low)
 
 
 def simulate_bim_element_data(element_id: str) -> Dict:
@@ -26,13 +34,13 @@ def simulate_bim_element_data(element_id: str) -> Dict:
         "category": secrets.choice(categories),  # NOSONAR
         "name": f"{secrets.choice(element_types)}_{element_id}",  # NOSONAR
         "level": f"Level_{1 + secrets.randbelow(4)}",  # NOSONAR
-        "coordinates": [random.uniform(0, 100), random.uniform(0, 100), random.uniform(0, 30)],  # NOSONAR
-        "dimensions": [random.uniform(1, 20), random.uniform(0.1, 5), random.uniform(2, 10)],  # NOSONAR
+        "coordinates": [_rand_float(0, 100), _rand_float(0, 100), _rand_float(0, 30)],
+        "dimensions": [_rand_float(1, 20), _rand_float(0.1, 5), _rand_float(2, 10)],
         "material": secrets.choice(["Concrete", "Steel", "Wood", "Glass"]),  # NOSONAR
         "properties": {
             "fire_rating": secrets.choice(["1-hour", "2-hour", "3-hour", "non-rated"]),  # NOSONAR
-            "thermal_resistance": round(random.uniform(0.5, 5.0), 2),  # NOSONAR
-            "cost_per_unit": round(random.uniform(50, 500), 2)  # NOSONAR
+            "thermal_resistance": round(_rand_float(0.5, 5.0), 2),
+            "cost_per_unit": round(_rand_float(50, 500), 2)
         },
         "created_at": "2024-01-01T00:00:00Z"
     }
@@ -40,7 +48,7 @@ def simulate_bim_element_data(element_id: str) -> Dict:
 
 def simulate_embeddings(vector_size: int = 1536) -> List[float]:
     """Simulate embeddings for vector search."""
-    return [random.random() for _ in range(vector_size)]  # NOSONAR
+    return [_rand_float(0.0, 1.0) for _ in range(vector_size)]
 
 
 def simulate_relationships(element_ids: List[str], count: int) -> List[str]:

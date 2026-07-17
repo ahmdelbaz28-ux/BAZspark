@@ -97,7 +97,7 @@ class Database:
             else None
         )
         if _db_dir:
-            os.makedirs(_db_dir, exist_ok=True)
+            os.makedirs(_db_dir, exist_ok=True, mode=0o700)
 
         self._conn = sqlite3.connect(
             db_path,
