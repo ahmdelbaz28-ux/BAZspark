@@ -48,7 +48,7 @@ References
 # which Pydantic cannot resolve at runtime for FastAPI model parsing.
 # Removing it forces actual type resolution at import time.
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
