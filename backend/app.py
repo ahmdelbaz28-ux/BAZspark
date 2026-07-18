@@ -54,6 +54,7 @@ from slowapi.errors import RateLimitExceeded
 from backend.multi_db_service import get_multi_db_service
 from backend.rbac import Permission
 
+
 # Rebuild all Pydantic models used as route parameters to resolve ForwardRefs
 # caused by `from __future__ import annotations` in router files.
 # This must be done BEFORE importing any routers to prevent ForwardRef issues.
@@ -66,15 +67,18 @@ def _rebuild_pydantic_models():
     except ImportError:
         pass
     try:
-        from backend.routers.analyze import BatteryRequest, VoltageRequest, RoomAnalyzeRequest
+        from backend.routers.analyze import BatteryRequest, RoomAnalyzeRequest, VoltageRequest
         for m in (BatteryRequest, VoltageRequest, RoomAnalyzeRequest):
             m.model_rebuild()
     except ImportError:
         pass
     try:
         from backend.routers.qomn import (
-            SmokeSpacingRequest, HeatSpacingRequest, VoltageDropRequest,
-            DuctDetectorRequest, RoomRequest,
+            DuctDetectorRequest,
+            HeatSpacingRequest,
+            RoomRequest,
+            SmokeSpacingRequest,
+            VoltageDropRequest,
         )
         for m in (SmokeSpacingRequest, HeatSpacingRequest, VoltageDropRequest,
                   DuctDetectorRequest, RoomRequest):
@@ -83,12 +87,21 @@ def _rebuild_pydantic_models():
         pass
     try:
         from backend.routers.v2 import (
-            IFC43MapDetectorRequest, GenerativeDesignRequest, ARExportRequest,
-            WebhookSubscribeRequest, WebhookPublishRequest,
-            TopologyAddElementRequest, TopologyAddConnectionRequest, TopologyImpactRequest,
-            VectorMemoryStoreRequest, VectorMemorySearchRequest,
-            GraphRAGAddKnowledgeRequest, GraphRAGAskRequest, GraphRAGSearchRequest,
-            BIMExtractRoomsRequest, SmokeSimulationStateRequest,
+            ARExportRequest,
+            BIMExtractRoomsRequest,
+            GenerativeDesignRequest,
+            GraphRAGAddKnowledgeRequest,
+            GraphRAGAskRequest,
+            GraphRAGSearchRequest,
+            IFC43MapDetectorRequest,
+            SmokeSimulationStateRequest,
+            TopologyAddConnectionRequest,
+            TopologyAddElementRequest,
+            TopologyImpactRequest,
+            VectorMemorySearchRequest,
+            VectorMemoryStoreRequest,
+            WebhookPublishRequest,
+            WebhookSubscribeRequest,
         )
         for m in (IFC43MapDetectorRequest, GenerativeDesignRequest, ARExportRequest,
                   WebhookSubscribeRequest, WebhookPublishRequest,
