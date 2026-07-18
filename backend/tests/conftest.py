@@ -54,6 +54,7 @@ from __future__ import annotations
 
 import os
 import sys as _sys
+
 for _m in list(_sys.modules):
     if _m == "backend.app" or _m.startswith("backend.app."):
         del _sys.modules[_m]

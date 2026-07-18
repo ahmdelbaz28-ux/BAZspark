@@ -343,7 +343,7 @@ async def export_ifc(
         )
 
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 from pydantic import BaseModel
 
