@@ -24,6 +24,44 @@ from fireai.core.event_bus import EventBus, Events
 
 logger = logging.getLogger(__name__)
 
+# V279 SECURITY FIX: Replace unsalted SHA-256 password hashing with bcrypt.
+# ===========================================================================
+# Previously _hash_password() returned hashlib.sha256(password).hexdigest()
+# — unsalted, fast to compute, and trivially crackable with GPU brute-force
+# or rainbow tables. This violates OWASP A02:2021 (Cryptographic Failures)
+# and is unacceptable for any system that stores user credentials, even a
+# demo mobile API.
+#
+# Fix: use passlib[bcrypt] (already a project dependency — see pyproject.toml
+# line 44) with the OWASP-recommended 12-round work factor. bcrypt provides:
+#   - Per-hash random salt (defeats rainbow tables)
+#   - Adjustable work factor (defeats GPU brute-force)
+#   - Industry-standard KDF (no rolling crypto)
+#
+# Protocol preservation: the client still sends SHA-256(password) over the
+# wire (unchanged wire protocol). The server-side bcrypt hashing is applied
+# on top of the received SHA-256 hex digest — same SHA-256-pre-then-bcrypt
+# pattern used in backend/api_keys.py for API keys (lines 56-75 there).
+# ===========================================================================
+try:
+    from passlib.context import CryptContext
+
+    _pwd_context: CryptContext | None = CryptContext(
+        schemes=["bcrypt"],
+        deprecated="auto",
+        bcrypt__rounds=12,
+    )
+    HAS_BCRYPT: bool = True
+except ImportError as _exc:  # pragma: no cover — defensive
+    logger.warning(
+        "passlib[bcrypt] not available — refusing to start mobile_api. "
+        "Run `pip install 'passlib[bcrypt]>=1.7.0'` to fix. "
+        "Original error: %s",
+        _exc,
+    )
+    _pwd_context = None
+    HAS_BCRYPT = False
+
 
 # ===========================================================================
 # Rate Limiter
@@ -203,9 +241,11 @@ class MobileAPI:
             raise PermissionError("Invalid username or password")
 
         stored_hash = user.get("password_hash", "")
-        if not secrets.compare_digest(
-            credentials.password_hash, stored_hash
-        ):
+        # V279 SECURITY FIX: Use bcrypt verification (constant-time, salted)
+        # instead of secrets.compare_digest on unsalted SHA-256 hashes.
+        # The client still sends SHA-256(password) — _verify_password runs
+        # bcrypt.checkpw on the received value against the stored bcrypt hash.
+        if not self._verify_password(credentials.password_hash, stored_hash):
             raise PermissionError("Invalid username or password")
 
         token_str = self._generate_token()
@@ -409,7 +449,65 @@ class MobileAPI:
 
     @staticmethod
     def _hash_password(password: str) -> str:
-        return hashlib.sha256(password.encode("utf-8")).hexdigest()
+        """
+        Hash a password using SHA-256 pre-hash + bcrypt (salted, 12 rounds).
+
+        V279 SECURITY FIX: Previously returned unsalted SHA-256 hex digest.
+        Now applies bcrypt on top of the SHA-256 digest to add a per-user
+        random salt and a slow KDF (defeats rainbow tables + GPU brute-force).
+
+        Protocol (unchanged on the wire):
+          1. Client computes SHA-256(password) → sends hex digest over TLS
+          2. Server (this method) hashes the digest with bcrypt → stores result
+          3. On authenticate: server calls _verify_password(SHA-256(password), stored_hash)
+             which runs bcrypt.checkpw(SHA-256(password), stored_bcrypt_hash)
+
+        Same SHA-256-pre-then-bcrypt pattern as backend/api_keys.py (lines 56-75).
+
+        Refuses to operate if passlib[bcrypt] is not installed — fail-loud
+        is safer than silently falling back to unsalted SHA-256.
+        """
+        if not HAS_BCRYPT or _pwd_context is None:
+            raise RuntimeError(
+                "passlib[bcrypt] is required for secure password hashing "
+                "in mobile_api. Install with: pip install 'passlib[bcrypt]>=1.7.0'. "
+                "Refusing to hash with unsalted SHA-256 (OWASP A02:2021 violation)."
+            )
+        # Step 1: SHA-256 pre-hash (preserves wire protocol — client sends this)
+        sha256_digest = hashlib.sha256(password.encode("utf-8")).hexdigest()
+        # Step 2: bcrypt with random salt + 12-round KDF
+        return _pwd_context.hash(sha256_digest)
+
+    @staticmethod
+    def _verify_password(client_supplied_sha256: str, stored_bcrypt_hash: str) -> bool:
+        """
+        Verify a client-supplied SHA-256 digest against the stored bcrypt hash.
+
+        V279 SECURITY FIX: Replaces secrets.compare_digest on unsalted SHA-256
+        with bcrypt.checkpw — constant-time, salted, slow KDF.
+
+        Args:
+            client_supplied_sha256: SHA-256 hex digest sent by the client
+                (NOT the plaintext password — wire protocol unchanged).
+            stored_bcrypt_hash: bcrypt hash stored at registration time
+                (output of _hash_password).
+
+        Returns:
+            True if the SHA-256 digest matches the stored bcrypt hash.
+            False if verification fails, hash is malformed, or bcrypt
+            is unavailable (fail-closed).
+        """
+        if not HAS_BCRYPT or _pwd_context is None:
+            logger.error(
+                "passlib[bcrypt] not available — refusing to verify password "
+                "(fail-closed). Install passlib[bcrypt] to enable authentication."
+            )
+            return False
+        try:
+            return _pwd_context.verify(client_supplied_sha256, stored_bcrypt_hash)
+        except (ValueError, TypeError) as exc:
+            logger.warning("Password verification failed (malformed hash): %s", exc)
+            return False
 
 
 # ===========================================================================
@@ -420,16 +518,38 @@ if __name__ == "__main__":
     api = MobileAPI()
 
     api.register_user("field_engineer", "secure_pass_123!")
+    # V279: Client-side pre-hashing protocol preserved.
+    # The mobile client sends SHA-256(password) over the wire (TLS-protected).
+    # The server-side authenticate() runs bcrypt.checkpw on the received
+    # SHA-256 digest against the stored bcrypt hash.
+    client_password_hash = hashlib.sha256("secure_pass_123!".encode("utf-8")).hexdigest()
     token = api.authenticate(
         MobileCredentials(
             username="field_engineer",
-            password_hash=api._hash_password("secure_pass_123!"),
+            password_hash=client_password_hash,
             device_id="DEVICE-A1",
             platform="ios",
         )
     )
     print(f"Auth token: {token.token[:20]}...")
     print(f"Expires: {token.expires_at}")
+
+    # V279: Verify that an INVALID password is rejected (regression test
+    # for the bcrypt migration — confirms we're not silently accepting
+    # wrong credentials).
+    bad_password_hash = hashlib.sha256("wrong_password".encode("utf-8")).hexdigest()
+    try:
+        api.authenticate(
+            MobileCredentials(
+                username="field_engineer",
+                password_hash=bad_password_hash,
+                device_id="DEVICE-A1",
+                platform="ios",
+            )
+        )
+        print("FAIL: invalid password was accepted — bug in bcrypt verification")
+    except PermissionError:
+        print("PASS: invalid password correctly rejected")
 
     api.add_project(
         ProjectSummary(
