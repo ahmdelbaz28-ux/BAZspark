@@ -158,9 +158,22 @@ describe("CodeValidator", () => {
                         expect(Array.isArray(violations)).toBe(true);
                 });
 
-                it("should return an empty array for an empty device list", () => {
-                        const violations = validateAllDevices([]);
-                        expect(violations).toEqual([]);
+                it("should return only the AUDIT_CONTEXT_MISSING warning for an empty device list (F-11 FIX)", () => {
+                        // F-11 FIX (Engineering Review): validateAllDevices now emits an
+                        // AUDIT_CONTEXT_MISSING WARNING when called without roomContext.
+                        // For an empty device list, no other violations can exist, so the
+                        // result is exactly [AUDIT_CONTEXT_MISSING warning].
+                        // When roomContext IS provided, an empty device list returns [].
+                        const violationsNoContext = validateAllDevices([]);
+                        expect(violationsNoContext).toHaveLength(1);
+                        expect(violationsNoContext[0].rule).toBe("AUDIT_CONTEXT_MISSING");
+
+                        const violationsWithContext = validateAllDevices([], {
+                                width: 10,
+                                length: 10,
+                                ceilingHeight: 3,
+                        });
+                        expect(violationsWithContext).toEqual([]);
                 });
         });
 });

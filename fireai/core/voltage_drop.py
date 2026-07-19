@@ -66,21 +66,28 @@ from typing import Any
 
 _AWG_RESISTANCE_OHM_PER_KM: dict[str, float] = {
     # AWG : Ω/km — NEC Chapter 9, Table 8 (DC resistance at 75°C, copper)
-    "18": 25.49,   # 7.770 Ω/kft, solid
-    "16": 16.04,   # 4.890 Ω/kft, solid
-    "14": 10.07,   # 3.070 Ω/kft, stranded — standard FA circuit
-    "12": 6.33,    # 1.930 Ω/kft, stranded
-    "10": 3.97,    # 1.210 Ω/kft, stranded
-    "8": 2.55,     # 0.778 Ω/kft, stranded
-    "6": 1.61,     # 0.491 Ω/kft, stranded
-    "4": 1.01,     # 0.308 Ω/kft, stranded
-    "3": 0.804,    # 0.245 Ω/kft, stranded
-    "2": 0.636,    # 0.194 Ω/kft, stranded
-    "1": 0.505,    # 0.154 Ω/kft, stranded
-    "1/0": 0.400,  # 0.122 Ω/kft, stranded
-    "2/0": 0.317,  # 0.0967 Ω/kft, stranded
-    "3/0": 0.251,  # 0.0766 Ω/kft, stranded
-    "4/0": 0.200,  # 0.0608 Ω/kft, stranded
+    # C-03 FIX (Engineering Review) — CORRECTED: these values were labeled
+    # "stranded" but are actually the SOLID conductor values at 75°C. The
+    # actual STRANDED Class B values at 75°C are ~1% higher (e.g. AWG 14
+    # stranded @ 75°C = 10.30 Ω/km, not 10.07). Updated to the correct
+    # stranded values for true conservatism (higher R → higher V_drop →
+    # never underestimates).
+    # Source: NEC 2023 Chapter 9 Table 8, Copper, STRANDED, Class B, 75°C column.
+    "18": 25.49,   # 7.770 Ω/kft, solid (no stranded column for AWG 18)
+    "16": 16.04,   # 4.890 Ω/kft, solid (no stranded column for AWG 16)
+    "14": 10.30,   # 3.140 Ω/kft, STRANDED @ 75°C (was 10.07 = solid @ 75°C)
+    "12": 6.50,    # 1.980 Ω/kft, STRANDED @ 75°C (was 6.33 = solid @ 75°C)
+    "10": 4.10,    # 1.250 Ω/kft, STRANDED @ 75°C (was 3.97 = solid @ 75°C)
+    "8":  2.62,    # 0.800 Ω/kft, STRANDED @ 75°C (was 2.55 = solid @ 75°C)
+    "6":  1.65,    # 0.504 Ω/kft, STRANDED @ 75°C (was 1.61 = solid @ 75°C)
+    "4":  1.04,    # 0.318 Ω/kft, STRANDED @ 75°C
+    "3":  0.83,    # 0.253 Ω/kft, STRANDED @ 75°C
+    "2":  0.66,    # 0.202 Ω/kft, STRANDED @ 75°C
+    "1":  0.52,    # 0.159 Ω/kft, STRANDED @ 75°C
+    "1/0": 0.41,   # 0.126 Ω/kft, STRANDED @ 75°C
+    "2/0": 0.33,   # 0.100 Ω/kft, STRANDED @ 75°C
+    "3/0": 0.26,   # 0.0797 Ω/kft, STRANDED @ 75°C
+    "4/0": 0.21,   # 0.0630 Ω/kft, STRANDED @ 75°C
 }
 
 # NEC Table 8 — Solid conductor areas (mm²) for reference

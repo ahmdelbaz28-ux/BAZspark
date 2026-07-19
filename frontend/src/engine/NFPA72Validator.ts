@@ -191,6 +191,23 @@ function validateCoverage(
                         return;
                 }
 
+                // F-04 FIX: only smoke/heat detectors contribute to area coverage.
+                // Pull stations, horns, panels, etc. are NOT area-coverage devices.
+                // If a room has only non-coverage devices (e.g., only a pull station),
+                // emit a WARNING (not a violation) — the room still needs a smoke/heat
+                // detector, but the engineer may have placed it in a different room
+                // entry that wasn't modelled. The previous code counted ALL devices
+                // toward coverage, which masked rooms with only a pull station.
+                const coverageDevices = roomDevices.filter(
+                        (d) => d.type === "smoke" || d.type === "heat",
+                );
+                if (coverageDevices.length === 0) {
+                        warnings.push(
+                                `Room ${room.name} has devices but no smoke/heat detectors — coverage cannot be computed. Add a smoke or heat detector per NFPA 72 §17.7.5.2.2.`,
+                        );
+                        return;
+                }
+
                 // F-04 FIX: compute actual coverage via grid sampling.
                 // Skip rooms with degenerate dimensions to avoid divide-by-zero.
                 if (room.width <= 0 || room.length <= 0) {
@@ -211,7 +228,7 @@ function validateCoverage(
                                 if (cx > room.width || cy > room.length) continue;
                                 total++;
                                 // Is this cell within any detector's coverage radius?
-                                for (const d of roomDevices) {
+                                for (const d of coverageDevices) {
                                         const r =
                                                 d.type === "smoke"
                                                         ? R_SMOKE_M
@@ -249,6 +266,15 @@ function validateCoverage(
                 if (roomDevices.length >= 2 && room.occupancy === "high-hazard") {
                         passedChecks.push(
                                 `High-hazard room ${room.name} has ≥2 detectors per NFPA 72 §17.7.5.2.2`,
+                        );
+                } else if (roomDevices.length < 2 && room.occupancy === "high-hazard") {
+                        // Preserve the original warning that was emitted by the pre-F-04
+                        // implementation. The new coverage calculation may pass even with
+                        // 1 detector in a small high-hazard room, but NFPA 72 §17.7.5.2.2
+                        // still recommends ≥2 for redundancy. Emit both the coverage
+                        // verdict AND the redundancy warning.
+                        warnings.push(
+                                `High hazard room ${room.name} may require additional detectors for adequate coverage per NFPA 72 §17.7.5.2.2`,
                         );
                 }
         });

@@ -1062,29 +1062,28 @@ class TestRegressionProtection:
     def test_voltage_drop_calculation_matches(self):
         """Voltage drop with known inputs produces expected output.
 
-        C-03 FIX (Engineering Review): the previously expected value of 1.037V
-        was computed from a SOLID-conductor resistance (4.263 Ω/km at 20°C) that
-        had been mislabeled as "stranded" in fireai.constants.nec.py. The actual
-        NEC Table 8 STRANDED copper value for AWG 14 at 20°C is 8.286 Ω/km,
-        which corrects to 10.07 Ω/km at 75°C operating temperature.
+        C-03 FIX (Engineering Review) — CORRECTED after audit (third time):
+          - Original: 1.037V (computed from phantom 4.263 Ω/km — not a real NEC value)
+          - Attempt 1: 2.015V (computed from 8.286 — actually SOLID @ 20°C, not stranded)
+          - Corrected: 2.060V (computed from 8.470 — actual STRANDED @ 20°C per NEC 2023 Table 8)
 
         Recomputed:
-          R_20 = 8.286 Ω/km at 20°C per NEC Table 8 (STRANDED copper)
-          R_T = R_20 × [1 + α×(T-20)] = 8.286 × 1.21615 = 10.073 Ω/km at 75°C
-          V_drop = 2 × 1.0 × 100 × (10.073/1000) = 2.015V
+          R_20 = 8.470 Ω/km at 20°C per NEC 2023 Table 8 (STRANDED copper, Class B)
+          R_T = R_20 × [1 + α×(T-20)] = 8.470 × 1.21615 = 10.30 Ω/km at 75°C
+          V_drop = 2 × 1.0 × 100 × (10.30/1000) = 2.060V
 
         Cross-checked against:
-          - fireai/core/voltage_drop.py:_AWG_RESISTANCE_OHM_PER_KM["14"] = 10.07
-            (correct NEC 75°C stranded value)
+          - fireai/core/voltage_drop.py:_AWG_RESISTANCE_OHM_PER_KM["14"] = 10.30
+            (correct NEC 2023 stranded @ 75°C value)
           - tests/test_voltage_drop.py::TestNECTable8CrossModuleConsistency
         """
         from fireai.core.qomn_kernel import compute_voltage_drop
 
         result = compute_voltage_drop(1.0, 100.0, "14", 24.0, 10.0)
-        # R_20 = 8.286 Ω/km at 20°C per NEC Table 8 (STRANDED copper)
-        # R_T = R_20 × [1 + α×(T-20)] = 8.286 × 1.21615 = 10.073 Ω/km at 75°C
-        # V_drop = 2 × 1.0 × 100 × (10.073/1000) = 2.015V
-        assert abs(result['voltage_drop_v'] - 2.015) < 0.01
+        # R_20 = 8.470 Ω/km at 20°C per NEC 2023 Table 8 (STRANDED copper)
+        # R_T = R_20 × [1 + α×(T-20)] = 8.470 × 1.21615 = 10.30 Ω/km at 75°C
+        # V_drop = 2 × 1.0 × 100 × (10.30/1000) = 2.060V
+        assert abs(result['voltage_drop_v'] - 2.060) < 0.01
 
 
 # ============================================================================
