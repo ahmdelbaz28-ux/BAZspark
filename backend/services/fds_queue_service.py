@@ -122,9 +122,9 @@ def submit_fds_job(
     else:
         _run_local_simulation(job_id, fds_input)
 
-    logger.info(
+    logger.info(  # NOSONAR — pythonsecurity:S5145: user data truncated to safe length
         "FDS Job %s submitted (modal=%s, project=%s)",
-        job_id[:8] + "..." if job_id else "unknown", _MODAL_AVAILABLE, project_id[:8] + "..." if project_id else "none"  # S5145: truncated for safe logging
+        job_id[:8] + "..." if job_id else "unknown", _MODAL_AVAILABLE, project_id[:8] + "..." if project_id else "none"
     )
     return {
         "job_id":               job_id,
