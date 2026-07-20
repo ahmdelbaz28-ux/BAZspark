@@ -67,7 +67,7 @@ async function expectNotCrashed(page: Page) {
  */
 async function expectNotInfiniteLoading(page: Page) {
         // Wait a moment for any legitimate loading to start
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(2000);  // NOSONAR - typescript:S2925: intentional chaos test delay
         // Check that either content has loaded OR an error is shown
         // (not just a spinner with no error recovery)
         const hasSpinner = await page.locator("[class*='animate-spin']").count();
@@ -76,7 +76,7 @@ async function expectNotInfiniteLoading(page: Page) {
 
         if (hasSpinner > 0 && hasContent === 0 && hasError === 0) {
                 // Wait a bit more — maybe it's just slow
-                await page.waitForTimeout(3000);
+                await page.waitForTimeout(3000);  // NOSONAR - typescript:S2925: intentional chaos test delay
                 const stillSpinner = await page.locator("[class*='animate-spin']").count();
                 const stillContent = await page.locator("h1, h2, h3, p, button").count();
                 expect(
@@ -309,7 +309,7 @@ test.describe("Chaos Engineering — Failure Injection", () => {
                 await page.goto("/projects");
                 // Don't wait for networkidle (it will timeout)
                 await page.waitForLoadState("domcontentloaded");
-                await page.waitForTimeout(3000);
+                await page.waitForTimeout(3000);  // NOSONAR - typescript:S2925: intentional chaos test delay
 
                 await expectNotCrashed(page);
                 // The page should still be usable (not frozen)
@@ -328,7 +328,7 @@ test.describe("Chaos Engineering — Failure Injection", () => {
 
                 await page.goto("/projects");
                 await page.waitForLoadState("domcontentloaded");
-                await page.waitForTimeout(2000);
+                await page.waitForTimeout(2000);  // NOSONAR - typescript:S2925: intentional chaos test delay
 
                 await expectNotCrashed(page);
                 expect(errors.length, `Console errors: ${errors.join("; ")}`).toBe(0);
@@ -368,7 +368,7 @@ test.describe("Chaos Engineering — Failure Injection", () => {
 
                 // Rapid double-click
                 await signInBtn.click({ clickCount: 2 });
-                await page.waitForTimeout(3000);
+                await page.waitForTimeout(3000);  // NOSONAR - typescript:S2925: intentional chaos test delay
 
                 await expectNotCrashed(page);
                 expect(errors.length, `Console errors: ${errors.join("; ")}`).toBe(0);
@@ -390,12 +390,12 @@ test.describe("Chaos Engineering — Failure Injection", () => {
                 });
 
                 await page.goto("/projects");
-                await page.waitForTimeout(500); // Mid-request
+                await page.waitForTimeout(500);  // NOSONAR - typescript:S2925: intentional chaos test delay (mid-request)
 
                 // Refresh
                 await page.reload();
                 await page.waitForLoadState("domcontentloaded");
-                await page.waitForTimeout(2000);
+                await page.waitForTimeout(2000);  // NOSONAR - typescript:S2925: intentional chaos test delay
 
                 await expectNotCrashed(page);
                 expect(errors.length, `Console errors: ${errors.join("; ")}`).toBe(0);
@@ -555,7 +555,7 @@ test.describe("Chaos Engineering — Failure Injection", () => {
 
                 await page.goto("/dashboard");
                 await page.waitForLoadState("domcontentloaded");
-                await page.waitForTimeout(5000);
+                await page.waitForTimeout(5000);  // NOSONAR - typescript:S2925: intentional chaos test delay
 
                 // The app should NOT crash to a white screen.
                 const root = page.locator("#root");

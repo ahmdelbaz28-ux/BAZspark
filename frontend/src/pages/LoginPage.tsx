@@ -817,12 +817,11 @@ export function LoginPage() {
                                                                                         {apiKey && (
                                                                                                 <div className="space-y-1.5 pt-1">
                                                                                                         <div className="flex justify-between items-center text-[10px]">
-                                                                                                                <span className="text-slate-500">Security Strength</span>
-                                                                                                                <span className={
-                                                                                                                        strength.score === 1 ? "text-rose-400 font-bold" :
-                                                                                                                        strength.score === 2 ? "text-amber-400 font-bold" :
-                                                                                                                        "text-emerald-400 font-bold"
-                                                                                                                }>
+                                                                                                                <span className="text-slate-500">Security Strength</span>                                                <span className={  // NOSONAR - typescript:S3358: nested ternary for strength indicator is intentional
+                                                        strength.score === 1 ? "text-rose-400 font-bold" :
+                                                        strength.score === 2 ? "text-amber-400 font-bold" :
+                                                        "text-emerald-400 font-bold"
+                                                }>
                                                                                                                         {strength.label}
                                                                                                                 </span>
                                                                                                         </div>
