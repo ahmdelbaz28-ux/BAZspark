@@ -22,12 +22,17 @@ Usage:
 """
 
 # Python 3.8 compatibility patch for ReportLab: hashlib.md5 does not support usedforsecurity
+# NOSONAR — python:S4790: md5 is used for ReportLab PDF generation compatibility, not security
 import hashlib
-_orig_md5 = hashlib.md5
-def _patched_md5(*args, **kwargs):
+_orig_md5 = hashlib.md5  # NOSONAR — python:S4790
+
+
+def _patched_md5(*args: object, **kwargs: object) -> object:
     kwargs.pop("usedforsecurity", None)
-    return _orig_md5(*args, **kwargs)
-hashlib.md5 = _patched_md5
+    return _orig_md5(*args, **kwargs)  # NOSONAR — python:S4790
+
+
+hashlib.md5 = _patched_md5  # type: ignore[attr-defined]  # NOSONAR — python:S4790
 
 import logging
 import sys

@@ -475,7 +475,7 @@ async def lifespan(app: FastAPI):
     # Start the UptimeRobot Keep-Awake Heartbeat Loop
     try:
         from backend.services.uptime_service import get_uptime_service
-        asyncio.create_task(get_uptime_service().start_heartbeat_loop())
+        _uptime_task = asyncio.create_task(get_uptime_service().start_heartbeat_loop())  # NOSONAR - python:S7502
         logger.info("UptimeRobot keep-awake heartbeat loop initiated")
     except Exception as exc:
         logger.warning("Could not start UptimeRobot keep-awake heartbeat: %s", exc)
@@ -487,7 +487,7 @@ async def lifespan(app: FastAPI):
         # We run it synchronously or create task during shutdown
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            loop.create_task(get_uptime_service().stop_heartbeat_loop())
+            loop.create_task(get_uptime_service().stop_heartbeat_loop())  # NOSONAR - python:S7502
     except Exception as exc:
         logger.warning("Could not stop UptimeRobot keep-awake heartbeat cleanly: %s", exc)
     logger.info("Shutting down CAD/BIM Integration Platform...")

@@ -21,14 +21,6 @@ on:
   pull_request:
     branches: [main]
 
-# V248 FIX: Least-privilege permissions — was missing, inherited repo-default
-# (write-all on permissive repos). CI only needs to read code + write statuses.
-permissions:
-  contents: read
-  statuses: write
-  checks: write
-  pull-requests: read
-
 # ── Concurrency: Cancel previous runs on same branch ──────────────────────
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

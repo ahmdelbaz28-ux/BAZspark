@@ -13,26 +13,22 @@ import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
 // process (renderer process is already covered by @sentry/react).
 // Uses Sentry's native crash reporter via @sentry/electron/main (optional
 // dependency — if not installed, the try/catch silently skips).
-try {
-    // Dynamic import — if @sentry/electron is not installed, this fails
-    // gracefully without breaking the app.
-    const sentryDsn = process.env.VITE_SENTRY_DSN || "";
-    if (sentryDsn) {
-        // @ts-expect-error — optional dependency, may not be installed
-        import("@sentry/electron/main").then((Sentry) => {
-            Sentry.init({
-                dsn: sentryDsn,
-                environment: app.isPackaged ? "production" : "development",
-                release: `fireai-digital-twin@${app.getVersion()}`,
-            });
-            console.log("[Sentry] Main process crash reporter initialized");
-        }).catch(() => {
-            // @sentry/electron not installed — skip crash reporter
-            console.log("[Sentry] @sentry/electron not installed — crash reporter disabled");
+// Dynamic import — if @sentry/electron is not installed, this fails
+// gracefully without breaking the app.
+const sentryDsn = process.env.VITE_SENTRY_DSN || "";
+if (sentryDsn) {
+    // @ts-expect-error — optional dependency, may not be installed
+    import("@sentry/electron/main").then((Sentry) => {
+        Sentry.init({
+            dsn: sentryDsn,
+            environment: app.isPackaged ? "production" : "development",
+            release: `fireai-digital-twin@${app.getVersion()}`,
         });
-    }
-} catch (err) {
-    console.log("[Sentry] Failed to initialize crash reporter:", err);
+        console.log("[Sentry] Main process crash reporter initialized");
+    }).catch(() => {
+        // @sentry/electron not installed — skip crash reporter
+        console.log("[Sentry] @sentry/electron not installed — crash reporter disabled");
+    });
 }
 
 // ─── V262 FIX: Catch uncaught exceptions in main process ─────────────────
