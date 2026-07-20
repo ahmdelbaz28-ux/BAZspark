@@ -39,7 +39,7 @@ def _verify_project(project_id: str) -> dict:
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional
     return project
 
 
@@ -55,7 +55,7 @@ async def export_dxf(project_id: str):
         import ezdxf
     except ImportError:
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
-            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
             detail={
                 "success": False,
                 "error": "DXF export unavailable: ezdxf package not installed",
@@ -374,7 +374,7 @@ async def export_data_global(request: Request, input_data: ExportDataInput):  # 
     db = get_db()
     projects = db.list_projects(page=1, limit=1)
     if not projects or not projects.get("data"):
-        raise HTTPException(status_code=404, detail="No projects found to export data")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(status_code=404, detail="No projects found to export data")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     project_id = projects["data"][0]["id"]
     project = projects["data"][0]
