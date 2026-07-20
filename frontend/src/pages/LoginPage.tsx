@@ -440,7 +440,7 @@ function BrandSafetyHUD() {
         );
 }
 
-export function LoginPage()  // NOSONAR - typescript:S3776: cognitive complexity is inherent to the safety-critical login flow {
+export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexity is inherent to the safety-critical login flow
         const [searchParams] = useSearchParams();
         const { isAuthenticated, loading: ctxLoading, login } = useAuth();
 

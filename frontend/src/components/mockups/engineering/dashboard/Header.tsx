@@ -217,21 +217,21 @@ export function Header({
 
 					{/* ── Theme Switcher ──────────────────────────────────────────── */}
 					<div className="flex bg-muted p-1 rounded-lg text-xs">
-						<button
+						<button type="button"
 							id="theme-btn-light"
 							onClick={() => onThemeChange("light")}
 							className={`p-1.5 rounded-md ${theme === "light" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
 						>
 							<Sun className="h-4 w-4" />
 						</button>
-						<button
+						<button type="button"
 							id="theme-btn-dark"
 							onClick={() => onThemeChange("dark")}
 							className={`p-1.5 rounded-md ${theme === "dark" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
 						>
 							<Moon className="h-4 w-4" />
 						</button>
-						<button
+						<button type="button"
 							id="theme-btn-blue"
 							onClick={() => onThemeChange("blue")}
 							className={`px-2 py-1 rounded-md ${theme === "blue" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
@@ -244,14 +244,14 @@ export function Header({
 
 					{/* ── Data Mode Switcher ──────────────────────────────────────── */}
 					<div className="flex bg-muted p-1 rounded-lg text-xs">
-						<button
+						<button type="button"
 							id="data-mode-demo"
 							onClick={() => onDataModeChange("demo")}
 							className={`px-2 py-1 rounded-md ${dataMode === "demo" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
 						>
 							<span className="text-[10px] font-bold">DEMO</span>
 						</button>
-						<button
+						<button type="button"
 							id="data-mode-live"
 							onClick={() => onDataModeChange("live")}
 							className={`px-2 py-1 rounded-md ${dataMode === "live" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
@@ -263,7 +263,7 @@ export function Header({
 					<div className="h-5 w-px bg-border" />
 
 					{/* ── Help Button ─────────────────────────────────────────────── */}
-					<button
+					<button type="button"
 						id="help-btn"
 						onClick={onHelpToggle}
 						className="p-2 rounded-lg bg-muted hover:bg-accent hover:text-accent-foreground transition-colors"

@@ -21,7 +21,7 @@ export function ControlPanel({
 					<div className="text-xs font-bold mb-2">Inject Faults</div>
 					<div className="space-y-2">
 						<button
-							onClick={() => onFaultToggle("gen-01")}
+							type="button" onClick={() => onFaultToggle("gen-01")}
 							className={`w-full py-2 rounded-md text-xs font-medium transition-colors ${
 								isFaulty("gen-01")
 									? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -31,7 +31,7 @@ export function ControlPanel({
 							{isFaulty("gen-01") ? "Clear Gen Fault" : "Simulate Gen Overload"}
 						</button>
 						<button
-							onClick={() => onFaultToggle("bat-01")}
+							type="button" onClick={() => onFaultToggle("bat-01")}
 							className={`w-full py-2 rounded-md text-xs font-medium transition-colors ${
 								isFaulty("bat-01")
 									? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -43,7 +43,7 @@ export function ControlPanel({
 								: "Simulate Battery Failure"}
 						</button>
 						<button
-							onClick={onStressTest}
+							type="button" onClick={onStressTest}
 							className="w-full py-2 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
 						>
 							Run Stress Test (50 Faults)

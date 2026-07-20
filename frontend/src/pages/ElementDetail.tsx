@@ -130,14 +130,13 @@ function ElementDetail() {
 					</p>
 				</div>
 				<div className="flex gap-2">
-					<button
-						onClick={startEditing}
-						className="px-4 py-2 bg-secondary hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors"
-					>
+					<button type="button" onClick={startEditing}
+					className="px-4 py-2 bg-secondary hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors"
+				>
 						Edit
 					</button>
 					<button
-						onClick={() => setShowDeleteConfirm(true)}
+						type="button" onClick={() => setShowDeleteConfirm(true)}
 						disabled={deleteMutation.isPending}
 						className="px-4 py-2 bg-danger/10 hover:bg-danger text-danger hover:text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
 						aria-label={t("common.delete")}
@@ -210,13 +209,13 @@ function ElementDetail() {
 						</div>
 						<div className="flex justify-end gap-3">
 							<button
-								onClick={() => setIsEditing(false)}
-								className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
-							>
-								Cancel
-							</button>
-							<button
-								onClick={() => {
+							type="button" onClick={() => setIsEditing(false)}
+							className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
+						>
+							Cancel
+						</button>
+						<button
+							type="button" onClick={() => {
 									updateMutation.mutate({
 										properties: {
 											name: editName,
