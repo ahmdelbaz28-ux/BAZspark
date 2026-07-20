@@ -1,3 +1,5 @@
+import math
+
 from fastapi.testclient import TestClient
 
 from backend.app import app
@@ -32,7 +34,7 @@ def test_fds_local_simulation_job():
     assert status_res["project_id"] == "p-123"
     assert status_res["status"] == "simulated"
     assert status_res["result"]["simulation_type"] == "LOCAL_SIMULATION"
-    assert status_res["result"]["duration_s"] == 5.0
+    assert math.isclose(status_res["result"]["duration_s"], 5.0, rel_tol=1e-9)
 
 
 def test_fds_router_endpoints(monkeypatch):
@@ -85,7 +87,7 @@ def test_fds_router_endpoints(monkeypatch):
     assert status_response2.status_code == 200
     status_data2 = status_response2.json()
     assert status_data2["status"] == "completed"
-    assert status_data2["result"]["max_temperature_c"] == 120.0
+    assert math.isclose(status_data2["result"]["max_temperature_c"], 120.0, rel_tol=1e-9)
 
 
 def test_fds_webhook_invalid_secret(monkeypatch):

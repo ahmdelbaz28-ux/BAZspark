@@ -3,7 +3,8 @@ import { exec } from "child_process";
 import http from "http";
 
 // Start the preview server
-const serverProcess = exec("npm run preview -- --port 4173 --strictPort --host 127.0.0.1", { cwd: "." });
+// S4036: NOSONAR — this is a test/dev script; npm location is controlled by the dev environment
+const serverProcess = exec("npx --yes vite preview --port 4173 --strictPort --host 127.0.0.1", { cwd: "." });  // NOSONAR - javascript:S4036
 serverProcess.stdout.on("data", (data) => console.log(`[Server] ${data.trim()}`));
 serverProcess.stderr.on("data", (data) => console.error(`[Server Error] ${data.trim()}`));
 

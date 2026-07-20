@@ -369,11 +369,11 @@ export function useGsapGridBackground(
     const nodeCount = Math.min(20, Math.floor((width * height) / 50000));
     for (let i = 0; i < nodeCount; i++) {
       nodes.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        phase: Math.random() * Math.PI * 2,
+        x: Math.random() * width,  // NOSONAR - typescript:S2245: Math.random safe for canvas animation positioning
+        y: Math.random() * height,  // NOSONAR - typescript:S2245
+        vx: (Math.random() - 0.5) * 0.3,  // NOSONAR - typescript:S2245
+        vy: (Math.random() - 0.5) * 0.3,  // NOSONAR - typescript:S2245
+        phase: Math.random() * Math.PI * 2,  // NOSONAR - typescript:S2245
       });
     }
 
@@ -384,13 +384,13 @@ export function useGsapGridBackground(
     const spawnSpark = () => {
       if (sparks.length >= maxSparks) return;
       sparks.push({
-        x: Math.random() * width,
+        x: Math.random() * width,  // NOSONAR - typescript:S2245
         y: height + 5,
-        vx: (Math.random() - 0.5) * 0.6,
-        vy: -Math.random() * 1.5 - 0.5,
+        vx: (Math.random() - 0.5) * 0.6,  // NOSONAR - typescript:S2245
+        vy: -Math.random() * 1.5 - 0.5,  // NOSONAR - typescript:S2245
         life: 1,
-        maxLife: 80 + Math.random() * 60,
-        size: Math.random() * 1.5 + 0.5,
+        maxLife: 80 + Math.random() * 60,  // NOSONAR - typescript:S2245
+        size: Math.random() * 1.5 + 0.5,  // NOSONAR - typescript:S2245
       });
     };
 
@@ -464,7 +464,7 @@ export function useGsapGridBackground(
       });
 
       // ─── Rising sparks (flame-like) ───
-      if (Math.random() < 0.2) spawnSpark();
+      if (Math.random() < 0.2) spawnSpark();  // NOSONAR - typescript:S2245: Math.random safe for visual canvas animation timing
 
       for (let i = sparks.length - 1; i >= 0; i--) {
         const s = sparks[i];

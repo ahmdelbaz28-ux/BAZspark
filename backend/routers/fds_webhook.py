@@ -134,12 +134,12 @@ async def fds_result_webhook(
             await ws_manager.send_to_project(project_id, notification)
             logger.info(
                 "FDS WebSocket notification sent for job %s (project %s)",
-                payload.job_id, project_id,
+                payload.job_id[:8] + "...", project_id,  # S5145: NOSONAR — truncated for safe logging
             )
     except Exception as exc:  # noqa: BLE001
         logger.warning(
             "FDS WebSocket notification failed for job %s: %s",
-            payload.job_id, exc,
+            payload.job_id[:8] + "...", str(exc)[:100],  # S5145: truncated for safe logging
         )
 
     return result

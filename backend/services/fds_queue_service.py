@@ -124,7 +124,7 @@ def submit_fds_job(
 
     logger.info(
         "FDS Job %s submitted (modal=%s, project=%s)",
-        job_id, _MODAL_AVAILABLE, project_id
+        job_id[:8] + "..." if job_id else "unknown", _MODAL_AVAILABLE, project_id[:8] + "..." if project_id else "none"  # S5145: truncated for safe logging
     )
     return {
         "job_id":               job_id,

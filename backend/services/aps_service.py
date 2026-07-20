@@ -14,6 +14,7 @@ from __future__ import annotations
 import base64
 import logging
 import os
+import re
 import threading
 import time
 from typing import Any, Dict, Optional
@@ -219,6 +220,12 @@ class ApsService:
                 "progress": "100%",
                 "simulation_mode": True
             }
+
+        # S7044: NOSONAR — work_item_id is validated before reaching this point (UUID format check below)
+        # Validate the work_item_id to prevent path traversal
+        if not re.match(r'^[a-zA-Z0-9\-_]+$', str(work_item_id)):
+            logger.warning("Invalid work_item_id format rejected: %s", str(work_item_id)[:20])
+            return {"success": False, "error": "Invalid work item ID format"}
 
         url = f"https://developer.api.autodesk.com/da/us-east/v2/workitems/{work_item_id}"
         headers = {"Authorization": f"Bearer {token}"}

@@ -86,11 +86,11 @@ function BrandNetworkBackground() {
                 const nodes: NodeParticle[] = [];
                 for (let i = 0; i < nodesCount; i++) {
                         nodes.push({
-                                x: Math.random() * width,
-                                y: Math.random() * height,
-                                vx: (Math.random() - 0.5) * 0.35,
-                                vy: (Math.random() - 0.5) * 0.35,
-                                radius: Math.random() * 1.5 + 1.2,
+                                x: Math.random() * width,  // NOSONAR - typescript:S2245: Math.random safe for visual canvas particle positioning
+                                y: Math.random() * height,  // NOSONAR - typescript:S2245
+                                vx: (Math.random() - 0.5) * 0.35,  // NOSONAR - typescript:S2245
+                                vy: (Math.random() - 0.5) * 0.35,  // NOSONAR - typescript:S2245
+                                radius: Math.random() * 1.5 + 1.2,  // NOSONAR - typescript:S2245
                         });
                 }
 
@@ -100,14 +100,14 @@ function BrandNetworkBackground() {
                 const spawnSpark = () => {
                         if (sparks.length >= maxSparks) return;
                         sparks.push({
-                                x: Math.random() * width,
+                                x: Math.random() * width,  // NOSONAR - typescript:S2245
                                 y: height + 10,
-                                vx: (Math.random() - 0.5) * 0.8,
-                                vy: -Math.random() * 1.6 - 0.6,
-                                radius: Math.random() * 1.4 + 0.6,
+                                vx: (Math.random() - 0.5) * 0.8,  // NOSONAR - typescript:S2245
+                                vy: -Math.random() * 1.6 - 0.6,  // NOSONAR - typescript:S2245
+                                radius: Math.random() * 1.4 + 0.6,  // NOSONAR - typescript:S2245
                                 alpha: 1,
-                                decay: Math.random() * 0.007 + 0.003,
-                                color: Math.random() > 0.4 ? "rgba(244, 63, 94, " : "rgba(249, 115, 22, ", // rose or orange
+                                decay: Math.random() * 0.007 + 0.003,  // NOSONAR - typescript:S2245
+                                color: Math.random() > 0.4 ? "rgba(244, 63, 94, " : "rgba(249, 115, 22, ", // rose or orange  // NOSONAR - typescript:S2245
                         });
                 };
 
@@ -146,7 +146,7 @@ function BrandNetworkBackground() {
                         }
 
                         // 2. Manage fire safety sparks
-                        if (Math.random() < 0.18) {
+                        if (Math.random() < 0.18) {  // NOSONAR - typescript:S2245: Math.random safe for visual canvas animation
                                 spawnSpark();
                         }
 
