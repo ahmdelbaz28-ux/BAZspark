@@ -220,7 +220,7 @@ export const OnboardingTour: React.FC = () => {
 							{step.title}
 						</h3>
 						<button
-							onClick={skipTour}
+							type="button" onClick={skipTour}
 							className="text-muted-foreground hover:text-foreground/90 text-xs"
 						>
 							Skip
@@ -237,14 +237,14 @@ export const OnboardingTour: React.FC = () => {
 						<div className="flex gap-2">
 							{!isFirst && (
 								<button
-									onClick={prevStep}
+									type="button" onClick={prevStep}
 									className="px-3 py-1 text-muted-foreground hover:text-foreground text-xs border border-border rounded"
 								>
 									← Previous
 								</button>
 							)}
 							<button
-								onClick={nextStep}
+								type="button" onClick={nextStep}
 								className="px-3 py-1 bg-primary hover:bg-primary text-white text-xs rounded"
 							>
 								{isLast ? "Done" : "Next"} →
