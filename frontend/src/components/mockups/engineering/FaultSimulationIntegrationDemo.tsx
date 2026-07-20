@@ -19,7 +19,7 @@ export function FaultSimulationIntegrationDemo() {
 				<p className="text-muted-foreground mb-3">
 					FaultSimulationWorkspace uses the global store for state management.
 				</p>
-				<button
+				<button type="button"
 					onClick={() => {
 						import("@/store/simpleStore").then(({ actions }) => {
 							actions.addFault("gen-01");

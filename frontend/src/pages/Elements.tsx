@@ -315,17 +315,15 @@ function Elements() {
                                                         <p className="text-sm text-muted-foreground">
                                                                 {t("common.page")} {page} {t("common.of")} {totalPages}
                                                         </p>
-                                                        <div className="flex gap-2">
-                                                                <button
-                                                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                                        <div className="flex gap-2"><button type="button"
+										onClick={() => setPage((p) => Math.max(1, p - 1))}
                                                                         disabled={page <= 1}
                                                                         className="px-3 py-1.5 bg-secondary text-white text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
                                                                         aria-label={t("common.previous")}
                                                                 >
                                                                         {t("common.previous")}
-                                                                </button>
-                                                                <button
-                                                                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                                                </button><button type="button"
+										onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                                                         disabled={page >= totalPages}
                                                                         className="px-3 py-1.5 bg-secondary text-white text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
                                                                         aria-label={t("common.next")}

@@ -114,7 +114,7 @@ export function ClashDetection() {
 							"Electrical",
 							"Fire Protection",
 						].map((tab) => (
-							<button
+							<button type="button"
 								key={tab}
 								className={`px-3 py-1 text-xs rounded-sm transition-colors ${activeTab === tab ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
 								onClick={() => setActiveTab(tab)}
