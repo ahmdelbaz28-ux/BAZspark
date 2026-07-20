@@ -59,8 +59,7 @@ export function EventLog({
 				<div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
 					SCADA Event Log
 				</div>
-				<button
-					onClick={exportJson}
+				<button type="button" onClick={exportJson}
 					className={buttonClass}
 					disabled={isBlocked}
 					title={

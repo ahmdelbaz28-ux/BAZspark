@@ -19,7 +19,7 @@ export function HelpDrawer({ helpOpen, onHelpToggle }: HelpDrawerProps) {
 						<Book className="h-4 w-4 text-primary" />
 						<span>NexusCAD Help Center</span>
 					</div>
-					<button
+					<button type="button"
 						onClick={onHelpToggle}
 						className="p-1.5 rounded-md hover:bg-muted transition-colors"
 					>
