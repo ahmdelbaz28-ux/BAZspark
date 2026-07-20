@@ -90,25 +90,22 @@ const TopBar: React.FC<TopBarProps> = ({  // NOSONAR - typescript:S9011: Intenti
 
                         <div className="h-5 w-px bg-white/10" />
 
-                        {/* Action buttons */}
-                        <button
-                                onClick={onSearchOpen}
-                                className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
-                                aria-label="Search"
-                                title="Search (Ctrl+K)"
-                        >
+                        {/* Action buttons */}						<button type="button"
+								onClick={onSearchOpen}
+								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
+								aria-label="Search"
+								title="Search (Ctrl+K)"
+						>
                                 <Search className="h-[18px] w-[18px]" />
                         </button>
 
-                        <ContextualHelpButton />
-
-                        <button
-                                onClick={onHelpOpen}
-                                className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
-                                aria-label="Help"
-                                data-onboarding="help-button"
-                                title="Global help (F1)"
-                        >
+                        <ContextualHelpButton />						<button type="button"
+								onClick={onHelpOpen}
+								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
+								aria-label="Help"
+								data-onboarding="help-button"
+								title="Global help (F1)"
+						>
                                 <HelpCircle className="h-[18px] w-[18px]" />
                         </button>
 
@@ -121,40 +118,37 @@ const TopBar: React.FC<TopBarProps> = ({  // NOSONAR - typescript:S9011: Intenti
                                 <Settings className="h-[18px] w-[18px]" />
                         </Link>
 
-                        {/* Dark mode toggle */}
-                        <button
-                                onClick={toggle}
-                                aria-label="Toggle dark mode"
-                                className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
-                        >
+                        {/* Dark mode toggle */}						<button type="button"
+								onClick={toggle}
+								aria-label="Toggle dark mode"
+								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
+						>
                                 {dark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
                         </button>
 
                         {/* Language selector */}
-                        <div className="relative" ref={langRef}>
-                                <button
-                                        onClick={() => setLangOpen(!langOpen)}
-                                        className="flex items-center gap-1.5 px-3 py-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 text-[13px] rounded-lg border border-white/10 font-medium"
-                                        aria-label="Change language"
-                                >
+                        <div className="relative" ref={langRef}>							<button type="button"
+									onClick={() => setLangOpen(!langOpen)}
+									className="flex items-center gap-1.5 px-3 py-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 text-[13px] rounded-lg border border-white/10 font-medium"
+									aria-label="Change language"
+							>
                                         <Globe className="h-4 w-4" />
                                         {currentLanguage.toUpperCase()}
                                 </button>
                                 {langOpen && (
                                         <div className="absolute right-0 top-full mt-2 glass rounded-lg shadow-xl z-50 min-w-[120px] overflow-hidden">
-                                                {["en", "ar"].map((lang) => (
-                                                        <button
-                                                                key={lang}
-                                                                onClick={() => {
-                                                                        onLanguageChange(lang);
-                                                                        setLangOpen(false);
-                                                                }}
-                                                                className={`block w-full text-left px-3 py-2.5 text-[13px] transition-all duration-200 ${
-                                                                        currentLanguage === lang
-                                                                                ? "text-cyan-300 bg-cyan-400/10"
-                                                                                : "text-foreground hover:bg-white/5"
-                                                                }`}
-                                                        >
+                                                {["en", "ar"].map((lang) => (													<button type="button"
+															key={lang}
+																onClick={() => {
+																	onLanguageChange(lang);
+																	setLangOpen(false);
+																}}
+															className={`block w-full text-left px-3 py-2.5 text-[13px] transition-all duration-200 ${
+																	currentLanguage === lang
+																		? "text-cyan-300 bg-cyan-400/10"
+																		: "text-foreground hover:bg-white/5"
+																}`}
+														>
                                                                 {lang === "en" ? "English" : "العربية"}
                                                         </button>
                                                 ))}

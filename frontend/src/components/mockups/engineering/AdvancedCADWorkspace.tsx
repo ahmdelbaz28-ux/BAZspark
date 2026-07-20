@@ -85,13 +85,13 @@ export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intenti
 						Enterprise Workspace
 					</div>
 					<div className="flex bg-muted/50 p-0.5 rounded-lg text-xs">
-						<button className="px-3 py-1 rounded-md bg-blue-600 text-white font-medium">
+						<button type="button" className="px-3 py-1 rounded-md bg-blue-600 text-white font-medium">
 							Model
 						</button>
-						<button className="px-3 py-1 rounded-md text-muted-foreground hover:text-white">
+						<button type="button" className="px-3 py-1 rounded-md text-muted-foreground hover:text-white">
 							Analysis
 						</button>
-						<button className="px-3 py-1 rounded-md text-muted-foreground hover:text-white">
+						<button type="button" className="px-3 py-1 rounded-md text-muted-foreground hover:text-white">
 							Simulation
 						</button>
 					</div>
@@ -104,10 +104,10 @@ export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intenti
 							WebGPU Acceleration Active
 						</span>
 					</div>
-					<button className="p-2 rounded-lg bg-card hover:bg-secondary transition-colors">
+					<button type="button" className="p-2 rounded-lg bg-card hover:bg-secondary transition-colors">
 						<Share2 className="h-4 w-4" />
 					</button>
-					<button className="p-2 rounded-lg bg-card hover:bg-secondary transition-colors">
+					<button type="button" className="p-2 rounded-lg bg-card hover:bg-secondary transition-colors">
 						<Settings className="h-4 w-4" />
 					</button>
 				</div>
@@ -116,16 +116,16 @@ export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intenti
 			<div className="flex flex-1 overflow-hidden">
 				{/* Left Sidebar - Tools */}
 				<div className="w-16 flex flex-col items-center py-4 gap-4 border-r border-slate-800 bg-[#0a0a14]/90">
-					<button className="p-3 rounded-md bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+					<button type="button" className="p-3 rounded-md bg-blue-600 text-white shadow-lg shadow-blue-600/20">
 						<Box className="h-5 w-5" />
 					</button>
-					<button className="p-3 rounded-md text-muted-foreground hover:bg-card hover:text-white transition-colors">
+					<button type="button" className="p-3 rounded-md text-muted-foreground hover:bg-card hover:text-white transition-colors">
 						<Layers className="h-5 w-5" />
 					</button>
-					<button className="p-3 rounded-md text-muted-foreground hover:bg-card hover:text-white transition-colors">
+					<button type="button" className="p-3 rounded-md text-muted-foreground hover:bg-card hover:text-white transition-colors">
 						<Globe className="h-5 w-5" />
 					</button>
-					<button className="p-3 rounded-md text-muted-foreground hover:bg-card hover:text-white transition-colors">
+					<button type="button" className="p-3 rounded-md text-muted-foreground hover:bg-card hover:text-white transition-colors">
 						<Terminal className="h-5 w-5" />
 					</button>
 				</div>
@@ -171,7 +171,7 @@ export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intenti
 								</div>
 
 								<div className="border-t border-slate-800 pt-3 mt-3">
-									<button
+									<button type="button"
 										onClick={runHeavyCalculation}
 										disabled={isCalculating}
 										className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors ${
@@ -224,7 +224,7 @@ export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intenti
 
 						{/* Top Right Controls */}
 						<div className="absolute top-6 right-6 flex gap-2">
-							<button className="p-2.5 bg-[#0a0a14]/80 backdrop-blur-md border border-slate-800 rounded-lg hover:bg-card transition-colors">
+							<button type="button" className="p-2.5 bg-[#0a0a14]/80 backdrop-blur-md border border-slate-800 rounded-lg hover:bg-card transition-colors">
 								<Maximize2 className="h-4 w-4" />
 							</button>
 						</div>
