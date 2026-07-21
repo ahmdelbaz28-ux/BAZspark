@@ -161,7 +161,7 @@ const TopBar: React.FC<TopBarProps> = memo(({  // NOSONAR - typescript:S9011: In
                         <UserMenu />
                 </header>
         );
-}});
+});
 
 TopBar.displayName = "TopBar";
 

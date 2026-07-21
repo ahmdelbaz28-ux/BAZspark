@@ -339,7 +339,7 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                         </div>
                 </aside>
         );
-}});
+});
 
 Sidebar.displayName = "Sidebar";
 
