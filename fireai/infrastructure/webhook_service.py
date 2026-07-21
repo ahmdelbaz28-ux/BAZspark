@@ -429,16 +429,21 @@ class WebhookDeliveryService:
                 f"Allowed hosts: {self.allowed_hosts}"
             )
 
-        # SSRF protection: Block internal/private IPs and cloud metadata endpoints
+        # SSRF protection: Block internal/private IPs and cloud metadata endpoints.
+        # In dev mode (allow_http=True), allow localhost for local development.
         import ipaddress
         import socket
+        LOCALHOST_HOSTNAMES = frozenset({"localhost", "127.0.0.1", "::1", "[::1]"})
         try:
             # Resolve hostname to IP
             ip = socket.getaddrinfo(parsed.hostname, None, socket.AF_INET)
             if ip:
                 ip_addr = ipaddress.ip_address(ip[0][4][0])
-                # Block private IPs, loopback, link-local, and cloud metadata
-                if ip_addr.is_private or ip_addr.is_loopback or ip_addr.is_link_local:
+                # In dev mode, allow localhost for local development servers
+                is_localhost = parsed.hostname in LOCALHOST_HOSTNAMES or ip_addr.is_loopback
+                if is_localhost and self.allow_http:
+                    pass  # Allow localhost in dev mode
+                elif ip_addr.is_private or ip_addr.is_loopback or ip_addr.is_link_local:
                     raise ValueError(
                         f"Webhook URL cannot point to internal/private IP: {parsed.hostname} ({ip_addr})"
                     )
