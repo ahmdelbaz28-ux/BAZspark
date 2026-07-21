@@ -211,8 +211,8 @@ async def find_related_elements(
 
 @router.get("/neo4j/query", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 async def execute_neo4j_query(
-    query_type: Annotated[str, Query(..., description="Predefined safe query template to execute")],
-    parameters: Annotated[Optional[str], Query(None, description="JSON string of query parameters")]
+    query_type: Annotated[str, Query(description="Predefined safe query template to execute")],
+    parameters: Annotated[Optional[str], Query(description="JSON string of query parameters")] = None
 ):
     """Execute a predefined, parameterized Cypher query against Neo4j securely."""
     # Predefined safe, read-only queries

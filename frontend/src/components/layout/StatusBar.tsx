@@ -41,7 +41,7 @@ const StatusBar: React.FC<StatusBarProps> = memo(({
                         </div>
                 </footer>
         );
-}});
+});
 
 StatusBar.displayName = "StatusBar";
 
