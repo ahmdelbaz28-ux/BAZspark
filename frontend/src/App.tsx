@@ -1,5 +1,5 @@
 
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -147,6 +147,13 @@ const WorkflowPage = lazy(() =>
         import("./pages/WorkflowPage").then((m) => ({ default: m.WorkflowPage })),
 );
 
+// C-07 FIX: Typed route structure with optional requiredRole for role-based access
+interface ProtectedRoute {
+        path: string;
+        element: ReactNode;
+        requiredRole?: string;
+}
+
 // V193 (R10): Skip-link for keyboard users to bypass the sidebar.
 // First focusable element on every page. WCAG 2.4.1 (Level A) requirement.
 const SkipLink = (
@@ -236,16 +243,17 @@ const handleSearchOpen = useCallback(() => {
         ), []);
 
         // PROTECTED routes — wrapped in RouteGuard, rendered inside AppShell
-        const protectedRoutes = useMemo(() => [
+        const protectedRoutes: ProtectedRoute[] = useMemo(() => [
                 { path: "/", element: <Navigate to="/dashboard" /> },
                 { path: "/dashboard", element: <DashboardPage /> },
                 { path: "/projects", element: <ProjectsPage /> },
                 { path: "/engineering", element: <EngineeringPage /> },
                 { path: "/marine", element: <MarinePage /> },
                 { path: "/mining", element: <MiningPage /> },
-                { path: "/api-keys", element: <ApiKeysPage /> },
-                { path: "/exports", element: <ExportsPage /> },
-                { path: "/self-healing", element: <SelfHealingPage /> },
+                // C-07 FIX: Admin-only pages — RouteGuard checks role
+                { path: "/api-keys", element: <ApiKeysPage />, requiredRole: "admin" },
+                { path: "/exports", element: <ExportsPage />, requiredRole: "admin" },
+                { path: "/self-healing", element: <SelfHealingPage />, requiredRole: "admin" },
                 { path: "/facp", element: <FACPPage /> },
                 { path: "/environment", element: <EnvironmentPage /> },
                 { path: "/monitor", element: <MonitorPage /> },
@@ -317,7 +325,7 @@ const handleSearchOpen = useCallback(() => {
                                                                                                 key={route.path}
                                                                                                 path={route.path}
                                                                                                 element={
-                                                                                                        <RouteGuard>{route.element}</RouteGuard>
+                                                                                                        <RouteGuard requiredRole={route.requiredRole}>{route.element}</RouteGuard>
                                                                                                 }
                                                                                         />
                                                                                 ))}
