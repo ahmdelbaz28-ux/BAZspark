@@ -1,4 +1,6 @@
 # Cloudflare Pages configuration for BAZSPARK frontend
+# NOTE: Primary deployment is Vercel (ba-zspark.vercel.app)
+# Cloudflare Pages is a secondary/backup deployment only.
 name = "bazspark-frontend"
 compatibility_date = "2024-09-23"
 pages_build_output_dir = "dist"
@@ -8,5 +10,8 @@ command = "npm run build"
 cwd = "."
 
 [vars]
-VITE_API_URL = "/api/v1"
-VITE_APP_VERSION = "8.1.0"
+# Must point to HuggingFace Space backend (same as Vercel proxy)
+VITE_API_URL = "https://ahmdelbaz28-bazspark.hf.space/api/v1"
+VITE_API_BASE_URL = "https://ahmdelbaz28-bazspark.hf.space/api/v1"
+VITE_APP_VERSION = "1.55.0"
+VITE_APP_ENV = "production"

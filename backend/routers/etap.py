@@ -18,7 +18,7 @@ Endpoints:
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -39,7 +39,7 @@ from backend.rbac import Permission
 router = APIRouter(prefix="/api/v1/integrations/etap", tags=["ETAP Integration"])
 
 
-def get_etap_service(request: Request) -> EtapService:
+def get_etap_service(request: Request) -> Any:
     """Dependency to get ETAP service instance."""
     db = request.app.state.db
     return EtapService(db)
@@ -52,7 +52,7 @@ def get_etap_service(request: Request) -> EtapService:
 async def test_connection(
     request: Request,
     settings: EtapConnectionSettings,
-    service: EtapService = Depends(get_etap_service),
+    service: Any = Depends(get_etap_service),
 ) -> EtapConnectionTestResponse:
     """
     Test connection to ETAP server.
@@ -74,7 +74,7 @@ async def test_connection(
 )
 async def disconnect(
     request: Request,
-    service: EtapService = Depends(get_etap_service),
+    service: Any = Depends(get_etap_service),
 ) -> dict:
     """Disconnect from ETAP (disable integration)."""
     require_permission(Permission.INTEGRATION_MANAGE)
@@ -92,7 +92,7 @@ async def disconnect(
 async def get_status(
     request: Request,
     project_id: str = Query(..., description="Project ID"),
-    service: EtapService = Depends(get_etap_service),
+    service: Any = Depends(get_etap_service),
 ) -> dict:
     """Get ETAP integration status for a project."""
     require_permission(Permission.INTEGRATION_READ)
@@ -106,7 +106,7 @@ async def get_status(
 async def list_etap_projects(
     request: Request,
     project_id: str = Query(..., description="Project ID"),
-    service: EtapService = Depends(get_etap_service),
+    service: Any = Depends(get_etap_service),
 ) -> List[EtapProjectInfo]:
     """List available ETAP projects."""
     require_permission(Permission.INTEGRATION_READ)
@@ -117,7 +117,7 @@ async def list_etap_projects(
 @router.get("/projects/local")
 async def list_local_projects(
     request: Request,
-    service: EtapService = Depends(get_etap_service),
+    service: Any = Depends(get_etap_service),
 ) -> List[dict]:
     """List local BAZSPARK projects."""
     require_permission(Permission.INTEGRATION_READ)
@@ -137,7 +137,7 @@ async def list_local_projects(
 async def export_to_etap(
     request: Request,
     export_request: EtapExportRequest,
-    service: EtapService = Depends(get_etap_service),
+    service: Any = Depends(get_etap_service),
 ) -> dict:
     """
     Export local project data to ETAP.
