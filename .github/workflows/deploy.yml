@@ -289,7 +289,16 @@ jobs:
             --set secrets.fireai-secrets.stringData.GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
             --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
             --set secrets.fireai-secrets.stringData.JWT_SECRET=${{ secrets.JWT_SECRET }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set api.environment.DATABASE_URL=sqlite:////tmp/fireai_deploy.db \
+            # C-03 FIX: Use Supabase Postgres instead of ephemeral SQLite.
+            # DATABASE_URL_STAGING must be set as a GitHub Actions environment
+            # secret. Expected format:
+            #   postgresql://postgres:<password>@<project-ref>.supabase.co:5432/postgres?sslmode=require
+            --set api.environment.DATABASE_URL=${{ secrets.DATABASE_URL_STAGING }} \
+            # NEON_DATABASE_URL fallback: if the primary DATABASE_URL fails (e.g.
+            # IPv6 connectivity issue), the backend automatically falls back to
+            # this Neon Postgres URL. Expected format:
+            #   postgresql://username:password@ep-<project>.region.aws.neon.tech/dbname?sslmode=require
+            --set api.environment.NEON_DATABASE_URL=${{ secrets.NEON_DATABASE_URL_STAGING }} \
             --wait --timeout 300s
 
       - name: Verify deployment
@@ -340,6 +349,8 @@ jobs:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           FIREAI_EVIDENCE_HMAC_KEY: ${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }}
+          DATABASE_URL_PRODUCTION: ${{ secrets.DATABASE_URL_PRODUCTION }}
+          NEON_DATABASE_URL_PRODUCTION: ${{ secrets.NEON_DATABASE_URL_PRODUCTION }}
         run: |
           if [ -z "$KUBE_CONFIG_PRODUCTION" ]; then
             echo "::warning::KUBE_CONFIG_PRODUCTION not set — skipping deployment (images are built and pushed)"
@@ -347,7 +358,7 @@ jobs:
             exit 0
           fi
           missing=()
-          for var in FIREAI_API_KEY DB_PASSWORD_PRODUCTION REDIS_PASSWORD_PRODUCTION JWT_SECRET ENCRYPTION_KEY GEMINI_API_KEY FIREAI_EVIDENCE_HMAC_KEY; do
+          for var in FIREAI_API_KEY DB_PASSWORD_PRODUCTION REDIS_PASSWORD_PRODUCTION JWT_SECRET ENCRYPTION_KEY GEMINI_API_KEY FIREAI_EVIDENCE_HMAC_KEY DATABASE_URL_PRODUCTION; do
             if [ -z "${!var}" ]; then
               missing+=("$var")
             fi
@@ -356,6 +367,10 @@ jobs:
             echo "::error::Missing required production secrets: ${missing[*]}"
             echo "::error::Add them as GitHub Actions environment secrets for the 'production' environment."
             exit 1
+          fi
+          # NEON_DATABASE_URL is OPTIONAL — the backend falls back gracefully if unset.
+          if [ -z "$NEON_DATABASE_URL_PRODUCTION" ]; then
+            echo "::warning::NEON_DATABASE_URL_PRODUCTION not set — no IPv4 fallback for Postgres (the primary DATABASE_URL will be used directly)"
           fi
           echo "deploy_skipped=false" >> "$GITHUB_OUTPUT"
 
@@ -387,7 +402,16 @@ jobs:
             --set secrets.fireai-secrets.stringData.GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
             --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
             --set secrets.fireai-secrets.stringData.JWT_SECRET=${{ secrets.JWT_SECRET }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set api.environment.DATABASE_URL=sqlite:////tmp/fireai_deploy.db \
+            # C-03 FIX: Use Supabase Postgres instead of ephemeral SQLite.
+            # DATABASE_URL_PRODUCTION must be set as a GitHub Actions environment
+            # secret. Expected format:
+            #   postgresql://postgres:<password>@<project-ref>.supabase.co:5432/postgres?sslmode=require
+            --set api.environment.DATABASE_URL=${{ secrets.DATABASE_URL_PRODUCTION }} \
+            # NEON_DATABASE_URL fallback: if the primary DATABASE_URL fails (e.g.
+            # IPv6 connectivity issue), the backend automatically falls back to
+            # this Neon Postgres URL. Expected format:
+            #   postgresql://username:password@ep-<project>.region.aws.neon.tech/dbname?sslmode=require
+            --set api.environment.NEON_DATABASE_URL=${{ secrets.NEON_DATABASE_URL_PRODUCTION }} \
             --wait --timeout 300s
 
       - name: Verify deployment
