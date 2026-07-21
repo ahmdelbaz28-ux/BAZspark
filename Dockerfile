@@ -7,7 +7,7 @@
 # V206 FIX: The frontend MUST be built and served by the FastAPI app on
 # HuggingFace Spaces. Without this stage, the HF Space URL returns 404 for /
 # because there is no static file server — only the FastAPI backend runs.
-FROM node:20-slim AS frontend-builder
+FROM node:26-slim AS frontend-builder
 
 WORKDIR /build
 
