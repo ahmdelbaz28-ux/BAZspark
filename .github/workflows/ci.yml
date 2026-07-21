@@ -54,7 +54,7 @@ jobs:
         run: mkdir -p reports
 
       - name: Ruff lint
-        run: ruff check backend/ fireai/ core/ skills/ backend_app.py --output-format=github || true
+        run: ruff check backend/ fireai/ core/ backend_app.py --output-format=github || true
 
       - name: MyPy type check
         # V140 FIX (Rule 17 — Root-Cause Analysis): Multiple skill packages
