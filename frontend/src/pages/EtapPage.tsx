@@ -1,18 +1,15 @@
 /**
  * EtapPage.tsx — ETAP Power System Integration.
  *
- * Full integration settings page for ETAP:
- *   - Connection management (host, port, username, password)
- *   - Project sync (local ↔ ETAP)
- *   - Export/Import controls
- *   - Sync schedule
- *   - Operation logs
+ * Professional engineering interface inspired by electrical power system
+ * HMI displays and switchgear control panels. Amber accent references
+ * warning indicators, arc-flash labels, and power system instrumentation.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
         Activity,
-        AlertCircle,
+        AlertTriangle,
         CheckCircle2,
         Download,
         Globe,
@@ -23,9 +20,11 @@ import {
         Save,
         Server,
         Settings2,
+        ShieldAlert,
         Trash2,
         Upload,
         XCircle,
+        Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,8 +49,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { etapApi, type EtapConnectionSettings, type EtapExportRequest, type EtapImportRequest, type EtapProjectInfo, type EtapSettingsResponse, type EtapSyncLog } from "@/services/fullApi";
+import "./../styles/etap-theme.css";
 
 const DEFAULT_PROJECT_ID = "default";
+
+type TabValue = "connection" | "projects" | "sync" | "logs";
 
 export function EtapPage() {
         const { t } = useTranslation();
@@ -96,6 +98,7 @@ export function EtapPage() {
         const [loading, setLoading] = useState<string | null>(null);
         const [showPassword, setShowPassword] = useState(false);
         const [syncEnabled, setSyncEnabled] = useState(false);
+        const [activeTab, setActiveTab] = useState<TabValue>("connection");
 
         const loadSettings = async () => {
                 setLoading("loading-settings");
@@ -315,430 +318,446 @@ export function EtapPage() {
                 }
         };
 
-        const getStatusBadge = () => {
-                switch (connectionStatus) {
-                        case "connected":
-                                return <Badge className="bg-green-500/20 text-green-400 border-green-500/30"><CheckCircle2 className="h-3 w-3 mr-1" />{t("etap.connected")}</Badge>;
-                        case "connecting":
-                                return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30"><Loader2 className="h-3 w-3 mr-1 animate-spin" />{t("etap.connecting")}</Badge>;
-                        case "error":
-                                return <Badge className="bg-red-500/20 text-red-400 border-red-500/30"><XCircle className="h-3 w-3 mr-1" />{t("etap.error")}</Badge>;
-                        default:
-                                return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30"><XCircle className="h-3 w-3 mr-1" />{t("etap.disconnected")}</Badge>;
+        const handleTabChange = (value: string) => {
+                const tab = value as TabValue;
+                setActiveTab(tab);
+                if (tab === "projects") {
+                        loadProjects();
+                } else if (tab === "logs") {
+                        loadLogs();
+                } else if (tab === "connection" && !settingsLoaded) {
+                        loadSettings();
                 }
         };
 
+        const getStatusBadge = () => {
+                const label = {
+                        connected: t("etap.connected", "Connected"),
+                        connecting: t("etap.connecting", "Connecting"),
+                        error: t("etap.error", "Error"),
+                        disconnected: t("etap.disconnected", "Disconnected"),
+                }[connectionStatus];
+
+                return (
+                        <span className="etap-status-pill" data-status={connectionStatus}>
+                                <span className="etap-status-dot" />
+                                {label}
+                        </span>
+                );
+        };
+
         return (
-                <div className="space-y-6">
-                        {/* Header */}
-                        <div className="flex items-center justify-between">
-                                <div>
-                                        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                                                <Server className="h-6 w-6 text-cyan-400" />
-                                                {t("etap.title", "ETAP Integration")}
-                                        </h1>
-                                        <p className="text-slate-400 mt-1">
-                                                {t("etap.description", "Connect and synchronize with ETAP Power System Analysis software")}
-                                        </p>
+                <div className="etap-page">
+                        <div className="relative">
+                                {/* Circuit decoration — signature element */}
+                                <div className="etap-circuit-bg" aria-hidden="true">
+                                        <div className="etap-circuit-line" />
+                                        <div className="etap-circuit-line" />
+                                        <div className="etap-circuit-line" />
                                 </div>
-                                <div className="flex items-center gap-2">
-                                        {getStatusBadge()}
-                                </div>
-                        </div>
 
-                        <Tabs defaultValue="connection" className="space-y-4">
-                                <TabsList className="bg-slate-800 border-slate-700">
-                                        <TabsTrigger value="connection" className="data-[state=active]:bg-slate-700">
-                                                <Settings2 className="h-4 w-4 mr-2" />
-                                                {t("etap.connection")}
-                                        </TabsTrigger>
-                                        <TabsTrigger value="projects" className="data-[state=active]:bg-slate-700">
-                                                <Globe className="h-4 w-4 mr-2" />
-                                                {t("etap.projects")}
-                                        </TabsTrigger>
-                                        <TabsTrigger value="sync" className="data-[state=active]:bg-slate-700">
-                                                <RefreshCw className="h-4 w-4 mr-2" />
-                                                {t("etap.sync")}
-                                        </TabsTrigger>
-                                        <TabsTrigger value="logs" className="data-[state=active]:bg-slate-700">
-                                                <Activity className="h-4 w-4 mr-2" />
-                                                {t("etap.logs")}
-                                        </TabsTrigger>
-                                </TabsList>
-
-                                {/* Connection Tab */}
-                                <TabsContent value="connection" className="space-y-4">
-                                        <Card className="bg-slate-800/50 border-slate-700">
-                                                <CardHeader>
-                                                        <CardTitle className="text-white flex items-center gap-2">
-                                                                <Server className="h-5 w-5 text-cyan-400" />
-                                                                {t("etap.connectionSettings")}
-                                                        </CardTitle>
-                                                        <CardDescription className="text-slate-400">
-                                                                {t("etap.connectionSettingsDesc")}
-                                                        </CardDescription>
-                                                </CardHeader>
-                                                <CardContent className="space-y-4">
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                <div className="space-y-2">
-                                                                        <Label htmlFor="host" className="text-slate-300">
-                                                                                {t("etap.host")}
-                                                                        </Label>
-                                                                        <Input
-                                                                                id="host"
-                                                                                value={settings.host}
-                                                                                onChange={(e) => setSettings({ ...settings, host: e.target.value })}
-                                                                                placeholder="etap.example.com"
-                                                                                className="bg-slate-900 border-slate-700 text-white"
-                                                                        />
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                        <Label htmlFor="port" className="text-slate-300">
-                                                                                {t("etap.port")}
-                                                                        </Label>
-                                                                        <Input
-                                                                                id="port"
-                                                                                type="number"
-                                                                                value={settings.port}
-                                                                                onChange={(e) => setSettings({ ...settings, port: parseInt(e.target.value) || 0 })}
-                                                                                className="bg-slate-900 border-slate-700 text-white"
-                                                                        />
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                        <Label htmlFor="username" className="text-slate-300">
-                                                                                {t("etap.username")}
-                                                                        </Label>
-                                                                        <Input
-                                                                                id="username"
-                                                                                value={settings.username}
-                                                                                onChange={(e) => setSettings({ ...settings, username: e.target.value })}
-                                                                                className="bg-slate-900 border-slate-700 text-white"
-                                                                        />
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                        <Label htmlFor="password" className="text-slate-300">
-                                                                                {t("etap.password")}
-                                                                        </Label>
-                                                                        <div className="relative">
-                                                                                <Input
-                                                                                        id="password"
-                                                                                        type={showPassword ? "text" : "password"}
-                                                                                        value={settings.password}
-                                                                                        onChange={(e) => setSettings({ ...settings, password: e.target.value })}
-                                                                                        className="bg-slate-900 border-slate-700 text-white pr-10"
-                                                                                />
-                                                                                <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        className="absolute right-0 top-0 h-full px-3"
-                                                                                        onClick={() => setShowPassword(!showPassword)}
-                                                                                >
-                                                                                        {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-                                                                                </Button>
-                                                                        </div>
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                        <Label htmlFor="timeout" className="text-slate-300">
-                                                                                {t("etap.timeoutSeconds")}
-                                                                        </Label>
-                                                                        <Input
-                                                                                id="timeout"
-                                                                                type="number"
-                                                                                value={settings.timeout_seconds}
-                                                                                onChange={(e) => setSettings({ ...settings, timeout_seconds: parseInt(e.target.value) || 30 })}
-                                                                                className="bg-slate-900 border-slate-700 text-white"
-                                                                        />
-                                                                </div>
+                                {/* Header */}
+                                <header className="etap-header relative z-10">
+                                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                        <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                                                                <Zap className="h-6 w-6 text-amber-400" />
                                                         </div>
-
-                                                        <div className="flex flex-wrap gap-2">
-                                                                <Button
-                                                                        onClick={handleTestConnection}
-                                                                        disabled={connectionStatus === "connecting"}
-                                                                        className="bg-cyan-600 hover:bg-cyan-700"
-                                                                >
-                                                                        {connectionStatus === "connecting" ? (
-                                                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                                        ) : (
-                                                                                <Play className="h-4 w-4 mr-2" />
-                                                                        )}
-                                                                        {t("etap.testConnection")}
-                                                                </Button>
-                                                                <Button
-                                                                        onClick={handleSaveSettings}
-                                                                        disabled={loading === "saving-settings"}
-                                                                        className="bg-emerald-600 hover:bg-emerald-700"
-                                                                >
-                                                                        {loading === "saving-settings" ? (
-                                                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                                        ) : (
-                                                                                <Save className="h-4 w-4 mr-2" />
-                                                                        )}
-                                                                        {t("etap.saveSettings")}
-                                                                </Button>
-                                                                {savedSettings && (
-                                                                        <Button
-                                                                                onClick={handleDeleteSettings}
-                                                                                disabled={loading === "deleting-settings"}
-                                                                                variant="destructive"
-                                                                        >
-                                                                                {loading === "deleting-settings" ? (
-                                                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                                                ) : (
-                                                                                        <Trash2 className="h-4 w-4 mr-2" />
-                                                                                )}
-                                                                                {t("etap.deleteSettings")}
-                                                                        </Button>
-                                                                )}
+                                                        <div>
+                                                                <h1 className="etap-title">ETAP Integration</h1>
+                                                                <p className="etap-subtitle">
+                                                                        Power system analysis interconnect — host, sync, and transfer
+                                                                        load and source data between ETAP and BAZSPARK.
+                                                                </p>
                                                         </div>
-
-                                                        {connectionMessage && (
-                                                                <div className={`p-3 rounded-md flex items-start gap-2 ${
-                                                                        connectionStatus === "connected" ? "bg-green-500/10 text-green-400" :
-                                                                        connectionStatus === "error" ? "bg-red-500/10 text-red-400" :
-                                                                        "bg-slate-500/10 text-slate-400"
-                                                                }`}>
-                                                                        {connectionStatus === "connected" ? <CheckCircle2 className="h-5 w-5 mt-0.5" /> :
-                                                                         connectionStatus === "error" ? <AlertCircle className="h-5 w-5 mt-0.5" /> :
-                                                                         <Activity className="h-5 w-5 mt-0.5" />}
-                                                                        <div>
-                                                                                <p className="font-medium">{connectionMessage}</p>
-                                                                                {serverVersion && <p className="text-sm mt-1 opacity-80">{serverVersion}</p>}
-                                                                        </div>
-                                                                </div>
-                                                        )}
-
-                                                        <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-                                                                <div className="flex items-center gap-2">
-                                                                        <RefreshCw className="h-5 w-5 text-slate-400" />
-                                                                        <div>
-                                                                                <Label className="text-white">{t("etap.autoSync")}</Label>
-                                                                                <p className="text-sm text-slate-400">{t("etap.autoSyncDesc")}</p>
-                                                                        </div>
-                                                                </div>
-                                                                <Switch checked={syncEnabled} onCheckedChange={setSyncEnabled} />
-                                                        </div>
-                                                </CardContent>
-                                        </Card>
-                                </TabsContent>
-
-                                {/* Projects Tab */}
-                                <TabsContent value="projects" className="space-y-4">
-                                        <Card className="bg-slate-800/50 border-slate-700">
-                                                <CardHeader>
-                                                        <CardTitle className="text-white flex items-center gap-2">
-                                                                <Globe className="h-5 w-5 text-cyan-400" />
-                                                                {t("etap.projectSync")}
-                                                        </CardTitle>
-                                                        <CardDescription className="text-slate-400">
-                                                                {t("etap.projectSyncDesc")}
-                                                        </CardDescription>
-                                                </CardHeader>
-                                                <CardContent className="space-y-4">
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                <div className="space-y-2">
-                                                                        <Label className="text-slate-300">{t("etap.localProject")}</Label>
-                                                                        <Select value={selectedLocalProject} onValueChange={setSelectedLocalProject}>
-                                                                                <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                                                                                        <SelectValue placeholder={t("etap.selectLocalProject")} />
-                                                                                </SelectTrigger>
-                                                                                <SelectContent>
-                                                                                        {localProjects.map((p) => (
-                                                                                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                                                                        ))}
-                                                                                </SelectContent>
-                                                                        </Select>
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                        <Label className="text-slate-300">{t("etap.etapProject")}</Label>
-                                                                        <Select value={selectedEtapProject} onValueChange={setSelectedEtapProject}>
-                                                                                <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                                                                                        <SelectValue placeholder={t("etap.selectEtapProject")} />
-                                                                                </SelectTrigger>
-                                                                                <SelectContent>
-                                                                                        {etapProjects.map((p) => (
-                                                                                                <SelectItem key={p.project_id} value={p.project_id}>
-                                                                                                        {p.name} {p.size_mb ? `(${p.size_mb} MB)` : ""}
-                                                                                                </SelectItem>
-                                                                                        ))}
-                                                                                </SelectContent>
-                                                                        </Select>
-                                                                </div>
-                                                        </div>
-                                                </CardContent>
-                                        </Card>
-                                </TabsContent>
-
-                                {/* Sync Tab */}
-                                <TabsContent value="sync" className="space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <Card className="bg-slate-800/50 border-slate-700">
-                                                        <CardHeader>
-                                                                <CardTitle className="text-white flex items-center gap-2">
-                                                                        <Download className="h-5 w-5 text-emerald-400" />
-                                                                        {t("etap.exportToEtap")}
-                                                                </CardTitle>
-                                                                <CardDescription className="text-slate-400">
-                                                                        {t("etap.exportToEtapDesc")}
-                                                                </CardDescription>
-                                                        </CardHeader>
-                                                        <CardContent className="space-y-4">
-                                                                <div className="flex items-center gap-2">
-                                                                        <Switch id="includeLoads" checked={includeLoads} onCheckedChange={setIncludeLoads} />
-                                                                        <Label htmlFor="includeLoads" className="text-slate-300">{t("etap.includeLoads")}</Label>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                        <Switch id="includeSources" checked={includeSources} onCheckedChange={setIncludeSources} />
-                                                                        <Label htmlFor="includeSources" className="text-slate-300">{t("etap.includeSources")}</Label>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                        <Switch id="includeTopology" checked={includeTopology} onCheckedChange={setIncludeTopology} />
-                                                                        <Label htmlFor="includeTopology" className="text-slate-300">{t("etap.includeTopology")}</Label>
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                        <Label className="text-slate-300">{t("etap.format")}</Label>
-                                                                        <Select value={exportFormat} onValueChange={(v) => setExportFormat(v as "csv" | "ort")}>
-                                                                                <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                                                                                        <SelectValue />
-                                                                                </SelectTrigger>
-                                                                                <SelectContent>
-                                                                                        <SelectItem value="csv">CSV</SelectItem>
-                                                                                        <SelectItem value="ort">ORT (ETAP Native)</SelectItem>
-                                                                                </SelectContent>
-                                                                        </Select>
-                                                                </div>
-                                                                <Button
-                                                                        onClick={handleExport}
-                                                                        disabled={loading === "exporting"}
-                                                                        className="w-full bg-emerald-600 hover:bg-emerald-700"
-                                                                >
-                                                                        {loading === "exporting" ? (
-                                                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                                        ) : (
-                                                                                <Download className="h-4 w-4 mr-2" />
-                                                                        )}
-                                                                        {t("etap.export")}
-                                                                </Button>
-                                                        </CardContent>
-                                                </Card>
-
-                                                <Card className="bg-slate-800/50 border-slate-700">
-                                                        <CardHeader>
-                                                                <CardTitle className="text-white flex items-center gap-2">
-                                                                        <Import className="h-5 w-5 text-blue-400" />
-                                                                        {t("etap.importFromEtap")}
-                                                                </CardTitle>
-                                                                <CardDescription className="text-slate-400">
-                                                                        {t("etap.importFromEtapDesc")}
-                                                                </CardDescription>
-                                                        </CardHeader>
-                                                        <CardContent className="space-y-4">
-                                                                <div className="flex items-center gap-2">
-                                                                        <Switch id="importLoads" checked={importLoads} onCheckedChange={setImportLoads} />
-                                                                        <Label htmlFor="importLoads" className="text-slate-300">{t("etap.importLoads")}</Label>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                        <Switch id="importSources" checked={importSources} onCheckedChange={setImportSources} />
-                                                                        <Label htmlFor="importSources" className="text-slate-300">{t("etap.importSources")}</Label>
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                        <Label className="text-slate-300">{t("etap.conflictResolution")}</Label>
-                                                                        <Select value={conflictResolution} onValueChange={(v) => setConflictResolution(v as any)}>
-                                                                                <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                                                                                        <SelectValue />
-                                                                                </SelectTrigger>
-                                                                                <SelectContent>
-                                                                                        <SelectItem value="skip">{t("etap.conflictSkip")}</SelectItem>
-                                                                                        <SelectItem value="overwrite">{t("etap.conflictOverwrite")}</SelectItem>
-                                                                                        <SelectItem value="merge">{t("etap.conflictMerge")}</SelectItem>
-                                                                                </SelectContent>
-                                                                        </Select>
-                                                                </div>
-                                                                <Button
-                                                                        onClick={handleImport}
-                                                                        disabled={loading === "importing" || !selectedEtapProject}
-                                                                        className="w-full bg-blue-600 hover:bg-blue-700"
-                                                                >
-                                                                        {loading === "importing" ? (
-                                                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                                        ) : (
-                                                                                <Upload className="h-4 w-4 mr-2" />
-                                                                        )}
-                                                                        {t("etap.import")}
-                                                                </Button>
-                                                        </CardContent>
-                                                </Card>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                        {getStatusBadge()}
+                                                </div>
                                         </div>
-                                </TabsContent>
+                                </header>
 
-                                {/* Logs Tab */}
-                                <TabsContent value="logs" className="space-y-4">
-                                        <Card className="bg-slate-800/50 border-slate-700">
-                                                <CardHeader>
-                                                        <CardTitle className="text-white flex items-center gap-2">
-                                                                <Activity className="h-5 w-5 text-cyan-400" />
-                                                                {t("etap.syncLogs")}
-                                                        </CardTitle>
-                                                        <CardDescription className="text-slate-400">
-                                                                {t("etap.syncLogsDesc")}
-                                                        </CardDescription>
-                                                </CardHeader>
-                                                <CardContent>
-                                                        <div className="overflow-x-auto">
-                                                                <table className="w-full text-sm">
-                                                                        <thead>
-                                                                                <tr className="border-b border-slate-700">
-                                                                                        <th className="text-left py-2 px-4 text-slate-400">{t("etap.direction")}</th>
-                                                                                        <th className="text-left py-2 px-4 text-slate-400">{t("etap.status")}</th>
-                                                                                        <th className="text-left py-2 px-4 text-slate-400">{t("etap.records")}</th>
-                                                                                        <th className="text-left py-2 px-4 text-slate-400">{t("etap.error")}</th>
-                                                                                        <th className="text-left py-2 px-4 text-slate-400">{t("etap.timestamp")}</th>
-                                                                                </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                                {logs.length === 0 ? (
-                                                                                        <tr>
-                                                                                                <td colSpan={5} className="text-center py-8 text-slate-500">
-                                                                                                        {t("etap.noLogs")}
-                                                                                                </td>
-                                                                                        </tr>
-                                                                                ) : (
-                                                                                        logs.map((log) => (
-                                                                                                <tr key={log.id} className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                                                                                                        <td className="py-2 px-4 text-slate-300">
-                                                                                                                <Badge variant={log.direction === "export" ? "default" : "secondary"}>
-                                                                                                                        {log.direction === "export" ? <Download className="h-3 w-3 mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
-                                                                                                                        {log.direction}
-                                                                                                                </Badge>
-                                                                                                        </td>
-                                                                                                        <td className="py-2 px-4">
-                                                                                                                <Badge className={
-                                                                                                                        log.status === "success" ? "bg-green-500/20 text-green-400 border-green-500/30" :
-                                                                                                                        log.status === "error" ? "bg-red-500/20 text-red-400 border-red-500/30" :
-                                                                                                                        "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-                                                                                                                }>
-                                                                                                                        {log.status}
-                                                                                                                </Badge>
-                                                                                                        </td>
-                                                                                                        <td className="py-2 px-4 text-slate-300">{log.records_synced}</td>
-                                                                                                        <td className="py-2 px-4 text-slate-400">{log.error_message || "—"}</td>
-                                                                                                        <td className="py-2 px-4 text-slate-400">{new Date(log.created_at).toLocaleString()}</td>
-                                                                                                </tr>
-                                                                                        ))
+                                {/* Main content */}
+                                <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                                        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+                                                <TabsList className="etap-tabs w-full justify-start rounded-none bg-transparent border-b border-white/10 p-0">
+                                                        <TabsTrigger value="connection" className="etap-tab rounded-none border-b-2 border-transparent">
+                                                                <Settings2 className="h-4 w-4 mr-2" />
+                                                                Connection
+                                                        </TabsTrigger>
+                                                        <TabsTrigger value="projects" className="etap-tab rounded-none border-b-2 border-transparent">
+                                                                <Globe className="h-4 w-4 mr-2" />
+                                                                Projects
+                                                        </TabsTrigger>
+                                                        <TabsTrigger value="sync" className="etap-tab rounded-none border-b-2 border-transparent">
+                                                                <RefreshCw className="h-4 w-4 mr-2" />
+                                                                Synchronization
+                                                        </TabsTrigger>
+                                                        <TabsTrigger value="logs" className="etap-tab rounded-none border-b-2 border-transparent">
+                                                                <Activity className="h-4 w-4 mr-2" />
+                                                                Sync Logs
+                                                        </TabsTrigger>
+                                                </TabsList>
+
+                                                {/* Connection Tab */}
+                                                <TabsContent value="connection" className="space-y-4 mt-4">
+                                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                                                <Card className="etap-panel lg:col-span-2">
+                                                                        <CardHeader className="etap-panel-header">
+                                                                                <CardTitle className="etap-panel-title">
+                                                                                        <Server className="h-5 w-5 etap-panel-title-icon" />
+                                                                                        Host Configuration
+                                                                                </CardTitle>
+                                                                                <CardDescription className="etap-panel-description">
+                                                                                        Define the ETAP server endpoint, credentials, and network timeout for this integration.
+                                                                                </CardDescription>
+                                                                        </CardHeader>
+                                                                        <CardContent className="etap-panel-body">
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                        <div className="etap-field">
+                                                                                                <Label htmlFor="host" className="etap-label">Host</Label>
+                                                                                                <Input
+                                                                                                        id="host"
+                                                                                                        value={settings.host}
+                                                                                                        onChange={(e) => setSettings({ ...settings, host: e.target.value })}
+                                                                                                        placeholder="etap.example.com"
+                                                                                                        className="etap-input"
+                                                                                                />
+                                                                                        </div>
+                                                                                        <div className="etap-field">
+                                                                                                <Label htmlFor="port" className="etap-label">Port</Label>
+                                                                                                <Input
+                                                                                                        id="port"
+                                                                                                        type="number"
+                                                                                                        value={settings.port}
+                                                                                                        onChange={(e) => setSettings({ ...settings, port: parseInt(e.target.value) || 0 })}
+                                                                                                        className="etap-input"
+                                                                                                />
+                                                                                        </div>
+                                                                                        <div className="etap-field">
+                                                                                                <Label htmlFor="username" className="etap-label">Username</Label>
+                                                                                                <Input
+                                                                                                        id="username"
+                                                                                                        value={settings.username}
+                                                                                                        onChange={(e) => setSettings({ ...settings, username: e.target.value })}
+                                                                                                        className="etap-input"
+                                                                                                />
+                                                                                        </div>
+                                                                                        <div className="etap-field">
+                                                                                                <Label htmlFor="password" className="etap-label">Password</Label>
+                                                                                                <div className="relative">
+                                                                                                        <Input
+                                                                                                                id="password"
+                                                                                                                type={showPassword ? "text" : "password"}
+                                                                                                                value={settings.password}
+                                                                                                                onChange={(e) => setSettings({ ...settings, password: e.target.value })}
+                                                                                                                className="etap-input pr-10"
+                                                                                                        />
+                                                                                                        <Button
+                                                                                                                type="button"
+                                                                                                                variant="ghost"
+                                                                                                                size="sm"
+                                                                                                                className="absolute right-0 top-0 h-full px-3 text-slate-400 hover:text-white"
+                                                                                                                onClick={() => setShowPassword(!showPassword)}
+                                                                                                        >
+                                                                                                                {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                                                                                                        </Button>
+                                                                                                </div>
+                                                                                        </div>
+                                                                                        <div className="etap-field">
+                                                                                                <Label htmlFor="timeout" className="etap-label">Timeout (seconds)</Label>
+                                                                                                <Input
+                                                                                                        id="timeout"
+                                                                                                        type="number"
+                                                                                                        value={settings.timeout_seconds}
+                                                                                                        onChange={(e) => setSettings({ ...settings, timeout_seconds: parseInt(e.target.value) || 30 })}
+                                                                                                        className="etap-input"
+                                                                                                />
+                                                                                        </div>
+                                                                                </div>
+
+                                                                                <div className="flex flex-wrap items-center gap-2 mt-6">
+                                                                                        <Button onClick={handleTestConnection} disabled={connectionStatus === "connecting"} className="etap-btn etap-btn-primary">
+                                                                                                {connectionStatus === "connecting" ? (
+                                                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                                ) : (
+                                                                                                        <Play className="h-4 w-4" />
+                                                                                                )}
+                                                                                                Test Connection
+                                                                                        </Button>
+                                                                                        <Button onClick={handleSaveSettings} disabled={loading === "saving-settings"} className="etap-btn etap-btn-primary">
+                                                                                                {loading === "saving-settings" ? (
+                                                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                                ) : (
+                                                                                                        <Save className="h-4 w-4" />
+                                                                                                )}
+                                                                                                Save Configuration
+                                                                                        </Button>
+                                                                                        {savedSettings && (
+                                                                                                <Button onClick={handleDeleteSettings} disabled={loading === "deleting-settings"} className="etap-btn etap-btn-danger">
+                                                                                                        {loading === "deleting-settings" ? (
+                                                                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                                        ) : (
+                                                                                                                <Trash2 className="h-4 w-4" />
+                                                                                                        )}
+                                                                                                        Remove Configuration
+                                                                                                </Button>
+                                                                                        )}
+                                                                                </div>
+
+                                                                                {connectionMessage && (
+                                                                                        <div className={`etap-alert mt-4 ${connectionStatus === "connected" ? "etap-alert-success" : connectionStatus === "error" ? "etap-alert-error" : ""}`}>
+                                                                                                {connectionStatus === "connected" ? <CheckCircle2 className="h-5 w-5 mt-0.5" /> :
+                                                                                                 connectionStatus === "error" ? <AlertTriangle className="h-5 w-5 mt-0.5" /> :
+                                                                                                 <Activity className="h-5 w-5 mt-0.5" />}
+                                                                                                <div>
+                                                                                                        <p className="font-medium">{connectionMessage}</p>
+                                                                                                        {serverVersion && <p className="text-sm mt-1 opacity-80 font-mono">{serverVersion}</p>}
+                                                                                                </div>
+                                                                                        </div>
                                                                                 )}
-                                                                        </tbody>
-                                                                </table>
+
+                                                                                <hr className="etap-divider" />
+
+                                                                                <div className="flex items-center justify-between p-4 rounded-lg border border-white/10 bg-black/20">
+                                                                                        <div className="flex items-center gap-3">
+                                                                                                <RefreshCw className="h-5 w-5 text-amber-400" />
+                                                                                                <div>
+                                                                                                        <Label className="etap-label" style={{ marginBottom: 0 }}>Auto Synchronization</Label>
+                                                                                                        <p className="text-sm text-slate-400 mt-1">Enable scheduled sync between ETAP and local project store.</p>
+                                                                                                </div>
+                                                                                        </div>
+                                                                                        <Switch checked={syncEnabled} onCheckedChange={setSyncEnabled} className="etap-toggle" />
+                                                                                </div>
+                                                                        </CardContent>
+                                                                </Card>
+
+                                                                <div className="space-y-4">
+                                                                        <Card className="etap-panel">
+                                                                                <CardHeader className="etap-panel-header">
+                                                                                        <CardTitle className="etap-panel-title">
+                                                                                                <ShieldAlert className="h-5 w-5 etap-panel-title-icon" />
+                                                                                                Security Notice
+                                                                                        </CardTitle>
+                                                                                </CardHeader>
+                                                                                <CardContent className="etap-panel-body text-sm text-slate-400 space-y-2">
+                                                                                        <p>Credentials are encrypted at rest using Fernet AES-128. The password field is never returned by the API after creation.</p>
+                                                                                        <p className="font-mono text-xs text-slate-500">RBAC: INTEGRATION_READ / INTEGRATION_MANAGE</p>
+                                                                                </CardContent>
+                                                                        </Card>
+                                                                </div>
                                                         </div>
-                                                </CardContent>
-                                        </Card>
-                                </TabsContent>
-                        </Tabs>
+                                                </TabsContent>
+
+                                                {/* Projects Tab */}
+                                                <TabsContent value="projects" className="space-y-4 mt-4">
+                                                        <Card className="etap-panel">
+                                                                        <CardHeader className="etap-panel-header">
+                                                                                <CardTitle className="etap-panel-title">
+                                                                                        <Globe className="h-5 w-5 etap-panel-title-icon" />
+                                                                                        Project Mapping
+                                                                                </CardTitle>
+                                                                                <CardDescription className="etap-panel-description">
+                                                                                        Map a local BAZSPARK project to an ETAP remote project for import and export operations.
+                                                                                </CardDescription>
+                                                                        </CardHeader>
+                                                                        <CardContent className="etap-panel-body">
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                        <div className="etap-field">
+                                                                                                <Label className="etap-label">Local Project</Label>
+                                                                                                <Select value={selectedLocalProject} onValueChange={setSelectedLocalProject}>
+                                                                                                        <SelectTrigger className="etap-input">
+                                                                                                                <SelectValue placeholder={t("etap.selectLocalProject")} />
+                                                                                                        </SelectTrigger>
+                                                                                                        <SelectContent>
+                                                                                                                {localProjects.map((p) => (
+                                                                                                                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                                                                                ))}
+                                                                                                        </SelectContent>
+                                                                                                </Select>
+                                                                                        </div>
+                                                                                        <div className="etap-field">
+                                                                                                <Label className="etap-label">ETAP Remote Project</Label>
+                                                                                                <Select value={selectedEtapProject} onValueChange={setSelectedEtapProject}>
+                                                                                                        <SelectTrigger className="etap-input">
+                                                                                                                <SelectValue placeholder={t("etap.selectEtapProject")} />
+                                                                                                        </SelectTrigger>
+                                                                                                        <SelectContent>
+                                                                                                                {etapProjects.map((p) => (
+                                                                                                                        <SelectItem key={p.project_id} value={p.project_id}>
+                                                                                                                                {p.name} {p.size_mb ? `(${p.size_mb} MB)` : ""}
+                                                                                                                        </SelectItem>
+                                                                                                                ))}
+                                                                                                        </SelectContent>
+                                                                                                </Select>
+                                                                                        </div>
+                                                                                </div>
+                                                                        </CardContent>
+                                                        </Card>
+                                                </TabsContent>
+
+                                                {/* Sync Tab */}
+                                                <TabsContent value="sync" className="space-y-4 mt-4">
+                                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                                                <Card className="etap-panel">
+                                                                        <CardHeader className="etap-panel-header">
+                                                                                <CardTitle className="etap-panel-title">
+                                                                                        <Download className="h-5 w-5 etap-panel-title-icon" />
+                                                                                        Export to ETAP
+                                                                                </CardTitle>
+                                                                                <CardDescription className="etap-panel-description">
+                                                                                        Transfer local load, source, and topology data to the selected ETAP project.
+                                                                                </CardDescription>
+                                                                        </CardHeader>
+                                                                        <CardContent className="etap-panel-body space-y-4">
+                                                                                <div className="flex items-center justify-between">
+                                                                                        <Label className="etap-label" style={{ marginBottom: 0 }}>Include Loads</Label>
+                                                                                        <Switch id="includeLoads" checked={includeLoads} onCheckedChange={setIncludeLoads} className="etap-toggle" />
+                                                                                </div>
+                                                                                <div className="flex items-center justify-between">
+                                                                                        <Label className="etap-label" style={{ marginBottom: 0 }}>Include Sources</Label>
+                                                                                        <Switch id="includeSources" checked={includeSources} onCheckedChange={setIncludeSources} className="etap-toggle" />
+                                                                                </div>
+                                                                                <div className="flex items-center justify-between">
+                                                                                        <Label className="etap-label" style={{ marginBottom: 0 }}>Include Topology</Label>
+                                                                                        <Switch id="includeTopology" checked={includeTopology} onCheckedChange={setIncludeTopology} className="etap-toggle" />
+                                                                                </div>
+                                                                                <div className="etap-field">
+                                                                                        <Label className="etap-label">Format</Label>
+                                                                                        <Select value={exportFormat} onValueChange={(v) => setExportFormat(v as "csv" | "ort")}>
+                                                                                                <SelectTrigger className="etap-input">
+                                                                                                        <SelectValue />
+                                                                                                </SelectTrigger>
+                                                                                                <SelectContent>
+                                                                                                        <SelectItem value="csv">CSV</SelectItem>
+                                                                                                        <SelectItem value="ort">ORT (ETAP Native)</SelectItem>
+                                                                                                </SelectContent>
+                                                                                        </Select>
+                                                                                </div>
+                                                                                <Button onClick={handleExport} disabled={loading === "exporting"} className="etap-btn etap-btn-primary w-full">
+                                                                                        {loading === "exporting" ? (
+                                                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                        ) : (
+                                                                                                <Download className="h-4 w-4" />
+                                                                                        )}
+                                                                                        Execute Export
+                                                                                </Button>
+                                                                        </CardContent>
+                                                                </Card>
+
+                                                                <Card className="etap-panel">
+                                                                        <CardHeader className="etap-panel-header">
+                                                                                <CardTitle className="etap-panel-title">
+                                                                                        <Import className="h-5 w-5 etap-panel-title-icon" />
+                                                                                        Import from ETAP
+                                                                                </CardTitle>
+                                                                                <CardDescription className="etap-panel-description">
+                                                                                        Pull remote project data into the local BAZSPARK project store.
+                                                                                </CardDescription>
+                                                                        </CardHeader>
+                                                                        <CardContent className="etap-panel-body space-y-4">
+                                                                                <div className="flex items-center justify-between">
+                                                                                        <Label className="etap-label" style={{ marginBottom: 0 }}>Import Loads</Label>
+                                                                                        <Switch id="importLoads" checked={importLoads} onCheckedChange={setImportLoads} className="etap-toggle" />
+                                                                                </div>
+                                                                                <div className="flex items-center justify-between">
+                                                                                        <Label className="etap-label" style={{ marginBottom: 0 }}>Import Sources</Label>
+                                                                                        <Switch id="importSources" checked={importSources} onCheckedChange={setImportSources} className="etap-toggle" />
+                                                                                </div>
+                                                                                <div className="etap-field">
+                                                                                        <Label className="etap-label">Conflict Resolution</Label>
+                                                                                        <Select value={conflictResolution} onValueChange={(v) => setConflictResolution(v as any)}>
+                                                                                                <SelectTrigger className="etap-input">
+                                                                                                        <SelectValue />
+                                                                                                </SelectTrigger>
+                                                                                                <SelectContent>
+                                                                                                        <SelectItem value="skip">Skip</SelectItem>
+                                                                                                        <SelectItem value="overwrite">Overwrite</SelectItem>
+                                                                                                        <SelectItem value="merge">Merge</SelectItem>
+                                                                                                </SelectContent>
+                                                                                        </Select>
+                                                                                </div>
+                                                                                <Button onClick={handleImport} disabled={loading === "importing" || !selectedEtapProject} className="etap-btn etap-btn-primary w-full">
+                                                                                        {loading === "importing" ? (
+                                                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                        ) : (
+                                                                                                <Upload className="h-4 w-4" />
+                                                                                        )}
+                                                                                        Execute Import
+                                                                                </Button>
+                                                                        </CardContent>
+                                                                </Card>
+                                                        </div>
+                                                </TabsContent>
+
+                                                {/* Logs Tab */}
+                                                <TabsContent value="logs" className="space-y-4 mt-4">
+                                                        <Card className="etap-panel">
+                                                                        <CardHeader className="etap-panel-header">
+                                                                                <CardTitle className="etap-panel-title">
+                                                                                        <Activity className="h-5 w-5 etap-panel-title-icon" />
+                                                                                        Synchronization Log
+                                                                                </CardTitle>
+                                                                                <CardDescription className="etap-panel-description">
+                                                                                        Operational history of import and export transactions.
+                                                                                </CardDescription>
+                                                                        </CardHeader>
+                                                                        <CardContent>
+                                                                                <div className="overflow-x-auto">
+                                                                                        <table className="etap-table">
+                                                                                                <thead>
+                                                                                                        <tr>
+                                                                                                                <th>Direction</th>
+                                                                                                                <th>Status</th>
+                                                                                                                <th>Records</th>
+                                                                                                                <th>Error</th>
+                                                                                                                <th>Timestamp</th>
+                                                                                                        </tr>
+                                                                                                </thead>
+                                                                                                <tbody>
+                                                                                                        {logs.length === 0 ? (
+                                                                                                                <tr>
+                                                                                                                        <td colSpan={5} className="text-center py-10 text-slate-500">
+                                                                                                                                No sync logs available.
+                                                                                                                        </td>
+                                                                                                                </tr>
+                                                                                                        ) : (
+                                                                                                                logs.map((log) => (
+                                                                                                                        <tr key={log.id}>
+                                                                                                                                <td>
+                                                                                                                                        <span className={`etap-badge ${log.direction === "export" ? "etap-badge-success" : "etap-badge-warning"}`}>
+                                                                                                                                                {log.direction === "export" ? <Download className="h-3 w-3" /> : <Upload className="h-3 w-3" />}
+                                                                                                                                                {log.direction}
+                                                                                                                                        </span>
+                                                                                                                                </td>
+                                                                                                                                <td>
+                                                                                                                                        <span className={
+                                                                                                                                                log.status === "success" ? "etap-badge etap-badge-success" :
+                                                                                                                                                log.status === "error" ? "etap-badge etap-badge-danger" :
+                                                                                                                                                "etap-badge etap-badge-warning"
+                                                                                                                                        }>
+                                                                                                                                                {log.status}
+                                                                                                                                        </span>
+                                                                                                                                </td>
+                                                                                                                                <td>{log.records_synced}</td>
+                                                                                                                                <td>{log.error_message || "—"}</td>
+                                                                                                                                <td>{new Date(log.created_at).toLocaleString()}</td>
+                                                                                                                        </tr>
+                                                                                                                ))
+                                                                                                        )}
+                                                                                                </tbody>
+                                                                                        </table>
+                                                                                </div>
+                                                                        </CardContent>
+                                                        </Card>
+                                                </TabsContent>
+                                        </Tabs>
+                                </main>
+                        </div>
                 </div>
         );
 }
 
-// Icons as components to avoid JSX issues
 function EyeIcon({ className }: { readonly className: string }) {
         return (
                 <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

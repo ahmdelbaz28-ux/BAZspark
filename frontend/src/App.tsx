@@ -1,5 +1,5 @@
 
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -196,12 +196,14 @@ function App() {
 
         // V140 Phase 7: Magic Help — F1 opens help for current page
         // V207.3: Ctrl+J opens AI Copilot
+        const pathnameRef = useRef(location.pathname);
+        pathnameRef.current = location.pathname;
         useEffect(() => {
                 const handleKeyDown = (e: KeyboardEvent) => {
                         if (e.key === "F1" || (e.ctrlKey && e.key === "h")) {
                                 e.preventDefault();
                                 // Find help topic for current route
-                                const routeTopic = ROUTE_HELP_MAP[location.pathname];
+                                const routeTopic = ROUTE_HELP_MAP[pathnameRef.current];
                                 setMagicHelpTopic(routeTopic || null);
                                 setHelpOpen(true);
                         } else if (e.ctrlKey && e.key === "k") {
@@ -214,8 +216,8 @@ function App() {
                         }
                 };
                 globalThis.addEventListener("keydown", handleKeyDown);
-        return () => globalThis.removeEventListener("keydown", handleKeyDown);
-        }, [location.pathname]);
+                return () => globalThis.removeEventListener("keydown", handleKeyDown);
+        }, []);
 
 const handleHelpOpen = useCallback(() => {
     setMagicHelpTopic(null);

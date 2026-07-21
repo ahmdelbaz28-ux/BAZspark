@@ -25,9 +25,12 @@ export interface UseLlmChatResult {
 	clearChat: () => void;
 }
 
+const BATCH_INTERVAL_MS = 50;
+
 /**
  * Hook for AI Copilot chat with SSE streaming.
  * Maintains message history and calls the backend LLM streaming endpoint.
+ * Batches streaming updates to reduce GC pressure from rapid array copies.
  */
 export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -35,14 +38,35 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 	const [error, setError] = useState<string | null>(null);
 	const { toast } = useToast();
 	const abortRef = useRef<AbortController | null>(null);
+	const streamBufferRef = useRef("");
+	const batchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const streamIndexRef = useRef<number>(-1);
+
+	const flushBuffer = useCallback(() => {
+		const buffer = streamBufferRef.current;
+		if (!buffer || streamIndexRef.current < 0) return;
+		const idx = streamIndexRef.current;
+		streamBufferRef.current = "";
+		setMessages((prev) => {
+			const updated = [...prev];
+			const lastMsg = updated[idx];
+			if (lastMsg && lastMsg.role === "assistant" && lastMsg.isStreaming) {
+				updated[idx] = { ...lastMsg, content: lastMsg.content + buffer };
+			}
+			return updated;
+		});
+	}, []);
 
 	const sendMessage = useCallback(
 		async (content: string) => {
 			if (!content.trim() || loading) return;
 
-			// Abort any in-flight request
 			if (abortRef.current) {
 				abortRef.current.abort();
+			}
+			if (batchTimerRef.current) {
+				clearTimeout(batchTimerRef.current);
+				batchTimerRef.current = null;
 			}
 
 			const controller = new AbortController();
@@ -54,20 +78,23 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 				timestamp: Date.now(),
 			};
 
-			// Add user message + placeholder assistant message (streaming)
 			const assistantTimestamp = Date.now();
-			setMessages((prev) => [
-				...prev,
-				userMessage,
-				{
-					role: "assistant",
-					content: "",
-					timestamp: assistantTimestamp,
-					isStreaming: true,
-				},
-			]);
+			setMessages((prev) => {
+				streamIndexRef.current = prev.length + 1;
+				return [
+					...prev,
+					userMessage,
+					{
+						role: "assistant",
+						content: "",
+						timestamp: assistantTimestamp,
+						isStreaming: true,
+					},
+				];
+			});
 			setLoading(true);
 			setError(null);
+			streamBufferRef.current = "";
 
 			try {
 				await llmApi.chatStream(
@@ -78,25 +105,26 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 						max_tokens: 1500,
 					},
 					controller.signal,
-					// onChunk — update the assistant message incrementally
+					// onChunk — buffer and batch updates
 					(chunk: string) => {
-						setMessages((prev) => {
-							const updated = [...prev];
-							const lastMsg = updated[updated.length - 1];  // NOSONAR: typescript:S7755
-							if (lastMsg && lastMsg.role === "assistant" && lastMsg.isStreaming) {
-								updated[updated.length - 1] = {
-									...lastMsg,
-									content: lastMsg.content + chunk,
-								};
-							}
-							return updated;
-						});
+						streamBufferRef.current += chunk;
+						if (!batchTimerRef.current) {
+							batchTimerRef.current = setTimeout(() => {
+								batchTimerRef.current = null;
+								flushBuffer();
+							}, BATCH_INTERVAL_MS);
+						}
 					},
-					// onDone — finalize the message
+					// onDone — flush remaining buffer and finalize
 					(done: { content: string; model: string; source: string }) => {
+						if (batchTimerRef.current) {
+							clearTimeout(batchTimerRef.current);
+							batchTimerRef.current = null;
+						}
+						flushBuffer();
 						setMessages((prev) => {
 							const updated = [...prev];
-							const lastMsg = updated[updated.length - 1];  // NOSONAR: typescript:S7755
+							const lastMsg = updated[updated.length - 1];
 							if (lastMsg && lastMsg.role === "assistant") {
 								updated[updated.length - 1] = {
 									...lastMsg,
@@ -108,12 +136,19 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 							}
 							return updated;
 						});
+						streamIndexRef.current = -1;
 					},
 					// onError — mark message as error
 					(errMsg: string) => {
+						if (batchTimerRef.current) {
+							clearTimeout(batchTimerRef.current);
+							batchTimerRef.current = null;
+						}
+						streamBufferRef.current = "";
+						streamIndexRef.current = -1;
 						setMessages((prev) => {
 							const updated = [...prev];
-							const lastMsg = updated[updated.length - 1];  // NOSONAR: typescript:S7755
+							const lastMsg = updated[updated.length - 1];
 							if (lastMsg && lastMsg.role === "assistant" && lastMsg.isStreaming) {
 								updated[updated.length - 1] = {
 									...lastMsg,
@@ -136,7 +171,6 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 				const msg =
 					err instanceof Error ? err.message : "Failed to get AI response";
 				setError(msg);
-				// Remove the empty streaming message
 				setMessages((prev) => {
 					const last = prev[prev.length - 1];
 					if (last && last.role === "assistant" && last.isStreaming && !last.content) {
@@ -150,19 +184,31 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 					variant: "destructive",
 				});
 			} finally {
+				if (batchTimerRef.current) {
+					clearTimeout(batchTimerRef.current);
+					batchTimerRef.current = null;
+				}
+				streamBufferRef.current = "";
+				streamIndexRef.current = -1;
 				if (abortRef.current === controller) {
 					abortRef.current = null;
 				}
 				setLoading(false);
 			}
 		},
-		[loading, systemPrompt, toast],
+		[loading, systemPrompt, toast, flushBuffer],
 	);
 
 	const clearChat = useCallback(() => {
 		if (abortRef.current) {
 			abortRef.current.abort();
 		}
+		if (batchTimerRef.current) {
+			clearTimeout(batchTimerRef.current);
+			batchTimerRef.current = null;
+		}
+		streamBufferRef.current = "";
+		streamIndexRef.current = -1;
 		setMessages([]);
 		setError(null);
 	}, []);

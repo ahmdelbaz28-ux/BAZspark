@@ -1,6 +1,6 @@
 import { Globe, HelpCircle, Search, Settings, Sun, Moon } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { ContextualHelpButton } from "@/components/shared/ContextualHelpButton";
@@ -37,7 +37,7 @@ const routeLabels: Record<string, string> = {
         "/digital-twin/history": "DT History",
 };
 
-const TopBar: React.FC<TopBarProps> = ({  // NOSONAR - typescript:S9011: Intentionally complex demo UI with many interactive buttons
+const TopBar: React.FC<TopBarProps> = memo(({  // NOSONAR - typescript:S9011: Intentionally complex demo UI with many interactive buttons
         isConnected,
         onHelpOpen,
         onSearchOpen,
@@ -161,6 +161,8 @@ const TopBar: React.FC<TopBarProps> = ({  // NOSONAR - typescript:S9011: Intenti
                         <UserMenu />
                 </header>
         );
-};
+}});
+
+TopBar.displayName = "TopBar";
 
 export default TopBar;

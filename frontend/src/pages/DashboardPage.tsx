@@ -1,4 +1,5 @@
 
+import { useMemo } from "react";
 import {
         Activity,
         AlertTriangle,
@@ -41,10 +42,12 @@ export function DashboardPage() {
         } = useDevices(null); // Pass null as projectId
 
         // Calculate stats
-        const totalProjects = projects?.length || 0;
-        const totalDevices = devices?.length || 0;
-        const activeProjects =
-                projects?.filter((p) => p.status === "active").length || 0;
+        const totalProjects = useMemo(() => projects?.length || 0, [projects]);
+        const totalDevices = useMemo(() => devices?.length || 0, [devices]);
+        const activeProjects = useMemo(
+                () => projects?.filter((p) => p.status === "active").length || 0,
+                [projects],
+        );
 
         // V214 FIX (self-critique revised): Calculate device status counts.
         //
@@ -65,7 +68,7 @@ export function DashboardPage() {
         // a tooltip explaining the limitation.
         const warningDevices = 0; // No health endpoint available — honest zero
         const dangerDevices = 0;  // No health endpoint available — honest zero
-        const okDevices = totalDevices; // All devices assumed operational
+        const okDevices = useMemo(() => totalDevices, [totalDevices]); // All devices assumed operational
 
         return (
                 <div className="flex-1 overflow-auto" aria-label={t("dashboard.title")}>

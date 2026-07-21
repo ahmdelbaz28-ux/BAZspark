@@ -5,7 +5,7 @@
  * V140 Phase 5: Connected to real devices API. Falls back to empty zones
  * when no project is selected or API is unavailable.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ExplainButton } from "@/components/ai/ExplainButton";
@@ -342,6 +342,15 @@ export function FireAlarmPage() {
                 setShowProperties(false);
         };
 
+        const deviceStats = useMemo(() => ({
+                total: detectors.length,
+                smoke: detectors.filter((d) => d.type === "smoke").length,
+                heat: detectors.filter((d) => d.type === "heat").length,
+                pull: detectors.filter((d) => d.type === "pull").length,
+                normal: detectors.filter((d) => d.status === "normal").length,
+                warning: detectors.filter((d) => d.status === "warning").length,
+        }), [detectors]);
+
         return (
                 <div
                         className="flex flex-1 overflow-auto"
@@ -475,12 +484,12 @@ export function FireAlarmPage() {
                                                                                 <ExplainButton
                                                                                         calculationType="device_summary"
                                                                                         result={{
-                                                                                                total_detectors: detectors.length,
-                                                                                                smoke_detectors: detectors.filter((d: Detector) => d.type === "smoke").length,
-                                                                                                heat_detectors: detectors.filter((d: Detector) => d.type === "heat").length,
-                                                                                                pull_stations: detectors.filter((d: Detector) => d.type === "pull").length,
-                                                                                                normal: detectors.filter((d: Detector) => d.status === "normal").length,
-                                                                                                warning: detectors.filter((d: Detector) => d.status === "warning").length,
+                                                                                                total_detectors: deviceStats.total,
+                                                                                                smoke_detectors: deviceStats.smoke,
+                                                                                                heat_detectors: deviceStats.heat,
+                                                                                                pull_stations: deviceStats.pull,
+                                                                                                normal: deviceStats.normal,
+                                                                                                warning: deviceStats.warning,
                                                                                         }}
                                                                                 />
                                                                         </div>
@@ -494,14 +503,14 @@ export function FireAlarmPage() {
                                                                                         <span className="text-muted-foreground">
                                                                                                 {t("fireAlarm.totalDetectors")}
                                                                                         </span>
-                                                                                        <span className="text-foreground">{detectors.length}</span>
+                                                                                        <span className="text-foreground">{deviceStats.total}</span>
                                                                                 </div>
                                                                                 <div className="flex justify-between">
                                                                                         <span className="text-muted-foreground">
                                                                                                 {t("fireAlarm.smokeDetectors")}
                                                                                         </span>
                                                                                         <span className="text-foreground">
-                                                                                                {detectors.filter((d) => d.type === "smoke").length}
+                                                                                                {deviceStats.smoke}
                                                                                         </span>
                                                                                 </div>
                                                                                 <div className="flex justify-between">
@@ -509,7 +518,7 @@ export function FireAlarmPage() {
                                                                                                 {t("fireAlarm.heatDetectors")}
                                                                                         </span>
                                                                                         <span className="text-foreground">
-                                                                                                {detectors.filter((d) => d.type === "heat").length}
+                                                                                                {deviceStats.heat}
                                                                                         </span>
                                                                                 </div>
                                                                                 <div className="flex justify-between">
@@ -520,7 +529,7 @@ export function FireAlarmPage() {
                                                                                                 variant="secondary"
                                                                                                 className="bg-success/10 text-success border-success/30"
                                                                                         >
-                                                                                                {detectors.filter((d) => d.status === "normal").length}
+                                                                                                {deviceStats.normal}
                                                                                         </Badge>
                                                                                 </div>
                                                                                 <div className="flex justify-between">
@@ -531,7 +540,7 @@ export function FireAlarmPage() {
                                                                                                 variant="secondary"
                                                                                                 className="bg-warning/10 text-warning border-warning/30"
                                                                                         >
-                                                                                                {detectors.filter((d) => d.status === "warning").length}
+                                                                                                {deviceStats.warning}
                                                                                         </Badge>
                                                                                 </div>
                                                                         </div>

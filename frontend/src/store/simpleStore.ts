@@ -110,6 +110,7 @@ const uid = () => crypto.randomUUID();
 const MAX_LOG_ENTRIES = 500;
 const MAX_ERROR_ENTRIES = 200;
 const MAX_FAULT_ENTRIES = 100;
+const MAX_LIVEDATA_KEYS = 500;
 
 // Method stubs for AppState — these are placeholder functions that are
 // immediately overwritten by the `actions` object below. They exist only
@@ -416,7 +417,20 @@ export const actions = {
         },
 
         updateLiveData: (data: Record<string, unknown>) =>
-                setState((s) => ({ liveData: { ...s.liveData, ...data } })),
+                setState((s) => {
+                        const merged = { ...s.liveData, ...data };
+                        const keys = Object.keys(merged);
+                        if (keys.length > MAX_LIVEDATA_KEYS) {
+                                // Keep only the most recent entries (by insertion order)
+                                const trimmed: Record<string, unknown> = {};
+                                const start = keys.length - MAX_LIVEDATA_KEYS;
+                                for (let i = start; i < keys.length; i++) {
+                                        trimmed[keys[i]] = merged[keys[i]];
+                                }
+                                return { liveData: trimmed };
+                        }
+                        return { liveData: merged };
+                }),
 
         setConnectionStatus: (status: "connected" | "disconnected" | "connecting") =>
                 setState({ connectionStatus: status }),
