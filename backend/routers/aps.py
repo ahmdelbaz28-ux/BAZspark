@@ -14,7 +14,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from backend.services.aps_service import ApsService, get_aps_service
+from backend.services.aps_service import get_aps_service
 
 router = APIRouter(prefix="/api/v2/aps", tags=["Autodesk Platform Services"])
 

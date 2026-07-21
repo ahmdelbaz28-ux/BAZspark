@@ -14,7 +14,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from backend.auth import require_permission
-from backend.db_service import DatabaseService, get_db_service
+from backend.db_service import get_db_service
 from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.schemas import (

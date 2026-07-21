@@ -18,7 +18,7 @@ Endpoints:
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -36,7 +36,7 @@ from backend.integrations.etap_schemas import (
 from backend.integrations.etap_service import EtapService
 from backend.rbac import Permission
 
-router = APIRouter(prefix="/api/v1/integrations/etap", tags=["ETAP Integration"])
+router = APIRouter(prefix="/integrations/etap", tags=["ETAP Integration"])
 
 
 def get_etap_service(request: Request):
