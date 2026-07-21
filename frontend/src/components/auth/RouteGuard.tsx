@@ -27,11 +27,25 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface RouteGuardProps {
         readonly children: ReactNode;
+        /**
+         * Optional role required to access this route.
+         * - If set and user lacks this role, renders an AccessDenied view.
+         * - If not set, any authenticated user can access.
+         * Backend roles: admin, engineer, viewer
+         */
+        readonly requiredRole?: string;
 }
 
-export function RouteGuard({ children }: RouteGuardProps) {
+// C-07 FIX: Role mapping for human-readable access denied messages
+const ROLE_LABELS: Record<string, string> = {
+        admin: "Administrator",
+        engineer: "Engineer",
+        viewer: "Viewer",
+};
 
-        const { isAuthenticated, loading } = useAuth();
+export function RouteGuard({ children, requiredRole }: RouteGuardProps) {
+
+        const { isAuthenticated, loading, role } = useAuth();
         const location = useLocation();
 
         if (loading) {
@@ -49,6 +63,43 @@ export function RouteGuard({ children }: RouteGuardProps) {
                 // Preserve the original path so we can return after login
                 const from = encodeURIComponent(location.pathname + location.search);
                 return <Navigate to={`/login?from=${from}`} replace />;
+        }
+
+        // C-07 FIX: Check role-based access if a requiredRole is specified
+        if (requiredRole && role !== requiredRole) {
+                const requiredLabel = ROLE_LABELS[requiredRole] || requiredRole;
+                const userLabel = (role && ROLE_LABELS[role]) || role || "Unknown";
+                return (
+                        <div className="min-h-screen flex items-center justify-center bg-background">
+                                <div className="flex flex-col items-center gap-4 max-w-md text-center px-4">
+                                        <div className="rounded-full bg-destructive/10 p-4">
+                                                <svg
+                                                        className="h-8 w-8 text-destructive"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                        strokeWidth={2}
+                                                >
+                                                        <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                                                        />
+                                                </svg>
+                                        </div>
+                                        <h2 className="text-xl font-semibold text-foreground">
+                                                Access Denied
+                                        </h2>
+                                        <p className="text-sm text-muted-foreground">
+                                                This page requires the <strong>{requiredLabel}</strong> role.
+                                                Your current role is <strong>{userLabel}</strong>.
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                                Contact your administrator if you need elevated access.
+                                        </p>
+                                </div>
+                        </div>
+                );
         }
 
         return <>{children}</>;

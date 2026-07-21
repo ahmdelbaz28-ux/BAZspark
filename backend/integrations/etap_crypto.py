@@ -10,16 +10,24 @@ import os
 from cryptography.fernet import Fernet, InvalidToken
 
 _ETAP_ENCRYPTION_KEY_ENV = "ETAP_ENCRYPTION_KEY"
+_MASTER_ENCRYPTION_KEY_ENV = "ENCRYPTION_KEY"
+
 
 logger: type(None) = None  # placeholder to satisfy linters without adding logging import here
 
 
 def _get_key() -> bytes:
-    """Return the Fernet key, deriving from env or generating a new one."""
-    key = os.getenv(_ETAP_ENCRYPTION_KEY_ENV)
+    """Return the Fernet key.
+
+    Resolution order:
+      1. ETAP_ENCRYPTION_KEY (dedicated ETAP key, if set)
+      2. ENCRYPTION_KEY (shared master key, already configured in deploy.yml)
+      3. Raise OSError if neither is set
+    """
+    key = os.getenv(_ETAP_ENCRYPTION_KEY_ENV) or os.getenv(_MASTER_ENCRYPTION_KEY_ENV)
     if not key:
         raise OSError(
-            f"Missing required env var {_ETAP_ENCRYPTION_KEY_ENV}. "
+            f"Missing required env var {_ETAP_ENCRYPTION_KEY_ENV} or {_MASTER_ENCRYPTION_KEY_ENV}. "
             "Generate one with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
         )
     if isinstance(key, str):

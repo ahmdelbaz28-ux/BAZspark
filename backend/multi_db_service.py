@@ -348,25 +348,40 @@ class MultiDatabaseService:
     BIM_REDIS_PREFIX = "bim:element:"
     BIM_QDRANT_COLLECTION = "bim_elements"
 
-    def cache_bim_element(self, element_id: str, element_data: dict) -> bool:
-        """Cache BIM element data in Redis (JSON-serialized)."""
+    @staticmethod
+    def _bim_redis_key(element_id: str, tenant_id: str = "") -> str:
+        """Build a tenant-scoped Redis key for BIM elements."""
+        if tenant_id:
+            return f"bim:tenant:{tenant_id}:element:{element_id}"
+        return f"{MultiDatabaseService.BIM_REDIS_PREFIX}{element_id}"
+
+    def cache_bim_element(self, element_id: str, element_data: dict, tenant_id: str = "") -> bool:
+        """Cache BIM element data in Redis (JSON-serialized).
+
+        When tenant_id is provided, the Redis key includes tenant isolation:
+        `bim:tenant:<tenant_id>:element:<element_id>`.
+        """
         if not element_id or not isinstance(element_data, dict):
             return False
         try:
             import json
             payload = json.dumps(element_data, default=str)
-            return self.redis_set(f"{self.BIM_REDIS_PREFIX}{element_id}", payload, ex=86400)
+            return self.redis_set(self._bim_redis_key(element_id, tenant_id), payload, ex=86400)
         except Exception:
             logger.exception("cache_bim_element failed")
             return False
 
-    def get_cached_bim_element(self, element_id: str) -> Optional[dict]:
-        """Retrieve cached BIM element data from Redis."""
+    def get_cached_bim_element(self, element_id: str, tenant_id: str = "") -> Optional[dict]:
+        """Retrieve cached BIM element data from Redis.
+
+        When tenant_id is provided, the Redis key includes tenant isolation:
+        `bim:tenant:<tenant_id>:element:<element_id>`.
+        """
         if not element_id:
             return None
         try:
             import json
-            payload = self.redis_get(f"{self.BIM_REDIS_PREFIX}{element_id}")
+            payload = self.redis_get(self._bim_redis_key(element_id, tenant_id))
             if payload is None:
                 return None
             return json.loads(payload)
@@ -374,30 +389,56 @@ class MultiDatabaseService:
             logger.exception("get_cached_bim_element failed")
             return None
 
-    def store_element_embeddings(self, element_id: str, embeddings: list) -> bool:
-        """Store element embeddings in Qdrant for similarity search."""
+    def store_element_embeddings(self, element_id: str, embeddings: list, tenant_id: str = "") -> bool:
+        """Store element embeddings in Qdrant for similarity search.
+
+        When tenant_id is provided, it is stored in the point payload and
+        used as a filter during search (see find_similar_elements).
+        """
         if not element_id or not isinstance(embeddings, list) or not embeddings:
             return False
         if not self._qdrant_client:
             logger.warning("store_element_embeddings: Qdrant not available")
             return False
         try:
+            payload: dict[str, Any] = {"element_id": element_id}
+            if tenant_id:
+                payload["tenant_id"] = tenant_id
             # Qdrant PointStruct: {"id": <str|uuid>, "vector": [...], "payload": {...}}
-            points = [{"id": element_id, "vector": embeddings, "payload": {"element_id": element_id}}]
+            points = [{"id": element_id, "vector": embeddings, "payload": payload}]
             return self.qdrant_upsert_vectors(self.BIM_QDRANT_COLLECTION, points)
         except Exception:
             logger.exception("store_element_embeddings failed")
             return False
 
-    def find_similar_elements(self, query_embedding: list, limit: int = 5) -> list:
-        """Find similar BIM elements using Qdrant vector search."""
+    def find_similar_elements(self, query_embedding: list, limit: int = 5, tenant_id: str = "") -> list:
+        """Find similar BIM elements using Qdrant vector search.
+
+        When tenant_id is provided, results are filtered to only include
+        elements belonging to that tenant (via payload.tenant_id filter).
+        """
         if not isinstance(query_embedding, list) or not query_embedding:
             return []
         if not self._qdrant_client:
             logger.warning("find_similar_elements: Qdrant not available")
             return []
         try:
-            results = self.qdrant_search(self.BIM_QDRANT_COLLECTION, query_embedding, limit=limit)
+            from qdrant_client.http import models as qdrant_models
+            search_kwargs: dict[str, Any] = {
+                "collection_name": self.BIM_QDRANT_COLLECTION,
+                "query_vector": query_embedding,
+                "limit": limit,
+            }
+            if tenant_id:
+                search_kwargs["query_filter"] = qdrant_models.Filter(
+                    must=[
+                        qdrant_models.FieldCondition(
+                            key="tenant_id",
+                            match=qdrant_models.MatchValue(value=tenant_id),
+                        )
+                    ]
+                )
+            results = self._qdrant_client.search(**search_kwargs)
             # Normalize Qdrant results to a plain dict list for JSON response.
             normalized = []
             for r in results:

@@ -34,6 +34,7 @@ import type React from "react";
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { BazSparkLogo } from "@/components/auth/BazSparkLogo";
 
 interface NavItem {
@@ -42,6 +43,8 @@ interface NavItem {
         icon: React.ElementType;
         path: string;
         dataOnboarding?: string;
+        /** If set, only users with this role can see this nav item. */
+        requiredRole?: string;
 }
 
 const navItems: NavItem[] = [
@@ -152,14 +155,14 @@ const navItems: NavItem[] = [
                 icon: FileText,
                 path: "/reports",
                 dataOnboarding: "nav-reports",
-        },
-        {
-                labelKey: "nav.exports",
-                defaultLabel: "Exports",
-                icon: Download,
-                path: "/exports",
-                dataOnboarding: "nav-exports",
-        },
+        },                {
+                        labelKey: "nav.exports",
+                        defaultLabel: "Exports",
+                        icon: Download,
+                        path: "/exports",
+                        dataOnboarding: "nav-exports",
+                        requiredRole: "admin",
+                },
         {
                 labelKey: "nav.etap",
                 defaultLabel: "ETAP",
@@ -177,13 +180,13 @@ const navItems: NavItem[] = [
                 defaultLabel: "Monitor",
                 icon: Activity,
                 path: "/monitor",
-        },
-        {
-                labelKey: "nav.selfHealing",
-                defaultLabel: "Self-Healing",
-                icon: Shield,
-                path: "/self-healing",
-        },
+        },                {
+                        labelKey: "nav.selfHealing",
+                        defaultLabel: "Self-Healing",
+                        icon: Shield,
+                        path: "/self-healing",
+                        requiredRole: "admin",
+                },
         {
                 labelKey: "nav.memory",
                 defaultLabel: "Memory",
@@ -226,14 +229,14 @@ const navItems: NavItem[] = [
                 icon: Settings,
                 path: "/settings",
                 dataOnboarding: "nav-settings",
-        },
-        {
-                labelKey: "nav.apiKeys",
-                defaultLabel: "API Keys",
-                icon: Key,
-                path: "/api-keys",
-                dataOnboarding: "nav-api-keys",
-        },
+        },                {
+                        labelKey: "nav.apiKeys",
+                        defaultLabel: "API Keys",
+                        icon: Key,
+                        path: "/api-keys",
+                        dataOnboarding: "nav-api-keys",
+                        requiredRole: "admin",
+                },
 ];
 
 interface SidebarProps {
@@ -244,6 +247,7 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
         const [collapsed, setCollapsed] = useState(false);
         const location = useLocation();
         const { t } = useTranslation();
+        const { role } = useAuth();
         const isRTL = document.documentElement.dir === "rtl";
 
         const width = collapsed ? "w-16" : "w-60";
@@ -275,7 +279,9 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                                 className="flex-1 py-3 overflow-y-auto overflow-x-hidden"
                                 aria-label="Primary navigation"
                         >
-                                {navItems.map((item) => {
+                                {navItems
+                                        .filter((item) => !item.requiredRole || item.requiredRole === role)
+                                        .map((item) => {
                                         const isActive =
                                                 location.pathname === item.path ||
                                                 (item.path !== "/dashboard" &&
