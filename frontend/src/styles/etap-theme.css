@@ -1,0 +1,428 @@
+/* ETAP Engineering Theme — Professional Electrical Power System Aesthetic
+ * Distinctive choice: amber/orange accent inspired by electrical warning panels,
+ * switchgear indicators, and power system HMI displays.
+ */
+
+/* ── ETAP-specific tokens ─────────────────────────────────────────────── */
+.etap-page {
+  --etap-bg-primary: #06090f;
+  --etap-bg-secondary: #0b1018;
+  --etap-bg-tertiary: #111827;
+  --etap-bg-elevated: #151d2c;
+  --etap-border-subtle: rgba(255, 255, 255, 0.06);
+  --etap-border-default: rgba(255, 255, 255, 0.1);
+  --etap-border-strong: rgba(255, 255, 255, 0.16);
+  --etap-text-primary: #f1f5f9;
+  --etap-text-secondary: #94a3b8;
+  --etap-text-muted: #64748b;
+  --etap-accent: #f59e0b;
+  --etap-accent-foreground: #0b1018;
+  --etap-accent-muted: rgba(245, 158, 11, 0.15);
+  --etap-accent-glow: rgba(245, 158, 11, 0.35);
+  --etap-success: #10b981;
+  --etap-warning: #f59e0b;
+  --etap-danger: #ef4444;
+  --etap-info: #3b82f6;
+  --etap-radius: 6px;
+  --etap-radius-lg: 10px;
+  --etap-font-mono: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+}
+
+/* ── Page shell ────────────────────────────────────────────────────────── */
+.etap-page {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(245, 158, 11, 0.08), transparent 40%),
+    radial-gradient(circle at 80% 90%, rgba(59, 130, 246, 0.06), transparent 40%),
+    var(--etap-bg-primary);
+  color: var(--etap-text-primary);
+  min-height: 100vh;
+}
+
+/* ── Header / hero ─────────────────────────────────────────────────────── */
+.etap-header {
+  border-bottom: 1px solid var(--etap-border-default);
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.08), transparent);
+  position: relative;
+}
+.etap-header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--etap-accent-glow), transparent);
+}
+
+.etap-title {
+  font-family: var(--etap-font-mono);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 1.25rem;
+}
+.etap-subtitle {
+  color: var(--etap-text-secondary);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
+/* ── Status indicator ──────────────────────────────────────────────────── */
+.etap-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-family: var(--etap-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--etap-border-default);
+  background: var(--etap-bg-tertiary);
+}
+.etap-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--etap-text-muted);
+}
+.etap-status-pill[data-status="connected"] .etap-status-dot {
+  background: var(--etap-success);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+.etap-status-pill[data-status="connecting"] .etap-status-dot {
+  background: var(--etap-warning);
+  animation: etap-blink 1s step-end infinite;
+}
+.etap-status-pill[data-status="error"] .etap-status-dot {
+  background: var(--etap-danger);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+@keyframes etap-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── Tabs — terminal/engineering style ─────────────────────────────────── */
+.etap-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--etap-border-default);
+  background: var(--etap-bg-secondary);
+}
+.etap-tab {
+  position: relative;
+  padding: 0.75rem 1.25rem;
+  font-family: var(--etap-font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--etap-text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 200ms ease, border-color 200ms ease;
+}
+.etap-tab:hover {
+  color: var(--etap-text-secondary);
+}
+.etap-tab[aria-selected="true"] {
+  color: var(--etap-accent);
+  border-bottom-color: var(--etap-accent);
+}
+.etap-tab:focus-visible {
+  outline: 2px solid var(--etap-accent);
+  outline-offset: 2px;
+}
+
+/* ── Cards — engineering panel aesthetic ───────────────────────────────── */
+.etap-panel {
+  background: var(--etap-bg-tertiary);
+  border: 1px solid var(--etap-border-default);
+  border-radius: var(--etap-radius-lg);
+  overflow: hidden;
+}
+.etap-panel-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--etap-border-subtle);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+}
+.etap-panel-title {
+  font-family: var(--etap-font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--etap-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.etap-panel-title-icon {
+  color: var(--etap-accent);
+}
+.etap-panel-description {
+  color: var(--etap-text-muted);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+.etap-panel-body {
+  padding: 1.25rem;
+}
+
+/* ── Form controls — engineering terminal style ────────────────────────── */
+.etap-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.etap-label {
+  font-family: var(--etap-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--etap-text-secondary);
+}
+.etap-input {
+  background: var(--etap-bg-primary);
+  border: 1px solid var(--etap-border-default);
+  border-radius: var(--etap-radius);
+  color: var(--etap-text-primary);
+  padding: 0.6rem 0.85rem;
+  font-family: var(--etap-font-mono);
+  font-size: 0.9rem;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+.etap-input:focus {
+  outline: none;
+  border-color: var(--etap-accent);
+  box-shadow: 0 0 0 3px var(--etap-accent-muted), 0 0 12px var(--etap-accent-glow);
+}
+.etap-input::placeholder {
+  color: var(--etap-text-muted);
+  opacity: 0.7;
+}
+
+/* ── Buttons — engineering HMI style ───────────────────────────────────── */
+.etap-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: var(--etap-radius);
+  font-family: var(--etap-font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 200ms ease, background 200ms ease;
+}
+.etap-btn:active {
+  transform: translateY(1px);
+}
+.etap-btn:focus-visible {
+  outline: 2px solid var(--etap-accent);
+  outline-offset: 2px;
+}
+
+.etap-btn-primary {
+  background: var(--etap-accent);
+  color: var(--etap-accent-foreground);
+  border-color: var(--etap-accent);
+  box-shadow: 0 0 16px var(--etap-accent-glow);
+}
+.etap-btn-primary:hover:not(:disabled) {
+  background: #fbbf24;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.5);
+}
+
+.etap-btn-secondary {
+  background: transparent;
+  color: var(--etap-text-primary);
+  border-color: var(--etap-border-strong);
+}
+.etap-btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.etap-btn-danger {
+  background: transparent;
+  color: var(--etap-danger);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+.etap-btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+.etap-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Toggle switch ─────────────────────────────────────────────────────── */
+.etap-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: var(--etap-bg-primary);
+  border: 1px solid var(--etap-border-default);
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background 200ms ease, border-color 200ms ease;
+}
+.etap-toggle[aria-checked="true"] {
+  background: var(--etap-accent-muted);
+  border-color: var(--etap-accent);
+}
+.etap-toggle::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--etap-text-muted);
+  transition: transform 200ms ease, background 200ms ease;
+}
+.etap-toggle[aria-checked="true"]::after {
+  transform: translateX(20px);
+  background: var(--etap-accent);
+}
+
+/* ── Tables — engineering log style ────────────────────────────────────── */
+.etap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.etap-table th {
+  font-family: var(--etap-font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--etap-text-muted);
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--etap-border-default);
+}
+.etap-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--etap-border-subtle);
+  color: var(--etap-text-secondary);
+  font-family: var(--etap-font-mono);
+  font-size: 0.8rem;
+}
+.etap-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* ── Badges — engineering status chips ─────────────────────────────────── */
+.etap-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  font-family: var(--etap-font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--etap-border-default);
+  background: var(--etap-bg-tertiary);
+  color: var(--etap-text-secondary);
+}
+.etap-badge-success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.etap-badge-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.etap-badge-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ── Alert / banner ────────────────────────────────────────────────────── */
+.etap-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--etap-radius);
+  border: 1px solid var(--etap-border-default);
+  background: var(--etap-bg-tertiary);
+  font-size: 0.9rem;
+}
+.etap-alert-success {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+  color: #6ee7b7;
+}
+.etap-alert-error {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  color: #fca5a5;
+}
+
+/* ── Circuit decoration — signature element ────────────────────────────── */
+.etap-circuit-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  overflow: hidden;
+}
+.etap-circuit-line {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, var(--etap-accent-glow), transparent);
+  height: 1px;
+  width: 100%;
+  animation: etap-circuit-sweep 8s linear infinite;
+}
+.etap-circuit-line:nth-child(1) { top: 20%; animation-delay: 0s; }
+.etap-circuit-line:nth-child(2) { top: 50%; animation-delay: 2.5s; }
+.etap-circuit-line:nth-child(3) { top: 80%; animation-delay: 5s; }
+
+@keyframes etap-circuit-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ── Section divider ───────────────────────────────────────────────────── */
+.etap-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--etap-border-default), transparent);
+  border: none;
+  margin: 1.5rem 0;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .etap-tabs {
+    overflow-x: auto;
+  }
+  .etap-tab {
+    white-space: nowrap;
+  }
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .etap-circuit-line,
+  .etap-status-pill[data-status="connecting"] .etap-status-dot {
+    animation: none;
+  }
+}

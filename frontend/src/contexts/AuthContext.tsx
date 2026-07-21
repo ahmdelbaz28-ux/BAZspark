@@ -21,6 +21,7 @@ import {
         useCallback,
         useContext,
         useEffect,
+        useRef,
         useState,
         type ReactNode,
 } from "react";
@@ -84,17 +85,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }, [refresh]);
 
         // Re-check on window focus (catches logout in another tab)
+        const isAuthRef = useRef(state.isAuthenticated);
+        isAuthRef.current = state.isAuthenticated;
         useEffect(() => {
                 const onFocus = () => {
                         // Only re-check if we think we're authenticated (avoid spamming
                         // /auth/me when not logged in — LoginPage handles that flow)
-                        if (state.isAuthenticated) {
+                        if (isAuthRef.current) {
                                 refresh();
                         }
                 };
                 globalThis.addEventListener("focus", onFocus);
                 return () => globalThis.removeEventListener("focus", onFocus);
-        }, [state.isAuthenticated, refresh]);
+        }, [refresh]);
 
         const login = useCallback(
                 async (apiKey: string) => {

@@ -1,4 +1,5 @@
 import type React from "react";
+import { memo } from "react";
 
 interface StatusBarProps {
         backendUrl: string;
@@ -8,7 +9,7 @@ interface StatusBarProps {
 
 const APP_VERSION = "v1.55.0";
 
-const StatusBar: React.FC<StatusBarProps> = ({
+const StatusBar: React.FC<StatusBarProps> = memo(({
         backendUrl,
         isConnected,
         environment,
@@ -40,6 +41,8 @@ const StatusBar: React.FC<StatusBarProps> = ({
                         </div>
                 </footer>
         );
-};
+}});
+
+StatusBar.displayName = "StatusBar";
 
 export default StatusBar;

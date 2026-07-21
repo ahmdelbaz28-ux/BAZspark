@@ -347,12 +347,21 @@ export function useGsapGridBackground(
     let animId: number;
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
+    let paused = false;
 
     const handleResize = () => {
       width = canvas!.width = window.innerWidth;
       height = canvas!.height = window.innerHeight;
     };
     window.addEventListener("resize", handleResize);
+
+    const handleVisibility = () => {
+      paused = document.hidden;
+      if (!paused) {
+        animId = requestAnimationFrame(animate);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     // ─── Grid 3D perspective ───
     const gridSize = 40;
@@ -391,6 +400,7 @@ export function useGsapGridBackground(
     let time = 0;
 
     const animate = () => {
+      if (paused) return;
       time += 0.016;
       offset += 0.3;
       ctx.clearRect(0, 0, width, height);
@@ -491,6 +501,7 @@ export function useGsapGridBackground(
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      document.removeEventListener("visibilitychange", handleVisibility);
       cancelAnimationFrame(animId);
     };
   }, [canvasRef]);

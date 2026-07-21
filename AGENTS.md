@@ -25,6 +25,13 @@ The following skills are installed and active for this workspace. **Use them bef
 - **When:** Building new UI or reshaping existing UI. Distinctive, intentional visual design.
 - **Scope:** Aesthetic direction, typography, palette, layout, copy, motion, restraint.
 
+### 3. `superdesign`
+
+- **Location:** `.agents/skills/superdesign/SKILL.md`
+- **References:** `.agents/skills/superdesign/references/`
+- **When:** Building or refactoring design systems, creating component libraries, establishing design tokens, implementing consistent UI patterns.
+- **Scope:** Design token systems, component architecture, accessibility standards, safety-critical UI patterns, visual design principles.
+
 ## Rules
 
 1. **Always invoke a relevant skill before acting.** If a skill applies to the task, use it — no exceptions.

@@ -31,7 +31,7 @@ import {
         Server,
 } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { BazSparkLogo } from "@/components/auth/BazSparkLogo";
@@ -240,7 +240,7 @@ interface SidebarProps {
         compact?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = () => {
+const Sidebar: React.FC<SidebarProps> = memo(() => {
         const [collapsed, setCollapsed] = useState(false);
         const location = useLocation();
         const { t } = useTranslation();
@@ -339,6 +339,8 @@ const Sidebar: React.FC<SidebarProps> = () => {
                         </div>
                 </aside>
         );
-};
+}});
+
+Sidebar.displayName = "Sidebar";
 
 export default Sidebar;
