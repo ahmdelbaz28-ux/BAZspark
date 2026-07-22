@@ -206,7 +206,7 @@ export function GlobalHelpDrawer({
 										</Badge>
 										<Badge
 											variant="outline"
-											className="border-orange-600/30 text-primary"
+											className="border-primary/30 text-primary"
 										>
 											AR
 										</Badge>
@@ -299,7 +299,7 @@ export function GlobalHelpDrawer({
 													return (														<button type="button"
 																key={rtId}
 																onClick={() => setSelectedTopicId(rtId)}
-																className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:border-orange-600/30 hover:text-primary transition-colors"
+																className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:border-primary/30 hover:text-primary transition-colors"
 															>
 															{isAr ? rt.titleAr : rt.titleEn}
 														</button>

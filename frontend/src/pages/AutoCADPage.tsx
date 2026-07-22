@@ -271,7 +271,7 @@ export function AutoCADPage() {
                                                 <Button
                                                         onClick={handleReadDwg}
                                                         disabled={!connected}
-                                                        className="bg-primary hover:bg-orange-700 text-white"
+                                                        className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
                                                 >
                                                         Read
                                                 </Button>

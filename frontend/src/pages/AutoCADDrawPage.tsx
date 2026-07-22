@@ -197,7 +197,7 @@ export function AutoCADDrawPage() {
 							<Button
 								onClick={drawLine}
 								disabled={drawing}
-								className="bg-primary hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{drawing ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -242,7 +242,7 @@ export function AutoCADDrawPage() {
 							<Button
 								onClick={drawPolyline}
 								disabled={drawing}
-								className="bg-primary hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{drawing ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -296,7 +296,7 @@ export function AutoCADDrawPage() {
 							<Button
 								onClick={drawCircle}
 								disabled={drawing}
-								className="bg-primary hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{drawing ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -361,7 +361,7 @@ export function AutoCADDrawPage() {
 							<Button
 								onClick={drawText}
 								disabled={drawing}
-								className="bg-primary hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{drawing ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />

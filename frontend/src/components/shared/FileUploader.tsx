@@ -123,7 +123,7 @@ export function FileUploader({
 						type="button"
 						onClick={handleUpload}
 						disabled={uploading}
-						className="bg-primary hover:bg-orange-700 text-white"
+						className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 					>
 						{uploading ? "Uploading..." : "Upload"}
 					</Button>

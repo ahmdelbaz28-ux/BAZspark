@@ -31,7 +31,7 @@ export function NotFoundPage() {
 				<div className="flex flex-wrap gap-3 justify-center">
 					<Button
 						onClick={() => navigate("/dashboard")}
-						className="bg-gradient-to-r from-primary to-primary hover:from-orange-600 hover:to-red-700 text-white shadow-lg shadow-orange-500/20"
+						className="bg-gradient-to-r from-primary to-cyan-500 hover:from-cyan-400 hover:to-cyan-600 text-slate-950 font-semibold shadow-lg shadow-cyan-500/20"
 					>
 						<Home className="h-4 w-4 mr-2" />
 						Back to Dashboard

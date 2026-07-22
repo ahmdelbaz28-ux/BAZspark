@@ -430,7 +430,7 @@ export function FireAlarmPage() {
                                                 </Button>
                                                 <Button
                                                         size="sm"
-                                                        className="bg-primary hover:bg-orange-700 text-white border-none transition-colors"
+                                                        className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold border-none transition-colors"
                                                         onClick={handleSave}
                                                         aria-label={t("common.save")}
                                                 >
