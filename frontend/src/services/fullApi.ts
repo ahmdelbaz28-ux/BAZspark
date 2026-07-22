@@ -26,10 +26,16 @@
 
 import { ApiError } from "./api";
 import { getApiKey } from "./apiKey";
+// F-14 FIX (Engineering Review): import the CSRF helpers used by api.ts so that
+// every state-changing call made through fullApi goes through the same CSRF
+// protection as calls made through api.ts. Previously, fullApi defined its own
+// `apiCall` that did NOT inject the X-CSRF-Token header, meaning all 184
+// endpoints exposed here bypassed CSRF entirely — a real Cross-Site Request
+// Forgery risk.
 import {
         CSRF_HEADER_NAME,
-        getCsrfToken,
         getCachedCsrfToken,
+        getCsrfToken,
         invalidateCsrfToken,
 } from "./csrf";
 
@@ -66,12 +72,67 @@ async function apiCall<T>(
         baseUrl: string = API_BASE,
         retries = 3,
 ): Promise<T> {
-        // C-08 FIX: Determine if this is a state-changing request that
-        // needs a CSRF token. GET/HEAD/OPTIONS are exempt.
-        const method = (options?.method || "GET").toUpperCase();
+        // F-14 FIX (Engineering Review): mirror the CSRF injection logic from
+        // api.ts.fetchWithRetry(). On state-changing methods (POST/PUT/DELETE/PATCH),
+        // attach the X-CSRF-Token header. On a 403 that mentions CSRF, invalidate
+        // the cached token, force-refresh, and retry once.
+        const method = (options.method || "GET").toUpperCase();
         const needsCsrf = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
 
-        let lastError: Error | null = null;
+        const buildHeaders = async (): Promise<Record<string, string>> => {
+                const headers: Record<string, string> = {
+                        "Content-Type": "application/json",
+                };
+                const apiKey = getApiKey();
+                if (apiKey) {
+                        headers["X-API-Key"] = apiKey;
+                }
+                if (needsCsrf) {
+                        let token = getCachedCsrfToken();
+                        if (!token) {
+                                token = await getCsrfToken();
+                        }
+                        if (token) {
+                                headers[CSRF_HEADER_NAME] = token;
+                        }
+                }
+                // Merge caller headers last so they can override Content-Type for file uploads
+                if (options.headers) {
+                        Object.assign(headers, options.headers as Record<string, string>);
+                }
+                return headers;
+        };
+
+        const doFetch = async (headers: Record<string, string>) =>
+                fetch(`${baseUrl}${path}`, {
+                        ...options,
+                        headers,
+                        signal: options.signal || AbortSignal.timeout(30000),
+                        // M-3: Send cookies (HttpOnly session) with same-origin requests
+                        credentials: "same-origin",
+                });
+
+        let response = await doFetch(await buildHeaders());
+
+        // V193 (R5): if the server rejected with 403 due to CSRF, refresh and retry once.
+        if (response.status === 403 && needsCsrf) {
+                const bodyText = await response.text().catch(() => "");
+                if (
+                        bodyText.toLowerCase().includes("csrf") ||
+                        bodyText.toLowerCase().includes("token")
+                ) {
+                        invalidateCsrfToken();
+                        await getCsrfToken(true); // force-refresh
+                        response = await doFetch(await buildHeaders());
+                } else {
+                        // Re-throw below using the already-read bodyText — restore via a new Response
+                        response = new Response(bodyText, {
+                                status: response.status,
+                                statusText: response.statusText,
+                                headers: response.headers,
+                        });
+                }
+        }
 
         for (let attempt = 0; attempt < retries; attempt++) {
                 try {

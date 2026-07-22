@@ -54,10 +54,11 @@ jobs:
         run: mkdir -p reports
 
       - name: Ruff lint
-        # V300 FIX: Removed `|| true` — Ruff now passes clean on the codebase.
-        # Previously non-blocking because of pre-existing violations that have
-        # since been fixed. New lint errors will now correctly block the gate.
-        run: ruff check backend/ fireai/ core/ backend_app.py --output-format=github
+        # V300 / C-XX FIX: Removed `|| true` — Ruff failures now block CI.
+        # Added `skills/` to scan paths (engineering review). New lint errors
+        # correctly block the gate. Pre-existing violations must be fixed or
+        # selectively suppressed with `# noqa` before merging.
+        run: ruff check backend/ fireai/ core/ skills/ backend_app.py --output-format=github
 
       - name: MyPy type check (regression gate)
         # V300 FIX: Replaced bare `|| true` with a regression gate that fails
@@ -417,13 +418,10 @@ jobs:
         run: pip install pip-audit
 
       - name: Audit Python dependencies
-        # V300 FIX: Made blocking for HIGH/CRITICAL vulnerabilities.
-        # Previously fully non-blocking (`|| true` everywhere), which meant
-        # new vulnerable dependencies could be introduced without CI failing.
-        # Now: pip-audit runs and the gate script checks severity levels.
+        # V300 / C-XX FIX: Combined approach — pip-audit runs with severity
+        # gating via pip_audit_gate.py. HIGH/CRITICAL vulnerabilities block CI.
         # LOW/MEDIUM vulns are reported as warnings (non-blocking) because
         # they often depend on transitive deps we can't directly control.
-        # HIGH/CRITICAL vulns block the pipeline.
         run: |
           mkdir -p reports
           # Run pip-audit, capturing output for the gate script
@@ -447,7 +445,7 @@ jobs:
 
 
       - name: Audit frontend dependencies
-        # V300 FIX: Made blocking for HIGH severity vulnerabilities.
+        # V300 / C-XX FIX: Combined approach — npm audit blocks on HIGH severity.
         # Previously fully non-blocking (`|| true`), meaning vulnerable npm
         # packages could be introduced without CI failing.
         run: |

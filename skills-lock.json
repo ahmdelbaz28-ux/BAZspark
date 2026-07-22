@@ -7,6 +7,12 @@
       "skillPath": "skills/debugging-wizard/SKILL.md",
       "computedHash": "7c578adb7a39ff6c4018f87055e4191e965c5e440119116914efd86318646a69"
     },
+    "resolve-merge-conflicts": {
+      "source": "warpdotdev/common-skills",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/resolve-merge-conflicts/SKILL.md",
+      "computedHash": "23f28117a0d622d494a1b7650305507a2a76d4c51f609b34654c7b1866e4542d"
+    },
     "security-audit": {
       "source": "cloudflare/security-audit-skill",
       "sourceType": "github",

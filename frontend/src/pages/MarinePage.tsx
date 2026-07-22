@@ -18,6 +18,10 @@
  *   12. /marine/integrations/revit    — Export Revit BIM ship families
  *   13. /marine/standards             — List supported SOLAS/IMO standards
  *   14. /marine/fire-classes          — List SOLAS fire division classes
+ *
+ * V300 DESIGN: Maritime Instrument Panel aesthetic — brass (#c9a84c) & ivory
+ * palette, Instrument Serif display type, JetBrains Mono for engineering data.
+ * Signature: Brass-etched vessel hull schematic on radar-grid viewport.
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -182,8 +186,8 @@ export function MarinePage() {
                         toast({
                                 title: "SOLAS Compliance Validation",
                                 description: (res as { compliant?: boolean }).compliant
-                                        ? "✅ Ship parameters pass SOLAS II-2 rules"
-                                        : "⚠️ Compliance warnings detected — review checklist",
+                                        ? "Ship parameters pass SOLAS II-2 rules"
+                                        : "Compliance warnings detected — review checklist",
                         });
                 } catch (err) {
                         toast({
@@ -384,7 +388,7 @@ export function MarinePage() {
                         const res = await marineApi.integrateEtap(buildShipPayload());
                         toast({
                                 title: "ETAP CSV Exported",
-                                description: `Generated ETAP marine power network definition file`,
+                                description: "Generated ETAP marine power network definition file",
                         });
                 } catch (err) {
                         toast({ title: "ETAP Export Failed", variant: "destructive" });
@@ -430,7 +434,7 @@ export function MarinePage() {
                         setSimulatedDamperClosed(true);
                         setSimulatedCo2Discharging(true);
                         toast({
-                                title: "🚨 FIRE ALARM SIMULATION INITIATED",
+                                title: "FIRE ALARM SIMULATION INITIATED",
                                 description: `MVZ-${selectedZoneIndex + 1} Smoke Detector #04 Activated — Dampers Closed & CO2 Discharge Primed!`,
                                 variant: "destructive",
                         });
@@ -445,37 +449,35 @@ export function MarinePage() {
                 }
         };
 
+        // ── Render ──────────────────────────────────────────────────────────────
         return (
-                <div className="flex-1 overflow-auto bg-[#080c14] text-slate-100" aria-label={t("nav.marine", "Marine")}>
-                        <div className="p-6 max-w-7xl mx-auto space-y-6">
+                <div className="marine-page flex-1 overflow-auto" aria-label={t("nav.marine", "Marine")}>
+                        <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
 
-                                {/* Top Header & Quick Actions */}
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+                                {/* ── Brass Rule Header ───────────────────────────────────────── */}
+                                <div className="marine-brass-rule mb-6" />
+
+                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                                         <div>
-                                                <div className="flex items-center gap-2.5">
-                                                        <div className="p-2 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                        <div className="p-2.5 rounded-md bg-[rgba(201,168,76,0.1)] border border-[rgba(201,168,76,0.25)] text-[#c9a84c]">
                                                                 <Anchor className="h-6 w-6" />
                                                         </div>
-                                                        <div>
-                                                                <h1 className="text-xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
-                                                                        Marine Fire Protection & Safety Studio
-                                                                        <Badge variant="outline" className="text-[11px] font-mono border-cyan-500/30 text-cyan-400 bg-cyan-500/5">
-                                                                                SOLAS II-2
-                                                                        </Badge>
-                                                                </h1>
-                                                                <p className="text-xs text-slate-400 mt-0.5 font-mono">
-                                                                        IMO FSS Code · IEC 60092 · Classification Rules (LR / DNV / ABS)
-                                                                </p>
-                                                        </div>
+                                                        <h1 className="marine-display text-3xl md:text-4xl tracking-tight">
+                                                                Marine Fire Protection & Safety Studio
+                                                        </h1>
                                                 </div>
+                                                <p className="marine-label text-[#4a5568] ml-[52px]">
+                                                        SOLAS II-2 · IMO FSS Code · IEC 60092 · Classification Rules (LR / DNV / ABS)
+                                                </p>
                                         </div>
 
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2.5">
                                                 <Button
                                                         data-testid="marine-run-pipeline-btn"
                                                         onClick={handleRunFullPipeline}
                                                         disabled={loading === "full-pipeline"}
-                                                        className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs h-9 px-4"
+                                                        className="marine-btn marine-btn--primary"
                                                 >
                                                         {loading === "full-pipeline" ? (
                                                                 <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
@@ -489,282 +491,237 @@ export function MarinePage() {
                                                         data-testid="marine-alarm-sim-btn"
                                                         variant="outline"
                                                         onClick={toggleAlarmSimulation}
-                                                        className={`text-xs h-9 px-3 border transition-colors ${
-                                                                alarmActive
-                                                                        ? "border-red-500 bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                                                                        : "border-slate-700 bg-slate-900/60 text-slate-300 hover:bg-slate-800"
-                                                        }`}
+                                                        className={`marine-btn ${alarmActive ? "marine-btn--danger" : "marine-btn--secondary"}`}
                                                 >
-                                                        <Siren className={`h-4 w-4 mr-1.5 ${alarmActive ? "animate-pulse text-red-400" : "text-amber-400"}`} />
+                                                        <Siren className={`h-4 w-4 mr-1.5 ${alarmActive ? "animate-pulse text-[#e63946]" : "text-[#c9a84c]"}`} />
                                                         {alarmActive ? "Stop Alarm Sim" : "Simulate Alarm"}
                                                 </Button>
                                         </div>
                                 </div>
 
-                                {/* Main Studio Tabs */}
+                                {/* ── Telemetry Bento Bar ───────────────────────────────────────── */}
+                                <div className="marine-telemetry-bar">
+                                        <div className={`marine-telemetry-item ${ship.length_overall_m ? "marine-telemetry-item--accent" : ""}`}>
+                                                <div className="marine-telemetry-label">Vessel LOA</div>
+                                                <div className="marine-telemetry-value marine-telemetry-value--brass">{ship.length_overall_m} m</div>
+                                        </div>
+                                        <div className="marine-telemetry-item">
+                                                <div className="marine-telemetry-label">Gross Tonnage</div>
+                                                <div className="marine-telemetry-value">{ship.gross_tonnage} GT</div>
+                                        </div>
+                                        <div className="marine-telemetry-item">
+                                                <div className="marine-telemetry-label">MVZ Zones</div>
+                                                <div className="marine-telemetry-value">{zones.length > 0 ? zones.length : "4 (Auto)"}</div>
+                                        </div>
+                                        <div className="marine-telemetry-item">
+                                                <div className="marine-telemetry-label">Fire Damper</div>
+                                                <div className="mt-1.5">
+                                                        <span className={`marine-badge ${simulatedDamperClosed ? "marine-badge--danger" : "marine-badge--safe"}`}>
+                                                                {simulatedDamperClosed ? "CLOSED (ALARM)" : "OPEN (NORMAL)"}
+                                                        </span>
+                                                </div>
+                                        </div>
+                                        <div className="marine-telemetry-item">
+                                                <div className="marine-telemetry-label">CO2 Flooding</div>
+                                                <div className="mt-1.5">
+                                                        <span className={`marine-badge ${simulatedCo2Discharging ? "marine-badge--danger" : "marine-badge--neutral"}`}>
+                                                                {simulatedCo2Discharging ? "ARMED / DISCHARGE" : "STANDBY"}
+                                                        </span>
+                                                </div>
+                                        </div>
+                                        <div className="marine-telemetry-item">
+                                                <div className="marine-telemetry-label">SOLAS Status</div>
+                                                <div className="mt-1.5">
+                                                        <span className="marine-badge marine-badge--safe">
+                                                                SOLAS II-2 PASS
+                                                        </span>
+                                                </div>
+                                        </div>
+                                </div>
+
+                                {/* ── Instrument Panel Tabs ────────────────────────────────────── */}
                                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                                        <TabsList className="bg-slate-900/80 border border-slate-800 p-1 h-11">
-                                                <TabsTrigger value="viewport" className="text-xs font-medium data-[state=active]:bg-slate-800 data-[state=active]:text-cyan-400">
+                                        <TabsList className="marine-tabs">
+                                                <TabsTrigger value="viewport" className="marine-tab-trigger">
                                                         <Ship className="h-3.5 w-3.5 mr-1.5" />
                                                         Vessel Deck Viewport & Alarm Sim
                                                 </TabsTrigger>
-                                                <TabsTrigger value="specs" className="text-xs font-medium data-[state=active]:bg-slate-800 data-[state=active]:text-cyan-400">
+                                                <TabsTrigger value="specs" className="marine-tab-trigger">
                                                         <Sliders className="h-3.5 w-3.5 mr-1.5" />
                                                         Ship Parameters & SOLAS Rules
                                                 </TabsTrigger>
-                                                <TabsTrigger value="systems" className="text-xs font-medium data-[state=active]:bg-slate-800 data-[state=active]:text-cyan-400">
+                                                <TabsTrigger value="systems" className="marine-tab-trigger">
                                                         <Zap className="h-3.5 w-3.5 mr-1.5" />
                                                         Detection, Extinguishing & Power
                                                 </TabsTrigger>
-                                                <TabsTrigger value="exports" className="text-xs font-medium data-[state=active]:bg-slate-800 data-[state=active]:text-cyan-400">
+                                                <TabsTrigger value="exports" className="marine-tab-trigger">
                                                         <Download className="h-3.5 w-3.5 mr-1.5" />
                                                         PLC Logic & CAD/BIM Exports
                                                 </TabsTrigger>
                                         </TabsList>
 
-                                        {/* ── TAB 1: VESSEL DECK VIEWPORT & ALARM SIMULATOR ────────────────────────── */}
+                                        {/* ── TAB 1: VESSEL DECK VIEWPORT & ALARM SIMULATOR ───────────── */}
                                         <TabsContent value="viewport" className="space-y-6 m-0">
 
-                                                {/* Telemetry Bento Bar */}
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                                                        <div className="p-3 rounded-md bg-slate-900/60 border border-slate-800/80">
-                                                                <span className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Vessel LOA</span>
-                                                                <div className="text-lg font-bold font-mono text-cyan-400 mt-1">{ship.length_overall_m} m</div>
-                                                        </div>
-                                                        <div className="p-3 rounded-md bg-slate-900/60 border border-slate-800/80">
-                                                                <span className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Gross Tonnage</span>
-                                                                <div className="text-lg font-bold font-mono text-slate-200 mt-1">{ship.gross_tonnage} GT</div>
-                                                        </div>
-                                                        <div className="p-3 rounded-md bg-slate-900/60 border border-slate-800/80">
-                                                                <span className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">MVZ Zones</span>
-                                                                <div className="text-lg font-bold font-mono text-slate-200 mt-1">{zones.length > 0 ? zones.length : "4 (Auto)"}</div>
-                                                        </div>
-                                                        <div className="p-3 rounded-md bg-slate-900/60 border border-slate-800/80">
-                                                                <span className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Fire Damper</span>
-                                                                <div className="text-sm font-semibold mt-1">
-                                                                        <Badge variant="outline" className={simulatedDamperClosed ? "border-amber-500/40 bg-amber-500/10 text-amber-400" : "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"}>
-                                                                                {simulatedDamperClosed ? "CLOSED (ALARM)" : "OPEN (NORMAL)"}
-                                                                        </Badge>
-                                                                </div>
-                                                        </div>
-                                                        <div className="p-3 rounded-md bg-slate-900/60 border border-slate-800/80">
-                                                                <span className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">CO2 Flooding</span>
-                                                                <div className="text-sm font-semibold mt-1">
-                                                                        <Badge variant="outline" className={simulatedCo2Discharging ? "border-red-500/40 bg-red-500/10 text-red-400 animate-pulse" : "border-slate-700 text-slate-400"}>
-                                                                                {simulatedCo2Discharging ? "ARMED / DISCHARGE" : "STANDBY"}
-                                                                        </Badge>
-                                                                </div>
-                                                        </div>
-                                                        <div className="p-3 rounded-md bg-slate-900/60 border border-slate-800/80">
-                                                                <span className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">SOLAS Status</span>
-                                                                <div className="text-sm font-semibold mt-1">
-                                                                        <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-                                                                                SOLAS II-2 PASS
-                                                                        </Badge>
-                                                                </div>
-                                                        </div>
+                                                {/* Animated SVG Vessel Schematic Viewport */}
+                                                <div className={`marine-viewport ${alarmActive ? "marine-viewport--alarm" : ""}`}>
+                                                        <svg viewBox="0 0 1000 320" className="w-full h-auto min-w-[700px]">
+                                                                {/* Waterline */}
+                                                                <line x1="0" y1="230" x2="1000" y2="230" stroke="rgba(126,200,164,0.2)" strokeWidth="1" strokeDasharray="6 4" />
+                                                                <text x="20" y="245" fill="rgba(126,200,164,0.4)" fontSize="10" fontFamily="monospace">WATERLINE (DRAFT 7.2m)</text>
+
+                                                                {/* Ship Hull Shape — Brass Etch */}
+                                                                <path
+                                                                        className="marine-hull-path marine-hull-etch"
+                                                                        d="M 50 140 L 150 250 L 880 250 L 960 140 L 960 100 L 50 100 Z"
+                                                                />
+
+                                                                {/* Superstructure / Bridge */}
+                                                                <path
+                                                                        className="marine-hull-superstructure"
+                                                                        d="M 250 100 L 250 40 L 450 40 L 450 100 Z"
+                                                                />
+                                                                <text x="320" y="70" fill="rgba(176,184,196,0.6)" fontSize="11" fontFamily="monospace" fontWeight="bold">NAVIGATION BRIDGE</text>
+
+                                                                {/* Decks */}
+                                                                <line x1="50" y1="140" x2="960" y2="140" stroke="rgba(74,85,104,0.6)" strokeWidth="1" />
+                                                                <line x1="100" y1="195" x2="920" y2="195" stroke="rgba(74,85,104,0.6)" strokeWidth="1" />
+
+                                                                {/* MVZ Bulkhead Dividers (A-60 Rated) */}
+                                                                <line x1="280" y1="40" x2="280" y2="250" stroke="rgba(230,57,70,0.7)" strokeWidth="2" strokeDasharray="4 2" className={alarmActive ? "marine-bulkhead--alarm" : ""} />
+                                                                <line x1="500" y1="100" x2="500" y2="250" stroke="rgba(230,57,70,0.7)" strokeWidth="2" strokeDasharray="4 2" className={alarmActive ? "marine-bulkhead--alarm" : ""} />
+                                                                <line x1="720" y1="100" x2="720" y2="250" stroke="rgba(230,57,70,0.7)" strokeWidth="2" strokeDasharray="4 2" className={alarmActive ? "marine-bulkhead--alarm" : ""} />
+
+                                                                {/* MVZ Bulkhead Labels */}
+                                                                <text x="285" y="32" fill="rgba(230,57,70,0.8)" fontSize="10" fontFamily="monospace">A-60 BULKHEAD</text>
+                                                                <text x="505" y="92" fill="rgba(230,57,70,0.8)" fontSize="10" fontFamily="monospace">A-60 BULKHEAD</text>
+                                                                <text x="725" y="92" fill="rgba(230,57,70,0.8)" fontSize="10" fontFamily="monospace">A-60 BULKHEAD</text>
+
+                                                                {/* Interactive MVZ Zone Clickable Overlays */}
+                                                                {/* MVZ 1: Bridge & Accommodation */}
+                                                                <rect
+                                                                        x="60" y="45" width="215" height="145"
+                                                                        className={`marine-zone-overlay ${selectedZoneIndex === 0 ? "marine-zone-overlay--selected" : ""} ${alarmActive && selectedZoneIndex === 0 ? "marine-zone-overlay--alarm" : ""}`}
+                                                                        onClick={() => setSelectedZoneIndex(0)}
+                                                                />
+                                                                <text x="80" y="125" fill="rgba(241,245,249,0.9)" fontSize="12" fontFamily="monospace" fontWeight="bold">MVZ 1: ACCOMMODATION</text>
+                                                                <text x="80" y="160" fill="rgba(176,184,196,0.5)" fontSize="10" fontFamily="monospace">Smoke Detectors: 24 | Fire Class: A-60</text>
+
+                                                                {/* MVZ 2: Engine Room & Machinery Space */}
+                                                                <rect
+                                                                        x="285" y="105" width="210" height="140"
+                                                                        className={`marine-zone-overlay ${selectedZoneIndex === 1 ? "marine-zone-overlay--selected" : ""} ${alarmActive && selectedZoneIndex === 1 ? "marine-zone-overlay--alarm" : ""}`}
+                                                                        onClick={() => setSelectedZoneIndex(1)}
+                                                                />
+                                                                <text x="300" y="150" fill="rgba(241,245,249,0.9)" fontSize="12" fontFamily="monospace" fontWeight="bold">MVZ 2: ENGINE ROOM</text>
+                                                                <text x="300" y="175" fill="rgba(201,168,76,0.7)" fontSize="10" fontFamily="monospace">CO2 Flooding: 45 Cylinders</text>
+
+                                                                {/* MVZ 3: Cargo Hold #1 */}
+                                                                <rect
+                                                                        x="505" y="105" width="210" height="140"
+                                                                        className={`marine-zone-overlay ${selectedZoneIndex === 2 ? "marine-zone-overlay--selected" : ""} ${alarmActive && selectedZoneIndex === 2 ? "marine-zone-overlay--alarm" : ""}`}
+                                                                        onClick={() => setSelectedZoneIndex(2)}
+                                                                />
+                                                                <text x="520" y="150" fill="rgba(241,245,249,0.9)" fontSize="12" fontFamily="monospace" fontWeight="bold">MVZ 3: CARGO HOLD 1</text>
+                                                                <text x="520" y="175" fill="rgba(176,184,196,0.5)" fontSize="10" fontFamily="monospace">Flame IR3: 8 | Smoke: 12</text>
+
+                                                                {/* MVZ 4: Cargo Hold #2 */}
+                                                                <rect
+                                                                        x="725" y="105" width="220" height="140"
+                                                                        className={`marine-zone-overlay ${selectedZoneIndex === 3 ? "marine-zone-overlay--selected" : ""} ${alarmActive && selectedZoneIndex === 3 ? "marine-zone-overlay--alarm" : ""}`}
+                                                                        onClick={() => setSelectedZoneIndex(3)}
+                                                                />
+                                                                <text x="740" y="150" fill="rgba(241,245,249,0.9)" fontSize="12" fontFamily="monospace" fontWeight="bold">MVZ 4: CARGO HOLD 2</text>
+                                                                <text x="740" y="175" fill="rgba(176,184,196,0.5)" fontSize="10" fontFamily="monospace">Smoke Detectors: 16</text>
+
+                                                                {/* Detector Marker Circles */}
+                                                                <circle cx="150" cy="120" r="5" className="marine-detector" />
+                                                                <circle cx="380" cy="120" r="5" className="marine-detector" />
+                                                                <circle cx="600" cy="120" r="5" className="marine-detector" />
+                                                                <circle cx="820" cy="120" r="5" className="marine-detector" />
+
+                                                                {/* Alarm Mode Animated Pulses */}
+                                                                {alarmActive && (
+                                                                        <>
+                                                                                <circle cx="380" cy="120" r="14" fill="none" stroke="#e63946" strokeWidth="2">
+                                                                                        <animate attributeName="r" values="6;22;6" dur="1.2s" repeatCount="indefinite" />
+                                                                                        <animate attributeName="opacity" values="1;0;1" dur="1.2s" repeatCount="indefinite" />
+                                                                                </circle>
+                                                                                <text x="350" y="95" fill="#e63946" fontSize="11" fontFamily="monospace" fontWeight="bold" className="animate-pulse">FIRE ALARM</text>
+                                                                        </>
+                                                                )}
+                                                        </svg>
                                                 </div>
 
-                                                {/* Animated SVG Vessel Schematic Viewport */}
-                                                <Card className="border-slate-800 bg-slate-900/60 overflow-hidden">
-                                                        <CardHeader className="py-3 px-4 bg-slate-900/80 border-b border-slate-800 flex flex-row items-center justify-between">
-                                                                <div>
-                                                                        <CardTitle className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                                                                                <Ship className="h-4 w-4 text-cyan-400" />
-                                                                                Vessel Hull Profile & Main Vertical Zones (MVZ Schematic)
-                                                                        </CardTitle>
-                                                                        <CardDescription className="text-xs text-slate-400 font-mono">
-                                                                                Interactive SOLAS fire zone schematic — Click a zone to inspect safety parameters
-                                                                        </CardDescription>
-                                                                </div>
-                                                                <Badge variant="outline" className="font-mono text-[11px] border-slate-700 text-slate-300">
-                                                                        SCALE 1:500
-                                                                </Badge>
-                                                        </CardHeader>
-                                                        <CardContent className="p-6">
-                                                                <div className="relative w-full overflow-x-auto">
-                                                                        <svg viewBox="0 0 1000 320" className="w-full h-auto min-w-[700px] border border-slate-800/60 rounded-md bg-[#04060a]">
-                                                                                {/* Background Grid Lines */}
-                                                                                <defs>
-                                                                                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                                                                                                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                                                                                        </pattern>
-                                                                                </defs>
-                                                                                <rect width="1000" height="320" fill="url(#grid)" />
+                                                {/* Selected Zone Controls */}
+                                                <div className="p-4 rounded-md bg-[rgba(4,6,10,0.8)] border border-[rgba(74,85,104,0.5)] flex flex-col md:flex-row items-center justify-between gap-4">
+                                                        <div className="flex items-center gap-3">
+                                                                <span className="marine-badge marine-badge--brass">
+                                                                        SELECTED: MVZ-{selectedZoneIndex + 1}
+                                                                </span>
+                                                                <span className="text-xs text-[#b0b8c4] font-mono">
+                                                                        {selectedZoneIndex === 0 && "Accommodation & Navigation Bridge (SOLAS Reg 7.2)"}
+                                                                        {selectedZoneIndex === 1 && "Main Engine Room & Machinery Space (SOLAS Reg 10.5)"}
+                                                                        {selectedZoneIndex === 2 && "Cargo Hold 1 General Cargo (SOLAS Reg 10.7)"}
+                                                                        {selectedZoneIndex === 3 && "Cargo Hold 2 General Cargo (SOLAS Reg 10.7)"}
+                                                                </span>
+                                                        </div>
 
-                                                                                {/* Waterline */}
-                                                                                <line x1="0" y1="230" x2="1000" y2="230" stroke="#0284c7" strokeWidth="2" strokeDasharray="6 4" opacity="0.6" />
-                                                                                <text x="20" y="245" fill="#0284c7" fontSize="10" fontFamily="monospace" opacity="0.8">WATERLINE (DRAFT 7.2m)</text>
+                                                        <div className="flex items-center gap-2">
+                                                                <Button data-testid="marine-detection-btn" size="sm" variant="outline" onClick={handleDetection} disabled={!!loading} className="marine-btn marine-btn--secondary h-8">
+                                                                        {loading === "detection" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Zap className="h-3.5 w-3.5 mr-1 text-[#c9a84c]" />}
+                                                                        Design Zone Detection
+                                                                </Button>
 
-                                                                                {/* Ship Hull Shape */}
-                                                                                <path
-                                                                                        d="M 50 140 L 150 250 L 880 250 L 960 140 L 960 100 L 50 100 Z"
-                                                                                        fill="#0f172a"
-                                                                                        stroke="#38bdf8"
-                                                                                        strokeWidth="2"
-                                                                                />
-
-                                                                                {/* Superstructure / Bridge */}
-                                                                                <path
-                                                                                        d="M 250 100 L 250 40 L 450 40 L 450 100 Z"
-                                                                                        fill="#1e293b"
-                                                                                        stroke="#06b6d4"
-                                                                                        strokeWidth="1.5"
-                                                                                />
-                                                                                <text x="320" y="70" fill="#94a3b8" fontSize="11" fontFamily="monospace" fontWeight="bold">NAVIGATION BRIDGE</text>
-
-                                                                                {/* Decks */}
-                                                                                <line x1="50" y1="140" x2="960" y2="140" stroke="#334155" strokeWidth="1.5" />
-                                                                                <line x1="100" y1="195" x2="920" y2="195" stroke="#334155" strokeWidth="1.5" />
-
-                                                                                {/* MVZ Bulkhead Dividers (A-60 Rated) */}
-                                                                                <line x1="280" y1="40" x2="280" y2="250" stroke="#ef4444" strokeWidth="2.5" strokeDasharray="4 2" />
-                                                                                <line x1="500" y1="100" x2="500" y2="250" stroke="#ef4444" strokeWidth="2.5" strokeDasharray="4 2" />
-                                                                                <line x1="720" y1="100" x2="720" y2="250" stroke="#ef4444" strokeWidth="2.5" strokeDasharray="4 2" />
-
-                                                                                {/* MVZ Bulkhead Labels */}
-                                                                                <text x="285" y="32" fill="#ef4444" fontSize="10" fontFamily="monospace">A-60 BULKHEAD</text>
-                                                                                <text x="505" y="92" fill="#ef4444" fontSize="10" fontFamily="monospace">A-60 BULKHEAD</text>
-                                                                                <text x="725" y="92" fill="#ef4444" fontSize="10" fontFamily="monospace">A-60 BULKHEAD</text>
-
-                                                                                {/* Interactive MVZ Zone Clickable Overlays */}
-                                                                                {/* MVZ 1: Bridge & Accommodation */}
-                                                                                <rect
-                                                                                        x="60" y="45" width="215" height="145"
-                                                                                        fill={selectedZoneIndex === 0 ? (alarmActive ? "rgba(239, 68, 68, 0.25)" : "rgba(6, 182, 212, 0.15)") : "transparent"}
-                                                                                        stroke={selectedZoneIndex === 0 ? "#06b6d4" : "transparent"}
-                                                                                        strokeWidth="2"
-                                                                                        className="cursor-pointer transition-all hover:fill-cyan-500/10"
-                                                                                        onClick={() => setSelectedZoneIndex(0)}
-                                                                                />
-                                                                                <text x="80" y="125" fill="#e2e8f0" fontSize="12" fontFamily="monospace" fontWeight="bold">MVZ 1: ACCOMMODATION</text>
-                                                                                <text x="80" y="160" fill="#94a3b8" fontSize="10" fontFamily="monospace">Smoke Detectors: 24 | Fire Class: A-60</text>
-
-                                                                                {/* MVZ 2: Engine Room & Machinery Space */}
-                                                                                <rect
-                                                                                        x="285" y="105" width="210" height="140"
-                                                                                        fill={selectedZoneIndex === 1 ? (alarmActive ? "rgba(239, 68, 68, 0.25)" : "rgba(6, 182, 212, 0.15)") : "transparent"}
-                                                                                        stroke={selectedZoneIndex === 1 ? "#06b6d4" : "transparent"}
-                                                                                        strokeWidth="2"
-                                                                                        className="cursor-pointer transition-all hover:fill-cyan-500/10"
-                                                                                        onClick={() => setSelectedZoneIndex(1)}
-                                                                                />
-                                                                                <text x="300" y="150" fill="#e2e8f0" fontSize="12" fontFamily="monospace" fontWeight="bold">MVZ 2: ENGINE ROOM</text>
-                                                                                <text x="300" y="175" fill="#f59e0b" fontSize="10" fontFamily="monospace">CO2 Flooding: 45 Cylinders</text>
-
-                                                                                {/* MVZ 3: Cargo Hold #1 */}
-                                                                                <rect
-                                                                                        x="505" y="105" width="210" height="140"
-                                                                                        fill={selectedZoneIndex === 2 ? (alarmActive ? "rgba(239, 68, 68, 0.25)" : "rgba(6, 182, 212, 0.15)") : "transparent"}
-                                                                                        stroke={selectedZoneIndex === 2 ? "#06b6d4" : "transparent"}
-                                                                                        strokeWidth="2"
-                                                                                        className="cursor-pointer transition-all hover:fill-cyan-500/10"
-                                                                                        onClick={() => setSelectedZoneIndex(2)}
-                                                                                />
-                                                                                <text x="520" y="150" fill="#e2e8f0" fontSize="12" fontFamily="monospace" fontWeight="bold">MVZ 3: CARGO HOLD 1</text>
-                                                                                <text x="520" y="175" fill="#94a3b8" fontSize="10" fontFamily="monospace">Flame IR3: 8 | Smoke: 12</text>
-
-                                                                                {/* MVZ 4: Cargo Hold #2 */}
-                                                                                <rect
-                                                                                        x="725" y="105" width="220" height="140"
-                                                                                        fill={selectedZoneIndex === 3 ? (alarmActive ? "rgba(239, 68, 68, 0.25)" : "rgba(6, 182, 212, 0.15)") : "transparent"}
-                                                                                        stroke={selectedZoneIndex === 3 ? "#06b6d4" : "transparent"}
-                                                                                        strokeWidth="2"
-                                                                                        className="cursor-pointer transition-all hover:fill-cyan-500/10"
-                                                                                        onClick={() => setSelectedZoneIndex(3)}
-                                                                                />
-                                                                                <text x="740" y="150" fill="#e2e8f0" fontSize="12" fontFamily="monospace" fontWeight="bold">MVZ 4: CARGO HOLD 2</text>
-                                                                                <text x="740" y="175" fill="#94a3b8" fontSize="10" fontFamily="monospace">Smoke Detectors: 16</text>
-
-                                                                                {/* Detector Marker Circles */}
-                                                                                <circle cx="150" cy="120" r="5" fill="#06b6d4" />
-                                                                                <circle cx="380" cy="120" r="5" fill="#f59e0b" />
-                                                                                <circle cx="600" cy="120" r="5" fill="#06b6d4" />
-                                                                                <circle cx="820" cy="120" r="5" fill="#06b6d4" />
-
-                                                                                {/* Alarm Mode Animated Pulses */}
-                                                                                {alarmActive && (
-                                                                                        <>
-                                                                                                <circle cx="380" cy="120" r="14" fill="none" stroke="#ef4444" strokeWidth="2">
-                                                                                                        <animate attributeName="r" values="6;22;6" dur="1.2s" repeatCount="indefinite" />
-                                                                                                        <animate attributeName="opacity" values="1;0;1" dur="1.2s" repeatCount="indefinite" />
-                                                                                                </circle>
-                                                                                                <text x="350" y="95" fill="#ef4444" fontSize="11" fontFamily="monospace" fontWeight="bold" className="animate-pulse">🔥 FIRE ALARM</text>
-                                                                                        </>
-                                                                                )}
-                                                                        </svg>
-                                                                </div>
-
-                                                                {/* Selected Zone Controls */}
-                                                                <div className="mt-4 p-4 rounded-md bg-slate-950/80 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-                                                                        <div className="flex items-center gap-3">
-                                                                                <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/40 font-mono text-xs">
-                                                                                        SELECTED: MVZ-{selectedZoneIndex + 1}
-                                                                                </Badge>                                                                                <span className="text-xs text-slate-300 font-mono">
-                                                                                        {selectedZoneIndex === 0 && "Accommodation & Navigation Bridge (SOLAS Reg 7.2)"}
-                                                                                        {selectedZoneIndex === 1 && "Main Engine Room & Machinery Space (SOLAS Reg 10.5)"}
-                                                                                        {selectedZoneIndex === 2 && "Cargo Hold 1 General Cargo (SOLAS Reg 10.7)"}
-                                                                                        {selectedZoneIndex === 3 && "Cargo Hold 2 General Cargo (SOLAS Reg 10.7)"}
-                                                                                </span>
-                                                                        </div>
-
-                                                                        <div className="flex items-center gap-2">
-                                                                                <Button data-testid="marine-detection-btn" size="sm" variant="outline" onClick={handleDetection} disabled={!!loading} className="text-xs h-8 border-slate-700 text-slate-200">
-                                                                                        {loading === "detection" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Zap className="h-3.5 w-3.5 mr-1" />}
-                                                                                        Design Zone Detection
-                                                                                </Button>
-
-                                                                                <Button data-testid="marine-extinguishing-btn" size="sm" variant="outline" onClick={handleExtinguishing} disabled={!!loading} className="text-xs h-8 border-slate-700 text-slate-200">
-                                                                                        {loading === "extinguishing" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Flame className="h-3.5 w-3.5 mr-1 text-amber-400" />}
-                                                                                        Size Extinguishing
-                                                                                </Button>
-                                                                        </div>
-                                                                </div>
-                                                        </CardContent>
-                                                </Card>
-
+                                                                <Button data-testid="marine-extinguishing-btn" size="sm" variant="outline" onClick={handleExtinguishing} disabled={!!loading} className="marine-btn marine-btn--secondary h-8">
+                                                                        {loading === "extinguishing" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Flame className="h-3.5 w-3.5 mr-1 text-[#c9a84c]" />}
+                                                                        Size Extinguishing
+                                                                </Button>
+                                                        </div>
+                                                </div>
                                         </TabsContent>
 
-                                        {/* ── TAB 2: SHIP PARAMETERS & SOLAS COMPLIANCE ───────────────────────────── */}
+                                        {/* ── TAB 2: SHIP PARAMETERS & SOLAS COMPLIANCE ───────────────── */}
                                         <TabsContent value="specs" className="space-y-6 m-0">
 
                                                 {/* Ship Parameters Form */}
-                                                <Card className="border-slate-800 bg-slate-900/60">
-                                                        <CardHeader>
-                                                                <CardTitle className="text-sm font-semibold text-slate-200">
-                                                                        Vessel Specifications & Classification
-                                                                </CardTitle>
-                                                                <CardDescription className="text-xs text-slate-400">
+                                                <div className="marine-card">
+                                                        <div className="marine-card-header">
+                                                                <div className="flex items-center gap-2">
+                                                                        <Sliders className="h-4 w-4 text-[#c9a84c]" />
+                                                                        <h2 className="marine-display text-lg">Vessel Specifications & Classification</h2>
+                                                                </div>
+                                                                <p className="text-xs text-[#4a5568] mt-1">
                                                                         Enter ship dimensions and registration details for SOLAS compliance calculation
-                                                                </CardDescription>
-                                                        </CardHeader>
-                                                        <CardContent>
+                                                                </p>
+                                                        </div>
+                                                        <div className="p-5">
                                                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                                                         <div className="space-y-1.5">
-                                                                                <Label className="text-xs text-slate-400 font-mono">Ship Name</Label>
+                                                                                <Label className="marine-label">Ship Name</Label>
                                                                                 <Input
                                                                                         value={ship.ship_name}
                                                                                         onChange={(e) => setShip({ ...ship, ship_name: e.target.value })}
-                                                                                        className="bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono"
+                                                                                        className="marine-input"
                                                                                 />
                                                                         </div>
 
                                                                         <div className="space-y-1.5">
-                                                                                <Label className="text-xs text-slate-400 font-mono">IMO Number (7 Digits)</Label>
+                                                                                <Label className="marine-label">IMO Number (7 Digits)</Label>
                                                                                 <Input
                                                                                         value={ship.imo_number}
                                                                                         onChange={(e) => setShip({ ...ship, imo_number: e.target.value })}
-                                                                                        className="bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono"
+                                                                                        className="marine-input"
                                                                                 />
                                                                         </div>
 
                                                                         <div className="space-y-1.5">
-                                                                                <Label className="text-xs text-slate-400 font-mono">SOLAS Ship Category</Label>
+                                                                                <Label className="marine-label">SOLAS Ship Category</Label>
                                                                                 <Select value={ship.ship_type} onValueChange={(v) => setShip({ ...ship, ship_type: v })}>
-                                                                                        <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-200 text-xs">
+                                                                                        <SelectTrigger className="marine-select-trigger">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
-                                                                                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                                                                                        <SelectContent className="bg-[#0a0e16] border-[rgba(74,85,104,0.5)] text-[#b0b8c4]">
                                                                                                 {SHIP_TYPES.map((st) => (
                                                                                                         <SelectItem key={st.value} value={st.value} className="text-xs">
                                                                                                                 {st.label}
@@ -775,51 +732,51 @@ export function MarinePage() {
                                                                         </div>
 
                                                                         <div className="space-y-1.5">
-                                                                                <Label className="text-xs text-slate-400 font-mono">Length Overall - LOA (m)</Label>
+                                                                                <Label className="marine-label">Length Overall — LOA (m)</Label>
                                                                                 <Input
                                                                                         type="number"
                                                                                         value={ship.length_overall_m}
                                                                                         onChange={(e) => setShip({ ...ship, length_overall_m: e.target.value })}
-                                                                                        className="bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono"
+                                                                                        className="marine-input"
                                                                                 />
                                                                         </div>
 
                                                                         <div className="space-y-1.5">
-                                                                                <Label className="text-xs text-slate-400 font-mono">Gross Tonnage (GT)</Label>
+                                                                                <Label className="marine-label">Gross Tonnage (GT)</Label>
                                                                                 <Input
                                                                                         type="number"
                                                                                         value={ship.gross_tonnage}
                                                                                         onChange={(e) => setShip({ ...ship, gross_tonnage: e.target.value })}
-                                                                                        className="bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono"
+                                                                                        className="marine-input"
                                                                                 />
                                                                         </div>
 
                                                                         <div className="space-y-1.5">
-                                                                                <Label className="text-xs text-slate-400 font-mono">Passenger Capacity</Label>
+                                                                                <Label className="marine-label">Passenger Capacity</Label>
                                                                                 <Input
                                                                                         type="number"
                                                                                         value={ship.passenger_capacity}
                                                                                         onChange={(e) => setShip({ ...ship, passenger_capacity: e.target.value })}
-                                                                                        className="bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono"
+                                                                                        className="marine-input"
                                                                                 />
                                                                         </div>
 
                                                                         <div className="space-y-1.5">
-                                                                                <Label className="text-xs text-slate-400 font-mono">Flag State (ISO Code)</Label>
+                                                                                <Label className="marine-label">Flag State (ISO Code)</Label>
                                                                                 <Input
                                                                                         value={ship.flag_state}
                                                                                         onChange={(e) => setShip({ ...ship, flag_state: e.target.value })}
-                                                                                        className="bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono"
+                                                                                        className="marine-input"
                                                                                 />
                                                                         </div>
 
                                                                         <div className="space-y-1.5">
-                                                                                <Label className="text-xs text-slate-400 font-mono">Classification Society</Label>
+                                                                                <Label className="marine-label">Classification Society</Label>
                                                                                 <Select value={ship.classification_society} onValueChange={(v) => setShip({ ...ship, classification_society: v })}>
-                                                                                        <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-200 text-xs">
+                                                                                        <SelectTrigger className="marine-select-trigger">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
-                                                                                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                                                                                        <SelectContent className="bg-[#0a0e16] border-[rgba(74,85,104,0.5)] text-[#b0b8c4]">
                                                                                                 {SOCIETIES.map((s) => (
                                                                                                         <SelectItem key={s.value} value={s.value} className="text-xs">
                                                                                                                 {s.label}
@@ -831,203 +788,198 @@ export function MarinePage() {
                                                                 </div>
 
                                                                 <div className="mt-5 flex items-center gap-3">
-                                                                        <Button data-testid="marine-validate-btn" onClick={handleValidate} disabled={loading === "validate"} className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 text-xs font-semibold">
+                                                                        <Button data-testid="marine-validate-btn" onClick={handleValidate} disabled={loading === "validate"} className="marine-btn marine-btn--primary">
                                                                                 {loading === "validate" ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <ShieldCheck className="h-4 w-4 mr-1.5" />}
                                                                                 Validate SOLAS Compliance
                                                                         </Button>
 
-                                                                        <Button data-testid="marine-divide-zones-btn" onClick={handleDivideZones} disabled={loading === "zones"} variant="outline" className="border-slate-700 text-slate-200 text-xs">
+                                                                        <Button data-testid="marine-divide-zones-btn" onClick={handleDivideZones} disabled={loading === "zones"} className="marine-btn marine-btn--secondary">
                                                                                 {loading === "zones" ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Layers className="h-4 w-4 mr-1.5" />}
                                                                                 Auto-Divide MVZ Zones
                                                                         </Button>
                                                                 </div>
-                                                        </CardContent>
-                                                </Card>
+                                                        </div>
+                                                </div>
 
                                                 {/* SOLAS Validation Results */}
                                                 {validation && (
-                                                        <Card className="border-slate-800 bg-slate-900/60">
-                                                                <CardHeader className="py-3 px-4 bg-slate-900/80 border-b border-slate-800 flex flex-row items-center justify-between">
-                                                                        <CardTitle className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                                                                                <Shield className="h-4 w-4 text-cyan-400" />
-                                                                                SOLAS II-2 Compliance Audit Results
-                                                                        </CardTitle>
-                                                                        <Badge variant="outline" className={(validation as { compliant?: boolean }).compliant ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-red-500/40 bg-red-500/10 text-red-400"}>
+                                                        <div className="marine-card">
+                                                                <div className="marine-card-header flex flex-row items-center justify-between">
+                                                                        <div className="flex items-center gap-2">
+                                                                                <Shield className="h-4 w-4 text-[#c9a84c]" />
+                                                                                <h3 className="text-sm font-semibold text-[#f1f5f9]">SOLAS II-2 Compliance Audit Results</h3>
+                                                                        </div>
+                                                                        <span className={`marine-badge ${(validation as { compliant?: boolean }).compliant ? "marine-badge--safe" : "marine-badge--danger"}`}>
                                                                                 {(validation as { compliant?: boolean }).compliant ? "PASS — SOLAS COMPLIANT" : "FAIL — NON COMPLIANT"}
-                                                                        </Badge>
-                                                                </CardHeader>
-                                                                <CardContent className="p-4">
-                                                                        <pre className="text-xs font-mono bg-slate-950 p-4 rounded border border-slate-800/80 text-cyan-300 overflow-auto max-h-64">
+                                                                        </span>
+                                                                </div>
+                                                                <div className="p-4">
+                                                                        <pre className="marine-code-block">
                                                                                 {JSON.stringify(validation, null, 2)}
                                                                         </pre>
-                                                                </CardContent>
-                                                        </Card>
+                                                                </div>
+                                                        </div>
                                                 )}
-
                                         </TabsContent>
 
-                                        {/* ── TAB 3: FIRE DETECTION, EXTINGUISHING & POWER SYSTEMS ────────────────── */}
+                                        {/* ── TAB 3: FIRE DETECTION, EXTINGUISHING & POWER SYSTEMS ────── */}
                                         <TabsContent value="systems" className="space-y-6 m-0">
 
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                         {/* Detection Action Box */}
-                                                        <Card className="border-slate-800 bg-slate-900/60">
-                                                                <CardHeader>
-                                                                        <CardTitle className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                                                                                <Siren className="h-4 w-4 text-cyan-400" />
-                                                                                Fire Detection System
-                                                                        </CardTitle>
-                                                                        <CardDescription className="text-xs text-slate-400">
-                                                                                Optical Smoke, Thermal Heat, and Flame IR3 sensor placement
-                                                                        </CardDescription>
-                                                                </CardHeader>
-                                                                <CardContent className="space-y-4">
-                                                                        <Button data-testid="marine-calculate-sensor-btn" onClick={handleDetection} disabled={loading === "detection"} className="w-full bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 text-xs">
+                                                        <div className="marine-card">
+                                                                <div className="marine-card-header">
+                                                                        <div className="flex items-center gap-2">
+                                                                                <Siren className="h-4 w-4 text-[#c9a84c]" />
+                                                                                <h3 className="text-sm font-semibold text-[#f1f5f9]">Fire Detection System</h3>
+                                                                        </div>
+                                                                <CardDescription className="text-xs text-[#4a5568] mt-1">
+                                                                        Optical Smoke, Thermal Heat, and Flame IR3 sensor placement
+                                                                </CardDescription>
+                                                                </div>
+                                                                <div className="p-4 space-y-4">
+                                                                        <Button data-testid="marine-calculate-sensor-btn" onClick={handleDetection} disabled={loading === "detection"} className="marine-btn marine-btn--primary w-full">
                                                                                 {loading === "detection" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
                                                                                 Calculate Sensor Layout
                                                                         </Button>
 
                                                                         {detection && (
-                                                                                <pre className="text-[11px] font-mono bg-slate-950 p-3 rounded border border-slate-800 text-slate-300 overflow-auto max-h-48">
+                                                                                <pre className="marine-code-block">
                                                                                         {JSON.stringify(detection, null, 2)}
                                                                                 </pre>
                                                                         )}
-                                                                </CardContent>
-                                                        </Card>
+                                                                </div>
+                                                        </div>
 
                                                         {/* Extinguishing System Action Box */}
-                                                        <Card className="border-slate-800 bg-slate-900/60">
-                                                                <CardHeader>
-                                                                        <CardTitle className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                                                                                <Flame className="h-4 w-4 text-amber-400" />
-                                                                                Fire Suppression Sizing
-                                                                        </CardTitle>
-                                                                        <CardDescription className="text-xs text-slate-400">
-                                                                                CO2 Total Flooding, Novec 1230, and Hi-Fog Water Mist
-                                                                        </CardDescription>
-                                                                </CardHeader>
-                                                                <CardContent className="space-y-4">
-                                                                        <Button data-testid="marine-size-extinguishing-btn" onClick={handleExtinguishing} disabled={loading === "extinguishing"} className="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs">
+                                                        <div className="marine-card">
+                                                                <div className="marine-card-header">
+                                                                        <div className="flex items-center gap-2">
+                                                                                <Flame className="h-4 w-4 text-[#c9a84c]" />
+                                                                                <h3 className="text-sm font-semibold text-[#f1f5f9]">Fire Suppression Sizing</h3>
+                                                                        </div>
+                                                                <CardDescription className="text-xs text-[#4a5568] mt-1">
+                                                                        CO2 Total Flooding, Novec 1230, and Hi-Fog Water Mist
+                                                                </CardDescription>
+                                                                </div>
+                                                                <div className="p-4 space-y-4">
+                                                                        <Button data-testid="marine-size-extinguishing-btn" onClick={handleExtinguishing} disabled={loading === "extinguishing"} className="marine-btn marine-btn--primary w-full">
                                                                                 {loading === "extinguishing" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Flame className="h-4 w-4 mr-2" />}
                                                                                 Size Extinguishing System
                                                                         </Button>
 
                                                                         {extinguishing && (
-                                                                                <pre className="text-[11px] font-mono bg-slate-950 p-3 rounded border border-slate-800 text-slate-300 overflow-auto max-h-48">
+                                                                                <pre className="marine-code-block">
                                                                                         {JSON.stringify(extinguishing, null, 2)}
                                                                                 </pre>
                                                                         )}
-                                                                </CardContent>
-                                                        </Card>
+                                                                </div>
+                                                        </div>
 
                                                         {/* Emergency Power System Action Box */}
-                                                        <Card className="border-slate-800 bg-slate-900/60">
-                                                                <CardHeader>
-                                                                        <CardTitle className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                                                                                <Zap className="h-4 w-4 text-emerald-400" />
-                                                                                Emergency Power Sizing
-                                                                        </CardTitle>
-                                                                        <CardDescription className="text-xs text-slate-400">
-                                                                                IEC 60092 Emergency Generator & UPS battery autonomy
-                                                                        </CardDescription>
-                                                                </CardHeader>
-                                                                <CardContent className="space-y-4">
-                                                                        <Button data-testid="marine-design-power-btn" onClick={handleDesignPower} disabled={loading === "power"} className="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 text-xs">
+                                                        <div className="marine-card">
+                                                                <div className="marine-card-header">
+                                                                        <div className="flex items-center gap-2">
+                                                                                <Zap className="h-4 w-4 text-[#c9a84c]" />
+                                                                                <h3 className="text-sm font-semibold text-[#f1f5f9]">Emergency Power Sizing</h3>
+                                                                        </div>
+                                                                <CardDescription className="text-xs text-[#4a5568] mt-1">
+                                                                        IEC 60092 Emergency Generator & UPS battery autonomy
+                                                                </CardDescription>
+                                                                </div>
+                                                                <div className="p-4 space-y-4">
+                                                                        <Button data-testid="marine-design-power-btn" onClick={handleDesignPower} disabled={loading === "power"} className="marine-btn marine-btn--primary w-full">
                                                                                 {loading === "power" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
                                                                                 Design Emergency Power
                                                                         </Button>
 
                                                                         {powerDesign && (
-                                                                                <pre className="text-[11px] font-mono bg-slate-950 p-3 rounded border border-slate-800 text-slate-300 overflow-auto max-h-48">
+                                                                                <pre className="marine-code-block">
                                                                                         {JSON.stringify(powerDesign, null, 2)}
                                                                                 </pre>
                                                                         )}
-                                                                </CardContent>
-                                                        </Card>
+                                                                </div>
+                                                        </div>
                                                 </div>
-
                                         </TabsContent>
 
-                                        {/* ── TAB 4: PLC ALARM LOGIC & EXPORT INTEGRATIONS ───────────────────────── */}
+                                        {/* ── TAB 4: PLC ALARM LOGIC & EXPORT INTEGRATIONS ────────────── */}
                                         <TabsContent value="exports" className="space-y-6 m-0">
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                                                         {/* Cause & Effect Logic Tree */}
-                                                        <Card className="border-slate-800 bg-slate-900/60">
-                                                                <CardHeader>
-                                                                        <CardTitle className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                                                                                <Cpu className="h-4 w-4 text-cyan-400" />
-                                                                                PLC / DCS Cause & Effect Logic Tree
-                                                                        </CardTitle>
-                                                                        <CardDescription className="text-xs text-slate-400">
-                                                                                Generates automatic FACP trigger matrix for fire dampers & alarms
-                                                                        </CardDescription>
-                                                                </CardHeader>
-                                                                <CardContent className="space-y-4">
-                                                                        <Button data-testid="marine-generate-alarm-logic-btn" onClick={handleGenerateAlarmLogic} disabled={loading === "alarm-logic"} className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 text-xs font-semibold">
+                                                        <div className="marine-card">
+                                                                <div className="marine-card-header">
+                                                                        <div className="flex items-center gap-2">
+                                                                                <Cpu className="h-4 w-4 text-[#c9a84c]" />
+                                                                                <h3 className="text-sm font-semibold text-[#f1f5f9]">PLC / DCS Cause & Effect Logic Tree</h3>
+                                                                        </div>
+                                                                <CardDescription className="text-xs text-[#4a5568] mt-1">
+                                                                        Generates automatic FACP trigger matrix for fire dampers & alarms
+                                                                </CardDescription>
+                                                                </div>
+                                                                <div className="p-4 space-y-4">
+                                                                        <Button data-testid="marine-generate-alarm-logic-btn" onClick={handleGenerateAlarmLogic} disabled={loading === "alarm-logic"} className="marine-btn marine-btn--primary">
                                                                                 {loading === "alarm-logic" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Cpu className="h-4 w-4 mr-2" />}
                                                                                 Generate Logic Matrix
                                                                         </Button>
 
                                                                         {alarmLogic && (
-                                                                                <pre className="text-[11px] font-mono bg-slate-950 p-3 rounded border border-slate-800 text-cyan-300 overflow-auto max-h-60">
+                                                                                <pre className="marine-code-block marine-code-block--brass">
                                                                                         {JSON.stringify(alarmLogic, null, 2)}
                                                                                 </pre>
                                                                         )}
-                                                                </CardContent>
-                                                        </Card>
+                                                                </div>
+                                                        </div>
 
                                                         {/* Multi-Format File Export Hub */}
-                                                        <Card className="border-slate-800 bg-slate-900/60">
-                                                                <CardHeader>
-                                                                        <CardTitle className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                                                                                <Download className="h-4 w-4 text-cyan-400" />
-                                                                                CAD / BIM & SCADA Export Center
-                                                                        </CardTitle>
-                                                                        <CardDescription className="text-xs text-slate-400">
-                                                                                Export vessel fire protection specs into engineering tools
-                                                                        </CardDescription>
-                                                                </CardHeader>
-                                                                <CardContent className="space-y-3">
+                                                        <div className="marine-card">
+                                                                <div className="marine-card-header">
+                                                                        <div className="flex items-center gap-2">
+                                                                                <Download className="h-4 w-4 text-[#c9a84c]" />
+                                                                                <h3 className="text-sm font-semibold text-[#f1f5f9]">CAD / BIM & SCADA Export Center</h3>
+                                                                        </div>
+                                                                <CardDescription className="text-xs text-[#4a5568] mt-1">
+                                                                        Export vessel fire protection specs into engineering tools
+                                                                </CardDescription>
+                                                                </div>
+                                                                <div className="p-4 space-y-3">
                                                                         <div className="grid grid-cols-2 gap-2.5">
-                                                                                <Button data-testid="marine-export-scada-btn" variant="outline" onClick={handleExportSCADA} disabled={loading === "export-scada"} className="border-slate-700 text-slate-200 text-xs h-9 justify-start">
-                                                                                        {loading === "export-scada" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Server className="h-4 w-4 mr-2 text-cyan-400" />}
+                                                                                <Button data-testid="marine-export-scada-btn" variant="outline" onClick={handleExportSCADA} disabled={loading === "export-scada"} className="marine-btn marine-btn--secondary h-9 justify-start">
+                                                                                        {loading === "export-scada" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Server className="h-4 w-4 mr-2 text-[#c9a84c]" />}
                                                                                         SCADA Config (MQTT)
                                                                                 </Button>
 
-                                                                                <Button data-testid="marine-export-etap-btn" variant="outline" onClick={handleExportETAP} disabled={loading === "export-etap"} className="border-slate-700 text-slate-200 text-xs h-9 justify-start">
-                                                                                        {loading === "export-etap" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileSpreadsheet className="h-4 w-4 mr-2 text-amber-400" />}
+                                                                                <Button data-testid="marine-export-etap-btn" variant="outline" onClick={handleExportETAP} disabled={loading === "export-etap"} className="marine-btn marine-btn--secondary h-9 justify-start">
+                                                                                        {loading === "export-etap" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileSpreadsheet className="h-4 w-4 mr-2 text-[#c9a84c]" />}
                                                                                         ETAP CSV Export
                                                                                 </Button>
 
-                                                                                <Button data-testid="marine-export-dxf-btn" variant="outline" onClick={handleExportDXF} disabled={loading === "export-dxf"} className="border-slate-700 text-slate-200 text-xs h-9 justify-start">
-                                                                                        {loading === "export-dxf" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileCode2 className="h-4 w-4 mr-2 text-emerald-400" />}
+                                                                                <Button data-testid="marine-export-dxf-btn" variant="outline" onClick={handleExportDXF} disabled={loading === "export-dxf"} className="marine-btn marine-btn--secondary h-9 justify-start">
+                                                                                        {loading === "export-dxf" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileCode2 className="h-4 w-4 mr-2 text-[#c9a84c]" />}
                                                                                         AutoCAD DXF Ship Plan
                                                                                 </Button>
 
-                                                                                <Button data-testid="marine-export-revit-btn" variant="outline" onClick={handleExportRevit} disabled={loading === "export-revit"} className="border-slate-700 text-slate-200 text-xs h-9 justify-start">
-                                                                                        {loading === "export-revit" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Layers className="h-4 w-4 mr-2 text-cyan-400" />}
+                                                                                <Button data-testid="marine-export-revit-btn" variant="outline" onClick={handleExportRevit} disabled={loading === "export-revit"} className="marine-btn marine-btn--secondary h-9 justify-start">
+                                                                                        {loading === "export-revit" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Layers className="h-4 w-4 mr-2 text-[#c9a84c]" />}
                                                                                         Revit BIM Families
                                                                                 </Button>
                                                                         </div>
 
                                                                         {scadaConfig && (
                                                                                 <div className="mt-3">
-                                                                                        <Label className="text-[10px] font-mono uppercase text-slate-400">Generated SCADA Telemetry Map</Label>
-                                                                                        <pre className="text-[10px] font-mono bg-slate-950 p-2.5 rounded border border-slate-800 text-slate-300 overflow-auto max-h-40 mt-1">
+                                                                                        <Label className="marine-label">Generated SCADA Telemetry Map</Label>
+                                                                                        <pre className="marine-code-block marine-code-block--brass mt-1.5">
                                                                                                 {JSON.stringify(scadaConfig, null, 2)}
                                                                                         </pre>
                                                                                 </div>
                                                                         )}
-                                                                </CardContent>
-                                                        </Card>
-
+                                                                </div>
+                                                        </div>
                                                 </div>
-
                                         </TabsContent>
                                 </Tabs>
-
                         </div>
                 </div>
         );

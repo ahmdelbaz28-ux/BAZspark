@@ -41,6 +41,7 @@ from backend.auth import require_permission
 from backend.limiter import limiter
 from backend.rbac import Permission
 
+# V118: Canonical NEC Table 8 gauge set — MUST stay in sync with
 # fireai/core/qomn_kernel.py:NEC_TABLE8_RESISTANCE_OHM_PER_KM keys.
 # Module-level (NOT class-attr) so Pydantic V2 doesn't treat it as a
 # private model attribute (leading underscore convention).
@@ -81,6 +82,7 @@ _kernel = None
 _kernel_lock = threading.Lock()
 
 # ── Cached kernel exception classes ─────────────────────────────────────────
+# V116 FIX: Cache exception classes at module level instead of importing
 # inside _handle_error(). The old code did `from fireai.core.qomn_kernel
 # import PhysicsGuardError, ...` inside the function body. If that import
 # failed for ANY reason (module partially loaded, class renamed, corruption),
@@ -190,9 +192,11 @@ class VoltageDropRequest(BaseModel):
 
     current_a:        float = Field(..., gt=0, description="Circuit current in Amperes")
     length_m:         float = Field(..., gt=0, description="One-way circuit length in meters")
+    # V65 FIX: Validate AWG gauge against NEC Table 8 valid sizes.
     # An invalid gauge could produce incorrect voltage drop — in a fire alarm
     # system, underestimated voltage drop means devices may not operate.
     #
+    # V118 FIX: The previous regex accepted 6 values (3, 250, 300, 350, 400, 500)
     # that DO NOT EXIST in NEC_TABLE8_RESISTANCE_OHM_PER_KM (kernel source of
     # truth). A user submitting awg_gauge="250" would pass router validation
     # and then hit ValueError in the kernel → opaque HTTP 422 with no helpful
@@ -201,6 +205,7 @@ class VoltageDropRequest(BaseModel):
     # deliver). The regex is now aligned EXACTLY with the kernel's table
     # keys: 18, 16, 14, 12, 10, 8, 6, 4, 2, 1, 1/0, 2/0, 3/0, 4/0.
     #
+    # V118 NORMALIZATION: Accept user-friendly variants ("AWG14", "14 ",
     # "awg 14") via Pydantic validator BEFORE regex check, matching the
     # kernel's awg_gauge.strip().upper().replace("AWG","").strip() logic.
     # This eliminates the previous mismatch where router rejected "AWG14"
@@ -217,6 +222,7 @@ class VoltageDropRequest(BaseModel):
     supply_voltage_v: float = Field(24.0, gt=0, description="Supply voltage (default 24VDC)")
     max_drop_pct:     float = Field(10.0, gt=0, le=50, description="Max allowable drop %")
 
+    # V118: Field validator delegates to module-level _normalize_awg_gauge
     # to keep the kernel/router AWG validation in lockstep.
     _validate_awg = field_validator("awg_gauge", mode="before")(_normalize_awg_gauge)
 
@@ -742,6 +748,7 @@ async def run_golden_tests(request: Request):
     )
 
     # Golden Test 4: Battery — 0.5A standby 24h + 3.0A alarm 5min → check formula
+    # V130: tolerance relaxed to 1e-2 to handle round() in kernel output.
     r4 = compute_battery_capacity_ah(0.5, 3.0)
     ah_manual = ((0.5 * 24 + 3.0 * (5/60)) / 0.80) * 1.25
     _test(
@@ -751,17 +758,23 @@ async def run_golden_tests(request: Request):
     )
 
     # Golden Test 5: Voltage drop 2.5A, 100m, AWG14, 24V
-    # correction to 75°C. R_eff = 4.263 × (1 + 0.00393 × 55) = 5.184 ohm/km
-    # V_drop = 2 × 2.5 × 100 × (5.184/1000) = 2.592V
+    # C-03 FIX (Engineering Review) — CORRECTED after audit (third attempt):
+    #   - Original: r_20 = 4.263 (phantom — does not match any NEC Table 8 entry)
+    #   - Attempt 1: r_20 = 8.286 (actually SOLID @ 20°C, mislabeled as stranded)
+    #   - Correct: r_20 = 8.470 (actual STRANDED Class B @ 20°C per NEC 2023
+    #     Chapter 9 Table 8)
+    # R_eff = 8.470 × (1 + 0.00393 × 55) = 8.470 × 1.21615 = 10.30 ohm/km
+    # V_drop = 2 × 2.5 × 100 × (10.30/1000) = 5.150V
+    from fireai.constants.nec import NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C as _NEC_TABLE8
     r5 = compute_voltage_drop(2.5, 100, "14", 24.0)
-    r_20 = 4.263  # NEC Table 8 stranded copper at 20°C
+    r_20 = _NEC_TABLE8["14"]  # 8.470 Ω/km — canonical STRANDED @ 20°C
     alpha = 0.00393
-    r_eff = r_20 * (1.0 + alpha * (75.0 - 20.0))
-    expected_vd = 2.0 * 2.5 * 100 * (r_eff / 1000.0)
+    r_eff = r_20 * (1.0 + alpha * (75.0 - 20.0))  # = 10.30 Ω/km at 75°C
+    expected_vd = 2.0 * 2.5 * 100 * (r_eff / 1000.0)  # = 5.150V
     _test(
         "NEC_voltage_drop_AWG14_100m",
         r5["voltage_drop_v"], expected_vd, 1e-3,
-        "NEC 2023 Chapter 9, Table 8 (stranded @ 20°C + 75°C correction)"
+        "NEC 2023 Chapter 9, Table 8 (STRANDED @ 20°C + 75°C correction)"
     )
 
     # Golden Test 6: Physics guard — negative area MUST raise
@@ -831,6 +844,7 @@ def _handle_error(exc: Exception) -> NoReturn:
     In a safety-critical system, this is a SAFETY HAZARD per agent.md
     Anti-Deception Directive. Now we use cached classes with safe fallback.
     """
+    # V116: Use cached exception classes — safe even if kernel is unavailable
     if _PhysicsGuardError is not None and isinstance(exc, _PhysicsGuardError):
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=422,
