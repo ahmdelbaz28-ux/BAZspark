@@ -1,12 +1,18 @@
-# backend/routers/multi_db.py — Multi-Database API Endpoints
-# =========================================================
-# S-02/S-03 FIX (Engineering Review):
-# The previous version exposed three dangerous endpoints:
-#   GET  /redis/get/{key}   — could read ANY Redis key (incl. session tokens)
-#   POST /redis/set          — could overwrite ANY Redis key
-#   GET  /neo4j/query (raw)  — could execute ANY Cypher query
-# These have been removed. Only BIM-scoped endpoints remain, plus a
-# locked-down /neo4j/query that only accepts a fixed set of safe templates.
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
+"""
+backend/routers/multi_db.py — Multi-Database API Endpoints
+=========================================================
+
+API endpoints for interacting with the multi-database system:
+- PostgreSQL (primary relational data)
+- Qdrant (vector database for embeddings/RAG)
+- Neo4j (graph database for relationships/topology)
+- Redis (cache and temporary storage)
+
+These endpoints enable advanced BIM/CAD operations leveraging
+multiple database technologies.
+"""
 
 import logging
 from typing import Dict, List, Optional
@@ -38,6 +44,45 @@ async def get_database_health():
     except Exception:
         logger.exception("Database health check failed")
         raise HTTPException(status_code=500, detail="Database health check failed")  # NOSONAR — S8415: assignment kept for readability / debuggability
+
+
+@router.get("/redis/get/{key}", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
+async def get_from_redis(key: str):
+    """Get a value from Redis cache."""
+    try:
+        db_service = get_multi_db_service()
+        value = db_service.redis_get(key)
+        if value is not None:
+            return ApiResponse(
+                success=True,
+                data={"key": key, "value": value},
+                message="Value retrieved from Redis"
+            )
+        else:
+            raise HTTPException(status_code=404, detail=f"Key '{key}' not found in Redis")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+    except Exception:
+        logger.exception("Redis get failed")
+        raise HTTPException(status_code=500, detail="Redis operation failed")  # NOSONAR — S8415: assignment kept for readability / debuggability
+
+
+@router.post("/redis/set", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
+@limiter.limit("30/minute")
+async def set_in_redis(request: Request, key: str, value: str, ttl: Optional[int] = Query(None, description="Time to live in seconds")):  # NOSONAR - python:S8410
+    """Set a value in Redis cache."""
+    try:
+        db_service = get_multi_db_service()
+        success = db_service.redis_set(key, value, ex=ttl)
+        if success:
+            return ApiResponse(
+                success=True,
+                data={"key": key, "ttl": ttl},
+                message="Value set in Redis successfully"
+            )
+        else:
+            raise HTTPException(status_code=500, detail="Failed to set value in Redis")  # NOSONAR — S8415: assignment kept for readability / debuggability
+    except Exception:
+        logger.exception("Redis set failed")
+        raise HTTPException(status_code=500, detail="Redis operation failed")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
 @router.post("/bim/cache-element", dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
@@ -166,8 +211,8 @@ async def find_related_elements(
 
 @router.get("/neo4j/query", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 async def execute_neo4j_query(
-    query_type: str = Query(description="Predefined safe query template to execute"),
-    parameters: Optional[str] = Query(None, description="JSON string of query parameters"),
+    query_type: str = Query(..., description="Predefined safe query template to execute"),
+    parameters: Optional[str] = Query(None, description="JSON string of query parameters")
 ):
     """Execute a predefined, parameterized Cypher query against Neo4j securely."""
     # Predefined safe, read-only queries
@@ -178,7 +223,7 @@ async def execute_neo4j_query(
     }
 
     if query_type not in SAFE_TEMPLATES:
-        raise HTTPException(  # NOSONAR — S8415: endpoint error handling is intentional(
+        raise HTTPException(
             status_code=400,
             detail=f"Invalid or unsafe query type. Allowed types are: {list(SAFE_TEMPLATES.keys())}"
         )

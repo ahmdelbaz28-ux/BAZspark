@@ -408,6 +408,9 @@ deploy_to_hf.py
 .vercel
 .env*
 
+# C-09 FIX: Auto-generated project index (regenerate in CI as artifact)
+PROJECT_INDEX.json
+
 # Vercel Python build cache
 .vercel_python_packages/
 sonar_issues.json
@@ -482,7 +485,7 @@ obj/
 .mimocode/
 API_Test_Collection.postman_collection.json
 
-# Environment files (contain secrets — NEVER commit)
+# Environment files (contain secrets ï¿½ NEVER commit)
 .env
 .env.local
 .env.*.local

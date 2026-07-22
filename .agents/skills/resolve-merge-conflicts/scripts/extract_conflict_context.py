@@ -129,7 +129,8 @@ def normalize_requested_path(repo_root: Path, raw_path: str) -> str:
     path = Path(raw_path)
     candidate = path.resolve() if path.is_absolute() else (repo_root / path).resolve()
     try:
-        return str(candidate.relative_to(repo_root))
+        # Normalize to forward slashes to match git's path format
+        return str(candidate.relative_to(repo_root)).replace("\\", "/")
     except ValueError as error:
         raise RuntimeError(f"path is outside repository: {raw_path}") from error
 
@@ -376,6 +377,12 @@ def render_json(
 
 
 def main() -> int:
+    # Ensure UTF-8 output on Windows to avoid charmap encoding errors
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
     parser = argparse.ArgumentParser(
         description="Summarize and extract compact merge-conflict context."
     )
