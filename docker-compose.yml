@@ -33,7 +33,7 @@ services:
       # V254 FIX: Wire REDIS_URL to the fireai container so session store
       # and rate limiter use Redis (not in-memory per-worker). Without this,
       # login succeeds but the next request 401s (different worker, no session).
-      - REDIS_URL=${REDIS_URL:-redis://fireai-redis:6379/0}
+      - REDIS_URL=${REDIS_URL:-redis://:${REDIS_PASSWORD:-devonly123}@fireai-redis:6379/0}
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
       - LANGFUSE_HOST=${LANGFUSE_HOST:-https://cloud.langfuse.com}
@@ -75,10 +75,12 @@ services:
     image: redis:7-alpine
     container_name: fireai-redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-devonly123}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-devonly123}
     restart: unless-stopped
     # V248 FIX: Add network isolation
     networks:
