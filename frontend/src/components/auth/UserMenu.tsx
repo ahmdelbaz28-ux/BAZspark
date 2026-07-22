@@ -26,7 +26,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 const ROLE_BADGE_COLORS: Record<string, string> = {
 	admin: "bg-slate-500/15 text-slate-400 border-danger/30",
-	engineer: "bg-primary/15 text-orange-300 border-primary/30",
+	engineer: "bg-primary/15 text-primary border-primary/30",
 	viewer: "bg-slate-500/15 text-foreground/90 border-border/30",
 };
 

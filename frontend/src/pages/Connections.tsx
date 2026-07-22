@@ -102,7 +102,7 @@ function Connections() {
 			{/* Loading */}
 			{isLoading && (
 				<div className="flex items-center justify-center py-12">
-					<div className="w-8 h-8 border-2 border-border border-t-orange-500 rounded-full animate-spin" />
+					<div className="w-8 h-8 border-2 border-border border-t-primary rounded-full animate-spin" />
 				</div>
 			)}
 
@@ -180,7 +180,7 @@ function Connections() {
 											<td className="px-4 py-3">
 												<Link
 													to={`/elements/${conn.from_element_id}`}
-													className="text-primary hover:text-orange-300 text-xs font-mono"
+													className="text-primary hover:text-cyan-300 text-xs font-mono"
 												>
 													{conn.from_element_id.slice(0, 12)}…
 												</Link>
@@ -188,7 +188,7 @@ function Connections() {
 											<td className="px-4 py-3">
 												<Link
 													to={`/elements/${conn.to_element_id}`}
-													className="text-primary hover:text-orange-300 text-xs font-mono"
+													className="text-primary hover:text-cyan-300 text-xs font-mono"
 												>
 													{conn.to_element_id.slice(0, 12)}…
 												</Link>
@@ -367,7 +367,7 @@ function CreateConnectionModal({
 							type="checkbox"
 							checked={isParametric}
 							onChange={(e) => setIsParametric(e.target.checked)}
-							className="rounded bg-card border-border text-primary focus:ring-orange-500"
+							className="rounded bg-card border-border text-primary focus:ring-primary"
 						/>
 						<span className="text-sm text-foreground/90">{t("common.active")}</span>
 					</label>

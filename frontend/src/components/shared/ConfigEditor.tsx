@@ -137,7 +137,7 @@ export function ConfigEditor({
 						<Button
 							onClick={handleSave}
 							disabled={!hasChanges || saving || !!error}
-							className="bg-primary hover:bg-orange-700 text-white"
+							className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 						>
 							{saving ? (
 								<>

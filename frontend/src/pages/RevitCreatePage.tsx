@@ -255,7 +255,7 @@ export function RevitCreatePage() {
 							<Button
 								onClick={() => handleCreate("wall")}
 								disabled={creating}
-								className="bg-primary hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -306,7 +306,7 @@ export function RevitCreatePage() {
 							<Button
 								onClick={() => handleCreate("floor")}
 								disabled={creating}
-								className="bg-primary hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -363,7 +363,7 @@ export function RevitCreatePage() {
 							<Button
 								onClick={() => handleCreate("column")}
 								disabled={creating}
-								className="bg-primary hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -422,7 +422,7 @@ export function RevitCreatePage() {
 							<Button
 								onClick={() => handleCreate("beam")}
 								disabled={creating}
-								className="bg-primary hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -480,7 +480,7 @@ export function RevitCreatePage() {
 							<Button
 								onClick={() => handleCreate("door")}
 								disabled={creating}
-								className="bg-primary hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -538,7 +538,7 @@ export function RevitCreatePage() {
 							<Button
 								onClick={() => handleCreate("window")}
 								disabled={creating}
-								className="bg-primary hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />

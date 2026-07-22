@@ -125,7 +125,7 @@ export function RiskAssessment() {
 						</Card>
 					))}
 					<Button
-						className="w-full mt-4 bg-primary hover:bg-orange-700"
+						className="w-full mt-4 bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 						onClick={() => console.info("Risk Report Added to Project Files")}
 					>
 						Download Compliance Certificate

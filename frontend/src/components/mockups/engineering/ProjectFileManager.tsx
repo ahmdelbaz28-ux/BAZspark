@@ -988,7 +988,7 @@ export function ProjectFileManager() {
 								<Button
 									size="sm"
 									variant="outline"
-									className="h-7 text-xs border-border hover:bg-card text-primary hover:text-orange-300"
+									className="h-7 text-xs border-border hover:bg-card text-primary hover:text-cyan-300"
 								>
 									Check Out
 								</Button>

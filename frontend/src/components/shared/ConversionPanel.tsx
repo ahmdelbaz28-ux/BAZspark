@@ -157,7 +157,7 @@ export function ConversionPanel() {
                                 <Button
                                         onClick={handleConvert}
                                         disabled={state === "converting"}
-                                        className="w-full bg-primary hover:bg-orange-700 text-white"
+                                        className="w-full bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
                                 >
                                         {state === "converting" ? (
                                                 <>
