@@ -104,7 +104,7 @@ function BrandNetworkBackground() {  // NOSONAR - typescript:S3776: cognitive co
                                 radius: Math.random() * 1.4 + 0.6,  // NOSONAR - typescript:S2245
                                 alpha: 1,
                                 decay: Math.random() * 0.007 + 0.003,  // NOSONAR - typescript:S2245
-                                color: Math.random() > 0.4 ? "rgba(244, 63, 94, " : "rgba(249, 115, 22, ",  // NOSONAR - typescript:S2245: visual canvas animation, not security
+                                color: Math.random() > 0.4 ? "rgba(34, 211, 238, " : "rgba(16, 185, 129, ",  // NOSONAR - typescript:S2245: visual canvas animation, not security
                         });
                 };
 
@@ -126,7 +126,7 @@ function BrandNetworkBackground() {  // NOSONAR - typescript:S3776: cognitive co
                                         const dy = n1.y - n2.y;
                                         const dist = Math.hypot(dx, dy);
                                         if (dist < 140) {
-                                                ctx.strokeStyle = `rgba(244, 63, 94, ${(1 - dist / 140) * 0.065})`;
+                                                ctx.strokeStyle = `rgba(34, 211, 238, ${(1 - dist / 140) * 0.065})`;
                                                 ctx.lineWidth = 0.8;
                                                 ctx.beginPath();
                                                 ctx.moveTo(n1.x, n1.y);
@@ -136,7 +136,7 @@ function BrandNetworkBackground() {  // NOSONAR - typescript:S3776: cognitive co
                                 }
 
                                 // Render individual sensor node
-                                ctx.fillStyle = "rgba(244, 63, 94, 0.25)";
+                                ctx.fillStyle = "rgba(34, 211, 238, 0.25)";
                                 ctx.beginPath();
                                 ctx.arc(n1.x, n1.y, n1.radius, 0, Math.PI * 2);
                                 ctx.fill();
@@ -585,8 +585,8 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                         width: 200%;
                                         height: 220%;
                                         background-image: 
-                                                linear-gradient(rgba(239, 68, 68, 0.032) 1px, transparent 1px),
-                                                linear-gradient(90deg, rgba(239, 68, 68, 0.032) 1px, transparent 1px);
+                                                linear-gradient(rgba(34, 211, 238, 0.032) 1px, transparent 1px),
+                                                linear-gradient(90deg, rgba(34, 211, 238, 0.032) 1px, transparent 1px);
                                         background-size: 50px 50px;
                                         transform: rotateX(60deg) translateY(0);
                                         transform-origin: center center;
@@ -619,7 +619,7 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                 <div className="grid-3d-grid" />
                                 <div className="grid-3d-overlay" />
                                 {/* Glowing orbs for depth */}
-                                <div className="absolute top-[10%] left-[10%] w-[50%] h-[50%] rounded-full bg-rose-500/[0.03] blur-[130px]" />
+                                <div className="absolute top-[10%] left-[10%] w-[50%] h-[50%] rounded-full bg-cyan-500/[0.03] blur-[130px]" />
                                 <div className="absolute bottom-[10%] right-[10%] w-[50%] h-[50%] rounded-full bg-cyan-500/[0.02] blur-[130px]" />
                         </div>
 
@@ -645,8 +645,8 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                 {/* Headline and Features List */}
                                 <div className="my-auto max-w-lg space-y-8 py-8">
                                         <motion.div variants={leftPanelItem} className="space-y-4">
-                                                <span className="text-rose-500 font-mono text-xs font-bold tracking-widest uppercase flex items-center gap-2">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                                                <span className="text-cyan-400 font-mono text-xs font-bold tracking-widest uppercase flex items-center gap-2">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
                                                         THE FUTURE OF LIFE-SAFETY ENGINEERING
                                                 </span>
                                                 <h1 ref={headlineRef} className="gsap-split text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight text-white leading-tight lg:leading-[1.12]">
@@ -668,7 +668,7 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                         </p>
                                                 </div>
 
-                                                <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-3.5 lg:p-4 text-center space-y-1 hover:border-rose-500/20 hover:shadow-[0_0_15px_rgba(244,63,94,0.08)] transition-all duration-300">
+                                                <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-3.5 lg:p-4 text-center space-y-1 hover:border-cyan-500/20 hover:shadow-[0_0_15px_rgba(34,211,238,0.08)] transition-all duration-300">
                                                         <div className="text-2xl lg:text-3xl font-black tracking-tight font-mono">
                                                                 <span className="gsap-counter bg-gradient-to-r from-rose-400 to-orange-400 bg-clip-text text-transparent" data-value="100" data-suffix="%">0%</span>
                                                         </div>
@@ -700,7 +700,7 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                 {/* Micro dashboard layout preview square */}
                                                 <div className="w-9 h-9 rounded border border-slate-850 bg-slate-950/95 flex-shrink-0 relative overflow-hidden flex items-center justify-center">
                                                         <div className="absolute inset-0 opacity-[0.12] bg-[linear-gradient(rgba(239,68,68,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.5)_1px,transparent_1px)] bg-[size:3px_3px]" />
-                                                        <div className="w-3.5 h-3.5 rounded-full border-2 border-rose-500/30 border-t-rose-500 animate-spin" />
+                                                        <div className="w-3.5 h-3.5 rounded-full border-2 border-cyan-500/30 border-t-cyan-500 animate-spin" />
                                                 </div>
                                                 <div className="space-y-0.5">
                                                         <p className="text-slate-400 text-xs lg:text-[13px] italic leading-relaxed">
@@ -787,12 +787,12 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                                                                         value={apiKey}
                                                                                                         onChange={(e) => setApiKey(e.target.value)}
                                                                                                         disabled={submitting}
-                                                                                                        className="peer pl-11 pr-11 font-mono text-sm tracking-widest bg-slate-950/80 border-slate-800 text-white rounded-lg h-12 transition-all duration-300 focus:border-rose-500/80 focus:ring-1 focus:ring-rose-500/20 focus:shadow-[0_0_15px_rgba(239,68,68,0.15)]"
+                                                                                                        className="peer pl-11 pr-11 font-mono text-sm tracking-widest bg-slate-950/80 border-slate-800 text-white rounded-lg h-12 transition-all duration-300 focus:border-cyan-400/80 focus:ring-1 focus:ring-cyan-400/20 focus:shadow-[0_0_15px_rgba(34,211,238,0.15)]"
                                                                                                 />
                                                                                                 <Label
                                                                                                         htmlFor="api-key"
                                                                                                         className="absolute left-11 top-1/2 -translate-y-1/2 text-xs text-slate-500 transition-all duration-300 pointer-events-none origin-[0]
-                                                                                                                peer-focus:top-2 peer-focus:scale-85 peer-focus:-translate-y-4 peer-focus:text-rose-500 peer-focus:bg-[#05070f] peer-focus:px-1
+                                                                                                                peer-focus:top-2 peer-focus:scale-85 peer-focus:-translate-y-4 peer-focus:text-cyan-400 peer-focus:bg-[#05070f] peer-focus:px-1
                                                                                                                 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:scale-85 peer-[:not(:placeholder-shown)]:-translate-y-4 peer-[:not(:placeholder-shown)]:bg-[#05070f] peer-[:not(:placeholder-shown)]:px-1"
                                                                                                 >
                                                                                                         AUTHORIZATION KEY
@@ -800,7 +800,7 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                                                                 <button
                                                                                                         type="button"
                                                                                                         onClick={() => setShowKey(!showKey)}
-                                                                                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 transition-colors hover:text-rose-400 z-10"
+                                                                                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 transition-colors hover:text-cyan-400 z-10"
                                                                                                         aria-label={showKey ? "Hide API key" : "Show API key"}
                                                                                                         tabIndex={-1}
                                                                                                 >
@@ -844,7 +844,7 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                                                                 checked={remember}
                                                                                                 onCheckedChange={(v) => setRemember(v === true)}
                                                                                                 disabled={submitting}
-                                                                                                className="border-slate-800 h-4 w-4 data-[state=checked]:bg-rose-600 data-[state=checked]:border-rose-600"
+                                                                                                className="border-slate-800 h-4 w-4 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500"
                                                                                         />
                                                                                         <Label htmlFor="remember" className="text-xs lg:text-sm cursor-pointer select-none text-slate-450 hover:text-slate-300 transition-colors leading-none">
                                                                                                 Maintain persistent secure connection
@@ -854,7 +854,7 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                                                 {/* Submit button with enhanced size & typography */}
                                                                                 <Button
                                                                                         type="submit"
-                                                                                        className="w-full h-12 lg:h-13 text-xs lg:text-sm font-extrabold tracking-widest rounded-lg transition-all duration-300 bg-rose-600 hover:bg-rose-500 text-white shadow-lg hover:shadow-rose-600/25 disabled:opacity-50 disabled:pointer-events-none mt-3"
+                                                                                        className="w-full h-12 lg:h-13 text-xs lg:text-sm font-extrabold tracking-widest rounded-lg transition-all duration-300 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold shadow-lg hover:shadow-cyan-500/25 disabled:opacity-50 disabled:pointer-events-none mt-3"
                                                                                         disabled={submitting || !apiKey.trim()}
                                                                                 >
                                                                                         {submitting ? (
