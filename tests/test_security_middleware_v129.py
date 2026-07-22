@@ -359,16 +359,16 @@ class TestBackendAppAlsoHasSecurityHeaders:
     """
 
     def test_backend_app_has_security_headers(self):
-        """backend_app.py must emit X-Frame-Options on every response."""
+        """backend.app must emit security headers on every response."""
         os.environ["FIREAI_ENV"] = "development"
         os.environ["FIREAI_API_KEY"] = ""
         try:
-            # Reload backend_app fresh
+            # Reload backend.app fresh
             for mod_name in list(sys.modules):  # NOSONAR - python:S7504
-                if mod_name == "backend_app" or mod_name.startswith("backend_app."):
+                if mod_name == "backend.app" or mod_name.startswith("backend.app."):
                     del sys.modules[mod_name]
-            backend_app = importlib.import_module("backend_app")
-            with TestClient(backend_app.app) as client:
+            backend_mod = importlib.import_module("backend.app")
+            with TestClient(backend_mod.app) as client:
                 response = client.get("/api/health")
                 assert response.headers.get("x-frame-options") == "DENY"
                 assert response.headers.get("x-content-type-options") == "nosniff"
@@ -379,5 +379,5 @@ class TestBackendAppAlsoHasSecurityHeaders:
         finally:
             # Restore env
             for mod_name in list(sys.modules):  # NOSONAR - python:S7504
-                if mod_name == "backend_app" or mod_name.startswith("backend_app."):
+                if mod_name == "backend.app" or mod_name.startswith("backend.app."):
                     del sys.modules[mod_name]

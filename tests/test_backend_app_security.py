@@ -44,7 +44,7 @@ def _reload_backend_app(env_overrides: dict) -> Any:
     """Reload backend_app with the given env vars set."""
     # Clear cached module so __init__ runs again with new env
     for mod_name in list(sys.modules):  # NOSONAR - python:S7504
-        if mod_name == "backend_app" or mod_name.startswith("backend_app."):
+        if mod_name == "backend.app" or mod_name.startswith("backend.app."):
             del sys.modules[mod_name]
     saved = {}
     for k, v in env_overrides.items():
@@ -54,7 +54,7 @@ def _reload_backend_app(env_overrides: dict) -> Any:
         else:
             os.environ[k] = v
     try:
-        return importlib.import_module("backend_app")
+        return importlib.import_module("backend.app")
     finally:
         for k, v in saved.items():
             if v is None:
