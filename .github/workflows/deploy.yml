@@ -273,6 +273,27 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config  # NOSONAR — S7636: GitHub Actions acceptable
           chmod 600 $HOME/.kube/config
 
+      # H-13 FIX: Write secrets to temp YAML file instead of --set (avoids
+      # leaking secrets in /proc/<pid>/cmdline on the runner).
+      - name: Create Helm secrets values file (staging)
+        run: |
+          cat > /tmp/helm-secrets-staging.yaml << 'HELMEOF'
+          secrets:
+            fireai-secrets:
+              stringData:
+                FIREAI_API_KEY: "${{ secrets.FIREAI_API_KEY }}"
+                FIREAI_EVIDENCE_HMAC_KEY: "${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }}"
+                DB_PASSWORD: "${{ secrets.DB_PASSWORD_STAGING }}"
+                REDIS_PASSWORD: "${{ secrets.REDIS_PASSWORD_STAGING }}"
+                GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+                ENCRYPTION_KEY: "${{ secrets.ENCRYPTION_KEY }}"
+                JWT_SECRET: "${{ secrets.JWT_SECRET }}"
+          api:
+            environment:
+              DATABASE_URL: "${{ secrets.DATABASE_URL_STAGING }}"
+              NEON_DATABASE_URL: "${{ secrets.NEON_DATABASE_URL_STAGING }}"
+          HELMEOF
+
       - name: Deploy Helm chart
         run: |
           helm upgrade --install fireai deploy/helm/fireai \
@@ -282,24 +303,9 @@ jobs:
             --set images.worker.tag=${{ env.VERSION }} \
             --set images.nginx.tag=${{ env.VERSION }} \
             --set ingress.hosts[0].host=staging.fireai.example.com \
-            --set secrets.fireai-secrets.stringData.FIREAI_API_KEY=${{ secrets.FIREAI_API_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set secrets.fireai-secrets.stringData.FIREAI_EVIDENCE_HMAC_KEY=${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set secrets.fireai-secrets.stringData.DB_PASSWORD=${{ secrets.DB_PASSWORD_STAGING }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set secrets.fireai-secrets.stringData.REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD_STAGING }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set secrets.fireai-secrets.stringData.GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set secrets.fireai-secrets.stringData.JWT_SECRET=${{ secrets.JWT_SECRET }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            # C-03 FIX: Use Supabase Postgres instead of ephemeral SQLite.
-            # DATABASE_URL_STAGING must be set as a GitHub Actions environment
-            # secret. Expected format:
-            #   postgresql://postgres:<password>@<project-ref>.supabase.co:5432/postgres?sslmode=require
-            --set api.environment.DATABASE_URL=${{ secrets.DATABASE_URL_STAGING }} \
-            # NEON_DATABASE_URL fallback: if the primary DATABASE_URL fails (e.g.
-            # IPv6 connectivity issue), the backend automatically falls back to
-            # this Neon Postgres URL. Expected format:
-            #   postgresql://username:password@ep-<project>.region.aws.neon.tech/dbname?sslmode=require
-            --set api.environment.NEON_DATABASE_URL=${{ secrets.NEON_DATABASE_URL_STAGING }} \
+            --values /tmp/helm-secrets-staging.yaml \
             --wait --timeout 300s
+          rm -f /tmp/helm-secrets-staging.yaml
 
       - name: Verify deployment
         run: |
@@ -381,6 +387,28 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > $HOME/.kube/config  # NOSONAR — S7636: GitHub Actions acceptable
           chmod 600 $HOME/.kube/config
 
+      # H-13 FIX: Write secrets to temp YAML file instead of --set (avoids
+      # leaking secrets in /proc/<pid>/cmdline on the runner).
+      - name: Create Helm secrets values file (production)
+        if: steps.validate.outputs.deploy_skipped != 'true'
+        run: |
+          cat > /tmp/helm-secrets-production.yaml << 'HELMEOF'
+          secrets:
+            fireai-secrets:
+              stringData:
+                FIREAI_API_KEY: "${{ secrets.FIREAI_API_KEY }}"
+                FIREAI_EVIDENCE_HMAC_KEY: "${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }}"
+                DB_PASSWORD: "${{ secrets.DB_PASSWORD_PRODUCTION }}"
+                REDIS_PASSWORD: "${{ secrets.REDIS_PASSWORD_PRODUCTION }}"
+                GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+                ENCRYPTION_KEY: "${{ secrets.ENCRYPTION_KEY }}"
+                JWT_SECRET: "${{ secrets.JWT_SECRET }}"
+          api:
+            environment:
+              DATABASE_URL: "${{ secrets.DATABASE_URL_PRODUCTION }}"
+              NEON_DATABASE_URL: "${{ secrets.NEON_DATABASE_URL_PRODUCTION }}"
+          HELMEOF
+
       - name: Deploy Helm chart
         if: steps.validate.outputs.deploy_skipped != 'true'
         run: |
@@ -395,24 +423,9 @@ jobs:
             --set images.nginx.tag=${{ env.VERSION }} \
             --set ingress.hosts[0].host=fireai.example.com \
             --set replicas.api=3 \
-            --set secrets.fireai-secrets.stringData.FIREAI_API_KEY=${{ secrets.FIREAI_API_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set secrets.fireai-secrets.stringData.FIREAI_EVIDENCE_HMAC_KEY=${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set secrets.fireai-secrets.stringData.DB_PASSWORD=${{ secrets.DB_PASSWORD_PRODUCTION }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set secrets.fireai-secrets.stringData.REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD_PRODUCTION }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set secrets.fireai-secrets.stringData.GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            --set secrets.fireai-secrets.stringData.JWT_SECRET=${{ secrets.JWT_SECRET }} \  # NOSONAR — S7636: GitHub Actions acceptable
-            # C-03 FIX: Use Supabase Postgres instead of ephemeral SQLite.
-            # DATABASE_URL_PRODUCTION must be set as a GitHub Actions environment
-            # secret. Expected format:
-            #   postgresql://postgres:<password>@<project-ref>.supabase.co:5432/postgres?sslmode=require
-            --set api.environment.DATABASE_URL=${{ secrets.DATABASE_URL_PRODUCTION }} \
-            # NEON_DATABASE_URL fallback: if the primary DATABASE_URL fails (e.g.
-            # IPv6 connectivity issue), the backend automatically falls back to
-            # this Neon Postgres URL. Expected format:
-            #   postgresql://username:password@ep-<project>.region.aws.neon.tech/dbname?sslmode=require
-            --set api.environment.NEON_DATABASE_URL=${{ secrets.NEON_DATABASE_URL_PRODUCTION }} \
+            --values /tmp/helm-secrets-production.yaml \
             --wait --timeout 300s
+          rm -f /tmp/helm-secrets-production.yaml
 
       - name: Verify deployment
         if: steps.validate.outputs.deploy_skipped != 'true'

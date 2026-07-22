@@ -41,13 +41,13 @@ logger = logging.getLogger(__name__)
 _DB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "db")
 _DB_PATH = config.DIGITAL_TWIN_DB_PATH
 
-# PostgreSQL support: if DATABASE_URL starts with postgres:// or postgresql://,
-# use psycopg2 + connection pooling instead of SQLite.
+# PostgreSQL support: if DATABASE_URL starts with postgres://, postgresql://,
+# or postgresql+asyncpg://, use psycopg2 + connection pooling instead of SQLite.
 # NOTE: These are read at module import-time for backward compat, but the
 # Database class also re-reads them at config time to support late-binding
 # (e.g. Hugging Face Spaces that inject secrets after module import).
 _DATABASE_URL = config.DATABASE_URL
-_USE_POSTGRES = _DATABASE_URL.startswith(("postgres://", "postgresql://"))
+_USE_POSTGRES = _DATABASE_URL.startswith(("postgres://", "postgresql://", "postgresql+asyncpg://"))
 
 
 class Database:
@@ -59,7 +59,8 @@ class Database:
       - PostgreSQL — for production, multi-replica, and horizontally-scaled deployments
 
     The backend is selected via the DATABASE_URL environment variable:
-      - If DATABASE_URL starts with "postgres://" or "postgresql://", PostgreSQL is used.
+      - If DATABASE_URL starts with "postgres://", "postgresql://", or "postgresql+asyncpg://",
+        PostgreSQL is used.
       - Otherwise, SQLite is used with the DIGITAL_TWIN_DB_PATH or default path.
 
     PostgreSQL mode uses connection pooling (psycopg2.pool) for concurrent access
@@ -73,7 +74,7 @@ class Database:
         # so that environment variables injected after module load (e.g. HF Secrets)
         # are correctly picked up when the singleton is first created.
         database_url = config.DATABASE_URL
-        self._is_postgres = database_url.startswith(("postgres://", "postgresql://"))
+        self._is_postgres = database_url.startswith(("postgres://", "postgresql://", "postgresql+asyncpg://"))
         if self._is_postgres:
             # Store the actual URL on the instance for _init_postgres to use
             self._database_url = database_url

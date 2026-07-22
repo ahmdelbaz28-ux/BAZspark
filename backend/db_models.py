@@ -14,6 +14,7 @@ SQLAlchemy model here, then run `alembic revision --autogenerate -m "description
 from sqlalchemy import (
     CheckConstraint,
     Column,
+    DateTime,
     Float,
     ForeignKey,
     Index,
@@ -39,8 +40,8 @@ class Project(Base):
     name = Column(String, nullable=False)
     description = Column(String, nullable=False, server_default="")
     author = Column(String, nullable=False, server_default="")
-    created_at = Column(String, nullable=False)
-    updated_at = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
     status = Column(
         String,
         nullable=False,
@@ -78,8 +79,8 @@ class Device(Base):
     current = Column(Float, nullable=False, server_default="0.0")
     load = Column(Float, nullable=False, server_default="0.0")
     properties = Column(Text, nullable=False, server_default="{}")
-    created_at = Column(String, nullable=False)
-    updated_at = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
 
     # Relationships
     project = relationship("Project", back_populates="devices")
@@ -102,7 +103,7 @@ class Connection(Base):
     cable_size = Column(String, nullable=False, server_default="1.5mm²")
     length = Column(Float, nullable=False, server_default="0.0")
     type = Column(String, nullable=False, server_default="power")
-    created_at = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
 
     # Relationships
     project = relationship("Project", back_populates="connections")
@@ -129,8 +130,8 @@ class Report(Base):
         nullable=False,
         server_default="pending",
     )
-    created_at = Column(String, nullable=False)
-    completed_at = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     project = relationship("Project", back_populates="reports")
@@ -160,7 +161,7 @@ class SyncStatus(Base):
         nullable=False,
         server_default="synced",
     )
-    last_sync = Column(String, nullable=False)
+    last_sync = Column(DateTime(timezone=True), nullable=False)
     pending_changes = Column(Integer, nullable=False, server_default="0")
     error = Column(String, nullable=True)
 
@@ -182,7 +183,7 @@ class SyncOperation(Base):
     entity_id = Column(String, nullable=False)
     target_db = Column(String, nullable=False)
     status = Column(String, server_default="pending")
-    last_sync_at = Column(String, nullable=True)
+    last_sync_at = Column(DateTime(timezone=True), nullable=True)
     error_message = Column(String, nullable=True)
     retry_count = Column(Integer, server_default="0")
 
@@ -198,7 +199,7 @@ class AuditLog(Base):
     __tablename__ = "audit_log"
 
     id = Column(String, primary_key=True)
-    timestamp = Column(String, nullable=False)
+    timestamp = Column(DateTime(timezone=True), nullable=False)
     user_id = Column(String, nullable=False)
     action = Column(String, nullable=False)  # CREATE, UPDATE, DELETE, VIEW
     entity_type = Column(String, nullable=False)  # projects, devices, etc.
