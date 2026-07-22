@@ -131,11 +131,26 @@ describe("CoverageEngine", () => {
                         );
                 });
 
-                it("should warn when detector is too close to wall (< 0.5m)", () => {
-                        const nearWall = { ...detector, x: 0.3, y: 0.3 };
+                it("should warn when detector is too close to wall (< 0.1016m = 4in per NFPA 72 §17.7.3.2.3) (F-07 FIX)", () => {
+                        // F-07 FIX (Engineering Review): wall-distance threshold changed
+                        // from 0.5m to 0.1016m (4 inches per NFPA 72 §17.7.3.2.3 dead-air
+                        // space rule). A detector at 0.3m is now WITHIN the compliant
+                        // zone (0.3 > 0.1016). To trigger the warning, the detector must
+                        // be placed at < 0.1016m from a wall.
+                        const nearWall = { ...detector, x: 0.05, y: 0.05 }; // 5cm < 10.16cm
                         const result = validateDetectorPlacement(room, [nearWall]);
                         expect(result.warnings).toContainEqual(
-                                expect.stringContaining("close to wall"),
+                                expect.stringContaining("4in"),
+                        );
+                });
+
+                it("should NOT warn when detector is at 0.3m from wall (F-07 FIX: 0.3 > 0.1016)", () => {
+                        // F-07 FIX: 0.3m is compliant per the new 0.1016m threshold.
+                        // Previously this triggered a warning (0.3 < 0.5); now it must not.
+                        const compliantPlacement = { ...detector, x: 0.3, y: 0.3 };
+                        const result = validateDetectorPlacement(room, [compliantPlacement]);
+                        expect(result.warnings).not.toContainEqual(
+                                expect.stringContaining("4in"),
                         );
                 });
 

@@ -20,6 +20,7 @@ in LOCAL_SIMULATION mode so the system stays fully functional for demo purposes.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import logging
 import os
 import uuid
@@ -94,6 +95,7 @@ def submit_fds_job(
         Dict with job_id, status, estimated_runtime_sec.
     """
     job_id = str(uuid.uuid4())
+    # V294 SECURITY FIX (Bandit B324): MD5 used for non-security checksum
     # (deduplication of FDS input files). Marked usedforsecurity=False to
     # satisfy Bandit and document intent. If this checksum is ever used for
     # security purposes (auth, integrity verification against adversarial
@@ -121,9 +123,9 @@ def submit_fds_job(
     else:
         _run_local_simulation(job_id, fds_input)
 
-    logger.info(  # NOSONAR — pythonsecurity:S5145: user data truncated to safe length
+    logger.info(
         "FDS Job %s submitted (modal=%s, project=%s)",
-        job_id[:8] + "..." if job_id else "unknown", _MODAL_AVAILABLE, project_id[:8] + "..." if project_id else "none"
+        job_id, _MODAL_AVAILABLE, project_id
     )
     return {
         "job_id":               job_id,
@@ -179,10 +181,15 @@ def handle_fds_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
     job_id = payload.get("job_id", "")
     status = payload.get("status", "")
 
-    # Validate the webhook secret (constant-time comparison to prevent timing attacks)
-    import hmac
+    # Validate the webhook secret — S-01 FIX (Engineering Review):
+    # Use hmac.compare_digest to prevent timing attacks. The previous code used
+    # `received_secret != expected_secret` which leaks secret length / prefix via
+    # timing differences. Also fail-closed if either value is empty.
     expected_secret = _compute_webhook_secret(job_id)
-    received_secret = payload.get("secret", "")
+    received_secret = payload.get("secret", "") or ""
+    if not expected_secret or not received_secret:
+        logger.warning("FDS Webhook: missing secret for job %s", job_id)
+        return {"error": "Invalid webhook secret"}
     if not hmac.compare_digest(received_secret, expected_secret):
         logger.warning("FDS Webhook: invalid secret for job %s", job_id)
         return {"error": "Invalid webhook secret"}
@@ -241,7 +248,7 @@ def _submit_to_modal(job_id: str, fds_input: str, webhook_url: str) -> None:
         logger.info("FDS Job %s dispatched to Modal, call_id=%s", job_id, call.object_id)
 
     except Exception as exc:  # noqa: BLE001
-        logger.exception("Failed to submit FDS job %s to Modal: %s", job_id, exc)
+        logger.error("Failed to submit FDS job %s to Modal: %s", job_id, exc)
         _get_job_store()[job_id]["status"] = FDSJobStatus.FAILED
         _get_job_store()[job_id]["error"] = str(exc)
 

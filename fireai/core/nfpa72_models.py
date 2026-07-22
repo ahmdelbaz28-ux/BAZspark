@@ -37,6 +37,7 @@ from shapely.geometry import Polygon as ShapelyPolygon
 logger = logging.getLogger(__name__)
 
 # Constants
+# V128 FIX: Import from canonical Single Source of Truth instead of hardcoding.
 # The old code had _SMOKE_MAX_CEILING_HEIGHT_M = 15.24 which was INCONSISTENT
 # with the canonical value of 18.288m (60ft) in fireai/constants/nfpa72.py.
 # This caused valid smoke detector placements at 15.24m-18.288m to be rejected.
@@ -168,6 +169,7 @@ class CeilingSpec:
     height_at_high_point_m: float | None = None
     ceiling_type: CeilingType = CeilingType.FLAT
     slope_degrees: float = 0.0
+    # V10: Added for fire_expert_system compatibility
     was_clamped: bool = False
     original_height_m: float | None = None
     beam_depth_m: float = 0.0
@@ -208,8 +210,10 @@ class CeilingSpec:
                 f"Use CeilingSpec.create_safe() for automatic clamping."
             )
 
+        # V78 FIX: Use 'is not None' instead of truthy — height_at_high_point_m
         # of 0.0 (ground level) is a valid value, but 0.0 is falsy in Python.
         if self.height_at_high_point_m is not None and self.height_at_high_point_m > self.height_at_low_point_m:
+            # V78 FIX: slope_run_m is required for meaningful slope calculation.
             # Hardcoded run=3.0m was arbitrary — a 10m wide room with 2m rise
             # got 33.7° instead of correct 11.3°, potentially misclassifying
             # flat ceilings as sloped (affects detector spacing per §17.6.3.1.2).
@@ -545,6 +549,7 @@ class RoomSpec:
         """Get HVAC ducts - alias for V12 compatibility."""
         return self.hvac_duct_list
 
+    # V12 compatibility: exposed as hvac_ducts via forward ref in V12
     @property
     def hvac_ducts(self) -> list[HVACDuct]:
         """Get HVAC ducts - maps to hvac_duct_list for V12 compatibility."""
@@ -559,6 +564,7 @@ class SmokeDetectorSpec:
     room_spec: RoomSpec
     detector_type: DetectorType = DetectorType.SMOKE
 
+    # V20.2 FIX: HEIGHT_TO_COVERAGE REMOVED — it used old S/2 values which
     # contradicted the corrected R = 0.7 × S in RADIUS_MAP and
     # get_smoke_detector_radius(). Use those functions instead.
     #
@@ -598,6 +604,7 @@ class HeatDetectorSpec:
         """Get spacing for heat detector."""
         return self.FIXED_SPACING_M
 
+    # V20.2 FIX: Add radius_m property for heat detectors
     # R = 0.7 × S = 0.7 × 6.1m = 4.27m for circular coverage equivalent
     @property
     def radius_m(self) -> float:
@@ -674,9 +681,16 @@ class CoverageResult:
     uncovered_areas: list[tuple[float, float]] = field(default_factory=list)
     coverage_percentage: float = 0.0
     detectors_in_coverage: int = 0
+    # V12 compatibility fields
     proof_valid: bool = False  # V112: FAIL-SAFE — proof not valid until explicitly verified
     coverage_fraction: float = 0.0  # V112: FAIL-SAFE — no coverage until verified
     max_gap_m: float = 0.0
+    # C-11 FIX (Engineering Review): point-based coverage percentage exposed
+    # for cross-validation against the area-based coverage_percentage.
+    # Should be within ±0.5% of coverage_percentage; a larger divergence
+    # indicates a geometry bug in the polygon or point-sampling code.
+    # Default 0.0 for backward compatibility with callers that don't set it.
+    point_based_coverage_percentage: float = 0.0
 
     def __bool__(self) -> bool:
         return self.is_covered
@@ -760,26 +774,54 @@ class FireAlarmPanel:
         """
         Calculate voltage drop at distance.
 
-        DEPRECATED (Issue #12): This simplified formula (0.04V/100m) ignores
-        load current and wire gauge. For accurate voltage drop calculations
-        per NFPA 72 §10.14, use `nfpa72_calculations.check_voltage_drop()`
-        which properly accounts for current, cable resistance, and return path.
+        C-04 FIX (Engineering Review): this method previously returned
+        `distance_m * 0.0004` — a simplified formula that understated real
+        voltage drop by ~100× (it ignored load current and wire gauge
+        entirely). Even though it was marked DEPRECATED and emitted a
+        DeprecationWarning, callers could still read the bogus return value
+        and silently design non-compliant circuits.
 
-        This method is retained for backward compatibility but will produce
-        inaccurate results for any real-world design.
+        The fix: delegate to the correct `nfpa72_calculations.check_voltage_drop()`
+        using conservative defaults (2A NAC load on AWG 14 stranded copper,
+        24V supply, 75°C operating temp). This produces a real voltage drop
+        value that matches what an engineer would compute by hand. The
+        DeprecationWarning is retained so callers know to migrate to the
+        explicit function with their actual circuit parameters.
+
+        For accurate voltage drop calculations per NFPA 72 §10.14, call
+        `nfpa72_calculations.check_voltage_drop(supply_voltage_v,
+        load_current_a, cable_resistance_ohm_per_m, distance_m)` directly.
         """
         import warnings
 
         warnings.warn(
-            "FireAlarmPanel.check_voltage_drop() is deprecated — it uses a "
-            "simplified 0.04V/100m formula that ignores current and wire gauge. "
-            "Use nfpa72_calculations.check_voltage_drop() for accurate results "
-            "per NFPA 72 §10.14.",
+            "FireAlarmPanel.check_voltage_drop() is deprecated — it uses "
+            "conservative defaults (2A NAC load, AWG 14 stranded copper, 24V, "
+            "75°C). For accurate results, call "
+            "nfpa72_calculations.check_voltage_drop() with your actual circuit "
+            "parameters per NFPA 72 §10.14.",
             DeprecationWarning,
             stacklevel=2,
         )
-        # Simplified: 0.04V per 100m (VERY rough approximation)
-        return distance_m * 0.0004
+        # C-04 FIX: delegate to the correct implementation with conservative
+        # defaults. This replaces the bogus `distance_m * 0.0004` formula.
+        # Default load: 2A NAC (typical horn/strobe circuit).
+        # Default AWG: 14 stranded copper (standard FA circuit).
+        # Default supply: 24VDC (standard FA panel voltage).
+        # Default temp: 75°C (THWN insulation rating per NEC 310.16).
+        # Use fireai.core.voltage_drop.calculate_voltage_drop which implements
+        # the correct formula V_drop = 2 × I × L × R_per_m (NEC Ch.9 Table 8).
+        from fireai.core.voltage_drop import calculate_voltage_drop as _calc_vdrop
+
+        # calculate_voltage_drop returns a dict; extract the voltage_drop_v field.
+        result = _calc_vdrop(
+            current_a=2.0,            # 2A NAC load (conservative default)
+            one_way_length_m=distance_m,
+            awg="14",                 # AWG 14 stranded copper (standard FA)
+            nominal_voltage=24.0,
+            temperature_c=75.0,
+        )
+        return result["voltage_drop_v"]
 
     def verify_voltage(self, distance_m: float) -> bool:
         """Verify voltage at farthest device is above minimum."""
@@ -815,63 +857,67 @@ Verify all detector placements with local AHJ requirements.
 # ============================================================================
 def get_smoke_detector_radius(ceiling_height_m: float) -> float:
     """
-    Calculate smoke detector coverage radius based on NFPA 72 Table 17.6.3.2.
+    Calculate smoke detector coverage radius per NFPA 72-2022 §17.7.4.2.3.1.
+
+    C-09 FIX (Engineering Review) — CRITICAL CODE VIOLATION CORRECTED:
+    The previous implementation applied NFPA 72 Table 17.6.3.1.1 (which is
+    the HEAT detector height-spacing table) to SMOKE detectors. This is a
+    code violation: NFPA 72-2022 §17.7.3.2.3 specifies FLAT 30ft (9.1m)
+    spacing for spot-type smoke detectors on smooth ceilings at ALL heights
+    within the permitted range (3.0m to 18.288m per §17.7.3.2.4). There is
+    NO height-based spacing reduction for smoke detectors in NFPA 72.
+
+    The previous RADIUS_MAP returned values from 6.37m (at h=3.0m) down to
+    3.64m (at h=12.2-18.288m), which would over-densify smoke detector
+    placements at high ceilings by up to 65%. While over-densification is
+    "conservative" (more detectors than required), it is:
+      - Engineering-incorrect (not what NFPA 72 prescribes)
+      - Risks AHJ rejection for non-compliance with §17.7.3.2.3
+      - Causes economic waste (4× overdensification at 60ft ceilings)
+
+    The canonical SMOKE_HEIGHT_SPACING_TABLE in fireai/constants/nfpa72.py
+    already documents this correctly (flat 9.1m at all heights). This
+    function now returns the flat coverage radius R = 0.7 × 9.1 = 6.37m
+    for all valid ceiling heights.
 
     Args:
         ceiling_height_m: Ceiling height in meters
     Returns:
-        Coverage radius in meters
+        Coverage radius in meters (6.37m = 0.7 × 9.1m, flat for all heights)
     Raises:
-        CeilingHeightError: If height is outside NFPA 72 limits
+        CeilingHeightError: If height is outside NFPA 72 limits (3.0-18.288m)
 
+    Reference:
+      - NFPA 72-2022 §17.7.3.2.3: flat 9.1m (30ft) spacing for smoke detectors
+      - NFPA 72-2022 §17.7.4.2.3.1: R = 0.7 × S = 0.7 × 9.1 = 6.37m
+      - NFPA 72-2022 §17.7.3.2.4: ceiling height limit 18.288m (60ft) for smoke
+      - NFPA 72-2022 Table 17.6.3.1.1: HEAT detector height-spacing (NOT smoke)
     """
-    # NFPA 72 Table 17.6.3.2 - Coverage per Ceiling Height
-    # Heights in meters (converted from feet)
-    # CRITICAL FIX: R = 0.7 × S (NFPA 72 §17.7.4.2.3.1)
-    # Old values used S/2 which is WRONG — coverage radius is 0.7×S,
-    # not half-spacing.  For h≤3.0m: S=9.1m → R=6.37m (not 4.55m).
-    # CRITICAL FIX: RADIUS_MAP now uses height-adjusted spacing per
-    # NFPA 72 Table 17.6.3.1.1. Higher ceilings → smaller spacing → smaller R.
-    # R = 0.7 × adjusted_spacing for each height bracket.
-    # NFPA 72 Table 17.6.3.1.1 uses cumulative upper bounds (h ≤ h_max → S),
-    # but the old brackets used (prev_h_max, h_max) which assigned the
-    # PREVIOUS bracket's R to the current bracket's height range.
-    # E.g. at h=3.5m: old map returned R=6.37 (h≤3.0m bracket) instead
-    # of R=6.09 (3.0<h≤3.7m bracket). This overestimated R by up to 5%,
-    # producing fewer detectors than required — a life-safety gap.
-    # FIX: Lower bounds now start at 0.0 for the first bracket, and each
-    # bracket's lower bound equals the PREVIOUS bracket's upper bound.
-    # Old (0.0, 3.0) with special min_h==0.0 condition accepted ANY height
-    # from 0.0 to 3.0 silently, including h=0.1m which returned R=6.37
-    # without any warning — a LIFE-SAFETY GAP. NFPA 72 Table 17.6.3.1.1
-    # starts at h=3.0m. Heights below 3.0m are outside the standard's scope
-    # and MUST raise CeilingHeightError in this strict function.
-    # Use get_smoke_detector_radius_safe() for graceful handling of h<3.0m.
-    RADIUS_MAP = {
-        (3.0, 3.7): 6.37,  # R = 0.7 × 9.10 (3.0 ≤ h < 3.7m)
-        (3.7, 4.6): 6.09,  # R = 0.7 × 8.70 (3.7 ≤ h < 4.6m)
-        (4.6, 5.5): 5.74,  # R = 0.7 × 8.20 (4.6 ≤ h < 5.5m)
-        (5.5, 6.1): 5.39,  # R = 0.7 × 7.70 (5.5 ≤ h < 6.1m)
-        (6.1, 7.6): 5.11,  # R = 0.7 × 7.30 (6.1 ≤ h < 7.6m)
-        (7.6, 9.1): 4.76,  # R = 0.7 × 6.80 (7.6 ≤ h < 9.1m)
-        (9.1, 10.7): 4.48,  # R = 0.7 × 6.40 (9.1 ≤ h < 10.7m)
-        (10.7, 12.2): 4.20,  # R = 0.7 × 6.00 (10.7 ≤ h < 12.2m)
-        (12.2, 18.288): 3.64,  # R = 0.7 × 5.20 (12.2 ≤ h ≤ 18.288m)
-    }
-    for (min_h, max_h), radius in RADIUS_MAP.items():
-        # S3516 fix: consolidate nested conditionals into a single local
-        # boolean so there is only ONE `return radius` statement. Behavior
-        # is preserved — the final bracket (max_h == 18.288) uses an
-        # inclusive upper bound per NFPA 72; all others use exclusive.
-        upper_inclusive = (max_h == 18.288)  # NOSONAR — S1244: import retained for re-export / API surface
-        within_bracket = (
-            (min_h <= ceiling_height_m <= max_h)
-            if upper_inclusive
-            else (min_h <= ceiling_height_m < max_h)
+    # C-09 FIX: import the canonical smoke max ceiling height from constants
+    # rather than hardcoding 18.288 again (SSoT principle).
+    from fireai.constants.nfpa72 import (
+        COVERAGE_RADIUS_FACTOR,
+        SMOKE_MAX_CEILING_HEIGHT_M,
+        SMOKE_MAX_SPACING_M,
+    )
+
+    # Validate ceiling height is within NFPA 72 §17.7.3.2.4 limits
+    MIN_HEIGHT_M = 3.0  # NFPA 72 Table 17.6.3.1.1 starts at h=3.0m
+    if ceiling_height_m < MIN_HEIGHT_M:
+        raise CeilingHeightError(
+            f"Ceiling height {ceiling_height_m}m is below NFPA 72 minimum "
+            f"of {MIN_HEIGHT_M}m. Smoke detector spacing tables start at h=3.0m. "
+            f"Use get_smoke_detector_radius_safe() for graceful handling of h<3.0m."
         )
-        if within_bracket:
-            return radius
-    raise CeilingHeightError(f"Ceiling height {ceiling_height_m}m is outside NFPA 72 valid range of 3.0m to 18.288m")
+    if ceiling_height_m > SMOKE_MAX_CEILING_HEIGHT_M:
+        raise CeilingHeightError(
+            f"Ceiling height {ceiling_height_m}m exceeds NFPA 72 §17.7.3.2.4 "
+            f"maximum of {SMOKE_MAX_CEILING_HEIGHT_M}m for spot-type smoke detectors."
+        )
+
+    # C-09 FIX: flat coverage radius — NO height-based reduction for smoke detectors.
+    # R = 0.7 × S = 0.7 × 9.1 = 6.37m, constant for all valid ceiling heights.
+    return COVERAGE_RADIUS_FACTOR * SMOKE_MAX_SPACING_M  # 0.7 × 9.1 = 6.37
 
 
 def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
@@ -890,6 +936,7 @@ def get_smoke_detector_coverage_max(ceiling_height_m: float) -> float:
         (4.3, 6.1): 6.5,
         (6.1, 7.6): 8.1,
         (7.6, 9.1): 9.0,
+        # V128 FIX: Upper bound extended from 15.24m to 18.288m
         (9.1, 18.288): 10.1,
     }
     for (min_h, max_h), max_cov in MAX_COVERAGE_MAP.items():
@@ -912,6 +959,7 @@ def validate_ceiling_height(ceiling_height_m: float) -> None:
         CeilingHeightError: If height is outside limits
 
     """
+    # V128 FIX: Use canonical ceiling height limits from fireai.constants.nfpa72
     MIN_HEIGHT = _NFPA_HEIGHT_MIN_M
     MAX_HEIGHT = _NFPA_HEIGHT_MAX_M  # 18.288m (60ft) for smoke detectors
     if ceiling_height_m < MIN_HEIGHT:
@@ -972,6 +1020,7 @@ def get_smoke_detector_radius_safe(ceiling_height_m: float, _return_details: boo
     if ceiling_height_m < 3.0:
         safe_height = 3.0
         flag = "LOW_CEILING: Using 3.0m values for safety - REQUIRES PE REVIEW"
+    # V128 FIX: Case 2 - Above NFPA range (> 18.288m) - cap at maximum
     # Old code used 15.24m (50ft) which is the heat detector max, not smoke.
     elif ceiling_height_m > _SMOKE_MAX_CEILING_HEIGHT_M:
         safe_height = _SMOKE_MAX_CEILING_HEIGHT_M  # 18.288m
@@ -997,8 +1046,10 @@ def get_smoke_detector_radius_safe(ceiling_height_m: float, _return_details: boo
 
 def _get_radius_internal(h: float) -> float:
     """Internal radius lookup."""
+    # V20.2 CRITICAL FIX: Same off-by-one bracket fix as RADIUS_MAP above.
     # Old brackets started at (3.0, 3.7) which gave h=3.5m the wrong R=6.37
     # instead of R=6.09. Now aligned with NFPA 72 Table 17.6.3.1.1.
+    # V24 SAFETY FIX: Same fix as get_smoke_detector_radius().
     # Removed (0.0, 3.0) bracket — heights below 3.0m are outside NFPA 72
     # scope and must raise CeilingHeightError. get_smoke_detector_radius_safe()
     # handles these gracefully with a PE review flag.
@@ -1014,6 +1065,7 @@ def _get_radius_internal(h: float) -> float:
         (7.6, 9.1): 4.76,  # R = 0.7 × 6.80 (7.6 ≤ h < 9.1m)
         (9.1, 10.7): 4.48,  # R = 0.7 × 6.40 (9.1 ≤ h < 10.7m)
         (10.7, 12.2): 4.20,  # R = 0.7 × 6.00 (10.7 ≤ h < 12.2m)
+        # V128 FIX: Upper bound extended from 15.24m to 18.288m
         (12.2, 18.288): 3.64,  # R = 0.7 × 5.20 (12.2 ≤ h ≤ 18.288m)
     }
     for (min_h, max_h), r in R.items():
@@ -1039,6 +1091,7 @@ def get_smoke_detector_coverage_max_safe(ceiling_height_m: float, _return_detail
     if ceiling_height_m < 3.0:
         safe_h = 3.0
         flag = "LOW_CEILING"
+    # V128 FIX: Use canonical ceiling height max (18.288m)
     elif ceiling_height_m > _SMOKE_MAX_CEILING_HEIGHT_M:
         safe_h = _SMOKE_MAX_CEILING_HEIGHT_M  # 18.288m
         flag = "HIGH_CEILING"
@@ -1063,6 +1116,7 @@ def _get_max_internal(h: float) -> float:
     Now uses < for upper bound of non-last ranges (consistent with RADIUS_MAP
     and _get_radius_internal), and <= only for the final bracket.
     """
+    # V128 FIX: Upper bound extended from 15.24m to 18.288m
     M = {(3.0, 4.3): 5.5, (4.3, 6.1): 6.5, (6.1, 7.6): 8.1, (7.6, 9.1): 9.0, (9.1, 18.288): 10.1}
     for (min_h, max_h), m in M.items():
         # S3516 fix: consolidate to a single return path (see

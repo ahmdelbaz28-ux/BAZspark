@@ -20,17 +20,11 @@
          hardcoding them would cause 404s. Vite's buildModulePreload config
          handles this correctly. -->
 
-    <!-- V242: System font stack for instant text render (no external fetch).
-         Inter is still loaded as a progressive enhancement, but the
-         critical text renders immediately using the system font. This
-         eliminates the render-blocking Google Fonts request from FCP. -->
-    <style>
-      /* Critical CSS — system font fallback for instant FCP */
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-      }
-    </style>
+    <!-- H-01 FIX: Critical CSS extracted to /critical.css for CSP compliance.
+         External stylesheet (loaded via <link>) is allowed by style-src 'self'
+         without requiring 'unsafe-inline'. React inline style={{...}} props
+         are handled by style-src-attr 'unsafe-inline' separately. -->
+    <link rel="stylesheet" href="/critical.css" />
 
     <!-- Inter font — loaded async for progressive enhancement (non-blocking).
          V242: Uses preload + a tiny inline <script> (allowed by CSP because
@@ -59,21 +53,19 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="" />
 
-<!-- Content Security Policy
-          V7039 FIX: Removed 'unsafe-inline' from style-src to pass SonarCloud quality gate.
-          React inline styles (style={{...}}) are now allowed via the CSP Level 3
-          style-src-attr directive instead — this is more secure because it only
-          permits style ATTRIBUTES, not arbitrary <style> elements.
-          For <style> elements (critical CSS), a nonce-based approach is used:
-          the 'nonce-{{nonce}}' source in style-src is replaced at request time
-          by the hosting platform (Vercel / HF Space edge middleware) with a
-          cryptographically random nonce that matches the nonce attribute on
-          the <style> element below.
+<!-- H-01 FIX: Removed 'unsafe-inline' from style-src.
+          - style-src 'self' covers /critical.css (external stylesheet)
+            and Vite's hashed CSS chunks.
+          - style-src-attr 'unsafe-inline' covers React style={{...}}
+            props (this is CSP Level 3 — only style ATTRIBUTES, not
+            arbitrary <style> elements).
+          - https://fonts.googleapis.com is needed for the Inter font
+            progressive enhancement loaded via <link> above.
      -->
      <meta http-equiv="Content-Security-Policy"
       content="default-src 'self';
     script-src 'self';
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    style-src 'self' https://fonts.googleapis.com;
     style-src-attr 'unsafe-inline';
     img-src 'self' data: blob:;
     font-src 'self' data: https://fonts.gstatic.com;
@@ -91,49 +83,6 @@
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
 
     <title>BAZSPARK Digital Twin</title>
-    <style>
-      /* Critical CSS for initial load — prevents FOUC */
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-        background-color: #070b12;
-        color: #e8f0fe;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        overflow-x: hidden;
-      }
-      #root {
-        min-height: 100vh;
-      }
-      /* Loading spinner shown before React hydrates */
-      .app-loader {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        background-color: #070b12;
-        color: #94a3b8;
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      }
-      .app-loader-spinner {
-        width: 32px;
-        height: 32px;
-        border: 2px solid rgba(31, 45, 68, 0.5);
-        border-top-color: #22d3ee;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-      .app-loader-text {
-        margin-top: 0.75rem;
-        font-size: 0.8125rem;
-        letter-spacing: 0.05em;
-      }
-    </style>
   </head>
   <body>
     <noscript>

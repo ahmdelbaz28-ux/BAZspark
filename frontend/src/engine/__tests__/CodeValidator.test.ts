@@ -41,7 +41,7 @@ describe("CodeValidator", () => {
                         );
                 });
 
-                it("should pass when two detectors are within max spacing (≤7.5m)", () => {
+                it("should pass when two detectors are within max spacing (≤9.1m)", () => {
                         const d1 = makeDevice({ id: "d1", x: 0, y: 0 });
                         const d2 = makeDevice({ id: "d2", x: 5, y: 0 });
                         const results = validateSmokeDetectorPlacement([d1, d2], 10, 10);
@@ -49,7 +49,7 @@ describe("CodeValidator", () => {
                         expect(results.some((r) => r.isCompliant)).toBe(true);
                 });
 
-                it("should flag a violation when detectors exceed max spacing (>7.5m)", () => {
+                it("should flag a violation when detectors exceed max spacing (>9.1m)", () => {
                         const d1 = makeDevice({ id: "d1", x: 0, y: 0 });
                         const d2 = makeDevice({ id: "d2", x: 10, y: 0 });
                         const results = validateSmokeDetectorPlacement([d1, d2], 15, 10);
@@ -61,7 +61,8 @@ describe("CodeValidator", () => {
                         const d2 = makeDevice({ id: "d2", x: 5, y: 0 });
                         const results = validateSmokeDetectorPlacement([d1, d2], 10, 10);
                         expect(results[0].actualDistance).toBeGreaterThan(0);
-                        expect(results[0].maxDistance).toBe(7.5); // SMOKE_DETECTOR_MAX_SPACING
+                        // F-12 FIX: SMOKE_DETECTOR_MAX_SPACING is now 9.1m per NFPA 72-2022 §17.7.3.2.3
+                        expect(results[0].maxDistance).toBe(9.1); // SMOKE_DETECTOR_MAX_SPACING
                 });
         });
 
@@ -157,9 +158,22 @@ describe("CodeValidator", () => {
                         expect(Array.isArray(violations)).toBe(true);
                 });
 
-                it("should return an empty array for an empty device list", () => {
-                        const violations = validateAllDevices([]);
-                        expect(violations).toEqual([]);
+                it("should return only the AUDIT_CONTEXT_MISSING warning for an empty device list (F-11 FIX)", () => {
+                        // F-11 FIX (Engineering Review): validateAllDevices now emits an
+                        // AUDIT_CONTEXT_MISSING WARNING when called without roomContext.
+                        // For an empty device list, no other violations can exist, so the
+                        // result is exactly [AUDIT_CONTEXT_MISSING warning].
+                        // When roomContext IS provided, an empty device list returns [].
+                        const violationsNoContext = validateAllDevices([]);
+                        expect(violationsNoContext).toHaveLength(1);
+                        expect(violationsNoContext[0].rule).toBe("AUDIT_CONTEXT_MISSING");
+
+                        const violationsWithContext = validateAllDevices([], {
+                                width: 10,
+                                length: 10,
+                                ceilingHeight: 3,
+                        });
+                        expect(violationsWithContext).toEqual([]);
                 });
         });
 });
