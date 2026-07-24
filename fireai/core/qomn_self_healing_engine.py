@@ -1556,7 +1556,10 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                 # SAFETY GATE: LLM-generated engineering values are DISABLED by default.
                 # Set QOMN_ENABLE_LLM_HEALING=true to enable Tier 2 LLM recovery.
                 # When disabled, Tier 2 falls through to re-raise the original error.
-                if not _config.ENABLE_LLM_HEALING:
+                # Read from environment directly (not cached config) so tests can
+                # set the env var at runtime without re-importing the module.
+                _llm_healing_enabled = os.environ.get("QOMN_ENABLE_LLM_HEALING", "").lower() in ("1", "true", "yes")
+                if not _llm_healing_enabled:
                     logging.warning(
                         f"[TIER 2 SAFETY GATE] LLM healing is disabled (QOMN_ENABLE_LLM_HEALING not set). "
                         f"Tier 1 could not resolve {err_type} in {func_name}. "

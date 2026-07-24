@@ -85,11 +85,17 @@ class TestQomnFireSelfHealing(unittest.TestCase):
 
     def test_tier_2_verification_safety(self):
         """Verify Tier 2 local agent heals correctly using golden checks."""
-        tones = ["TONE_A"]
-        res = fetch_emergency_audio_sequence(tones, 10)
-        self.assertEqual(res.status, "HEALED")
-        self.assertEqual(res.value, "DEFAULT_EVAC_TONE")
-        self.assertEqual(res.metadata["tier"], 2)
+        import os
+        # Enable LLM healing for this test (disabled by default per safety gate)
+        os.environ["QOMN_ENABLE_LLM_HEALING"] = "true"
+        try:
+            tones = ["TONE_A"]
+            res = fetch_emergency_audio_sequence(tones, 10)
+            self.assertEqual(res.status, "HEALED")
+            self.assertEqual(res.value, "DEFAULT_EVAC_TONE")
+            self.assertEqual(res.metadata["tier"], 2)
+        finally:
+            os.environ.pop("QOMN_ENABLE_LLM_HEALING", None)
 
     def test_tier_3_circuit_breaker_trips(self):
         """Verify high frequency errors trip the circuit breaker and bypass normal calls."""
