@@ -731,7 +731,6 @@ class GenerativeLayoutAgent:
 
         Higher score = better variant.
         """
-
         # Validate inputs (per agent.md V57 NaN/Inf bypass)
         for _name, val in (("coverage_pct", coverage_pct),
                           ("overlap_pct", overlap_pct),

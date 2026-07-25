@@ -32,12 +32,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
-from fireai.core.contracts import (
-    DetectorType as _CanonicalDetectorType,
-)
-from fireai.core.contracts import (
-    CeilingType as _CanonicalCeilingType,
-)
 from fireai.constants.nfpa72 import (
     NAC_MIN_CD as NFPA72_NAC_MIN_CD,
 )
@@ -52,6 +46,12 @@ from fireai.constants.nfpa72 import (
 )
 from fireai.constants.nfpa72 import (
     PULL_STATION_HEIGHT_M as NFPA72_PULL_STATION_HEIGHT_M,
+)
+from fireai.core.contracts import (
+    CeilingType as _CanonicalCeilingType,
+)
+from fireai.core.contracts import (
+    DetectorType as _CanonicalDetectorType,
 )
 from fireai.core.qomn_kernel import (
     PhysicsGuardError,
