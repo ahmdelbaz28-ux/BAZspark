@@ -676,14 +676,14 @@ class DatabaseService:
         """Helper function to validate and create Geometry object from update data."""
         if not geometry:
             return None
-        
+
         point_data = geometry.get("location", {})
         location = Point3D(
             x=point_data.get("x", 0.0),
             y=point_data.get("y", 0.0),
             z=point_data.get("z", 0.0),
         )
-        
+
         return Geometry(location=location)
 
     def update_element(self, element_id: str, update_data: ElementUpdate) -> ElementResponse | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
@@ -697,7 +697,7 @@ class DatabaseService:
             name = update_data.name if update_data.name is not None else element.name
             description = update_data.description if update_data.description is not None else element.description
             element_type = update_data.type if update_data.type is not None else element.type
-            
+
             # Handle properties update
             new_properties = self._validate_property_updates(update_data.properties)
             if update_data.properties is not None:
@@ -1086,7 +1086,7 @@ class DatabaseService:
                 count_query += " AND project_id=?"
                 count_params.append(project_id)
             count_query = f"SELECT COUNT(*) FROM ({count_query})"
-            
+
             total_count = self._conn.execute(count_query, count_params).fetchone()[0]
 
             # Convert rows to response format
@@ -1305,7 +1305,7 @@ class DatabaseService:
             # Fetch paginated conflicts
             offset = (page - 1) * page_size
             query = f"""
-                SELECT 
+                SELECT
                     conflict_id, element_id, conflict_type, timestamp,
                     source_a, source_b, change_a, change_b,
                     resolution, resolved
@@ -1315,7 +1315,7 @@ class DatabaseService:
                 LIMIT ? OFFSET ?
             """
             params.extend([page_size, offset])
-            
+
             rows = self._conn.execute(query, params).fetchall()
 
             # Convert rows to response format
@@ -1345,7 +1345,7 @@ class DatabaseService:
         ct = getattr(result, 'conflict_type', 'UNKNOWN')
         sa = getattr(result, 'source_a', {})
         sb = getattr(result, 'source_b', {})
-        
+
         return ConflictResponse(
             conflict_id=conflict_id,
             element_id=element_id,
