@@ -1,6 +1,19 @@
+import io
+import json
+from datetime import datetime, timezone
 from typing import Dict, Optional, Tuple
 
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+
+from backend.auth import require_permission
+from backend.database import get_db
+from backend.limiter import limiter
+from backend.rbac import Permission
+from backend.response import safe_filename as _safe_filename
+
+project_router = APIRouter(prefix="/exports", tags=["exports"])
 
 
 def _generate_excel_export(project, devices, connections):
@@ -143,7 +156,7 @@ def _generate_excel_export(project, devices, connections):
     content = buf.getvalue()
     media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     filename = f"{_safe_filename(project.get('name', 'project'))}_export.xlsx"
-    
+
     return content, media_type, filename
 
 
@@ -175,7 +188,7 @@ def _generate_manifest_export(project, devices, connections, export_type, projec
     content = json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8")
     media_type = "application/json"
     filename = f"{_safe_filename(project.get('name', 'project'))}_manifest.json"
-    
+
     return content, media_type, filename
 
 

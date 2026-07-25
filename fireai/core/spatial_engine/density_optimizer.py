@@ -49,8 +49,10 @@ from dataclasses import dataclass, field
 
 from fireai.constants.nfpa72 import (
     SMOKE_COVERAGE_RADIUS_M,
-    SMOKE_MAX_SPACING_M as _CANONICAL_SMOKE_MAX_SPACING_M,
     WALL_MIN_DISTANCE_M,
+)
+from fireai.constants.nfpa72 import (
+    SMOKE_MAX_SPACING_M as _CANONICAL_SMOKE_MAX_SPACING_M,
 )
 
 # ── ConvergenceConfig integration (PDF Phase 3 requirement) ──
