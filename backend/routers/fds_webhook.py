@@ -15,10 +15,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from backend.routers.sync import manager as ws_manager
+from backend.auth import require_permission
+from backend.rbac import Permission
 from backend.services.fds_queue_service import (
     get_fds_job_status,
     handle_fds_webhook,
@@ -35,7 +36,7 @@ router = APIRouter(prefix="/fds", tags=["FDS Simulation Queue"])
 
 class FDSSubmitRequest(BaseModel):
     """Request body for submitting an FDS simulation."""
-    fds_input:  str             = Field(..., min_length=10,
+    fds_input:  str             = Field(..., min_length=10, max_length=1_000_000,
                                         description="Raw FDS input file content")
     project_id: str             = Field(default="",
                                         description="BAZspark project ID")
@@ -53,7 +54,7 @@ class FDSWebhookPayload(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.post("/submit", summary="Submit an FDS simulation job")
+@router.post("/submit", summary="Submit an FDS simulation job", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def submit_simulation(
     body: FDSSubmitRequest,
     request: Request,
@@ -83,16 +84,16 @@ async def submit_simulation(
     )
 
 
-@router.get("/status/{job_id}", summary="Get FDS job status")
+@router.get("/status/{job_id}", summary="Get FDS job status", dependencies=[Depends(require_permission(Permission.CALCULATION_READ))])
 async def get_job_status(job_id: str) -> Dict[str, Any]:
     """Poll the status and result of an FDS simulation job."""
     result = get_fds_job_status(job_id)
     if result.get("error"):
-        raise HTTPException(status_code=404, detail=result["error"])  # NOSONAR — S8415: endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail=result["error"])
     return result
 
 
-@router.get("/jobs", summary="List FDS simulation jobs")
+@router.get("/jobs", summary="List FDS simulation jobs", dependencies=[Depends(require_permission(Permission.CALCULATION_READ))])
 async def list_jobs(
     request: Request,
     limit: int = 20,
@@ -118,28 +119,6 @@ async def fds_result_webhook(
     result = handle_fds_webhook(payload.model_dump())
 
     if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])  # NOSONAR — S8415: endpoint error handling is intentional
-
-    # Broadcast completion event to subscribed WebSocket clients
-    try:
-        job_status = get_fds_job_status(payload.job_id)
-        project_id = job_status.get("project_id", "")
-        if project_id:
-            notification = {
-                "event": "fds_complete",
-                "job_id": payload.job_id,
-                "status": payload.status,
-                "error": payload.error,
-            }
-            await ws_manager.send_to_project(project_id, notification)
-            logger.info(  # NOSONAR — pythonsecurity:S5145: user data truncated to safe length
-                "FDS WebSocket notification sent for job %s (project %s)",
-                payload.job_id[:8] + "...", project_id[:8] + "...",
-            )
-    except Exception as exc:  # noqa: BLE001
-        logger.warning(  # NOSONAR — pythonsecurity:S5145: user data truncated to safe length
-            "FDS WebSocket notification failed for job %s: %s",
-            payload.job_id[:8] + "...", str(exc)[:100],
-        )
+        raise HTTPException(status_code=400, detail=result["error"])
 
     return result

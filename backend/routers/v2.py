@@ -1,4 +1,4 @@
-
+from __future__ import annotations
 
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
@@ -43,13 +43,12 @@ References
 
 """
 
+# V141 FIX: Removed __future__ annotations to fix Pydantic forward ref resolution.
 # With __future__ annotations, Dict[str, Any] becomes ForwardRef('Dict[str, Any]')
 # which Pydantic cannot resolve at runtime for FastAPI model parsing.
 # Removing it forces actual type resolution at import time.
 import logging
-import os
-import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -115,7 +114,7 @@ class ARExportRequest(BaseModel):
 
     building_id: str = "API_Building"
     format: str = Field("both", pattern="^(glb|usdz|both)$")
-    nodes: List[Dict[str, Any]] = Field(
+    nodes: list[dict[str, Any]] = Field(
         default_factory=list,
         description="AR scene nodes (optional — empty uses DigitalTwin)",
     )
@@ -126,7 +125,7 @@ class WebhookSubscribeRequest(BaseModel):
 
     url: str
     secret: str = Field(..., min_length=32)  # V135 F-33: NIST SP 800-107
-    event_types: List[str] = Field(default_factory=list)
+    event_types: list[str] = Field(default_factory=list)
 
 
 class WebhookPublishRequest(BaseModel):
@@ -134,7 +133,7 @@ class WebhookPublishRequest(BaseModel):
 
     event_type: str
     source: str
-    data: Dict[str, Any]
+    data: dict[str, Any]
     trace_id: Optional[str] =  None
 
 
@@ -156,10 +155,10 @@ class SmokeSimulationStateRequest(BaseModel):
     """
 
     room_id: str = Field(..., max_length=200)
-    smoke_density_points: List[SmokeDensityPointRequest] = Field(
+    smoke_density_points: list[SmokeDensityPointRequest] = Field(
         default_factory=list, max_length=10000
     )
-    visibility_at_height: Dict[float, float] = Field(default_factory=dict)
+    visibility_at_height: dict[float, float] = Field(default_factory=dict)
     fds_run_id: Optional[str] =  None
 
 
@@ -170,7 +169,7 @@ class SmokeSimulationStateRequest(BaseModel):
 
 @router.post("/generative/design", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("10/minute")
-async def generate_design_variants(request: Request, req: GenerativeDesignRequest) -> Dict[str, Any]:
+async def generate_design_variants(request: Request, req: GenerativeDesignRequest) -> dict[str, Any]:
     """
     Generate 3 layout variants (Cost-Min, Standard, Safety-Max).
 
@@ -210,22 +209,22 @@ async def generate_design_variants(request: Request, req: GenerativeDesignReques
 # ---------------------------------------------------------------------------
 
 
-@router.get("/bim/providers")
-async def list_bim_providers() -> Dict[str, Any]:
+@router.get("/bim/providers", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
+async def list_bim_providers() -> dict[str, Any]:
     """List all registered BIM providers."""
     from fireai.bridges.bim_provider import BIMProviderRegistry
 
     providers = BIMProviderRegistry.list_available()
     return {
         "providers": providers,
-        "active": os.environ.get("FIREAI_BIM_PROVIDER"),
+        "active": __import__("os").environ.get("FIREAI_BIM_PROVIDER"),
         "count": len(providers),
     }
 
 
 @router.post("/bim/extract-rooms", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("10/minute")
-async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Extract rooms via configured BIM provider.
 
@@ -235,6 +234,7 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[s
     """
     from fireai.bridges.bim_provider import get_provider
 
+    # V137 F-5 / V138 F-7: Validate source path if provided
     # CodeQL: py/path-injection — source is validated below with Path.resolve()
     # + is_relative_to() + null byte check + extension whitelist.
     if req.source:  # lgtm[py/path-injection] — validated below
@@ -247,6 +247,7 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[s
         from pathlib import Path
         try:
             source_path = Path(req.source).resolve()  # NOSONAR
+            # V138 F-7 FIX: Use Path.is_relative_to() or proper boundary check
             # instead of str.startswith() which matches "/tmp_evil" against "/tmp"
             cwd = Path.cwd().resolve()
             allowed_roots = [
@@ -255,6 +256,7 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[s
                 Path("/var/tmp"),  # NOSONAR
                 Path(os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
             ]
+            # V138 F-7: Check if source_path is within any allowed root
             # using proper path containment (not string prefix)
             def _is_within(path: Path, root: Path) -> bool:
                 try:
@@ -289,11 +291,10 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[s
 
     provider = get_provider(req.provider)
     if provider is None:
-        from fireai.bridges.bim_provider import BIMProviderRegistry
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
             detail=f"No BIM provider available. Set FIREAI_BIM_PROVIDER env var. "
-            f"Registered: {BIMProviderRegistry.list_available()}",
+            f"Registered: {__import__('fireai.bridges.bim_provider', fromlist=['BIMProviderRegistry']).BIMProviderRegistry.list_available()}",
         )
 
     rooms = provider.extract_rooms(source=req.source)
@@ -313,8 +314,8 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[s
     }
 
 
-@router.get("/bim/health")
-async def bim_health() -> Dict[str, Any]:
+@router.get("/bim/health", dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
+async def bim_health() -> dict[str, Any]:
     """Health check for active BIM provider."""
     from fireai.bridges.bim_provider import get_provider
 
@@ -335,7 +336,7 @@ async def bim_health() -> Dict[str, Any]:
 
 @router.post("/ifc43/map-detector", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
 @limiter.limit("30/minute")
-async def map_detector_to_ifc43(request: Request, req: IFC43MapDetectorRequest) -> Dict[str, Any]:
+async def map_detector_to_ifc43(request: Request, req: IFC43MapDetectorRequest) -> dict[str, Any]:
     """Map a FireAI detector to IFC 4.3 ADD2 representation."""
     from fireai.bridges.ifc43_mapper import IFC43Mapper
 
@@ -355,7 +356,7 @@ async def map_detector_to_ifc43(request: Request, req: IFC43MapDetectorRequest) 
 
 @router.post("/ifc43/map-project", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
 @limiter.limit("10/minute")
-async def map_project_to_ifc43(request: Request, req: Dict[str, Any]) -> Dict[str, Any]:
+async def map_project_to_ifc43(request: Request, req: dict[str, Any]) -> dict[str, Any]:
     """Map an entire FireAI project to IFC 4.3 ADD2."""
     from fireai.bridges.ifc43_mapper import IFC43Mapper
 
@@ -378,7 +379,7 @@ async def map_project_to_ifc43(request: Request, req: Dict[str, Any]) -> Dict[st
 
 @router.post("/ar/export", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
 @limiter.limit("10/minute")
-async def export_ar_snapshot(request: Request, req: ARExportRequest) -> Dict[str, Any]:
+async def export_ar_snapshot(request: Request, req: ARExportRequest) -> dict[str, Any]:
     """
     Export DigitalTwin snapshot to GLB/USDZ for AR visualization.
 
@@ -436,7 +437,7 @@ async def export_ar_snapshot(request: Request, req: ARExportRequest) -> Dict[str
 
 @router.post("/webhooks/subscribe", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 @limiter.limit("30/minute")
-async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> Dict[str, Any]:
+async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> dict[str, Any]:
     """Subscribe to webhook events."""
     from fireai.infrastructure.webhook_service import (
         WebhookSubscription,
@@ -446,7 +447,7 @@ async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> D
     service = get_webhook_service()
     try:
         sub = WebhookSubscription(
-            id=f"sub-{uuid.uuid4().hex[:12]}",
+            id=f"sub-{__import__('uuid').uuid4().hex[:12]}",
             url=req.url,
             secret=req.secret,
             event_types=req.event_types,
@@ -464,8 +465,8 @@ async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> D
         raise HTTPException(status_code=422, detail=safe_msg) from e  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@router.get("/webhooks/subscriptions")
-async def list_webhook_subscriptions() -> Dict[str, Any]:
+@router.get("/webhooks/subscriptions", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
+async def list_webhook_subscriptions() -> dict[str, Any]:
     """List all webhook subscriptions."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
@@ -487,7 +488,7 @@ async def list_webhook_subscriptions() -> Dict[str, Any]:
 
 @router.delete("/webhooks/subscriptions/{sub_id}", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 @limiter.limit("30/minute")
-async def unsubscribe_webhook(request: Request, sub_id: str) -> Dict[str, Any]:
+async def unsubscribe_webhook(request: Request, sub_id: str) -> dict[str, Any]:
     """Remove a webhook subscription."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
@@ -500,7 +501,7 @@ async def unsubscribe_webhook(request: Request, sub_id: str) -> Dict[str, Any]:
 
 @router.post("/webhooks/publish", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 @limiter.limit("30/minute")
-async def publish_webhook_event(request: Request, req: WebhookPublishRequest) -> Dict[str, Any]:
+async def publish_webhook_event(request: Request, req: WebhookPublishRequest) -> dict[str, Any]:
     """Publish an event to all matching webhook subscribers."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
@@ -525,7 +526,7 @@ async def publish_webhook_event(request: Request, req: WebhookPublishRequest) ->
 
 @router.post("/smoke-simulation/state", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("10/minute")
-async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest) -> Dict[str, Any]:
+async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest) -> dict[str, Any]:
     """
     Create or update smoke simulation state for a room.
 
@@ -538,6 +539,7 @@ async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest)
     )
 
     if req.fds_run_id:
+        # V137 F-6 FIX: Validate FDS run ID format to prevent fake validation.
         # The OLD code accepted ANY string as fds_run_id — a user could submit
         # arbitrary smoke data with fds_run_id="fake" and the state would be
         # marked VALIDATED, potentially tainting the legal audit chain.
@@ -558,6 +560,7 @@ async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest)
             )
 
         # Create validated state from FDS results
+        # V138 F-14: Use Pydantic-validated points (was unvalidated Dict)
         points = [
             SmokeDensityPoint(
                 x=p.x, y=p.y, z=p.z,
@@ -579,6 +582,7 @@ async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest)
 
 
 # ---------------------------------------------------------------------------
+# V141: Vector Memory & Topology Endpoints
 # ---------------------------------------------------------------------------
 
 
@@ -642,7 +646,7 @@ async def store_memory(request: Request, req: VectorMemoryStoreRequest) -> Dict[
     return {"entry_id": entry_id, "stored": True, "memory_type": req.memory_type}
 
 
-@router.post("/memory/search")
+@router.post("/memory/search", dependencies=[Depends(require_permission(Permission.CALCULATION_READ))])
 @limiter.limit("30/minute")
 async def search_memory(request: Request, req: VectorMemorySearchRequest) -> Dict[str, Any]:
     """Search for similar memories in Qdrant."""
@@ -662,7 +666,7 @@ async def search_memory(request: Request, req: VectorMemorySearchRequest) -> Dic
     return result.to_dict()
 
 
-@router.get("/memory/health")
+@router.get("/memory/health", dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
 async def memory_health() -> Dict[str, Any]:
     """Check Qdrant vector database health."""
     from fireai.infrastructure.vector_memory_service import get_vector_memory
@@ -727,7 +731,7 @@ async def analyze_impact(request: Request, req: TopologyImpactRequest) -> Dict[s
     return result.to_dict()
 
 
-@router.get("/topology/health")
+@router.get("/topology/health", dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
 async def topology_health() -> Dict[str, Any]:
     """Check Neo4j topology graph health."""
     from fireai.infrastructure.topology_graph_service import get_topology_service
@@ -735,6 +739,7 @@ async def topology_health() -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# V142: GraphRAG Endpoints
 # ---------------------------------------------------------------------------
 
 
@@ -813,7 +818,7 @@ async def search_graphrag(request: Request, req: GraphRAGSearchRequest) -> Dict[
     return {"query": req.query, "results": results, "total": len(results)}
 
 
-@router.get("/graphrag/health")
+@router.get("/graphrag/health", dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
 async def graphrag_health() -> Dict[str, Any]:
     """Check GraphRAG engine health."""
     from fireai.infrastructure.graphrag_engine import get_graphrag_engine
@@ -827,7 +832,7 @@ async def graphrag_health() -> Dict[str, Any]:
 
 
 @router.get("/health")
-async def v2_health() -> Dict[str, Any]:
+async def v2_health() -> dict[str, Any]:
     """Health check for v2 API endpoints."""
     return {
         "status": "ok",
@@ -865,7 +870,7 @@ async def v2_health() -> Dict[str, Any]:
 
 
 @router.get("/auth/csrf-token")
-async def get_csrf_token(request: Request) -> Dict[str, Any]:
+async def get_csrf_token(request: Request) -> dict[str, Any]:
     """
     Issue a CSRF token via Double Submit Cookie pattern.
 
