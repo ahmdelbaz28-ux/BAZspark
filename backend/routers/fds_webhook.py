@@ -103,7 +103,7 @@ async def list_jobs(
     return list_fds_jobs(user_id=user_id, limit=limit)
 
 
-@router.post("/webhook", summary="FDS simulation result webhook (internal)")
+@router.post("/webhook", summary="FDS simulation result webhook (internal)", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def fds_result_webhook(
     payload: FDSWebhookPayload,
     request: Request,
@@ -113,8 +113,9 @@ async def fds_result_webhook(
     Validates the HMAC secret, updates the job record, and broadcasts to
     subscribed WebSocket clients.
 
-    This endpoint should NOT be exposed to unauthenticated users in production.
-    Add IP allowlisting for Modal's egress IPs if needed.
+    SECURITY: This endpoint uses CALCULATION_EXECUTE as a minimum permission
+    gate. In production, also add IP allowlisting for Modal's egress IPs
+    and validate the HMAC secret in the payload.
     """
     result = handle_fds_webhook(payload.model_dump())
 
