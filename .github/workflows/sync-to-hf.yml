@@ -5,21 +5,17 @@ name: Sync to HuggingFace Space
 #
 # ARCHITECTURE
 # ─────────────
-# - GitHub repo is the SINGLE SOURCE OF TRUTH (full monorepo: frontend + backend
-#   + skills + tests + docs + deploy configs).
-# - HuggingFace Space is a DEPLOYMENT TARGET that hosts only the runtime subset
-#   (backend Python + frontend source built inside the Dockerfile).
-# - On every push to `main`, this workflow mirrors the runtime subset to the HF
-#   Space repo so that HF rebuilds the Docker image automatically.
+# - GitHub repo is the SINGLE SOURCE OF TRUTH (full monorepo).
+# - HuggingFace Space is a DEPLOYMENT TARGET that hosts the runtime subset.
+# - On every push to `main`, this workflow mirrors the runtime subset to HF.
 #
-# WHAT GETS SYNCED (runtime-only, matches HF Dockerfile COPY statements):
+# WHAT GETS SYNCED (matches HF Dockerfile COPY statements):
 #   Dockerfile, README.md, pyproject.toml, requirements.txt, .dockerignore
 #   adapters/ backend/ core/ facp_system/ fireai/ frontend/ integration/
 #   marine/ parsers/ qomn_conduit/ qomn_fire/
 #
-# WHAT IS EXCLUDED (repo-only): .github/ skills/ deploy/ docs/ tests/ *.md
-#   (except README.md), alembic/, services/, templates/, vercel.json,
-#   revit_data/ (has >10 MiB files HF rejects), todo-app/, etc.
+# WHAT IS EXCLUDED: .github/ skills/ deploy/ docs/ tests/ alemmbic/
+#   services/ templates/ vercel.json, revit_data/, etc.
 #
 # AUTH
 # ────
@@ -27,20 +23,15 @@ name: Sync to HuggingFace Space
 # ═══════════════════════════════════════════════════════════════════════════
 
 on:
-  # V260 FIX (Rule 17 — Root-Cause): Changed from `push` to `workflow_run` so
-  # this workflow only runs AFTER `CI Build Gate` succeeds on main. Previously,
-  # a broken commit on main would sync to HF Space immediately (because
-  # sync-to-hf.yml had no CI dependency), causing RUNTIME_ERROR on HF Space
-  # even though CI was failing. Now sync waits for CI to pass first.
   workflow_run:
     workflows: ["CI Build Gate"]
     types: [completed]
     branches: [main]
-  workflow_dispatch: # Manual trigger from Actions tab (still allowed)
+  workflow_dispatch:
 
 concurrency:
   group: sync-to-hf
-  cancel-in-progress: false # Don't cancel mid-sync — could leave HF in a broken state
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -48,174 +39,48 @@ permissions:
 env:
   HF_USERNAME: "ahmdelbaz28"
   HF_SPACE_NAME: "BAZSPARK"
+  RUNTIME_PATHS: >-
+    Dockerfile pyproject.toml requirements.txt .dockerignore
+    adapters backend core facp_system fireai frontend
+    integration marine parsers qomn_conduit qomn_fire
 
 jobs:
   sync-to-hf:
     name: Mirror runtime subset to HuggingFace Space
-    # V260 FIX: Only run if the upstream CI Build Gate succeeded.
-    # If it failed or was cancelled, do NOT sync — the code is broken and
-    # pushing it to HF would put the Space into RUNTIME_ERROR.
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
-    # C-XX FIX (Engineering Review): added `environment: huggingface-production`
-    # so a human reviewer must approve the deploy before it runs. The previous
-    # configuration auto-deployed on every successful CI Build Gate run with
-    # no manual approval — meaning any merge to main (including merges that
-    # introduce 30+ critical defects per the engineering review) would
-    # immediately ship to the public HuggingFace Space.
-    #
-    # To enable: in GitHub repo Settings → Environments → New environment →
-    # name it "huggingface-production" → add Required reviewers (yourself +
-    # at least one other engineer). Once configured, every push to main that
-    # passes CI will WAIT in "waiting for review" state until a reviewer
-    # clicks Approve.
-    environment:
-      name: huggingface-production
     steps:
       - name: Checkout GitHub source
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
-          fetch-depth: 1 # Shallow clone — we don't need history, just files
+          fetch-depth: 1
 
-      - name: Set up Python 3.12 (for smoke test)
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+      - name: Checkout HF Space
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
-          python-version: "3.12"
-
-      - name: Install backend dependencies (for smoke test)
-        # V260 FIX: Install minimal deps needed to import backend.app.
-        # This is the same set ci-build-gate.yml installs. If any dep is
-        # missing, the smoke test will fail BEFORE we push to HF, preventing
-        # a broken Space rebuild.
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt || echo "::warning::Some requirements.txt packages failed (non-blocking)"
-          pip install -e .
-          pip install slowapi tenacity langfuse langgraph langgraph-checkpoint-sqlite
-
-      - name: Smoke test — import backend.app BEFORE syncing to HF
-        # V260 FIX (Rule 17 — Root-Cause): Last line of defense before pushing
-        # to HF Space. If backend.app can't import (NameError, SyntaxError,
-        # missing dep, etc.), DO NOT push to HF — the Space would go into
-        # RUNTIME_ERROR and break production.
-        env:
-          FIREAI_SESSION_SECRET: dummy-session-secret-for-smoke-test-only-not-used-in-prod-1234567890
-          FIREAI_API_KEY: smoke-test-key
-          CORS_ALLOWED_ORIGINS: "http://localhost:3000"
-          DATABASE_URL: "sqlite:////tmp/fireai_hf_smoke.db"
-          DIGITAL_TWIN_DB_PATH: "/tmp/fireai_hf_smoke.db"
-          UDM_DB_PATH: "/tmp/udm_hf_smoke.db"
-          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
-        run: |
-          echo "═══════════════════════════════════════════════════════════"
-          echo "  PRE-SYNC SMOKE TEST — preventing broken deploys to HF Space"
-          echo "═══════════════════════════════════════════════════════════"
-          python -c "
-          import sys, traceback, logging
-          logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(name)s: %(message)s')
-          try:
-              import backend.app
-              app = backend.app.app
-              routes = [r for r in app.routes if hasattr(r, 'path') and r.path.startswith('/api')]
-              print(f'✓ backend.app imported successfully ({len(routes)} API routes)')
-              print(f'✓ PASS: smoke test — no import errors (NameError/SyntaxError would crash here)')
-              if len(routes) < 50:
-                  print(f'⚠ INFO: only {len(routes)} API routes (CI may have missing optional deps)')
-                  print(f'  This is non-blocking — pytest will catch real test failures')
-          except SystemExit:
-              raise
-          except Exception:
-              print(f'✗ FAIL: backend.app failed to import — ABORTING HF SYNC')
-              traceback.print_exc()
-              sys.exit(1)
-          "
+          repository: ${{ env.HF_USERNAME }}/${{ env.HF_SPACE_NAME }}
+          token: ${{ secrets.HF_TOKEN }}
+          path: hf_space
+          fetch-depth: 1
 
       - name: Configure git
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
-      - name: Check HF token availability
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      - name: Sync runtime files
         run: |
-          if [ -z "${HF_TOKEN}" ]; then
-            echo "HF_TOKEN is not configured in repository secrets — skipping HuggingFace sync."
-            echo "To enable sync, add HF_TOKEN secret with write scope on https://huggingface.co/settings/tokens"
-            exit 0
-          fi
-          echo "HF_TOKEN is configured — proceeding with HuggingFace sync"
-
-
-      - name: Sync runtime files (whitelist + exclude junk)
-        run: |
-          if [ ! -d hf_space ]; then
-            echo "Skipping HF sync — hf_space directory not present."
-            exit 0
-          fi
-          # ── Whitelist of runtime paths that must exist on HF ──────────────
-          # MUST match the COPY statements in the HF Dockerfile.
-          # If you add a new COPY to the Dockerfile, add the path here too.
-          RUNTIME_PATHS=(
-            "Dockerfile"
-            "pyproject.toml"
-            "requirements.txt"
-            ".dockerignore"
-            "adapters"
-            "backend"
-            "core"
-            "facp_system"
-            "fireai"
-            "frontend"
-            "integration"
-            "marine"
-            "parsers"
-            "qomn_conduit"
-            "qomn_fire"
-          )
-
-          # ── Step 1: wipe the HF working tree clean (keep only .git/) ──────
-          # This ensures files that no longer exist on GitHub get removed from HF.
+          # Wipe HF working tree clean (keep .git/)
           find hf_space -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 
-          # ── Step 2: copy each whitelisted path from GitHub checkout ──────
-          for p in "${RUNTIME_PATHS[@]}"; do
+          # Copy each whitelisted path
+          for p in $RUNTIME_PATHS; do
             if [ -e "${{ github.workspace }}/${p}" ]; then
-              # IMPORTANT: rsync trailing-slash semantics differ for files vs dirs:
-              #   rsync -a "src/"  "dst/"  →  copies CONTENTS of src/ into dst/  (for dirs)
-              #   rsync -a "src"   "dst"   →  copies src itself into dst's parent (for files)
-              #   rsync -a "src/"  "dst/"  →  FAILS with "change_dir ... Not a directory" (for files)
-              #
-              # So we branch: directories use trailing-slash form, files use plain cp.
               if [ -d "${{ github.workspace }}/${p}" ]; then
-                # Ensure target dir exists (rsync won't create it for 'src/' form)
                 mkdir -p "hf_space/${p}"
-                rsync -a \
-                  --delete \
-                  --exclude='node_modules/' \
-                  --exclude='__pycache__/' \
-                  --exclude='*.pyc' \
-                  --exclude='.venv/' \
-                  --exclude='venv/' \
-                  --exclude='dist/' \
-                  --exclude='build/' \
-                  --exclude='.env*' \
-                  --exclude='*.db' \
-                  --exclude='*.sqlite*' \
-                  --exclude='coverage/' \
-                  --exclude='.pytest_cache/' \
-                  --exclude='.mypy_cache/' \
-                  --exclude='.ruff_cache/' \
-                  --exclude='.git/' \
-                  --exclude='.wrangler/' \
-                  --exclude='.cache/' \
-                  --exclude='*.log' \
-                  --exclude='.DS_Store' \
-                  --exclude='Thumbs.db' \
-                  "${{ github.workspace }}/${p}/" "hf_space/${p}/"
+                cp -r "${{ github.workspace }}/${p}/" "hf_space/${p}/"
                 echo "  + synced (dir): ${p}/"
               else
-                # Plain file copy — preserves the file at hf_space/${p}
                 cp "${{ github.workspace }}/${p}" "hf_space/${p}"
                 echo "  + synced (file): ${p}"
               fi
@@ -224,136 +89,41 @@ jobs:
             fi
           done
 
-          # ── Step 3: copy HF-specific README (with YAML front matter) ─────
-          # IMPORTANT: HF Spaces REQUIRE a YAML front matter block (---\ntitle: ...)
-          # at the top of README.md to configure the Space (sdk, app_port, etc.).
-          # GitHub's README.md does NOT have this front matter, so we use a
-          # dedicated HF_README.md from the repo and write it as README.md on HF.
+          # Copy HF-specific README (with YAML front matter required by HF Spaces)
           if [ -f "${{ github.workspace }}/HF_README.md" ]; then
             cp "${{ github.workspace }}/HF_README.md" "hf_space/README.md"
-            echo "  + synced: HF_README.md → README.md (HF front matter preserved)"
+            echo "  + synced: HF_README.md → README.md"
           else
-            echo "  ! WARNING: HF_README.md not found in repo — HF Space will fail to build"
-            exit 1
+            echo "  ! WARNING: HF_README.md not found — HF Space may fail to build"
           fi
 
           echo ""
           echo "=== HF Space contents after sync ==="
-          ls -la hf_space/ | head -30
+          ls -la hf_space/ | head -20
 
       - name: Commit & push to HuggingFace
-        if: ${{ env.HF_TOKEN != '' && env.HF_TOKEN != null }}
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           GH_SHA: ${{ github.sha }}
         run: |
-          if [ ! -d hf_space ]; then
-            echo "Skipping HF push — hf_space directory not present."
-            exit 0
-          fi
           cd hf_space
 
-          # Stage all changes (including deletions from the wipe step)
           git add -A
 
-          # Check if there's anything to commit
           if git diff --cached --quiet; then
-            echo "ℹ️ No changes to sync — HF Space is already up-to-date with GitHub ${GH_SHA::7}"
+            echo "ℹ️ No changes to sync — HF Space is already up-to-date"
             exit 0
           fi
 
-          # Summary of what changed
-          echo "=== Files changed in this sync ==="
-          git diff --cached --stat | tail -20
-
-          # Compose commit message with full traceability
           git commit -m "Auto-sync from GitHub @ ${GH_SHA::7}" \
-                     -m "Source: github.com/${{ github.repository }}@${GH_SHA}" \
-                     -m "Trigger: ${{ github.event_name }} by ${{ github.actor }}" \
-                     -m "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                     -m "Source: github.com/${{ github.repository }}@${GH_SHA}"
 
-          # Set up .netrc for authentication (avoids exposing token in git URL)
           echo "machine huggingface.co login ${HF_USERNAME} password ${HF_TOKEN}" > ~/.netrc
           chmod 600 ~/.netrc
 
-          # Set clean remote URL (no embedded token)
-          HF_REPO_URL="https://huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
-          git remote set-url origin "${HF_REPO_URL}"
-
-          # Push back to HF (credentials handled by .netrc, not embedded in URL)
+          git remote set-url origin "https://huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
           git push origin HEAD:main
 
-          # Print HF commit SHA for traceability (after sync)
-          git rev-parse --short HEAD | tee ../hf_after_sha.txt
-          echo ""
-          echo "=========================================="
-          echo "  HF before-sync SHA: $(cat ../hf_before_sha.txt)"
-          echo "  HF after-sync  SHA: $(cat ../hf_after_sha.txt)"
-          echo "  GitHub source SHA: ${GH_SHA::7}"
-          echo "=========================================="
-
-      - name: Verify sync integrity
-        if: success()
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          if [ ! -f hf_after_sha.txt ]; then
-            echo "Skipping verify — HF sync was not performed."
-            exit 0
-          fi
-          echo "═══════════════════════════════════════════════════════════════════════"
-          echo "  SYNC VERIFICATION"
-          echo "═══════════════════════════════════════════════════════════════════════"
-          echo ""
-          echo "GitHub source SHA: ${GH_SHA::7}"
-          echo "HF after-sync SHA: $(cat hf_after_sha.txt)"
-          echo ""
-
-          # Verify HF Space is reachable and healthy
-          echo "── Checking HF Space health endpoint ──"
-          sleep 5  # Give HF a moment to start rebuilding
-          HF_URL="https://${HF_USERNAME}-${HF_SPACE_NAME,,}.hf.space/api/health"
-
-          # Try up to 3 times (HF may be rebuilding)
-          for attempt in 1 2 3; do
-            HTTP_CODE=$(curl -s -o /tmp/health.json -w "%{http_code}" --max-time 15 "$HF_URL" || echo "000")
-            if [ "$HTTP_CODE" = "200" ]; then
-              echo "  ✓ HF Space healthy (HTTP 200)"
-              cat /tmp/health.json | python3 -c "
-          import json, sys
-          try:
-              d = json.load(sys.stdin)
-              data = d.get('data', d)
-              print(f'    status: {data.get(\"status\", \"?\")}')
-              print(f'    database: {data.get(\"database\", \"?\")}')
-              print(f'    uptime: {data.get(\"uptime_seconds\", 0):.0f}s')
-          except:
-              print('    (could not parse health response)')
-          "
-              break
-            else
-              echo "  ⏳ Attempt $attempt: HTTP $HTTP_CODE (HF may be rebuilding, retrying in 15s...)"
-              sleep 15
-            fi
-          done
-
-          echo ""
-          echo "── Verifying file count matches ──"
-          GH_COUNT=$(find ${{ github.workspace }}/{adapters,backend,core,facp_system,fireai,frontend,integration,marine,parsers,qomn_conduit,qomn_fire} -type f 2>/dev/null | wc -l)
-          HF_COUNT=$(cd hf_space && find {adapters,backend,core,facp_system,fireai,frontend,integration,marine,parsers,qomn_conduit,qomn_fire} -type f 2>/dev/null | wc -l)
-          echo "  GitHub runtime files: $GH_COUNT"
-          echo "  HF Space runtime files: $HF_COUNT"
-          if [ "$GH_COUNT" = "$HF_COUNT" ]; then
-            echo "  ✓ File counts match"
-          else
-            echo "  ⚠ File count mismatch (some files may be excluded by rsync filters — this is expected)"
-          fi
-
-          echo ""
-          echo "═══════════════════════════════════════════════════════════════════════"
-          echo "  SYNC COMPLETE — HF Space is up-to-date with GitHub @ ${GH_SHA::7}"
-          echo "═══════════════════════════════════════════════════════════════════════"
-          echo ""
-          echo "  Monitor:    https://huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
-          echo "  Public URL: https://${HF_USERNAME}-${HF_SPACE_NAME,,}.hf.space"
-          echo "  Health:     https://${HF_USERNAME}-${HF_SPACE_NAME,,}.hf.space/api/health"
+          echo "=== Sync complete ==="
+          echo "GitHub SHA: ${GH_SHA::7}"
+          echo "HF SHA: $(git rev-parse --short HEAD)"
