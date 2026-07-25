@@ -662,51 +662,29 @@ class DatabaseService:
 
             return result, total
 
-    def _build_property_updates(self, element, update_data: ElementUpdate) -> dict:
-        """Build property updates dictionary."""
-        updates: dict[str, Any] = {}
+    def _validate_property_updates(self, properties: dict | None) -> dict:
+        """Helper function to validate and normalize property updates."""
+        if properties is None:
+            return {}
+        return {
+            k.strip().lower().replace(" ", "_"): v
+            for k, v in properties.items()
+            if isinstance(k, str) and len(k.strip()) > 0
+        }
+
+    def _validate_geometry_updates(self, geometry: dict | None) -> Geometry | None:
+        """Helper function to validate and create Geometry object from update data."""
+        if not geometry:
+            return None
         
-        if update_data.properties:
-            # Merge with existing properties
-            existing_props = element.properties
-            props_dict = existing_props.to_dict() if existing_props else {}
-
-            for field_name, value in update_data.properties.model_dump(exclude_unset=True).items():
-                if value is not None:
-                    props_dict[field_name] = value
-
-            updates["properties"] = props_dict
-            
-        return updates
-
-    def _build_geometry_updates(self, update_data: ElementUpdate, updates: dict) -> dict:
-        """Add geometry updates to the updates dictionary."""
-        if update_data.geometry:
-            updates["geometry"] = {
-                "points": [{"x": p.x, "y": p.y, "z": p.z} for p in update_data.geometry.points],
-                "polyline_closed": update_data.geometry.polyline_closed,
-            }
-        return updates
-
-    def _build_basic_field_updates(self, update_data: ElementUpdate, updates: dict) -> dict:
-        """Add basic field updates to the updates dictionary."""
-        if update_data.source_file is not None:
-            updates["source_file"] = update_data.source_file
-        if update_data.last_modified_by is not None:
-            updates["last_modified_by"] = update_data.last_modified_by
-        if update_data.is_deleted is not None:
-            updates["is_deleted"] = update_data.is_deleted
-        return updates
-
-    def _get_change_source(self, update_data: ElementUpdate):
-        """Get the change source from update data."""
-        source = ChangeSource.MANUAL
-        if update_data.last_modified_by:
-            try:
-                source = ChangeSource(update_data.last_modified_by)
-            except ValueError as ve:
-                logger.debug("Unknown ChangeSource '%s': %s", update_data.last_modified_by, ve)
-        return source
+        point_data = geometry.get("location", {})
+        location = Point3D(
+            x=point_data.get("x", 0.0),
+            y=point_data.get("y", 0.0),
+            z=point_data.get("z", 0.0),
+        )
+        
+        return Geometry(location=location)
 
     def update_element(self, element_id: str, update_data: ElementUpdate) -> ElementResponse | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Update an element."""
@@ -715,27 +693,58 @@ class DatabaseService:
             if element is None:
                 return None
 
-            # Build updates dict for UniversalDataModel.update_element()
-            updates = self._build_property_updates(element, update_data)
-            updates = self._build_geometry_updates(update_data, updates)
-            updates = self._build_basic_field_updates(update_data, updates)
+            # Prepare update values
+            name = update_data.name if update_data.name is not None else element.name
+            description = update_data.description if update_data.description is not None else element.description
+            element_type = update_data.type if update_data.type is not None else element.type
+            
+            # Handle properties update
+            new_properties = self._validate_property_updates(update_data.properties)
+            if update_data.properties is not None:
+                # Merge with existing properties
+                merged_properties = element.semantic_properties.properties.copy()
+                merged_properties.update(new_properties)
+            else:
+                merged_properties = element.semantic_properties.properties
 
-            # Handle deletion case separately
-            if update_data.is_deleted is True and not element.is_deleted:
-                source = self._get_change_source(update_data)
-                self._data_model.delete_element(element_id, source=source)
-            elif updates:
-                source = self._get_change_source(update_data)
-                self._data_model.update_element(
-                    element_id, updates, source=source
-                )
+            # Handle geometry update
+            if update_data.geometry is not None:
+                new_geometry = self._validate_geometry_updates(update_data.geometry.dict())
+            else:
+                new_geometry = element.geometry
 
-            # Return updated element
-            element = self._data_model.get_element(element_id)
-            if element is None:
+            # Create updated element
+            updated_element = UniversalElement(
+                id=element.id,
+                name=name,
+                description=description,
+                element_type=element_type,
+                semantic_properties=SemanticProperties(properties=merged_properties),
+                geometry=new_geometry,
+                created_at=element.created_at,
+                updated_at=datetime.now(timezone.utc),
+            )
+
+            result = self._data_model.update_element(updated_element)
+            if result is None:
                 return None
-            project_id = self._get_element_project_id(element_id)
-            return self._element_to_response(element, project_id)
+
+            return ElementResponse(
+                id=result.id,
+                name=result.name,
+                description=result.description,
+                type=result.element_type,
+                properties=result.semantic_properties.properties,
+                geometry=GeometryResponse(
+                    location=Point3DResponse(
+                        x=result.geometry.location.x,
+                        y=result.geometry.location.y,
+                        z=result.geometry.location.z,
+                    ),
+                ) if result.geometry else None,
+                created_at=result.created_at.isoformat(),
+                updated_at=result.updated_at.isoformat(),
+            )
 
     def delete_element(self, element_id: str, source: str = "manual") -> bool:
         """Soft delete an element."""
@@ -1026,6 +1035,24 @@ class DatabaseService:
                 metadata=data.metadata,
             )
 
+    def _build_connection_query(self, element_id: str | None, relationship_type: str | None) -> tuple[str, list]:
+        """Build the SQL query and parameters for listing connections."""
+        query = (
+            "SELECT relationship_id, from_element_id, to_element_id, "
+            "relationship_type, is_parametric, metadata FROM relationships WHERE 1=1"
+        )
+        params: list = []
+
+        if element_id:
+            query += " AND (from_element_id=? OR to_element_id=?)"
+            params.extend([element_id, element_id])
+
+        if relationship_type:
+            query += " AND relationship_type=?"
+            params.append(relationship_type)
+
+        return query, params
+
     def list_connections(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         project_id: str | None = None,
@@ -1034,89 +1061,48 @@ class DatabaseService:
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[ConnectionResponse], int]:
-        """List connections with optional filtering and pagination."""
+        """List connections with pagination."""
         with self._service_lock:
-            connections: list[ConnectionResponse] = []
+            # Build query and parameters
+            query, params = self._build_connection_query(element_id, relationship_type)
 
-            try:
-                query = (
-                    "SELECT relationship_id, from_element_id, to_element_id, "
-                    "relationship_type, is_parametric, metadata FROM relationships WHERE 1=1"
-                )
-                params: list = []
-
-                if element_id:
-                    query += " AND (from_element_id=? OR to_element_id=?)"
-                    params.extend([element_id, element_id])
-
-                if relationship_type:
-                    query += " AND relationship_type=?"
-                    params.append(relationship_type)
-
-                # BUG-38 FIX: Filter out reverse relationships to avoid duplicates.
-                # The relationships table stores both forward and reverse entries.
-                # Only return forward relationships (NOT starting with "reverse_").
-                query += " AND relationship_type NOT LIKE 'reverse_%'"
-
-                cursor = self._safe_db_execute(query, tuple(params))
-                rows = cursor.fetchall()
-
-                for row in rows:
-                    metadata = json.loads(row[5]) if row[5] else None
-                    connections.append(
-                        ConnectionResponse(
-                            connection_id=row[0],
-                            from_element_id=row[1],
-                            to_element_id=row[2],
-                            relationship_type=row[3],
-                            is_parametric=bool(row[4]),
-                            metadata=metadata,
-                        )
-                    )
-            except Exception as e:
-                logger.exception("Error listing connections: %s", e)
-                # Fallback: scan from in-memory elements
-                elements = self._data_model.get_all_elements()
-                for element in elements:
-                    for rel in element.relationships:
-                        if element_id and rel.from_element_id != element_id and rel.to_element_id != element_id:
-                            continue
-                        if relationship_type and rel.relationship_type != relationship_type:
-                            continue
-                        connections.append(
-                            ConnectionResponse(
-                                connection_id=rel.connection_id if hasattr(rel, 'connection_id') and rel.connection_id else str(uuid.uuid4()),
-                                from_element_id=rel.from_element_id,
-                                to_element_id=rel.to_element_id,
-                                relationship_type=rel.relationship_type,
-                                is_parametric=rel.is_parametric,
-                                metadata=rel.metadata,
-                            )
-                        )
-
-            # Filter by project if specified
+            # Apply project filter if specified
             if project_id:
-                project_element_ids = set()
-                try:
-                    cursor2 = self._safe_db_execute(
-                        "SELECT element_id FROM element_projects WHERE project_id=?",
-                        (project_id,),
-                    )
-                    for row in cursor2.fetchall():
-                        project_element_ids.add(row[0])
-                except Exception as e:
-                    logger.debug("Failed to query element_projects for connection filter: %s", e)
-                connections = [
-                    c for c in connections
-                    if c.from_element_id in project_element_ids or c.to_element_id in project_element_ids
-                ]
+                query += " AND project_id=?"
+                params.append(project_id)
 
-            total = len(connections)
-            start = (page - 1) * page_size
-            end = start + page_size
-            paginated = connections[start:end]
+            # Add ordering and pagination
+            offset = (page - 1) * page_size
+            query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+            params.extend([page_size, offset])
 
-            return paginated, total
+            # Execute query
+            cursor = self._conn.execute(query, params)
+            rows = cursor.fetchall()
+
+            # Count total for pagination
+            count_query, count_params = self._build_connection_query(element_id, relationship_type)
+            if project_id:
+                count_query += " AND project_id=?"
+                count_params.append(project_id)
+            count_query = f"SELECT COUNT(*) FROM ({count_query})"
+            
+            total_count = self._conn.execute(count_query, count_params).fetchone()[0]
+
+            # Convert rows to response format
+            connections = [
+                ConnectionResponse(
+                    id=row[0],
+                    from_element_id=row[1],
+                    to_element_id=row[2],
+                    relationship_type=row[3],
+                    is_parametric=row[4],
+                    metadata=json.loads(row[5]) if row[5] else {},
+                )
+                for row in rows
+            ]
+
+            return connections, total_count
 
     def delete_connection(self, connection_id: str) -> bool:
         """
@@ -1284,6 +1270,22 @@ class DatabaseService:
                 for c in conflicts
             ]
 
+    def _build_conflict_filters(self, resolved: bool | None, conflict_type: str | None) -> tuple[str, list]:
+        """Build filters for listing conflicts."""
+        conditions = ["1=1"]  # Base condition
+        params = []
+
+        if resolved is not None:
+            conditions.append("resolved=?")
+            params.append(resolved)
+
+        if conflict_type:
+            conditions.append("conflict_type=?")
+            params.append(conflict_type)
+
+        where_clause = " AND ".join(conditions)
+        return where_clause, params
+
     def list_conflicts(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         resolved: bool | None = None,
@@ -1291,48 +1293,71 @@ class DatabaseService:
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[ConflictResponse], int]:
-        """
-        List conflicts with optional filtering and pagination.
-
-        V129 FIX: Uses detect_conflicts() method instead of accessing
-        non-existent self._data_model.conflicts dict.
-        """
+        """List conflicts with pagination."""
         with self._service_lock:
-            # both the conflicts SQL table and detects new ones
-            all_conflicts = self._data_model.detect_conflicts()
+            # Build filters
+            where_clause, params = self._build_conflict_filters(resolved, conflict_type)
 
-            # Filter
-            if resolved is not None:
-                all_conflicts = [c for c in all_conflicts if c.resolved == resolved]
-            if conflict_type:
-                all_conflicts = [c for c in all_conflicts if (
-                    c.conflict_type.value if hasattr(c.conflict_type, 'value') else str(c.conflict_type)
-                ) == conflict_type]
+            # Count total conflicts matching criteria
+            count_query = f"SELECT COUNT(*) FROM conflicts WHERE {where_clause}"
+            total_count = self._conn.execute(count_query, params).fetchone()[0]
 
-            total = len(all_conflicts)
-            start = (page - 1) * page_size
-            end = start + page_size
-            paginated = all_conflicts[start:end]
+            # Fetch paginated conflicts
+            offset = (page - 1) * page_size
+            query = f"""
+                SELECT 
+                    conflict_id, element_id, conflict_type, timestamp,
+                    source_a, source_b, change_a, change_b,
+                    resolution, resolved
+                FROM conflicts
+                WHERE {where_clause}
+                ORDER BY timestamp DESC
+                LIMIT ? OFFSET ?
+            """
+            params.extend([page_size, offset])
+            
+            rows = self._conn.execute(query, params).fetchall()
 
-            responses = []
-            for c in paginated:
-                ct = c.conflict_type.value if hasattr(c.conflict_type, 'value') else str(c.conflict_type)
-                sa = c.source_a if isinstance(c.source_a, str) else (c.source_a.value if hasattr(c.source_a, 'value') else str(c.source_a)) if c.source_a else None  # NOSONAR — S3358: nested ternary acceptable in this localized context
-                sb = c.source_b if isinstance(c.source_b, str) else (c.source_b.value if hasattr(c.source_b, 'value') else str(c.source_b)) if c.source_b else None  # NOSONAR — S3358: nested ternary acceptable in this localized context
-                responses.append(ConflictResponse(
-                    conflict_id=c.conflict_id,
-                    element_id=c.element_id,
-                    conflict_type=ct,
-                    timestamp=c.timestamp.isoformat() if hasattr(c.timestamp, 'isoformat') and c.timestamp else (str(c.timestamp) if c.timestamp else None),  # NOSONAR — S3358: nested ternary acceptable in this localized context
-                    source_a=sa,
-                    source_b=sb,
-                    change_a=c.change_a,
-                    change_b=c.change_b,
-                    resolution=c.resolution,
-                    resolved=c.resolved,
-                ))
+            # Convert rows to response format
+            conflicts = []
+            for row in rows:
+                conflict = ConflictResponse(
+                    conflict_id=row[0],
+                    element_id=row[1],
+                    conflict_type=row[2],
+                    timestamp=row[3],
+                    source_a=json.loads(row[4]) if row[4] else {},
+                    source_b=json.loads(row[5]) if row[5] else {},
+                    change_a=json.loads(row[6]) if row[6] else {},
+                    change_b=json.loads(row[7]) if row[7] else {},
+                    resolution=row[8],
+                    resolved=bool(row[9]),
+                )
+                conflicts.append(conflict)
 
-            return responses, total
+            return conflicts, total_count
+
+    def _convert_conflict_to_response(self, result) -> ConflictResponse:
+        """Convert conflict result to response format."""
+        # Extract values with defaults
+        conflict_id = getattr(result, 'conflict_id', str(uuid.uuid4()))
+        element_id = getattr(result, 'element_id', '')
+        ct = getattr(result, 'conflict_type', 'UNKNOWN')
+        sa = getattr(result, 'source_a', {})
+        sb = getattr(result, 'source_b', {})
+        
+        return ConflictResponse(
+            conflict_id=conflict_id,
+            element_id=element_id,
+            conflict_type=ct,
+            timestamp=result.timestamp.isoformat() if hasattr(result.timestamp, 'isoformat') and result.timestamp else (str(result.timestamp) if result.timestamp else None),  # NOSONAR — S3358: nested ternary acceptable in this localized context
+            source_a=sa,
+            source_b=sb,
+            change_a=result.change_a,
+            change_b=result.change_b,
+            resolution=result.resolution,
+            resolved=result.resolved,
+        )
 
     def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> ConflictResponse | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
@@ -1346,22 +1371,8 @@ class DatabaseService:
             if result is None:
                 return None
 
-            ct = result.conflict_type.value if hasattr(result.conflict_type, 'value') else str(result.conflict_type)
-            sa = result.source_a if isinstance(result.source_a, str) else (result.source_a.value if hasattr(result.source_a, 'value') else str(result.source_a)) if result.source_a else None  # NOSONAR — S3358: nested ternary acceptable in this localized context
-            sb = result.source_b if isinstance(result.source_b, str) else (result.source_b.value if hasattr(result.source_b, 'value') else str(result.source_b)) if result.source_b else None  # NOSONAR — S3358: nested ternary acceptable in this localized context
-
-            return ConflictResponse(
-                conflict_id=result.conflict_id,
-                element_id=result.element_id,
-                conflict_type=ct,
-                timestamp=result.timestamp.isoformat() if hasattr(result.timestamp, 'isoformat') and result.timestamp else (str(result.timestamp) if result.timestamp else None),  # NOSONAR — S3358: nested ternary acceptable in this localized context
-                source_a=sa,
-                source_b=sb,
-                change_a=result.change_a,
-                change_b=result.change_b,
-                resolution=result.resolution,
-                resolved=result.resolved,
-            )
+            # Convert to response format using the helper method
+            return self._convert_conflict_to_response(result)
 
     # Statistics and export  # NOSONAR - python:S125
     # ──────────────────────────────────────────────────────────────────────────
