@@ -1,541 +1,213 @@
-<div align="center">
+# BAZSpark
 
-<img src="docs/assets/banner/hero-banner.svg" alt="BazSpark — Safety-Critical Fire Alarm Engineering Platform" width="100%"/>
+**Safety-Critical Fire Alarm Engineering Platform**
 
-[![Vercel Production](https://img.shields.io/badge/Vercel-Production%20%E2%9C%93%20Ready-brightgreen?style=flat-square&logo=vercel)](https://ba-zspark.vercel.app)
-[![HuggingFace Space](https://img.shields.io/badge/HF%20Space-Backend%20Running-success?style=flat-square&logo=huggingface)](https://ahmdelbaz28-bazspark.hf.space)
-[![CI/CD Pipeline](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/ci.yml)
-[![Vercel Deploy](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/trigger-vercel.yml/badge.svg?branch=main)](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/trigger-vercel.yml)
-[![Sync to HF](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/sync-to-hf.yml/badge.svg?branch=main)](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/sync-to-hf.yml)
+[![CI/CD](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-1.55.0-orange)](VERSION)
 
-[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.138-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+BAZSpark automates fire detection and alarm system design per **NFPA 72-2022**. It provides deterministic engineering calculations, a Digital Twin for bidirectional AutoCAD/Revit conversion, and an immutable audit trail for PE review.
 
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.55.0-orange?style=flat-square)](VERSION)
-[![Tests](https://img.shields.io/badge/Tests-8%2C557%2B-blue?style=flat-square)](#-الاختبارات)
-[![CodeQL](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/codeql.yml/badge.svg)](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/codeql.yml)
-
-**🚀 Live Demo: [ba-zspark.vercel.app](https://ba-zspark.vercel.app)** · **📦 Container: `ghcr.io/ahmdelbaz28-ux/bazspark`**
-
-**منصة هندسية متكاملة لتصميم أنظمة الإنذار من الحريق وفق NFPA 72-2022**
-**مع محرك Digital Twin للتحويل ثنائي الاتجاه بين AutoCAD و Revit**
-
-</div>
-
-## 📸 لقطات حقيقية من البرنامج
-
-<div align="center">
-
-> جميع اللقطات أدناه مأخوذة من النسخة المنشورة فعلياً على Vercel + HuggingFace Space
-
-### صفحة تسجيل الدخول (Live من Vercel)
-
-| Login Page |
-|:----------:|
-| ![Login](docs/assets/screenshots/login.png) |
-| واجهة تسجيل الدخول الآمنة — مصادقة عبر API Key مع HttpOnly Cookie |
-
-### واجهات النظام (من التطبيق الفعلي)
-
-| Dashboard | Fire Alarm Designer | Engineering Workspace |
-|:--------:|:-------------------:|:---------------------:|
-| ![Dashboard](docs/assets/screenshots/dashboard.png) | ![Fire Alarm](docs/assets/screenshots/fire-alarm-designer.png) | ![Engineering](docs/assets/screenshots/engineering-workspace.png) |
-| لوحة التحكم الرئيسية | مصمم نظام إنذار الحريق | مساحة العمل الهندسية |
-
-| Reports | Digital Twin | Project Management |
-|:------:|:------------:|:------------------:|
-| ![Reports](docs/assets/screenshots/reports.png) | ![Digital Twin](docs/assets/screenshots/digital-twin.png) | ![Projects](docs/assets/screenshots/project-management.png) |
-| التقارير الهندسية | التوأم الرقمي | إدارة المشاريع |
-
-| Settings | Connections | Compliance Center |
-|:-------:|:------------:|:-----------------:|
-| ![Settings](docs/assets/screenshots/settings.png) | ![Connections](docs/assets/screenshots/connections.png) | ![Compliance](docs/assets/screenshots/compliance-center.png) |
-| الإعدادات | الاتصالات | مركز الامتثال |
-
-</div>
+**Live:** [ba-zspark.vercel.app](https://ba-zspark.vercel.app) (frontend) | [ahmdelbaz28-bazspark.hf.space](https://ahmdelbaz28-bazspark.hf.space) (backend)
 
 ---
 
-## 📋 جدول المحتويات
+## Features
 
-- [نظرة عامة](#-نظرة-عامة)
-- [المميزات](#-المميزات)
-- [المخطط المعماري](#-المخطط-المعماري)
-- [التشغيل السريع](#-التشغيل-السريع)
-- [التركيب](#-التركيب)
-- [الاستخدام](#-الاستخدام)
-- [الأمان](#-الأمان)
-- [الاختبارات](#-الاختبارات)
-- [النشر](#-النشر)
-- [التقنيات المستخدمة](#-التقنيات-المستخدمة)
-- [الدعم](#-الدعم-والتواصل)
-
----
-
-## 🔥 نظرة عامة
-
-**BazSpark** هو نظام هندسي متخصص في تصميم أنظمة الإنذار من الحريق للمباني. تم تصميمه وفق متطلبات **NFPA 72-2022** (National Fire Alarm and Signaling Code) مع محرك حسابات حتمي (deterministic) يضمن دقة النتائج.
-
-### لماذا BazSpark؟
-
-| التحدي | الحل |
+| Capability | Description |
 |---|---|
-| تصميم يدوي معرض للأخطاء | محرك حسابات تلقائي معتمد على NFPA 72 |
-| صعوبة التحقق من التغطية | تحليل مكاني (spatial analysis) مع Shapely/GEOS |
-| عدم تتبع القرارات الهندسية | سجل تدقيق (audit trail) بـ HMAC-SHA256 |
-| تكامل معقد بين CAD و BIM | Digital Twin engine للتحويل ثنائي الاتجاه |
-
-### ✅ ما يعمل فعلاً ومُختبَر (12 ميزة core)
-
-| الميزة | الاختبارات | الحالة |
-|---|---|---|
-| **NFPA 72 Engine** (تباعد الكواشف، التغطية) | 755+ tests | ✅ حقيقي ومُختبَر |
-| **Marine Module** (SOLAS, NFPA 302, IEC 60092) | 83 tests | ✅ حقيقي ومُختبَر |
-| **Digital Twin** (drift detection, reconciliation) | 12 tests | ✅ حقيقي ومُختبَر |
-| **Hash Chain Audit** (SHA-256, HMAC, Merkle tree) | 221 tests | ✅ حقيقي ومُختبَر |
-| **DWG/DXF Parser** (ezdxf) | 46 tests | ✅ حقيقي ومُختبَر |
-| **PDF Parser** (pdfplumber/pymupdf) | 11 tests | ✅ حقيقي ومُختبَر |
-| **Workflow Service** (LangGraph) | 108 tests | ✅ حقيقي ومُختبَر |
-| **Security/RBAC/Rate Limiting** | 359 tests | ✅ حقيقي ومُختبَر |
-| **Acoustic Calculator** | 112 tests | ✅ حقيقي ومُختبَر |
-| **Battery Aging Derating** | 60 tests | ✅ حقيقي ومُختبَر |
-| **FACP Panel Selector** | 58 tests | ✅ حقيقي ومُختبَر |
-| **MCP Server** (Claude Desktop integration) | 21 tests | ✅ حقيقي ومُختبَر |
-
-**إجمالي:** 8,557+ tests collected، 2,000+ verified passing محلياً.
+| **NFPA 72 Engine** | Detector spacing, coverage analysis, compliance verification |
+| **Digital Twin** | Bidirectional conversion between AutoCAD and Revit |
+| **NAC Design** | Notification appliance circuit calculations with voltage drop and battery sizing |
+| **Audit Trail** | HMAC-SHA256 signed, Merkle tree for PE review |
+| **Marine Module** | SOLAS, IEC 60092, NFPA 302 for ship fire safety |
+| **Multi-Format Parsers** | DXF, DWG, IFC, PDF, Excel, Image |
+| **RBAC Security** | Role-based access with 5 roles (Admin, Engineer, Reviewer, Viewer, API) |
+| **API** | 188 REST + WebSocket endpoints |
 
 ---
 
-## ✨ المميزات
+## Quick Start
 
-### المحرك الهندسي
-- **محرك NFPA 72-2022** — حسابات تباعد كواشف الدخان والحرارة، تغطية الغرف، تصغير عدد الكواشف
-- **حسابات الدارات** — انخفاض الجهد (voltage drop)، حجم البطارية، سعة SLC
-- **محرك الصوتيات** — حساب مستوى ضغط الصوت (dB) للأجهزة التنبيهية
-- **بوابة الامتثال** (Compliance Gate) — التحقق من الامتثال لكود NFPA قبل الاعتماد
+### Prerequisites
 
-### التكامل مع CAD/BIM
-- **AutoCAD Integration** — قراءة/كتابة DWG (Windows + pywin32 + AutoCAD)
-- **Revit Integration** — إنشاء عناصر Wall/Floor/Column/Door/Window/Beam (Windows + pythonnet + RevitAPI)
-- **Digital Twin** — تحويل ثنائي الاتجاه بين AutoCAD و Revit
-- **Bentley Integration** — تبادل ملفات IFC
-- **Parsers** — DXF, IFC, PDF, Excel, Word, Image
-
-### الأمان
-- **مصادقة HttpOnly Cookies** — جلسات موقعة بـ HMAC-SHA256
-- **RBAC** — Role-Based Access Control مع 5 أدوار
-- **Rate Limiting** — حماية من هجمات brute force
-- **CSP/HSTS/CORS** — رؤوس أمان صارمة في الإنتاج
-- **pip-audit + npm audit** — تُشغَّل في CI (Gate 5)
-
-### الواجهة
-- **22 صفحة React** — Dashboard, Engineering, Fire Alarm Designer, Digital Twin, Reports, Settings, ...
-- **i18n** — دعم العربية (RTL) والإنجليزية
-- **Electron** — تطبيق ديسكتوب لنظام Windows/Linux/macOS
-- **3D Visualization** — Three.js لعرض النماذج ثلاثية الأبعاد
-
----
-
-## 🏗 المخطط المعماري
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    واجهة المستخدم (Frontend)                       │
-├─────────────────────────────────────────────────────────────────┤
-│  React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui        │
-│  ├── Dashboard        ├── Fire Alarm Designer                   │
-│  ├── Engineering      ├── Digital Twin                          │
-│  ├── Elements         ├── Projects                             │
-│  ├── Connections      ├── Conflicts                            │
-│  ├── Reports          ├── Settings                             │
-│  └── 12 صفحة إضافية                                             │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ REST API + WebSocket
-┌──────────────────────────▼──────────────────────────────────────┐
-│                    الخادم (Backend)                               │
-├─────────────────────────────────────────────────────────────────┤
-│  FastAPI 0.138 + Python 3.12                                     │
-│  ├── 188 API Endpoint                                           │
-│  ├── Auth (HttpOnly Cookie + HMAC-SHA256)                       │
-│  ├── RBAC (5 أدوار: Admin, Engineer, Reviewer, Viewer, ...)    │
-│  ├── Rate Limiting (SlowAPI)                                    │
-│  └── Security Middleware (CSP, CORS, HSTS, Correlation ID)      │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-          ┌────────────────┼────────────────┐
-          ▼                ▼                ▼
-┌─────────────────┐ ┌──────────────┐ ┌─────────────────┐
-│  المحرك الهندسي  │ │  Digital Twin │ │   قاعدة البيانات │
-├─────────────────┤ ├──────────────┤ ├─────────────────┤
-│ NFPA 72 Engine  │ │ AutoCAD ←→   │ │ SQLite /        │
-│ Voltage Drop    │ │ Revit        │ │ PostgreSQL      │
-│ Battery sizing  │ │ Bidirectional│ │ + Redis         │
-│ Acoustics       │ │ Conversion   │ │ + Qdrant (RAG)  │
-│ Spatial Analysis│ │              │ │ + Neo4j (Graph) │
-└─────────────────┘ └──────────────┘ └─────────────────┘
-```
-
----
-
-## 🚀 التشغيل السريع
-
-### المتطلبات
 - Python 3.12+
 - Node.js 22+
 - npm 11+
 
-### 1. استنساخ المستودع
+### Backend
+
 ```bash
 git clone https://github.com/ahmdelbaz28-ux/BAZspark.git
 cd BAZspark
-```
 
-### 2. تشغيل الخادم (Backend)
-```bash
-# تثبيت التبعيات
 pip install -e ".[dev,parsing]"
 
-# توليد مفتاح API (للتطوير)
-export FIREAI_API_KEY="your-api-key-here"
-
-# تشغيل الخادم
+export FIREAI_API_KEY="your-api-key"
 cd backend
 uvicorn app:app --reload --host 127.0.0.1 --port 8000
 ```
 
-الخادم سيعمل على: `http://127.0.0.1:8000`
-- الوثائق (Swagger): `http://127.0.0.1:8000/docs`
-- Health check: `http://127.0.0.1:8000/api/health`
+API docs: http://127.0.0.1:8000/docs
 
-### 3. تشغيل الواجهة (Frontend)
+### Frontend
+
 ```bash
 cd frontend
 npm ci
 npm run dev
 ```
 
-الواجهة ستعمل على: `http://localhost:5173`
+Frontend: http://localhost:5173
 
-### 4. تسجيل الدخول
-1. افتح `http://localhost:5173` في المتصفح
-2. اذهب إلى Settings
-3. أدخل API Key (نفس القيمة في `FIREAI_API_KEY`)
-4. اضغط Login
+### Login
+
+1. Open http://localhost:5173
+2. Go to Settings
+3. Enter your API Key (same value as `FIREAI_API_KEY`)
+4. Click Login
 
 ---
 
-## 🗄️ إعداد قواعد البيانات المتعددة
+## Architecture
 
-يدعم هذا المشروع أربع أنواع من قواعد البيانات:
-
-### 1. PostgreSQL (الرئيسية) - عبر Supabase
-- قم بزيارة [supabase.com](https://supabase.com) لإنشاء حساب مجاني
-- إنشاء مشروع والحصول على سلسلة الاتصال
-
-### 2. Qdrant (قاعدة المتجهات) - لتخزين المتجهات و RAG
-- قم بزيارة [cloud.qdrant.io](https://cloud.qdrant.io) لإنشاء حساب مجاني
-- إنشاء عنقود والحصول على الرابط ومفتاح API
-
-### 3. Neo4j (قاعدة الرسوم) - للعلاقات والبنية
-- قم بزيارة [neo4j.com/cloud/aura](https://neo4j.com/cloud/aura) لإنشاء حساب AuraDB مجاني
-- إنشاء مثيل والحصول على بيانات الاعتماد
-
-### 4. Redis (الذاكرة المؤقتة) - للتخزين المؤقت
-- قم بزيارة [upstash.com](https://upstash.com) لإنشاء حساب Redis مجاني
-- إنشاء قاعدة بيانات والحصول على الرابط
-
-### تهيئة قواعد البيانات
-```bash
-# تشغيل البرنامج التفاعلي لتهيئة قواعد البيانات
-python setup_databases.py
-
-# أو إنشاء ملف .env يدوياً
-cp .env.example .env
-# ثم تعديل المتغيرات البيئية حسب مزودي الخدمة
+```
+┌─────────────────────────────────────────────────────┐
+│  Frontend (React 18 + TypeScript + Vite + Tailwind) │
+└──────────────────────┬──────────────────────────────┘
+                       │ REST + WebSocket
+┌──────────────────────▼──────────────────────────────┐
+│  Backend (FastAPI 0.138 + Python 3.12)              │
+│  188 endpoints │ RBAC │ Rate Limiting │ CSP/HSTS    │
+└──────────────────────┬──────────────────────────────┘
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+   ┌───────────┐ ┌──────────┐ ┌──────────┐
+   │ NFPA 72   │ │ Digital  │ │ Database │
+   │ Engine    │ │ Twin     │ │ SQLite / │
+   │ Voltage   │ │ AutoCAD  │ │ Postgres │
+   │ Drop      │ │ ←→ Revit │ │ + Redis  │
+   │ Spatial   │ │          │ │ + Qdrant │
+   └───────────┘ └──────────┘ └──────────┘
 ```
 
+See [docs/reference/architecture.md](docs/reference/architecture.md) for full architecture details.
+
 ---
 
-## 📦 التركيب
+## Tech Stack
 
-### التركيب عبر Docker (موصى به للإنتاج)
+| Layer | Technology |
+|---|---|
+| Backend | Python 3.12, FastAPI, SQLAlchemy, Pydantic, Shapely/GEOS |
+| Frontend | React 18, TypeScript 5.9, Vite 8, Tailwind CSS 4, Three.js |
+| Database | PostgreSQL (Supabase), SQLite, Redis, Qdrant (vector), Neo4j (graph) |
+| Infrastructure | Docker, Kubernetes, Helm, Prometheus, Grafana |
+| CI/CD | GitHub Actions (6 gates), CodeQL, SonarCloud |
+
+---
+
+## Documentation
+
+| Document | Description |
+|---|---|
+| [Installation](docs/how-to/installation.md) | Setup instructions for all platforms |
+| [Configuration](docs/how-to/configuration.md) | Environment variables and settings |
+| [API Reference](docs/reference/api-reference.md) | Full endpoint documentation |
+| [Architecture](docs/reference/architecture.md) | System design and components |
+| [Engineering Formulas](docs/reference/engineering-formulas.md) | NFPA 72 / NEC formulas and constants |
+| [Security](docs/reference/security.md) | Security practices and policies |
+| [Contributing](CONTRIBUTING.md) | How to contribute |
+| [Changelog](CHANGELOG.md) | Release history |
+
+### Guides
+
+| Guide | Description |
+|---|---|
+| [First Fire Alarm Design](docs/tutorials/first-fire-alarm-design.md) | Step-by-step tutorial |
+| [Database Setup](docs/how-to/database-setup.md) | PostgreSQL, Redis, Qdrant, Neo4j |
+| [Deployment](docs/how-to/deployment.md) | Docker and production deployment |
+| [Troubleshooting](docs/how-to/troubleshooting.md) | Common issues and solutions |
+
+---
+
+## Testing
 
 ```bash
-# 1. إعداد المتغيرات البيئية
-export FIREAI_API_KEY="your-strong-api-key"
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=fireai --cov-report=html
+
+# Run specific module
+pytest tests/test_nfpa72.py -v
+```
+
+**Current status:** 8,557+ tests collected.
+
+---
+
+## Deployment
+
+### Docker (Recommended)
+
+```bash
+export FIREAI_API_KEY="your-strong-key"
 export FIREAI_SESSION_SECRET=$(python3 -m backend.session_secret generate | tail -1)
-export CORS_ALLOWED_ORIGINS="https://your-domain.com"
 
-# 2. تشغيل
 docker-compose up -d
-
-# 3. التحقق
 curl http://localhost:8000/api/health
 ```
 
-### التركيب اليدوي
-
-<details>
-<summary>تفاصيل التركيب اليدوي</summary>
+### Kubernetes
 
 ```bash
-# Python
-python3 -m venv venv
-source venv/bin/activate
-pip install -e ".[dev,parsing,facp]"
-
-# Frontend
-cd frontend
-npm ci
-npm run build  # للإنتاج
-# أو
-npm run dev    # للتطوير
-
-# Database (Alembic)
-alembic upgrade head
-
-# Environment
-cp env.example.txt .env
-# عدّل .env بالقيم المناسبة
+helm install fireai deploy/helm/fireai
 ```
 
-</details>
+See [docs/how-to/deployment.md](docs/how-to/deployment.md) for full details.
 
 ---
 
-## 📖 الاستخدام
+## Project Structure
 
-### إنشاء مشروع جديد
-```bash
-curl -X POST http://localhost:8000/api/v1/projects \
-  -H "X-API-Key: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "مبنى المكاتب - الطابق الأول",
-    "description": "تصميم نظام إنذار حريق",
-    "author": "م. أحمد الباز"
-  }'
 ```
-
-### حساب تباعد الكواشف (NFPA 72)
-```bash
-curl -X POST http://localhost:8000/api/v1/qomn/smoke-spacing \
-  -H "X-API-Key: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "room_width": 10.0,
-    "room_length": 15.0,
-    "ceiling_height": 3.5,
-    "occupancy_type": "business"
-  }'
-```
-
-### تسجيل الدخول (Cookie-based)
-```bash
-# Login — يحصل على HttpOnly cookie
-curl -X POST http://localhost:8000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"api_key": "your-api-key"}' \
-  -c cookies.txt
-
-# الطلبات التالية تستخدم الـ cookie تلقائياً
-curl http://localhost:8000/api/v1/auth/me -b cookies.txt
+BAZspark/
+├── fireai/              # Core engine (NFPA 72, spatial analysis, audit trail)
+├── backend/             # FastAPI backend (188 endpoints)
+├── frontend/            # React SPA (22 pages)
+├── marine/              # Marine fire safety (SOLAS, IEC 60092)
+├── qomn_fire/           # QOMN-FIRE engine (standalone)
+├── facp_distributed/    # Distributed FACP agent system
+├── parsers/             # Multi-format file parsers
+├── deploy/              # Docker, Kubernetes, Helm, observability
+├── tests/               # 8,557+ tests
+└── docs/                # Documentation (Diátaxis structure)
+    ├── tutorials/       # Learning-oriented guides
+    ├── how-to/          # Problem-oriented recipes
+    ├── reference/       # Information-oriented specs
+    └── explanation/     # Understanding-oriented discussions
 ```
 
 ---
 
-## 🔒 الأمان
+## Contributing
 
-### نظام المصادقة
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-```
-┌──────────┐    POST /auth/login     ┌──────────────┐
-│  Client   │ ──────────────────────► │   Backend    │
-│           │ ◄────────────────────── │              │
-│           │    Set-Cookie:          │  Verify API  │
-│           │    bazspark_session=    │  Key (HMAC)  │
-│           │    <signed_token>       │              │
-│           │    HttpOnly             │  Create      │
-│           │    SameSite=Strict      │  Session     │
-└──────────┘                         └──────────────┘
-      │
-      │  الطلبات التالية:
-      │  Cookie يُرسل تلقائياً
-      │  لا حاجة لـ X-API-Key header
-      ▼
-┌──────────────────────────────────────────────────┐
-│  Backend يتحقق من:                                │
-│  1. HMAC signature (constant-time)                │
-│  2. Session exists in store (not revoked)         │
-│  3. Session not expired                            │
-│  4. Rate limit not exceeded (5 attempts/IP)       │
-└──────────────────────────────────────────────────┘
-```
-
-### المميزات الأمنية
-
-| الميزة | الوصف |
-|---|---|
-| **HttpOnly Cookie** | JavaScript لا يمكنه قراءة الـ cookie (حماية من XSS) |
-| **HMAC-SHA256 Signing** | الـ cookie موقَّع، لا يمكن تزويره |
-| **SameSite=Strict** | حماية من CSRF |
-| **Rate Limiting** | 5 محاولات فاشلة → حظر 5 دقائق |
-| **Session Revocation** | logout يُبطل الجلسة فوراً |
-| **Secret Rotation** | تدوير المفتاح بدون downtime |
-| **CSP/HSTS** | رؤوس أمان صارمة في الإنتاج |
-| **RBAC** | 5 أدوار مع صلاحيات مختلفة |
+**Important:** This is a safety-critical system. All contributions undergo additional review for engineering calculations and compliance verification.
 
 ---
 
-## 🧪 الاختبارات
+## License
 
-```bash
-# تشغيل كل الاختبارات
-pytest
-
-# اختبارات الأمان فقط
-pytest tests/test_security.py tests/test_auth_security.py tests/test_codeql_security_fixes.py
-
-# مع التغطية
-pytest --cov=fireai --cov=backend --cov-report=term
-
-# اختبارات NFPA 72 الحرجة
-pytest tests/test_nfpa72_engine.py tests/test_voltage_drop.py tests/test_qomn_kernel.py
-```
-
-### نتائج الاختبارات
-
-| الفحص | النتيجة |
-|---|---|
-| pytest (suite كامل) | 8,557+ tests collected |
-| pytest (verified subset) | ✅ 394+ passed |
-| ruff lint | ✅ All checks passed |
-| Frontend typecheck | ✅ PASS |
-| Frontend build | ✅ PASS |
-| pip-audit | ✅ PASS |
+MIT License. See [LICENSE](LICENSE).
 
 ---
 
-## 🚢 النشر
+## Acknowledgments
 
-### خيارات النشر
+Designed and developed by **Eng. Ahmed Elbaz**.
 
-| المنصة | مناسب؟ | السبب |
-|---|---|---|
-| **VPS (Hetzner/DigitalOcean)** | ✅ | Docker + persistent backend + WebSocket |
-| **Railway/Render** | ✅ | Docker + persistent volumes |
-| **Fly.io** | ✅ | Global deployment + Docker |
-| **Electron App** | ✅ | للمستخدمين الفرديين — بدون متصفح |
-
-<details>
-<summary>دليل النشر الكامل</summary>
-
-```bash
-# 1. على الـ VPS:
-git clone https://github.com/ahmdelbaz28-ux/BAZspark.git
-cd BAZspark
-
-# 2. إعداد المتغيرات
-export FIREAI_API_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
-export FIREAI_SESSION_SECRET="$(python3 -m backend.session_secret generate | tail -1)"
-export CORS_ALLOWED_ORIGINS="https://bazspark.yourdomain.com"
-export FIREAI_ENV=production
-
-# 3. تشغيل
-docker-compose up -d
-
-# 4. Nginx + SSL
-sudo apt install nginx certbot python3-certbot-nginx
-sudo certbot --nginx -d bazspark.yourdomain.com
-```
-
-</details>
-
----
-
-## 📊 إحصائيات المشروع
-
-| المقياس | القيمة |
-|---|---|
-| ملفات Python | 630+ |
-| ملفات TypeScript/TSX | 260+ |
-| API Endpoints | 188 |
-| صفحات الواجهة | 22 |
-| الاختبارات (collected) | 8,557+ |
-| التبعيات Python | 60+ |
-| التبعيات npm | 760+ |
-| حجم الـ bundle (gzipped) | ~117 KB |
-
----
-
-## 🛠 التقنيات المستخدمة
-
-### Backend
-| التقنية | الإصدار | الاستخدام |
-|---|---|---|
-| **FastAPI** | 0.138 | إطار الويب |
-| **SQLAlchemy** | 2.0 | ORM |
-| **Alembic** | — | Database migrations |
-| **SlowAPI** | — | Rate limiting |
-| **Pydantic** | 2.0 | Data validation |
-| **Passlib + bcrypt** | — | Password hashing |
-| **HMAC-SHA256** | — | Session signing |
-
-### Frontend
-| التقنية | الإصدار | الاستخدام |
-|---|---|---|
-| **React** | 18 | UI framework |
-| **TypeScript** | 5.9 | Type safety |
-| **Vite** | 8 | Build tool |
-| **Tailwind CSS** | 4 | Styling |
-| **shadcn/ui** | — | UI components |
-| **Three.js** | — | 3D visualization |
-| **Recharts** | — | Charts |
-| **i18next** | — | i18n (AR/EN) |
-| **Electron** | 42 | Desktop app |
-
-### Infrastructure
-| التقنية | الاستخدام |
-|---|---|
-| **Docker + Docker Compose** | Containerization |
-| **Redis** | Caching + session store |
-| **Qdrant** | Vector database (RAG) |
-| **Neo4j** | Graph database (topology) |
-| **GitHub Actions** | CI/CD (6 gates) |
-| **CodeQL** | Security analysis |
-
----
-
-## 📞 الدعم والتواصل
-
-| | |
-|---|---|
-| **المؤلف** | م. أحمد الباز |
-| **البريد** | engineering@bazspark.com |
-| **المستودع** | [github.com/ahmdelbaz28-ux/BAZspark](https://github.com/ahmdelbaz28-ux/BAZspark) |
-| **الإنتاج (Frontend)** | [ba-zspark.vercel.app](https://ba-zspark.vercel.app) |
-| **الإنتاج (Backend)** | [ahmdelbaz28-bazspark.hf.space](https://ahmdelbaz28-bazspark.hf.space) |
-| **الحاوية** | `ghcr.io/ahmdelbaz28-ux/bazspark:latest` |
-| **Issues** | [أبلغ عن مشكلة](https://github.com/ahmdelbaz28-ux/BAZspark/issues) |
-
----
-
-## 📄 الترخيص
-
-هذا المشروع مرخص تحت رخصة **MIT** — راجع ملف [LICENSE](LICENSE) للتفاصيل.
-
----
-
-<div align="center">
-
-**🔥 BazSpark** — Safety-Critical Fire Alarm Engineering Platform
-
-Built with ❤️ for life safety
-
-</div>
-
+Built on NFPA 72-2022, NEC 2023, IBC, and SOLAS standards.
