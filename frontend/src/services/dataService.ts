@@ -329,10 +329,10 @@ export class DataService {
                 }
 
                 // Handle fault events
-                if (message.type === "fault" || message.data?.fault) {
-                        const fault = message.data?.fault || message.data;
-                        actions.addFault(fault);
-                        actions.addLog(`CRITICAL: Server reported fault on ${fault}`);
+                if (message.type === "fault" || (message.data as Record<string, unknown>)?.fault) {
+                        const fault = (message.data as Record<string, unknown>)?.fault || message.data;
+                        actions.addFault(fault as string | { type: string; });
+                        actions.addLog(`CRITICAL: Server reported fault on ${String(fault)}`);
                         return;
                 }
 
@@ -417,8 +417,8 @@ export class DataService {
 
                 // Handle faults from server data
                 if (data.fault) {
-                        actions.addFault(data.fault);
-                        actions.addLog(`CRITICAL: Server reported fault on ${data.fault}`);
+                        actions.addFault(data.fault as string | { type: string; });
+                        actions.addLog(`CRITICAL: Server reported fault on ${String(data.fault)}`);
                 }
         };
 
