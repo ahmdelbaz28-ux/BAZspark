@@ -11,9 +11,9 @@ import { expect, type Page, test } from "@playwright/test";
 interface ApiCallLog {
 	method: string;
 	url: string;
-	requestBody?: any;
+	requestBody?: Record<string, unknown>;
 	statusCode: number;
-	responseBody?: any;
+	responseBody?: Record<string, unknown>;
 	timestamp: number;
 }
 

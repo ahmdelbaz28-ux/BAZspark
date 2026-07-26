@@ -20,6 +20,10 @@ def client():
             json={"api_key": "test_key_for_cad_gateway_testing"}
         )
         assert login_resp.status_code == 200, f"Login failed: {login_resp.text}"
+        # Manually inject __Host- session cookie (httpx rejects __Host- over HTTP)
+        set_cookie = login_resp.headers.get("set-cookie", "")
+        session_token = set_cookie.split("__Host-fireai_session=")[1].split(";")[0]
+        c.cookies.set("__Host-fireai_session", session_token)
         yield c
 
 class TestCADGatewayEndpoints:

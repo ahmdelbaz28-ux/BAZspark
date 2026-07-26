@@ -515,7 +515,16 @@ export function AuditTrail() {  // NOSONAR - typescript:S9011: Intentionally com
 	);
 }
 
-function RevNode({ rev, time, user, msg, current, approved }: any) {
+interface RevNodeProps {
+	rev: string;
+	time: string;
+	user: string;
+	msg: string;
+	current?: boolean;
+	approved?: boolean;
+}
+
+function RevNode({ rev, time, user, msg, current, approved }: RevNodeProps) {
 	return (
 		<div className="relative pl-6">
 			{/* Node Dot */}
@@ -551,7 +560,18 @@ function RevNode({ rev, time, user, msg, current, approved }: any) {
 	);
 }
 
-function LogRow({ time, user, action, type, msg, file, dev, isSystem }: any) {
+interface LogRowProps {
+	time: string;
+	user: string;
+	action: string;
+	type: string;
+	msg: string;
+	file: string;
+	dev: string;
+	isSystem?: boolean;
+}
+
+function LogRow({ time, user, action, type, msg, file, dev, isSystem }: LogRowProps) {
 	let border = "border-l-slate-700";
 	if (type === "yellow") border = "border-l-yellow-500";
 	if (type === "blue") border = "border-l-blue-500";

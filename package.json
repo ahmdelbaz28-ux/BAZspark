@@ -21,7 +21,8 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.2",
-		"@playwright/test": "^1.61.1"
+		"@playwright/test": "^1.61.1",
+		"dependency-cruiser": "^18.1.0"
 	},
 	"dependencies": {
 		"@gsap/react": "^2.1.1",

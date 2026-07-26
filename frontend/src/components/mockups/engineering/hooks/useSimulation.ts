@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { actions, useStore } from "@/store/simpleStore";
 
 export function useSimulation() {
@@ -8,7 +8,10 @@ export function useSimulation() {
 	const connectionStatus = useStore((s) => s.connectionStatus);
 	const liveData = useStore((s) => s.liveData);
 
-	const isFaulty = (id: string) => faults.some((f) => f.id === id);
+	const isFaulty = useCallback(
+		(id: string) => faults.some((f) => f.id === id),
+		[faults],
+	);
 
 	// 1. Simulator: Live Data Fluctuations (Random Walk)
 	useEffect(() => {

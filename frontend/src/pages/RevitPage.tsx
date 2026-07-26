@@ -13,7 +13,7 @@ import {
         Wifi,
         WifiOff,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FileUploader } from "@/components/shared/FileUploader";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,7 @@ export function RevitPage() {
         const [visible, setVisible] = useState(true);
         const [filepath, setFilepath] = useState("");
 
-        const checkStatus = async () => {
+        const checkStatus = useCallback(async () => {
                 try {
                         const s = await revitService.getStatus();
                         setStatus(s as Record<string, unknown>);
@@ -51,7 +51,7 @@ export function RevitPage() {
                         setStatus(null);
                         setSimulationMode(false);
                 }
-        };
+        }, []);
 
         useEffect(() => {
                 checkStatus();

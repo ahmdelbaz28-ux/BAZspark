@@ -69,7 +69,7 @@ class TestLogin:
 
         # Verify Set-Cookie header
         set_cookie = resp.headers.get("set-cookie", "")
-        assert "fireai_session=" in set_cookie
+        assert "__Host-fireai_session=" in set_cookie
         assert "HttpOnly" in set_cookie
         assert "SameSite=Strict" in set_cookie
 
@@ -109,11 +109,15 @@ class TestAuthMe:
     def test_me_with_valid_cookie_returns_role(self, client: TestClient) -> None:
         """After login, /me should return the user's role."""
         # Login first to get the cookie
-        client.post(
+        login_resp = client.post(
             "/api/v1/auth/login",
             json={"api_key": "test_key_for_auth_123"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
-        # Now /me should work (TestClient auto-sends cookies)
+        # Manually inject the __Host- session cookie (httpx rejects __Host- over HTTP)
+        set_cookie = login_resp.headers.get("set-cookie", "")
+        session_token = set_cookie.split("__Host-fireai_session=")[1].split(";")[0]
+        client.cookies.set("__Host-fireai_session", session_token)
+        # Now /me should work
         resp = client.get("/api/v1/auth/me")
         assert resp.status_code == 200, resp.text
         data = resp.json()
@@ -132,10 +136,14 @@ class TestCookieAuth:
         from backend.app import app as _app
         fresh_client = TestClient(_app)
         # Login to get session cookie
-        fresh_client.post(
+        login_resp = fresh_client.post(
             "/api/v1/auth/login",
             json={"api_key": "test_key_for_auth_123"},
         )
+        # Manually inject the __Host- session cookie (httpx rejects __Host- over HTTP)
+        set_cookie = login_resp.headers.get("set-cookie", "")
+        session_token = set_cookie.split("__Host-fireai_session=")[1].split(";")[0]
+        fresh_client.cookies.set("__Host-fireai_session", session_token)
         # Verify cookie auth works for a simple GET first
         me_resp = fresh_client.get("/api/v1/auth/me")
         assert me_resp.status_code == 200, me_resp.text

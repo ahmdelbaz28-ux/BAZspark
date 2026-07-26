@@ -16,11 +16,10 @@ interface TestResult {
 	status: number;
 	statusText: string;
 	duration: number;
-	error?: string;
-	details: {
-		response?: any;
+	error?: string;		details: {
+		response?: Record<string, unknown>;
 		headers?: Record<string, string>;
-		requestBody?: any;
+		requestBody?: Record<string, unknown>;
 	};
 }
 
@@ -37,7 +36,7 @@ function logTestResult(
 	statusText: string,
 	duration: number,
 	error?: string,
-	details: any = {},
+	details: Record<string, unknown> = {},
 ) {
 	const result: TestResult = {
 		testName,

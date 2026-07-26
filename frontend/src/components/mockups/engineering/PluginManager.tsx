@@ -550,7 +550,22 @@ function PluginCard({
 	action,
 	selected,
 	onClick,
-}: any) {
+}: {
+		id: number;
+		name: string;
+		publisher: string;
+		verified?: boolean;
+		desc: string;
+		rating: number;
+		downloads: string;
+		price: string;
+		category: string;
+		iconColor: string;
+		iconLetter: string;
+		action: string;
+		selected?: boolean;
+		onClick: () => void;
+	}) {
 	let actionBtn;
 	if (action === "Installed") {
 		actionBtn = (

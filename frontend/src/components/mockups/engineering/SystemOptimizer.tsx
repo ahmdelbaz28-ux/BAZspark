@@ -10,7 +10,7 @@ export function SystemOptimizer() {
 	const [optimizationScore, setScore] = React.useState<number>(0);  // NOSONAR: typescript:S6754
 	const [suggestions, setSuggestions] = React.useState<string[]>([]);
 
-	const calculateEfficiency = () => {
+	const calculateEfficiency = React.useCallback(() => {
 		if (devices.length === 0) {
 			setScore(0);
 			setSuggestions([]);
@@ -49,7 +49,7 @@ export function SystemOptimizer() {
 		score = Math.max(0, Math.min(100, score));
 		setScore(score);
 		setSuggestions(newSuggestions);
-	};
+	}, [devices, connections]);
 
 	React.useEffect(() => {
 		calculateEfficiency();

@@ -28,7 +28,8 @@
 		"outdated": "npm outdated",
 		"lint": "eslint src/",
 		"lint:fix": "eslint src --ext .ts,.tsx --fix",
-		"ci": "npm ci && npm run typecheck && npm run audit && npm run test && npm run build"
+		"lint:boundaries": "depcruise --ts-pre-compilation-deps src/packages",
+		"ci": "npm ci && npm run typecheck && npm run audit && npm run lint:boundaries && npm run test && npm run build"
 	},
 	"dependencies": {
 		"@gsap/react": "^2.1.1",
@@ -110,6 +111,7 @@
 		"@vitejs/plugin-react": "^6.0.3",
 		"@vitest/coverage-v8": "^4.1.8",
 		"chokidar": "^4.0.3",
+		"dependency-cruiser": "^18.1.0",
 		"electron": "^42.4.0",
 		"electron-builder": "^26.15.3",
 		"eslint": "^9.0.0",

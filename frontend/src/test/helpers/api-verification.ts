@@ -9,7 +9,7 @@
 interface ApiResponse {
 	status: number;
 	statusText: string;
-	data: any;
+	data: Record<string, unknown>;
 	headers: Record<string, string>;
 	ok: boolean;
 	duration: number;
@@ -141,7 +141,7 @@ export async function waitForEndpoint(
  */
 export async function validateApiResponse(
 	endpoint: string,
-	validator: (data: any) => boolean,
+	validator: (data: Record<string, unknown>) => boolean,
 ): Promise<{ success: boolean; response: ApiResponse; message: string }> {
 	const response = await makeApiRequest(endpoint);
 
@@ -244,7 +244,7 @@ export function getApiBaseUrl(): string {
 export function formatTestResult(
 	testName: string,
 	success: boolean,
-	details?: any,
+	details?: Record<string, unknown>,
 ): string {
 	const status = success ? "PASS" : "FAIL";
 	const timestamp = new Date().toISOString();

@@ -12,7 +12,6 @@ The FireAI platform implements a robust, safety-critical architecture for fire p
 ├─────────────────────────────────────────────────────────────────┤
 │  CAD Integration    │  Web Interface   │  API Gateway          │
 │  • AutoCAD Plugin  │  • React UI      │  • RESTful API        │
-│  • Revit Add-in    │  • Dashboard     │  • GraphQL API        │
 │  • IFC Reader      │  • Reports       │  • WebSocket          │
 └─────────────────────────────────────────────────────────────────┘
                                 │
@@ -152,7 +151,6 @@ The interface layer provides multiple access points to the FireAI system:
 - **Web Dashboard**: Graphical user interface for interactive design
 - **API Gateway**: RESTful and WebSocket APIs for integration
 - **Revit Plugin**: Direct integration with Autodesk Revit
-- **Mobile App**: Field applications for inspections and verification
 
 *Designed by Eng. Ahmed Elbaz*
 
@@ -311,12 +309,10 @@ Multiple validation layers ensure safety:
 - **FastAPI**: Web framework for API services
 - **SQLAlchemy**: ORM for database interactions
 - **Redis**: In-memory data store
-- **Celery**: Task queue for background jobs
 
 ### Frontend Technologies
 - **React**: User interface framework
 - **D3.js**: Data visualization
-- **Leaflet**: Map visualization
 - **WebSockets**: Real-time communication
 
 *Technology selection by Eng. Ahmed Elbaz*

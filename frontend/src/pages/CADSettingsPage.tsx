@@ -45,11 +45,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Module-level cache for cad_settings to avoid repeated synchronous localStorage I/O
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _cachedCadSettings: any = null;
+let _cachedCadSettings: Record<string, unknown> | null = null;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getCadSettings(): any {
+function getCadSettings(): Record<string, unknown> {
 	if (_cachedCadSettings !== null) return _cachedCadSettings;
 	try {
 		const saved = localStorage.getItem("cad_settings");
@@ -60,8 +58,7 @@ function getCadSettings(): any {
 	return _cachedCadSettings;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function setCadSettings(settings: any): void {
+function setCadSettings(settings: Record<string, unknown>): void {
 	localStorage.setItem("cad_settings", JSON.stringify(settings));
 	_cachedCadSettings = settings;
 }

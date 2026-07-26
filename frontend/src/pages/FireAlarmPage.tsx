@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/services/api";
 
 // Mock data for the navigator
-const mockZones = [
+const _mockZones = [
         {
                 id: "project-1",
                 name: "Building A Fire Alarm System",
@@ -260,7 +260,7 @@ export function FireAlarmPage() {
         }, []);
 
         // V140 Phase 5: Fetch zones from API
-        const [zones, setZones] = useState<typeof mockZones>([]);
+        const [zones, setZones] = useState<typeof _mockZones>([]);
         const [zonesLoading, setZonesLoading] = useState(false);
 
         useEffect(() => {
@@ -302,7 +302,7 @@ export function FireAlarmPage() {
                                                                         devices: [],
                                                                         children: Object.values(zoneMap),
                                                                 },
-                                                        ] as unknown as typeof mockZones);
+                                                        ] as unknown as typeof _mockZones);
                                                 } else {
                                                         // V246 SAFETY FIX: Show empty state instead of mock data
                                                         setZones([]);

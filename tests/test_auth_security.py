@@ -98,10 +98,10 @@ class TestCookieSecurity:
 
         # Extract cookie value
         set_cookie = resp.headers.get("set-cookie", "")
-        assert "fireai_session=" in set_cookie
+        assert "__Host-fireai_session=" in set_cookie
 
         # Extract the token part
-        token_part = set_cookie.split("fireai_session=")[1].split(";")[0]
+        token_part = set_cookie.split("__Host-fireai_session=")[1].split(";")[0]
 
         # CRITICAL: token must NOT equal the API key
         assert token_part != "test_key_for_security_audit", \
@@ -151,14 +151,14 @@ class TestTamperedCookie:
 
         # Clear ALL cookies then set tampered one
         client.cookies.clear()
-        client.cookies.set("fireai_session", "fake_token.invalid_signature")
+        client.cookies.set("__Host-fireai_session", "fake_token.invalid_signature")
 
         resp = client.get("/api/v1/auth/me")
         assert resp.status_code == 401, "Tampered cookie should be rejected"
 
     def test_malformed_cookie_no_dot_rejected(self, client: TestClient) -> None:
         """Cookie without dot separator should be rejected."""
-        client.cookies.set("fireai_session", "nodotincookie")
+        client.cookies.set("__Host-fireai_session", "nodotincookie")
 
         resp = client.get("/api/v1/auth/me")
         assert resp.status_code == 401
@@ -166,7 +166,7 @@ class TestTamperedCookie:
     def test_empty_cookie_rejected(self, client: TestClient) -> None:
         """Empty cookie value should result in 401."""
         client.cookies.clear()
-        client.cookies.set("fireai_session", "")
+        client.cookies.set("__Host-fireai_session", "")
 
         resp = client.get("/api/v1/auth/me")
         assert resp.status_code == 401
@@ -189,6 +189,10 @@ class TestSessionRevocation:
             json={"api_key": "test_key_for_security_audit"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         assert login_resp.status_code == 200
+        # Manually inject __Host- session cookie (httpx rejects __Host- over HTTP)
+        set_cookie = login_resp.headers.get("set-cookie", "")
+        session_token = set_cookie.split("__Host-fireai_session=")[1].split(";")[0]
+        client.cookies.set("__Host-fireai_session", session_token)
 
         # Verify session works
         resp = client.get("/api/v1/auth/me")
@@ -208,14 +212,14 @@ class TestSessionRevocation:
             "/api/v1/auth/login",
             json={"api_key": "test_key_for_security_audit"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
-        token1 = resp1.headers.get("set-cookie", "").split("fireai_session=")[1].split(";")[0]
+        token1 = resp1.headers.get("set-cookie", "").split("__Host-fireai_session=")[1].split(";")[0]
 
         # Second login (should create new session, not reuse)
         resp2 = client.post(
             "/api/v1/auth/login",
             json={"api_key": "test_key_for_security_audit"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
-        token2 = resp2.headers.get("set-cookie", "").split("fireai_session=")[1].split(";")[0]
+        token2 = resp2.headers.get("set-cookie", "").split("__Host-fireai_session=")[1].split(";")[0]
 
         # Tokens should be different (random session IDs)
         assert token1 != token2, "Each login should create a unique session"
