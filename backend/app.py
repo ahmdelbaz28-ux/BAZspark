@@ -113,7 +113,7 @@ def _rebuild_pydantic_models():
 _rebuild_pydantic_models()
 
 # Import our CAD/BIM integration routers
-from backend.routers import autocad, digital_twin, revit
+from backend.routers import autocad, cad, digital_twin, revit
 from backend.routers import health as health_router_module
 
 # X-Content-Type-Options, HSTS, CSP, Referrer-Policy, Permissions-Policy to
@@ -405,6 +405,7 @@ app.add_middleware(
 # router already defines its own prefix (e.g., prefix="/autocad").
 app.include_router(autocad.router, prefix="/api/v1", tags=["AutoCAD-v1"])  # NOSONAR — S1192: duplicated literal acceptable in this localized context
 app.include_router(revit.router, prefix="/api/v1", tags=["Revit-v1"])
+app.include_router(cad.router, prefix="/api/v1", tags=["CAD-v1"])
 app.include_router(digital_twin.router, prefix="/api/v1", tags=["Digital-Twin-v1"])
 
 # ── STRESS-TEST FIX #8: Register ALL backend routers ───────────────────────

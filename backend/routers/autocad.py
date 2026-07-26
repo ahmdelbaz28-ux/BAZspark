@@ -34,7 +34,6 @@ import logging
 import os
 import re
 import tempfile
-import threading
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -102,18 +101,13 @@ router = APIRouter(prefix="/autocad", tags=["AutoCAD"])
 # ── Thread-safe service singleton (FIX #18) ────────────────────────────────
 # Previously the singleton had a TOCTOU race condition — two threads could
 # both see _autocad_service as None and create separate instances.
-_autocad_service: Optional[AutoCADService] = None
-_service_lock = threading.Lock()
-
+# Delegates to the unified CADGateway to ensure singleton consistency.
 
 def get_autocad_service() -> AutoCADService:
     """Get or initialize AutoCAD service singleton (thread-safe)."""
-    global _autocad_service
-    if _autocad_service is None:
-        with _service_lock:
-            if _autocad_service is None:  # Double-checked locking
-                _autocad_service = AutoCADService()
-    return _autocad_service
+    from backend.services.cad_gateway import CADGateway
+    return CADGateway().get_service("autocad")
+
 
 
 # ── Safe error helper (FIX #20) ────────────────────────────────────────────
