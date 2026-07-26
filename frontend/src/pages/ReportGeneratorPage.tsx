@@ -36,7 +36,7 @@ import {
         SelectTrigger,
         SelectValue,
 } from "@/components/ui/select";
-import { useProjects, useReports } from "@/hooks/useApi";
+import { useProjects, useReports } from "@/hooks/useApiQuery";
 import type {
         GenerateReportInput,
         Project,

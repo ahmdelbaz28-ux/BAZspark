@@ -31,7 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { calculateBatteryRequirements } from "@/engine/BatteryCalculator";
 import type { BatteryCalcInput } from "@/engine/BatteryCalculator";
 import { calculateCoverage } from "@/engine/CoverageEngine";
-import { useGenerateReport, useProjects, useReports } from "@/hooks/useApi";
+import { useGenerateReport, useProjects, useReports } from "@/hooks/useApiQuery";
 import { api as apiClient } from "@/services/api";
 
 // ============================================================================

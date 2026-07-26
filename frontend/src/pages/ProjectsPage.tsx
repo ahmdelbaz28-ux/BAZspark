@@ -42,7 +42,7 @@ import {
         useDeleteProject,
         useProjects,
         useSyncProject,
-} from "@/hooks/useApi";
+} from "@/hooks/useApiQuery";
 import type { Project } from "@/services/digitalTwinApi";
 import { DEVICE_CATEGORIES, getDevicesByCategory } from "@/types/deviceLibrary";
 

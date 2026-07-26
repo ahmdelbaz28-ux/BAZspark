@@ -27,7 +27,7 @@ import {
         SelectTrigger,
         SelectValue,
 } from "@/components/ui/select";
-import { useProjects } from "@/hooks/useApi";
+import { useProjects } from "@/hooks/useApiQuery";
 import { getApiKey } from "@/services/apiKey";
 
 export function ExportsPage() {

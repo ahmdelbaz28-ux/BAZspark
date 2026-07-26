@@ -28,15 +28,18 @@ const CSRF_COOKIE_NAME = "__Host-fireai_csrf_token";
 let cachedToken: string | null = null;
 let fetchPromise: Promise<string | null> | null = null;
 
+/** Hoisted RegExp — created once at module level instead of on every call. */
+const CSRF_COOKIE_REGEX = new RegExp(
+        `(?:^|;\\s*)${CSRF_COOKIE_NAME}=([^;]+)`,
+);
+
 /**
  * Parse the CSRF token from document.cookie.
  * Returns null if the cookie is not present.
  */
 function readCookieToken(): string | null {
         if (typeof document === "undefined") return null;
-        const match = document.cookie.match(
-                new RegExp(`(?:^|;\\s*)${CSRF_COOKIE_NAME}=([^;]+)`),  // NOSONAR: typescript:S7780
-        );
+        const match = document.cookie.match(CSRF_COOKIE_REGEX);
         return match ? decodeURIComponent(match[1]) : null;
 }
 
