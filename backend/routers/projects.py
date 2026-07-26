@@ -153,11 +153,17 @@ async def export_project_revit(project_id: str) -> StreamingResponse:
 
 @router.get("/{project_id}/export/ifc", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
 async def export_project_ifc(project_id: str, version: Optional[str] = None) -> StreamingResponse:
-    """Export a project as IFC (placeholder)."""
+    """Export a project as IFC (placeholder).
+    Accepts optional version parameter; only known versions are allowed.
+    """
     db = get_db()
     project = db.get_project(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    # Validate version if provided
+    allowed_versions = {"IFC2X3", "IFC4"}
+    if version is not None and version not in allowed_versions:
+        raise HTTPException(status_code=422, detail="Invalid IFC version")
     # Simple placeholder IFC content
     content = f"IFC placeholder for project {project_id}, version {version or 'default'}".encode()
     filename = f"{project.get('name','project')}_export.ifc"

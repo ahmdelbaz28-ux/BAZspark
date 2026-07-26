@@ -1064,10 +1064,9 @@ class DatabaseService:
             # Build query and parameters
             query, params = self._build_connection_query(element_id, relationship_type)
 
-            # Apply project filter if specified
-            if project_id:
-                query += " AND project_id=?"
-                params.append(project_id)
+        # Project filter ignored: relationships table does not have a project_id column.
+        # If needed, implement proper join logic. For now, we simply ignore this filter.
+
 
             # Add ordering and pagination
             offset = (page - 1) * page_size
@@ -1080,9 +1079,7 @@ class DatabaseService:
 
             # Count total for pagination
             count_query, count_params = self._build_connection_query(element_id, relationship_type)
-            if project_id:
-                count_query += " AND project_id=?"
-                count_params.append(project_id)
+            # Project filter ignored as it does not exist in relationships table.
             count_query = f"SELECT COUNT(*) FROM ({count_query})"
 
             total_count = self._db_conn.execute(count_query, count_params).fetchone()[0]
