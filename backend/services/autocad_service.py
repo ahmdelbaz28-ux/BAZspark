@@ -53,8 +53,8 @@ win32com.client = _types.ModuleType("win32com.client")  # type: ignore[attr-defi
 
 if IS_WINDOWS:
     try:
-        import pythoncom  # noqa: F811  (re-defines the placeholder above)
-        import win32com.client  # noqa: F811
+        import pythoncom
+        import win32com.client
         HAS_AUTOCAD_API = True
     except ImportError:
         logger.warning("AutoCAD COM API not available. Install pywin32.")

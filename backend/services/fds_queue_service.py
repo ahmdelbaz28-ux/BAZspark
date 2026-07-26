@@ -247,7 +247,7 @@ def _submit_to_modal(job_id: str, fds_input: str, webhook_url: str) -> None:
         _get_job_store()[job_id]["status"] = FDSJobStatus.RUNNING
         logger.info("FDS Job %s dispatched to Modal, call_id=%s", job_id, call.object_id)
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.error("Failed to submit FDS job %s to Modal: %s", job_id, exc)
         _get_job_store()[job_id]["status"] = FDSJobStatus.FAILED
         _get_job_store()[job_id]["error"] = str(exc)

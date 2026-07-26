@@ -29,7 +29,6 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 class Base(DeclarativeBase):
     """SQLAlchemy declarative base for all ORM models."""
 
-    pass
 
 
 class Project(Base):
