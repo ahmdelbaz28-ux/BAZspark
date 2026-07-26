@@ -693,58 +693,56 @@ class DatabaseService:
             if element is None:
                 return None
 
-            # Prepare update values
-            name = update_data.name if update_data.name is not None else element.name
-            description = update_data.description if update_data.description is not None else element.description
-            element_type = update_data.type if update_data.type is not None else element.type
+            updates: dict[str, Any] = {}
 
-            # Handle properties update
-            new_properties = self._validate_property_updates(update_data.properties)
-            if update_data.properties is not None:
+            if update_data.properties:
                 # Merge with existing properties
-                merged_properties = element.semantic_properties.properties.copy()
-                merged_properties.update(new_properties)
-            else:
-                merged_properties = element.semantic_properties.properties
+                existing_props = element.properties
+                props_dict = existing_props.to_dict() if existing_props else {}
 
-            # Handle geometry update
-            if update_data.geometry is not None:
-                new_geometry = self._validate_geometry_updates(update_data.geometry.dict())
-            else:
-                new_geometry = element.geometry
+                for field_name, value in update_data.properties.model_dump(exclude_unset=True).items():
+                    if value is not None:
+                        # Convert enum to string value
+                        if hasattr(value, 'value'):
+                            props_dict[field_name] = value.value
+                        else:
+                            props_dict[field_name] = value
 
-            # Create updated element
-            updated_element = UniversalElement(
-                id=element.id,
-                name=name,
-                description=description,
-                element_type=element_type,
-                semantic_properties=SemanticProperties(properties=merged_properties),
-                geometry=new_geometry,
-                created_at=element.created_at,
-                updated_at=datetime.now(timezone.utc),
-            )
+                updates["properties"] = props_dict
 
-            result = self._data_model.update_element(updated_element)
-            if result is None:
+            if update_data.geometry:
+                updates["geometry"] = {
+                    "points": [{"x": p.x, "y": p.y, "z": p.z} for p in update_data.geometry.points],
+                    "polyline_closed": update_data.geometry.polyline_closed,
+                }
+
+            if update_data.source_file is not None:
+                updates["source_file"] = update_data.source_file
+            if update_data.last_modified_by is not None:
+                updates["last_modified_by"] = update_data.last_modified_by
+            if update_data.is_deleted is not None:
+                updates["is_deleted"] = update_data.is_deleted
+
+            # Get change source for audit trail
+            source = ChangeSource.MANUAL
+            if update_data.last_modified_by:
+                try:
+                    source = ChangeSource(update_data.last_modified_by)
+                except ValueError as ve:
+                    logger.debug("Unknown ChangeSource '%s': %s", update_data.last_modified_by, ve)
+
+            # Perform update in database
+            success = self._data_model.update_element(element_id, updates, source=source)
+            if not success:
                 return None
 
-            return ElementResponse(
-                id=result.id,
-                name=result.name,
-                description=result.description,
-                type=result.element_type,
-                properties=result.semantic_properties.properties,
-                geometry=GeometryResponse(
-                    location=Point3DResponse(
-                        x=result.geometry.location.x,
-                        y=result.geometry.location.y,
-                        z=result.geometry.location.z,
-                    ),
-                ) if result.geometry else None,
-                created_at=result.created_at.isoformat(),
-                updated_at=result.updated_at.isoformat(),
-            )
+            # Get updated element and map to response
+            updated = self._data_model.get_element(element_id)
+            if updated is None:
+                return None
+
+            project_id = self._get_element_project_id(element_id)
+            return self._element_to_response(updated, project_id)
 
     def delete_element(self, element_id: str, source: str = "manual") -> bool:
         """Soft delete an element."""
@@ -1073,11 +1071,11 @@ class DatabaseService:
 
             # Add ordering and pagination
             offset = (page - 1) * page_size
-            query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+            query += " ORDER BY relationship_id DESC LIMIT ? OFFSET ?"
             params.extend([page_size, offset])
 
             # Execute query
-            cursor = self._conn.execute(query, params)
+            cursor = self._db_conn.execute(query, params)
             rows = cursor.fetchall()
 
             # Count total for pagination
@@ -1087,12 +1085,12 @@ class DatabaseService:
                 count_params.append(project_id)
             count_query = f"SELECT COUNT(*) FROM ({count_query})"
 
-            total_count = self._conn.execute(count_query, count_params).fetchone()[0]
+            total_count = self._db_conn.execute(count_query, count_params).fetchone()[0]
 
             # Convert rows to response format
             connections = [
                 ConnectionResponse(
-                    id=row[0],
+                    connection_id=row[0],
                     from_element_id=row[1],
                     to_element_id=row[2],
                     relationship_type=row[3],
@@ -1300,7 +1298,7 @@ class DatabaseService:
 
             # Count total conflicts matching criteria
             count_query = f"SELECT COUNT(*) FROM conflicts WHERE {where_clause}"
-            total_count = self._conn.execute(count_query, params).fetchone()[0]
+            total_count = self._db_conn.execute(count_query, params).fetchone()[0]
 
             # Fetch paginated conflicts
             offset = (page - 1) * page_size
@@ -1316,7 +1314,7 @@ class DatabaseService:
             """
             params.extend([page_size, offset])
 
-            rows = self._conn.execute(query, params).fetchall()
+            rows = self._db_conn.execute(query, params).fetchall()
 
             # Convert rows to response format
             conflicts = []

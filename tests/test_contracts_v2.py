@@ -57,7 +57,8 @@ from fireai.core.contracts import (
 class TestCeilingType:
     def test_all_values(self):
         expected = {"FLAT", "SLOPED", "BEAMED", "COFFERED", "DOMED", "SMOOTH",
-                    "GABLE", "SHED", "CORRIDOR", "TRUSS", "COMBUSTIBLE"}
+                    "GABLE", "SHED", "CORRIDOR", "TRUSS", "COMBUSTIBLE",
+                    "PEAKED", "BEAM", "OPEN_JOIST"}
         assert {ct.value for ct in CeilingType} == expected
 
     def test_string_enum(self):
