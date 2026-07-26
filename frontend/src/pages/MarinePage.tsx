@@ -23,7 +23,7 @@
  * palette, Instrument Serif display type, JetBrains Mono for engineering data.
  * Signature: Brass-etched vessel hull schematic on radar-grid viewport.
  */
-import { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Activity } from "lucide-react";
 import { AlertTriangle } from "lucide-react";
@@ -239,11 +239,6 @@ export function MarinePage() {
         const [logicView, setLogicView] = useState<"matrix" | "script">("matrix");
         const [scadaView, setScadaView] = useState<"table" | "yaml">("table");
 
-  // ── Active Tab & Loading States ──────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState("viewport");
-  const [loading, setLoading] = useState<string | null>(null);
-  const [logicView, setLogicView] = useState<"matrix" | "script">("matrix");
-  const [scadaView, setScadaView] = useState<"table" | "yaml">("table");
 
   // ── Interactive Alarm Simulation & Viewport State ───────────────────────
   const [alarmActive, setAlarmActive] = useState(false);
@@ -261,6 +256,10 @@ export function MarinePage() {
   const [passengerCapacity, setPassengerCapacity] = useState("1450");
   const [flagState, setFlagState] = useState("PA");
   const [classificationSociety, setClassificationSociety] = useState("LR");
+  const ship = {
+    length_overall_m: Number.parseFloat(lengthOverallM) || 0,
+    gross_tonnage: Number.parseFloat(grossTonnage) || 0,
+  };
 
   // ── API Result States ───────────────────────────────────────────────────
   const [standards, setStandards] = useState<Array<{ code: string; title: string; issuer: string }>>([]);
@@ -599,27 +598,7 @@ useEffect(() => {
                 }
         };
 
-        // Alarm Trigger Simulation Toggle
-        const toggleAlarmSimulation = () => {
-                if (!alarmActive) {
-                        setAlarmActive(true);
-                        setSimulatedDamperClosed(true);
-                        setSimulatedCo2Discharging(true);
-                        toast({
-                                title: "FIRE ALARM SIMULATION INITIATED",
-                                description: `MVZ-${selectedZoneIndex + 1} Smoke Detector #04 Activated — Dampers Closed & CO2 Discharge Primed!`,
-                                variant: "destructive",
-                        });
-                } else {
-                        setAlarmActive(false);
-                        setSimulatedDamperClosed(false);
-                        setSimulatedCo2Discharging(false);
-                        toast({
-                                title: "Alarm Simulation Reset",
-                                description: "Vessel safety systems returned to NORMAL monitoring state.",
-                        });
-                }
-        };
+
 
         // ── Render ──────────────────────────────────────────────────────────────
         return (
