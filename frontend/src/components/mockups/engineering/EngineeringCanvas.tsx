@@ -95,12 +95,30 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
 	const svgRef = useRef<SVGSVGElement>(null);
 
+	// Build Maps for O(1) lookups instead of O(n) array.find() / array.filter()
+	const deviceMap = useMemo(
+		() => new Map(devices.map((d) => [d.id, d])),
+		[devices],
+	);
+	const connectionsByDeviceId = useMemo(() => {
+		const map = new Map<string, (typeof connections)[number][]>();
+		for (const conn of connections) {
+			const fromEntry = map.get(conn.fromId);
+			if (fromEntry) fromEntry.push(conn);
+			else map.set(conn.fromId, [conn]);
+			const toEntry = map.get(conn.toId);
+			if (toEntry) toEntry.push(conn);
+			else map.set(conn.toId, [conn]);
+		}
+		return map;
+	}, [connections]);
+
 	// Calculate thermal data for all connections
 	const thermalConnections = useMemo<ThermalConnection[]>(() => {
 		return connections
 			.map((conn) => {
-				const from = devices.find((d) => d.id === conn.fromId);
-				const to = devices.find((d) => d.id === conn.toId);
+				const from = deviceMap.get(conn.fromId);
+				const to = deviceMap.get(conn.toId);
 
 				if (!from || !to) return null;
 
@@ -146,9 +164,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 	// Calculate thermal data for all devices
 	const thermalDevices = useMemo<ThermalDevice[]>(() => {
 		return devices.map((dev) => {
-			const deviceConnections = connections.filter(
-				(c) => c.fromId === dev.id || c.toId === dev.id,
-			);
+			const deviceConnections = connectionsByDeviceId.get(dev.id) || [];
 			const totalCurrent = deviceConnections.reduce(
 				(sum, c) => sum + c.current,
 				0,
@@ -514,7 +530,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 				{/* Drag Line */}
 				{connectingFrom &&
 					(() => {
-						const from = devices.find((d) => d.id === connectingFrom);
+						const from = deviceMap.get(connectingFrom);
 						if (!from) return null;
 						return (
 							<line

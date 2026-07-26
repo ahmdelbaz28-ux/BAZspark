@@ -20,6 +20,7 @@ export default tseslint.config(
 		plugins: { "react-hooks": reactHooks },
 		rules: {
 			...reactHooks.configs.recommended.rules,
+			"no-empty": ["error", { allowEmptyCatch: true }],
 			"@typescript-eslint/no-unused-vars": [
 				"warn",
 				{
@@ -29,6 +30,14 @@ export default tseslint.config(
 				},
 			],
 			"@typescript-eslint/no-explicit-any": "warn",
+		},
+	},
+	// Playwright test setup files — not React components, so disable React hooks rules
+	// Must come AFTER the react-hooks config to take precedence in flat config
+	{
+		files: ["tests/setup/**"],
+		rules: {
+			"react-hooks/rules-of-hooks": "off",
 		},
 	},
 );
