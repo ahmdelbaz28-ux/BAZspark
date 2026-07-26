@@ -829,7 +829,7 @@ class SevereWeatherService:
         except ET.ParseError as e:
             logger.warning("MeteoAlarm Atom XML parse error: %s", e)
             # Return empty results — caller will handle fallback
-            pass  # NOSONAR - python:S2772
+            # NOSONAR - python:S2772
 
         return alerts, has_power_risk, has_extreme_temp
 

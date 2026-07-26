@@ -163,7 +163,7 @@ if not logger.handlers:
 # testable. Re-exports below maintain backward compatibility with code that
 # imports these symbols from backend.app.
 
-from backend.cache import (  # noqa: I001 — imports kept together for backward compat
+from backend.cache import (
     _CACHE_MAX_ENTRIES,  # noqa: F401
     _CACHE_MAX_VALUE_SIZE,  # noqa: F401
     _cache,

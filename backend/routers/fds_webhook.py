@@ -136,7 +136,7 @@ async def fds_result_webhook(
                 "FDS WebSocket notification sent for job %s (project %s)",
                 payload.job_id[:8] + "...", project_id[:8] + "...",
             )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning(  # NOSONAR — pythonsecurity:S5145: user data truncated to safe length
             "FDS WebSocket notification failed for job %s: %s",
             payload.job_id[:8] + "...", str(exc)[:100],

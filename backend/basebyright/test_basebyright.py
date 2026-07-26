@@ -661,7 +661,7 @@ class TestBaseByRightReport:
         report_path = os.path.join(str(tmp_path), "test_report.json")
         saved_path = bbr.save_report(path=report_path)
         assert os.path.exists(saved_path)
-        with open(saved_path, "r") as f:
+        with open(saved_path) as f:
             data = json.load(f)
         assert data["framework"] == "BASEBYRIGHT"
         assert data["summary"]["total"] >= 1

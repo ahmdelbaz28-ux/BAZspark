@@ -150,7 +150,7 @@ def validate_secret(secret: str, source: str = "unknown") -> None:
 def _read_secret_from_file(filepath: str) -> str:
     """Read a secret from a file (Docker/K8s secret mount)."""
     try:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             # Strip whitespace/newlines — secret files often have trailing newline
             return f.read().strip()
     except FileNotFoundError:
@@ -392,18 +392,18 @@ def main() -> None:
         # so the user can copy it. This is NOT logging (no logger, no file).
         # The user MUST see the secret to set FIREAI_SESSION_SECRET.
         # Suppressed with explicit justification per CodeQL docs.
-        print("# FireAI Session Secret — generated with cryptographic randomness")  # noqa: S105, T201 - CLI output, not logging  # NOSONAR — S7632: test function documented via class name / module path
-        print("# Store this securely. DO NOT commit to version control.")  # noqa: T201
-        print("#")  # noqa: T201
-        print("# Usage (env var):")  # noqa: T201
-        print("#   export FIREAI_SESSION_SECRET='<copy-secret-below>'")  # noqa: T201
-        print("#")  # noqa: T201
-        print("# Usage (Docker/K8s file-based, more secure):")  # noqa: T201
-        print("#   echo -n '<copy-secret-below>' > /run/secrets/fireai_session_secret")  # noqa: T201
-        print("#   export FIREAI_SESSION_SECRET_FILE=/run/secrets/fireai_session_secret")  # noqa: T201
-        print("#")  # noqa: T201
-        print("# The secret below has 512 bits of entropy (86 URL-safe base64 chars):")  # noqa: T201
-        print(secret)  # noqa: S105, T201 - intentional CLI output for user to copy
+        print("# FireAI Session Secret — generated with cryptographic randomness")  # noqa: S105 - CLI output, not logging  # NOSONAR — S7632: test function documented via class name / module path
+        print("# Store this securely. DO NOT commit to version control.")
+        print("#")
+        print("# Usage (env var):")
+        print("#   export FIREAI_SESSION_SECRET='<copy-secret-below>'")
+        print("#")
+        print("# Usage (Docker/K8s file-based, more secure):")
+        print("#   echo -n '<copy-secret-below>' > /run/secrets/fireai_session_secret")
+        print("#   export FIREAI_SESSION_SECRET_FILE=/run/secrets/fireai_session_secret")
+        print("#")
+        print("# The secret below has 512 bits of entropy (86 URL-safe base64 chars):")
+        print(secret)  # noqa: S105 - intentional CLI output for user to copy
     elif len(sys.argv) > 1 and sys.argv[1] == "info":
         mgr = get_secret_manager()
         info = mgr.get_info()

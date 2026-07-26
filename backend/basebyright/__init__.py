@@ -425,7 +425,7 @@ class GoldenTestRunner:
                 detail={"name": name, "path": path},
             )
 
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             golden = json.load(f)
 
         try:

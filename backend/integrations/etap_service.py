@@ -139,7 +139,7 @@ class EtapService:
             return {"success": False, "message": "ETAP not configured for this project"}
 
         # Validate stored credentials are decryptable
-        _candidate = decrypt_password(settings["password"])  # noqa: F841 — validate ciphertext
+        _candidate = decrypt_password(settings["password"])
         if not _candidate:
             return {"success": False, "message": "Stored ETAP password appears invalid"}
 

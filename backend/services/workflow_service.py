@@ -1677,7 +1677,7 @@ class WorkflowService:
                     flush_langfuse()
                 except Exception as e:
                     logger.debug("Langfuse flush failed (non-blocking): %s", e)
-                    pass  # Non-blocking  # NOSONAR - python:S2772
+                    # Non-blocking  # NOSONAR - python:S2772
 
             return result if result else initial_state
         except Exception as e:
