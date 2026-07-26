@@ -13,6 +13,12 @@
       "skillPath": "skills/debugging-wizard/SKILL.md",
       "computedHash": "7c578adb7a39ff6c4018f87055e4191e965c5e440119116914efd86318646a69"
     },
+    "finding-duplicate-functions": {
+      "source": "obra/superpowers-lab",
+      "sourceType": "github",
+      "skillPath": "skills/finding-duplicate-functions/SKILL.md",
+      "computedHash": "1a4b8322c630677c1e3c934aba450ba5703fc1545769936ac1ddf6d828251fbc"
+    },
     "improve-codebase-architecture": {
       "source": "mattpocock/skills",
       "sourceType": "github",
