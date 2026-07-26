@@ -42,7 +42,7 @@ celery>=5.2.0,<6.0.0
 # GHSA-h4gh-qq45-vh27, CVE-2024-12797, CVE-2026-26007, GHSA-537c-gmf6-5ccf).
 pyjwt[crypto]==2.9.0
 passlib[bcrypt]>=1.7.0,<2.0.0
-cryptography==43.0.0
+cryptography==48.0.1
 
 # ── Networking ───────────────────────────────────────────────────────────────
 requests>=2.30.0,<3.0.0
