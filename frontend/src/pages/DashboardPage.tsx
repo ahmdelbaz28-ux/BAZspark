@@ -21,7 +21,7 @@ import {
         CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDevices, useHealth, useProjects } from "@/hooks/useApi";
+import { useDevices, useHealth, useProjects } from "@/hooks/useApiQuery";
 
 export function DashboardPage() {
         const { t } = useTranslation();

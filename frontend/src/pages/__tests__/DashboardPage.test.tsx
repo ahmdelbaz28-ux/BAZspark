@@ -11,7 +11,7 @@ vi.mock("react-i18next", () => ({
 }));
 
 // Mock the API hooks before importing the component
-vi.mock("@/hooks/useApi", () => ({
+vi.mock("@/hooks/useApiQuery", () => ({
 	useHealth: vi.fn().mockReturnValue({
 		data: {
 			status: "ok",
