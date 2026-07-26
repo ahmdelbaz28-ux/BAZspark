@@ -8,9 +8,13 @@ engineering data. Deletion cascades to all child devices, connections,
 and reports.
 """
 
+import io
+import json
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 
 from backend.auth import require_permission
 from backend.contract import validate_paginated, validate_project
@@ -123,6 +127,43 @@ async def update_project(request: Request, project_id: str, input_data: UpdatePr
 
 
 @router.delete("/{project_id}", dependencies=[Depends(require_permission(Permission.PROJECT_DELETE))])
+
+# ── Project Export Endpoints (DXF, Revit, IFC) ────────────────────────────────────────
+
+@router.get("/{project_id}/export/dxf", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
+async def export_project_dxf(project_id: str):
+    """Export a project as DXF (placeholder implementation)."""
+    db = get_db()
+    project = db.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    content = b"Mock DXF content for project " + project_id.encode()
+    filename = f"{project.get('name','project')}_export.dxf"
+    return StreamingResponse(io.BytesIO(content), media_type="application/dxf", headers={"Content-Disposition": f"attachment; filename=\"{filename}\""})
+
+@router.get("/{project_id}/export/revit", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
+async def export_project_revit(project_id: str):
+    """Export a project as Revit JSON (placeholder)."""
+    db = get_db()
+    project = db.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    data = {"project_id": project_id, "devices": [], "connections": []}
+    content = json.dumps(data).encode()
+    filename = f"{project.get('name','project')}_export.json"
+    return StreamingResponse(io.BytesIO(content), media_type="application/json", headers={"Content-Disposition": f"attachment; filename=\"{filename}\""})
+
+@router.get("/{project_id}/export/ifc", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
+async def export_project_ifc(project_id: str, version: Optional[str] = None):
+    """Export a project as IFC (placeholder)."""
+    db = get_db()
+    project = db.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    # Simple placeholder IFC content
+    content = f"IFC placeholder for project {project_id}, version {version or 'default'}".encode()
+    filename = f"{project.get('name','project')}_export.ifc"
+    return StreamingResponse(io.BytesIO(content), media_type="application/ifc", headers={"Content-Disposition": f"attachment; filename=\"{filename}\""})
 @limiter.limit("30/minute")
 async def delete_project(request: Request, project_id: str):
     """Delete a project and all its children."""
