@@ -43,6 +43,7 @@ import {
         type SelfHealingHealth,
         type SelfHealingAudit,
 } from "@/services/selfHealingApi";
+import { formatBytes } from "@/lib/utils";
 
 export function SelfHealingPage() {
         const [health, setHealth] = useState<SelfHealingHealth | null>(null);
@@ -109,11 +110,7 @@ export function SelfHealingPage() {
                 return <Activity className="h-5 w-5 text-amber-500" />;
         };
 
-        const formatBytes = (bytes: number) => {
-                if (bytes < 1024) return `${bytes} B`;
-                if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-                return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-        };
+
 
         if (loading && !health) {
                 return (
