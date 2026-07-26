@@ -37,12 +37,12 @@ dependencies = [
     "sqlalchemy>=2.0.0,<3.0.0",
     "psycopg2-binary>=2.9.0,<3.0.0",
     "alembic>=1.10.0,<2.0.0",
-    "python-multipart>=0.0.15,<1.0.0",
+    "python-multipart==0.0.20",
     "python-dotenv>=1.0.0,<2.0.0",
     "requests>=2.34.0,<3.0.0",
-    "pyjwt[crypto]>=2.13.0,<3.0.0",
+    "pyjwt[crypto]==2.9.0",
     "passlib[bcrypt]>=1.7.0,<2.0.0",
-    "cryptography>=48.0.1,<50.0.0",  # V163: fix 5 HIGH CVEs
+    "cryptography==43.0.0",  # V163: fix 5 HIGH CVEs with compatible version for Python 3.8
     "websockets>=12.0.0,<16.0.0",
     "asyncpg>=0.27.0,<1.0.0",
     "celery>=5.2.0,<6.0.0",

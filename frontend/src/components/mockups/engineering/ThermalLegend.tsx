@@ -4,6 +4,7 @@
  * Shows the thermal color gradient with value ranges
  */
 
+import { memo } from "react";
 import {
 	getLoadColor,
 	getVoltageDropColor,
@@ -81,7 +82,7 @@ const SCALE_CONFIG = {
 	},
 };
 
-export function ThermalLegend({
+export const ThermalLegend = memo(function ThermalLegend({
 	type,
 	position = "bottom-right",
 	showValues = true,
@@ -223,10 +224,9 @@ export function ThermalLegend({
 						</span>
 					</div>
 				</div>
-			)}
-		</div>
+			)}        </div>
 	);
-}
+});
 
 // ============================================================================
 // Mini Indicator (for single cable/device)
@@ -238,7 +238,7 @@ interface MiniIndicatorProps {
 	size?: "sm" | "md" | "lg";
 }
 
-export function MiniIndicator({
+export const MiniIndicator = memo(function MiniIndicator({
 	value,
 	type,
 	size = "md",
@@ -266,7 +266,7 @@ export function MiniIndicator({
 			title={`${value}% ${type === "voltageDrop" ? "Voltage Drop" : "Load"}`}
 		/>
 	);
-}
+});
 
 // ============================================================================
 // Animated Bar Component
@@ -279,7 +279,7 @@ interface AnimatedBarProps {
 	showLabel?: boolean;
 }
 
-export function AnimatedBar({
+export const AnimatedBar = memo(function AnimatedBar({
 	value,
 	max,
 	type,
@@ -315,6 +315,6 @@ export function AnimatedBar({
 			</span>
 		</div>
 	);
-}
+});
 
 export default ThermalLegend;

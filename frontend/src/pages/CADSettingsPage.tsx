@@ -44,6 +44,28 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+// Module-level cache for cad_settings to avoid repeated synchronous localStorage I/O
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _cachedCadSettings: any = null;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getCadSettings(): any {
+	if (_cachedCadSettings !== null) return _cachedCadSettings;
+	try {
+		const saved = localStorage.getItem("cad_settings");
+		_cachedCadSettings = saved ? JSON.parse(saved) : {};
+	} catch {
+		_cachedCadSettings = {};
+	}
+	return _cachedCadSettings;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function setCadSettings(settings: any): void {
+	localStorage.setItem("cad_settings", JSON.stringify(settings));
+	_cachedCadSettings = settings;
+}
+
 interface CADConnectionStatus {
         connected: boolean;
         version?: string;
@@ -94,37 +116,32 @@ export function CADSettingsPage() {
 
         // Load saved settings on mount
         useEffect(() => {
-                try {
-                        const saved = localStorage.getItem("cad_settings");
-                        if (saved) {
-                                const settings = JSON.parse(saved);
-                                if (settings.autocad) {
-                                        setAcadPath(settings.autocad.path || "");
-                                        setAcadVersion(settings.autocad.version || "2024");
-                                        setAcadTemplate(settings.autocad.template || "");
-                                        setAcadUnits(settings.autocad.units || "Millimeters");
-                                }
-                                if (settings.revit) {
-                                        setRevitPath(settings.revit.path || "");
-                                        setRevitVersion(settings.revit.version || "2024");
-                                        setRevitTemplate(settings.revit.template || "");
-                                        setRevitUnits(settings.revit.units || "Millimeters");
-                                }
-                                if (settings.cloud) {
-                                        setSpeckleServer(settings.cloud.speckleServer || "https://speckle.xyz");
-                                        // V284 SECURITY: speckleToken / apsClientSecret are NO LONGER
-                                        // loaded from localStorage — they were readable by any XSS
-                                        // payload. A backend credential vault is in development
-                                        // (POST /api/v1/integrations/credentials, encrypted at rest).
-                                        // Until then, the token fields stay empty on page load and
-                                        // are never persisted to localStorage by saveCloudSettings().
-                                        setSpeckleStreamId(settings.cloud.speckleStreamId || "");
-                                        setApsClientId(settings.cloud.apsClientId || "");
-                                        setApsActivityId(settings.cloud.apsActivityId || "BazSparkAutoCADBridge.DrawLayout");
-                                }
+                const settings = getCadSettings();
+                if (Object.keys(settings).length > 0) {
+                        if (settings.autocad) {
+                                setAcadPath(settings.autocad.path || "");
+                                setAcadVersion(settings.autocad.version || "2024");
+                                setAcadTemplate(settings.autocad.template || "");
+                                setAcadUnits(settings.autocad.units || "Millimeters");
                         }
-                } catch {
-                        // Ignore parse errors
+                        if (settings.revit) {
+                                setRevitPath(settings.revit.path || "");
+                                setRevitVersion(settings.revit.version || "2024");
+                                setRevitTemplate(settings.revit.template || "");
+                                setRevitUnits(settings.revit.units || "Millimeters");
+                        }
+                        if (settings.cloud) {
+                                setSpeckleServer(settings.cloud.speckleServer || "https://speckle.xyz");
+                                // V284 SECURITY: speckleToken / apsClientSecret are NO LONGER
+                                // loaded from localStorage — they were readable by any XSS
+                                // payload. A backend credential vault is in development
+                                // (POST /api/v1/integrations/credentials, encrypted at rest).
+                                // Until then, the token fields stay empty on page load and
+                                // are never persisted to localStorage by saveCloudSettings().
+                                setSpeckleStreamId(settings.cloud.speckleStreamId || "");
+                                setApsClientId(settings.cloud.apsClientId || "");
+                                setApsActivityId(settings.cloud.apsActivityId || "BazSparkAutoCADBridge.DrawLayout");
+                        }
                 }
         }, []);
 
@@ -212,15 +229,14 @@ export function CADSettingsPage() {
 
         const saveAutoCADSettings = () => {
                 try {
-                        const saved = localStorage.getItem("cad_settings");
-                        const settings = saved ? JSON.parse(saved) : {};
+                        const settings = getCadSettings();
                         settings.autocad = {
                                 path: acadPath,
                                 version: acadVersion,
                                 template: acadTemplate,
                                 units: acadUnits,
                         };
-                        localStorage.setItem("cad_settings", JSON.stringify(settings));
+                        setCadSettings(settings);
                         toast.success("AutoCAD settings saved");
                 } catch {
                         toast.error("Failed to save settings");
@@ -229,15 +245,14 @@ export function CADSettingsPage() {
 
         const saveRevitSettings = () => {
                 try {
-                        const saved = localStorage.getItem("cad_settings");
-                        const settings = saved ? JSON.parse(saved) : {};
+                        const settings = getCadSettings();
                         settings.revit = {
                                 path: revitPath,
                                 version: revitVersion,
                                 template: revitTemplate,
                                 units: revitUnits,
                         };
-                        localStorage.setItem("cad_settings", JSON.stringify(settings));
+                        setCadSettings(settings);
                         toast.success("Revit settings saved");
                 } catch {
                         toast.error("Failed to save settings");
@@ -246,8 +261,7 @@ export function CADSettingsPage() {
 
         const saveCloudSettings = () => {
                 try {
-                        const saved = localStorage.getItem("cad_settings");
-                        const settings = saved ? JSON.parse(saved) : {};
+                        const settings = getCadSettings();
                         // V284 SECURITY: speckleToken and apsClientSecret are NEVER written
                         // to localStorage. They are session-only state — the user must
                         // re-enter them each session until the backend credential vault
@@ -260,7 +274,7 @@ export function CADSettingsPage() {
                                 apsClientId,
                                 apsActivityId,
                         };
-                        localStorage.setItem("cad_settings", JSON.stringify(settings));
+                        setCadSettings(settings);
                         if (speckleToken || apsClientSecret) {
                                 toast.info(
                                         "Non-secret cloud settings saved. Speckle/APS tokens are session-only — re-enter them each session until the backend credential vault ships (P0-8 follow-up).",

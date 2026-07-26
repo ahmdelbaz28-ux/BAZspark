@@ -24,13 +24,12 @@ export function InteractiveCanvas() {
 	};
 
 	const handleCanvasMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-		if (drawingFrom && canvasRef.current) {
-			const rect = canvasRef.current.getBoundingClientRect();
-			setMousePos({
-				x: e.clientX - rect.left,
-				y: e.clientY - rect.top,
-			});
-		}
+		if (!drawingFrom || !canvasRef.current) return;
+		const rect = canvasRef.current.getBoundingClientRect();
+		setMousePos({
+			x: e.clientX - rect.left,
+			y: e.clientY - rect.top,
+		});
 	};
 
 	const handleDeviceMouseDown = (e: React.MouseEvent, id: string) => {
@@ -40,36 +39,43 @@ export function InteractiveCanvas() {
 
 	const handleDeviceMouseUp = (e: React.MouseEvent, id: string) => {
 		e.stopPropagation();
-		if (drawingFrom && drawingFrom !== id) {
-			// Check if connection already exists
-			const exists = canvasElements.some(
-				(el) =>
-					el.type === "cable" &&
-					((el.from === drawingFrom && el.to === id) ||
-						(el.from === id && el.to === drawingFrom)),
-			);
-
-			if (!exists) {
-				const newCable: CanvasElement = {
-					id: `cable-${Date.now()}`,
-					type: "cable",
-					from: drawingFrom,
-					to: id,
-					x: 0,
-					y: 0, // Not used for lines directly but required by interface
-				};
-				actions.addElement(newCable);
-
-				// Validation: If connecting incompatible voltages (simulated)
-				const fromEl = canvasElements.find((el) => el.id === drawingFrom);
-				const toEl = canvasElements.find((el) => el.id === id);
-				if (fromEl && toEl && fromEl.voltage !== toEl.voltage) {
-					actions.pushError(
-						`Voltage mismatch between ${fromEl.type} (${fromEl.voltage}V) and ${toEl.type} (${toEl.voltage}V)!`,
-					);
-				}
-			}
+		if (!drawingFrom || drawingFrom === id) {
+			setDrawingFrom(null);
+			return;
 		}
+
+		// Check if connection already exists
+		const exists = canvasElements.some(
+			(el) =>
+				el.type === "cable" &&
+				((el.from === drawingFrom && el.to === id) ||
+					(el.from === id && el.to === drawingFrom)),
+		);
+
+		if (exists) {
+			setDrawingFrom(null);
+			return;
+		}
+
+		const newCable: CanvasElement = {
+			id: `cable-${Date.now()}`,
+			type: "cable",
+			from: drawingFrom,
+			to: id,
+			x: 0,
+			y: 0, // Not used for lines directly but required by interface
+		};
+		actions.addElement(newCable);
+
+		// Validation: If connecting incompatible voltages (simulated)
+		const fromEl = canvasElements.find((el) => el.id === drawingFrom);
+		const toEl = canvasElements.find((el) => el.id === id);
+		if (fromEl && toEl && fromEl.voltage !== toEl.voltage) {
+			actions.pushError(
+				`Voltage mismatch between ${fromEl.type} (${fromEl.voltage}V) and ${toEl.type} (${toEl.voltage}V)!`,
+			);
+		}
+
 		setDrawingFrom(null);
 	};
 
@@ -81,21 +87,21 @@ export function InteractiveCanvas() {
 	const handleDrop = (e: React.DragEvent<SVGSVGElement>) => {
 		e.preventDefault();
 		const type = e.dataTransfer.getData("elementType") as CanvasElement["type"];
-		if (type && canvasRef.current) {
-			const rect = canvasRef.current.getBoundingClientRect();
-			const x = e.clientX - rect.left;
-			const y = e.clientY - rect.top;
+		if (!type || !canvasRef.current) return;
 
-			const newElement: CanvasElement = {
-				id: `${type}-${Date.now()}`,
-				type,
-				x,
-				y,
-				voltage: type === "generator" ? 11000 : 220, // Example voltages
-				load: type === "panel" ? 50 : 0,
-			};
-			actions.addElement(newElement);
-		}
+		const rect = canvasRef.current.getBoundingClientRect();
+		const x = e.clientX - rect.left;
+		const y = e.clientY - rect.top;
+
+		const newElement: CanvasElement = {
+			id: `${type}-${Date.now()}`,
+			type,
+			x,
+			y,
+			voltage: type === "generator" ? 11000 : 220, // Example voltages
+			load: type === "panel" ? 50 : 0,
+		};
+		actions.addElement(newElement);
 	};
 
 	const handleDragOver = (e: React.DragEvent<SVGSVGElement>) => {
