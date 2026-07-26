@@ -68,7 +68,7 @@ jobs:
         # errors, and exits 1 only if the count goes above baseline.
         # To update the baseline after fixing a batch: update --baseline in
         # the command below.
-        run: python3 scripts/mypy_regression_gate.py --baseline 719
+        run: python3 scripts/mypy_regression_gate.py --baseline 735
 
 
       - name: Bandit security scan

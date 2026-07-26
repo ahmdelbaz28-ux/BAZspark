@@ -1077,7 +1077,7 @@ class DatabaseService:
             params.extend([page_size, offset])
 
             # Execute query
-            cursor = self._conn.execute(query, params)
+            cursor = self._db_conn.execute(query, params)
             rows = cursor.fetchall()
 
             # Count total for pagination
@@ -1087,7 +1087,7 @@ class DatabaseService:
                 count_params.append(project_id)
             count_query = f"SELECT COUNT(*) FROM ({count_query})"
 
-            total_count = self._conn.execute(count_query, count_params).fetchone()[0]
+            total_count = self._db_conn.execute(count_query, count_params).fetchone()[0]
 
             # Convert rows to response format
             connections = [
@@ -1300,7 +1300,7 @@ class DatabaseService:
 
             # Count total conflicts matching criteria
             count_query = f"SELECT COUNT(*) FROM conflicts WHERE {where_clause}"
-            total_count = self._conn.execute(count_query, params).fetchone()[0]
+            total_count = self._db_conn.execute(count_query, params).fetchone()[0]
 
             # Fetch paginated conflicts
             offset = (page - 1) * page_size
@@ -1316,7 +1316,7 @@ class DatabaseService:
             """
             params.extend([page_size, offset])
 
-            rows = self._conn.execute(query, params).fetchall()
+            rows = self._db_conn.execute(query, params).fetchall()
 
             # Convert rows to response format
             conflicts = []
