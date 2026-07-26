@@ -1,7 +1,7 @@
 # FireAI — API Endpoints Index
 
 **Generated:** 2026-06-13  
-**Total Endpoints:** 69  
+**Total Endpoints:** 247+  
 **Source:** `backend/routers/*.py`
 
 ---
