@@ -315,7 +315,7 @@ export class DataService {
                         }
                         // Update live data from sync events
                         if (message.data) {
-                                this.handleData(message.data);
+                                this.handleData(message.data as Record<string, unknown>);
                         }
                         return;
                 }
@@ -323,7 +323,7 @@ export class DataService {
                 // Handle telemetry data (if backend sends device telemetry)
                 if (message.channel === "telemetry" || message.type === "telemetry") {
                         if (message.data) {
-                                this.handleData(message.data);
+                                this.handleData(message.data as Record<string, unknown>);
                         }
                         return;
                 }
