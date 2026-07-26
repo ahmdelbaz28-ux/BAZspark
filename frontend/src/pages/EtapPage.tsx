@@ -26,7 +26,6 @@ import {
         XCircle,
         Zap,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
         Card,
@@ -46,7 +45,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { etapApi, type EtapConnectionSettings, type EtapExportRequest, type EtapImportRequest, type EtapProjectInfo, type EtapSettingsResponse, type EtapSyncLog } from "@/services/fullApi";
 import "./../styles/etap-theme.css";

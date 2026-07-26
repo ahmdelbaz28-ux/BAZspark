@@ -94,7 +94,6 @@ function getWarningClasses(severity: ContextPanelSeverity) {
 export function ContextPanel({
         open,
         selected,
-        contextId,
         className = "",
         onClose,
         onCollapse,

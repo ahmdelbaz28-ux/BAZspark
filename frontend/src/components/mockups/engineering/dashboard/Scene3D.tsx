@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls as OrbitControlsClass } from "three/examples/jsm/controls/OrbitControls.js";
 
-type OrbitControlsType = InstanceType<typeof OrbitControlsClass>;
-
 export function Scene3D() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const resourcesRef = useRef<{
