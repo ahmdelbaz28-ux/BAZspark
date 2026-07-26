@@ -293,7 +293,25 @@ export function MarinePage() {
     [projectId, shipName, imoNumber, shipType, lengthOverallM, grossTonnage, passengerCapacity, flagState, classificationSociety],
   );
 
-  // Alarm Trigger Simulation Toggle (Memoized)
+
+
+  // Load GSAP dynamically for animations
+  useEffect(() => {
+    const loadGSAP = async () => {
+      if (alarmActive) {
+        const gsap = (await import("gsap")).gsap;
+        gsap.to(".marine-bulkhead--alarm", {
+          opacity: 0.8,
+          duration: 0.5,
+          repeat: -1,
+          yoyo: true,
+        });
+      }
+    };
+    loadGSAP();
+  }, [alarmActive]);
+
+  // Alarm Trigger Simulation Toggle (single implementation)
   const toggleAlarmSimulation = useCallback(() => {
     if (!alarmActive) {
       setAlarmActive(true);
@@ -313,23 +331,7 @@ export function MarinePage() {
         description: "Vessel safety systems returned to NORMAL monitoring state.",
       });
     }
-  }, [alarmActive, selectedZoneIndex]);
-
-  // Load GSAP dynamically for animations
-  useEffect(() => {
-    const loadGSAP = async () => {
-      if (alarmActive) {
-        const gsap = (await import("gsap")).gsap;
-        gsap.to(".marine-bulkhead--alarm", {
-          opacity: 0.8,
-          duration: 0.5,
-          repeat: -1,
-          yoyo: true,
-        });
-      }
-    };
-    loadGSAP();
-  }, [alarmActive]);
+  }, [alarmActive, selectedZoneIndex, toast]);
 
 // Load Standards & Fire Classes on Mount
 useEffect(() => {
