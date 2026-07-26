@@ -69,3 +69,11 @@ GitHub issues. See `docs/agents/issue-tracker.md`.
 ### Domain docs
 
 Single-context layout. See `docs/agents/domain.md`.
+
+## Deployment & Branching Policy (Strict Instructions)
+
+1. **Feature Branching:** All modifications/fixes must be pushed to the remote via a separate, dedicated feature branch (do not commit directly to main).
+2. **Safe Push & Test:** Perform a safe push of the feature branch.
+3. **Merge Conflict & Issue Check:** Test the remote branch integration to verify if merging it with `main` will cause any issues, conflicts, or compilation errors. Solve any detected issues/conflicts first in the feature branch.
+4. **Safe Merging:** Perform the merge to `main` only after full verification.
+5. **Clean Up:** Delete the local/remote feature branch and clean up any temporary or cache files.
