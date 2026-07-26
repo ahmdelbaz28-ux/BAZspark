@@ -22,7 +22,7 @@ SECURITY DESIGN (CRITICAL FIX):
 Endpoints:
   POST /api/v1/auth/login
     Body: {"api_key": "..."}
-    Sets: Set-Cookie: fireai_session=<signed_token>; HttpOnly; SameSite=Strict; Secure
+    Sets: Set-Cookie: __Host-fireai_session=<signed_token>; HttpOnly; SameSite=Strict; Secure; Path=/
     Returns: {"success": true, "data": {"role": "ADMIN", "expires_at": "..."}}
 
   POST /api/v1/auth/logout
@@ -36,7 +36,6 @@ Compliance: agent.md ANTI-DECEPTION — every claim verified by tests.
 
 import hashlib
 import logging
-import os
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
@@ -56,7 +55,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # SESSION SECURITY CONFIGURATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
-_COOKIE_NAME = "fireai_session"
+_COOKIE_NAME = "__Host-fireai_session"
 _COOKIE_MAX_AGE_SECONDS = 8 * 3600  # 8 hours
 _SESSION_ID_BYTES = 32  # 256 bits of entropy
 
@@ -224,10 +223,8 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
             detail="Too many failed login attempts. Try again in 5 minutes.",
         )
 
-    import hmac as _hmac
-
+    from backend.auth_utils import validate_api_key_credential
     from backend.rbac import Role
-    from backend.security_middleware import _validate_api_key
 
     api_key = body.api_key.strip() if body.api_key else ""
     if not api_key:
@@ -247,16 +244,11 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
             )
         raise HTTPException(status_code=400, detail="API key is required")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
-    # Validate the API key
-    role: Optional[Role] =  None
-    env_key = os.getenv("FIREAI_API_KEY")
-    if env_key and api_key and _hmac.compare_digest(api_key, env_key):
-        role = Role.ADMIN
-    else:
-        if api_key:
-            info = _validate_api_key(api_key)
-            if info is not None:
-                role = info.role
+    # Validate the API key using shared credential validation
+    # (env var bypass + RBAC store — single implementation in auth_utils)
+    role: Optional[Role] = None
+    if api_key:
+        role = validate_api_key_credential(api_key)
 
     if role is None:
         _record_failed_attempt(client_ip)
@@ -298,23 +290,19 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     token = _create_session_token(session_id, int(expires_at_epoch))
 
     # Build Set-Cookie header
-    is_production = os.getenv("FIREAI_ENV", "production").lower() in ("production", "prod")
-    forwarded_proto = ""
-    for name, value in request.scope.get("headers", []):
-        if name == b"x-forwarded-proto":
-            forwarded_proto = value.decode("utf-8", errors="replace")
-            break
-    is_https = forwarded_proto == "https" or request.url.scheme == "https"
-
+    # __Host- prefix REQUIRES Secure (browsers enforce this):
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#cookie_prefixes
+    # The CSRF cookie (__Host-fireai_csrf_token) follows the same pattern.
+    # In dev mode over HTTP, the browser will simply not set the cookie
+    # (which is correct behavior — use HTTPS for testing auth).
     cookie_parts = [
         f"{_COOKIE_NAME}={token}",
         "Path=/",
         f"Max-Age={_COOKIE_MAX_AGE_SECONDS}",
         "HttpOnly",
         "SameSite=Strict",
+        "Secure",
     ]
-    if is_https or is_production:
-        cookie_parts.append("Secure")
 
     expires_at_iso = datetime.now(timezone.utc) + timedelta(seconds=_COOKIE_MAX_AGE_SECONDS)
 
@@ -340,28 +328,23 @@ async def logout(request: Request):  # NOSONAR — S3776: cognitive complexity i
     """Clear the cookie AND revoke the server-side session."""
     from fastapi.responses import JSONResponse
 
-    # Extract session token from cookie and revoke it server-side
-    cookie_header = ""
-    for name, value in request.scope.get("headers", []):
-        if name == b"cookie":
-            cookie_header = value.decode("utf-8", errors="replace")
-            break
+    from backend.auth_utils import extract_session_token_from_headers
 
-    if cookie_header:
-        for pair in cookie_header.split(";"):
-            pair = pair.strip()
-            if "=" in pair:
-                k, v = pair.split("=", 1)
-                if k.strip() == _COOKIE_NAME:
-                    session_id = _verify_session_token(v.strip())
-                    if session_id:
-                        session_id_hash = _hash_secret(session_id)
-                        _session_store.delete(session_id_hash)
-                    break
+    # Extract session token from cookie using shared parser (auth_utils)
+    headers = request.scope.get("headers", [])
+    cookie_token = extract_session_token_from_headers(headers)
+
+    if cookie_token:
+        session_id = _verify_session_token(cookie_token)
+        if session_id:
+            session_id_hash = _hash_secret(session_id)
+            _session_store.delete(session_id_hash)
 
     response = JSONResponse(content=success({"logged_out": True}))
+    # Use the __Host- prefixed cookie name so the browser correctly clears it.
+    # Secure is required for __Host- cookies (browsers reject the cookie otherwise).
     response.headers["Set-Cookie"] = (
-        f"{_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict"
+        f"{_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict; Secure"
     )
     return response
 

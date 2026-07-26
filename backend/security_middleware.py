@@ -55,23 +55,14 @@ import os
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-# Lazy accessor for validate_session_cookie — avoids circular import
-# (backend/routers/auth.py imports _validate_api_key from this module).
-# The first call triggers a normal import which is cached by Python's
-# import system, so subsequent calls are free. The lazy accessor is
-# called inside ApiKeyMiddleware.__call__ instead of a bare import.
+from backend.auth_utils import (
+    extract_session_token_from_headers as _extract_session_token,
+    validate_api_key_credential as _validate_api_key_credential,
+)
 from backend.rbac import Role as _Role
 
 # Re-export CorrelationIdMiddleware for a single import surface.
-# Lazy import to avoid circular dependency if backend.request_context
-# ever imports from this module in the future.
 from backend.request_context import CorrelationIdMiddleware
-
-
-def _get_validate_session_cookie():
-    """Lazy accessor for validate_session_cookie to avoid circular import."""
-    from backend.routers.auth import validate_session_cookie
-    return validate_session_cookie
 
 
 logger = logging.getLogger(__name__)
@@ -269,29 +260,9 @@ class SecurityHeadersMiddleware:
 
 
 # ── ApiKeyMiddleware ────────────────────────────────────────────────────────
-# STRESS-TEST FIX #2: The original auth.py docstring claims "The role is set
-# by the ApiKeyMiddleware on request.state.fireai_role" — but no such
-# middleware existed in the codebase. As a result, request.state.fireai_role
-# was ALWAYS None, every require_permission() check fell through to the
-# Role.VIEWER default, admin endpoints were always 403 (legitimate admins
-# locked out) AND viewer-level endpoints were effectively public (no auth).
+# Pure ASGI middleware that validates X-API-Key and sets fireai_role.
+# Auth logic is delegated to auth_utils (shared with routers/auth.py).
 #
-# This middleware:
-#   1. Reads X-API-Key header from the request.
-#   2. Validates it via backend.api_keys.validate_api_key (now fixed to use
-#      deterministic HMAC lookup + bcrypt verification).
-#   3. Sets request.state.fireai_role and scope["fireai_role"] for downstream
-#      require_permission() checks.
-#   4. Public paths (health, docs) are allowed through without auth, and the
-#      role remains None — require_permission() will default to VIEWER for
-#      those, which is correct (VIEWER has HEALTH_READ permission).
-#   5. Caches the validation result on the scope so a single request doesn't
-#      pay the bcrypt cost twice (e.g. if multiple Depends() call it).
-import hmac as _hmac
-import os as _os
-
-from backend.api_keys import validate_api_key as _validate_api_key
-
 # Paths that bypass API key auth entirely (still subject to RBAC checks
 # downstream, which will default them to VIEWER). Health and docs MUST be
 # reachable without auth so deployment probes can run.
@@ -406,87 +377,44 @@ class ApiKeyMiddleware:
         # Skip auth for public endpoints (health, docs)
         # STRICT FIX B/E: Use exact-match, not startswith
         if not _is_public_path(path):
-            # Extract X-API-Key header
             headers = scope.get("headers", [])
+
+            # Extract X-API-Key header
             api_key: str | None = None
             for name, value in headers:
                 if name == b"x-api-key":
                     api_key = value.decode("utf-8", errors="replace")
                     break
 
-            # CRITICAL FIX: Fallback to signed session cookie if X-API-Key header is missing.
+            # Fallback to signed session cookie if X-API-Key header is missing.
             # The cookie contains an opaque signed token (NOT the API key).
-            # The token is verified via validate_session_cookie() which checks
-            # HMAC signature + session store + expiry.
-            # This is XSS-resistant (HttpOnly), CSRF-resistant (SameSite=Strict),
-            # and replay-resistant (server-side revocation via /logout).
+            # Cookie parsing is delegated to auth_utils.extract_session_token_from_headers
+            # which is the single implementation shared with routers/auth.py.
             if not api_key:
-                cookie_header: str | None = None
-                for name, value in headers:
-                    if name == b"cookie":
-                        cookie_header = value.decode("utf-8", errors="replace")
-                        break
-                if cookie_header:
-                    # Parse cookie header: "key1=val1; key2=val2"
-                    for pair in cookie_header.split(";"):
-                        pair = pair.strip()
-                        if "=" in pair:
-                            k, v = pair.split("=", 1)
-                            if k.strip() == "fireai_session":
-                                cookie_token = v.strip()
-                                # Validate the signed session token
-                                # Use lazy accessor to avoid circular import with
-                                # backend/routers/auth.py (which imports from this module).
-                                # The lazy accessor defers import to call time (after both
-                                # modules are fully loaded), so ImportError cannot fire here.
-                                _validate_cookie_fn = _get_validate_session_cookie()
-                                role_from_cookie = _validate_cookie_fn(cookie_token)
-                                if role_from_cookie is not None:
-                                    # Session is valid — set role directly
-                                    try:
-                                        role = _Role(role_from_cookie)
-                                    except ValueError:
-                                        role = None
-                                    if role is not None:
-                                        scope.setdefault("state", {})
-                                        scope["state"]["fireai_role"] = role
-                                        scope["fireai_role"] = role
-                                        # Skip the API key validation below — session is authenticated
-                                        await self.app(scope, receive, send)
-                                        return
-                                break
+                cookie_token = _extract_session_token(headers)
+                if cookie_token is not None:
+                    # Import validate_session_cookie lazily to avoid circular import
+                    # if backend.routers.auth ever imports from this module in future.
+                    from backend.routers.auth import validate_session_cookie
+                    role_from_cookie = validate_session_cookie(cookie_token)
+                    if role_from_cookie is not None:
+                        try:
+                            role = _Role(role_from_cookie)
+                        except ValueError:
+                            role = None
+                        if role is not None:
+                            scope.setdefault("state", {})
+                            scope["state"]["fireai_role"] = role
+                            scope["fireai_role"] = role
+                            await self.app(scope, receive, send)
+                            return
 
-            # Also accept FIREAI_API_KEY env var bypass for server-side
-            # internal calls (e.g. sidecars, monitoring agents). Only honored
-            # if the env var is set — admin must explicitly opt in.
-            # SECURITY: This bypass is logged and rate-limited to detect abuse.
-            env_key = _os.getenv("FIREAI_API_KEY")
+            # Validate API key via auth_utils (env var bypass + RBAC store).
+            # This is the single validation implementation shared with routers/auth.py.
             role = None
-            if api_key and env_key and _hmac.compare_digest(api_key, env_key):
-                # Env var bypass — grant admin role (env key is the admin key)
-                # Log this for audit trail (rate-limited to prevent log flooding)
-                if not hasattr(self, '_env_key_usage_count'):
-                    self._env_key_usage_count = 0
-                    self._env_key_last_log = 0
-                import time
-                now = time.time()
-                self._env_key_usage_count += 1
-                # Log every 100th usage or if more than 5 minutes since last log
-                if self._env_key_usage_count % 100 == 0 or now - self._env_key_last_log > 300:
-                    import logging
-                    logging.getLogger(__name__).warning(
-                        "FIREAI_API_KEY bypass used %d times (last log: %.0f seconds ago)",
-                        self._env_key_usage_count,
-                        now - self._env_key_last_log
-                    )
-                    self._env_key_last_log = now
-                role = _Role.ADMIN
-            elif api_key:
-                # Validate via RBAC key store
-                info = _validate_api_key(api_key)
-                if info is not None:
-                    role = info.role
-                else:
+            if api_key:
+                role = _validate_api_key_credential(api_key)
+                if role is None:
                     # Invalid API key — return 401 directly.
                     # Don't reveal whether the key exists; just "unauthorized".
                     await self._send_401(scope, send)
