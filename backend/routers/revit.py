@@ -54,7 +54,6 @@ import logging
 import os
 import re
 import tempfile
-import threading
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -77,18 +76,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/revit", tags=["revit"])
 
 # ── Thread-safe service singleton ────────────────────────────────────────
-_service: Optional[RevitService] = None
-_service_lock = threading.Lock()
-
+# Delegates to the unified CADGateway to ensure singleton consistency.
 
 def get_revit_service() -> RevitService:
     """Provide RevitService instance via thread-safe singleton."""
-    global _service
-    if _service is None:
-        with _service_lock:
-            if _service is None:
-                _service = RevitService()
-    return _service
+    from backend.services.cad_gateway import CADGateway
+    return CADGateway().get_service("revit")
+
 
 
 # ── Path validation helper (FIX V130: Path Traversal prevention) ────────
