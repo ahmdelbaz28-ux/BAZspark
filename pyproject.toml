@@ -40,7 +40,7 @@ dependencies = [
     "python-multipart==0.0.20",
     "python-dotenv>=1.0.0,<2.0.0",
     "requests>=2.34.0,<3.0.0",
-    "pyjwt[crypto]==2.9.0",
+    "pyjwt[crypto]==2.13.0",
     "passlib[bcrypt]>=1.7.0,<2.0.0",
     "cryptography==43.0.0",  # V163: fix 5 HIGH CVEs with compatible version for Python 3.8
     "websockets>=12.0.0,<16.0.0",
