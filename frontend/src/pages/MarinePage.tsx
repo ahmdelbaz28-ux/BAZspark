@@ -1238,7 +1238,7 @@ useEffect(() => {
                                                                                                                                                         {Number(node.delay_s) > 0 ? `${node.delay_s}s` : "-"}
                                                                                                                                                 </td>
                                                                                                                                                 {uniqueEffects.map(eff => {
-                                                                                                                                                        const isTriggered = (node.action_outputs || []).includes(eff);
+                                                                                                                                                        const isTriggered = ((node.action_outputs as string[]) || []).includes(eff);
                                                                                                                                                         return (
                                                                                                                                                                 <td key={eff} className="p-2 text-center border-l border-[rgba(74,85,104,0.2)]">
                                                                                                                                                                         {isTriggered ? (
@@ -1366,7 +1366,7 @@ useEffect(() => {
                                                                                                                                         <td className="p-2 border-l border-[rgba(74,85,104,0.2)] text-[#2ec4b6] truncate max-w-[250px]" title={String(tag.address)}>{String(tag.address)}</td>
                                                                                                                                         <td className="p-2 text-center border-l border-[rgba(74,85,104,0.2)] text-[9px] w-[60px]">
                                                                                                                                                 <span className="bg-[#0f172a] px-1.5 py-0.5 rounded border border-[rgba(74,85,104,0.3)] text-[#b0b8c4]">
-                                                                                                                                                        {tag.data_type}
+                                                                                                                                                        {String(tag.data_type)}
                                                                                                                                                 </span>
                                                                                                                                         </td>
                                                                                                                                 </tr>
