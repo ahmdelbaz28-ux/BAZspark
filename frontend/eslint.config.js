@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 import globals from "globals";
 
 export default tseslint.config(
-	{ ignores: ["dist/", "electron/compiled/", "node_modules/"] },
+	{ ignores: ["dist/", "electron/compiled/", "node_modules/", "scripts/"] },
 	{
 		languageOptions: {
 			globals: {
