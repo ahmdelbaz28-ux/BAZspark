@@ -1,5 +1,5 @@
 import type React from "react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { actions, type CanvasElement, useStore } from "@/store/simpleStore";
 
 export function InteractiveCanvas() {
@@ -8,6 +8,12 @@ export function InteractiveCanvas() {
 	const [drawingFrom, setDrawingFrom] = useState<string | null>(null);
 	const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 	const canvasRef = useRef<SVGSVGElement>(null);
+
+	// Build a Map for O(1) element lookups instead of O(n) array.find()
+	const elementMap = useMemo(
+		() => new Map(canvasElements.map((el) => [el.id, el])),
+		[canvasElements],
+	);
 
 	const handleCanvasClick = (_e: React.MouseEvent<SVGSVGElement>) => {
 		if (drawingFrom) {
@@ -96,8 +102,7 @@ export function InteractiveCanvas() {
 		e.preventDefault();
 	};
 
-	const getElementById = (id: string) =>
-		canvasElements.find((el) => el.id === id);
+	const getElementById = (id: string) => elementMap.get(id);
 
 	return (
 		<div className="w-full h-full bg-[#0f1115] border rounded-lg overflow-hidden relative">

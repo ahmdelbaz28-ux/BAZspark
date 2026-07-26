@@ -346,14 +346,24 @@ export function FireAlarmPage() {
                 setShowProperties(false);
         };
 
-        const deviceStats = useMemo(() => ({
-                total: detectors.length,
-                smoke: detectors.filter((d) => d.type === "smoke").length,
-                heat: detectors.filter((d) => d.type === "heat").length,
-                pull: detectors.filter((d) => d.type === "pull").length,
-                normal: detectors.filter((d) => d.status === "normal").length,
-                warning: detectors.filter((d) => d.status === "warning").length,
-        }), [detectors]);
+        const deviceStats = useMemo(() => {
+                let smoke = 0, heat = 0, pull = 0, normal = 0, warning = 0;
+                for (const d of detectors) {
+                        if (d.type === "smoke") smoke++;
+                        else if (d.type === "heat") heat++;
+                        else if (d.type === "pull") pull++;
+                        if (d.status === "normal") normal++;
+                        else if (d.status === "warning") warning++;
+                }
+                return {
+                        total: detectors.length,
+                        smoke,
+                        heat,
+                        pull,
+                        normal,
+                        warning,
+                };
+        }, [detectors]);
 
         return (
                 <div
