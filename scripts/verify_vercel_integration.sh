@@ -5,27 +5,15 @@
 # This script verifies the EXACT state of the Vercel project's Git integration
 # using the DEFINITIVE check: the project's gitRepository field.
 #
-# It replaces the incomplete check from VERCEL_VERIFICATION_REPORT.md (Phase 1)
-# which only checked /repos/.../hooks — that check returned [] but the
-# interpretation was incomplete (Vercel could use a GitHub App).
-#
-# The definitive check is: GET /v9/projects/{projectId} → .gitRepository
-#   - If null: NO native integration configured (workflow is only trigger)
-#   - If not null: native integration IS configured (workflow can be disabled)
-#
-# Usage:
-#   export VERCEL_TOKEN="vcp_..."
-#   bash scripts/verify_vercel_integration.sh
-#
 # Exit codes:
 #   0 = native integration IS configured (gitRepository not null)
 #   1 = native integration NOT configured (gitRepository is null)
 #   2 = error (token invalid, network issue, etc.)
 
-set -euo pipefail
+set -eu
 
 PROJECT_ID="${VERCEL_PROJECT_ID:-prj_cLO9iGH2sEG5LGSV1tv95CWimkl5}"
-TEAM_ID="${VERCEL_TEAM_ID:-team_eeEYqzXI8zkrTo62cUOTMVmS}"
+TEAM_ID="${VERCEL_TEAM_ID:-team_thkWFCepMKbBSrOf5ulqi4wF}"
 REPO="${GH_REPO:-ahmdelbaz28-ux/BAZspark}"
 
 VERCEL_TOKEN="${VERCEL_TOKEN:-}"
@@ -45,9 +33,10 @@ echo "─── Step 1: Project gitRepository (DEFINITIVE check) ───"
 PROJECT_RESPONSE=$(curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
     "https://api.vercel.com/v9/projects/$PROJECT_ID?teamId=$TEAM_ID" 2>&1)
 
-GIT_REPO=$(echo "$PROJECT_RESPONSE" | jq -r '.gitRepository')
-FRAMEWORK=$(echo "$PROJECT_RESPONSE" | jq -r '.framework')
-GIT_STATUS=$(echo "$PROJECT_RESPONSE" | jq -r '.gitStatus')
+# Parse responses using python instead of jq
+GIT_REPO=$(echo "$PROJECT_RESPONSE" | python -c "import sys, json; r = json.loads(sys.stdin.read()).get('gitRepository'); print(json.dumps(r) if r is not None else 'null')")
+FRAMEWORK=$(echo "$PROJECT_RESPONSE" | python -c "import sys, json; print(json.loads(sys.stdin.read()).get('framework', 'null'))")
+GIT_STATUS=$(echo "$PROJECT_RESPONSE" | python -c "import sys, json; s = json.loads(sys.stdin.read()).get('gitStatus'); print(json.dumps(s) if s is not None else 'null')")
 
 echo "  Project framework: $FRAMEWORK"
 echo "  gitRepository: $GIT_REPO"
@@ -60,9 +49,9 @@ if [ "$GIT_REPO" = "null" ]; then
     echo "     trigger-vercel.yml is the ONLY deployment trigger."
     echo ""
     echo "  📋 TO FIX (requires Vercel dashboard access):"
-    echo "     1. Go to: https://vercel.com/ahmdelbaz28/revit/settings/git"
+    echo "     1. Go to: https://vercel.com/bazspark/ba-zspark/settings/git"
     echo "     2. Click 'Connect Git Repository'"
-    echo "     3. Select GitHub → ahmdelbaz28-ux/revit"
+    echo "     3. Select GitHub → ahmdelbaz28-ux/BAZspark"
     echo "     4. Set Production Branch = main"
     echo "     5. Save"
     echo "     6. Re-run this script to verify"
@@ -72,7 +61,7 @@ if [ "$GIT_REPO" = "null" ]; then
 else
     echo "  ✅ NATIVE INTEGRATION IS CONFIGURED"
     echo "     gitRepository details:"
-    echo "$PROJECT_RESPONSE" | jq '.gitRepository' | sed 's/^/      /'
+    echo "$PROJECT_RESPONSE" | python -c "import sys, json; print(json.dumps(json.loads(sys.stdin.read()).get('gitRepository'), indent=2))" | sed 's/^/      /'
     echo ""
     echo "  ✅ You can now safely disable trigger-vercel.yml push trigger."
     echo "     Edit .github/workflows/trigger-vercel.yml:"
@@ -84,14 +73,33 @@ echo ""
 echo "─── Step 2: Recent deployments (last 5) ───"
 curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
     "https://api.vercel.com/v6/deployments?projectId=$PROJECT_ID&teamId=$TEAM_ID&limit=5" 2>&1 | \
-    jq -r '.deployments[] | "  \(.createdAt) [\(.state // .readySubstate // "?")] commit=\(.meta.githubCommitSha[:8] // "n/a") url=\(.url)"' 2>&1 | head -8
+    python -c "
+import sys, json
+try:
+    data = json.loads(sys.stdin.read())
+    for d in data.get('deployments', []):
+        state = d.get('state') or d.get('readySubstate') or '?'
+        sha = d.get('meta', {}).get('githubCommitSha', 'n/a')[:8]
+        print(f\"  {d.get('createdAt')} [{state}] commit={sha} url={d.get('url')}\")
+except Exception as e:
+    print('  Error parsing deployments:', e)
+" 2>&1 | head -8
 
 # ── Step 3: Check team plan ──
 echo ""
 echo "─── Step 3: Team plan ───"
 curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
     "https://api.vercel.com/v2/teams?limit=10" 2>&1 | \
-    jq -r '.teams[] | "  Team: \(.slug) plan=\(.billing.plan // "?")"' 2>&1 | head -3
+    python -c "
+import sys, json
+try:
+    data = json.loads(sys.stdin.read())
+    for t in data.get('teams', []):
+        plan = t.get('billing', {}).get('plan', '?')
+        print(f\"  Team: {t.get('slug')} plan={plan}\")
+except Exception as e:
+    print('  Error parsing teams:', e)
+" 2>&1 | head -3
 
 # ── Step 4: Check GitHub webhooks (informational only) ──
 echo ""
@@ -99,9 +107,9 @@ echo "─── Step 4: GitHub webhooks (informational — may be empty even wit
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 if [ -n "$GITHUB_TOKEN" ]; then
     HOOK_COUNT=$(curl -sS -H "Authorization: token $GITHUB_TOKEN" \
-        "https://api.github.com/repos/$REPO/hooks" 2>&1 | jq 'length' 2>/dev/null || echo "?")
+        "https://api.github.com/repos/$REPO/hooks" 2>&1 | python -c "import sys, json; print(len(json.loads(sys.stdin.read())))" 2>/dev/null || echo "?")
     echo "  Webhooks registered on GitHub repo: $HOOK_COUNT"
-    echo "  (Note: Vercel native integration uses a GitHub App, not a webhook.")
+    echo "  (Note: Vercel native integration uses a GitHub App, not a webhook."
     echo "   The definitive check is Step 1 — gitRepository field.)"
 else
     echo "  ⏭️  GITHUB_TOKEN not set — skipping GitHub webhook check"

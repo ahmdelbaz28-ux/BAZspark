@@ -24,12 +24,12 @@
 #   Step 3: trigger-vercel.yml workflow runs — is it still firing?
 #   Step 4: Verdict + recommended action
 
-set -euo pipefail
+set -eu
 
 REPO="${GH_REPO:-ahmdelbaz28-ux/BAZspark}"
 PROJECT_ID="${VERCEL_PROJECT_ID:-prj_cLO9iGH2sEG5LGSV1tv95CWimkl5}"
-TEAM_ID="${VERCEL_TEAM_ID:-team_eeEYqzXI8zkrTo62cUOTMVmS}"
-LOG_DIR="/home/z/my-project/work"
+TEAM_ID="${VERCEL_TEAM_ID:-team_thkWFCepMKbBSrOf5ulqi4wF}"
+LOG_DIR="${LOG_DIR:-work}"
 TIMESTAMP=$(date +%Y%mDD_%H%M%S)
 LOG_FILE="${LOG_DIR}/vercel_verify_${TIMESTAMP}.log"
 
@@ -76,16 +76,39 @@ if [ -n "$GITHUB_TOKEN" ]; then  # NOSONAR
     BODY=$(echo "$WEBHOOKS_RESPONSE" | head -n -1)
 
     if [ "$HTTP_CODE" = "200" ]; then  # NOSONAR
-        HOOK_COUNT=$(echo "$BODY" | jq 'length' 2>/dev/null || echo "?")
+        HOOK_COUNT=$(echo "$BODY" | python -c "import sys, json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "?")
         echo "  Found $HOOK_COUNT webhook(s) registered on the repo"
 
         if [ "$HOOK_COUNT" != "0" ] && [ "$HOOK_COUNT" != "?" ]; then  # NOSONAR
             echo ""
             echo "  Webhook details:"
-            echo "$BODY" | jq -r '.[] | "    - URL: \(.config.url // "unknown")\n      Name: \(.name // "unknown")\n      Events: \(.events | join(", "))\n      Active: \(.active)\n      Last response code: \(.last_response.code // "none")"' 2>/dev/null || echo "    (could not parse webhook details)"
+            echo "$BODY" | python -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    for h in data:
+        url = h.get("config", {}).get("url", "unknown")
+        name = h.get("name", "unknown")
+        events = ", ".join(h.get("events", []))
+        active = h.get("active", False)
+        code = h.get("last_response", {}).get("code", "none")
+        print(f"    - URL: {url}\n      Name: {name}\n      Events: {events}\n      Active: {active}\n      Last response code: {code}")
+except Exception as e:
+    print("    (could not parse webhook details):", e)
+' 2>/dev/null || echo "    (could not parse webhook details)"
 
             # Check if any webhook points to vercel.com
-            VERCEL_HOOK=$(echo "$BODY" | jq -r '.[] | select(.config.url | test("vercel")) | .config.url' 2>/dev/null || echo "")
+            VERCEL_HOOK=$(echo "$BODY" | python -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    urls = [h.get("config", {}).get("url", "") for h in data]
+    vercel_urls = [u for u in urls if "vercel" in u]
+    if vercel_urls:
+        print(vercel_urls[0])
+except Exception:
+    pass
+' 2>/dev/null || echo "")
             if [ -n "$VERCEL_HOOK" ]; then  # NOSONAR
                 echo ""
                 echo "  ✅ Vercel webhook FOUND: $VERCEL_HOOK"
@@ -124,18 +147,40 @@ if [ -n "$VERCEL_TOKEN" ]; then  # NOSONAR
     BODY=$(echo "$DEPLOY_RESPONSE" | head -n -1)
 
     if [ "$HTTP_CODE" = "200" ]; then  # NOSONAR
-        DEPLOY_COUNT=$(echo "$BODY" | jq '.deployments | length' 2>/dev/null || echo "?")
+        DEPLOY_COUNT=$(echo "$BODY" | python -c "import sys, json; print(len(json.load(sys.stdin).get(\"deployments\", [])))" 2>/dev/null || echo "?")
         echo "  Found $DEPLOY_COUNT recent deployment(s)"
 
         if [ "$DEPLOY_COUNT" != "0" ] && [ "$DEPLOY_COUNT" != "?" ]; then  # NOSONAR
             echo ""
             echo "  Recent deployments:"
-            echo "$BODY" | jq -r '.deployments[] | "    - \(.createdAt // "unknown"): state=\(.state // "unknown"), target=\(.target // "unknown"), url=\(.url // "unknown")"' 2>/dev/null || echo "    (could not parse deployment details)"
+            echo "$BODY" | python -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    for d in data.get("deployments", []):
+        created = d.get("createdAt", "unknown")
+        state = d.get("state", "unknown")
+        target = d.get("target", "unknown")
+        url = d.get("url", "unknown")
+        print(f"    - {created}: state={state}, target={target}, url={url}")
+except Exception as e:
+    print("    (could not parse deployment details):", e)
+' 2>/dev/null || echo "    (could not parse deployment details)"
 
             # Check if any recent deployment was triggered by the webhook (not by the workflow)
             echo ""
-            echo "  Deployment triggers (check 'meta' field for source):"
-            echo "$BODY" | jq -r '.deployments[] | "    - \(.createdAt): meta=\(.meta | to_entries | map(\"\(.key)=\(.value)\") | join(\", \"))"' 2>/dev/null | head -10 || echo "    (could not parse meta)"
+            echo "  Deployment triggers (check '\''meta'\'' field for source):"
+            echo "$BODY" | python -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    for d in data.get("deployments", []):
+        created = d.get("createdAt", "unknown")
+        meta_str = ", ".join(f"{k}={v}" for k, v in d.get("meta", {}).items())
+        print(f"    - {created}: meta={meta_str}")
+except Exception as e:
+    print("    (could not parse meta):", e)
+' 2>/dev/null | head -10 || echo "    (could not parse meta)"
         fi
     else
         echo "  ❌ Failed to fetch deployments (HTTP $HTTP_CODE)"
@@ -161,13 +206,25 @@ if [ -n "$GITHUB_TOKEN" ]; then  # NOSONAR
     BODY=$(echo "$WORKFLOW_RESPONSE" | head -n -1)
 
     if [ "$HTTP_CODE" = "200" ]; then  # NOSONAR
-        RUN_COUNT=$(echo "$BODY" | jq '.workflow_runs | length' 2>/dev/null || echo "?")
+        RUN_COUNT=$(echo "$BODY" | python -c "import sys, json; print(len(json.load(sys.stdin).get(\"workflow_runs\", [])))" 2>/dev/null || echo "?")
         echo "  Found $RUN_COUNT recent run(s) of trigger-vercel.yml"
 
         if [ "$RUN_COUNT" != "0" ] && [ "$RUN_COUNT" != "?" ]; then  # NOSONAR
             echo ""
             echo "  Recent runs:"
-            echo "$BODY" | jq -r '.workflow_runs[] | "    - \(.created_at): status=\(.status), conclusion=\(.conclusion // "in-progress"), event=\(.event)"' 2>/dev/null | head -10 || echo "    (could not parse run details)"
+            echo "$BODY" | python -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    for r in data.get("workflow_runs", []):
+        created = r.get("created_at")
+        status = r.get("status")
+        conclusion = r.get("conclusion") or "in-progress"
+        event = r.get("event")
+        print(f"    - {created}: status={status}, conclusion={conclusion}, event={event}")
+except Exception as e:
+    print("    (could not parse run details):", e)
+' 2>/dev/null | head -10 || echo "    (could not parse run details)"
         fi
     else
         echo "  ⚠️  Could not fetch workflow runs (HTTP $HTTP_CODE)"
