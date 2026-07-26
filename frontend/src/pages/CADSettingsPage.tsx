@@ -47,6 +47,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // Module-level cache for cad_settings to avoid repeated synchronous localStorage I/O
 let _cachedCadSettings: Record<string, unknown> | null = null;
 
+interface CadSettingsShape {
+	autocad?: {
+		path?: string;
+		version?: string;
+		template?: string;
+		units?: string;
+	};
+	revit?: {
+		path?: string;
+		version?: string;
+		template?: string;
+		units?: string;
+	};
+	cloud?: {
+		speckleServer?: string;
+		speckleStreamId?: string;
+		apsClientId?: string;
+		apsActivityId?: string;
+	};
+}
+
 function getCadSettings(): Record<string, unknown> {
 	if (_cachedCadSettings !== null) return _cachedCadSettings;
 	try {
@@ -55,7 +76,7 @@ function getCadSettings(): Record<string, unknown> {
 	} catch {
 		_cachedCadSettings = {};
 	}
-	return _cachedCadSettings;
+	return _cachedCadSettings!;
 }
 
 function setCadSettings(settings: Record<string, unknown>): void {
@@ -113,7 +134,8 @@ export function CADSettingsPage() {
 
         // Load saved settings on mount
         useEffect(() => {
-                const settings = getCadSettings();
+                const raw = getCadSettings();
+                const settings = raw as unknown as CadSettingsShape;
                 if (Object.keys(settings).length > 0) {
                         if (settings.autocad) {
                                 setAcadPath(settings.autocad.path || "");
