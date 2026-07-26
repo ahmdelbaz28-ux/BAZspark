@@ -687,7 +687,9 @@ class TestV214NoMockDwgData:
         docstrings (as historical notes) but never as actual writes.
         """
         import re
-        src_path = "backend/services/autocad_service.py"
+        tests_dir = os.path.dirname(__file__)
+        src_path = os.path.join(tests_dir, "..", "backend", "services", "autocad_service.py")
+        src_path = os.path.normpath(src_path)
         with open(src_path, "r", encoding="utf-8") as f:
             content = f.read()
 
@@ -834,7 +836,9 @@ class TestV214NoHardcodedReadDwgEntities:
         as historical notes).
         """
         import re
-        src_path = "backend/services/autocad_service.py"
+        tests_dir = os.path.dirname(__file__)
+        src_path = os.path.join(tests_dir, "..", "backend", "services", "autocad_service.py")
+        src_path = os.path.normpath(src_path)
         with open(src_path, "r", encoding="utf-8") as f:
             content = f.read()
 

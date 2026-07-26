@@ -369,6 +369,15 @@ class Database:
             """)
 
             # â”€â”€ Indexes (MUST match SQLite indexes exactly) â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_element_projects_project ON element_projects(project_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_element_projects_element ON element_projects(element_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_relationships_from ON relationships(from_element_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_relationships_to ON relationships(to_element_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at DESC)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_projects_status_active ON projects(status) WHERE status = 'active'")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_integrations_project ON etap_integrations(project_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_project ON etap_sync_logs(project_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_completed ON etap_sync_logs(project_id) WHERE error_message IS NULL")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_project ON devices(project_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_project ON reports(project_id)")
