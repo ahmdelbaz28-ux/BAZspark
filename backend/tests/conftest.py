@@ -129,27 +129,24 @@ for _tmp_db in [
 # fixture. Import-time patching ensures EVERY TestClient gets the header,
 # regardless of when it's constructed.
 #
-# injected X-API-Key into EVERY TestClient instance across the entire test
-# suite. This broke tests/test_auth_integration.py::test_projects_requires_auth
-# which expects a 401 response when NO X-API-Key is sent. When backend/tests/
-# ran before tests/, the global patch persisted and the auth test got 200
-# instead of 401.
-#
-# Root-cause fix: only inject the header when the calling test is under
-# backend/tests/. We detect this by inspecting the calling frame's filename.
+# Only inject the header when the calling test is under backend/tests/.
 # Tests outside backend/tests/ get an unpatched TestClient (no auto-injected
 # header), preserving their ability to test unauthenticated requests.
 try:
     import warnings
-    warnings.filterwarnings("ignore", "Please use `import python_multipart` instead.", category=PendingDeprecationWarning)
+    warnings.filterwarnings(
+        "ignore",
+        "Please use `import python_multipart` instead.",
+        category=PendingDeprecationWarning,
+    )
     import os as _os
-    import sys as _sys
+    import sys as _sys2
     from starlette.testclient import TestClient as _StarletteTestClient
-    import python_multipart
+
     _original_testclient_init = _StarletteTestClient.__init__
-    
     _BACKEND_TESTS_DIR = _os.path.dirname(_os.path.abspath(__file__))
-    
+    _BACKEND_TESTS_DIR_NORM = _os.path.normcase(_BACKEND_TESTS_DIR)
+
     def _patched_testclient_init(self, *args, **kwargs):
         """
         Inject X-API-Key header by default into every TestClient — but ONLY
@@ -157,48 +154,73 @@ try:
         (tests/, fireai/core/tests/, etc.) get an unpatched TestClient so they
         can test unauthenticated request paths.
         """
-        frame = _sys._getframe(1)
+        # Walk the call stack to find the originating test/conftest file.
+        frame = _sys2._getframe(1)
         caller_file = ""
         while frame is not None:
             f_filename = frame.f_code.co_filename
-            if f_filename and ("test_" in _os.path.basename(f_filename) or "conftest" in f_filename):
+            if f_filename and (
+                "test_" in _os.path.basename(f_filename)
+                or "conftest" in f_filename
+            ):
                 caller_file = f_filename
                 break
             frame = frame.f_back
 
-            # Only inject header if the caller is under backend/tests/
-            is_backend_test = bool(caller_file and "backend/tests" in _os.path.normcase(caller_file))
-            if is_backend_test:
-                caller_headers = kwargs.pop("headers", None) or {}
-                # setdefault so a test can still override with its own X-API-Key
-                caller_headers.setdefault("X-API-Key", TEST_API_KEY)
-                kwargs["headers"] = caller_headers
-            _original_testclient_init(self, *args, **kwargs)
-            # can check it without call-stack inspection (which is fragile because
-            # starlette's testclient.py filename contains "test_" and confuses the
-            # frame walker). This is the root-cause fix for the URL rewriting bug
-            # that was breaking tests/test_dwg_router.py.
-            self._fireai_backend_test = is_backend_test
+        # Only inject header if the caller is under backend/tests/
+        # FIX: Use normcase + startswith instead of substring check.
+        # On Windows, os.path.normcase converts / to \, so the old check
+        # "backend/tests" in normcase(caller_file) always returned False.
+        is_backend_test = bool(
+            caller_file and _os.path.normcase(
+                _os.path.abspath(caller_file)
+            ).startswith(_BACKEND_TESTS_DIR_NORM)
+        )
+        if is_backend_test:
+            caller_headers = kwargs.pop("headers", None) or {}
+            # setdefault so a test can still override with its own X-API-Key
+            caller_headers.setdefault("X-API-Key", TEST_API_KEY)
+            kwargs["headers"] = caller_headers
+            # Restore env var in case a module-scoped fixture cleared it
+            os.environ["FIREAI_API_KEY"] = TEST_API_KEY
 
-        _StarletteTestClient.__init__ = _patched_testclient_init
+        _original_testclient_init(self, *args, **kwargs)
+
+        # Store flag on the instance so HTTP-method patches can check it
+        # without call-stack inspection (which is fragile because
+        # starlette's testclient.py filename contains "test_" and confuses
+        # the frame walker).
+        self._fireai_backend_test = is_backend_test
+
+    _StarletteTestClient.__init__ = _patched_testclient_init
+
     # Patch FastAPI TestClient similarly
     try:
         from fastapi.testclient import TestClient as _FastAPITestClient
+
         _fastapi_original_init = _FastAPITestClient.__init__
+
         def _fastapi_patched_init(self, *args, **kwargs):
-            # Detect caller
-            frame = _sys._getframe(1)
+            frame = _sys2._getframe(1)
             caller_file = ""
             while frame is not None:
                 f_filename = frame.f_code.co_filename
-                if f_filename and ("test_" in _os.path.basename(f_filename) or "conftest" in f_filename):
+                if f_filename and (
+                    "test_" in _os.path.basename(f_filename)
+                    or "conftest" in f_filename
+                ):
                     caller_file = f_filename
                     break
                 frame = frame.f_back
-            is_backend_test = bool(caller_file and "backend/tests" in _os.path.normcase(caller_file))
+            is_backend_test = bool(
+                caller_file and _os.path.normcase(
+                    _os.path.abspath(caller_file)
+                ).startswith(_BACKEND_TESTS_DIR_NORM)
+            )
             _fastapi_original_init(self, *args, **kwargs)
             if is_backend_test:
                 self.headers.setdefault("X-API-Key", TEST_API_KEY)
+
         _FastAPITestClient.__init__ = _fastapi_patched_init
     except Exception:
         pass
@@ -217,16 +239,42 @@ try:
     # the audit's HIGH-1 (auth) finding, which is already fixed above.
     _HTTP_METHODS = ("get", "post", "put", "delete", "patch", "head", "options")
 
+    def _rewrite_legacy_url(url: str) -> str:
+        """Rewrite /api/* → /api/v1/* for legacy tests.
+
+        Tests were written assuming /api/* routes (pre-V110). Production
+        moved to /api/v1/* (security hardening). This rewriter bridges
+        the gap for tests only.
+
+        Paths that are genuinely mounted at /api/ (not /api/v1/) — like
+        /api/health — are returned unchanged (they're in the
+        _NON_VERSIONED_API_PATHS set built from the OpenAPI schema).
+        """
+        if (
+            url.startswith("/api/")
+            and not url.startswith("/api/v1/")
+            and not url.startswith("/api/v2/")
+        ):
+            # Extract path-only portion (strip query string / path params)
+            path_only = url.split("?")[0]
+            path_base = path_only.split("/{")[0]
+            if path_base not in _NON_VERSIONED_API_PATHS:
+                return "/api/v1" + url[4:]  # /api/xxx → /api/v1/xxx
+        return url
+
     # The health router is mounted at /api (not /api/v1) via app.include_router(
     # health_router_module.router, prefix="/api"). So /api/health and
     # /api/health/statistics are valid as-is — URL rewriting them to /api/v1/
     # breaks them. We query the OpenAPI schema ONCE at import time to build
     # an authoritative set, then skip rewriting for those paths.
-    _NON_VERSIONED_API_PATHS: set[str] = set()
+    _NON_VERSIONED_API_PATHS: set = set()
     try:
-        import warnings
-        warnings.filterwarnings("ignore", "Please use `import python_multipart` instead.", category=PendingDeprecationWarning)
-        import os as _os
+        import warnings as _warn2
+        _warn2.filterwarnings(
+            "ignore",
+            "Please use `import python_multipart` instead.",
+            category=PendingDeprecationWarning,
+        )
         _os.environ.setdefault("FIREAI_API_KEY", TEST_API_KEY)
         import logging as _logging
         _logging.disable(_logging.CRITICAL)
@@ -234,13 +282,18 @@ try:
         _schema = _app.openapi()
         for _path in _schema.get("paths", {}):
             # Collect /api/* paths that are NOT under /api/v1/ or /api/v2/
-            if _path.startswith("/api/") and not _path.startswith("/api/v1/") and not _path.startswith("/api/v2/"):  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+            if (
+                _path.startswith("/api/")
+                and not _path.startswith("/api/v1/")
+                and not _path.startswith("/api/v2/")
+            ):  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 # Strip path params ({project_id} etc.) for prefix matching
                 _NON_VERSIONED_API_PATHS.add(_path.split("/{")[0])
         _logging.disable(_logging.NOTSET)
     except Exception:
         # If schema introspection fails, fall back to known good prefixes.
         _NON_VERSIONED_API_PATHS = {"/api/health", "/api/reports/statistics"}
+
     for _method_name in _HTTP_METHODS:
         _original_method = getattr(_StarletteTestClient, _method_name)
 
@@ -248,21 +301,30 @@ try:
             def _patched_method(self, url, *args, **kwargs):
                 # The flag is set in _patched_testclient_init based on whether
                 # the TestClient was created from a test under backend/tests/.
-                if getattr(self, '_fireai_backend_test', False):
+                if getattr(self, "_fireai_backend_test", False):
                     return orig(self, _rewrite_legacy_url(url), *args, **kwargs)
                 return orig(self, url, *args, **kwargs)
+
             _patched_method.__name__ = name
             return _patched_method
 
-        setattr(_StarletteTestClient, _method_name, _make_patched_method(_original_method, _method_name))
+        setattr(
+            _StarletteTestClient,
+            _method_name,
+            _make_patched_method(_original_method, _method_name),
+        )
 
     # Also patch `request` (lower-level method used by some tests)
     if hasattr(_StarletteTestClient, "request"):
         _original_request = _StarletteTestClient.request
+
         def _patched_request(self, method, url, *args, **kwargs):
-            if getattr(self, '_fireai_backend_test', False):
-                return _original_request(self, method, _rewrite_legacy_url(url), *args, **kwargs)
+            if getattr(self, "_fireai_backend_test", False):
+                return _original_request(
+                    self, method, _rewrite_legacy_url(url), *args, **kwargs
+                )
             return _original_request(self, method, url, *args, **kwargs)
+
         _StarletteTestClient.request = _patched_request
 
 except ImportError:
@@ -301,9 +363,9 @@ def _enforce_test_api_key(monkeypatch):
 # with MemoryStorage. slowapi's MemoryStorage persists across tests within the
 # same process. When backend/tests/ runs as a whole, the cumulative POST
 # requests to /api/v1/parse-dwg (from test_dwg.py + test_routers.py + others)
-# exceed the @limiter.limit("10/minute") quota before test_parse_invalid_extension_rejected
-# runs — causing it to receive 429 Too Many Requests instead of the expected
-# 400 Bad Request.
+# exceed the @limiter.limit("10/minute") quota before
+# test_parse_invalid_extension_rejected runs — causing it to receive
+# 429 Too Many Requests instead of the expected 400 Bad Request.
 #
 # This is NOT a bug in the production code (rate limiting is correct in prod).
 # It is test infrastructure pollution: the limiter's in-memory state is not
@@ -336,80 +398,15 @@ def _reset_rate_limiter_storage():
     Clearing all four dicts resets the limiter to a fresh state, matching
     each test's assumption that it is the first request to any endpoint.
     """
-    # Clear slowapi's in-memory rate-limit storage before every test.
-    # This ensures test isolation for rate limiting.
     try:
-        from backend.limiter import limiter as _limiter
-        if _limiter is not None and hasattr(_limiter, "_storage"):
-            _storage = getattr(_limiter, "_storage")
-            for _attr in ("storage", "events", "expirations", "locks"):
-                if hasattr(_storage, _attr):
-                    getattr(_storage, _attr).clear()
-    except Exception:
-        # Fail‑safe: ignore if limiter unavailable or API changed
-        pass
-    # This ensures test isolation for rate limiting.
-    try:
-        from backend.limiter import limiter as _limiter
-        if _limiter is not None and hasattr(_limiter, "_storage"):
-            _storage = getattr(_limiter, "_storage")
-            for _attr in ("storage", "events", "expirations", "locks"):
-                if hasattr(_storage, _attr):
-                    getattr(_storage, _attr).clear()
-    except Exception:
-        # Fail‑safe: ignore if limiter unavailable or API changed
-        pass
-        from backend.limiter import limiter as _limiter
-        if _limiter is not None and hasattr(_limiter, "_storage"):
-            _storage = getattr(_limiter, "_storage")
-            for _attr in ("storage", "events", "expirations", "locks"):
-                if hasattr(_storage, _attr):
-                    getattr(_storage, _attr).clear()
-    except Exception:
-        # Fail‑safe: ignore if limiter unavailable or API changed
-        pass
-        from backend.limiter import limiter as _limiter
-        if _limiter is not None and hasattr(_limiter, "_storage"):
-            _storage = getattr(_limiter, "_storage")
-            for _attr in ("storage", "events", "expirations", "locks"):
-                if hasattr(_storage, _attr):
-                    getattr(_storage, _attr).clear()
-    except Exception:
-        # Fail‑safe: ignore if limiter unavailable or API changed
-        pass
-        from backend.limiter import limiter as _limiter
-        if _limiter is not None and hasattr(_limiter, "_storage"):
-            _storage = getattr(_limiter, "_storage")
-            for _attr in ("storage", "events", "expirations", "locks"):
-                if hasattr(_storage, _attr):
-                    getattr(_storage, _attr).clear()
-    except Exception:
-        # Fail‑safe: ignore if limiter unavailable or API changed
-        pass
-        from backend.limiter import limiter as _limiter
-        if _limiter is not None and hasattr(_limiter, "_storage"):
-            # Clear internal dicts of the limiter storage to avoid test cross‑contamination
-            _storage = getattr(_limiter, "_storage")
-            for _attr in ("storage", "events", "expirations", "locks"):
-                if hasattr(_storage, _attr):
-                    getattr(_storage, _attr).clear()
-    except Exception:
-        # Fail‑safe: if the limiter is unavailable or its API changed, ignore
-        pass
         from backend.limiter import limiter as _limiter
         if _limiter is not None and hasattr(_limiter, "_storage"):
             _storage = _limiter._storage
-            if hasattr(_storage, "storage"):
-                _storage.storage.clear()
-            if hasattr(_storage, "events"):
-                _storage.events.clear()
-            if hasattr(_storage, "expirations"):
-                _storage.expirations.clear()
-            if hasattr(_storage, "locks"):
-                _storage.locks.clear()
+            for _attr in ("storage", "events", "expirations", "locks"):
+                if hasattr(_storage, _attr):
+                    getattr(_storage, _attr).clear()
     except Exception:
-        # If limiter import fails (e.g., slowapi not installed), tests that
-        # depend on rate limiting will skip on their own. Don't fail the whole suite here.
+        # Fail-safe: ignore if limiter unavailable or API changed
         pass
 
 
