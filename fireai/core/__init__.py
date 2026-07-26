@@ -401,7 +401,6 @@ __all__ = [
     "ParameterOptimizer",
     "PasquillStability",
     "PipelineResult",
-    "PipelineResult",
     "PipelineStage",
     # Polygon
     "PolygonDensityOptimizer",
