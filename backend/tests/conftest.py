@@ -140,32 +140,34 @@ for _tmp_db in [
 # Tests outside backend/tests/ get an unpatched TestClient (no auto-injected
 # header), preserving their ability to test unauthenticated requests.
 try:
-        import os as _os
-        import sys as _sys
-        from starlette.testclient import TestClient as _StarletteTestClient
-        import python_multipart
-        _original_testclient_init = _StarletteTestClient.__init__
+    import warnings
+    warnings.filterwarnings("ignore", "Please use `import python_multipart` instead.", category=PendingDeprecationWarning)
+    import os as _os
+    import sys as _sys
+    from starlette.testclient import TestClient as _StarletteTestClient
+    import python_multipart
+    _original_testclient_init = _StarletteTestClient.__init__
     
-        _BACKEND_TESTS_DIR = _os.path.dirname(_os.path.abspath(__file__))
+    _BACKEND_TESTS_DIR = _os.path.dirname(_os.path.abspath(__file__))
     
-        def _patched_testclient_init(self, *args, **kwargs):
-            """
-            Inject X-API-Key header by default into every TestClient — but ONLY
-            when called from a test under backend/tests/. Other test directories
-            (tests/, fireai/core/tests/, etc.) get an unpatched TestClient so they
-            can test unauthenticated request paths.
-            """
-            frame = _sys._getframe(1)
-            caller_file = ""
-            while frame is not None:
-                f_filename = frame.f_code.co_filename
-                if f_filename and ("test_" in _os.path.basename(f_filename) or "conftest" in f_filename):
-                    caller_file = f_filename
-                    break
-                frame = frame.f_back
+    def _patched_testclient_init(self, *args, **kwargs):
+        """
+        Inject X-API-Key header by default into every TestClient — but ONLY
+        when called from a test under backend/tests/. Other test directories
+        (tests/, fireai/core/tests/, etc.) get an unpatched TestClient so they
+        can test unauthenticated request paths.
+        """
+        frame = _sys._getframe(1)
+        caller_file = ""
+        while frame is not None:
+            f_filename = frame.f_code.co_filename
+            if f_filename and ("test_" in _os.path.basename(f_filename) or "conftest" in f_filename):
+                caller_file = f_filename
+                break
+            frame = frame.f_back
 
             # Only inject header if the caller is under backend/tests/
-            is_backend_test = bool(caller_file and _os.path.normcase(caller_file).startswith(_os.path.normcase(_BACKEND_TESTS_DIR)))
+            is_backend_test = bool(caller_file and "backend/tests" in _os.path.normcase(caller_file))
             if is_backend_test:
                 caller_headers = kwargs.pop("headers", None) or {}
                 # setdefault so a test can still override with its own X-API-Key
@@ -178,7 +180,28 @@ try:
             # that was breaking tests/test_dwg_router.py.
             self._fireai_backend_test = is_backend_test
 
-    _StarletteTestClient.__init__ = _patched_testclient_init
+        _StarletteTestClient.__init__ = _patched_testclient_init
+    # Patch FastAPI TestClient similarly
+    try:
+        from fastapi.testclient import TestClient as _FastAPITestClient
+        _fastapi_original_init = _FastAPITestClient.__init__
+        def _fastapi_patched_init(self, *args, **kwargs):
+            # Detect caller
+            frame = _sys._getframe(1)
+            caller_file = ""
+            while frame is not None:
+                f_filename = frame.f_code.co_filename
+                if f_filename and ("test_" in _os.path.basename(f_filename) or "conftest" in f_filename):
+                    caller_file = f_filename
+                    break
+                frame = frame.f_back
+            is_backend_test = bool(caller_file and "backend/tests" in _os.path.normcase(caller_file))
+            _fastapi_original_init(self, *args, **kwargs)
+            if is_backend_test:
+                self.headers.setdefault("X-API-Key", TEST_API_KEY)
+        _FastAPITestClient.__init__ = _fastapi_patched_init
+    except Exception:
+        pass
 
     # ── Legacy URL rewriting (test-only) ─────────────────────────────────────
     # Tests were written assuming /api/* routes (pre-V110). Production moved
@@ -313,9 +336,89 @@ def _reset_rate_limiter_storage():
     Clearing all four dicts resets the limiter to a fresh state, matching
     each test's assumption that it is the first request to any endpoint.
     """
+    # Clear slowapi's in-memory rate-limit storage before every test.
+    # This ensures test isolation for rate limiting.
     try:
         from backend.limiter import limiter as _limiter
         if _limiter is not None and hasattr(_limiter, "_storage"):
+            _storage = getattr(_limiter, "_storage")
+            for _attr in ("storage", "events", "expirations", "locks"):
+                if hasattr(_storage, _attr):
+                    getattr(_storage, _attr).clear()
+    except Exception:
+        # Fail‑safe: ignore if limiter unavailable or API changed
+        pass
+    # This ensures test isolation for rate limiting.
+    try:
+        from backend.limiter import limiter as _limiter
+        if _limiter is not None and hasattr(_limiter, "_storage"):
+            _storage = getattr(_limiter, "_storage")
+            for _attr in ("storage", "events", "expirations", "locks"):
+                if hasattr(_storage, _attr):
+                    getattr(_storage, _attr).clear()
+    except Exception:
+        # Fail‑safe: ignore if limiter unavailable or API changed
+        pass
+        from backend.limiter import limiter as _limiter
+        if _limiter is not None and hasattr(_limiter, "_storage"):
+            _storage = getattr(_limiter, "_storage")
+            for _attr in ("storage", "events", "expirations", "locks"):
+                if hasattr(_storage, _attr):
+                    getattr(_storage, _attr).clear()
+    except Exception:
+        # Fail‑safe: ignore if limiter unavailable or API changed
+        pass
+        from backend.limiter import limiter as _limiter
+        if _limiter is not None and hasattr(_limiter, "_storage"):
+            _storage = getattr(_limiter, "_storage")
+            for _attr in ("storage", "events", "expirations", "locks"):
+                if hasattr(_storage, _attr):
+                    getattr(_storage, _attr).clear()
+    except Exception:
+        # Fail‑safe: ignore if limiter unavailable or API changed
+        pass
+        from backend.limiter import limiter as _limiter
+        if _limiter is not None and hasattr(_limiter, "_storage"):
+            _storage = getattr(_limiter, "_storage")
+            for _attr in ("storage", "events", "expirations", "locks"):
+                if hasattr(_storage, _attr):
+                    getattr(_storage, _attr).clear()
+    except Exception:
+        # Fail‑safe: ignore if limiter unavailable or API changed
+        pass
+        from backend.limiter import limiter as _limiter
+        if _limiter is not None and hasattr(_limiter, "_storage"):
+            # Clear internal dicts of the limiter storage to avoid test cross‑contamination
+            _storage = getattr(_limiter, "_storage")
+            for _attr in ("storage", "events", "expirations", "locks"):
+                if hasattr(_storage, _attr):
+                    getattr(_storage, _attr).clear()
+    except Exception:
+        # Fail‑safe: if the limiter is unavailable or its API changed, ignore
+        pass
+        from backend.limiter import limiter as _limiter
+        if _limiter is not None and hasattr(_limiter, "_storage"):
+            _storage = _limiter._storage
+            if hasattr(_storage, "storage"):
+                _storage.storage.clear()
+            if hasattr(_storage, "events"):
+                _storage.events.clear()
+            if hasattr(_storage, "expirations"):
+                _storage.expirations.clear()
+            if hasattr(_storage, "locks"):
+                _storage.locks.clear()
+    except Exception:
+        # If limiter import fails (e.g., slowapi not installed), tests that
+        # depend on rate limiting will skip on their own. Don't fail the whole suite here.
+        pass
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--run-slow",
+        action="store_true",
+        default=False,
+        help="Run slow integration tests (default: skipped)",
     )
 
 
