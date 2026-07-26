@@ -57,6 +57,7 @@ When multiple skills apply, process skills come first — they set the approach,
 ## Project Context
 
 - **Stack:** React + Vite (client-only SPA), TypeScript, Tailwind CSS, GSAP
+- **Packages are deep modules** — see [frontend/src/packages/README.md](./frontend/src/packages/README.md) before adding or importing one.
 - **Not Next.js** — skip server-side rules (RSC, `next/dynamic`, `next/script`, `after()`, server actions).
 - **Most relevant rules:** Bundle size (barrel imports, dynamic imports), re-render optimization, JS perf, rendering perf.
 

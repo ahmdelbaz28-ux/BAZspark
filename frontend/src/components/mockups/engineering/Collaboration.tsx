@@ -672,7 +672,15 @@ export function Collaboration() {
 	);
 }
 
-function ActivityItem({ color, initials, text, time, isSystem = false }: any) {
+interface ActivityItemProps {
+	color?: string;
+	initials: string;
+	text: React.ReactNode;
+	time: string;
+	isSystem?: boolean;
+}
+
+function ActivityItem({ color, initials, text, time, isSystem = false }: ActivityItemProps) {
 	return (
 		<div className="flex gap-3">
 			{isSystem ? (

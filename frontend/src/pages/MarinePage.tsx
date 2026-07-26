@@ -986,7 +986,7 @@ useEffect(() => {
                                                                          {detection && (
                                                                                  <div className="space-y-4">
                                                                                          <AnalogGauge
-                                                                                                 value={Number((detection as any).placements?.length || 0)}
+                                                                                                 value={Number(((detection as { placements?: unknown[] })?.placements?.length ?? 0))}
                                                                                                  min={0}
                                                                                                  max={50}
                                                                                                  label="Placed Sensors"
@@ -994,14 +994,14 @@ useEffect(() => {
                                                                                          />
                                                                                          <div className="bg-[#04060a] border border-[rgba(74,85,104,0.3)] rounded-md p-3 font-mono text-[10px] text-[#b0b8c4] space-y-1.5">
                                                                                                  <div className="text-[9px] uppercase tracking-wider text-[#4a5568] font-bold border-b border-[rgba(74,85,104,0.2)] pb-1">Layout Summary</div>
-                                                                                                 {((detection as any).counts || []).map((c: any) => (
+                                                                                                 {((detection as { counts?: Array<Record<string, unknown>> })?.counts ?? []).map((c: Record<string, unknown>, _ci: number) => (
                                                                                                          <div key={c.detector_type} className="flex justify-between items-center">
                                                                                                                  <span className="text-[#c9a84c] uppercase">{c.detector_type.replace("_", " ")}</span>
                                                                                                                  <span>{c.placement_count} units</span>
                                                                                                          </div>
                                                                                                  ))}
                                                                                                  <div className="text-[8px] text-[#4a5568] mt-2 leading-tight">
-                                                                                                         Coverage standard: {(detection as any).selection?.standard_reference || "SOLAS Reg. 12"}
+                                                                                                         Coverage standard: {(detection as { selection?: { standard_reference?: string } })?.selection?.standard_reference ?? "SOLAS Reg. 12"}
                                                                                                  </div>
                                                                                          </div>
                                                                                  </div>
@@ -1029,7 +1029,7 @@ useEffect(() => {
                                                                          {extinguishing && (
                                                                                  <div className="space-y-4">
                                                                                          <AnalogGauge
-                                                                                                 value={Number((extinguishing as any).agent_quantity_kg || 0)}
+                                                                                                 value={Number(((extinguishing as { agent_quantity_kg?: number })?.agent_quantity_kg ?? 0))}
                                                                                                  min={0}
                                                                                                  max={5000}
                                                                                                  label="Agent Capacity"
@@ -1039,26 +1039,26 @@ useEffect(() => {
                                                                                                  <div className="text-[9px] uppercase tracking-wider text-[#4a5568] font-bold border-b border-[rgba(74,85,104,0.2)] pb-1">Suppression Spec</div>
                                                                                                  <div className="flex justify-between items-center">
                                                                                                          <span className="text-[#c9a84c]">System Agent</span>
-                                                                                                         <span className="uppercase text-[#2ec4b6]">{(extinguishing as any).system_type}</span>
+                                                                                                         <span className="uppercase text-[#2ec4b6]">{(extinguishing as { system_type?: string })?.system_type}</span>
                                                                                                  </div>
                                                                                                  <div className="flex justify-between items-center">
                                                                                                          <span className="text-[#c9a84c]">Room Volume</span>
-                                                                                                         <span>{(extinguishing as any).protected_volume_m3} m³</span>
+                                                                                                         <span>{(extinguishing as { protected_volume_m3?: number })?.protected_volume_m3} m³</span>
                                                                                                  </div>
                                                                                                  <div className="flex justify-between items-center">
                                                                                                          <span className="text-[#c9a84c]">Nozzles / Pipes</span>
-                                                                                                         <span>{(extinguishing as any).nozzles || 0} / {(extinguishing as any).pipe_length_m || 0}m</span>
+                                                                                                         <span>{(extinguishing as { nozzles?: number })?.nozzles ?? 0} / {(extinguishing as { pipe_length_m?: number })?.pipe_length_m ?? 0}m</span>
                                                                                                  </div>
                                                                                                  <div className="flex justify-between items-center">
                                                                                                          <span className="text-[#c9a84c]">Concentration</span>
-                                                                                                         <span>{(extinguishing as any).design_concentration_pct}%</span>
+                                                                                                         <span>{(extinguishing as { design_concentration_pct?: number })?.design_concentration_pct}%</span>
                                                                                                  </div>
                                                                                                  <div className="flex justify-between items-center">
                                                                                                          <span className="text-[#c9a84c]">Discharge Time</span>
-                                                                                                         <span>{(extinguishing as any).discharge_time_s}s</span>
+                                                                                                         <span>{(extinguishing as { discharge_time_s?: number })?.discharge_time_s}s</span>
                                                                                                  </div>
                                                                                                  <div className="text-[8px] text-[#4a5568] mt-2 leading-tight">
-                                                                                                         Reference: {(extinguishing as any).standard_reference}
+                                                                                                         Reference: {(extinguishing as { standard_reference?: string })?.standard_reference}
                                                                                                  </div>
                                                                                          </div>
                                                                                  </div>
@@ -1086,7 +1086,7 @@ useEffect(() => {
                                                                          {powerDesign && (
                                                                                  <div className="space-y-4">
                                                                                          <AnalogGauge
-                                                                                                 value={Number((powerDesign as any).ups_capacity_ah || 0)}
+                                                                                                 value={Number(((powerDesign as { ups_capacity_ah?: number })?.ups_capacity_ah ?? 0))}
                                                                                                  min={0}
                                                                                                  max={100}
                                                                                                  label="UPS Battery Size"
@@ -1096,22 +1096,22 @@ useEffect(() => {
                                                                                                  <div className="text-[9px] uppercase tracking-wider text-[#4a5568] font-bold border-b border-[rgba(74,85,104,0.2)] pb-1">Power Distribution Spec</div>
                                                                                                  <div className="flex justify-between items-center">
                                                                                                          <span className="text-[#c9a84c]">Main Supply</span>
-                                                                                                         <span>{(powerDesign as any).main_supply_voltage}V AC</span>
+                                                                                                         <span>{(powerDesign as { main_supply_voltage?: number })?.main_supply_voltage}V AC</span>
                                                                                                  </div>
                                                                                                  <div className="flex justify-between items-center">
                                                                                                          <span className="text-[#c9a84c]">Emergency Supply</span>
-                                                                                                         <span>{(powerDesign as any).emergency_supply_voltage}V AC</span>
+                                                                                                         <span>{(powerDesign as { emergency_supply_voltage?: number })?.emergency_supply_voltage}V AC</span>
                                                                                                  </div>
                                                                                                  <div className="flex justify-between items-center">
                                                                                                          <span className="text-[#c9a84c]">UPS Autonomy</span>
-                                                                                                         <span>{(powerDesign as any).ups_autonomy_min} min</span>
+                                                                                                         <span>{(powerDesign as { ups_autonomy_min?: number })?.ups_autonomy_min} min</span>
                                                                                                  </div>
                                                                                                  <div className="flex justify-between items-center">
                                                                                                          <span className="text-[#c9a84c]">Insulation Monitor</span>
-                                                                                                         <span className="text-[#2ec4b6]">{(powerDesign as any).insulation_monitoring ? "ACTIVE" : "INACTIVE"}</span>
+                                                                                                         <span className="text-[#2ec4b6]">{(powerDesign as { insulation_monitoring?: boolean })?.insulation_monitoring ? "ACTIVE" : "INACTIVE"}</span>
                                                                                                  </div>
                                                                                                  <div className="text-[8px] text-[#4a5568] mt-2 leading-tight">
-                                                                                                         Standard compliance: {(powerDesign as any).standard_reference}
+                                                                                                         Standard compliance: {(powerDesign as { standard_reference?: string })?.standard_reference}
                                                                                                  </div>
                                                                                          </div>
                                                                                  </div>
@@ -1167,10 +1167,10 @@ useEffect(() => {
                                                                                 </Button>
                                                                                 {alarmLogic && (
                                                                                         <span className="text-[10px] font-mono text-[#b0b8c4] bg-[#0f172a] px-2 py-1 rounded border border-[rgba(74,85,104,0.3)]">
-                                                                                                Causes: {(alarmLogic as any).node_count || 0} | Effects: {
+                                                                                                Causes: {(alarmLogic as { node_count?: number })?.node_count ?? 0} | Effects: {
                                                                                                         (() => {
                                                                                                                 const effects = new Set<string>();
-                                                                                                                ((alarmLogic as any).nodes || []).forEach((n: any) => {
+                                                                                                                ((alarmLogic as { nodes?: Array<Record<string, unknown>> })?.nodes ?? []).forEach((n: Record<string, unknown>) => {
                                                                                                                         (n.action_outputs || []).forEach((e: string) => {
                                                                                                                                 effects.add(e);
                                                                                                                         });
@@ -1194,7 +1194,7 @@ useEffect(() => {
                                                                                                                                 <th className="p-2 text-center font-bold text-[#b0b8c4] border-l border-[rgba(74,85,104,0.3)] w-[50px]">Evac</th>
                                                                                                                                 {(() => {
                                                                                                                                         const effects = new Set<string>();
-                                                                                                                                        ((alarmLogic as any).nodes || []).forEach((n: any) => {
+                                                                                                                                        ((alarmLogic as { nodes?: Array<Record<string, unknown>> })?.nodes ?? []).forEach((n: Record<string, unknown>) => {
                                                                                                                                                 (n.action_outputs || []).forEach((e: string) => effects.add(e));
                                                                                                                                         });
                                                                                                                                         const uniqueEffects = Array.from(effects);
@@ -1207,10 +1207,10 @@ useEffect(() => {
                                                                                                                         </tr>
                                                                                                                 </thead>
                                                                                                                 <tbody>
-                                                                                                                        {((alarmLogic as any).nodes || []).map((node: any) => {
+                                                                                                                        {((alarmLogic as { nodes?: Array<Record<string, unknown>> })?.nodes ?? []).map((node: Record<string, unknown>) => {
                                                                                                                                 const isSimActive = alarmActive && node.zone_id === zones[selectedZoneIndex]?.zone_id;
                                                                                                                                 const effects = new Set<string>();
-                                                                                                                                ((alarmLogic as any).nodes || []).forEach((n: any) => {
+                                                                                                                                ((alarmLogic as { nodes?: Array<Record<string, unknown>> })?.nodes ?? []).forEach((n: Record<string, unknown>) => {
                                                                                                                                         (n.action_outputs || []).forEach((e: string) => effects.add(e));
                                                                                                                                 });
                                                                                                                                 const uniqueEffects = Array.from(effects);
@@ -1269,7 +1269,7 @@ useEffect(() => {
                                                                                                                         variant="outline"
                                                                                                                         className="marine-btn marine-btn--secondary h-7 text-[10px] px-2.5"
                                                                                                                         onClick={() => {
-                                                                                                                                navigator.clipboard.writeText((alarmLogic as any).plc_script_st || "");
+                                                                                                                                navigator.clipboard.writeText(((alarmLogic as { plc_script_st?: string })?.plc_script_st ?? ""));
                                                                                                                                 toast({
                                                                                                                                         title: "Copied ST Script",
                                                                                                                                         description: "PLC program copied to clipboard successfully.",
@@ -1280,7 +1280,7 @@ useEffect(() => {
                                                                                                                 </Button>
                                                                                                         </div>
                                                                                                         <pre className="marine-code-block marine-code-block--brass text-[10px] overflow-auto max-h-[300px] p-3 bg-[#04060a] border border-[rgba(74,85,104,0.4)] rounded-md font-mono whitespace-pre text-[#a7f3d0]">
-                                                                                                                {(alarmLogic as any).plc_script_st}
+                                                                                                                {(alarmLogic as { plc_script_st?: string })?.plc_script_st}
                                                                                                         </pre>
                                                                                                 </div>
                                                                                         )}
@@ -1359,7 +1359,7 @@ useEffect(() => {
                                                                                                                         </tr>
                                                                                                                 </thead>
                                                                                                                 <tbody>
-                                                                                                                        {((scadaConfig as any).tags || []).map((tag: any) => (
+                                                                                                                        {((scadaConfig as { tags?: Array<Record<string, unknown>> })?.tags ?? []).map((tag: Record<string, unknown>) => (
                                                                                                                                 <tr key={tag.tag_id} className="border-b border-[rgba(74,85,104,0.2)] hover:bg-[rgba(201,168,76,0.04)]">
                                                                                                                                         <td className="p-2 font-semibold text-[#c9a84c] truncate max-w-[150px]">{tag.tag_id}</td>
                                                                                                                                         <td className="p-2 border-l border-[rgba(74,85,104,0.2)]">{tag.description}</td>
@@ -1386,7 +1386,7 @@ useEffect(() => {
                                                                                                                         variant="outline"
                                                                                                                         className="marine-btn marine-btn--secondary h-6 text-[9px] px-2"
                                                                                                                         onClick={() => {
-                                                                                                                                navigator.clipboard.writeText((scadaConfig as any).pyscada_yaml || "");
+                                                                                                                                navigator.clipboard.writeText(((scadaConfig as { pyscada_yaml?: string })?.pyscada_yaml ?? ""));
                                                                                                                                 toast({
                                                                                                                                         title: "Copied YAML Configuration",
                                                                                                                                         description: "SCADA config YAML copied to clipboard successfully.",
@@ -1397,7 +1397,7 @@ useEffect(() => {
                                                                                                                 </Button>
                                                                                                         </div>
                                                                                                         <pre className="marine-code-block marine-code-block--brass text-[10px] overflow-auto max-h-[240px] p-2.5 bg-[#04060a] border border-[rgba(74,85,104,0.4)] rounded-md font-mono whitespace-pre text-[#a7f3d0]">
-                                                                                                                {(scadaConfig as any).pyscada_yaml}
+                                                                                                                {(scadaConfig as { pyscada_yaml?: string })?.pyscada_yaml}
                                                                                                         </pre>
                                                                                                 </div>
                                                                                         )}

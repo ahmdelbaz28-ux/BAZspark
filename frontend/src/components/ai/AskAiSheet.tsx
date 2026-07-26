@@ -43,7 +43,7 @@ const QUICK_PROMPTS = [
 export function AskAiSheet({
         open,
         onOpenChange,
-        context = "engineering",
+        context: _context = "engineering",
 }: AskAiSheetProps) {
         const { t } = useTranslation();
         const [input, setInput] = useState("");

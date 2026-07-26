@@ -23,7 +23,7 @@ import {
         ShieldAlert,
         Trash2,
         Upload,
-        XCircle,
+
         Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -129,7 +129,7 @@ export function EtapPage() {
                                 etapApi.listLocalProjects(),
                         ]);
                         setEtapProjects(etap);
-                        setLocalProjects(local.map((p: any) => ({ id: p.id, name: p.name })));
+                        setLocalProjects(local.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })));
                 } catch (error) {
                         console.error("Failed to load projects", error);
                 } finally {
@@ -182,12 +182,13 @@ export function EtapPage() {
                                         variant: "destructive",
                                 });
                         }
-                } catch (error: any) {
+                } catch (error) {
+                        const errMsg = error instanceof Error ? error.message : String(error);
                         setConnectionStatus("error");
-                        setConnectionMessage(error.message || "Connection failed");
+                        setConnectionMessage(errMsg || "Connection failed");
                         toast({
                                 title: t("etap.connectionError"),
-                                description: error.message,
+                                description: errMsg,
                                 variant: "destructive",
                         });
                 }
@@ -213,10 +214,11 @@ export function EtapPage() {
                                 title: t("etap.settingsSaved"),
                                 description: t("etap.settingsSavedDesc"),
                         });
-                } catch (error: any) {
+                } catch (error) {
+                        const errMsg = error instanceof Error ? error.message : String(error);
                         toast({
                                 title: t("etap.saveFailed"),
-                                description: error.message,
+                                description: errMsg,
                                 variant: "destructive",
                         });
                 } finally {
@@ -242,10 +244,11 @@ export function EtapPage() {
                                 title: t("etap.settingsDeleted"),
                                 description: t("etap.settingsDeletedDesc"),
                         });
-                } catch (error: any) {
+                } catch (error) {
+                        const errMsg = error instanceof Error ? error.message : String(error);
                         toast({
                                 title: t("etap.deleteFailed"),
-                                description: error.message,
+                                description: errMsg,
                                 variant: "destructive",
                         });
                 } finally {
@@ -269,10 +272,11 @@ export function EtapPage() {
                                 description: `${t("etap.exportedRecords")}: ${response.records_exported}`,
                         });
                         await loadLogs();
-                } catch (error: any) {
+                } catch (error) {
+                        const errMsg = error instanceof Error ? error.message : String(error);
                         toast({
                                 title: t("etap.exportFailed"),
-                                description: error.message,
+                                description: errMsg,
                                 variant: "destructive",
                         });
                 } finally {
@@ -305,10 +309,11 @@ export function EtapPage() {
                                 description: response.message,
                         });
                         await loadLogs();
-                } catch (error: any) {
+                } catch (error) {
+                        const errMsg = error instanceof Error ? error.message : String(error);
                         toast({
                                 title: t("etap.importFailed"),
-                                description: error.message,
+                                description: errMsg,
                                 variant: "destructive",
                         });
                 } finally {
@@ -664,7 +669,7 @@ export function EtapPage() {
                                                                                 </div>
                                                                                 <div className="etap-field">
                                                                                         <Label className="etap-label">Conflict Resolution</Label>
-                                                                                        <Select value={conflictResolution} onValueChange={(v) => setConflictResolution(v as any)}>
+                                                                                        <Select value={conflictResolution} onValueChange={(v) => setConflictResolution(v as "skip" | "overwrite" | "merge")}>
                                                                                                 <SelectTrigger className="etap-input">
                                                                                                         <SelectValue />
                                                                                                 </SelectTrigger>

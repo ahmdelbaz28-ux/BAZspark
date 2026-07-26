@@ -62,7 +62,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 			device?.lastTestDate || new Date().toISOString().split("T")[0],
 	});
 
-	const handleChange = (field: keyof DeviceProperty, value: any) => {
+	const handleChange = (field: keyof DeviceProperty, value: string | number | boolean) => {
 		setEditedDevice((prev) => ({
 			...prev,
 			[field]: value,

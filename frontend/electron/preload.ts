@@ -5,9 +5,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
         getAppInfo: () => ipcRenderer.invoke("get-app-info"),
         getBackendUrl: () => ipcRenderer.invoke("get-backend-url"),
         getBackendStatus: () => ipcRenderer.invoke("get-backend-status"),
-        showOpenDialog: (options: any) =>
+        showOpenDialog: (options: Record<string, unknown>) =>
                 ipcRenderer.invoke("show-open-dialog", options),
-        showSaveDialog: (options: any) =>
+        showSaveDialog: (options: Record<string, unknown>) =>
                 ipcRenderer.invoke("show-save-dialog", options),
         // V262 FIX #8: Listen for bazspark:// protocol URLs
         onProtocolUrl: (callback: (data: { action: string; params: Record<string, string>; url: string }) => void) =>

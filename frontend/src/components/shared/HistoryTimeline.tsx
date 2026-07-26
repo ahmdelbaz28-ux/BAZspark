@@ -4,7 +4,7 @@
  */
 
 import { Clock, FileDown, FileUp, History, RotateCcw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ export function HistoryTimeline() {
         const [loading, setLoading] = useState(true);
         const [rollingBack, setRollingBack] = useState<string | null>(null);
 
-        const fetchHistory = async () => {
+        const fetchHistory = useCallback(async () => {
                 setLoading(true);
                 try {
                         const history = await digitalTwinService.getHistory();
@@ -30,7 +30,7 @@ export function HistoryTimeline() {
                 } finally {
                         setLoading(false);
                 }
-        };
+        }, []);
 
         useEffect(() => {
                 fetchHistory();

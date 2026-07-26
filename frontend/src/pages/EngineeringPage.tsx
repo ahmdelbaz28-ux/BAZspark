@@ -60,8 +60,8 @@ export function EngineeringPage() {
                 alarmMinutes: "5",
         });
 
-        const [apiLoading, setApiLoading] = useState(false);  // NOSONAR: typescript:S6754
-        const [apiError, setApiError] = useState<string | null>(null);  // NOSONAR: typescript:S6754
+        const [_apiLoading, setApiLoading] = useState(false);  // NOSONAR: typescript:S6754
+        const [_apiError, setApiError] = useState<string | null>(null);  // NOSONAR: typescript:S6754
         const [apiResult, setApiResult] = useState<{
                 voltage_drop_v: number;
                 drop_pct: number;
@@ -120,8 +120,7 @@ export function EngineeringPage() {
                                 length_m: length,
                                 awg_gauge: voltageDropInputs.cableSize || "12",
                                 supply_voltage_v: Number.parseFloat(voltageDropInputs.voltage) || 24.0,
-                        });
-                        setApiResult(result as any);
+                        });			setApiResult(result as Record<string, unknown>);
                 } catch (err) {
                         const msg = err instanceof Error ? err.message : "QOMN API calculation failed";
                         setApiError(msg);

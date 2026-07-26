@@ -362,7 +362,14 @@ export function ComplianceCenter() {
 	);
 }
 
-function StandardGroup({ title, items }: { title: string; items: any[] }) {
+interface StandardItem {
+	name: string;
+	version: string;
+	active: boolean;
+	update?: boolean;
+}
+
+function StandardGroup({ title, items }: { title: string; items: StandardItem[] }) {
 	return (
 		<div className="mb-4">
 			<div className="text-xs font-semibold text-foreground mb-2 flex items-center">
@@ -403,7 +410,16 @@ function StandardGroup({ title, items }: { title: string; items: any[] }) {
 	);
 }
 
-function IssueCard({ active, severity, std, title, desc, actions }: any) {
+interface IssueCardProps {
+	active?: boolean;
+	severity: string;
+	std: string;
+	title: string;
+	desc: string;
+	actions: string[];
+}
+
+function IssueCard({ active, severity, std, title, desc, actions }: IssueCardProps) {
 	const isCrit = severity === "Critical";
 	const borderColor = isCrit ? "border-l-red-500" : "border-l-orange-500";
 	const iconColor = isCrit ? "text-danger" : "text-primary";

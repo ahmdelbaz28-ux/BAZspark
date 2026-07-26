@@ -159,7 +159,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 				};
 			})
 			.filter(Boolean) as ThermalConnection[];
-	}, [connections, devices]);
+	}, [connections, devices, deviceMap]);
 
 	// Calculate thermal data for all devices
 	const thermalDevices = useMemo<ThermalDevice[]>(() => {
@@ -187,7 +187,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 				isOverloaded,
 			};
 		});
-	}, [devices, connections]);
+	}, [devices, connections, connectionsByDeviceId]);
 
 	// Global stress values for the legend
 	const globalMaxVoltageDrop = useMemo(() => {

@@ -182,7 +182,7 @@ const SkipLink = (
  * (previously the SPA silently returned 200 with empty content).
  */
 function App() {
-        const { t, i18n } = useTranslation();
+        const { i18n } = useTranslation();
         const { connected } = useHealth();
         const location = useLocation();
         const [helpOpen, setHelpOpen] = useState(false);

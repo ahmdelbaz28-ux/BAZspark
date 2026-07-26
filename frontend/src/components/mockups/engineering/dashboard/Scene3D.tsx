@@ -6,8 +6,7 @@ export function Scene3D() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const resourcesRef = useRef<{
 		renderer?: THREE.WebGLRenderer;
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		controls?: any;
+		controls?: InstanceType<typeof import("three/examples/jsm/controls/OrbitControls.js").OrbitControls>;
 		animationId?: number;
 	}>({});
 
@@ -127,15 +126,18 @@ export function Scene3D() {
 		globalThis.addEventListener("resize", handleResize);
 
 		return () => {
-			// Cleanup
+			// Cleanup — copy ref to local variable to avoid stale ref warning
 			const resources = resourcesRef.current;
+			const animId = resources.animationId;
+			const controls = resources.controls;
+			const renderer = resources.renderer;
 
-			if (resources.animationId) {
-				cancelAnimationFrame(resources.animationId);
+			if (animId) {
+				cancelAnimationFrame(animId);
 			}
 
-			if (resources.controls) {
-				resources.controls.dispose();
+			if (controls) {
+				controls.dispose();
 			}
 
 			// Dispose geometries and materials passed from useMemo
@@ -146,11 +148,11 @@ export function Scene3D() {
 			planeGeo.dispose();
 			planeMat.dispose();
 
-			if (resources.renderer) {
-				if (resources.renderer.domElement) {
-					resources.renderer.domElement.remove();
+			if (renderer) {
+				if (renderer.domElement) {
+					renderer.domElement.remove();
 				}
-				resources.renderer.dispose();
+				renderer.dispose();
 			}
 
 			globalThis.removeEventListener("resize", handleResize);

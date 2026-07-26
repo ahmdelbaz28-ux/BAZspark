@@ -55,7 +55,7 @@ export function FireAlarmDesigner() {
         const { t } = useTranslation();
         const { toast } = useToast();
         const [detectors, setDetectors] = useState<Detector[]>([]);
-        const [selectedDetector, setSelectedDetector] = useState<Detector | null>(
+        const [_selectedDetector, setSelectedDetector] = useState<Detector | null>(
                 null,
         );
         const [projectName, setProjectName] = useState(t("fireAlarm.newProject"));
@@ -144,10 +144,9 @@ export function FireAlarmDesigner() {
                                 description: t("fireAlarm.noProjectLoadedDesc") || "Start adding detectors using the toolbar above.",
                         });
                 };
-                loadDetectors();
-        }, [t]);
+                loadDetectors();		}, [t, toast]);
 
-        const handleAddDetector = useCallback(
+		const handleAddDetector = useCallback(
                 (type: "smoke" | "heat" | "pull" | "horns" | "speaker" | "facp") => {
                         const newDetector: Detector = {
                                 id: `detector-${Date.now()}`,

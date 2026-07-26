@@ -526,19 +526,25 @@ function ToolBtn({
 }
 
 // Zap Icon duplicate since it wasn't imported from lucide-react above
-function Zap(props: any) {
+interface ZapProps {
+	className?: string;
+	size?: number;
+	color?: string;
+}
+
+function Zap({ className, size, color }: ZapProps) {
 	return (
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
-			width="24"
-			height="24"
+			width={size || 24}
+			height={size || 24}
 			viewBox="0 0 24 24"
 			fill="none"
-			stroke="currentColor"  // NOSONAR: typescript:S6747
+			stroke={color || "currentColor"}  // NOSONAR: typescript:S6747
 			strokeWidth="2"
 			strokeLinecap="round"
-			strokeLinelinejoin="round"
-			{...props}
+			strokeLinejoin="round"
+			className={className}
 		>
 			<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
 		</svg>

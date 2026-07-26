@@ -1,22 +1,55 @@
-
 import { useCallback, useEffect, useState } from "react";
 import { actions } from "@/store/simpleStore";
 
+// Web Speech API types — not in all TS DOM lib configurations
+interface SpeechRecognitionResult {
+	readonly 0: SpeechRecognitionAlternative;
+	readonly length: number;
+}
+interface SpeechRecognitionResultList {
+	readonly [index: number]: SpeechRecognitionResult;
+	readonly length: number;
+}
+interface SpeechRecognitionAlternative {
+	readonly transcript: string;
+	readonly confidence: number;
+}
+interface SpeechRecognitionEvent {
+	readonly results: SpeechRecognitionResultList;
+}
+interface SpeechRecognitionErrorEvent {
+	readonly error: string;
+}
+interface SpeechRecognition extends EventTarget {
+	continuous: boolean;
+	interimResults: boolean;
+	lang: string;
+	onresult: ((event: SpeechRecognitionEvent) => void) | null;
+	onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+	onend: (() => void) | null;
+	start(): void;
+	stop(): void;
+}
+
+interface SpeechRecognitionConstructor {
+	new (): SpeechRecognition;
+}
+
 export function useVoiceControl() {
 	const [isListening, setIsListening] = useState(false);
-	const [recognition, setRecognition] = useState<any>(null);
+	const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
 
 	useEffect(() => {
-		const SpeechRecognition =
-			(window as any).SpeechRecognition ||
-			(window as any).webkitSpeechRecognition;
-		if (SpeechRecognition) {
-			const rec = new SpeechRecognition();
+		const SpeechRecognitionCtor =
+			(window as unknown as { SpeechRecognition?: SpeechRecognitionConstructor }).SpeechRecognition ||
+			(window as unknown as { webkitSpeechRecognition?: SpeechRecognitionConstructor }).webkitSpeechRecognition;
+		if (SpeechRecognitionCtor) {
+			const rec = new SpeechRecognitionCtor();
 			rec.continuous = false;
 			rec.interimResults = false;
 			rec.lang = "en-US"; // English supported mostly
 
-			rec.onresult = (event: any) => {
+			rec.onresult = (event: SpeechRecognitionEvent) => {
 				const transcript = event.results[0][0].transcript.toLowerCase();
 				if (import.meta.env.DEV)
 					console.log("Voice Command Received:", transcript);
@@ -58,7 +91,7 @@ export function useVoiceControl() {
 				actions.setVoiceActive(false);
 			};
 
-			rec.onerror = (event: any) => {
+			rec.onerror = (event: SpeechRecognitionErrorEvent) => {
 				if (import.meta.env.DEV)
 					console.error("Speech recognition error", event.error);
 				setIsListening(false);

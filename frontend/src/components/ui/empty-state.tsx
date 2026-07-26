@@ -20,7 +20,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 	description,
 	action,
 	className,
-	rtl = false,
+	rtl: _rtl = false,
 }) => {
 	return (
 		<div

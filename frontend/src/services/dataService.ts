@@ -37,7 +37,7 @@ const WS_HEALTH_CHECK_INTERVAL = 30000;
 
 export class DataService {
         private static instance: DataService;
-        private buffer: any[] = [];
+        private buffer: Record<string, unknown>[] = [];
         private readonly maxBufferSize = 50;
         private isConnected = false;
         private isAuthenticated = false;
@@ -272,7 +272,7 @@ export class DataService {
                 this.startHealthCheck();
         }
 
-        private handleWebSocketMessage(message: any) {
+        private handleWebSocketMessage(message: Record<string, unknown>) {
                 // Backend sends: {"channel": "...", "type": "...", "data": {...}, "projectId": "..."}
 
                 // Handle authentication response
@@ -400,7 +400,7 @@ export class DataService {
 
         // ── Shared Data Handling ─────────────────────────────────────────────────
 
-        private handleData = (data: any) => {
+        private handleData = (data: Record<string, unknown>) => {
                 if (!this.isConnected) {
                         if (this.buffer.length < this.maxBufferSize) {
                                 this.buffer.push(data);
@@ -515,7 +515,7 @@ export class DataService {
          * Send a command to the backend via WebSocket.
          * Only works in live mode after authentication.
          */
-        public sendCommand(action: string, payload?: any) {
+        public sendCommand(action: string, payload?: Record<string, unknown>) {
                 if (this.ws?.readyState === WebSocket.OPEN && this.isAuthenticated) {
                         this.ws.send(
                                 JSON.stringify({ action, ...payload, timestamp: Date.now() }),

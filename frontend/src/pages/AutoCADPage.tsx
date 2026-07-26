@@ -14,7 +14,7 @@ import {
         Wifi,
         WifiOff,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FileUploader } from "@/components/shared/FileUploader";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,7 @@ export function AutoCADPage() {
         const [forceNew, setForceNew] = useState(false);
         const [filepath, setFilepath] = useState("");
 
-        const checkStatus = async () => {
+        const checkStatus = useCallback(async () => {
                 try {
                         const s = await autocadService.getStatus();
                         setStatus(s as Record<string, unknown>);
@@ -53,7 +53,7 @@ export function AutoCADPage() {
                         setStatus(null);
                         setSimulationMode(false);
                 }
-        };
+        }, []);
 
         useEffect(() => {
                 checkStatus();
