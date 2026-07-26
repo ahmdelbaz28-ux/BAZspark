@@ -17,7 +17,7 @@ import { SmoothScroll } from "@/components/interaction/SmoothScroll";
 import { DemoDataBanner } from "@/components/shared/DemoDataBanner";
 import type { HelpTopicId } from "@/help/types";
 import { ROUTE_HELP_MAP } from "@/help/types";
-import { useHealth } from "@/hooks/useApi";
+import { useHealth } from "@/hooks/useApiQuery";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LoginPage } from "./pages/LoginPage";
 import "./i18n";
