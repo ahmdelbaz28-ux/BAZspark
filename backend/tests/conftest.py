@@ -140,43 +140,43 @@ for _tmp_db in [
 # Tests outside backend/tests/ get an unpatched TestClient (no auto-injected
 # header), preserving their ability to test unauthenticated requests.
 try:
-    import os as _os
-    import sys as _sys
+        import os as _os
+        import sys as _sys
+        from starlette.testclient import TestClient as _StarletteTestClient
+        import python_multipart
+        _original_testclient_init = _StarletteTestClient.__init__
+    
+        _BACKEND_TESTS_DIR = _os.path.dirname(_os.path.abspath(__file__))
+    
+        def _patched_testclient_init(self, *args, **kwargs):
+            """
+            Inject X-API-Key header by default into every TestClient — but ONLY
+            when called from a test under backend/tests/. Other test directories
+            (tests/, fireai/core/tests/, etc.) get an unpatched TestClient so they
+            can test unauthenticated request paths.
+            """
+            frame = _sys._getframe(1)
+            caller_file = ""
+            while frame is not None:
+                f_filename = frame.f_code.co_filename
+                if f_filename and ("test_" in _os.path.basename(f_filename) or "conftest" in f_filename):
+                    caller_file = f_filename
+                    break
+                frame = frame.f_back
 
-    from starlette.testclient import TestClient as _StarletteTestClient
-    _original_testclient_init = _StarletteTestClient.__init__
-
-    _BACKEND_TESTS_DIR = _os.path.dirname(_os.path.abspath(__file__))
-
-    def _patched_testclient_init(self, *args, **kwargs):
-        """
-        Inject X-API-Key header by default into every TestClient — but ONLY
-        when called from a test under backend/tests/. Other test directories
-        (tests/, fireai/core/tests/, etc.) get an unpatched TestClient so they
-        can test unauthenticated request paths.
-        """
-        frame = _sys._getframe(1)
-        caller_file = ""
-        while frame is not None:
-            f_filename = frame.f_code.co_filename
-            if f_filename and ("test_" in _os.path.basename(f_filename) or "conftest" in f_filename):
-                caller_file = f_filename
-                break
-            frame = frame.f_back
-
-        # Only inject header if the caller is under backend/tests/
-        is_backend_test = bool(caller_file and _os.path.normcase(caller_file).startswith(_os.path.normcase(_BACKEND_TESTS_DIR)))
-        if is_backend_test:
-            caller_headers = kwargs.pop("headers", None) or {}
-            # setdefault so a test can still override with its own X-API-Key
-            caller_headers.setdefault("X-API-Key", TEST_API_KEY)
-            kwargs["headers"] = caller_headers
-        _original_testclient_init(self, *args, **kwargs)
-        # can check it without call-stack inspection (which is fragile because
-        # starlette's testclient.py filename contains "test_" and confuses the
-        # frame walker). This is the root-cause fix for the URL rewriting bug
-        # that was breaking tests/test_dwg_router.py.
-        self._fireai_backend_test = is_backend_test
+            # Only inject header if the caller is under backend/tests/
+            is_backend_test = bool(caller_file and _os.path.normcase(caller_file).startswith(_os.path.normcase(_BACKEND_TESTS_DIR)))
+            if is_backend_test:
+                caller_headers = kwargs.pop("headers", None) or {}
+                # setdefault so a test can still override with its own X-API-Key
+                caller_headers.setdefault("X-API-Key", TEST_API_KEY)
+                kwargs["headers"] = caller_headers
+            _original_testclient_init(self, *args, **kwargs)
+            # can check it without call-stack inspection (which is fragile because
+            # starlette's testclient.py filename contains "test_" and confuses the
+            # frame walker). This is the root-cause fix for the URL rewriting bug
+            # that was breaking tests/test_dwg_router.py.
+            self._fireai_backend_test = is_backend_test
 
     _StarletteTestClient.__init__ = _patched_testclient_init
 
@@ -201,6 +201,8 @@ try:
     # an authoritative set, then skip rewriting for those paths.
     _NON_VERSIONED_API_PATHS: set[str] = set()
     try:
+        import warnings
+        warnings.filterwarnings("ignore", "Please use `import python_multipart` instead.", category=PendingDeprecationWarning)
         import os as _os
         _os.environ.setdefault("FIREAI_API_KEY", TEST_API_KEY)
         import logging as _logging
@@ -216,31 +218,6 @@ try:
     except Exception:
         # If schema introspection fails, fall back to known good prefixes.
         _NON_VERSIONED_API_PATHS = {"/api/health", "/api/reports/statistics"}
-
-    def _rewrite_legacy_url(url: str) -> str:
-        """
-        Rewrite /api/* → /api/v1/* for legacy test URLs.
-
-        V139 FIX: Skip rewriting for paths that exist at /api/ (health,
-        reports/statistics). These are mounted at /api/ via
-        app.include_router(health_router, prefix="/api") and must NOT
-        be rewritten to /api/v1/.
-        """
-        if not isinstance(url, str):
-            return url
-        if not url.startswith("/api/"):
-            return url
-        if url.startswith("/api/v1/") or url.startswith("/api/v2/"):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
-            return url
-        # Check if the URL (or its prefix) matches a known /api/ route
-        # Strip query string for matching
-        path_only = url.split("?", maxsplit=1)[0]
-        for prefix in _NON_VERSIONED_API_PATHS:
-            if path_only == prefix or path_only.startswith(prefix + "/"):
-                return url  # Don't rewrite — route exists at /api/
-        # Default: rewrite to /api/v1/
-        return "/api/v1/" + url[len("/api/"):]
-
     for _method_name in _HTTP_METHODS:
         _original_method = getattr(_StarletteTestClient, _method_name)
 
@@ -339,35 +316,6 @@ def _reset_rate_limiter_storage():
     try:
         from backend.limiter import limiter as _limiter
         if _limiter is not None and hasattr(_limiter, "_storage"):
-            _storage = _limiter._storage
-            # MemoryStorage internal state (from limits/storage/memory.py):
-            #   self.storage: Counter[str]      — hit counts per key
-            #   self.events: dict[str, list]    — request timestamps per key
-            #   self.expirations: dict[str, float] — expiry times per key
-            #   self.locks: dict[str, RLock]    — per-key locks
-            # Clear all four to fully reset the limiter between tests.
-            if hasattr(_storage, "storage"):
-                _storage.storage.clear()
-            if hasattr(_storage, "events"):
-                _storage.events.clear()
-            if hasattr(_storage, "expirations"):
-                _storage.expirations.clear()
-            if hasattr(_storage, "locks"):
-                _storage.locks.clear()
-    except Exception:
-        # If limiter import fails (e.g., slowapi not installed), tests that
-        # depend on rate limiting will skip on their own. Don't fail the
-        # whole suite here.
-        pass
-
-
-# ─── Optional: skip slow integration tests unless --run-slow ─────────────────
-def pytest_addoption(parser):
-    parser.addoption(
-        "--run-slow",
-        action="store_true",
-        default=False,
-        help="Run slow integration tests (default: skipped)",
     )
 
 
