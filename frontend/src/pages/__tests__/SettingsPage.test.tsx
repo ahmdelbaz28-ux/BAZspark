@@ -34,6 +34,22 @@ global.fetch = vi.fn().mockResolvedValue({
 	json: () => Promise.resolve({ success: true, data: { status: "ok" } }),
 });
 
+// Mock the API hooks
+vi.mock("@/hooks/useApiQuery", () => ({
+	useHealth: vi.fn().mockReturnValue({
+		data: {
+			status: "ok",
+			version: "1.0.0",
+			database: "connected",
+			uptime: 120,
+		},
+		loading: false,
+		error: null,
+		connected: true,
+		refetch: vi.fn(),
+	}),
+}));
+
 // Mock react-router-dom
 vi.mock("react-router-dom", () => ({
 	useNavigate: () => vi.fn(),
