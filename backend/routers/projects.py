@@ -126,12 +126,12 @@ async def update_project(request: Request, project_id: str, input_data: UpdatePr
     return success(project)
 
 
-@router.delete("/{project_id}", dependencies=[Depends(require_permission(Permission.PROJECT_DELETE))])
+# @router.delete("/{project_id}", dependencies=[Depends(require_permission(Permission.PROJECT_DELETE))])
 
 # ── Project Export Endpoints (DXF, Revit, IFC) ────────────────────────────────────────
 
 @router.get("/{project_id}/export/dxf", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
-async def export_project_dxf(project_id: str):
+async def export_project_dxf(project_id: str) -> StreamingResponse:
     """Export a project as DXF (placeholder implementation)."""
     db = get_db()
     project = db.get_project(project_id)
@@ -142,7 +142,7 @@ async def export_project_dxf(project_id: str):
     return StreamingResponse(io.BytesIO(content), media_type="application/dxf", headers={"Content-Disposition": f"attachment; filename=\"{filename}\""})
 
 @router.get("/{project_id}/export/revit", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
-async def export_project_revit(project_id: str):
+async def export_project_revit(project_id: str) -> StreamingResponse:
     """Export a project as Revit JSON (placeholder)."""
     db = get_db()
     project = db.get_project(project_id)
@@ -154,7 +154,7 @@ async def export_project_revit(project_id: str):
     return StreamingResponse(io.BytesIO(content), media_type="application/json", headers={"Content-Disposition": f"attachment; filename=\"{filename}\""})
 
 @router.get("/{project_id}/export/ifc", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
-async def export_project_ifc(project_id: str, version: Optional[str] = None):
+async def export_project_ifc(project_id: str, version: Optional[str] = None) -> StreamingResponse:
     """Export a project as IFC (placeholder)."""
     db = get_db()
     project = db.get_project(project_id)
