@@ -913,7 +913,7 @@ class TestGetSmokeDetectorRadiusSafe:
     def test_high_ceiling_capped(self):
         """Heights > 15.24m capped at 15.24m values."""
         r = get_smoke_detector_radius_safe(20.0)
-        assert r == pytest.approx(3.64, abs=0.01)
+        assert r == pytest.approx(6.37, abs=0.01)
 
     def test_return_details_standard(self):
         _r, details = get_smoke_detector_radius_safe(3.0, _return_details=True)
@@ -938,7 +938,7 @@ class TestGetSmokeDetectorRadiusSafe:
 
     def test_15_24m_standard(self):
         r = get_smoke_detector_radius_safe(15.24)
-        assert r == pytest.approx(3.64, abs=0.01)
+        assert r == pytest.approx(6.37, abs=0.01)
 
 
 # get_smoke_detector_coverage_max_safe

@@ -6,7 +6,7 @@ import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 
 // ─── V262 FIX #6: Crash Reporter (main process) ──────────────────────────
 // Send uncaught exceptions + unhandled rejections to Sentry for the main
