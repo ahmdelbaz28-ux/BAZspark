@@ -23,7 +23,7 @@ BAZSpark automates fire detection and alarm system design per **NFPA 72-2022**. 
 | **Marine Module** | SOLAS, IEC 60092, NFPA 302 for ship fire safety |
 | **Multi-Format Parsers** | DXF, DWG, IFC, PDF, Excel, Image |
 | **RBAC Security** | Role-based access with 5 roles (Admin, Engineer, Reviewer, Viewer, API) |
-| **API** | 188 REST + WebSocket endpoints |
+| **API** | 247+ REST + WebSocket endpoints |
 
 ---
 
@@ -31,7 +31,7 @@ BAZSpark automates fire detection and alarm system design per **NFPA 72-2022**. 
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.8+ (minimum required by pyproject.toml)
 - Node.js 22+
 - npm 11+
 
@@ -75,20 +75,20 @@ Frontend: http://localhost:5173
 ┌─────────────────────────────────────────────────────┐
 │  Frontend (React 18 + TypeScript + Vite + Tailwind) │
 └──────────────────────┬──────────────────────────────┘
-                       │ REST + WebSocket
+                        │ REST + WebSocket
 ┌──────────────────────▼──────────────────────────────┐
-│  Backend (FastAPI 0.138 + Python 3.12)              │
-│  188 endpoints │ RBAC │ Rate Limiting │ CSP/HSTS    │
+│  Backend (FastAPI 0.138 + Python 3.8+)              │
+│  247+ endpoints │ RBAC │ Rate Limiting │ CSP/HSTS    │
 └──────────────────────┬──────────────────────────────┘
-          ┌────────────┼────────────┐
-          ▼            ▼            ▼
-   ┌───────────┐ ┌──────────┐ ┌──────────┐
-   │ NFPA 72   │ │ Digital  │ │ Database │
-   │ Engine    │ │ Twin     │ │ SQLite / │
-   │ Voltage   │ │ AutoCAD  │ │ Postgres │
-   │ Drop      │ │ ←→ Revit │ │ + Redis  │
-   │ Spatial   │ │          │ │ + Qdrant │
-   └───────────┘ └──────────┘ └──────────┘
+           ┌────────────┼────────────┐
+           ▼            ▼            ▼
+    ┌───────────┐ ┌──────────┐ ┌──────────┐
+    │ NFPA 72   │ │ Digital  │ │ Database │
+    │ Engine    │ │ Twin     │ │ SQLite / │
+    │ Voltage   │ │ AutoCAD  │ │ Postgres │
+    │ Drop      │ │ ←→ Revit │ │ + Redis  │
+    │ Spatial   │ │          │ │ + Qdrant │
+    └───────────┘ └──────────┘ └──────────┘
 ```
 
 See [docs/reference/architecture.md](docs/reference/architecture.md) for full architecture details.
@@ -99,7 +99,7 @@ See [docs/reference/architecture.md](docs/reference/architecture.md) for full ar
 
 | Layer | Technology |
 |---|---|
-| Backend | Python 3.12, FastAPI, SQLAlchemy, Pydantic, Shapely/GEOS |
+| Backend | Python 3.8+, FastAPI, SQLAlchemy, Pydantic, Shapely/GEOS |
 | Frontend | React 18, TypeScript 5.9, Vite 8, Tailwind CSS 4, Three.js |
 | Database | PostgreSQL (Supabase), SQLite, Redis, Qdrant (vector), Neo4j (graph) |
 | Infrastructure | Docker, Kubernetes, Helm, Prometheus, Grafana |
@@ -175,7 +175,7 @@ See [docs/how-to/deployment.md](docs/how-to/deployment.md) for full details.
 ```
 BAZspark/
 ├── fireai/              # Core engine (NFPA 72, spatial analysis, audit trail)
-├── backend/             # FastAPI backend (188 endpoints)
+├── backend/             # FastAPI backend (247+ endpoints)
 ├── frontend/            # React SPA (22 pages)
 ├── marine/              # Marine fire safety (SOLAS, IEC 60092)
 ├── qomn_fire/           # QOMN-FIRE engine (standalone)
