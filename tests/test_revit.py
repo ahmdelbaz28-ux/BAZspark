@@ -720,7 +720,9 @@ class TestV214ReadRvtNoHardcodedElements:
         with ids 12345/12346/12347 as actual return values.
         """
         import re
-        src_path = "backend/services/revit_service.py"
+        tests_dir = os.path.dirname(__file__)
+        src_path = os.path.join(tests_dir, "..", "backend", "services", "revit_service.py")
+        src_path = os.path.normpath(src_path)
         with open(src_path, "r", encoding="utf-8") as f:
             content = f.read()
 

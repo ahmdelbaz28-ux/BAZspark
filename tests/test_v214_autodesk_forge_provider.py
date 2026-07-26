@@ -12,6 +12,7 @@ Verifies that the 5 methods are no longer STUBs:
 
 from __future__ import annotations
 
+import os
 from unittest.mock import MagicMock, patch
 
 from fireai.bridges.bim_provider import AutodeskForgeProvider
@@ -247,7 +248,9 @@ class TestV214AutodeskForgeProviderRealImplementation:
         STUB mentions in docstrings/comments are allowed (historical notes).
         """
         import re
-        src_path = "fireai/bridges/bim_provider.py"
+        tests_dir = os.path.dirname(__file__)
+        src_path = os.path.join(tests_dir, "..", "fireai", "bridges", "bim_provider.py")
+        src_path = os.path.normpath(src_path)
         with open(src_path, "r", encoding="utf-8") as f:
             content = f.read()
 
