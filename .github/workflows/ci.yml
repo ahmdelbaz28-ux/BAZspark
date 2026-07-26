@@ -70,6 +70,7 @@ jobs:
         # the command below.
         run: python3 scripts/mypy_regression_gate.py --baseline 719
 
+
       - name: Bandit security scan
         # V140 FIX (Rule 17): Bandit exits with code 1 when it finds ANY
         # results (even LOW severity). The actual HIGH-severity gate is the

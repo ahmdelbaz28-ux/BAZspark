@@ -267,9 +267,13 @@ export function FireAlarmPage() {
                 const fetchZones = async () => {
                         setZonesLoading(true);
                         try {
-                                const projects = await api.getProjects({ page: 1, page_size: 1 });
+                                // Vercel best practice: start independent promises in parallel
+                                const projectsPromise = api.getProjects({ page: 1, page_size: 1 });
+                                const devicesPromise = api.getElements({ page: 1, page_size: 100 });
+
+                                const projects = await projectsPromise;
                                 if (projects?.items && projects.items.length > 0) {
-                                        const devices = await api.getElements({ page: 1, page_size: 100 });
+                                        const devices = await devicesPromise;
                                         if (devices?.items && devices.items.length > 0) {
                                                 // Transform devices into zone structure
                                                 const zoneMap: Record<
