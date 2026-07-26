@@ -8,14 +8,15 @@
 # Usage:
 #   bash scripts/verify_sync.sh
 # ═══════════════════════════════════════════════════════════════════════════
-set -euo pipefail
+set -eu
 
 # Separator line for visual output grouping (defined once to avoid
 # duplicating the literal — SonarCloud shelldre:S1192).
 SEP="═══════════════════════════════════════════════════════════════════════"
 
-GH_REPO="/home/z/my-project/repos/revit"
-HF_SPACE="/home/z/my-project/repos/BAZSPARK"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+GH_REPO="${GH_REPO:-$(dirname "$SCRIPT_DIR")}"
+HF_SPACE="${HF_SPACE:-$(dirname "$SCRIPT_DIR")/BAZSPARK}"
 
 # Runtime paths that MUST be in sync (matches sync-to-hf.yml RUNTIME_PATHS)
 RUNTIME_PATHS=(

@@ -26,9 +26,9 @@
 
 set -euo pipefail
 
-REPO="ahmdelbaz28-ux/revit"
-PROJECT_ID="prj_Y6Qr828DXS83tWF1LntFakyofMrf"
-TEAM_ID="team_eeEYqzXI8zkrTo62cUOTMVmS"
+REPO="${GH_REPO:-ahmdelbaz28-ux/BAZspark}"
+PROJECT_ID="${VERCEL_PROJECT_ID:-prj_cLO9iGH2sEG5LGSV1tv95CWimkl5}"
+TEAM_ID="${VERCEL_TEAM_ID:-team_eeEYqzXI8zkrTo62cUOTMVmS}"
 LOG_DIR="/home/z/my-project/work"
 TIMESTAMP=$(date +%Y%mDD_%H%M%S)
 LOG_FILE="${LOG_DIR}/vercel_verify_${TIMESTAMP}.log"
