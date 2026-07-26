@@ -120,7 +120,13 @@ export function EngineeringPage() {
                                 length_m: length,
                                 awg_gauge: voltageDropInputs.cableSize || "12",
                                 supply_voltage_v: Number.parseFloat(voltageDropInputs.voltage) || 24.0,
-                        });			setApiResult(result as Record<string, unknown>);
+                        });			setApiResult(result as unknown as {
+								voltage_drop_v: number;
+								drop_pct: number;
+								is_compliant: boolean;
+								nec_section: string;
+								computation_hash: string;
+						});
                 } catch (err) {
                         const msg = err instanceof Error ? err.message : "QOMN API calculation failed";
                         setApiError(msg);

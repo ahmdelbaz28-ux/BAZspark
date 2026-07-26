@@ -995,9 +995,9 @@ useEffect(() => {
                                                                                          <div className="bg-[#04060a] border border-[rgba(74,85,104,0.3)] rounded-md p-3 font-mono text-[10px] text-[#b0b8c4] space-y-1.5">
                                                                                                  <div className="text-[9px] uppercase tracking-wider text-[#4a5568] font-bold border-b border-[rgba(74,85,104,0.2)] pb-1">Layout Summary</div>
                                                                                                  {((detection as { counts?: Array<Record<string, unknown>> })?.counts ?? []).map((c: Record<string, unknown>, _ci: number) => (
-                                                                                                         <div key={c.detector_type} className="flex justify-between items-center">
-                                                                                                                 <span className="text-[#c9a84c] uppercase">{c.detector_type.replace("_", " ")}</span>
-                                                                                                                 <span>{c.placement_count} units</span>
+                                                                                                         <div key={String(c.detector_type)} className="flex justify-between items-center">
+                                                                                                                 <span className="text-[#c9a84c] uppercase">{String(c.detector_type).replace("_", " ")}</span>
+                                                                                                                 <span>{String(c.placement_count)} units</span>
                                                                                                          </div>
                                                                                                  ))}
                                                                                                  <div className="text-[8px] text-[#4a5568] mt-2 leading-tight">
@@ -1171,7 +1171,7 @@ useEffect(() => {
                                                                                                         (() => {
                                                                                                                 const effects = new Set<string>();
                                                                                                                 ((alarmLogic as { nodes?: Array<Record<string, unknown>> })?.nodes ?? []).forEach((n: Record<string, unknown>) => {
-                                                                                                                        (n.action_outputs || []).forEach((e: string) => {
+                                                                                                                        ((n.action_outputs as string[]) || []).forEach((e: string) => {
                                                                                                                                 effects.add(e);
                                                                                                                         });
                                                                                                                 });
@@ -1195,7 +1195,7 @@ useEffect(() => {
                                                                                                                                 {(() => {
                                                                                                                                         const effects = new Set<string>();
                                                                                                                                         ((alarmLogic as { nodes?: Array<Record<string, unknown>> })?.nodes ?? []).forEach((n: Record<string, unknown>) => {
-                                                                                                                                                (n.action_outputs || []).forEach((e: string) => effects.add(e));
+                                                                                                                                                ((n.action_outputs as string[]) || []).forEach((e: string) => effects.add(e));
                                                                                                                                         });
                                                                                                                                         const uniqueEffects = Array.from(effects);
                                                                                                                                         return uniqueEffects.map(eff => (
@@ -1211,18 +1211,18 @@ useEffect(() => {
                                                                                                                                 const isSimActive = alarmActive && node.zone_id === zones[selectedZoneIndex]?.zone_id;
                                                                                                                                 const effects = new Set<string>();
                                                                                                                                 ((alarmLogic as { nodes?: Array<Record<string, unknown>> })?.nodes ?? []).forEach((n: Record<string, unknown>) => {
-                                                                                                                                        (n.action_outputs || []).forEach((e: string) => effects.add(e));
+                                                                                                                                        ((n.action_outputs as string[]) || []).forEach((e: string) => effects.add(e));
                                                                                                                                 });
                                                                                                                                 const uniqueEffects = Array.from(effects);
                                                                                                                                 return (
                                                                                                                                         <tr
-                                                                                                                                                key={node.node_id}
+                                                                                                                                                key={String(node.node_id)}
                                                                                                                                                 className={`border-b border-[rgba(74,85,104,0.2)] transition-colors hover:bg-[rgba(201,168,76,0.05)] ${isSimActive ? "bg-[rgba(230,57,70,0.12)] text-[#f1f5f9]" : ""}`}
                                                                                                                                         >
                                                                                                                                                 <td className="p-2 font-semibold text-[#c9a84c] min-w-[140px] max-w-[200px]">
-                                                                                                                                                        <div>{node.node_id}</div>
-                                                                                                                                                        <div className="text-[9px] text-[#4a5568] truncate" title={`${node.trigger_detector} (${node.zone_id})`}>
-                                                                                                                                                                {node.trigger_detector} ({node.zone_id})
+                                                                                                                                                        <div>{String(node.node_id)}</div>
+                                                                                                                                                        <div className="text-[9px] text-[#4a5568] truncate" title={`${String(node.trigger_detector)} (${String(node.zone_id)})`}>
+                                                                                                                                                                {String(node.trigger_detector)} ({String(node.zone_id)})
                                                                                                                                                         </div>
                                                                                                                                                 </td>
                                                                                                                                                 <td className="p-2 border-l border-[rgba(74,85,104,0.2)]">
@@ -1231,11 +1231,11 @@ useEffect(() => {
                                                                                                                                                                 node.alarm_level === "ALARM" ? "bg-[rgba(245,158,11,0.25)] text-[#f59e0b] border border-[rgba(245,158,11,0.4)]" :
                                                                                                                                                                 "bg-[rgba(16,185,129,0.25)] text-[#10b981] border border-[rgba(16,185,129,0.4)]"
                                                                                                                                                         }`}>
-                                                                                                                                                                {node.alarm_level}
+                                                                                                                                                                {String(node.alarm_level)}
                                                                                                                                                         </span>
                                                                                                                                                 </td>
                                                                                                                                                 <td className="p-2 text-center border-l border-[rgba(74,85,104,0.2)] text-[10px] w-[50px]">
-                                                                                                                                                        {node.delay_s > 0 ? `${node.delay_s}s` : "-"}
+                                                                                                                                                        {Number(node.delay_s) > 0 ? `${node.delay_s}s` : "-"}
                                                                                                                                                 </td>
                                                                                                                                                 {uniqueEffects.map(eff => {
                                                                                                                                                         const isTriggered = (node.action_outputs || []).includes(eff);
@@ -1360,10 +1360,10 @@ useEffect(() => {
                                                                                                                 </thead>
                                                                                                                 <tbody>
                                                                                                                         {((scadaConfig as { tags?: Array<Record<string, unknown>> })?.tags ?? []).map((tag: Record<string, unknown>) => (
-                                                                                                                                <tr key={tag.tag_id} className="border-b border-[rgba(74,85,104,0.2)] hover:bg-[rgba(201,168,76,0.04)]">
-                                                                                                                                        <td className="p-2 font-semibold text-[#c9a84c] truncate max-w-[150px]">{tag.tag_id}</td>
-                                                                                                                                        <td className="p-2 border-l border-[rgba(74,85,104,0.2)]">{tag.description}</td>
-                                                                                                                                        <td className="p-2 border-l border-[rgba(74,85,104,0.2)] text-[#2ec4b6] truncate max-w-[250px]" title={tag.address}>{tag.address}</td>
+                                                                                                                                <tr key={String(tag.tag_id)} className="border-b border-[rgba(74,85,104,0.2)] hover:bg-[rgba(201,168,76,0.04)]">
+                                                                                                                                        <td className="p-2 font-semibold text-[#c9a84c] truncate max-w-[150px]">{String(tag.tag_id)}</td>
+                                                                                                                                        <td className="p-2 border-l border-[rgba(74,85,104,0.2)]">{String(tag.description)}</td>
+                                                                                                                                        <td className="p-2 border-l border-[rgba(74,85,104,0.2)] text-[#2ec4b6] truncate max-w-[250px]" title={String(tag.address)}>{String(tag.address)}</td>
                                                                                                                                         <td className="p-2 text-center border-l border-[rgba(74,85,104,0.2)] text-[9px] w-[60px]">
                                                                                                                                                 <span className="bg-[#0f172a] px-1.5 py-0.5 rounded border border-[rgba(74,85,104,0.3)] text-[#b0b8c4]">
                                                                                                                                                         {tag.data_type}
