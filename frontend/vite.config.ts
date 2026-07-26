@@ -82,6 +82,14 @@ export default defineConfig({
                 // configured API port. Do NOT inline the mock into vite preview — it
                 // destroys the audit's signal.
         ].filter(Boolean),
+        optimizeDeps: {
+                // Force pre-bundle lucide-react so its 1,583+ internal modules are
+                // bundled into a single optimized chunk by esbuild on dev startup.
+                // Without this, the first page load triggers a cascade of
+                // transform requests for each icon module, adding 200-800ms to
+                // cold-start time per import.
+                include: ["lucide-react"],
+        },
         resolve: {
                 alias: {
                         "@": path.resolve(__dirname, "src"),
