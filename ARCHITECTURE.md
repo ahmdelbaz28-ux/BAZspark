@@ -50,57 +50,21 @@ The FireAI platform implements a robust, safety-critical architecture for fire p
 ## Actual Repository Structure
 
 ```
-revit/
+BAZspark/
 ├── fireai/                        # Core fire alarm engineering library
-│   ├── core/                      # Core computation engine
-│   │   ├── qomn_kernel.py         # QOMN-FIRE deterministic engineering kernel
-│   │   ├── nfpa72_calculations.py # NFPA 72 Chapter 17 calculations
-│   │   ├── nfpa72_models.py       # Data models for NFPA 72
-│   │   ├── nfpa72_coverage.py     # Coverage analysis engine
-│   │   ├── nfpa72_engine.py       # Main NFPA 72 compliance engine
-│   │   ├── nfpa72_schemas.py      # Pydantic schemas for NFPA 72 API
-│   │   ├── nfpa72_technology_dispatcher.py  # Detector technology selection
-│   │   ├── fire_expert_system.py  # Expert system for fire protection
-│   │   ├── floor_orchestrator.py  # Multi-floor analysis orchestration
-│   │   ├── fireai_api.py         # FastAPI application
-│   │   ├── audit_trail.py        # Immutable audit trail
-│   │   ├── room_validator.py     # Room input validation
-│   │   ├── rules_engine/         # NFPA 72 rules engine
-│   │   ├── spatial_engine/       # Spatial analysis (Voronoi, MIP)
-│   │   └── ...                   # 60+ additional core modules
-│   ├── constants/                 # Single Source of Truth for standards
-│   │   ├── __init__.py           # Re-exports from nfpa72.py + NEC constants
-│   │   ├── nfpa72.py             # CANONICAL NFPA 72-2022 constants (SSoT)
-│   │   └── nec.py                # NEC (NFPA 70-2023) constants
-│   ├── bridges/                   # Integration bridges
-│   │   ├── revit_bim_sync.py     # Revit BIM synchronization
-│   │   ├── ifc_pipeline.py       # IFC file pipeline
-│   │   ├── enterprise_pipeline.py # Enterprise integration
-│   │   └── ifc_headless_bridge.py # Headless IFC bridge
+│   ├── core/                      # Core computation engine (QOMN kernel, NFPA 72)
+│   ├── constants/                 # SSoT for NFPA 72-2022 and NEC constants
+│   ├── bridges/                   # Integration bridges (Revit, IFC)
 │   ├── agents/                    # AI agent modules
-│   ├── validation/                # Compliance validation engines
-│   ├── analytics/                 # Predictive analytics & ML
-│   ├── infrastructure/            # Logging, metrics, health, tracing
-│   ├── tools/                     # Dependency analyzer, constant checker
-│   ├── integration/               # AutoCAD, Bentley, AR/VR, IoT bridges
-│   ├── v17_core/                  # V17 legacy core modules
-│   ├── conduit/                   # Conduit fill analysis
 │   ├── mcp_server/                # Model Context Protocol server
-│   ├── viewers/                   # Visualization components
-│   ├── cli.py                     # Command-line interface
 │   ├── env_config.py             # Environment configuration
-│   ├── version.py                # Version tracking
-│   ├── README.md                 # FireAI documentation
-│   ├── LIMITATIONS.md            # Known limitations
-│   ├── TESTING.md                # Testing documentation
-│   ├── SECURITY.md               # Security documentation
-│   └── CHANGELOG.md              # Change log
+│   └── ...                       # 60+ additional core modules
 ├── backend/                       # FastAPI backend service
 │   ├── app.py                    # Backend application entry
 │   ├── routers/                  # API route handlers
 │   ├── services/                 # Business logic services
 │   └── models.py                 # Backend data models
-├── frontend/                      # React + TypeScript frontend
+├── frontend/                      # React + TypeScript + Vite frontend
 │   ├── src/                      # Source code
 │   │   ├── pages/                # Page components
 │   │   ├── components/           # UI components (shadcn/ui)
@@ -110,35 +74,18 @@ revit/
 │   └── electron/                 # Electron desktop wrapper
 ├── facp_system/                   # Fire Alarm Control Panel system
 ├── facp_distributed/              # Distributed FACP architecture
-│   ├── l1_gateway/               # API gateway layer
-│   ├── l2_orchestrator/          # Orchestration layer
-│   ├── l3_engine_workers/        # Engine worker layer
-│   ├── security/                 # RBAC, auth, audit, isolation
-│   ├── event_bus/                # Event dispatching
-│   ├── transport/                # HTTP, WebSocket, message bus
-│   └── protocol/                 # Message schemas
 ├── qomn_fire/                     # QOMN-FIRE engine (standalone)
-│   ├── core/                     # Core types, constants, errors
-│   ├── engine/                   # Placement, routing, panel selection
-│   ├── drawing/                  # DXF, hatch, title block
-│   ├── output/                   # Revit export
-│   ├── parsers/                  # File format parsers
-│   └── integration/              # Cable hatch integration
 ├── qomn_conduit/                  # QOMN conduit routing engine
 ├── parsers/                       # Multi-format file parsers
 ├── integration/                   # IFC bridge integration
-├── tests/                         # Test suite (200+ test files)
-├── deploy/                        # Deployment configurations
-│   ├── docker/                   # Docker & docker-compose
-│   ├── k8s/                      # Kubernetes manifests
-│   ├── helm/                     # Helm charts
-│   └── observability/            # Prometheus, Grafana, Loki, Tempo
-├── docs/                          # Documentation
-├── wiki/                          # Standards wiki
-├── skills/                        # Skill modules
+├── tests/                         # 200+ test files
+├── docs/                          # Diátaxis documentation
+├── scripts/                       # Utility scripts
+├── traefik/                       # Traefik reverse proxy config
 ├── ARCHITECTURE.md                # This file
 ├── pyproject.toml                 # Python project config
-├── requirements.txt               # Python dependencies
+├── docker-compose.yml             # Docker Compose configuration
+├── Dockerfile                     # Container definition
 └── CHANGELOG.md                   # Project changelog
 ```
 
@@ -305,14 +252,16 @@ Multiple validation layers ensure safety:
 ## Technology Stack
 
 ### Backend Technologies
-- **Python 3.8+**: Primary implementation language
+- **Python 3.12+**: Primary implementation language
 - **FastAPI**: Web framework for API services
 - **SQLAlchemy**: ORM for database interactions
 - **Redis**: In-memory data store
 
 ### Frontend Technologies
 - **React**: User interface framework
-- **D3.js**: Data visualization
+- **TypeScript**: Type-safe frontend development
+- **Tailwind CSS**: Utility-first styling
+- **Vite**: Build tooling
 - **WebSockets**: Real-time communication
 
 *Technology selection by Eng. Ahmed Elbaz*
@@ -335,22 +284,7 @@ Multiple validation layers ensure safety:
 
 ## Evolution Plan
 
-### Phase 1: Foundation
-- Core calculation engines
-- Basic BIM integration
-- Essential safety features
-
-### Phase 2: Intelligence
-- Advanced AI capabilities
-- Predictive analytics
-- Automated optimization
-
-### Phase 3: Ecosystem
-- Third-party integrations
-- Marketplace for extensions
-- Advanced visualization
-
-*Evolution strategy by Eng. Ahmed Elbaz*
+Refer to [ROADMAP.md](ROADMAP.md) for the current evolution plan and milestones.
 
 ---
 

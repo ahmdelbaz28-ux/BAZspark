@@ -110,7 +110,7 @@ to which layer you're in.
 
 | Context | Meaning | Example |
 |---------|---------|---------|
-| Frontend canvas (`DeviceType`) | Electrical power system component | GENERATOR, BATTERY, LOAD, PANEL |
+| Frontend canvas (`PowerComponent`) | Electrical power system component | GENERATOR, BATTERY, LOAD, PANEL |
 | Backend `db_models.py` | Fire alarm field device | smoke detector, heat detector, pull station, notification appliance |
 | Backend `schemas.py` | UDM CRUD entity | generic device record in the elements database |
 

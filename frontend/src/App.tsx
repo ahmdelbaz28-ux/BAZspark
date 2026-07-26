@@ -3,15 +3,8 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
-import { AskAiButton } from "@/components/ai/AskAiButton";
-import { AskAiSheet } from "@/components/ai/AskAiSheet";
-import CommandPalette from "@/components/command/CommandPalette";
 import { RouteGuard } from "@/components/auth/RouteGuard";
 import { PageErrorBoundary } from "@/components/core/PageErrorBoundary";
-import AppShell from "@/components/layout/AppShell";
-import OnboardingTour from "@/components/onboarding/OnboardingTour";
-import { GlobalHelpDrawer } from "@/components/shared/GlobalHelpDrawer";
-import { MagneticCursor } from "@/components/interaction/MagneticCursor";
 import { SmoothScroll } from "@/components/interaction/SmoothScroll";
 // F-08 FIX (Engineering Review): visible banner when running on mock data.
 import { DemoDataBanner } from "@/components/shared/DemoDataBanner";
@@ -19,10 +12,36 @@ import type { HelpTopicId } from "@/help/types";
 import { ROUTE_HELP_MAP } from "@/help/types";
 import { useHealth } from "@/hooks/useApiQuery";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { LoginPage } from "./pages/LoginPage";
 import "./i18n";
 import "./styles/globals.css";
 import "./styles/typography.css";
+
+// Vercel React Best Practices: Defer non-critical third-party and heavy overlay components
+// bundle-defer-third-party + bundle-dynamic-imports
+const AskAiButton = lazy(() =>
+        import("@/components/ai/AskAiButton").then((m) => ({ default: m.AskAiButton })),
+);
+const AskAiSheet = lazy(() =>
+        import("@/components/ai/AskAiSheet").then((m) => ({ default: m.AskAiSheet })),
+);
+const CommandPalette = lazy(() =>
+        import("@/components/command/CommandPalette"),
+);
+const AppShell = lazy(() =>
+        import("@/components/layout/AppShell").then((m) => ({ default: m.default })),
+);
+const OnboardingTour = lazy(() =>
+        import("@/components/onboarding/OnboardingTour"),
+);
+const GlobalHelpDrawer = lazy(() =>
+        import("@/components/shared/GlobalHelpDrawer").then((m) => ({ default: m.GlobalHelpDrawer })),
+);
+const MagneticCursor = lazy(() =>
+        import("@/components/interaction/MagneticCursor").then((m) => ({ default: m.MagneticCursor })),
+);
+const LoginPage = lazy(() =>
+        import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })),
+);
 
 // V242: Lazy-load all page components to enable code splitting.
 // This reduces the initial bundle from ~705kB to ~250kB (vendor + app shell).

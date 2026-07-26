@@ -20,7 +20,7 @@ docs/
 │   ├── engineering-formulas.md
 │   └── security.md
 └── explanation/            # Understanding-oriented (discussions)
-    └── (coming soon)
+    └── architecture-overview.md  # System architecture explained
 ```
 
 ## Quick Links
@@ -70,14 +70,6 @@ Follow the [Deployment Guide](how-to/deployment.md).
 
 ## Legacy Documentation
 
-The following files are archived and may contain outdated information:
+The following directories contain archived documents that may be outdated:
 
 - `docs/archive/` — Historical documents from earlier phases
-- `docs/system/` — System integrity audit reports
-- `docs/release/` — Release process documentation
-- `docs/killer/` — Release blocker reports
-- `docs/ivv/` — Independent verification reports
-- `docs/infra/` — Infrastructure audit reports
-- `docs/features/` — Feature validation reports
-- `docs/chaos/` — Chaos engineering reports
-- `docs/cleanup/` — Code cleanup reports
