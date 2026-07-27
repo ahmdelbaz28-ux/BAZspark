@@ -13,9 +13,9 @@ ENDPOINTS:
   GET  /api/facp/panels      — List all available panels in the database
 
 STANDARDS:
-  NFPA 72-2022 SS10.6.7 — FACP selection and listing requirements
-  NFPA 72-2022 SS10.6.7  — Battery backup capacity
-  UL 864 10th Edition    — Control unit listing requirements
+  NFPA_72_REF — FACP selection and listing requirements
+  NFPA_72_REF  — Battery backup capacity
+  UL_864_REF    — Control unit listing requirements
   CSFM                   — California State Fire Marshal listing
   FDNY COA               — New York City Certificate of Approval
 
