@@ -12,20 +12,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getApiKey } from "@/services/apiKey";
 import {
-        Card,
-        CardContent,
-        CardDescription,
-        CardHeader,
-        CardTitle,
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-        Select,
-        SelectContent,
-        SelectItem,
-        SelectTrigger,
-        SelectValue,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { calculateBatteryRequirements } from "@/engine/BatteryCalculator";
@@ -636,40 +637,40 @@ export function ReportsPage() {
                                                         </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-4 pt-2">
-                                                        <div className="flex items-center gap-2">
-                                                                <Label className="flex items-center gap-2 text-foreground/90 cursor-pointer">
-                                                                        <input
-                                                                                type="checkbox"
-                                                                                checked={execParams.deterministic_analysis}
-                                                                                onChange={(e) =>
-                                                                                        setExecParams((p) => ({
-                                                                                                ...p,
-                                                                                                deterministic_analysis: e.target.checked,
-                                                                                        }))
-                                                                                }
-                                                                                className="rounded bg-card border-border text-slate-400 focus:ring-red-500"
-                                                                        />
-                                                                        Deterministic Analysis
-                                                                </Label>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                                <Label className="flex items-center gap-2 text-foreground/90 cursor-pointer">
-                                                                        <input
-                                                                                type="checkbox"
-                                                                                checked={execParams.nfpa_compliance}
-                                                                                onChange={(e) =>
-                                                                                        setExecParams((p) => ({
-                                                                                                ...p,
-                                                                                                nfpa_compliance: e.target.checked,
-                                                                                        }))
-                                                                                }
-                                                                                className="rounded bg-card border-border text-slate-400 focus:ring-red-500"
-                                                                        />
-                                                                        NFPA Compliance
-                                                                </Label>
-                                                        </div>
-                                                </div>
+												<div className="flex items-center gap-4 pt-2">
+													<div className="flex items-center gap-2">
+														<Label className="flex items-center gap-2 text-foreground/90 cursor-pointer">
+															<input
+																type="checkbox"
+																checked={execParams.deterministic_analysis}
+																onChange={(e) =>
+																	setExecParams((p) => ({
+																		...p,
+																		deterministic_analysis: e.target.checked,
+																	}))
+																}
+																className="rounded border-border bg-card text-primary focus:ring-primary/30 h-4 w-4"
+															/>
+															Deterministic Analysis
+														</Label>
+													</div>
+													<div className="flex items-center gap-2">
+														<Label className="flex items-center gap-2 text-foreground/90 cursor-pointer">
+															<input
+																type="checkbox"
+																checked={execParams.nfpa_compliance}
+																onChange={(e) =>
+																	setExecParams((p) => ({
+																		...p,
+																		nfpa_compliance: e.target.checked,
+																	}))
+																}
+																className="rounded border-border bg-card text-primary focus:ring-primary/30 h-4 w-4"
+															/>
+															NFPA Compliance
+														</Label>
+													</div>
+												</div>
 
                                                 <Button
                                                         className="bg-danger hover:bg-danger/90 text-white border-none"
@@ -692,49 +693,49 @@ export function ReportsPage() {
                                                 {/* V214 FIX: AHJ Submittal button — generates real NFPA 72
                                                      compliance proof document via POST /reports/ahj-submittal */}
                                                 {/* V246 FIX: AHJ fields are now editable (was hardcoded) */}
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2 w-full">
-                                                        <div>
-                                                                <Label htmlFor="ahj-designer" className="text-xs text-muted-foreground">
-                                                                        Designer Name (required)
-                                                                </Label>
-                                                                <input
-                                                                        id="ahj-designer"
-                                                                        type="text"
-                                                                        value={ahjDesigner}
-                                                                        onChange={(e) => setAhjDesigner(e.target.value)}
-                                                                        placeholder="Eng. John Doe, PE"
-                                                                        className="w-full mt-1 px-3 py-2 text-sm bg-card border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                                                                />
-                                                        </div>
-                                                        <div>
-                                                                <Label htmlFor="ahj-jurisdiction" className="text-xs text-muted-foreground">
-                                                                        Jurisdiction
-                                                                </Label>
-                                                                <input
-                                                                        id="ahj-jurisdiction"
-                                                                        type="text"
-                                                                        value={ahjJurisdiction}
-                                                                        onChange={(e) => setAhjJurisdiction(e.target.value)}
-                                                                        placeholder="City of Cairo Fire Marshal"
-                                                                        className="w-full mt-1 px-3 py-2 text-sm bg-card border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                                                                />
-                                                        </div>
-                                                        <div>
-                                                                <Label htmlFor="ahj-nfpa-edition" className="text-xs text-muted-foreground">
-                                                                        NFPA Edition
-                                                                </Label>
-                                                                <select
-                                                                        id="ahj-nfpa-edition"
-                                                                        value={ahjNfpaEdition}
-                                                                        onChange={(e) => setAhjNfpaEdition(e.target.value)}
-                                                                        className="w-full mt-1 px-3 py-2 text-sm bg-card border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                                                                >
-                                                                        <option value="2022">NFPA 72 (2022)</option>
-                                                                        <option value="2019">NFPA 72 (2019)</option>
-                                                                        <option value="2016">NFPA 72 (2016)</option>
-                                                                </select>
-                                                        </div>
-                                                </div>
+												<div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2 w-full">
+													<div>
+														<Label htmlFor="ahj-designer" className="text-xs text-muted-foreground">
+															Designer Name (required)
+														</Label>
+														<Input
+															id="ahj-designer"
+															type="text"
+															value={ahjDesigner}
+															onChange={(e) => setAhjDesigner(e.target.value)}
+															placeholder="Eng. John Doe, PE"
+															className="mt-1"
+														/>
+													</div>
+													<div>
+														<Label htmlFor="ahj-jurisdiction" className="text-xs text-muted-foreground">
+															Jurisdiction
+														</Label>
+														<Input
+															id="ahj-jurisdiction"
+															type="text"
+															value={ahjJurisdiction}
+															onChange={(e) => setAhjJurisdiction(e.target.value)}
+															placeholder="City of Cairo Fire Marshal"
+															className="mt-1"
+														/>
+													</div>
+													<div>
+														<Label htmlFor="ahj-nfpa-edition" className="text-xs text-muted-foreground">
+															NFPA Edition
+														</Label>
+														<Select value={ahjNfpaEdition} onValueChange={setAhjNfpaEdition}>
+															<SelectTrigger className="mt-1 bg-card border-border text-foreground">
+																<SelectValue />
+															</SelectTrigger>
+															<SelectContent className="bg-card border-border">
+																<SelectItem value="2022">NFPA 72 (2022)</SelectItem>
+																<SelectItem value="2019">NFPA 72 (2019)</SelectItem>
+																<SelectItem value="2016">NFPA 72 (2016)</SelectItem>
+															</SelectContent>
+														</Select>
+													</div>
+												</div>
                                                 <Button
                                                         className="bg-primary hover:bg-primary/90 text-white border-none ml-2 mt-2"
                                                         onClick={handleGenerateAhj}

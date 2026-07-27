@@ -217,14 +217,14 @@ export function SettingsPage() {
                                                                         {t("settings.comprehensiveReportDesc")}
                                                                 </p>
                                                         </div>
-                                                        <Button
-                                                                onClick={() => navigate("/reports")}
-                                                                className="bg-danger hover:bg-danger/90 text-white border-none flex items-center gap-2"
-                                                                aria-label={t("settings.openReportGenerator")}
-                                                        >
-                                                                <Calculator className="h-4 w-4" />
-                                                                {t("settings.openReportGenerator")}
-                                                        </Button>
+								<Button
+									onClick={() => navigate("/reports")}
+									className="bg-primary hover:bg-primary/90 text-primary-foreground border-none flex items-center gap-2"
+									aria-label={t("settings.openReportGenerator")}
+								>
+									<Calculator className="h-4 w-4" />
+									{t("settings.openReportGenerator")}
+								</Button>
                                                 </div>
                                         </CardContent>
                                 </Card>
@@ -316,14 +316,14 @@ export function SettingsPage() {
                                                                                 className="data-[state=checked]:bg-danger"
                                                                         />
                                                                 </div>
-                                                                <div className="pt-4">
-                                                                        <Button
-                                                                                className="bg-danger hover:bg-danger/90 text-white border-none"
-                                                                                onClick={handleSaveGeneral}
-                                                                        >
-                                                                                {t("settings.save")}
-                                                                        </Button>
-                                                                </div>
+										<div className="pt-4">
+											<Button
+												className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+												onClick={handleSaveGeneral}
+											>
+												{t("settings.save")}
+											</Button>
+										</div>
                                                         </CardContent>
                                                 </Card>
                                         </TabsContent>
@@ -376,14 +376,14 @@ export function SettingsPage() {
                                                                                 {t("settings.passwordExpiryDescription")}
                                                                         </p>
                                                                 </div>
-                                                                <div className="pt-4">
-                                                                        <Button
-                                                                                className="bg-danger hover:bg-danger/90 text-white border-none"
-                                                                                onClick={handleSaveSecurity}
-                                                                        >
-                                                                                {t("settings.save")}
-                                                                        </Button>
-                                                                </div>
+										<div className="pt-4">
+											<Button
+												className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+												onClick={handleSaveSecurity}
+											>
+												{t("settings.save")}
+											</Button>
+										</div>
                                                         </CardContent>
                                                 </Card>
                                         </TabsContent>
@@ -434,14 +434,14 @@ export function SettingsPage() {
                                                                                 </p>
                                                                         </div>
                                                                 </div>
-                                                                <div className="pt-4">
-                                                                        <Button
-                                                                                className="bg-danger hover:bg-danger/90 text-white border-none"
-                                                                                onClick={handleSaveApi}
-                                                                        >
-                                                                                {t("settings.save")}
-                                                                        </Button>
-                                                                </div>
+										<div className="pt-4">
+											<Button
+												className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+												onClick={handleSaveApi}
+											>
+												{t("settings.save")}
+											</Button>
+										</div>
                                                         </CardContent>
                                                 </Card>
                                         </TabsContent>
@@ -510,14 +510,14 @@ export function SettingsPage() {
                                                                                 </p>
                                                                         </div>
                                                                 </div>
-                                                                <div className="pt-4">
-                                                                        <Button
-                                                                                className="bg-danger hover:bg-danger/90 text-white border-none"
-                                                                                onClick={handleSaveReports}
-                                                                        >
-                                                                                {t("settings.saveReportSettings")}
-                                                                        </Button>
-                                                                </div>
+										<div className="pt-4">
+											<Button
+												className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+												onClick={handleSaveReports}
+											>
+												{t("settings.saveReportSettings")}
+											</Button>
+										</div>
                                                         </CardContent>
                                                 </Card>
                                         </TabsContent>

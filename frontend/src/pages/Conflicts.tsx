@@ -48,20 +48,20 @@ function Conflicts() {
 			{/* Header */}
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-bold text-white">
-						{t("conflicts.title")}
-					</h1>
+				<h1 className="text-2xl font-bold text-foreground">
+					{t("conflicts.title")}
+				</h1>
 					<p className="text-muted-foreground text-sm mt-1">
 						{conflicts
 							? `${unresolvedCount} ${t("conflicts.unresolved")} / ${resolvedCount} ${t("conflicts.resolved")}`
 							: t("common.loading")}
 					</p>
 				</div>
-				<Button
-					onClick={() => detectMutation.mutate()}
-					disabled={detectMutation.isPending}
-					className="bg-danger hover:bg-danger/90 text-white border-none"
-				>
+			<Button
+				onClick={() => detectMutation.mutate()}
+				disabled={detectMutation.isPending}
+				className="gap-2"
+			>
 					{detectMutation.isPending ? (
 						<>
 							<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
@@ -128,10 +128,10 @@ function Conflicts() {
 			{/* Summary cards */}
 			{conflictsData && !isLoading && (
 				<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-					<div className="bg-card border border-border rounded-md p-4">
-						<p className="text-2xl font-bold text-white">
-							{conflictsData.total}
-						</p>
+				<div className="bg-card border border-border rounded-md p-4">
+					<p className="text-2xl font-bold text-foreground">
+						{conflictsData.total}
+					</p>
 						<p className="text-muted-foreground text-sm">
 							{t("conflicts.totalConflicts")}
 						</p>
@@ -307,13 +307,13 @@ function Conflicts() {
 				</div>
 			)}
 
-			{/* Resolve Modal */}
-			{resolveTarget && (
-				<div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-					<div className="bg-card border border-border rounded-md max-w-md w-full p-6">
-						<h3 className="text-lg font-semibold text-white mb-2">
-							{t("conflicts.resolveConflict")}
-						</h3>
+		{/* Resolve Modal */}
+		{resolveTarget && (
+			<div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={t("conflicts.resolveConflict")}>
+				<div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
+					<h3 className="text-lg font-semibold text-foreground mb-2">
+						{t("conflicts.resolveConflict")}
+					</h3>
 						<p className="text-muted-foreground text-sm mb-4">
 							{t("conflicts.selectResolutionStrategy")}
 						</p>
@@ -334,7 +334,7 @@ function Conflicts() {
 								onValueChange={setResolveStrategy}
 								className="space-y-3"
 							>
-								<div className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg border border-border hover:border-danger/30 transition-colors">
+								<div className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg border border-border hover:border-primary/30 transition-colors">
 									<RadioGroupItem
 										value="LAST_WRITE_WINS"
 										id="last-write"
@@ -343,7 +343,7 @@ function Conflicts() {
 									<div className="space-y-1">
 										<label
 											htmlFor="last-write"
-											className="text-sm text-white font-medium cursor-pointer"
+											className="text-sm text-foreground font-medium cursor-pointer"
 										>
 											{t("conflicts.lastWriteWins")}
 										</label>
@@ -352,7 +352,7 @@ function Conflicts() {
 										</p>
 									</div>
 								</div>
-								<div className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg border border-border hover:border-danger/30 transition-colors">
+								<div className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg border border-border hover:border-primary/30 transition-colors">
 									<RadioGroupItem
 										value="SEMANTIC_MERGE"
 										id="semantic-merge"
@@ -361,7 +361,7 @@ function Conflicts() {
 									<div className="space-y-1">
 										<label
 											htmlFor="semantic-merge"
-											className="text-sm text-white font-medium cursor-pointer"
+											className="text-sm text-foreground font-medium cursor-pointer"
 										>
 											{t("conflicts.semanticMerge")}
 										</label>

@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
 import { api } from "@/services/api";
 import type { ConnectionCreate } from "@/types";
 
@@ -38,57 +40,59 @@ function Connections() {
 		<div className="space-y-6" aria-label={t("connectionsPage.title")}>
 			{/* Header */}
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-				<div>
-					<h1 className="text-2xl font-bold text-white">
-						{t("connectionsPage.title")}
-					</h1>
-					<p className="text-muted-foreground text-sm mt-1">
-						{connectionsData
-							? t("connectionsPage.totalConnections", {
-									count: connectionsData.total,
-								})
-							: t("common.loading")}
-					</p>
-				</div>
-				<button type="button"
-					onClick={() => setShowCreateModal(true)}
-					className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors"
+			<div>
+				<h1 className="text-2xl font-bold text-foreground">
+					{t("connectionsPage.title")}
+				</h1>
+				<p className="text-muted-foreground text-sm mt-1">
+					{connectionsData
+						? t("connectionsPage.totalConnections", {
+								count: connectionsData.total,
+							})
+						: t("common.loading")}
+				</p>
+			</div>
+			<Button
+				onClick={() => setShowCreateModal(true)}
+				className="gap-2"
+			>
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="2"
+					strokeLinecap="round"
+					strokeLinejoin="round"
 				>
-					<svg
-						width="16"
-						height="16"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth="2"
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					>
-						<line x1="12" y1="5" x2="12" y2="19" />
-						<line x1="5" y1="12" x2="19" y2="12" />
-					</svg>
-					{t("connectionsPage.createConnection")}
-				</button>
+					<line x1="12" y1="5" x2="12" y2="19" />
+					<line x1="5" y1="12" x2="19" y2="12" />
+				</svg>
+				{t("connectionsPage.createConnection")}
+			</Button>
 			</div>
 
-			{/* Filter */}
-			<div className="flex flex-wrap items-center gap-3">
-				<input
-					type="text"
-					value={elementFilter}
-					onChange={(e) => setElementFilter(e.target.value)}
-					placeholder={t("connectionsPage.elementFilter")}
-					className="bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none w-full sm:w-72"
-				/>
-				{elementFilter && (
-					<button type="button"
-						onClick={() => setElementFilter("")}
-						className="text-sm text-muted-foreground hover:text-white"
-					>
-						✕ {t("common.clear")}
-					</button>
-				)}
-			</div>
+		{/* Filter */}
+		<div className="flex flex-wrap items-center gap-3">
+			<Input
+				type="text"
+				value={elementFilter}
+				onChange={(e) => setElementFilter(e.target.value)}
+				placeholder={t("connectionsPage.elementFilter")}
+				className="w-full sm:w-72"
+			/>
+			{elementFilter && (
+				<Button
+					variant="ghost"
+					size="sm"
+					onClick={() => setElementFilter("")}
+					className="text-muted-foreground hover:text-foreground"
+				>
+					✕ {t("common.clear")}
+				</Button>
+			)}
+		</div>
 
 			{/* Error */}
 			{error && (
@@ -246,36 +250,36 @@ function Connections() {
 				/>
 			)}
 
-			{/* Delete Confirmation */}
-			{deleteTarget && (
-				<div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-					<div className="bg-card border border-border rounded-md max-w-md w-full p-6">
-						<h3 className="text-lg font-semibold text-white mb-2">
-							{t("connectionsPage.deleteConnection")}
-						</h3>
-						<p className="text-muted-foreground text-sm mb-4">
-							{t("connectionsPage.deleteConfirmation")}
-						</p>
-						<div className="flex justify-end gap-3">
-							<button type="button"
-								onClick={() => setDeleteTarget(null)}
-								className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
-							>
-								{t("common.cancel")}
-							</button>
-							<button type="button"
-								onClick={() => deleteMutation.mutate(deleteTarget)}
-								disabled={deleteMutation.isPending}
-								className="px-4 py-2 bg-danger hover:bg-slate-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-							>
-								{deleteMutation.isPending
-									? t("common.deleting")
-									: t("common.delete")}
-							</button>
-						</div>
+		{/* Delete Confirmation */}
+		{deleteTarget && (
+			<div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={t("connectionsPage.deleteConnection")}>
+				<div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
+					<h3 className="text-lg font-semibold text-foreground mb-2">
+						{t("connectionsPage.deleteConnection")}
+					</h3>
+					<p className="text-muted-foreground text-sm mb-4">
+						{t("connectionsPage.deleteConfirmation")}
+					</p>
+					<div className="flex justify-end gap-3">
+						<Button
+							variant="outline"
+							onClick={() => setDeleteTarget(null)}
+						>
+							{t("common.cancel")}
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={() => deleteMutation.mutate(deleteTarget)}
+							disabled={deleteMutation.isPending}
+						>
+							{deleteMutation.isPending
+								? t("common.deleting")
+								: t("common.delete")}
+						</Button>
 					</div>
 				</div>
-			)}
+			</div>
+		)}
 		</div>
 	);
 }
@@ -309,9 +313,9 @@ function CreateConnectionModal({
 	});
 
 	return (
-		<div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-			<div className="bg-card border border-border rounded-md max-w-md w-full p-6">
-				<h3 className="text-lg font-semibold text-white mb-4">
+		<div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={t("connectionsPage.createConnection")}>
+			<div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
+				<h3 className="text-lg font-semibold text-foreground mb-4">
 					{t("connectionsPage.createConnection")}
 				</h3>
 
@@ -330,11 +334,10 @@ function CreateConnectionModal({
 						<label className="block text-sm font-medium text-foreground/90 mb-1">
 							{t("connectionsPage.sourceElement")} *
 						</label>
-						<input
+						<Input
 							type="text"
 							value={fromId}
 							onChange={(e) => setFromId(e.target.value)}
-							className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
 							placeholder="Element UUID"
 						/>
 					</div>
@@ -342,11 +345,10 @@ function CreateConnectionModal({
 						<label className="block text-sm font-medium text-foreground/90 mb-1">
 							{t("connectionsPage.targetElement")} *
 						</label>
-						<input
+						<Input
 							type="text"
 							value={toId}
 							onChange={(e) => setToId(e.target.value)}
-							className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
 							placeholder="Element UUID"
 						/>
 					</div>
@@ -354,11 +356,10 @@ function CreateConnectionModal({
 						<label className="block text-sm font-medium text-foreground/90 mb-1">
 							{t("connectionsPage.relationshipType")} *
 						</label>
-						<input
+						<Input
 							type="text"
 							value={relationshipType}
 							onChange={(e) => setRelationshipType(e.target.value)}
-							className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
 							placeholder="e.g., adjacent, connected, contains"
 						/>
 					</div>
@@ -367,30 +368,29 @@ function CreateConnectionModal({
 							type="checkbox"
 							checked={isParametric}
 							onChange={(e) => setIsParametric(e.target.checked)}
-							className="rounded bg-card border-border text-primary focus:ring-primary"
+							className="rounded bg-card border-border text-primary focus:ring-primary/30 focus:ring-2"
 						/>
 						<span className="text-sm text-foreground/90">{t("common.active")}</span>
 					</label>
 				</div>
 
 				<div className="flex justify-end gap-3 mt-6">
-					<button type="button"
+					<Button
+						variant="outline"
 						onClick={onClose}
-						className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
 					>
 						{t("common.cancel")}
-					</button>
-					<button type="button"
+					</Button>
+					<Button
 						onClick={() => createMutation.mutate()}
 						disabled={
 							!fromId || !toId || !relationshipType || createMutation.isPending
 						}
-						className="px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
 					>
 						{createMutation.isPending
 							? t("common.creating")
 							: t("common.create")}
-					</button>
+					</Button>
 				</div>
 			</div>
 		</div>

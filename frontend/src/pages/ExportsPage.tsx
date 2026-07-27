@@ -127,7 +127,7 @@ export function ExportsPage() {
                                 <CardContent>
                                         <Label>Project</Label>
                                         <Select value={projectId} onValueChange={setSelectedProject}>
-                                                <SelectTrigger>
+											<SelectTrigger className="bg-card border-border text-foreground">
                                                         <SelectValue placeholder="Select a project" />
                                                 </SelectTrigger>
                                                 <SelectContent>
