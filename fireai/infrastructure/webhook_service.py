@@ -306,7 +306,7 @@ class WebhookDeliveryService:
 
         # Determine HTTP allowance
         if allow_http is None:
-            env = os.environ.get("FIREAI_ENV", "development").lower()
+            env = os.environ.get("FIREAI_ENV", "production").lower()
             self.allow_http = env == "development"
         else:
             self.allow_http = allow_http

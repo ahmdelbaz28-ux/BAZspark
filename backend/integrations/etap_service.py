@@ -161,7 +161,7 @@ class EtapService:
             }
         except Exception as exc:
             logger.error("ETAP connection test failed: %s", exc)
-            return {"success": False, "message": f"Connection failed: {exc}"}
+            return {"success": False, "message": "Connection failed: unable to reach the specified host and port"}
 
     def get_status(self, project_id: str) -> dict:
         """Get ETAP integration status."""

@@ -211,7 +211,9 @@ async def generate_design_variants(request: Request, req: GenerativeDesignReques
 
 
 @router.get("/bim/providers")
-async def list_bim_providers() -> Dict[str, Any]:
+async def list_bim_providers(
+    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+) -> Dict[str, Any]:
     """List all registered BIM providers."""
     from fireai.bridges.bim_provider import BIMProviderRegistry
 
@@ -465,7 +467,9 @@ async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> D
 
 
 @router.get("/webhooks/subscriptions")
-async def list_webhook_subscriptions() -> Dict[str, Any]:
+async def list_webhook_subscriptions(
+    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+) -> Dict[str, Any]:
     """List all webhook subscriptions."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
@@ -644,7 +648,11 @@ async def store_memory(request: Request, req: VectorMemoryStoreRequest) -> Dict[
 
 @router.post("/memory/search")
 @limiter.limit("30/minute")
-async def search_memory(request: Request, req: VectorMemorySearchRequest) -> Dict[str, Any]:
+async def search_memory(
+    request: Request,
+    req: VectorMemorySearchRequest,
+    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+) -> Dict[str, Any]:
     """Search for similar memories in Qdrant."""
     from fireai.infrastructure.vector_memory_service import (
         MemoryType,
@@ -663,7 +671,9 @@ async def search_memory(request: Request, req: VectorMemorySearchRequest) -> Dic
 
 
 @router.get("/memory/health")
-async def memory_health() -> Dict[str, Any]:
+async def memory_health(
+    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+) -> Dict[str, Any]:
     """Check Qdrant vector database health."""
     from fireai.infrastructure.vector_memory_service import get_vector_memory
     return get_vector_memory().health_check()
@@ -728,7 +738,9 @@ async def analyze_impact(request: Request, req: TopologyImpactRequest) -> Dict[s
 
 
 @router.get("/topology/health")
-async def topology_health() -> Dict[str, Any]:
+async def topology_health(
+    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+) -> Dict[str, Any]:
     """Check Neo4j topology graph health."""
     from fireai.infrastructure.topology_graph_service import get_topology_service
     return get_topology_service().health_check()
@@ -814,7 +826,9 @@ async def search_graphrag(request: Request, req: GraphRAGSearchRequest) -> Dict[
 
 
 @router.get("/graphrag/health")
-async def graphrag_health() -> Dict[str, Any]:
+async def graphrag_health(
+    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+) -> Dict[str, Any]:
     """Check GraphRAG engine health."""
     from fireai.infrastructure.graphrag_engine import get_graphrag_engine
 

@@ -302,6 +302,10 @@ export const llmApi = {
                 if (apiKey) {
                         headers["X-API-Key"] = apiKey;
                 }
+                // SECURITY FIX: Inject CSRF token for POST request (bypassed apiCall)
+                let csrfToken = getCachedCsrfToken();
+                if (!csrfToken) csrfToken = await getCsrfToken();
+                if (csrfToken) headers[CSRF_HEADER_NAME] = csrfToken;
 
                 try {
                         const response = await fetch(
