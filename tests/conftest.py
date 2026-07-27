@@ -121,6 +121,24 @@ _os.environ.setdefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://loc
 # Without this, 12 webhook tests fail with ValueError.
 _os.environ.setdefault("SECRET_KEY", "ci-test-hmac-secret-key-32-chars-minimum!!")
 
+# ─── CI Test Artifact Cleanup ─────────────────────────────────────────────────
+# The API key secret file (db/api_keys.secret) can become invalid between CI
+# runs (e.g., if a previous run crashed mid-write). This causes:
+#   RuntimeError: Server secret file db/api_keys.secret exists but is invalid.
+# Clean it up before tests start. Also clean stale DB files.
+# Using pathlib for cross-platform compatibility.
+for _stale in [
+    "db/api_keys.secret",
+    "db/digital_twin.db",
+    "db/udm_elements.db",
+]:
+    _p = Path(_stale)
+    if _p.exists():
+        try:
+            _p.unlink()
+        except OSError:
+            pass
+
 # Clean up namespace pollution from fireai/ subdirectory
 # (V27 fix: Python import machinery re-adds fireai/ to sys.path)
 _fireai_dir = str(_PROJECT_ROOT / "fireai")

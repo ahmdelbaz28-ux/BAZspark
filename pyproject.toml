@@ -356,7 +356,7 @@ norecursedirs = [".git", "__pycache__", "venv", "env", "revit-main", "facp_distr
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-asyncio_default_fixture_loop_scope = "function"
+# asyncio_default_fixture_loop_scope = "function"  # Requires pytest-asyncio >=0.24; CI uses 0.23.8
 
 [tool.coverage.run]
 source = ["."]

@@ -206,6 +206,8 @@ jobs:
           fi
           # Clean stale test artifacts that cause RuntimeError on re-runs
           rm -rf db/ /tmp/fireai_ci_test.db /tmp/udm_ci_test.db
+          # Explicitly remove api_keys.secret if it exists (may be invalid from prior run)
+          rm -f db/api_keys.secret
           pip install pytest-timeout
           # Run pytest with coverage (pytest-cov >=5.0.0 resolves atexit hang)
           mkdir -p reports/coverage_html && \
