@@ -132,10 +132,13 @@ export function generateCableSchedule(
 ): CableScheduleItem[] {
 	const schedule: CableScheduleItem[] = [];
 
+	// Vercel React Best Practices: js-set-map-lookups — O(1) device lookup
+	const deviceMap = new Map(devices.map((d) => [d.id, d]));
+
 	// Process all connections as cables
 	connections.forEach((conn, index) => {
-		const fromDevice = devices.find((d) => d.id === conn.fromId);
-		const toDevice = devices.find((d) => d.id === conn.toId);
+		const fromDevice = deviceMap.get(conn.fromId);
+		const toDevice = deviceMap.get(conn.toId);
 
 		if (!fromDevice || !toDevice) return;
 

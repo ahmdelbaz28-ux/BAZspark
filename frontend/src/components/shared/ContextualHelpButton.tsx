@@ -14,6 +14,12 @@ import { toast } from "sonner";
 import { HELP_TOPICS as TOPICS } from "@/help/helpTopics";
 import { ROUTE_HELP_MAP } from "@/help/types";
 
+// Vercel React Best Practices: js-hoist-regexp / js-cache-function-results
+// Pre-sort routes once at module level to avoid sorting on every click
+const SORTED_ROUTES = Object.keys(ROUTE_HELP_MAP).sort(
+        (a, b) => b.length - a.length,
+);
+
 interface ContextualHelpButtonProps {
         /** Override the route (defaults to current location) */
         route?: string;
@@ -36,10 +42,7 @@ export function ContextualHelpButton({
                         return ROUTE_HELP_MAP[currentRoute];
                 }
                 // Try prefix match (e.g. /elements/123 → /elements)
-                const sortedRoutes = Object.keys(ROUTE_HELP_MAP).sort(
-                        (a, b) => b.length - a.length,
-                );
-                for (const r of sortedRoutes) {
+                for (const r of SORTED_ROUTES) {
                         if (currentRoute.startsWith(`${r}/`) || currentRoute === r) {
                                 return ROUTE_HELP_MAP[r];
                         }

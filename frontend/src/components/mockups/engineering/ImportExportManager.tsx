@@ -1,5 +1,5 @@
 
-import DxfParser from "dxf-parser";
+// Vercel React Best Practices: bundle-conditional — load DxfParser only when DXF import is triggered
 import { saveAs } from "file-saver";
 import { AlertCircle, Download, Upload } from "lucide-react";
 import type React from "react";
@@ -21,10 +21,11 @@ export function ImportExportManager() {
                 );
         };
 
-        const handleImportDXF = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const handleImportDXF = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
 
+                const { default: DxfParser } = await import("dxf-parser");
                 const reader = new FileReader();
                 reader.onload = (event) => {
                         try {

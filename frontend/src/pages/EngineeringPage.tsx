@@ -7,7 +7,7 @@
  */
 
 import { Battery, Cable, Zap } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExplainButton } from "@/components/ai/ExplainButton";
 import { Badge } from "@/components/ui/badge";
@@ -147,7 +147,8 @@ export function EngineeringPage() {
                 return () => clearTimeout(timer);
         }, [calculateVoltageDropViaApi]);
 
-        const calculateCableSizing = () => {
+        // Vercel React Best Practices: rerender-memo — extract expensive work into memoized functions
+        const calculateCableSizing = useCallback(() => {
                 // Placeholder calculation
                 const loadCurrent = Number.parseFloat(cableSizingInputs.loadCurrent);
                 const length = Number.parseFloat(cableSizingInputs.length);
@@ -178,9 +179,10 @@ export function EngineeringPage() {
                         deratingFactor: Number.parseFloat(deratingFactor.toFixed(2)),
                         finalAmpacity: Number.parseFloat(finalAmpacity.toFixed(2)),
                 };
-        };
+        }, [cableSizingInputs]);
 
-        const calculateBatteryRequirements = () => {
+        // Vercel React Best Practices: rerender-memo — extract expensive work into memoized functions
+        const calculateBatteryRequirements = useCallback(() => {
                 // Placeholder calculation
                 const standbyDevices = Number.parseInt(batteryCalcInputs.standbyDevices, 10);
                 const standbyCurrent = Number.parseFloat(batteryCalcInputs.standbyCurrent);
@@ -217,7 +219,7 @@ export function EngineeringPage() {
                         requiredCapacity: Number.parseFloat(requiredCapacity.toFixed(2)),
                         recommendedBattery: `24V ${Math.ceil(requiredCapacity)}Ah Lead Acid`,
                 };
-        };
+        }, [batteryCalcInputs]);
 
         // V214 FIX: Use API result (primary) or local fallback (secondary)
         const localVDrop = calculateVoltageDropLocal();
@@ -236,8 +238,32 @@ export function EngineeringPage() {
                         absolute: localVDrop.absolute,
                         source: "Local fallback (unaudited)" as const,
                   };
-        const cableResult = calculateCableSizing();
-        const batteryResult = calculateBatteryRequirements();
+        const cableResult = useMemo(() => calculateCableSizing(), [calculateCableSizing]);
+        const batteryResult = useMemo(() => calculateBatteryRequirements(), [calculateBatteryRequirements]);
+
+        // Vercel React Best Practices: rerender-memo — memoize inline objects passed as props
+        const voltageDropResultProp = useMemo(() => ({
+                percentage: vDropResult.percentage,
+                absolute_v: vDropResult.absolute,
+                current: voltageDropInputs.current,
+                length: voltageDropInputs.length,
+                voltage: voltageDropInputs.voltage,
+        }), [vDropResult, voltageDropInputs]);
+
+        const cableResultProp = useMemo(() => ({
+                recommended_size_mm2: cableResult.recommendedSize,
+                base_ampacity_a: cableResult.baseAmpacity,
+                derating_factor: cableResult.deratingFactor,
+                final_ampacity_a: cableResult.finalAmpacity,
+        }), [cableResult]);
+
+        const batteryResultProp = useMemo(() => ({
+                total_standby_current_ma: batteryResult.totalStandbyCurrent,
+                total_alarm_current_ma: batteryResult.totalAlarmCurrent,
+                required_capacity_ah: batteryResult.requiredCapacity,
+                recommended_battery: batteryResult.recommendedBattery,
+                standby_hours: batteryCalcInputs.standbyHours,
+        }), [batteryResult, batteryCalcInputs.standbyHours]);
 
         return (
                 <div className="flex-1 overflow-auto" aria-label={t("engineering.title")}>
@@ -314,10 +340,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={voltageDropInputs.current}
                                                                                 onChange={(e) =>
-                                                                                        setVoltageDropInputs({
-                                                                                                ...voltageDropInputs,
+                                                                                        setVoltageDropInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 current: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="A"
@@ -331,10 +357,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={voltageDropInputs.length}
                                                                                 onChange={(e) =>
-                                                                                        setVoltageDropInputs({
-                                                                                                ...voltageDropInputs,
+                                                                                        setVoltageDropInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 length: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="m"
@@ -348,10 +374,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={voltageDropInputs.cableSize}
                                                                                 onChange={(e) =>
-                                                                                        setVoltageDropInputs({
-                                                                                                ...voltageDropInputs,
+                                                                                        setVoltageDropInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 cableSize: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="mm²"
@@ -365,10 +391,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={voltageDropInputs.voltage}
                                                                                 onChange={(e) =>
-                                                                                        setVoltageDropInputs({
-                                                                                                ...voltageDropInputs,
+                                                                                        setVoltageDropInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 voltage: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="V"
@@ -381,10 +407,10 @@ export function EngineeringPage() {
                                                                         <Select
                                                                                 value={voltageDropInputs.material}
                                                                                 onValueChange={(v) =>
-                                                                                        setVoltageDropInputs({
-                                                                                                ...voltageDropInputs,
+                                                                                        setVoltageDropInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 material: v,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                         >
                                                                                 <SelectTrigger className="bg-card border-border text-foreground">
@@ -413,13 +439,7 @@ export function EngineeringPage() {
                                                                                         </CardTitle>
                                                                                         <ExplainButton
                                                                                                 calculationType="voltage_drop"  // NOSONAR: typescript:S3358
-                                                                                                result={{
-                                                                                                        percentage: vDropResult.percentage,
-                                                                                                        absolute_v: vDropResult.absolute,
-                                                                                                        current: voltageDropInputs.current,
-                                                                                                        length: voltageDropInputs.length,
-                                                                                                        voltage: voltageDropInputs.voltage,
-                                                                                                }}  // NOSONAR: typescript:S3358
+                                                                                                result={voltageDropResultProp}  // NOSONAR: typescript:S3358
                                                                                         />
                                                                                 </div>
                                                                         </CardHeader>
@@ -503,10 +523,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={cableSizingInputs.loadCurrent}
                                                                                 onChange={(e) =>
-                                                                                        setCableSizingInputs({
-                                                                                                ...cableSizingInputs,
+                                                                                        setCableSizingInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 loadCurrent: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="A"
@@ -520,10 +540,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={cableSizingInputs.length}
                                                                                 onChange={(e) =>
-                                                                                        setCableSizingInputs({
-                                                                                                ...cableSizingInputs,
+                                                                                        setCableSizingInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 length: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="m"
@@ -537,10 +557,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={cableSizingInputs.ambientTemp}
                                                                                 onChange={(e) =>
-                                                                                        setCableSizingInputs({
-                                                                                                ...cableSizingInputs,
+                                                                                        setCableSizingInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 ambientTemp: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="°C"
@@ -553,10 +573,10 @@ export function EngineeringPage() {
                                                                         <Select
                                                                                 value={cableSizingInputs.installationMethod}
                                                                                 onValueChange={(v) =>
-                                                                                        setCableSizingInputs({
-                                                                                                ...cableSizingInputs,
+                                                                                        setCableSizingInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 installationMethod: v,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                         >
                                                                                 <SelectTrigger className="bg-card border-border text-foreground">
@@ -588,12 +608,7 @@ export function EngineeringPage() {
                                                                                         </CardTitle>
                                                                                         <ExplainButton
                                                                                                 calculationType="cable_sizing"
-                                                                                                result={{
-                                                                                                        recommended_size_mm2: cableResult.recommendedSize,
-                                                                                                        base_ampacity_a: cableResult.baseAmpacity,
-                                                                                                        derating_factor: cableResult.deratingFactor,
-                                                                                                        final_ampacity_a: cableResult.finalAmpacity,
-                                                                                                }}
+                                                                                                result={cableResultProp}
                                                                                         />
                                                                                 </div>
                                                                         </CardHeader>
@@ -674,10 +689,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={batteryCalcInputs.standbyDevices}
                                                                                 onChange={(e) =>
-                                                                                        setBatteryCalcInputs({
-                                                                                                ...batteryCalcInputs,
+                                                                                        setBatteryCalcInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 standbyDevices: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="#"
@@ -691,10 +706,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={batteryCalcInputs.standbyCurrent}
                                                                                 onChange={(e) =>
-                                                                                        setBatteryCalcInputs({
-                                                                                                ...batteryCalcInputs,
+                                                                                        setBatteryCalcInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 standbyCurrent: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="mA"
@@ -708,10 +723,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={batteryCalcInputs.alarmDevices}
                                                                                 onChange={(e) =>
-                                                                                        setBatteryCalcInputs({
-                                                                                                ...batteryCalcInputs,
+                                                                                        setBatteryCalcInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 alarmDevices: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="#"
@@ -725,10 +740,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={batteryCalcInputs.alarmCurrent}
                                                                                 onChange={(e) =>
-                                                                                        setBatteryCalcInputs({
-                                                                                                ...batteryCalcInputs,
+                                                                                        setBatteryCalcInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 alarmCurrent: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="mA"
@@ -742,10 +757,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={batteryCalcInputs.standbyHours}
                                                                                 onChange={(e) =>
-                                                                                        setBatteryCalcInputs({
-                                                                                                ...batteryCalcInputs,
+                                                                                        setBatteryCalcInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 standbyHours: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="hours"
@@ -759,10 +774,10 @@ export function EngineeringPage() {
                                                                                 type="number"
                                                                                 value={batteryCalcInputs.alarmMinutes}
                                                                                 onChange={(e) =>
-                                                                                        setBatteryCalcInputs({
-                                                                                                ...batteryCalcInputs,
+                                                                                        setBatteryCalcInputs((prev) => ({
+                                                                                                ...prev,
                                                                                                 alarmMinutes: e.target.value,
-                                                                                        })
+                                                                                        }))
                                                                                 }
                                                                                 className="bg-card border-border text-foreground"
                                                                                 placeholder="minutes"
@@ -781,13 +796,7 @@ export function EngineeringPage() {
                                                                                         </CardTitle>
                                                                                         <ExplainButton
                                                                                                 calculationType="battery_sizing"
-                                                                                                result={{
-                                                                                                        total_standby_current_ma: batteryResult.totalStandbyCurrent,
-                                                                                                        total_alarm_current_ma: batteryResult.totalAlarmCurrent,
-                                                                                                        required_capacity_ah: batteryResult.requiredCapacity,
-                                                                                                        recommended_battery: batteryResult.recommendedBattery,
-                                                                                                        standby_hours: batteryCalcInputs.standbyHours,
-                                                                                                }}
+                                                                                                result={batteryResultProp}
                                                                                         />
                                                                                 </div>
                                                                         </CardHeader>

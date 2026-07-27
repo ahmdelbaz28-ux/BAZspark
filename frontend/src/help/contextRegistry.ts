@@ -19,10 +19,12 @@ export function getHelpTopic(
 	return HELP_TOPICS[topicId as HelpTopicId] ?? undefined;
 }
 
+// Vercel React Best Practices: js-flatmap-filter — use flatMap to map and filter in one pass
 export function getHelpTopics(): HelpTopic[] {
-	return HELP_TOPIC_ORDER.map((topicId) => HELP_TOPICS[topicId]).filter(
-		(topic): topic is HelpTopic => Boolean(topic),
-	);
+	return HELP_TOPIC_ORDER.flatMap((topicId) => {
+		const topic = HELP_TOPICS[topicId];
+		return topic ? [topic] : [];
+	});
 }
 
 export function getHelpCategories(): HelpCategory[] {
@@ -192,9 +194,10 @@ export function getFallbackHelpTopic(query: string): HelpTopic | undefined {
 }
 
 export function getRelatedTopics(topic: HelpTopic): HelpTopic[] {
-	return topic.relatedTopics
-		.map((topicId) => HELP_TOPICS[topicId])
-		.filter((relatedTopic): relatedTopic is HelpTopic => Boolean(relatedTopic));
+	return topic.relatedTopics.flatMap((topicId) => {
+		const relatedTopic = HELP_TOPICS[topicId];
+		return relatedTopic ? [relatedTopic] : [];
+	});
 }
 
 export function getFirstTopicForContext(

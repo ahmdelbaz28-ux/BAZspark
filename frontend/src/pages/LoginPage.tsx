@@ -35,6 +35,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGsapSplitText, useGsapCounter } from "@/hooks/useGsapAnimations";
+import "@/styles/login.css";
 
 /**
  * BrandNetworkBackground component renders floating orange/rose sensor network nodes
@@ -409,13 +410,6 @@ function BrandSafetyHUD() {
                                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/2 to-transparent h-1/4 w-full top-0 left-0 pointer-events-none" style={{
                                         animation: "scanline 6s linear infinite"
                                 }} />
-                                
-                                <style>{`
-                                        @keyframes scanline {
-                                                0% { top: -25%; }
-                                                100% { top: 100%; }
-                                        }
-                                `}</style>
                         </div>
 
                         {/* Terminal Output */}
@@ -570,54 +564,6 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
         return (
                 <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#05070f] text-[#f8fafc] font-sans selection:bg-rose-500/30 overflow-hidden relative" role="main" aria-label="BAZSPARK Login">
                         
-                        {/* Custom CSS for the 3D grid and premium micro-interactions */}
-                        <style dangerouslySetInnerHTML={{ __html: `
-                                .grid-3d-bg {
-                                        position: absolute;
-                                        inset: 0;
-                                        z-index: 0;
-                                        overflow: hidden;
-                                        background-color: #05070f;
-                                        perspective: 280px;
-                                }
-                                .grid-3d-grid {
-                                        position: absolute;
-                                        top: -60%;
-                                        left: -50%;
-                                        right: -50%;
-                                        bottom: -50%;
-                                        width: 200%;
-                                        height: 220%;
-                                        background-image: 
-                                                linear-gradient(rgba(34, 211, 238, 0.032) 1px, transparent 1px),
-                                                linear-gradient(90deg, rgba(34, 211, 238, 0.032) 1px, transparent 1px);
-                                        background-size: 50px 50px;
-                                        transform: rotateX(60deg) translateY(0);
-                                        transform-origin: center center;
-                                        animation: gridScroll 18s linear infinite;
-                                }
-                                @keyframes gridScroll {
-                                        0% {
-                                                transform: rotateX(60deg) translateY(0);
-                                        }
-                                        100% {
-                                                transform: rotateX(60deg) translateY(50px);
-                                        }
-                                }
-                                .grid-3d-overlay {
-                                        position: absolute;
-                                        inset: 0;
-                                        background: radial-gradient(circle at 50% 40%, transparent 10%, #05070f 85%);
-                                        pointer-events: none;
-                                }
-                                .feature-icon-box {
-                                        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
-                                }
-                                .feature-row:hover .feature-icon-box {
-                                        transform: scale(1.08) rotate(3deg);
-                                }
-                        ` }} />
-
                         {/* 3D perspective grid background */}
                         <div className="grid-3d-bg pointer-events-none">
                                 <div className="grid-3d-grid" />
