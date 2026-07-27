@@ -39,6 +39,7 @@ from backend.services.digital_twin_service import (
     DigitalTwinService,
 )
 from backend.utils.log_sanitizer import safe_str as _safe_str
+from parsers._path_security import UnsafePathError, validate_input_path, validate_output_path
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/digital-twin", tags=["digital-twin"])
@@ -238,7 +239,6 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
                 async with await anyio.open_file(source_filepath, "w", encoding="utf-8") as f:
                     await f.write("MOCK SOURCE DATA")
         else:
-            from parsers._path_security import validate_input_path, UnsafePathError
             try:
                 source_filepath = validate_input_path(source_filepath, parser_name='digital_twin_convert')
             except (UnsafePathError, FileNotFoundError) as e:
@@ -249,7 +249,6 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
             temp_dir = tempfile.gettempdir()
             target_filepath = os.path.join(temp_dir, f"sample_target.{target_format.lower()}")
         else:
-            from parsers._path_security import validate_output_path, UnsafePathError
             try:
                 target_filepath = validate_output_path(target_filepath, parser_name='digital_twin_convert')
             except (UnsafePathError, FileNotFoundError) as e:
