@@ -152,7 +152,6 @@ jobs:
         env:
           PYTEST_ADDOPTS: "--color=no"
           FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
-          FIREAI_API_KEY: ci-test-admin-key
           CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
           DATABASE_URL: "sqlite:////tmp/fireai_ci_smoke.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_ci_smoke.db"
@@ -194,7 +193,6 @@ jobs:
         env:
           PYTEST_ADDOPTS: "--color=no"
           FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
-          FIREAI_API_KEY: ci-test-admin-key
           CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
           DATABASE_URL: "sqlite:////tmp/fireai_ci_test.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_ci_test.db"
