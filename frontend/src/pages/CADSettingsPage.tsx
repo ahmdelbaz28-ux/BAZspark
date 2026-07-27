@@ -80,7 +80,11 @@ function getCadSettings(): Record<string, unknown> {
 }
 
 function setCadSettings(settings: Record<string, unknown>): void {
-	localStorage.setItem("cad_settings", JSON.stringify(settings));
+	try {
+		localStorage.setItem("cad_settings", JSON.stringify(settings));
+	} catch {
+		// Storage unavailable or quota exceeded
+	}
 	_cachedCadSettings = settings;
 }
 

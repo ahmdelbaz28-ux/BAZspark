@@ -1,6 +1,6 @@
 
 import type React from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 
 interface ConfirmDialogProps {
 	isOpen: boolean;
@@ -13,7 +13,7 @@ interface ConfirmDialogProps {
 	variant?: "danger" | "warning" | "default";
 }
 
-export function ConfirmDialog({
+export const ConfirmDialog = memo(function ConfirmDialog({
 	isOpen,
 	title,
 	message,
@@ -129,4 +129,4 @@ export function ConfirmDialog({
 			</div>
 		</div>
 	);
-}
+});

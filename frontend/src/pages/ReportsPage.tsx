@@ -4,7 +4,7 @@
  */
 
 import { Calendar, Clock, Download, FileText, Loader2, AlertTriangle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ExplainButton } from "@/components/ai/ExplainButton";
@@ -142,10 +142,15 @@ export function ReportsPage() {
         const [ahjDownloadUrl, setAhjDownloadUrl] = useState<string | null>(null);
 
         // V250 FIX: Revoke Blob URL on unmount or regeneration to prevent memory leak
+        // Vercel React Best Practices: rerender-dependencies — use ref for cleanup-only effect
+        const prevAhjUrlRef = useRef<string | null>(null);
         useEffect(() => {
                 return () => {
-                        if (ahjDownloadUrl) URL.revokeObjectURL(ahjDownloadUrl);
+                        if (prevAhjUrlRef.current) URL.revokeObjectURL(prevAhjUrlRef.current);
                 };
+        }, []);
+        useEffect(() => {
+                prevAhjUrlRef.current = ahjDownloadUrl;
         }, [ahjDownloadUrl]);
 
         const handleGenerateAhj = async () => {

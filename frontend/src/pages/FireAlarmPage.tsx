@@ -5,7 +5,7 @@
  * V140 Phase 5: Connected to real devices API. Falls back to empty zones
  * when no project is selected or API is unavailable.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ExplainButton } from "@/components/ai/ExplainButton";
@@ -325,26 +325,26 @@ export function FireAlarmPage() {
                 fetchZones();
         }, []);
 
-        const handleDeviceSelect = (deviceId: string) => {
+        const handleDeviceSelect = useCallback((deviceId: string) => {
                 setSelectedDevice(deviceId);
                 setShowProperties(true);
-        };
+        }, []);
 
-        const handleZoomToZone = (zoneId: string) => {
+        const handleZoomToZone = useCallback((zoneId: string) => {
                 // V247 FIX: Replaced alert() with toast notification.
                 // The zoom functionality would require a canvas ref + scrollIntoView;
                 // for now, show a non-blocking toast instead of a blocking alert().
                 toast.info(`Zone selected: ${zoneId}`);
-        };
+        }, []);
 
-        const handleSaveDevice = (updatedDevice: Partial<{ id: string } & Record<string, unknown>>) => {
+        const handleSaveDevice = useCallback((updatedDevice: Partial<{ id: string } & Record<string, unknown>>) => {
                 // V187: use setDetectorsWithHistory to capture actual previous state
                 if (!updatedDevice.id) return;
                 setDetectorsWithHistory((prev) =>
                         prev.map((det) => (det.id === updatedDevice.id ? { ...det, ...updatedDevice } : det)),
                 );
                 setShowProperties(false);
-        };
+        }, []);
 
         const deviceStats = useMemo(() => {
                 let smoke = 0, heat = 0, pull = 0, normal = 0, warning = 0;
@@ -364,6 +364,12 @@ export function FireAlarmPage() {
                         warning,
                 };
         }, [detectors]);
+
+        // Vercel React Best Practices: rerender-dependencies — memoize O(n) find for DeviceProperties
+        const selectedDetector = useMemo(
+                () => detectors.find((d) => d.id === selectedDevice) || null,
+                [detectors, selectedDevice],
+        );
 
         return (
                 <div
@@ -568,7 +574,7 @@ export function FireAlarmPage() {
                         {/* Device Properties Panel - Appears when device is selected */}
                         {showProperties && selectedDevice && (
                                 <DeviceProperties
-                                        device={detectors.find((d) => d.id === selectedDevice) || null}
+                                        device={selectedDetector}
                                         onSave={handleSaveDevice}
                                         onClose={() => setShowProperties(false)}
                                 />

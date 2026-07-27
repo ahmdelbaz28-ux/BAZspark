@@ -4,7 +4,7 @@
  */
 
 import { Eye, Search, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,8 @@ interface ElementListProps {
         onDelete?: (element: ElementItem) => void;
 }
 
-export function ElementList({
+// Vercel React Best Practices: rerender-memo — wrap component with callbacks in memo
+export const ElementList = memo(function ElementList({
         elements,
         loading,
         onView,
@@ -171,4 +172,4 @@ export function ElementList({
                         </p>
                 </div>
         );
-}
+});

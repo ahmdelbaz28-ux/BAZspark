@@ -6,7 +6,7 @@
 
 import { Battery, Box, Eye, Power, Siren, Wifi, Zap } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	calculateVoltageDrop,
 	type VoltageDropResult,
@@ -84,7 +84,8 @@ const DEVICE_COLORS: Record<DeviceType, string> = {
 // MAIN COMPONENT
 // ============================================================================
 
-export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
+// Vercel React Best Practices: rerender-memo — expensive SVG + thermal calculations
+export const EngineeringCanvas = memo(function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 	const devices = useStore((s) => s.devices);
 	const connections = useStore((s) => s.connections);
 	const selectedId = useStore((s) => s.selectedElementId);
@@ -705,6 +706,6 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 			</div>
 		</div>
 	);
-}
+});
 
 export default EngineeringCanvas;
