@@ -4,7 +4,7 @@
  * A slide-in panel from the right with a chat interface for asking
  * engineering questions to the LLM. Calls POST /api/v1/llm/chat.
  */
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Bot, Send, Sparkles, Trash2, User, AlertCircle } from "lucide-react";
 import {
@@ -227,8 +227,8 @@ export function AskAiSheet({
         );
 }
 
-/** Single chat message bubble */
-function MessageBubble({ message }: { readonly message: ChatMessage }) {
+/** Single chat message bubble — wrapped in memo to prevent re-renders when other messages change */
+const MessageBubble = memo(function MessageBubble({ message }: { readonly message: ChatMessage }) {
         const isUser = message.role === "user";
 
         if (isUser) {
@@ -277,4 +277,4 @@ function MessageBubble({ message }: { readonly message: ChatMessage }) {
                         </div>
                 </div>
         );
-}
+});

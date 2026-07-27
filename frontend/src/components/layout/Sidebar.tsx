@@ -31,11 +31,45 @@ import {
         Server,
 } from "lucide-react";
 import type React from "react";
-import { memo, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { BazSparkLogo } from "@/components/auth/BazSparkLogo";
+
+// Vercel React Best Practices: network-prefetch — preload lazy chunks on hover
+const routePrefetchMap: Record<string, () => Promise<unknown>> = {
+        "/dashboard": () => import("@/pages/DashboardPage"),
+        "/projects": () => import("@/pages/ProjectsPage"),
+        "/engineering": () => import("@/pages/EngineeringPage"),
+        "/facp": () => import("@/pages/FACPPage"),
+        "/marine": () => import("@/pages/MarinePage"),
+        "/mining": () => import("@/pages/MiningPage"),
+        "/fire-alarm/designer": () => import("@/components/mockups/engineering/FireAlarmDesigner"),
+        "/autocad": () => import("@/pages/AutoCADPage"),
+        "/autocad/draw": () => import("@/pages/AutoCADDrawPage"),
+        "/revit": () => import("@/pages/RevitPage"),
+        "/revit/create": () => import("@/pages/RevitCreatePage"),
+        "/revit/elements": () => import("@/pages/RevitElementsPage"),
+        "/digital-twin": () => import("@/pages/DigitalTwinPage"),
+        "/digital-twin/convert": () => import("@/pages/DigitalTwinConvertPage"),
+        "/digital-twin/config": () => import("@/pages/DigitalTwinConfigPage"),
+        "/digital-twin/history": () => import("@/pages/DigitalTwinHistoryPage"),
+        "/reports": () => import("@/pages/ReportsPage"),
+        "/exports": () => import("@/pages/ExportsPage"),
+        "/etap": () => import("@/pages/EtapPage"),
+        "/environment": () => import("@/pages/EnvironmentPage"),
+        "/monitor": () => import("@/pages/MonitorPage"),
+        "/self-healing": () => import("@/pages/SelfHealingPage"),
+        "/memory": () => import("@/pages/MemoryPage"),
+        "/graphrag": () => import("@/pages/GraphRAGPage"),
+        "/workflow": () => import("@/pages/WorkflowPage"),
+        "/elements": () => import("@/pages/Elements"),
+        "/connections": () => import("@/pages/Connections"),
+        "/conflicts": () => import("@/pages/Conflicts"),
+        "/settings": () => import("@/pages/SettingsPage"),
+        "/api-keys": () => import("@/pages/ApiKeysPage"),
+};
 
 interface NavItem {
         labelKey: string;
@@ -298,6 +332,7 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                                                                 }`}
                                                                 title={collapsed ? labelText : undefined}
                                                                 data-onboarding={item.dataOnboarding}
+                                                                onMouseEnter={() => routePrefetchMap[item.path]?.()}
                                                         >
                                                                 <item.icon
                                                                         className={`shrink-0 h-[18px] w-[18px] ${isActive ? "text-cyan-300" : ""}`}  // NOSONAR: typescript:S3358

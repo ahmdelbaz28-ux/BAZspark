@@ -1,5 +1,4 @@
 
-import * as Sentry from "@sentry/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
@@ -22,23 +21,23 @@ const queryClient = new QueryClient({
 });
 
 // ── Sentry Error Tracking ─────────────────────────────────────────────────
+// Vercel React Best Practices: bundle-defer-third-party — load Sentry after hydration
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
 if (sentryDsn) {
-        Sentry.init({
-                dsn: sentryDsn,
-                environment: import.meta.env.MODE,
-                release: `fireai-digital-twin@${import.meta.env.VITE_APP_VERSION || "1.0.0"}`,
-                tracesSampleRate: 0.1,
-                replaysSessionSampleRate: 0.0,
-                // SECURITY: Limit replay capture rate to 10% to reduce risk of
-                // capturing sensitive engineering data (fire alarm designs, building plans)
-                // in Sentry session replays. Full 1.0 rate could expose PII/building data.
-                replaysOnErrorSampleRate: 0.1,
-                integrations: [Sentry.browserTracingIntegration()],
-                ignoreErrors: [
-                        "ResizeObserver loop limit exceeded",
-                        "NetworkError when attempting to fetch resource",
-                ],
+        import("@sentry/react").then((Sentry) => {
+                Sentry.init({
+                        dsn: sentryDsn,
+                        environment: import.meta.env.MODE,
+                        release: `fireai-digital-twin@${import.meta.env.VITE_APP_VERSION || "1.0.0"}`,
+                        tracesSampleRate: 0.1,
+                        replaysSessionSampleRate: 0.0,
+                        replaysOnErrorSampleRate: 0.1,
+                        integrations: [Sentry.browserTracingIntegration()],
+                        ignoreErrors: [
+                                "ResizeObserver loop limit exceeded",
+                                "NetworkError when attempting to fetch resource",
+                        ],
+                });
         });
 }
 
