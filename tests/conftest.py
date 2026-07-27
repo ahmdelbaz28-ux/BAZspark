@@ -69,6 +69,21 @@ _os.environ.setdefault("FIREAI_HMAC_SECRET_KEY", "test_hmac_secret_key_123456")
 _os.environ.setdefault("FIREAI_CSRF_DISABLED", "1")
 _os.environ.setdefault("FIREAI_ENV", "development")
 
+# Default FIREAI_API_KEY for root integration tests
+_os.environ.setdefault("FIREAI_API_KEY", "test-key-for-v2-api-testing-1234567890")
+
+
+@pytest.fixture(autouse=True)
+def _enforce_root_test_api_key(monkeypatch, request):
+    """
+    Ensure root integration tests under tests/ maintain their configured FIREAI_API_KEY
+    without contamination from backend/tests/ fixtures during combined suite runs.
+    """
+    fpath = str(getattr(request, "fspath", ""))
+    if "tests" in fpath and "backend" not in fpath:
+        monkeypatch.setenv("FIREAI_API_KEY", "test-key-for-v2-api-testing-1234567890")
+
+
 # Without it, TestClient-based tests in tests/ fail at startup with:
 #   RuntimeError: FIREAI_SESSION_SECRET environment variable is not set.
 # Generate a stable test secret at import time (safe — test-only, no prod access).
