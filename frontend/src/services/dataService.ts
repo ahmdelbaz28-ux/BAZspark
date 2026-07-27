@@ -145,8 +145,26 @@ export class DataService {
                                 // Send authentication if API key is available
                                 // Backend requires first message to be auth when FIREAI_API_KEY is set
                                 if (this.apiKey) {
-                                        // SECURITY FIX: Never send API key over unencrypted ws://
-                                        const isSecure = WS_BASE_URL.startsWith("wss://") || WS_BASE_URL.includes("localhost");
+                                        // SECURITY FIX (L-1): Never send API key over unencrypted ws://.
+                                        // Allow ws:// ONLY for explicit loopback dev origins.
+                                        // Previously used WS_BASE_URL.includes("localhost") which is a substring
+                                        // check and would match e.g. ws://my-localhost-proxy.example.com,
+                                        // bypassing the security gate. Use new URL().hostname to enforce an
+                                        // exact hostname match against the loopback set.
+                                        const isSecure = (() => {
+                                                if (WS_BASE_URL.startsWith("wss://")) return true;
+                                                try {
+                                                        const url = new URL(WS_BASE_URL);
+                                                        return (
+                                                                url.hostname === "localhost" ||
+                                                                url.hostname === "127.0.0.1" ||
+                                                                url.hostname === "[::1]"
+                                                        );
+                                                } catch {
+                                                        // Malformed URL — fail closed.
+                                                        return false;
+                                                }
+                                        })();
                                         if (isSecure) {
                                                 this.ws?.send(
                                                         JSON.stringify({

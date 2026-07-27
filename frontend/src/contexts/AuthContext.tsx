@@ -129,12 +129,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 } catch {
                         // ignore
                 }
-                // SECURITY FIX: Clear localStorage to prevent cross-user data leakage.
-                // Project state (devices, connections, canvas, logs) from a previous
-                // session persists in localStorage and loads for a different user.
+                // M-6 FIX: Clear ALL app-set localStorage keys to prevent
+                // cross-user data leakage. Previously, only nexus_project_state
+                // and cad_settings were cleared — leaving digital_twin_settings,
+                // fireai_firealarm_detectors, nexus_imported_dxf, fireai_settings_*,
+                // and onboarding-completed behind. These keys contain user-specific
+                // project data that would load for a different user after logout.
+                //
+                // The full list was discovered by scanning frontend/src for every
+                // localStorage.setItem() call. If a new key is added in the future,
+                // it MUST be added to this list as well.
+                //
+                // NOTE: "dark" (theme preference) is intentionally NOT cleared —
+                // it's a UI preference, not user-specific data.
                 try {
                         localStorage.removeItem("nexus_project_state");
                         localStorage.removeItem("cad_settings");
+                        localStorage.removeItem("digital_twin_settings");
+                        localStorage.removeItem("fireai_firealarm_detectors");
+                        localStorage.removeItem("nexus_imported_dxf");
+                        localStorage.removeItem("onboarding-completed");
+                        // fireai_settings_* uses a dynamic suffix — clear all matching keys
+                        const keysToRemove: string[] = [];
+                        for (let i = 0; i < localStorage.length; i++) {
+                                const key = localStorage.key(i);
+                                if (key && key.startsWith("fireai_settings_")) {
+                                        keysToRemove.push(key);
+                                }
+                        }
+                        keysToRemove.forEach((key) => localStorage.removeItem(key));
                 } catch {
                         // ignore
                 }

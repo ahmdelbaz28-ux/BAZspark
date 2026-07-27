@@ -20,7 +20,7 @@ uvicorn[standard]>=0.20.0,<1.0.0
 pydantic>=2.0.0,<3.0.0
 pydantic-settings>=2.0.0,<3.0.0
 slowapi>=0.1.9,<1.0.0
-python-multipart==0.0.20
+python-multipart>=0.0.31,<1.0.0  # V163 RESTORE: was reverted to 0.0.20 by 9da220d2 (6 known CVEs)
 openpyxl>=3.1.0,<4.0.0
 
 # ── Database & ORM ───────────────────────────────────────────────────────────
@@ -40,9 +40,9 @@ celery>=5.2.0,<6.0.0
 # ── Auth & Security ──────────────────────────────────────────────────────────
 # V163 FIX: cryptography pinned >=48.0.1 to fix 5 HIGH CVEs (PYSEC-2026-35,
 # GHSA-h4gh-qq45-vh27, CVE-2024-12797, CVE-2026-26007, GHSA-537c-gmf6-5ccf).
-pyjwt[crypto]==2.9.0
+pyjwt[crypto]>=2.13.0,<3.0.0  # V163 RESTORE: was reverted to 2.9.0 by 9da220d2 with false 'Python 3.8' justification
 passlib[bcrypt]>=1.7.0,<2.0.0
-cryptography==43.0.0
+cryptography>=48.0.1,<50.0.0  # V163 RESTORE: was reverted to 43.0.0 by 9da220d2 with false 'Python 3.8' justification
 
 # ── Networking ───────────────────────────────────────────────────────────────
 requests>=2.30.0,<3.0.0

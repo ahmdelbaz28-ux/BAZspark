@@ -1061,7 +1061,7 @@ _healing_logger = _logging.getLogger("fireai.core.qomn_kernel.self_healing")
 # ═══════════════════════════════════════════════════════════════════════════════
 # C-01 FIX (Engineering Review): QOMNCalculationError
 # ═══════════════════════════════════════════════════════════════════════════════
-# The engineering review flagged the SelfHealingQOMNKernel fallbacks (battery=0 Ah,
+# The engineering review flagged the SelfHealingQOMNKernel fallbacks (battery=72 Ah,
 # smoke_spacing=9.1m) as "fail-quiet-to-death" because a healed result is still
 # returned to the caller and may be silently treated as a valid design.
 #
@@ -1069,6 +1069,10 @@ _healing_logger = _logging.getLogger("fireai.core.qomn_kernel.self_healing")
 # is that the conservative fallbacks are intentional — they force manual
 # intervention by returning a sentinel that the engineer MUST investigate.
 # This is a legitimate design choice and we do NOT change the default behaviour.
+# NOTE: The battery fallback was raised from the historical 0 Ah to 72 Ah
+# (NFPA 72-2022 §10.6.7.2.1 minimum) — see battery_capacity @ _healing_wrapper
+# safe_minimum=72.0 below. The "force manual intervention" intent is preserved
+# because 72 Ah is still a conservative floor that an engineer MUST review.
 #
 # To reconcile both views we:
 #   1. Add a dedicated `QOMNCalculationError` exception class so callers that

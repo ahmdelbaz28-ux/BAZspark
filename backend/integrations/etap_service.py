@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from backend.database import Database
+from backend.integrations._ssrf_guard import SSRFError, resolve_to_safe_ip
 from backend.integrations.etap_crypto import decrypt_password, encrypt_password
 from backend.integrations.etap_schemas import (
     EtapConnectionSettings,
@@ -146,18 +147,39 @@ class EtapService:
         # In a real implementation, this would connect to ETAP API
         # For now, we validate settings and simulate a connection
         try:
-            # Simulate connection test
-            import socket
+            # SSRF defense (V264): re-resolve the host at connection time and
+            # connect using a LITERAL IP, not the hostname. This defeats DNS
+            # rebinding attacks where the attacker changes DNS between the
+            # Pydantic validator's check (at request time) and the actual
+            # outbound connection (here).
+            #
+            # resolve_to_safe_ip() re-validates:
+            #   - literal unsafe IPs (private, loopback, link-local, etc.)
+            #   - blocked hostnames (localhost, metadata.google.internal)
+            #   - hostnames that resolve to unsafe IPs at THIS moment
+            # Then returns a literal IP string that we pass to
+            # socket.create_connection, which uses it directly without
+            # any further DNS lookup.
+            import socket as _socket
+            safe_ip = resolve_to_safe_ip(settings["host"])
             timeout = settings.get("timeout_seconds", 30)
             if not isinstance(timeout, (int, float)):
                 timeout = 30
-            sock = socket.create_connection((settings["host"], settings["port"]), timeout=timeout)
+            sock = _socket.create_connection((safe_ip, settings["port"]), timeout=timeout)
             sock.close()
             return {
                 "success": True,
                 "message": "Connection successful",
                 "latency_ms": 42,
                 "server_version": "ETAP 2024.1 (simulated)",
+            }
+        except SSRFError as exc:
+            # SSRF rejection — log as security event, return generic message
+            # to avoid leaking internal network topology to the caller.
+            logger.warning("ETAP connection refused (SSRF protection): %s", exc)
+            return {
+                "success": False,
+                "message": "Connection refused: host is not allowed.",
             }
         except Exception as exc:
             logger.error("ETAP connection test failed: %s", exc)
@@ -210,7 +232,29 @@ class EtapService:
     # ------------------------------------------------------------------
 
     def export_to_etap(self, project_id: str, request: EtapExportRequest) -> dict:
-        """Export local project data to ETAP."""
+        """Export local project data to ETAP.
+
+        SSRF DEFENSE CONTRACT (V264):
+        ------------------------------
+        The current implementation generates CSVs locally and does NOT make
+        any outbound network call to the ETAP server. This is safe.
+
+        HOWEVER, when this method is upgraded to actually push data to ETAP
+        via HTTP/HTTPS, the developer MUST call resolve_to_safe_ip() (or
+        resolve_to_safe_ip_with_hostname() for HTTPS) on the stored
+        settings["host"] BEFORE any network I/O, and pass the returned
+        literal IP to the HTTP client's connect() — NOT the hostname.
+
+        Failing to do so re-introduces the SSRF / DNS-rebinding
+        vulnerability that was fixed in test_connection(). The
+        EtapConnectionSettings Pydantic validator alone is NOT sufficient
+        because DNS can be re-bound between request time (validator) and
+        connection time (here).
+
+        Reference: backend/integrations/_ssrf_guard.py
+        Test:     backend/tests/security/test_ssrf_complete.py
+                  backend/tests/security/test_ssrf_gaps.py
+        """
         try:
             from backend.services.marine_service import MarineService
             from marine.integration.etap_bridge import (
@@ -242,8 +286,24 @@ class EtapService:
         }
 
     def import_from_etap(self, project_id: str, request: EtapImportRequest) -> dict:
-        """Import data from ETAP to local project."""
+        """Import data from ETAP to local project.
+
+        SSRF DEFENSE CONTRACT (V264):
+        ------------------------------
+        The current implementation is SIMULATED — no real network call
+        is made to the ETAP server.
+
+        When this method is upgraded to actually fetch data from ETAP
+        via HTTP/HTTPS, the developer MUST call resolve_to_safe_ip()
+        (or resolve_to_safe_ip_with_hostname() for HTTPS) on the stored
+        settings["host"] BEFORE any network I/O, and use the returned
+        literal IP for the connection. See export_to_etap() docstring
+        for full rationale.
+
+        Reference: backend/integrations/_ssrf_guard.py
+        """
         # Simulate import — in real implementation, this would call ETAP API
+        # (see SSRF DEFENSE CONTRACT above before adding any network call)
         self._log_sync(project_id, "import", "success", 0)
         return {
             "project_id": project_id,

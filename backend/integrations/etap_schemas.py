@@ -10,6 +10,15 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+from backend.integrations._ssrf_guard import validate_host_for_user_input
+
+
+# ─── SSRF protection ───────────────────────────────────────────────────────
+# The standard SSRF defense lives in backend/integrations/_ssrf_guard.py.
+# - validate_host_for_user_input() is used here (Pydantic layer).
+# - resolve_to_safe_ip() is used in etap_service.py (service layer) to
+#   defeat DNS rebinding by re-resolving and pinning to a literal IP.
+
 
 class EtapConnectionSettings(BaseModel):
     """Connection settings for ETAP server."""
@@ -23,25 +32,7 @@ class EtapConnectionSettings(BaseModel):
     @field_validator("host")
     @classmethod
     def validate_host(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
-            raise ValueError("Host cannot be empty")
-        # SECURITY: Prevent SSRF via private/metadata IPs
-        import ipaddress
-        try:
-            ip = ipaddress.ip_address(v)
-            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
-                raise ValueError(
-                    f"Host '{v}' resolves to a private/reserved IP range. "
-                    "SSRF protection: only public hostnames are allowed."
-                )
-        except ValueError as e:
-            if "SSRF protection" in str(e):
-                raise
-            import re
-            if not re.match(r'^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$', v):
-                raise ValueError(f"Invalid hostname format: {v}")
-        return v
+        return validate_host_for_user_input(v.strip())
 
     @field_validator("username")
     @classmethod
@@ -139,9 +130,7 @@ class EtapSettingsUpdate(BaseModel):
     @classmethod
     def validate_host(cls, v: Optional[str]) -> Optional[str]:
         if v is not None:
-            v = v.strip()
-            if not v:
-                raise ValueError("Host cannot be empty")
+            v = validate_host_for_user_input(v.strip())
         return v
 
     @field_validator("username")
