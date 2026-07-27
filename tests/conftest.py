@@ -38,6 +38,9 @@ hashlib.md5 = _patched_md5  # type: ignore[attr-defined]  # NOSONAR — python:S
 
 import logging
 import sys
+import warnings
+
+warnings.filterwarnings("ignore", "Please use `import python_multipart` instead.", category=PendingDeprecationWarning)
 import tempfile
 from pathlib import Path
 
