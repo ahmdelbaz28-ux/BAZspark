@@ -111,10 +111,10 @@ export function MonitorPage() {
 		<div className="flex-1 overflow-auto">
 			<div className="p-6 max-w-5xl mx-auto space-y-6">
 				<div>
-					<h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-						<Activity className="h-5 w-5 text-primary" />
-						System Monitor
-					</h1>
+				<h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+					<Activity className="h-5 w-5 text-primary" />
+					System Monitor
+				</h1>
 					<p className="text-sm text-muted-foreground mt-1">
 						Engine health · Agent activity · Security alerts · Prometheus metrics
 					</p>
