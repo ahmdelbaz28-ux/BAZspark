@@ -69,8 +69,17 @@ _os.environ.setdefault("FIREAI_HMAC_SECRET_KEY", "test_hmac_secret_key_123456")
 _os.environ.setdefault("FIREAI_CSRF_DISABLED", "1")
 _os.environ.setdefault("FIREAI_ENV", "development")
 
-# Default FIREAI_API_KEY for root integration tests
-_os.environ.setdefault("FIREAI_API_KEY", "test-key-for-v2-api-testing-1234567890")
+# Defaults for env vars that clean_env/test_env delete via monkeypatch.delenv().
+# These ensure monkeypatch always saves a real value to restore on cleanup,
+# preventing the env var from being permanently deleted after the fixture's
+# test finishes. Dummy values only — never real credentials.
+_os.environ.setdefault("OPENAI_API_KEY", "test-dummy-openai-key-not-real")
+_os.environ.setdefault("GEMINI_API_KEY", "test-dummy-gemini-key-not-real")
+_os.environ.setdefault("FIREAI_EVIDENCE_HMAC_KEY", "test-dummy-evidence-hmac-key-32chars!!")
+_os.environ.setdefault("AUDIT_HMAC_KEY", "test-dummy-audit-hmac-key-min-32-char")
+_os.environ.setdefault("FIREAI_MEMORY_LLM_PROVIDER", "test-dummy-provider")
+_os.environ.setdefault("FIREAI_MEMORY_LLM_MODEL", "test-dummy-model")
+_os.environ.setdefault("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173")
 
 
 @pytest.fixture(autouse=True)
