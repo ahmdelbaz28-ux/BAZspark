@@ -141,6 +141,7 @@ try:
     )
     import os as _os
     import sys as _sys2
+
     from starlette.testclient import TestClient as _StarletteTestClient
 
     _original_testclient_init = _StarletteTestClient.__init__
@@ -256,7 +257,7 @@ try:
             and not url.startswith("/api/v2/")
         ):
             # Extract path-only portion (strip query string / path params)
-            path_only = url.split("?")[0]
+            path_only = url.split("?", maxsplit=1)[0]
             path_base = path_only.split("/{")[0]
             if path_base not in _NON_VERSIONED_API_PATHS:
                 return "/api/v1" + url[4:]  # /api/xxx → /api/v1/xxx
