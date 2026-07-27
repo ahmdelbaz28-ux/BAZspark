@@ -18,6 +18,7 @@ Endpoints:
 """
 from __future__ import annotations
 
+import logging
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -35,6 +36,8 @@ from backend.integrations.etap_schemas import (
 )
 from backend.integrations.etap_service import EtapService
 from backend.rbac import Permission
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/integrations/etap", tags=["ETAP Integration"])
 
@@ -138,9 +141,11 @@ async def export_to_etap(
     try:
         return service.export_to_etap(export_request.project_id, export_request)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        logger.exception("ETAP export validation failed")
+        raise HTTPException(status_code=400, detail="Export failed: invalid parameters") from exc
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Export failed: {exc}") from exc
+        logger.exception("ETAP export failed")
+        raise HTTPException(status_code=500, detail="Export failed") from exc
 
 
 @router.post(
@@ -163,9 +168,11 @@ async def import_from_etap(
     try:
         return service.import_from_etap(import_request.project_id, import_request)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        logger.exception("ETAP import validation failed")
+        raise HTTPException(status_code=400, detail="Import failed: invalid parameters") from exc
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Import failed: {exc}") from exc
+        logger.exception("ETAP import failed")
+        raise HTTPException(status_code=500, detail="Import failed") from exc
 
 
 # ─── Logs Endpoint ───────────────────────────────────────────────────────────

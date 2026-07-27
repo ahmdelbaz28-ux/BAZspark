@@ -40,6 +40,7 @@ References
 
 from __future__ import annotations
 
+import hmac
 import json
 import logging
 import os
@@ -214,7 +215,7 @@ class CloudflareIntegrationMiddleware:
         if not self.config.require_origin_token:
             return True
         cf_token = _get_header(scope, _HDR_X_CF_ORIGIN_TOKEN)
-        if cf_token == self.config.require_origin_token:
+        if hmac.compare_digest(cf_token, self.config.require_origin_token):
             return True
         if self.config.production_mode:
             logger.critical(

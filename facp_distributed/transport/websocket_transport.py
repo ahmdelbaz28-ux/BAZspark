@@ -14,12 +14,19 @@ from .http_transport import TransportLayer
 class WebSocketTransport(TransportLayer):
     """WebSocket transport implementation for distributed FACP"""
 
-    def __init__(self, host: str = "0.0.0.0", port: int = 8002, node_type: str = "l2_orchestrator"):
+    def __init__(self, host: str = "0.0.0.0", port: int = 8002, node_type: str = "l2_orchestrator",
+                 auth_token: Optional[str] = None, allowed_methods: Optional[Set[str]] = None):
         super().__init__()
         self.host = host
         self.port = port
         self.node_type = node_type
+        self.auth_token = auth_token
+        self.allowed_methods = allowed_methods or {
+            "get_status", "get_health", "route_announcement",
+            "process_alert", "query_sensor", "acknowledge_alarm",
+        }
         self.clients: Set[websockets.WebSocketServerProtocol] = set()
+        self._authenticated: Set[websockets.WebSocketServerProtocol] = set()
         self.websocket_server = None
         self.request_queue = []  # Queue for requests
         self.response_callbacks = {}  # request_id -> callback
@@ -33,6 +40,7 @@ class WebSocketTransport(TransportLayer):
 
     async def _unregister_client(self, websocket: websockets.WebSocketServerProtocol):  # NOSONAR - python:S7503
         """Unregister a client connection"""
+        self._authenticated.discard(websocket)
         self.clients.remove(websocket)
         print(f"Client disconnected: {websocket.remote_address}, Total clients: {len(self.clients)}")
 
@@ -44,6 +52,35 @@ class WebSocketTransport(TransportLayer):
                 try:
                     request_data = json.loads(message)
 
+                    if self.auth_token and websocket not in self._authenticated:
+                        if request_data.get("method") != "auth" or request_data.get("token") != self.auth_token:
+                            await websocket.send(json.dumps({
+                                "protocol": "FACP/1.1",
+                                "id": request_data.get("id", "unknown"),
+                                "status": "error",
+                                "error": {"code": "UNAUTHORIZED", "message": "Authentication required. Send {\"method\":\"auth\",\"token\":\"<token>\"} as first message."},
+                            }))
+                            continue
+                        self._authenticated.add(websocket)
+                        await websocket.send(json.dumps({
+                            "protocol": "FACP/1.1",
+                            "id": request_data.get("id", "unknown"),
+                            "status": "ok",
+                            "result": {"authenticated": True},
+                        }))
+                        continue
+
+                    method = request_data.get("method", "")
+                    if self.allowed_methods and method not in self.allowed_methods:
+                        error_response = {
+                            "protocol": "FACP/1.1",
+                            "id": request_data.get("id", "unknown"),
+                            "status": "error",
+                            "error": {"code": "METHOD_NOT_ALLOWED", "message": f"Method '{method}' is not in the allowed methods list"},
+                        }
+                        await websocket.send(json.dumps(error_response))
+                        continue
+
                     # Add node information to the request
                     request_data["trace"] = request_data.get("trace", {})
                     request_data["trace"]["node_id"] = self.node_id
@@ -51,7 +88,6 @@ class WebSocketTransport(TransportLayer):
                     request_data["trace"]["received_at"] = time.time()
 
                     # Route to appropriate handler
-                    method = request_data.get("method", "")
                     if method in self.handlers:
                         handler = self.handlers[method]
                         response = await handler(request_data) if asyncio.iscoroutinefunction(handler) else handler(request_data)

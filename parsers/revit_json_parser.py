@@ -39,6 +39,9 @@ class RevitJSONParser:
 
     def _load_json(self) -> Dict:
         """Load JSON file."""
+        from parsers._path_security import validate_input_path, validate_file_size
+        validate_input_path(self.json_path, parser_name='revit_json')
+        validate_file_size(self.json_path)
         with open(self.json_path) as f:
             return json.load(f)
 

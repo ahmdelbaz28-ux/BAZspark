@@ -224,7 +224,7 @@ class GraphRAGEngine:
                 llm=ChatOpenAI(**qa_llm_kwargs),
                 graph=self._graph,
                 verbose=False,
-                allow_dangerous_requests=True,  # V142: Required by langchain-neo4j 0.10+
+                allow_dangerous_requests=False,  # Security: Cypher injection prevention
             )
             logger.info("GraphRAG: GraphCypherQAChain initialized")
 

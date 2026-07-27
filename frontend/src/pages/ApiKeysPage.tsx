@@ -31,6 +31,8 @@ import {
         SelectValue,
 } from "@/components/ui/select";
 import { getApiKey } from "@/services/apiKey";
+// SECURITY FIX: Import CSRF helpers to protect admin key management from CSRF attacks
+import { CSRF_HEADER_NAME, getCsrfToken, getCachedCsrfToken } from "@/services/csrf";
 
 interface ApiKeyInfo {
         key_hash: string;
@@ -56,7 +58,7 @@ export function ApiKeysPage() {
                         const apiKey = getApiKey();
                         const headers: Record<string, string> = {};
                         if (apiKey) headers["X-API-Key"] = apiKey;
-                        const resp = await fetch("/api/v1/admin/keys", { headers });
+                        const resp = await fetch("/api/v1/admin/keys", { headers, credentials: "same-origin" });
                         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                         const data = await resp.json();
                         setKeys(data.keys || data.data?.keys || []);
@@ -78,10 +80,15 @@ export function ApiKeysPage() {
                         const apiKey = getApiKey();
                         const headers: Record<string, string> = { "Content-Type": "application/json" };
                         if (apiKey) headers["X-API-Key"] = apiKey;
+                        // SECURITY FIX: Inject CSRF token into POST request
+                        let csrfToken = getCachedCsrfToken();
+                        if (!csrfToken) csrfToken = await getCsrfToken();
+                        if (csrfToken) headers[CSRF_HEADER_NAME] = csrfToken;
                         const resp = await fetch("/api/v1/admin/keys", {
                                 method: "POST",
                                 headers,
                                 body: JSON.stringify({ role: newKeyRole, description: newKeyDesc }),
+                                credentials: "same-origin",
                         });
                         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                         const data = await resp.json();
@@ -102,12 +109,16 @@ export function ApiKeysPage() {
                 let resolveFn: ((value: void) => void) | null = null;
                 let rejectFn: ((reason?: unknown) => void) | null = null;
 
-                const onDeleteConfirmed = () => {
+                const onDeleteConfirmed = async () => {
                         confirmed = true;
                         const apiKey = getApiKey();
                         const headers: Record<string, string> = {};
                         if (apiKey) headers["X-API-Key"] = apiKey;
-                        fetch(`/api/v1/admin/keys/${keyHash}`, { method: "DELETE", headers })
+                        // SECURITY FIX: Inject CSRF token into DELETE request
+                        let csrfToken = getCachedCsrfToken();
+                        if (!csrfToken) csrfToken = await getCsrfToken();
+                        if (csrfToken) headers[CSRF_HEADER_NAME] = csrfToken;
+                        fetch(`/api/v1/admin/keys/${keyHash}`, { method: "DELETE", headers, credentials: "same-origin" })
                                 .then((resp) => {
                                         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                                         toast.success("API key deleted");

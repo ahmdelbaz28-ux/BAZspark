@@ -382,7 +382,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
     #      Python websockets, TestClient).
     #   2. {"action": "auth", "apiKey": "..."} as first message (kept for
     #      browser clients which cannot set custom headers on WebSocket).
-    needs_auth = bool(os.getenv("FIREAI_API_KEY"))
+    needs_auth = True
 
     # SECURITY FIX: Do NOT add to connection manager until authenticated.
     # Previously, manager.connect() was called BEFORE auth check, giving

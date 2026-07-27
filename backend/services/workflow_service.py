@@ -1447,6 +1447,7 @@ class WorkflowService:
 
     def __init__(self) -> None:
         self._workflows: dict[str, dict[str, Any]] = {}
+        self._workflow_locks: dict[str, asyncio.Lock] = {}
         # app.py lifespan can correctly report service status instead of
         # falling through to the "DEGRADED" warning path.
         self._langgraph_available = True
@@ -1487,6 +1488,11 @@ class WorkflowService:
             logger.warning("StuckDetector not available — workflow stuck detection DISABLED")
 
         logger.info("WorkflowService initialized with SQLite checkpointing at %s", self._checkpoint_db_path)
+
+    def _get_workflow_lock(self, workflow_id: str) -> asyncio.Lock:
+        if workflow_id not in self._workflow_locks:
+            self._workflow_locks[workflow_id] = asyncio.Lock()
+        return self._workflow_locks[workflow_id]
 
     async def _ensure_compiled(self):
         """
@@ -1873,60 +1879,61 @@ class WorkflowService:
 
         Resumes the workflow and generates the final report.
         """
-        if workflow_id not in self._workflows:
-            return None
+        async with self._get_workflow_lock(workflow_id):
+            if workflow_id not in self._workflows:
+                return None
 
-        wf = self._workflows[workflow_id]
-        state = wf["state"]
-        config = wf["config"]
+            wf = self._workflows[workflow_id]
+            state = wf["state"]
+            config = wf["config"]
 
-        if state.get("status") != WorkflowStatus.AWAITING_REVIEW.value:
-            return {
-                "error": f"Workflow is not awaiting review (status={state.get('status')})",
-                "workflow_id": workflow_id,
-            }
+            if state.get("status") != WorkflowStatus.AWAITING_REVIEW.value:
+                return {
+                    "error": f"Workflow is not awaiting review (status={state.get('status')})",
+                    "workflow_id": workflow_id,
+                }
 
-        # Update state with reviewer decision
-        state["reviewer_decision"] = "approved"
-        state["reviewer_comments"] = reviewer_comments
-        state["review_timestamp"] = datetime.now(timezone.utc).isoformat()
-        state["reviewer_timestamp"] = state["review_timestamp"]  # V82: keep both keys in sync
-        state["status"] = WorkflowStatus.APPROVED.value
+            # Update state with reviewer decision
+            state["reviewer_decision"] = "approved"
+            state["reviewer_comments"] = reviewer_comments
+            state["review_timestamp"] = datetime.now(timezone.utc).isoformat()
+            state["reviewer_timestamp"] = state["review_timestamp"]  # V82: keep both keys in sync
+            state["status"] = WorkflowStatus.APPROVED.value
 
-        # Log the approval
-        state = _log_transition(
-            state,
-            from_node="human_review_gate",
-            to_node="approved",
-            evidence=f"Reviewer: approved, Comments: {reviewer_comments or 'none'}",
-        )
-
-        # Resume workflow (re-invoke with updated state)
-        try:
-            compiled = await self._ensure_compiled()
-            # asyncio.get_event_loop() with asyncio.get_running_loop().
-            # This is an async method so a running loop is guaranteed.
-            import asyncio
-            loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(
-                None,
-                lambda: compiled.invoke(state, config),
+            # Log the approval
+            state = _log_transition(
+                state,
+                from_node="human_review_gate",
+                to_node="approved",
+                evidence=f"Reviewer: approved, Comments: {reviewer_comments or 'none'}",
             )
-            if result:
-                wf["state"] = result
 
-            return {
-                "workflow_id": workflow_id,
-                "status": result.get("status", "UNKNOWN") if result else state.get("status"),
-                "report": result.get("report", {}) if result else {},
-                "report_sha256": result.get("report_sha256", "") if result else "",
-            }
-        except Exception as e:
-            logger.exception("Workflow resume failed: %s", e)
-            return {
-                "error": f"Resume failed: {type(e).__name__}: {e}",
-                "workflow_id": workflow_id,
-            }
+            # Resume workflow (re-invoke with updated state)
+            try:
+                compiled = await self._ensure_compiled()
+                # asyncio.get_event_loop() with asyncio.get_running_loop().
+                # This is an async method so a running loop is guaranteed.
+                import asyncio
+                loop = asyncio.get_running_loop()
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: compiled.invoke(state, config),
+                )
+                if result:
+                    wf["state"] = result
+
+                return {
+                    "workflow_id": workflow_id,
+                    "status": result.get("status", "UNKNOWN") if result else state.get("status"),
+                    "report": result.get("report", {}) if result else {},
+                    "report_sha256": result.get("report_sha256", "") if result else "",
+                }
+            except Exception as e:
+                logger.exception("Workflow resume failed: %s", e)
+                return {
+                    "error": f"Resume failed: {type(e).__name__}: {e}",
+                    "workflow_id": workflow_id,
+                }
 
     async def reject_workflow(  # NOSONAR - python:S7503
         self,
@@ -1938,40 +1945,41 @@ class WorkflowService:
 
         Marks the workflow as REJECTED and does NOT generate a report.
         """
-        if workflow_id not in self._workflows:
-            return None
+        async with self._get_workflow_lock(workflow_id):
+            if workflow_id not in self._workflows:
+                return None
 
-        wf = self._workflows[workflow_id]
-        state = wf["state"]
+            wf = self._workflows[workflow_id]
+            state = wf["state"]
 
-        if state.get("status") != WorkflowStatus.AWAITING_REVIEW.value:
+            if state.get("status") != WorkflowStatus.AWAITING_REVIEW.value:
+                return {
+                    "error": f"Workflow is not awaiting review (status={state.get('status')})",
+                    "workflow_id": workflow_id,
+                }
+
+            state["reviewer_decision"] = "rejected"
+            state["reviewer_comments"] = reviewer_comments
+            state["review_timestamp"] = datetime.now(timezone.utc).isoformat()
+            state["reviewer_timestamp"] = state["review_timestamp"]  # V82: keep both keys in sync
+            state["status"] = WorkflowStatus.REJECTED.value
+            state["completed_at"] = datetime.now(timezone.utc).isoformat()
+
+            # Log the rejection
+            state = _log_transition(
+                state,
+                from_node="human_review_gate",
+                to_node="rejected",
+                evidence=f"Reviewer: rejected, Comments: {reviewer_comments or 'none'}",
+            )
+
+            wf["state"] = state
+
             return {
-                "error": f"Workflow is not awaiting review (status={state.get('status')})",
                 "workflow_id": workflow_id,
+                "status": WorkflowStatus.REJECTED.value,
+                "reviewer_comments": reviewer_comments,
             }
-
-        state["reviewer_decision"] = "rejected"
-        state["reviewer_comments"] = reviewer_comments
-        state["review_timestamp"] = datetime.now(timezone.utc).isoformat()
-        state["reviewer_timestamp"] = state["review_timestamp"]  # V82: keep both keys in sync
-        state["status"] = WorkflowStatus.REJECTED.value
-        state["completed_at"] = datetime.now(timezone.utc).isoformat()
-
-        # Log the rejection
-        state = _log_transition(
-            state,
-            from_node="human_review_gate",
-            to_node="rejected",
-            evidence=f"Reviewer: rejected, Comments: {reviewer_comments or 'none'}",
-        )
-
-        wf["state"] = state
-
-        return {
-            "workflow_id": workflow_id,
-            "status": WorkflowStatus.REJECTED.value,
-            "reviewer_comments": reviewer_comments,
-        }
 
     async def get_audit_trail(self, workflow_id: str) -> list[dict[str, Any]] | None:  # NOSONAR - python:S7503
         """Get the full audit trail for a workflow."""

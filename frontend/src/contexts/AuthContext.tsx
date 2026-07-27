@@ -129,6 +129,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 } catch {
                         // ignore
                 }
+                // SECURITY FIX: Clear localStorage to prevent cross-user data leakage.
+                // Project state (devices, connections, canvas, logs) from a previous
+                // session persists in localStorage and loads for a different user.
+                try {
+                        localStorage.removeItem("nexus_project_state");
+                        localStorage.removeItem("cad_settings");
+                } catch {
+                        // ignore
+                }
                 // V193 (R5): Invalidate the cached CSRF token on logout
                 invalidateCsrfToken();
                 setState({
