@@ -57,13 +57,14 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from backend.auth_utils import (
     extract_session_token_from_headers as _extract_session_token,
+)
+from backend.auth_utils import (
     validate_api_key_credential as _validate_api_key_credential,
 )
 from backend.rbac import Role as _Role
 
 # Re-export CorrelationIdMiddleware for a single import surface.
 from backend.request_context import CorrelationIdMiddleware
-
 
 logger = logging.getLogger(__name__)
 

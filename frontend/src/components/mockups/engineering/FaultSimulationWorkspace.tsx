@@ -1,13 +1,11 @@
 
 import { actions, useStore } from "@/store/simpleStore";
-import {
-	ControlPanel,
-	EventLog,
-	Header,
-	HelpDrawer,
-	Scene3D,
-	StatusGauges,
-} from "./dashboard";
+import { ControlPanel } from "./dashboard/ControlPanel";
+import { EventLog } from "./dashboard/EventLog";
+import { Header } from "./dashboard/Header";
+import { HelpDrawer } from "./dashboard/HelpDrawer";
+import { Scene3D } from "./dashboard/Scene3D";
+import { StatusGauges } from "./dashboard/StatusGauges";
 import { useFaultLogic } from "./hooks/useFaultLogic";
 
 export function FaultSimulationWorkspace() {
