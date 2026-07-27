@@ -465,7 +465,11 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
 
         // Delay redirect on form submission to display success sequence
         if (!ctxLoading && isAuthenticated && (redirectReady || !isSuccess)) {
-                const from = searchParams.get("from") || "/dashboard";
+                let from = searchParams.get("from") || "/dashboard";
+                // Validate redirect target — only allow relative paths
+                if (from && (from.startsWith("//") || !from.startsWith("/"))) {
+                    from = "/dashboard";
+                }
                 return <Navigate to={from} replace />;
         }
 

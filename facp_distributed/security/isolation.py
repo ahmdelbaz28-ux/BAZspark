@@ -44,19 +44,21 @@ class ExecutionIsolationManager:
 
         # Write function and arguments to a temporary file
         # This is a simplified approach - in a real system, we'd use proper sandboxing
+        import base64
+        import json
         import marshal
-        import pickle
 
         # Serialize function and arguments
         func_code = marshal.dumps(func.__code__)
-        with open(os.path.join(exec_dir, "func.pkl"), "wb") as f:
-            pickle.dump((func_code, args, kwargs), f)
+        with open(os.path.join(exec_dir, "func.json"), "w") as f:
+            json.dump({"func_code": base64.b64encode(func_code).decode(), "args": list(args), "kwargs": kwargs}, f)
 
         # Create execution script
         exec_script = f"""
 import sys
 import os
-import pickle
+import json
+import base64
 import marshal
 import types
 import resource
@@ -73,8 +75,11 @@ except Exception:
 os.chdir(r"{exec_dir}")
 
 # Load function and arguments
-with open("func.pkl", "rb") as f:
-    func_code, args, kwargs = pickle.load(f)
+with open("func.json", "r") as f:
+    data = json.load(f)
+    func_code = base64.b64decode(data["func_code"])
+    args = tuple(data["args"])
+    kwargs = data["kwargs"]
 
 # Recreate function
 func = types.FunctionType(marshal.loads(func_code), globals())
@@ -83,12 +88,12 @@ func = types.FunctionType(marshal.loads(func_code), globals())
 try:
     result = func(*args, **kwargs)
     # Write result to output file
-    with open("result.pkl", "wb") as f:
-        pickle.dump(("success", result), f)
+    with open("result.json", "w") as f:
+        json.dump(["success", result], f)
 except Exception as e:
     # Write exception to output file
-    with open("result.pkl", "wb") as f:
-        pickle.dump(("error", str(e)), f)
+    with open("result.json", "w") as f:
+        json.dump(["error", str(e)], f)
 """
 
         script_path = os.path.join(exec_dir, "exec_script.py")
@@ -109,10 +114,11 @@ except Exception as e:
             execution_time = (time.time() - start_time) * 1000  # Convert to ms
 
             # Read result
-            result_path = os.path.join(exec_dir, "result.pkl")
+            import json
+            result_path = os.path.join(exec_dir, "result.json")
             if os.path.exists(result_path):
-                with open(result_path, "rb") as f:
-                    status, result = pickle.load(f)
+                with open(result_path, "r") as f:
+                    status, result = json.load(f)
             else:
                 status = "error"
                 result = f"No result file found. Process exited with code {proc.returncode}"

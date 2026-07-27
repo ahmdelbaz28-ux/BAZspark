@@ -26,6 +26,21 @@ class EtapConnectionSettings(BaseModel):
         v = v.strip()
         if not v:
             raise ValueError("Host cannot be empty")
+        # SECURITY: Prevent SSRF via private/metadata IPs
+        import ipaddress
+        try:
+            ip = ipaddress.ip_address(v)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                raise ValueError(
+                    f"Host '{v}' resolves to a private/reserved IP range. "
+                    "SSRF protection: only public hostnames are allowed."
+                )
+        except ValueError as e:
+            if "SSRF protection" in str(e):
+                raise
+            import re
+            if not re.match(r'^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$', v):
+                raise ValueError(f"Invalid hostname format: {v}")
         return v
 
     @field_validator("username")

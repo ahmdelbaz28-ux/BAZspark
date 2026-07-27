@@ -64,6 +64,7 @@ References
 
 from __future__ import annotations
 
+import hmac
 import logging
 import os
 from typing import Iterable
@@ -288,7 +289,7 @@ class AkamaiIntegrationMiddleware:
         if not self.config.require_origin_token:
             return True
         akamai_internal = _get_header(scope, _HDR_AKAMAI_INTERNAL)
-        if akamai_internal == self.config.require_origin_token:
+        if hmac.compare_digest(akamai_internal, self.config.require_origin_token):
             return True
         # Fail-safe: log CRITICAL and block in production.
         # In dev/test (FIREAI_ENV != production), allow passthrough.

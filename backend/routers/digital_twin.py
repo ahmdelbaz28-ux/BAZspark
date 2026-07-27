@@ -203,6 +203,7 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
     http_request: Request,  # V243: Required by slowapi rate limiter
     request: ConvertRequest,
     service: DigitalTwinService = Depends(get_digital_twin_service),  # NOSONAR - python:S8410
+    _: None = Depends(require_permission(Permission.EXPORT_EXECUTE)),
 ) -> ConvertResponse:
     """Perform bidirectional CAD/BIM conversion."""
     try:
@@ -237,18 +238,22 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
                 async with await anyio.open_file(source_filepath, "w", encoding="utf-8") as f:
                     await f.write("MOCK SOURCE DATA")
         else:
-            # at source to break taint flow into logger calls in
-            # digital_twin_service.py. Only allow alphanumeric, /, \, ., _, -.
-            if not re.match(r'^[a-zA-Z0-9/\\._\- ]{1,512}$', source_filepath):
-                raise HTTPException(status_code=400, detail="Invalid source_filepath: contains forbidden characters")
+            from parsers._path_security import validate_input_path, UnsafePathError
+            try:
+                source_filepath = validate_input_path(source_filepath, parser_name='digital_twin_convert')
+            except (UnsafePathError, FileNotFoundError) as e:
+                raise HTTPException(status_code=400, detail=f"Invalid source path: {e}")
 
         target_filepath = request.target_filepath
         if not target_filepath:
             temp_dir = tempfile.gettempdir()
             target_filepath = os.path.join(temp_dir, f"sample_target.{target_format.lower()}")
         else:
-            if not re.match(r'^[a-zA-Z0-9/\\._\- ]{1,512}$', target_filepath):
-                raise HTTPException(status_code=400, detail="Invalid target_filepath: contains forbidden characters")
+            from parsers._path_security import validate_output_path, UnsafePathError
+            try:
+                target_filepath = validate_output_path(target_filepath, parser_name='digital_twin_convert')
+            except (UnsafePathError, FileNotFoundError) as e:
+                raise HTTPException(status_code=400, detail=f"Invalid target path: {e}")
 
         if conversion_type == "autocad_to_revit":
             result = service.convert_autocad_to_revit(
@@ -456,6 +461,7 @@ async def get_conversion_history(
 async def configure_conversion(
     request: ConfigureRequest,
     config_mgr: ConversionConfigManager = Depends(get_config_manager),  # NOSONAR - python:S8410
+    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
 ) -> ConfigureResponse:
     """Update conversion configuration."""
     try:
@@ -555,6 +561,7 @@ async def get_digital_twin_status(
 async def update_single_mapping(
     request: UpdateMappingRequest,
     config_mgr: ConversionConfigManager = Depends(get_config_manager),  # NOSONAR - python:S8410
+    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
 ) -> Dict[str, Any]:
     """
     Update a single mapping rule.

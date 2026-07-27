@@ -81,13 +81,20 @@ async def agent_websocket_endpoint(websocket: WebSocket):
         return
 
     try:
-        is_valid = validate_api_key(api_key) is not None
-        if not is_valid:
+        api_key_info = validate_api_key(api_key)
+        if api_key_info is None:
             logger.warning("Rejected agent connection: invalid API Key")
             await websocket.close(code=4003)
             return
     except Exception as e:
         logger.exception("Error validating agent API Key: %s", e)
+        await websocket.close(code=4003)
+        return
+
+    # RBAC: Check if agent role has permission to connect
+    from backend.rbac import Permission, has_permission
+    if not has_permission(api_key_info.role, Permission.CALCULATION_EXECUTE):
+        logger.warning("Rejected agent connection: role %s lacks CALCULATION_EXECUTE", api_key_info.role)
         await websocket.close(code=4003)
         return
 

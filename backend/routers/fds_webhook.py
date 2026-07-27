@@ -15,9 +15,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from backend.auth import require_permission
+from backend.rbac import Permission
 from backend.routers.sync import manager as ws_manager
 from backend.services.fds_queue_service import (
     get_fds_job_status,
@@ -57,6 +59,7 @@ class FDSWebhookPayload(BaseModel):
 async def submit_simulation(
     body: FDSSubmitRequest,
     request: Request,
+    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
 ) -> Dict[str, Any]:
     """
     Submit an FDS input file for cloud simulation.
@@ -84,7 +87,10 @@ async def submit_simulation(
 
 
 @router.get("/status/{job_id}", summary="Get FDS job status")
-async def get_job_status(job_id: str) -> Dict[str, Any]:
+async def get_job_status(
+    job_id: str,
+    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+) -> Dict[str, Any]:
     """Poll the status and result of an FDS simulation job."""
     result = get_fds_job_status(job_id)
     if result.get("error"):
@@ -96,6 +102,7 @@ async def get_job_status(job_id: str) -> Dict[str, Any]:
 async def list_jobs(
     request: Request,
     limit: int = 20,
+    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
 ) -> Dict[str, Any]:
     """List recent FDS jobs for the authenticated user."""
     user_id = getattr(request.state, "user_id", "") or ""

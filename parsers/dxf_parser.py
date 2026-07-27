@@ -79,6 +79,9 @@ class DXFParser:
         self.max_area = max_area
 
     def parse(self, dxf_path: str) -> DXFParseResult:
+        from parsers._path_security import validate_input_path, validate_file_size
+        validate_input_path(dxf_path, parser_name='dxf')
+        validate_file_size(dxf_path)
         logger.info("Parsing DXF: %s", dxf_path)
 
         # SAFETY: Try normal read first, then recovery

@@ -438,7 +438,7 @@ class AsyncAuditLogger:
             #     Tests that need a deterministic key must pass secret_key=...
             #     explicitly via the constructor.
             import secrets as _secrets
-            env = os.environ.get("FIREAI_ENV", "development").lower()
+            env = os.environ.get("FIREAI_ENV", "production").lower()
             is_production = env in ("production", "prod")
             if is_production:
                 raise SecurityError(
