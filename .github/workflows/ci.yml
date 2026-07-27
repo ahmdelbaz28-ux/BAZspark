@@ -601,10 +601,11 @@ jobs:
             exit 1
           fi
           
-          TOTAL_SIZE_KB=$(du -sk "$BUILD_DIR" | cut -f1)
+          # Calculate total size of JS/CSS/HTML assets in KB (excluding .map source maps)
+          TOTAL_SIZE_KB=$(find "$BUILD_DIR" -type f ! -name "*.map" -exec du -k {} + | awk '{s+=$1} END {print s}')
           TOTAL_SIZE_MB=$(echo "scale=2; $TOTAL_SIZE_KB / 1024" | bc)
           
-          echo "Total bundle size: ${TOTAL_SIZE_MB}MB"
+          echo "Production asset bundle size (excluding .map files): ${TOTAL_SIZE_MB}MB"
           
           MAX_SIZE_KB=5120
           if [ "$TOTAL_SIZE_KB" -gt "$MAX_SIZE_KB" ]; then
