@@ -23,6 +23,7 @@ FIXES APPLIED:
 import logging
 import os
 import re
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -72,6 +73,12 @@ def _safe_resolve_upload_path(filename: str) -> str:
     `abs_upload` (absolute) — this ALWAYS failed because a relative
     path never starts with an absolute path. Now both are resolved
     to absolute paths before comparison.
+
+    M-5 FIX: Replaced the brittle `str.startswith(abs_upload)` check
+    (which is vulnerable to suffix attacks like /tmp/uploads_evil)
+    with `Path.is_relative_to()` — Python 3.9+ semantic path
+    containment check that correctly handles directory boundaries.
+    This is the recommended approach per OWASP path traversal guidance.
     """
     # Validate filename at source to prevent path traversal
     if not re.match(r'^[a-zA-Z0-9._\- ]{1,255}$', filename):
@@ -83,14 +90,18 @@ def _safe_resolve_upload_path(filename: str) -> str:
     upload_dir = os.getenv("FIREAI_UPLOAD_DIR", "uploads")
     os.makedirs(upload_dir, exist_ok=True, mode=0o700)  # Ensure upload directory exists
 
-    # Resolve BOTH to absolute paths
-    abs_upload = os.path.abspath(upload_dir)
-    resolved = os.path.abspath(os.path.join(upload_dir, filename))
+    # Resolve BOTH to absolute Path objects
+    abs_upload = Path(os.path.abspath(upload_dir))
+    resolved = Path(os.path.abspath(os.path.join(upload_dir, filename)))
 
-    # Verify the resolved path is still within upload_dir
-    if not resolved.startswith(abs_upload):
+    # M-5 FIX: Use Path.is_relative_to() instead of str.startswith().
+    # is_relative_to() correctly handles directory boundaries —
+    # /tmp/uploads_evil/file is NOT relative to /tmp/uploads, even
+    # though the string starts with "/tmp/uploads". This eliminates
+    # the suffix-attack vulnerability that startswith() had.
+    if not resolved.is_relative_to(abs_upload):
         raise HTTPException(status_code=400, detail="Invalid file path")  # NOSONAR — S8415: endpoint error handling is intentional
-    return resolved
+    return str(resolved)
 
 
 # ── Pydantic models ────────────────────────────────────────────────────────

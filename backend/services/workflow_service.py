@@ -1494,6 +1494,56 @@ class WorkflowService:
             self._workflow_locks[workflow_id] = asyncio.Lock()
         return self._workflow_locks[workflow_id]
 
+    def _cleanup_workflow_lock(self, workflow_id: str) -> None:
+        """Remove the per-workflow lock to prevent unbounded dict growth.
+
+        M-3 FIX: Previously, _workflow_locks grew without bound — every
+        workflow_id ever seen stayed in the dict forever, leaking memory.
+        This method removes the lock entry when a workflow is deleted or
+        completed and no longer needs serialization.
+
+        Safe to call even if the workflow_id was never seen (no-op).
+        Safe to call while the lock is held — the Lock object itself is
+        not destroyed, just the reference in the dict is removed. Any
+        code currently holding the lock will continue to hold it; the
+        next _get_workflow_lock call for this workflow_id will create a
+        NEW lock (which is fine because the old workflow is gone).
+
+        Called by:
+          - cleanup_workflow() (public API)
+          - delete_workflow() (if added in the future)
+        """
+        self._workflow_locks.pop(workflow_id, None)
+
+    def cleanup_workflow(self, workflow_id: str) -> None:
+        """Clean up all in-memory state for a completed/deleted workflow.
+
+        M-3 FIX: Removes the per-workflow lock and any other in-memory
+        state that was tracking this workflow. This prevents unbounded
+        memory growth in long-running services that process many
+        workflows.
+
+        Call this when a workflow has reached a terminal state
+        (completed, rejected, cancelled) and is no longer needed.
+
+        Args:
+            workflow_id: The ID of the workflow to clean up.
+
+        Note:
+            This does NOT delete the persistent checkpoint (SQLite).
+            Use delete_workflow_checkpoint() for that (if implemented).
+            This only cleans up in-memory state.
+        """
+        self._workflow_locks.pop(workflow_id, None)
+        self._workflows.pop(workflow_id, None)
+        logger.debug(
+            "Cleaned up in-memory state for workflow %s "
+            "(locks remaining: %d, workflows remaining: %d)",
+            workflow_id,
+            len(self._workflow_locks),
+            len(self._workflows),
+        )
+
     async def _ensure_compiled(self):
         """
         Lazy-initialize the checkpointer and re-compile the graph with it.

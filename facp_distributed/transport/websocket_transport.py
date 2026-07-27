@@ -1,7 +1,19 @@
 # NOSONAR
-"""WebSocket Transport for Distributed FACP System"""
+"""WebSocket Transport for Distributed FACP System.
+
+SECURITY NOTE (M-2 fix):
+  - Token comparison uses hmac.compare_digest (constant-time) to prevent
+    timing attacks.
+  - auth_token=None means "no authentication required" — this is an
+    EXPLICIT design choice for trusted internal networks. A warning is
+    logged at startup to make this visible. For any deployment where
+    the WebSocket port is reachable from untrusted networks, auth_token
+    MUST be set.
+"""
 import asyncio
+import hmac
 import json
+import logging
 import threading
 import time
 from typing import Any, Dict, Optional, Set
@@ -10,17 +22,35 @@ import websockets
 
 from .http_transport import TransportLayer
 
+_logger = logging.getLogger(__name__)
+
 
 class WebSocketTransport(TransportLayer):
     """WebSocket transport implementation for distributed FACP"""
 
     def __init__(self, host: str = "0.0.0.0", port: int = 8002, node_type: str = "l2_orchestrator",
-                 auth_token: Optional[str] = None, allowed_methods: Optional[Set[str]] = None):
+                 auth_token: Optional[str] = None, allowed_methods: Optional[Set[str]] = None,
+                 allow_insecure_ws: bool = False):
+        # L-3 FIX: secure-by-default. The default outbound URL is now wss://.
+        # Use allow_insecure_ws=True to opt in to ws:// for trusted internal
+        # dev/test networks. Any caller that passes a ws:// target_node without
+        # setting allow_insecure_ws=True will trigger a ValueError at request
+        # time (see _resolve_node_url).
         super().__init__()
         self.host = host
         self.port = port
         self.node_type = node_type
         self.auth_token = auth_token
+        self.allow_insecure_ws = allow_insecure_ws
+        if auth_token is None:
+            _logger.warning(
+                "WebSocketTransport started with auth_token=None — "
+ "authentication is DISABLED. This is only safe on "
+ "trusted internal networks. Set auth_token for any "
+ "deployment where port %s is reachable from untrusted "
+ "networks.",
+                port,
+            )
         self.allowed_methods = allowed_methods or {
             "get_status", "get_health", "route_announcement",
             "process_alert", "query_sensor", "acknowledge_alarm",
@@ -53,7 +83,20 @@ class WebSocketTransport(TransportLayer):
                     request_data = json.loads(message)
 
                     if self.auth_token and websocket not in self._authenticated:
-                        if request_data.get("method") != "auth" or request_data.get("token") != self.auth_token:
+                        # M-2 FIX: use hmac.compare_digest for constant-time
+                        # comparison to prevent timing attacks that could
+                        # leak the token byte-by-byte.
+                        provided_token = request_data.get("token", "")
+                        expected_token = self.auth_token or ""
+                        token_matches = (
+                            isinstance(provided_token, str)
+                            and len(provided_token) == len(expected_token)
+                            and hmac.compare_digest(
+                                provided_token.encode("utf-8"),
+                                expected_token.encode("utf-8"),
+                            )
+                        )
+                        if request_data.get("method") != "auth" or not token_matches:
                             await websocket.send(json.dumps({
                                 "protocol": "FACP/1.1",
                                 "id": request_data.get("id", "unknown"),
@@ -206,7 +249,16 @@ class WebSocketTransport(TransportLayer):
         #
         # Fix: use a separate local variable `node` for the resolved URL.
         # This is the audit's recommended fix and is the minimal change.
-        node = target_node or f"ws://{self.host}:{self.port}"  # NOSONAR: internal comms, WSS handled at transport layer  # NOSONAR — S7632: test function documented via class name / module path
+        # L-3 FIX: default is now wss:// (secure-by-default). Callers that
+        # need ws:// for trusted internal dev/test must pass allow_insecure_ws=True
+        # at construction time AND pass an explicit ws:// target_node.
+        node = target_node or f"wss://{self.host}:{self.port}"
+        if node.startswith("ws://") and not self.allow_insecure_ws:
+            raise ValueError(
+                "WebSocketTransport refused to use insecure ws:// URL "
+                f"{node!r} without allow_insecure_ws=True. Use wss:// or "
+                "explicitly opt in to ws:// for trusted internal networks."
+            )
 
         async def send_to_target():
             try:
