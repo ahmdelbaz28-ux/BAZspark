@@ -16,6 +16,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DIST_DIR = REPO_ROOT / "dist" / "appbundles"
 
 _MANIFEST_FILENAME = "PackageContents.xml"
+_AUTOCAD_ADDIN_DIR = "autocad_addin"
+_REVIT_ADDIN_DIR = "revit_addin"
 
 
 def compile_project(csproj_path: Path) -> bool:
@@ -65,7 +67,7 @@ def pack_autocad_bundle() -> bool:
     contents_dir.mkdir(parents=True)
 
     # Copy PackageContents.xml
-    manifest_src = REPO_ROOT / "autocad_addin" / "PackageContents.xml"
+    manifest_src = REPO_ROOT / _AUTOCAD_ADDIN_DIR / _MANIFEST_FILENAME
     if not manifest_src.exists():
         print(f"[ERROR] Manifest missing: {manifest_src}")
         return False
@@ -106,7 +108,7 @@ def pack_revit_bundle() -> bool:
     contents_dir.mkdir(parents=True)
 
     # Copy PackageContents.xml
-    manifest_src = REPO_ROOT / "revit_addin" / "PackageContents.xml"
+    manifest_src = REPO_ROOT / _REVIT_ADDIN_DIR / _MANIFEST_FILENAME
     if not manifest_src.exists():
         print(f"[ERROR] Manifest missing: {manifest_src}")
         return False

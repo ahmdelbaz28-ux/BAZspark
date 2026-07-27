@@ -42,7 +42,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 _TARGET_DB = "udm_elements"
-_SUPPRESSED_EXCEPTION_MSG = "Suppressed Exception in project_bridge.py"
+_SUPPRESSED_EXCEPTION_MSG = "Suppressed Exception in project_bridge.py"  # NOSONAR - python:S1192
 
 
 def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
