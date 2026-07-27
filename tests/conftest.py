@@ -74,14 +74,17 @@ _os.environ.setdefault("FIREAI_API_KEY", "test-key-for-v2-api-testing-1234567890
 
 
 @pytest.fixture(autouse=True)
-def _enforce_root_test_api_key(monkeypatch, request):
+def _enforce_root_test_api_key(request):
     """
     Ensure root integration tests under tests/ maintain their configured FIREAI_API_KEY
     without contamination from backend/tests/ fixtures during combined suite runs.
+
+    Uses setdefault (not setenv/monkeypatch) so test files with specific API key
+    requirements (e.g. test_auth_router.py with "test_key_for_auth_123") are not overridden.
     """
     fpath = str(getattr(request, "fspath", ""))
     if "tests" in fpath and "backend" not in fpath:
-        monkeypatch.setenv("FIREAI_API_KEY", "test-key-for-v2-api-testing-1234567890")
+        _os.environ.setdefault("FIREAI_API_KEY", "test-key-for-v2-api-testing-1234567890")
 
 
 # Without it, TestClient-based tests in tests/ fail at startup with:
