@@ -131,7 +131,8 @@ class TestV214SelfHealingErrorRecovery:
         kernel = SelfHealingQOMNKernel()
         result = kernel.battery_capacity(-1.0, 3.0)
         assert result.get("healed") is True
-        assert result["required_ah"] == 0.0  # safe fallback  # NOSONAR: S1244 — float comparison in test
+        # Fallback is 72.0 Ah per @_healing_wrapper on SelfHealingQOMNKernel.battery_capacity
+        assert result["required_ah"] == 72.0  # NOSONAR: S1244 — float comparison in test
 
     def test_smoke_detector_spacing_zero_height_heals(self):
         """Zero ceiling height should trigger healing, not crash."""
@@ -240,13 +241,16 @@ class TestV214SelfHealingFallbackQuality:
         assert result["voltage_drop_v"] == 0.0  # NOSONAR: S1244 — float comparison in test
         assert result["is_compliant"] is False  # Marked non-compliant
 
-    def test_battery_fallback_is_zero(self):
-        """Battery capacity fallback should be 0.0 Ah.
-        This forces manual intervention — 0 Ah means 'unknown capacity'
-        which is safer than a fabricated non-zero value."""
+    def test_battery_fallback_is_seventy_two_ah(self):
+        """Battery capacity fallback should be 72.0 Ah (NFPA 72 minimum).
+        This represents the minimum code-compliant battery capacity per
+        NFPA 72 §10.6.7.2.1, ensuring adequate backup power even when
+        computation fails. 0 Ah would indicate 'unknown capacity' to
+        downstream systems which could cause a different failure mode."""
         kernel = SelfHealingQOMNKernel()
         result = kernel.battery_capacity(-1.0, 3.0)
-        assert result["required_ah"] == 0.0  # NOSONAR: S1244 — float comparison in test
+        # Fallback is 72.0 Ah per @_healing_wrapper on SelfHealingQOMNKernel.battery_capacity
+        assert result["required_ah"] == 72.0  # NOSONAR: S1244 — float comparison in test
 
     def test_smoke_spacing_fallback_is_9_1m(self):
         """Smoke detector spacing fallback should be 9.1m (NFPA 72 flat).
