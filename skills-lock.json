@@ -25,6 +25,12 @@
       "skillPath": "skills/debugging-wizard/SKILL.md",
       "computedHash": "7c578adb7a39ff6c4018f87055e4191e965c5e440119116914efd86318646a69"
     },
+    "documentation-and-adrs": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/documentation-and-adrs/SKILL.md",
+      "computedHash": "7464fd2950b99fb00bbf65cab27653e0a049eef00c98927713ffdfe232a9daa9"
+    },
     "domain-modeling": {
       "source": "mattpocock/skills",
       "sourceType": "github",
