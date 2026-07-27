@@ -31,6 +31,11 @@ const WS_BASE_URL =
                 ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`  // NOSONAR: typescript:S3358
                 : "ws://localhost:8000/ws");
 
+// SECURITY FIX: Warn if using unencrypted WebSocket on HTTPS page
+if (typeof window !== "undefined" && window.location.protocol === "https:" && WS_BASE_URL.startsWith("ws://")) {
+        console.error("[FireAI] SECURITY: Blocking insecure ws:// WebSocket on HTTPS page. Set VITE_WS_URL to wss://.");
+}
+
 const WS_RECONNECT_INTERVAL = 5000;
 const WS_MAX_RECONNECT_ATTEMPTS = 10;
 const WS_HEALTH_CHECK_INTERVAL = 30000;
@@ -140,12 +145,19 @@ export class DataService {
                                 // Send authentication if API key is available
                                 // Backend requires first message to be auth when FIREAI_API_KEY is set
                                 if (this.apiKey) {
-                                        this.ws?.send(
-                                                JSON.stringify({
-                                                        action: "auth",
-                                                        apiKey: this.apiKey,
-                                                }),
-                                        );
+                                        // SECURITY FIX: Never send API key over unencrypted ws://
+                                        const isSecure = WS_BASE_URL.startsWith("wss://") || WS_BASE_URL.includes("localhost");
+                                        if (isSecure) {
+                                                this.ws?.send(
+                                                        JSON.stringify({
+                                                                action: "auth",
+                                                                apiKey: this.apiKey,
+                                                        }),
+                                                );
+                                        } else {
+                                                console.error("[FireAI] SECURITY: Refusing to send API key over unencrypted WebSocket.");
+                                                this.ws?.close(4001, "Insecure transport rejected");
+                                        }
                                 } else {
                                         // No API key — might work in development mode
                                         this.onAuthSuccess();

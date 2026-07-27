@@ -1261,12 +1261,12 @@ class SelfHealingQOMNKernel(QOMNKernel):
 
     @_healing_wrapper(
         safe_result={
-            "required_ah": 0.0,
+            "required_ah": 72.0,
             "formula": "HEALED: battery capacity could not be computed — safe fallback applied",
             "nfpa_section": "NFPA 72-2022 §10.6.7.2.1 (HEALED)",
             "computation_hash": "HEALED",
         },
-        safe_minimum=0.0,
+        safe_minimum=72.0,
     )
     def battery_capacity(self, standby_load_a, alarm_load_a, **kwargs):
         return super().battery_capacity(standby_load_a, alarm_load_a, **kwargs)

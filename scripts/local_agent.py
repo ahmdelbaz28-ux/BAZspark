@@ -722,10 +722,11 @@ def _dispatch(action_full: str, args: Dict[str, Any]) -> Any:
 
 # ── WebSocket agent loop ──────────────────────────────────────────────────────
 
-async def _agent_loop(uri: str) -> None:
+async def _agent_loop(uri: str, api_key: str = "") -> None:
     """Connect, listen for commands, execute them, and send back results."""
     logger.info("Connecting to %s …", uri)
-    async with websockets.connect(uri, ping_interval=20, ping_timeout=30) as ws:
+    extra_headers = {"X-API-Key": api_key} if api_key else None
+    async with websockets.connect(uri, ping_interval=20, ping_timeout=30, extra_headers=extra_headers) as ws:
         logger.info("✅ Connected to BAZspark server. Waiting for commands …")
         async for raw in ws:
             try:
@@ -749,8 +750,9 @@ async def _agent_loop(uri: str) -> None:
                     payload = await asyncio.get_event_loop().run_in_executor(
                         None, _dispatch, action, args
                     )
-                except Exception:  # noqa: BLE001
-                    payload = {"error": traceback.format_exc()}
+                except Exception as exc:  # noqa: BLE001
+                    logger.exception("Command %s failed", action)
+                    payload = {"error": f"Command failed: {type(exc).__name__}"}
 
                 await ws.send(json.dumps({"type": "response", "id": cmd_id, "payload": payload}))
                 logger.info("◀ Response sent for [%s]", cmd_id)
@@ -761,13 +763,13 @@ async def _agent_loop(uri: str) -> None:
 
 async def run(server_url: str, api_key: str) -> None:
     """Main loop with exponential back-off reconnection."""
-    uri = f"{server_url.rstrip('/')}/api/v1/agent/ws?api_key={api_key}"
+    uri = f"{server_url.rstrip('/')}/api/v1/agent/ws"
     backoff = 2.0
     max_backoff = 60.0
 
     while True:
         try:
-            await _agent_loop(uri)
+            await _agent_loop(uri, api_key=api_key)
             backoff = 2.0  # reset on clean disconnect
         except websockets.exceptions.InvalidStatusCode as e:
             if e.status_code == 4003:
