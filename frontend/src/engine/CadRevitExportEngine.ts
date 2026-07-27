@@ -70,20 +70,21 @@ export function exportToDXF(project: ExportProject): void {
 
         for (const device of project.devices) {
                 const blockName = device.autocadBlock || device.type;
+                const { x, y, z } = device;
                 dxf += "0\nINSERT\n";
                 dxf += "8\nDevices\n";
                 dxf += `2\n${blockName}\n`;
-                dxf += `10\n${device.x.toFixed(4)}\n`;
-                dxf += `20\n${device.y.toFixed(4)}\n`;
-                dxf += `30\n${device.z.toFixed(4)}\n`;
+                dxf += `10\n${x.toFixed(4)}\n`;
+                dxf += `20\n${y.toFixed(4)}\n`;
+                dxf += `30\n${z.toFixed(4)}\n`;
                 dxf += "41\n1.0\n42\n1.0\n43\n1.0\n";
                 dxf += `50\n${device.rotation.toFixed(4)}\n`;
 
                 dxf += "0\nATTRIB\n";
                 dxf += "8\nAnnotations\n";
-                dxf += `10\n${device.x.toFixed(4)}\n`;
-                dxf += `20\n${(device.y + 10).toFixed(4)}\n`;
-                dxf += `30\n${device.z.toFixed(4)}\n`;
+                dxf += `10\n${x.toFixed(4)}\n`;
+                dxf += `20\n${(y + 10).toFixed(4)}\n`;
+                dxf += `30\n${z.toFixed(4)}\n`;
                 dxf += "40\n2.5\n";
                 dxf += `1\n${device.name}\n`;
                 dxf += "2\nDEVICENAME\n";
@@ -91,18 +92,20 @@ export function exportToDXF(project: ExportProject): void {
 
                 dxf += "0\nATTRIB\n";
                 dxf += "8\nAnnotations\n";
-                dxf += `10\n${device.x.toFixed(4)}\n`;
-                dxf += `20\n${(device.y + 15).toFixed(4)}\n`;
-                dxf += `30\n${device.z.toFixed(4)}\n`;
+                dxf += `10\n${x.toFixed(4)}\n`;
+                dxf += `20\n${(y + 15).toFixed(4)}\n`;
+                dxf += `30\n${z.toFixed(4)}\n`;
                 dxf += "40\n2.0\n";
                 dxf += `1\n${device.load.toFixed(1)}W\n`;
                 dxf += "2\nLOAD\n";
                 dxf += "70\n0\n";
         }
 
+        // Vercel React Best Practices: js-set-map-lookups — O(1) device lookup
+        const deviceMap = new Map(project.devices.map((d) => [d.id, d]));
         for (const conn of project.connections) {
-                const from = project.devices.find((d) => d.id === conn.fromId);
-                const to = project.devices.find((d) => d.id === conn.toId);
+                const from = deviceMap.get(conn.fromId);
+                const to = deviceMap.get(conn.toId);
                 if (!from || !to) continue;
 
                 dxf += "0\nLINE\n";

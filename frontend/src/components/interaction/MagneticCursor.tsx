@@ -82,8 +82,8 @@ export function MagneticCursor() {
                         }
                 };
 
-                window.addEventListener("mousemove", onMouseMove);
-                window.addEventListener("mouseover", onMouseOver);
+                window.addEventListener("mousemove", onMouseMove, { passive: true });
+                window.addEventListener("mouseover", onMouseOver, { passive: true });
                 rafId = requestAnimationFrame(animate);
 
                 return () => {

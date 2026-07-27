@@ -211,6 +211,8 @@ function App() {
         const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
         const [aiOpen, setAiOpen] = useState(false);
 
+        const handleAiOpen = useCallback(() => setAiOpen(true), []);
+
         useEffect(() => {
                 // Set document direction based on language for RTL support
                 if (i18n.language === "ar") {
@@ -315,7 +317,9 @@ const handleSearchOpen = useCallback(() => {
         return (
                 <AuthProvider>
                         <SmoothScroll>
+                                <Suspense fallback={null}>
                                 <MagneticCursor />
+                                </Suspense>
                                 <div className="h-screen bg-background text-foreground">
                                         {SkipLink}
                                         {/* F-08 FIX: show the demo-data banner whenever we're not
@@ -325,6 +329,7 @@ const handleSearchOpen = useCallback(() => {
                                         {isPublicRoute ? (
                                         publicRoutes
                                 ) : (
+                                        <Suspense fallback={<PageLoader />}>
                                         <AppShell
                                                 isConnected={connected}
                                                 backendUrl={import.meta.env.VITE_API_URL || "/api/v1"}
@@ -368,8 +373,10 @@ const handleSearchOpen = useCallback(() => {
                                                         </Suspense>
                                                 </main>
                                         </AppShell>
+                                        </Suspense>
                                 )}
                                 {/* V140 Phase 7: Global Help Drawer with full tree + user guide */}
+                                <Suspense fallback={null}>
                                 <GlobalHelpDrawer
                                         open={helpOpen}
                                         onOpenChange={setHelpOpen}
@@ -382,11 +389,12 @@ const handleSearchOpen = useCallback(() => {
                                 {/* V207.3: Global AI Copilot — visible on all protected routes (Ctrl+J) */}
                                 {!isPublicRoute && (
                                         <>
-                                                <AskAiButton onClick={() => setAiOpen(true)} />
+                                                <AskAiButton onClick={handleAiOpen} />
                                                 <AskAiSheet open={aiOpen} onOpenChange={setAiOpen} />
                                         </>
                                 )}
                                 <OnboardingTour />
+                                </Suspense>
                                 {/* V215: Move toaster to top-right to avoid overlapping
                                      the new floating Ask AI button (bottom-right). */}
                                 <Toaster position="top-right" />

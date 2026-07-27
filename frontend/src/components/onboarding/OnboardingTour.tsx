@@ -92,28 +92,24 @@ export const OnboardingTour: React.FC = () => {
 	const [currentStep, setCurrentStep] = useState(0);
 	const [isVisible, setIsVisible] = useState(false);
 	const [targetElement, setTargetElement] = useState<DOMRect | null>(null);
-	const [isMounted, setIsMounted] = useState(false);
 	const overlayRef = useRef<HTMLDivElement>(null);
 
 	const _location = useLocation();
 
-	useEffect(() => {
-		setIsMounted(true);
-		// V181 FIX: Do NOT auto-start the onboarding tour after 1 second.
-		// The previous behavior (setTimeout 1000ms → setIsVisible(true)) caused
-		// a full-screen bg-background/80 overlay to appear over EVERY new visitor's
-		// first session, making the entire UI look "dimmed/empty" (the overlay
-		// sat at z-[9998] above all content). This was the ROOT CAUSE of the
-		// 'pages look dim' issue reported by the operator — not the CSS vars,
-		// not the overlays in AppShell (V177), not the card transparency (V178).
-		//
-		// The tour is still available via the help menu / F1 / Ctrl+H, but it no
-		// longer ambushes new users with a dark overlay.
-		//
-		// To re-enable auto-tour in the future, gate it behind an explicit
-		// user opt-in (e.g. a "Take Tour" button in the help drawer) rather
-		// than auto-firing on first visit.
-	}, []);
+	// V181 FIX: Do NOT auto-start the onboarding tour after 1 second.
+	// The previous behavior (setTimeout 1000ms → setIsVisible(true)) caused
+	// a full-screen bg-background/80 overlay to appear over EVERY new visitor's
+	// first session, making the entire UI look "dimmed/empty" (the overlay
+	// sat at z-[9998] above all content). This was the ROOT CAUSE of the
+	// 'pages look dim' issue reported by the operator — not the CSS vars,
+	// not the overlays in AppShell (V177), not the card transparency (V178).
+	//
+	// The tour is still available via the help menu / F1 / Ctrl+H, but it no
+	// longer ambushes new users with a dark overlay.
+	//
+	// To re-enable auto-tour in the future, gate it behind an explicit
+	// user opt-in (e.g. a "Take Tour" button in the help drawer) rather
+	// than auto-firing on first visit.
 
 	const getTargetPosition = useCallback(() => {
 		const selector = TOUR_STEPS[currentStep].target;
@@ -135,7 +131,11 @@ export const OnboardingTour: React.FC = () => {
 	}, [isVisible, getTargetPosition]);
 
 	const completeTour = useCallback(() => {
-		localStorage.setItem(STORAGE_KEY, "true");
+		try {
+			localStorage.setItem(STORAGE_KEY, "true");
+		} catch {
+			// Storage unavailable
+		}
 		setIsVisible(false);
 	}, []);
 
@@ -157,7 +157,7 @@ export const OnboardingTour: React.FC = () => {
 		}
 	}, [currentStep]);
 
-	if (!isMounted || !isVisible || !targetElement) return null;
+	if (!isVisible || !targetElement) return null;
 
 	const step = TOUR_STEPS[currentStep];
 	const isFirst = currentStep === 0;
@@ -260,15 +260,22 @@ export const OnboardingTour: React.FC = () => {
 };
 
 export const useOnboarding = () => {
-	const [hasCompleted, setHasCompleted] = useState(false);
-
-	useEffect(() => {
-		const completed = localStorage.getItem(STORAGE_KEY);
-		setHasCompleted(!!completed);
-	}, []);
+	// Vercel React Best Practices: rerender-derived-state-no-effect
+	// Derive state during render instead of setting in useEffect
+	const [hasCompleted, setHasCompleted] = useState(() => {
+		try {
+			return !!localStorage.getItem(STORAGE_KEY);
+		} catch {
+			return false;
+		}
+	});
 
 	const resetOnboarding = useCallback(() => {
-		localStorage.removeItem(STORAGE_KEY);
+		try {
+			localStorage.removeItem(STORAGE_KEY);
+		} catch {
+			// Storage unavailable
+		}
 		setHasCompleted(false);
 	}, []);
 
