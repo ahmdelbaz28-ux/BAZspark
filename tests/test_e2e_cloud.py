@@ -22,7 +22,10 @@ the real test path when credentials are available.
 """
 
 import os
+import warnings
 from pathlib import Path
+
+warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
