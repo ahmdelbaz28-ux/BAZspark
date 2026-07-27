@@ -13,6 +13,7 @@ import pytest
 # PendingDeprecationWarning on import. Pytest converts this to an
 # error (filterwarnings=["error", ...]), crashing collection.
 warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+
 from fastapi.testclient import TestClient
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -79,8 +80,7 @@ class TestApsRouterEndpoints:
     """Verifies FastAPI API routes for Autodesk Platform Services Design Automation."""
 
     @pytest.fixture
-    def client(self, monkeypatch):
-        monkeypatch.setenv("FIREAI_API_KEY", "test-key-for-v2-api-testing-1234567890")
+    def client(self):
         return TestClient(app)
 
     @pytest.fixture
