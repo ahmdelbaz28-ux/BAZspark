@@ -5,9 +5,14 @@ tests/test_aps_integration.py — Integration and Unit tests for Autodesk Platfo
 from __future__ import annotations
 
 import sys
+import warnings
 from pathlib import Path
 
 import pytest
+# Suppress upstream library noise: multipart v0.0.20 emits a
+# PendingDeprecationWarning on import. Pytest converts this to an
+# error (filterwarnings=["error", ...]), crashing collection.
+warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
 from fastapi.testclient import TestClient
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

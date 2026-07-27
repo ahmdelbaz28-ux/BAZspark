@@ -7,6 +7,12 @@
       "skillPath": "security/SKILL.md",
       "computedHash": "087c1094fa5f1834af4785c058dcc8c9abe4c1321b853883c76ea46c93a21cfe"
     },
+    "ci-cd-and-automation": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ci-cd-and-automation/SKILL.md",
+      "computedHash": "578b098a7d2352ccdac8b8abdc40eb6803538e81cf8382f138da6188a655087c"
+    },
     "code-review": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -66,6 +72,12 @@
       "sourceType": "github",
       "skillPath": "skills/shipping-and-launch/SKILL.md",
       "computedHash": "005e89054a4bbe27e991c58aa2ddcede4285a7128eb452aaaae351832ebc8a88"
+    },
+    "test-engineer": {
+      "source": "caomeiyouren/momei",
+      "sourceType": "github",
+      "skillPath": ".github/skills/test-engineer/SKILL.md",
+      "computedHash": "e690be8e22c3a981618cbb848803591ca98bf904c7cb0543ead9781f1b9e4df3"
     },
     "web-design-guidelines": {
       "source": "vercel-labs/agent-skills",
