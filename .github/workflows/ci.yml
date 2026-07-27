@@ -566,11 +566,59 @@ jobs:
           docker rm test-app 2>/dev/null || true
           exit 1
 
+  # ── Gate 7: Bundle Size ────────────────────────────────────────────────────
+  bundle-size:
+    name: "Gate 7 — Bundle Size"
+    runs-on: ubuntu-latest
+    needs: frontend-build
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - name: Check bundle size
+        run: |
+          BUILD_DIR="frontend/dist"
+          if [ ! -d "$BUILD_DIR" ]; then
+            echo "FAIL: Build directory not found"
+            exit 1
+          fi
+          
+          TOTAL_SIZE_KB=$(du -sk "$BUILD_DIR" | cut -f1)
+          TOTAL_SIZE_MB=$(echo "scale=2; $TOTAL_SIZE_KB / 1024" | bc)
+          
+          echo "Total bundle size: ${TOTAL_SIZE_MB}MB"
+          
+          MAX_SIZE_KB=5120
+          if [ "$TOTAL_SIZE_KB" -gt "$MAX_SIZE_KB" ]; then
+            echo "FAIL: Bundle size ${TOTAL_SIZE_MB}MB exceeds 5MB limit"
+            exit 1
+          fi
+          
+          echo "PASS: Bundle size within limits"
+
   # ── Success Summary ────────────────────────────────────────────────────────
   success:
     name: "✅ All Gates Passed"
     runs-on: ubuntu-latest
-    needs: [static-analysis, test-suite, property-tests, frontend-build, frontend-visual, dependency-audit, docker-build]
+    needs: [static-analysis, test-suite, property-tests, frontend-build, frontend-visual, dependency-audit, docker-build, bundle-size]
     if: always()
     # CodeQL: actions/missing-workflow-permissions — explicit least privilege
     permissions:
@@ -594,6 +642,7 @@ jobs:
           GATE4B="${{ needs.frontend-visual.result }}"
           GATE5="${{ needs.dependency-audit.result }}"
           GATE6="${{ needs.docker-build.result }}"
+          GATE7="${{ needs.bundle-size.result }}"
 
           echo "Gate 1 (Static Analysis):        $GATE1"
           echo "Gate 2 (Test Suite):              $GATE2"
@@ -602,6 +651,7 @@ jobs:
           echo "Gate 4b (Visual Regression):      $GATE4B"
           echo "Gate 5 (Dependency Audit):        $GATE5"
           echo "Gate 6 (Docker Build & Test):     $GATE6"
+          echo "Gate 7 (Bundle Size):             $GATE7"
           echo ""
 
           # A gate is "failed" only if its result is 'failure'.
@@ -610,7 +660,7 @@ jobs:
           # 'skipped' is acceptable (e.g., Gate 3/6 skip on PRs without backend changes).
           # 'success' is the only fully-passing state.
           FAILED_GATES=""
-          for entry in "Gate 1:$GATE1" "Gate 2:$GATE2" "Gate 3:$GATE3" "Gate 4:$GATE4" "Gate 4b:$GATE4B" "Gate 5:$GATE5" "Gate 6:$GATE6"; do
+          for entry in "Gate 1:$GATE1" "Gate 2:$GATE2" "Gate 3:$GATE3" "Gate 4:$GATE4" "Gate 4b:$GATE4B" "Gate 5:$GATE5" "Gate 6:$GATE6" "Gate 7:$GATE7"; do
             name="${entry%%:*}"
             result="${entry##*:}"
             case "$result" in
