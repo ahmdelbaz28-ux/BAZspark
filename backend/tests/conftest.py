@@ -341,21 +341,18 @@ import pytest  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _enforce_test_api_key(monkeypatch):
+def _enforce_test_api_key(monkeypatch, request):
     """
-    Ensure FIREAI_API_KEY is set to the test value before every test.
+    Ensure FIREAI_API_KEY is set to the test value before every test under backend/tests/.
 
-    Per-module _setup_env fixtures overwrite it to "" — this fixture
-    restores the real test value so the middleware's env-bypass branch
-    can grant ADMIN role to requests carrying the matching X-API-Key.
-
-    Using monkeypatch.setenv ensures automatic restoration after the test,
-    preventing env pollution across test boundaries.
+    Per-module _setup_env fixtures in backend/tests/ overwrite it to "" — this fixture
+    restores the real test value for backend tests. For tests outside backend/tests/
+    (e.g., tests/test_auth_integration.py), we preserve whatever FIREAI_API_KEY
+    the test's own fixtures set.
     """
-    monkeypatch.setenv("FIREAI_API_KEY", TEST_API_KEY)
-    # Also clear FIREAI_EVIDENCE_HMAC_KEY / AUDIT_HMAC_KEY if empty —
-    # the audit store may complain about missing HMAC keys in tests.
-    # Don't set them; let tests that need them set their own values.
+    fpath = str(getattr(request, "fspath", ""))
+    if "backend" in fpath and "tests" in fpath:
+        monkeypatch.setenv("FIREAI_API_KEY", TEST_API_KEY)
     return  # NOSONAR - python:S3626
 
 
