@@ -1,0 +1,50 @@
+name: Bundle Size Check
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  bundle-size:
+    name: Bundle Size Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - name: Check bundle size
+        run: |
+          # Check total size of build output
+          BUILD_DIR="frontend/dist"
+          if [ ! -d "$BUILD_DIR" ]; then
+            echo "FAIL: Build directory not found"
+            exit 1
+          fi
+          
+          # Calculate total size in KB
+          TOTAL_SIZE_KB=$(du -sk "$BUILD_DIR" | cut -f1)
+          TOTAL_SIZE_MB=$(echo "scale=2; $TOTAL_SIZE_KB / 1024" | bc)
+          
+          echo "Total bundle size: ${TOTAL_SIZE_MB}MB"
+          
+          # Fail if bundle exceeds 5MB (adjust threshold as needed)
+          MAX_SIZE_KB=5120
+          if [ "$TOTAL_SIZE_KB" -gt "$MAX_SIZE_KB" ]; then
+            echo "FAIL: Bundle size ${TOTAL_SIZE_MB}MB exceeds 5MB limit"
+            exit 1
+          fi
+          
+          echo "PASS: Bundle size within limits"
