@@ -348,6 +348,7 @@ markers = [
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
     "ignore::UserWarning",
     "ignore::FutureWarning"
 ]
