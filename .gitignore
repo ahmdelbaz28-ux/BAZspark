@@ -305,6 +305,9 @@ obj/
 # Agent workspace directories
 .mimocode/
 API_Test_Collection.postman_collection.json
-# Environment files (contain secrets � NEVER commit)
+# Environment files (contain secrets — NEVER commit)
+.env
+.env.*
+*.secret
 !.env.example
 !.env.example.txt
