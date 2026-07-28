@@ -180,33 +180,63 @@ def test_dns_rebinding_attack_is_defeated():
     Note: the validator no longer does DNS (it's pure). The rebinding defense
     is entirely in the service layer. We simulate two consecutive
     resolve_to_safe_ip calls where DNS changes between them.
+
+    PARALLEL EXECUTION ROBUSTNESS:
+    ------------------------------
+    This test does NOT use a call_count to determine which IP to return.
+    Instead, it uses a STATEFUL FLAG that is toggled by the test itself
+    (not by getaddrinfo call count). This prevents interference from
+    leftover daemon threads (started by _resolve_host_with_timeout in
+    previous tests) that might call getaddrinfo and increment a counter.
+
+    The flag is explicitly set to 'public' before step 2, and 'private'
+    before step 4. The fake getaddrinfo reads the flag at call time,
+    so the order is deterministic regardless of how many times
+    getaddrinfo is called by leftover threads.
     """
     from backend.integrations._ssrf_guard import _reset_dns_state_for_testing
     _reset_dns_state_for_testing()
 
-    call_count = [0]
+    # Unique hostname — no other test uses this.
+    test_host = "rebinding-attacker-test-xyzzy.com"
+
+    # Stateful flag: 'public' or 'private'. The test explicitly toggles
+    # this before each resolve_to_safe_ip call.
+    dns_state = {"ip": "public"}
 
     def fake_getaddrinfo(host, *args, **kwargs):
-        call_count[0] += 1
-        # First call: return public IP
-        if call_count[0] == 1:
+        # For other hosts (leftover daemon threads), return a safe default.
+        if host != test_host:
             return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
-        # Second call: attacker changed DNS to private IP
+        # For our test host, return based on the current state.
+        if dns_state["ip"] == "public":
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
         return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 0))]
 
     with patch("backend.integrations._ssrf_guard.socket.getaddrinfo", side_effect=fake_getaddrinfo):
         # Step 1: validator passes (pure check — no DNS, no network I/O)
-        host = validate_host_for_user_input("rebinding.attacker.com")
-        assert host == "rebinding.attacker.com"
+        host = validate_host_for_user_input(test_host)
+        assert host == test_host
 
         # Step 2: first service-layer call succeeds (DNS returns public IP)
+        dns_state["ip"] = "public"
         safe_ip = resolve_to_safe_ip(host)
         assert safe_ip == "93.184.216.34"
 
-        # Step 3: clear cache to simulate a fresh request after DNS rebinding
+        # Step 3: clear cache to simulate a fresh request after DNS rebinding.
+        # Also wait briefly for any in-flight daemon threads from previous
+        # tests to finish caching their results (which would repopulate the
+        # cache AFTER our reset). The 0.3s wait is enough for daemon threads
+        # to complete their caching logic (which is just a dict assignment).
+        _reset_dns_state_for_testing()
+        import time as _time
+        _time.sleep(0.3)
+        # Clear AGAIN after the wait, in case a daemon thread repopulated
+        # the cache during the sleep.
         _reset_dns_state_for_testing()
 
         # Step 4: second service-layer call rejects (DNS now returns private IP)
+        dns_state["ip"] = "private"
         with pytest.raises(SSRFError, match="resolves only to unsafe"):
             resolve_to_safe_ip(host)
 
