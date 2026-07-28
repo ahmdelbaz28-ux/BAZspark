@@ -3,7 +3,7 @@
 import hashlib
 import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -237,11 +237,11 @@ class SelectionEngine:
 
 
 __all__ = [
-    "FireAlarmPanel",
+    "ALARM_MA_PER_DEVICE",
     "MASTER_PANEL_DATABASE",
+    "STANDBY_MA_PER_DEVICE",
+    "FireAlarmPanel",
     "PanelRecommendation",
     "ProjectRequirements",
     "SelectionEngine",
-    "STANDBY_MA_PER_DEVICE",
-    "ALARM_MA_PER_DEVICE",
 ]
