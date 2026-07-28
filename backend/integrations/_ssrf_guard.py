@@ -59,10 +59,10 @@ import time
 from typing import Optional, Tuple
 
 __all__ = [
-    "validate_host_for_user_input",
+    "SSRFError",
     "resolve_to_safe_ip",
     "resolve_to_safe_ip_with_hostname",
-    "SSRFError",
+    "validate_host_for_user_input",
 ]
 
 # ─── DNS resolution state ───────────────────────────────────────────────────

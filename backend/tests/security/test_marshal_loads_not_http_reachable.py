@@ -90,10 +90,8 @@ EVALUATION:
 from __future__ import annotations
 
 import ast
-import importlib.util
 import os
 import sys
-import threading
 from pathlib import Path
 from unittest.mock import patch
 
@@ -657,7 +655,7 @@ def test_marshal_never_invoked_during_http_traffic():
     filtered_log: list[tuple[str, int, str]] = []
     test_file_prefixes = (
         str(Path(__file__).resolve()),                      # this test
-        str((BACKEND_DIR / "tests" / "conftest.py")),       # backend conftest
+        str(BACKEND_DIR / "tests" / "conftest.py"),       # backend conftest
     )
 
     loads_sentinel = _make_sentinel(raw_log, filtered_log, test_file_prefixes, "loads")
@@ -989,7 +987,7 @@ def test_runtime_sentinel_actually_catches_violations():
     filtered_log: list[tuple[str, int, str]] = []
     test_file_prefixes = (
         str(Path(__file__).resolve()),
-        str((BACKEND_DIR / "tests" / "conftest.py")),
+        str(BACKEND_DIR / "tests" / "conftest.py"),
     )
     loads_sentinel = _make_sentinel(raw_log, filtered_log, test_file_prefixes, "loads")
 
@@ -1132,7 +1130,7 @@ def test_runtime_sentinel_catches_transitive_violation_via_isolation():
     filtered_log: list[tuple[str, int, str]] = []
     test_file_prefixes = (
         str(Path(__file__).resolve()),
-        str((BACKEND_DIR / "tests" / "conftest.py")),
+        str(BACKEND_DIR / "tests" / "conftest.py"),
     )
     dumps_sentinel = _make_sentinel(raw_log, filtered_log, test_file_prefixes, "dumps")
 

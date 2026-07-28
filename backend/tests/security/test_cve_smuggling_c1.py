@@ -19,7 +19,6 @@ Per pip-audit (run 2026-07-28):
   python-multipart 0.0.20 -> 6 unique CVEs (latest fix: 0.0.31)
 """
 import re
-import subprocess
 import sys
 from pathlib import Path
 

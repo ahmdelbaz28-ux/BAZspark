@@ -26,7 +26,6 @@ from __future__ import annotations
 import socket
 import threading
 import time
-from unittest.mock import patch
 
 import pytest
 
@@ -35,7 +34,6 @@ from backend.integrations._ssrf_guard import (
     resolve_to_safe_ip,
     validate_host_for_user_input,
 )
-
 
 # ─── LIE 1: Validator hangs on slow DNS ─────────────────────────────────────
 
@@ -58,7 +56,7 @@ def test_validator_does_not_hang_on_slow_dns(monkeypatch):
     start = time.monotonic()
     # Should return (or raise) within 2 seconds, NOT hang for 30s
     try:
-        result = validate_host_for_user_input("some-host.example.com")
+        validate_host_for_user_input("some-host.example.com")
     except SSRFError:
         pass  # rejection is fine — we just need it to be FAST
     elapsed = time.monotonic() - start
