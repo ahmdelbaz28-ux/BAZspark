@@ -161,8 +161,33 @@ const RevitPage = lazy(() =>
 const SelfHealingPage = lazy(() =>
         import("./pages/SelfHealingPage").then((m) => ({ default: m.SelfHealingPage })),
 );
+const FDSSimulationPage = lazy(() =>
+        import("./pages/FDSSimulationPage").then((m) => ({
+                default: m.FDSSimulationPage,
+        })),
+);
 const SettingsPage = lazy(() =>
         import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
+const DatabaseAdminPage = lazy(() =>
+        import("./pages/DatabaseAdminPage").then((m) => ({
+                default: m.DatabaseAdminPage,
+        })),
+);
+const BIMProvidersPage = lazy(() =>
+        import("./pages/BIMProvidersPage").then((m) => ({
+                default: m.BIMProvidersPage,
+        })),
+);
+const IFC43MappingPage = lazy(() =>
+        import("./pages/IFC43MappingPage").then((m) => ({
+                default: m.IFC43MappingPage,
+        })),
+);
+const ARExportPage = lazy(() =>
+        import("./pages/ARExportPage").then((m) => ({
+                default: m.ARExportPage,
+        })),
 );
 const WorkflowPage = lazy(() =>
         import("./pages/WorkflowPage").then((m) => ({ default: m.WorkflowPage })),
@@ -288,6 +313,7 @@ const handleSearchOpen = useCallback(() => {
                 { path: "/reports/generate", element: <ReportGeneratorPage /> },
                 { path: "/settings", element: <SettingsPage /> },
                 { path: "/settings/cad", element: <CADSettingsPage /> },
+                { path: "/settings/database", element: <DatabaseAdminPage />, requiredRole: "admin" },
                 { path: "/digital-twin", element: <DigitalTwinPage /> },
                 { path: "/fire-alarm", element: <FireAlarmPage /> },
                 { path: "/fire-alarm/designer", element: <FireAlarmDesigner /> },
@@ -310,6 +336,11 @@ const handleSearchOpen = useCallback(() => {
                 { path: "/digital-twin/config", element: <DigitalTwinConfigPage /> },
                 { path: "/digital-twin/history", element: <DigitalTwinHistoryPage /> },
                 { path: "/etap", element: <EtapPage /> },
+                // V270: FDS Simulation — smoke simulation job submission and tracking
+                { path: "/fds-simulation", element: <FDSSimulationPage />, requiredRole: "admin" },
+                { path: "/bim-providers", element: <BIMProvidersPage /> },
+                { path: "/ifc43-mapping", element: <IFC43MappingPage />, requiredRole: "admin" },
+                { path: "/ar-export", element: <ARExportPage />, requiredRole: "admin" },
         ], []);
 
         // Determine if we're on a public route (no AppShell)

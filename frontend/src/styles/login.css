@@ -45,3 +45,26 @@
 .feature-row:hover .feature-icon-box {
         transform: scale(1.08) rotate(3deg);
 }
+
+.login-feature-item {
+        transition: border-color 0.2s, transform 0.2s;
+}
+.login-submit-btn {
+        transition: background-color 0.2s, transform 0.1s;
+}
+.login-input-control {
+        transition: border-color 0.2s, box-shadow 0.2s;
+}
+.lang-toggle-btn {
+        transition: border-color 0.2s, color 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+        .login-feature-item,
+        .login-submit-btn,
+        .login-input-control,
+        .lang-toggle-btn {
+                transition-duration: 0.01ms !important;
+                transition-delay: 0s !important;
+        }
+}

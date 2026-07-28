@@ -1,5 +1,10 @@
 // NOSONAR
 import { expect, type Page, test } from "@playwright/test";
+import { installApiMock } from "./visual/helpers/authMock";
+
+test.beforeEach(async ({ page }) => {
+	await installApiMock(page, { preAuthenticated: true });
+});
 
 /**
  * Comprehensive Button and Backend Connection Tests

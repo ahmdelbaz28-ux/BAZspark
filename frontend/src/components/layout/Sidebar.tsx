@@ -22,6 +22,7 @@ import {
         CloudSun,
         Brain,
         Network,
+        Flame,
         Workflow as WorkflowIcon,
         Settings2,
         Info,
@@ -29,6 +30,8 @@ import {
         Key,
         Download,
         Server,
+        Globe,
+        Smartphone,
 } from "lucide-react";
 import type React from "react";
 import { memo, useCallback, useState } from "react";
@@ -69,6 +72,10 @@ const routePrefetchMap: Record<string, () => Promise<unknown>> = {
         "/conflicts": () => import("@/pages/Conflicts"),
         "/settings": () => import("@/pages/SettingsPage"),
         "/api-keys": () => import("@/pages/ApiKeysPage"),
+        "/fds-simulation": () => import("@/pages/FDSSimulationPage"),
+        "/bim-providers": () => import("@/pages/BIMProvidersPage"),
+        "/ifc43-mapping": () => import("@/pages/IFC43MappingPage"),
+        "/ar-export": () => import("@/pages/ARExportPage"),
 };
 
 interface NavItem {
@@ -215,6 +222,13 @@ const navItems: NavItem[] = [
                 icon: Activity,
                 path: "/monitor",
         },                {
+                        labelKey: "nav.fdsSimulation",
+                        defaultLabel: "FDS Simulation",
+                        icon: Flame,
+                        path: "/fds-simulation",
+                        requiredRole: "admin",
+                },
+                {
                         labelKey: "nav.selfHealing",
                         defaultLabel: "Self-Healing",
                         icon: Shield,
@@ -269,6 +283,26 @@ const navItems: NavItem[] = [
                         icon: Key,
                         path: "/api-keys",
                         dataOnboarding: "nav-api-keys",
+                        requiredRole: "admin",
+                },
+                {
+                        labelKey: "nav.bimProviders",
+                        defaultLabel: "BIM Providers",
+                        icon: Building2,
+                        path: "/bim-providers",
+                },
+                {
+                        labelKey: "nav.ifc43Mapping",
+                        defaultLabel: "IFC 4.3 Mapping",
+                        icon: Globe,
+                        path: "/ifc43-mapping",
+                        requiredRole: "admin",
+                },
+                {
+                        labelKey: "nav.arExport",
+                        defaultLabel: "AR Export",
+                        icon: Smartphone,
+                        path: "/ar-export",
                         requiredRole: "admin",
                 },
 ];

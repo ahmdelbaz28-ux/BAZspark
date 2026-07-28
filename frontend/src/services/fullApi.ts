@@ -873,6 +873,46 @@ export const v2Api = {
 
         /** GET /topology/health — Topology service health check */
         getTopologyHealth: () => apiCall("/topology/health", {}, API_V2_BASE),
+
+        // ── Multi-Database Admin ──
+        /** GET /multi-db/health — Check health of all database connections */
+        getMultiDbHealth: () => apiCall("/multi-db/health"),
+
+        /** GET /multi-db/redis/get/{key} — Get a value from Redis */
+        getRedisValue: (key: string) => apiCall(`/multi-db/redis/get/${key}`),
+
+        /** POST /multi-db/redis/set — Set a value in Redis */
+        setRedisValue: (key: string, value: string, ttl?: number) =>
+                apiCall(`/multi-db/redis/set?key=${key}&value=${encodeURIComponent(value)}${ttl ? `&ttl=${ttl}` : ""}`, { method: "POST" }),
+
+        /** GET /multi-db/neo4j/query — Execute predefined Neo4j query */
+        executeNeo4jQuery: (queryType: string, parameters?: string) =>
+                apiCall(`/multi-db/neo4j/query?query_type=${queryType}${parameters ? `&parameters=${encodeURIComponent(parameters)}` : ""}`),
+
+        /** GET /multi-db/qdrant/collections — List Qdrant collections */
+        getQdrantCollections: () => apiCall("/multi-db/qdrant/collections"),
+
+        // ── V270: FDS Simulation endpoints ──
+        /** POST /fds/submit — Submit an FDS simulation job */
+        submitFdsJob: (data: { fds_input: string; project_id?: string; metadata?: Record<string, unknown> }) =>
+                apiCall("/fds/submit", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** GET /fds/status/{job_id} — Get FDS job status */
+        getFdsJobStatus: (jobId: string) =>
+                apiCall(`/fds/status/${jobId}`, {}, API_V2_BASE),
+
+        /** GET /fds/jobs — List FDS simulation jobs */
+        listFdsJobs: (limit?: number) =>
+                apiCall(`/fds/jobs${limit ? `?limit=${limit}` : ""}`, {}, API_V2_BASE),
+
+        /** POST /smoke-simulation/state — Create/update smoke simulation state */
+        setSmokeSimulationState: (data: {
+                room_id: string;
+                smoke_density_points?: Array<{ x: number; y: number; z: number; density_kg_m3: number }>;
+                visibility_at_height?: Record<string, number>;
+                fds_run_id?: string;
+        }) =>
+                apiCall("/smoke-simulation/state", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
 };
 
 // ─── Marine API ─────────────────────────────────────────────────────────────
