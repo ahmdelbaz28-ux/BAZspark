@@ -17,7 +17,7 @@ Attack vectors covered:
   10. Service layer uses literal IP (not hostname) — verified via mock
 """
 import socket
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
@@ -28,7 +28,6 @@ from backend.integrations._ssrf_guard import (
     validate_host_for_user_input,
 )
 from backend.integrations.etap_schemas import EtapConnectionSettings, EtapSettingsUpdate
-
 
 # ─── 1. Literal private IPv4 addresses ─────────────────────────────────────
 

@@ -22,8 +22,8 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
 from pydantic import ValidationError
-from backend.integrations.etap_schemas import EtapConnectionSettings, EtapSettingsUpdate
 
+from backend.integrations.etap_schemas import EtapConnectionSettings, EtapSettingsUpdate
 
 # ─── Test fixtures ─────────────────────────────────────────────────────────
 
@@ -47,7 +47,7 @@ def test_etap_connection_settings_rejects_literal_loopback():
     """Baseline: literal 127.0.0.1 IS rejected (existing fix works)."""
     try:
         EtapConnectionSettings(host="127.0.0.1", port=80, username="u", password="p")
-        assert False, "Should have rejected 127.0.0.1"
+        raise AssertionError("Should have rejected 127.0.0.1")
     except ValidationError as e:
         assert "SSRF" in str(e) or "private" in str(e).lower()
 
@@ -62,7 +62,9 @@ def test_etap_connection_settings_rejects_dns_rebinding_to_loopback():
       2. Service-layer resolver rejects it (DNS resolves to 127.0.0.1)
     """
     from backend.integrations._ssrf_guard import (
-        resolve_to_safe_ip, SSRFError, _reset_dns_state_for_testing
+        SSRFError,
+        _reset_dns_state_for_testing,
+        resolve_to_safe_ip,
     )
     _reset_dns_state_for_testing()
 
@@ -86,7 +88,7 @@ def test_etap_connection_settings_rejects_aws_metadata_literal():
     """Baseline: AWS metadata IP IS rejected."""
     try:
         EtapConnectionSettings(host="169.254.169.254", port=80, username="u", password="p")
-        assert False, "Should have rejected 169.254.169.254"
+        raise AssertionError("Should have rejected 169.254.169.254")
     except ValidationError as e:
         assert "SSRF" in str(e) or "private" in str(e).lower() or "reserved" in str(e).lower()
 
@@ -96,11 +98,11 @@ def test_etap_connection_settings_rejects_aws_metadata_literal():
 def test_etap_settings_update_rejects_literal_loopback():
     """EtapSettingsUpdate must reject 127.0.0.1 (currently has NO SSRF check)."""
     try:
-        s = EtapSettingsUpdate(host="127.0.0.1", port=80, username="u", password="p")
+        EtapSettingsUpdate(host="127.0.0.1", port=80, username="u", password="p")
         raise AssertionError(
-            f"SSRF: EtapSettingsUpdate accepted host='127.0.0.1'. "
-            f"This model has NO SSRF check at all — any INTEGRATION_MANAGE user "
-            f"can target internal network via PUT /integrations/etap/settings."
+            "SSRF: EtapSettingsUpdate accepted host='127.0.0.1'. "
+            "This model has NO SSRF check at all — any INTEGRATION_MANAGE user "
+            "can target internal network via PUT /integrations/etap/settings."
         )
     except ValidationError:
         pass
@@ -109,10 +111,10 @@ def test_etap_settings_update_rejects_literal_loopback():
 def test_etap_settings_update_rejects_aws_metadata_literal():
     """EtapSettingsUpdate must reject AWS metadata IP."""
     try:
-        s = EtapSettingsUpdate(host="169.254.169.254", port=80, username="u", password="p")
+        EtapSettingsUpdate(host="169.254.169.254", port=80, username="u", password="p")
         raise AssertionError(
-            f"SSRF: EtapSettingsUpdate accepted host='169.254.169.254'. "
-            f"AWS/GCP metadata endpoints would be reachable."
+            "SSRF: EtapSettingsUpdate accepted host='169.254.169.254'. "
+            "AWS/GCP metadata endpoints would be reachable."
         )
     except ValidationError:
         pass
@@ -128,7 +130,9 @@ def test_etap_settings_update_rejects_dns_rebinding():
       2. Service-layer resolver rejects it (DNS resolves to 127.0.0.1)
     """
     from backend.integrations._ssrf_guard import (
-        resolve_to_safe_ip, SSRFError, _reset_dns_state_for_testing
+        SSRFError,
+        _reset_dns_state_for_testing,
+        resolve_to_safe_ip,
     )
     _reset_dns_state_for_testing()
 

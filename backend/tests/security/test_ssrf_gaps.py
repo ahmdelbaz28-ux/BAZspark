@@ -23,16 +23,14 @@ from __future__ import annotations
 import socket
 import threading
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from backend.integrations._ssrf_guard import (
     SSRFError,
     resolve_to_safe_ip,
-    validate_host_for_user_input,
 )
-
 
 # ─── Gap 1: setdefaulttimeout race condition ────────────────────────────────
 
@@ -154,6 +152,7 @@ def test_export_to_etap_must_use_resolve_to_safe_ip_when_real_network_added():
     the SSRF vulnerability we just fixed in test_connection().
     """
     import inspect
+
     from backend.integrations.etap_service import EtapService
 
     src = inspect.getsource(EtapService.export_to_etap) + inspect.getsource(EtapService.import_from_etap)
@@ -177,6 +176,7 @@ def test_export_to_etap_has_explicit_ssrf_contract_comment():
     future developers to call resolve_to_safe_ip() before network I/O.
     This is a defense-in-depth measure to prevent regression."""
     import inspect
+
     from backend.integrations.etap_service import EtapService
 
     src = inspect.getsource(EtapService.export_to_etap) + inspect.getsource(EtapService.import_from_etap)

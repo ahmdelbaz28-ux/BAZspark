@@ -15,9 +15,7 @@ guards: if someone removes the cleanup logic, the tests will FAIL.
 """
 from __future__ import annotations
 
-import asyncio
 import ast
-import os
 import sys
 from pathlib import Path
 from unittest.mock import patch

@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field, field_validator
 
 from backend.integrations._ssrf_guard import validate_host_for_user_input
 
-
 # ─── SSRF protection ───────────────────────────────────────────────────────
 # The standard SSRF defense lives in backend/integrations/_ssrf_guard.py.
 # - validate_host_for_user_input() is used here (Pydantic layer).
