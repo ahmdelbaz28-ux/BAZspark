@@ -30,25 +30,18 @@ def _reset_ssrf_dns_state():
 #     module-level state; evicting it causes test_dns_rebinding_attack_is_defeated
 #     to fail when run after test_hostname_resolving_to_loopback_is_rejected)
 #   - backend.integrations             (parent of _ssrf_guard, same reason)
-# We ONLY evict backend.app and its direct submodules that cache env vars
-# at import time (config, auth_utils, api_keys).
+#   - backend.services.workflow_service (uses langgraph ForwardRef type hints
+#     with `from __future__ import annotations`; evicting it causes NameError
+#     on re-import because ForwardRef resolution happens before the module's
+#     namespace is fully populated)
+#   - backend.routers.*                (same ForwardRef issue with Pydantic)
+#
+# We ONLY evict backend.app itself. The backend.app module caches
+# FIREAI_API_KEY at import time via config, which is the root cause of the
+# auth test pollution. Evicting just backend.app forces a re-import of the
+# app (which re-reads env vars) without breaking any submodule's type hints.
 _EVICT_PATTERNS = (
     "backend.app",
-    "backend.app.",
-    "backend.config",
-    "backend.auth_utils",
-    "backend.api_keys",
-    "backend.routers",
-    "backend.routers.",
-    "backend.services",
-    "backend.services.",
-    "backend.middleware",
-    "backend.middleware.",
-    "backend.limiter",
-    "backend.session_store",
-    "backend.database",
-    "backend.db",
-    "backend.db.",
 )
 
 
