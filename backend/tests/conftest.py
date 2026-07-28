@@ -68,7 +68,24 @@ TEST_API_KEY = "test-api-key-for-testing-only"
 
 # Set the env var at import time, before any test module's _setup_env runs.
 # This ensures the very first test in the very first module sees a real key.
-os.environ["FIREAI_API_KEY"] = TEST_API_KEY
+#
+# V216 FIX (Gate 2 — FIREAI_API_KEY contamination):
+# Previously this was an unconditional assignment
+# (`os.environ["FIREAI_API_KEY"] = TEST_API_KEY`), which LEAKED the backend
+# test key into root tests/ when pytest collected both suites in one run
+# (as CI does: `pytest tests/ backend/tests/`). Even though root tests/'
+# own conftest has an autouse fixture that tries to set the correct root
+# key, the old `setdefault` could not overwrite a value already set by
+# this import-time side effect — so root tests saw the backend key and
+# failed authentication with 401.
+#
+# `setdefault` here is the correct fix: it only sets the env var if no
+# other conftest has set it yet (preserving root tests' value when their
+# conftest runs first in pytest's collection order). For actual backend
+# tests, the autouse fixture `_enforce_test_api_key` below uses
+# `monkeypatch.setenv` to FORCE the backend key at fixture-resolution
+# time — which is properly scoped per-test and auto-restored after.
+os.environ.setdefault("FIREAI_API_KEY", TEST_API_KEY)
 
 # Without it, every TestClient test fails at startup with:
 #   RuntimeError: FIREAI_SESSION_SECRET environment variable is not set.

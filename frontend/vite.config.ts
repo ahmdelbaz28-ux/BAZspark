@@ -162,9 +162,28 @@ export default defineConfig({
                                         }
                                 },
                         },
-                        // Externalize GSAP Club plugins (SplitText, DrawSVGPlugin, CustomEase)
-                        // These are Club GSAP plugins that require a paid license and are not on npm
-                        external: ["gsap/SplitText", "gsap/DrawSVGPlugin", "gsap/CustomEase"],
+                        // V216/V287 FIX (Gate 4b — Visual Regression):
+                        // REMOVED `external: ["gsap/SplitText", "gsap/DrawSVGPlugin", "gsap/CustomEase"]`.
+                        //
+                        // These gsap subpaths are NOT external — they ship as proper ES
+                        // modules inside node_modules/gsap/ (CustomEase.js, DrawSVGPlugin.js,
+                        // SplitText.js) and are resolvable via the gsap package.json exports
+                        // map ("./*.js": { "import": "./*.js" }). Marking them as `external`
+                        // told Rollup to leave them as bare specifiers in the production
+                        // bundle, expecting the runtime environment to resolve them via an
+                        // import map. But the production HTML has NO import map, so the
+                        // browser failed with:
+                        //     TypeError: Failed to resolve module specifier "gsap/CustomEase".
+                        //     Relative references must start with "/", "./", or "../".
+                        //
+                        // This error propagated to React's ErrorRecovery boundary (logged
+                        // as "[BAZSPARK] Fatal error caught by boundary"), which the visual
+                        // smoke tests' expectNoConsoleErrors helper caught → Gate 4b failed.
+                        //
+                        // Without `external`, Rollup bundles these subpaths into chunks
+                        // and the browser resolves the relative chunk URLs at runtime.
+                        // The try/catch in useGsapAnimations.ts::loadClubPlugins still
+                        // gracefully degrades if a plugin is somehow unavailable.
                 },
                 chunkSizeWarningLimit: 600,
                 // V242: Aggressive module preloading for faster navigation.

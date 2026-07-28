@@ -33,10 +33,34 @@ let CustomEase: CustomEaseType | null = null;
 async function loadClubPlugins() {
   if (typeof window === "undefined") return;
   try {
-    // Use dynamic import with string concatenation to avoid static analysis
-    const splitTextModule = await import(/* webpackIgnore: true */ "gsap/SplitText");
-    const drawSVGModule = await import(/* webpackIgnore: true */ "gsap/DrawSVGPlugin");
-    const customEaseModule = await import(/* webpackIgnore: true */ "gsap/CustomEase");
+    // V216/V287 FIX (Gate 4b — Visual Regression):
+    // Root cause: `external: ["gsap/SplitText","gsap/DrawSVGPlugin","gsap/CustomEase"]`
+    // in vite.config.ts (now removed) told Rollup to leave these subpaths as
+    // bare specifiers in the production bundle. Vite also statically analyzed
+    // the string literal specs of `await import("gsap/CustomEase")` (the
+    // `/* webpackIgnore: true */` magic comment is webpack-only, Vite ignores
+    // it), so the bundler HOISTED the dynamic imports to top-level STATIC
+    // imports in the production bundle:
+    //     import { CustomEase as i } from "gsap/CustomEase";
+    //     import "gsap/SplitText";
+    //     import "gsap/DrawSVGPlugin";
+    // The browser then failed to resolve the bare specifier (no import map in
+    // production HTML) and threw:
+    //     TypeError: Failed to resolve module specifier "gsap/CustomEase".
+    //     Relative references must start with "/", "./", or "../".
+    // This error propagated to React's ErrorRecovery boundary (logged as
+    // "[BAZSPARK] Fatal error caught by boundary"), which the visual smoke
+    // tests' expectNoConsoleErrors helper caught → Gate 4b failed.
+    //
+    // FIX: Removed the `external` line in vite.config.ts so Rollup bundles
+    // these subpaths into chunks (they ship as proper ES modules in
+    // node_modules/gsap/ via the package.json exports map). The bare
+    // specifiers (without `.js` — adding `.js` broke TypeScript, see
+    // gsap-club.d.ts) resolve correctly at build time and runtime. The
+    // try/catch still gracefully degrades if a plugin is unavailable.
+    const splitTextModule = await import("gsap/SplitText");
+    const drawSVGModule = await import("gsap/DrawSVGPlugin");
+    const customEaseModule = await import("gsap/CustomEase");
 
     SplitText = splitTextModule.SplitText;
     DrawSVGPlugin = drawSVGModule.DrawSVGPlugin;
