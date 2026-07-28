@@ -71,7 +71,7 @@ export function WorkspaceArabic() {
                                 <div className="h-10 flex items-center justify-between px-4 border-b border-border/50">
                                         <div className="flex items-center gap-4">
                                                 <div className="flex items-center gap-2 text-primary">
-                                                        <Zap className="h-5 w-5 fill-current" />
+                                                        <Zap aria-hidden="true" className="h-5 w-5 fill-current" />
                                                         <span className="font-bold tracking-wider text-sm">
                                                                 نيكساد برو
                                                         </span>
@@ -116,12 +116,12 @@ export function WorkspaceArabic() {
                                                 </div>
 
                                                 <div className="flex items-center gap-2 text-xs">
-                                                        <Cloud className="h-4 w-4 text-success" />
+                                                        <Cloud aria-hidden="true" className="h-4 w-4 text-success" />
                                                         <span>متزامن</span>
                                                 </div>
                                                 <Separator orientation="vertical" className="h-5" />
                                                 <div className="flex items-center gap-2 text-xs">
-                                                        <Cpu className="h-4 w-4" />
+                                                        <Cpu aria-hidden="true" className="h-4 w-4" />
                                                         <div
                                                                 className="w-16 h-1.5 bg-muted rounded-full overflow-hidden"
                                                                 dir="ltr"
@@ -130,7 +130,7 @@ export function WorkspaceArabic() {
                                                         </div>
                                                 </div>
                                                 <Separator orientation="vertical" className="h-5" />
-                                                <Bell className="h-4 w-4 hover:text-foreground cursor-pointer" />
+                                                <Bell aria-hidden="true" className="h-4 w-4 hover:text-foreground cursor-pointer" />
                                                 <div className="h-6 w-6 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center text-xs font-bold text-primary">
                                                         JS
                                                 </div>
@@ -140,21 +140,21 @@ export function WorkspaceArabic() {
                                 <div className="h-14 flex items-center px-2 space-x-1 bg-card/50 overflow-x-auto">
                                         {activeTab === "كهربائي" && (
                                                 <>
-                                                        <RibbonBtn icon={<MinusSquare />} label="سلك جديد" />
-                                                        <RibbonBtn icon={<Plus />} label="إضافة مكون" />
+                                                        <RibbonBtn icon={<MinusSquare aria-hidden="true" />} label="سلك جديد" />
+                                                        <RibbonBtn icon={<Plus aria-hidden="true" />} label="إضافة مكون" />
                                                         <Separator orientation="vertical" className="h-8 mx-1" />
-                                                        <RibbonBtn icon={<Layout />} label="شريط الحافلة" />
-                                                        <RibbonBtn icon={<Layers />} label="مجرى الكابلات" />
-                                                        <RibbonBtn icon={<Monitor />} label="لوحة توزيع" />
-                                                        <RibbonBtn icon={<Zap />} label="قاطع دائرة" />
-                                                        <RibbonBtn icon={<ArrowRight />} label="رمز الأرضي" />
+                                                        <RibbonBtn icon={<Layout aria-hidden="true" />} label="شريط الحافلة" />
+                                                        <RibbonBtn icon={<Layers aria-hidden="true" />} label="مجرى الكابلات" />
+                                                        <RibbonBtn icon={<Monitor aria-hidden="true" />} label="لوحة توزيع" />
+                                                        <RibbonBtn icon={<Zap aria-hidden="true" />} label="قاطع دائرة" />
+                                                        <RibbonBtn icon={<ArrowRight aria-hidden="true" />} label="رمز الأرضي" />
                                                         <Separator orientation="vertical" className="h-8 mx-1" />
-                                                        <RibbonBtn icon={<Activity />} label="حساب الحمل" />
+                                                        <RibbonBtn icon={<Activity aria-hidden="true" />} label="حساب الحمل" />
                                                         <RibbonBtn
-                                                                icon={<Zap className="text-warning" />}
+                                                                icon={<Zap aria-hidden="true" className="text-warning" />}
                                                                 label="وميض القوس"
                                                         />
-                                                        <RibbonBtn icon={<Lock />} label="مرحل حماية" />
+                                                        <RibbonBtn icon={<Lock aria-hidden="true" />} label="مرحل حماية" />
                                                 </>
                                         )}
                                 </div>
@@ -165,7 +165,7 @@ export function WorkspaceArabic() {
                                 <div className="w-60 flex flex-col border-l bg-card/30">
                                         <div className="px-3 py-2 text-xs font-semibold tracking-wider text-muted-foreground border-b flex justify-between items-center">
                                                 <span>مستكشف المشروع</span>
-                                                <Search className="h-3 w-3" />
+                                                <Search aria-hidden="true" className="h-3 w-3" />
                                         </div>
                                         <ScrollArea className="flex-1">
                                                 <div className="p-2 text-sm">
@@ -197,7 +197,7 @@ export function WorkspaceArabic() {
                                         <div className="h-1/3 flex flex-col border-t bg-card/20">
                                                 <div className="px-3 py-2 text-xs font-semibold tracking-wider text-muted-foreground border-b flex justify-between items-center bg-card/40">
                                                         <span>مدير الطبقات</span>
-                                                        <Settings className="h-3 w-3" />
+                                                        <Settings aria-hidden="true" className="h-3 w-3" />
                                                 </div>
                                                 <ScrollArea className="flex-1 p-2">
                                                         <LayerRow name="الشبكة" color="bg-slate-500" />
@@ -227,12 +227,12 @@ export function WorkspaceArabic() {
                                                                 className={`px-4 py-2 text-xs border-r flex items-center gap-2 cursor-pointer ${activeFile === file ? "bg-[#0f1115] text-primary border-t-2 border-t-primary" : "text-muted-foreground hover:bg-muted"}`}
                                                                 onClick={() => setActiveFile(file)} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile(file))(); }}                                                        >
                                                                 {file.endsWith(".dwg") ? (
-                                                                        <Layout className="h-3 w-3" />
+                                                                        <Layout aria-hidden="true" className="h-3 w-3" />
                                                                 ) : (
-                                                                        <Box className="h-3 w-3" />
+                                                                        <Box aria-hidden="true" className="h-3 w-3" />
                                                                 )}
                                                                 {file}
-                                                                <X className="h-3 w-3 ml-2 opacity-50 hover:opacity-100" />
+                                                                <X aria-hidden="true" className="h-3 w-3 ml-2 opacity-50 hover:opacity-100" />
                                                         </div>
                                                 ))}
                                         </div>
@@ -317,12 +317,12 @@ export function WorkspaceArabic() {
 
                                                 {/* Floating Mini Toolbar */}
                                                 <div className="absolute top-10 left-4 bg-card/80 backdrop-blur border rounded-md shadow-lg flex flex-col p-1 gap-1 z-20">
-                                                        <ToolBtn icon={<Crosshair />} active />
-                                                        <ToolBtn icon={<Maximize />} />
-                                                        <ToolBtn icon={<Focus />} />
+                                                        <ToolBtn icon={<Crosshair aria-hidden="true" />} active />
+                                                        <ToolBtn icon={<Maximize aria-hidden="true" />} />
+                                                        <ToolBtn icon={<Focus aria-hidden="true" />} />
                                                         <Separator />
-                                                        <ToolBtn icon={<PenTool />} />
-                                                        <ToolBtn icon={<Triangle />} />
+                                                        <ToolBtn icon={<PenTool aria-hidden="true" />} />
+                                                        <ToolBtn icon={<Triangle aria-hidden="true" />} />
                                                 </div>
 
                                                 {/* Canvas Footer */}
@@ -343,13 +343,13 @@ export function WorkspaceArabic() {
                                         <div className="h-1/2 flex flex-col border-b">
                                                 <div className="px-3 py-2 text-xs font-semibold tracking-wider text-muted-foreground border-b flex justify-between items-center bg-card/40">
                                                         <span>الخصائص</span>
-                                                        <Settings className="h-3 w-3" />
+                                                        <Settings aria-hidden="true" className="h-3 w-3" />
                                                 </div>
                                                 <ScrollArea className="flex-1">
                                                         <div className="p-3">
                                                                 <div className="flex items-center gap-2 mb-4">
                                                                         <div className="h-8 w-8 rounded bg-primary/20 flex items-center justify-center">
-                                                                                <Monitor className="h-4 w-4 text-primary" />
+                                                                                <Monitor aria-hidden="true" className="h-4 w-4 text-primary" />
                                                                         </div>
                                                                         <div>
                                                                                 <div className="font-medium text-sm">لوحة توزيع LP-3A</div>
@@ -377,7 +377,7 @@ export function WorkspaceArabic() {
                                                                                                 variant="outline"
                                                                                                 className="text-success border-success/30 bg-emerald-500/10"
                                                                                         >
-                                                                                                <CheckSquare className="w-3 h-3 ml-1" /> NFPA 70
+                                                                                                <CheckSquare aria-hidden="true" className="w-3 h-3 ml-1" /> NFPA 70
                                                                                         </Badge>
                                                                                 </div>
                                                                         </div>
@@ -398,7 +398,7 @@ export function WorkspaceArabic() {
                                         {/* AI Copilot mini */}
                                         <div className="flex-1 flex flex-col bg-card/20">
                                                 <div className="px-3 py-2 text-xs font-semibold tracking-wider text-primary border-b flex items-center gap-2 bg-card/40">
-                                                        <Zap className="h-3 w-3" />
+                                                        <Zap aria-hidden="true" className="h-3 w-3" />
                                                         <span>مساعد الذكاء الاصطناعي</span>
                                                 </div>
                                                 <ScrollArea className="flex-1 p-3">
@@ -414,7 +414,7 @@ export function WorkspaceArabic() {
 
                                                                 <div className="flex gap-2">
                                                                         <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground shrink-0 mt-1">
-                                                                                <Zap className="h-3 w-3" />
+                                                                                <Zap aria-hidden="true" className="h-3 w-3" />
                                                                         </div>
                                                                         <div className="flex flex-col gap-1">
                                                                                 <div className="bg-muted px-3 py-2 rounded-lg rounded-tr-none text-xs text-foreground border">
@@ -471,7 +471,7 @@ export function WorkspaceArabic() {
                                                                         variant="ghost"
                                                                         className="absolute left-0 top-0 h-8 w-8 text-primary"
                                                                 >
-                                                                        <Mic className="h-4 w-4" />
+                                                                        <Mic aria-hidden="true" className="h-4 w-4" />
                                                                 </Button>
                                                         </div>
                                                 </div>
@@ -537,9 +537,9 @@ export function WorkspaceArabic() {
                                                         className="h-5 w-5 text-muted-foreground hover:text-foreground"
                                                 >
                                                         {isErrorLogExpanded ? (
-                                                                <ChevronDown className="h-3 w-3" />
+                                                                <ChevronDown aria-hidden="true" className="h-3 w-3" />
                                                         ) : (
-                                                                <ChevronUp className="h-3 w-3" />
+                                                                <ChevronUp aria-hidden="true" className="h-3 w-3" />
                                                         )}
                                                 </Button>
                                         </div>
@@ -578,7 +578,7 @@ export function WorkspaceArabic() {
                                         <span>آخر حفظ: قبل دقيقتين</span>
                                         <Separator orientation="vertical" className="h-3 bg-primary/20" />
                                         <div className="flex items-center gap-1">
-                                                <User className="h-3 w-3" />
+                                                <User aria-hidden="true" className="h-3 w-3" />
                                                 <span>3 متصلون</span>
                                         </div>
                                 </div>
@@ -628,7 +628,7 @@ function LogEntry({
                                                 انتقال
                                         </span>
                                 )}
-                                <X className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-pointer" />
+                                <X aria-hidden="true" className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-pointer" />
                         </div>
                 </div>
         );
@@ -665,7 +665,7 @@ function TreeNode({
                                 <Triangle
                                         className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : "-rotate-90"}`}
                                 />
-                                <FolderOpen className="h-4 w-4 text-info/80" />
+                                <FolderOpen aria-hidden="true" className="h-4 w-4 text-info/80" />
                                 <span className="text-xs truncate">{title}</span>
                         </div>
                         {open && children && (
@@ -701,7 +701,7 @@ function FileNode({
                         >
                                 {title}
                         </span>
-                        <FileText className={`h-4 w-4 shrink-0 ${color}`} />
+                        <FileText aria-hidden="true" className={`h-4 w-4 shrink-0 ${color}`} />
                 </div>
         );
 }
@@ -733,12 +733,12 @@ function LayerRow({
                         </div>
                         <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100">
                                 {hidden ? (
-                                        <EyeOff className="h-3 w-3 text-muted-foreground" />
+                                        <EyeOff aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
                                 ) : (
-                                        <Eye className="h-3 w-3 text-foreground" />
+                                        <Eye aria-hidden="true" className="h-3 w-3 text-foreground" />
                                 )}
                                 {locked ? (
-                                        <Lock className="h-3 w-3 text-amber-500/70" />
+                                        <Lock aria-hidden="true" className="h-3 w-3 text-amber-500/70" />
                                 ) : (
                                         <div className="w-3 h-3"></div>
                                 )}

@@ -56,18 +56,18 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                 switch (type) {
                         case "panel":
                                 return expanded ? (
-                                        <FolderOpen className="h-4 w-4" />
+                                        <FolderOpen aria-hidden="true" className="h-4 w-4" />
                                 ) : (
-                                        <Folder className="h-4 w-4" />
+                                        <Folder aria-hidden="true" className="h-4 w-4" />
                                 );
                         case "loop":
-                                return <Settings className="h-4 w-4" />;
+                                return <Settings aria-hidden="true" className="h-4 w-4" />;
                         case "circuit":
-                                return <Cpu className="h-4 w-4" />;
+                                return <Cpu aria-hidden="true" className="h-4 w-4" />;
                         case "zone":
-                                return <Square className="h-4 w-4" />;
+                                return <Square aria-hidden="true" className="h-4 w-4" />;
                         default:
-                                return <Folder className="h-4 w-4" />;
+                                return <Folder aria-hidden="true" className="h-4 w-4" />;
                 }
         };
 
@@ -123,9 +123,9 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                         >
                                 {zone.children && zone.children.length > 0 ? (
                                         expanded ? (
-                                                <ChevronDown className="h-4 w-4" />
+                                                <ChevronDown aria-hidden="true" className="h-4 w-4" />
                                         ) : (
-                                                <ChevronRight className="h-4 w-4" />
+                                                <ChevronRight aria-hidden="true" className="h-4 w-4" />
                                         )
                                 ) : (
                                         <div className="w-4 h-4" />
@@ -174,12 +174,12 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                                                 >
                                                         <div className="w-4" />
                                                         {device.type === "smoke" && (
-                                                                <MonitorSpeaker className="h-4 w-4" />
+                                                                <MonitorSpeaker aria-hidden="true" className="h-4 w-4" />
                                                         )}
-                                                        {device.type === "heat" && <Thermometer className="h-4 w-4" />}
-                                                        {device.type === "pull" && <Square className="h-4 w-4" />}
-                                                        {device.type === "horns" && <Volume2 className="h-4 w-4" />}
-                                                        {device.type === "facp" && <Settings className="h-4 w-4" />}
+                                                        {device.type === "heat" && <Thermometer aria-hidden="true" className="h-4 w-4" />}
+                                                        {device.type === "pull" && <Square aria-hidden="true" className="h-4 w-4" />}
+                                                        {device.type === "horns" && <Volume2 aria-hidden="true" className="h-4 w-4" />}
+                                                        {device.type === "facp" && <Settings aria-hidden="true" className="h-4 w-4" />}
                                                         <span className="text-sm truncate">{device.name}</span>
                                                         <span
                                                                 className={`ml-auto text-xs px-2 py-0.5 rounded-full ${getDeviceStatusClasses(

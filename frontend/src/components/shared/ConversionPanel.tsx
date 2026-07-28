@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { digitalTwinService } from "@/services/digitalTwinService";
+import { digitalTwinApi } from "@/services/fullApi";
 
 type ConvertState = "idle" | "converting" | "success" | "error";
 
@@ -97,7 +97,8 @@ export function ConversionPanel() {
 
                 setState("converting");
                 try {
-                        const res = await digitalTwinService.convert(sourceFile, conversionType);
+                        const targetFilepath = conversionType === "autocad_to_revit" ? "output.rvt" : "output.dwg";
+                        const res = await digitalTwinApi.convert({ source_filepath: sourceFile, target_filepath: targetFilepath, conversion_type: conversionType });
                         setResult(res as Record<string, unknown>);
                         setState("success");
                         toast.success("Conversion completed successfully");
@@ -113,7 +114,7 @@ export function ConversionPanel() {
                 <Card className="border-border bg-card">
                         <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-foreground">
-                                        <ArrowRightLeft className="h-5 w-5 text-primary" />
+                                        <ArrowRightLeft aria-hidden="true" className="h-5 w-5 text-primary" />
                                         Bidirectional Conversion
                                 </CardTitle>
                                 <CardDescription className="text-muted-foreground">
@@ -161,12 +162,12 @@ export function ConversionPanel() {
                                 >
                                         {state === "converting" ? (
                                                 <>
-                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                        <Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
                                                         Converting...
                                                 </>
                                         ) : (
                                                 <>
-                                                        <ArrowRightLeft className="h-4 w-4 mr-2" />
+                                                        <ArrowRightLeft aria-hidden="true" className="h-4 w-4 mr-2" />
                                                         Convert
                                                 </>
                                         )}
@@ -174,7 +175,7 @@ export function ConversionPanel() {
                                 {state === "success" && result && (
                                         <div className="p-3 bg-emerald-600/10 border border-emerald-600/30 rounded-lg">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                        <CheckCircle2 className="h-5 w-5 text-success" />
+                                                        <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-success" />
                                                         <span className="text-sm text-emerald-300">
                                                                 Conversion Successful
                                                         </span>
@@ -187,7 +188,7 @@ export function ConversionPanel() {
                                 {state === "error" && (
                                         <div className="p-3 bg-danger/10 border border-slate-600/30 rounded-lg">
                                                 <div className="flex items-center gap-2">
-                                                        <XCircle className="h-5 w-5 text-danger" />
+                                                        <XCircle aria-hidden="true" className="h-5 w-5 text-danger" />
                                                         <span className="text-sm text-slate-400">Conversion Failed</span>
                                                 </div>
                                         </div>

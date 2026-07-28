@@ -201,12 +201,12 @@ export function ImportExportManager() {
 								onClick={handleExportJSON}
 								className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-md transition-colors border border-emerald-500/20"
 						>
-                                <Download size={14} /> Export JSON
+                                <Download aria-hidden="true" size={14} /> Export JSON
                         </button>						<button type="button"
 								onClick={() => fileInputRef.current?.click()}
 								className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 rounded-md transition-colors border border-blue-500/20"
 						>
-                                <Upload size={14} /> Import DXF
+                                <Upload aria-hidden="true" size={14} /> Import DXF
                         </button>
                         <input
                                 type="file"
@@ -219,7 +219,7 @@ export function ImportExportManager() {
                         <div className="h-4 w-px bg-border mx-1" />
 
                         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted px-2 py-1 rounded">
-                                <AlertCircle size={10} />
+                                <AlertCircle aria-hidden="true" size={10} />
                                 <span>Revit IFC Support: Coming in v1.1</span>
                         </div>
                 </div>

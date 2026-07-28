@@ -47,42 +47,42 @@ export function SLDEditor() {
 				</div>
 				<div className="h-16 flex items-center px-2 space-x-4">
 					<RibbonGroup title="Draw">
-						<RibbonBtn icon={<MousePointer2 />} label="Select" active />
-						<RibbonBtn icon={<GitCommit />} label="Wire" />
-						<RibbonBtn icon={<Box />} label="Bus Bar" />
+						<RibbonBtn icon={<MousePointer2 aria-hidden="true" />} label="Select" active />
+						<RibbonBtn icon={<GitCommit aria-hidden="true" />} label="Wire" />
+						<RibbonBtn icon={<Box aria-hidden="true" />} label="Bus Bar" />
 					</RibbonGroup>
 					<Separator orientation="vertical" className="h-10" />
 
 					<RibbonGroup title="Power Source">
-						<RibbonBtn icon={<Power />} label="Utility" />
-						<RibbonBtn icon={<Zap />} label="Transformer" />
-						<RibbonBtn icon={<Activity />} label="Generator" />
+						<RibbonBtn icon={<Power aria-hidden="true" />} label="Utility" />
+						<RibbonBtn icon={<Zap aria-hidden="true" />} label="Transformer" />
+						<RibbonBtn icon={<Activity aria-hidden="true" />} label="Generator" />
 					</RibbonGroup>
 					<Separator orientation="vertical" className="h-10" />
 
 					<RibbonGroup title="Protection">
 						<RibbonBtn
-							icon={<Box className="text-danger" />}
+							icon={<Box aria-hidden="true" className="text-danger" />}
 							label="Circuit Breaker"
 						/>
 						<RibbonBtn
-							icon={<Box className="text-primary" />}
+							icon={<Box aria-hidden="true" className="text-primary" />}
 							label="Fuse"
 						/>
-						<RibbonBtn icon={<Crosshair />} label="Relay" />
+						<RibbonBtn icon={<Crosshair aria-hidden="true" />} label="Relay" />
 					</RibbonGroup>
 					<Separator orientation="vertical" className="h-10" />
 
 					<RibbonGroup title="Load">
-						<RibbonBtn icon={<ActivitySquare />} label="Motor" />
-						<RibbonBtn icon={<Layers />} label="Panel" />
+						<RibbonBtn icon={<ActivitySquare aria-hidden="true" />} label="Motor" />
+						<RibbonBtn icon={<Layers aria-hidden="true" />} label="Panel" />
 					</RibbonGroup>
 					<Separator orientation="vertical" className="h-10" />
 
 					<RibbonGroup title="View">
-						<RibbonBtn icon={<Maximize />} label="Zoom Fit" />
-						<RibbonBtn icon={<Grid />} label="Grid" />
-						<RibbonBtn icon={<Eye />} label="Layers" />
+						<RibbonBtn icon={<Maximize aria-hidden="true" />} label="Zoom Fit" />
+						<RibbonBtn icon={<Grid aria-hidden="true" />} label="Grid" />
+						<RibbonBtn icon={<Eye aria-hidden="true" />} label="Layers" />
 					</RibbonGroup>
 				</div>
 			</div>
@@ -92,29 +92,29 @@ export function SLDEditor() {
 				<div className="w-[240px] flex flex-col border-r bg-card/30 shrink-0">
 					<div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b flex justify-between items-center bg-card/40">
 						<span>SLD Navigator</span>
-						<Search className="h-3 w-3" />
+						<Search aria-hidden="true" className="h-3 w-3" />
 					</div>
 					<ScrollArea className="flex-1">
 						<div className="p-2 space-y-1">
 							<TreeFolder
 								title="Utility Source (11kV)"
-								icon={<Power className="h-4 w-4 text-info" />}
+								icon={<Power aria-hidden="true" className="h-4 w-4 text-info" />}
 								defaultOpen
 							>
 								<TreeFolder
 									title="Main Transformer T1 (11kV/480V)"
-									icon={<Zap className="h-4 w-4 text-info" />}
+									icon={<Zap aria-hidden="true" className="h-4 w-4 text-info" />}
 									defaultOpen
 								>
 									<TreeFolder
 										title="Main Switchboard MSB-1"
-										icon={<Box className="h-4 w-4 text-muted-foreground" />}
+										icon={<Box aria-hidden="true" className="h-4 w-4 text-muted-foreground" />}
 										defaultOpen
 									>
 										<TreeFolder
 											title="Feeder 1 → MDB-A"
 											icon={
-												<GitCommit className="h-4 w-4 text-muted-foreground" />
+												<GitCommit aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
 											}
 											defaultOpen
 										>
@@ -125,7 +125,7 @@ export function SLDEditor() {
 										<TreeFolder
 											title="Feeder 2 → MDB-B"
 											icon={
-												<GitCommit className="h-4 w-4 text-muted-foreground" />
+												<GitCommit aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
 											}
 											defaultOpen
 										>
@@ -135,7 +135,7 @@ export function SLDEditor() {
 										<TreeFolder
 											title="Emergency Feeder"
 											icon={
-												<GitCommit className="h-4 w-4 text-primary" />
+												<GitCommit aria-hidden="true" className="h-4 w-4 text-primary" />
 											}
 										>
 											<TreeItem title="ATS-1" />
@@ -710,7 +710,7 @@ export function SLDEditor() {
 				<div className="w-[300px] flex flex-col border-l bg-card/30 shrink-0 shadow-xl z-10">
 					<div className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-foreground border-b bg-card/40 flex justify-between items-center">
 						<span>Element Properties</span>
-						<Settings className="h-4 w-4 text-muted-foreground" />
+						<Settings aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
 					</div>
 
 					<ScrollArea className="flex-1">
@@ -718,7 +718,7 @@ export function SLDEditor() {
 							<div>
 								<div className="flex items-center gap-3 mb-4">
 									<div className="w-10 h-10 bg-blue-500/10 border border-blue-500/30 rounded flex items-center justify-center">
-										<Box className="h-5 w-5 text-info" />
+										<Box aria-hidden="true" className="h-5 w-5 text-info" />
 									</div>
 									<div>
 										<h3 className="font-bold text-base leading-tight">
@@ -769,7 +769,7 @@ export function SLDEditor() {
 
 							<div className="p-3 border border-primary/30 bg-primary/10 rounded-md">
 								<div className="flex items-center gap-2 text-primary font-semibold text-xs mb-1">
-									<AlertTriangle className="h-4 w-4" /> Compliance Warning
+									<AlertTriangle aria-hidden="true" className="h-4 w-4" /> Compliance Warning
 								</div>
 								<p className="text-[11px] text-muted-foreground">
 									Downstream feeder to Panel LP-3A exceeds 3% voltage drop limit
@@ -828,7 +828,7 @@ export function SLDEditor() {
 			<div className="h-8 border-t bg-card flex items-center justify-between px-4 text-[10px] font-mono text-muted-foreground shrink-0">
 				<div className="flex items-center gap-4">
 					<span className="text-primary flex items-center gap-1">
-						<AlertTriangle className="h-3 w-3" /> 2 issues in diagram
+						<AlertTriangle aria-hidden="true" className="h-3 w-3" /> 2 issues in diagram
 					</span>
 					<Separator orientation="vertical" className="h-4" />
 					<span>NEC Check: 1 warning</span>

@@ -92,47 +92,47 @@ const TopBar: React.FC<TopBarProps> = memo(({  // NOSONAR - typescript:S9011: In
 
                         {/* Action buttons */}						<button type="button"
 								onClick={onSearchOpen}
-								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[colors,transform] duration-200 rounded-lg"
+								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[color,background-color,border-color,transform] duration-200 rounded-lg"
                                 aria-label="Search"
                                 title="Search (Ctrl+K)"
 						>
-                                <Search className="h-[18px] w-[18px]" />
+                                <Search aria-hidden="true" className="h-[18px] w-[18px]" />
                         </button>
 
                         <ContextualHelpButton />						<button type="button"
 								onClick={onHelpOpen}
-								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[colors,transform] duration-200 rounded-lg"
+								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[color,background-color,border-color,transform] duration-200 rounded-lg"
                                 aria-label="Help"
 								data-onboarding="help-button"
 								title="Global help (F1)"
 						>
-                                <HelpCircle className="h-[18px] w-[18px]" />
+                                <HelpCircle aria-hidden="true" className="h-[18px] w-[18px]" />
                         </button>
 
                         <Link
                                 to="/settings"
-                                className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[colors,transform] duration-200 rounded-lg"
+                                className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[color,background-color,border-color,transform] duration-200 rounded-lg"
                                 aria-label="Settings"
                                 title="Settings"
                         >
-                                <Settings className="h-[18px] w-[18px]" />
+                                <Settings aria-hidden="true" className="h-[18px] w-[18px]" />
                         </Link>
 
                         {/* Dark mode toggle */}						<button type="button"
 								onClick={toggle}
 								aria-label="Toggle dark mode"
-								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[colors,transform] duration-200 rounded-lg"
+								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[color,background-color,border-color,transform] duration-200 rounded-lg"
                         >
-                                {dark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                                {dark ? <Moon aria-hidden="true" className="h-5 w-5" /> : <Sun aria-hidden="true" className="h-5 w-5" />}
                         </button>
 
                         {/* Language selector */}
                         <div className="relative" ref={langRef}>							<button type="button"
 									onClick={() => setLangOpen(!langOpen)}
-									className="flex items-center gap-1.5 px-3 py-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[colors,transform] duration-200 text-[13px] rounded-lg border border-white/10 font-medium"
+									className="flex items-center gap-1.5 px-3 py-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[color,background-color,border-color,transform] duration-200 text-[13px] rounded-lg border border-white/10 font-medium"
 									aria-label="Change language"
 							>
-                                        <Globe className="h-4 w-4" />
+                                        <Globe aria-hidden="true" className="h-4 w-4" />
                                         {currentLanguage.toUpperCase()}
                                 </button>
                                 {langOpen && (

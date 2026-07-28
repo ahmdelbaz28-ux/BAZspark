@@ -28,7 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { revitService } from "@/services/revitService";
+import { revitApi } from "@/services/fullApi";
 
 export function RevitPage() {
         const [connected, setConnected] = useState(false);
@@ -40,7 +40,7 @@ export function RevitPage() {
 
         const checkStatus = useCallback(async () => {
                 try {
-                        const s = await revitService.getStatus();
+                        const s = await revitApi.getStatus();
                         setStatus(s as Record<string, unknown>);
                         setConnected(true);
                         // V214: Check simulation_mode from status response
@@ -60,7 +60,7 @@ export function RevitPage() {
         const handleConnect = async () => {
                 setConnecting(true);
                 try {
-                        const result = await revitService.connect("auto");
+                        const result = await revitApi.connect("auto");
                         // V214: Check simulation_mode from connect response
                         const sim = (result as Record<string, unknown>)?.simulation_mode;
                         if (sim) {
@@ -88,7 +88,7 @@ export function RevitPage() {
 
         const handleDisconnect = async () => {
                 try {
-                        await revitService.disconnect();
+                        await revitApi.disconnect();
                         toast.success("Disconnected");
                         setConnected(false);
                         setSimulationMode(false);
@@ -106,7 +106,7 @@ export function RevitPage() {
                         return;
                 }
                 try {
-                        await revitService.readRvt(filepath);
+                        await revitApi.readRvt({ filepath });
                         toast.success(`Read ${filepath}`);
                 } catch (err) {
                         toast.error(
@@ -116,7 +116,7 @@ export function RevitPage() {
         };
 
         const handleUpload = async (file: File) => {
-                await revitService.uploadRvt(file);
+                await revitApi.uploadRvt(file);
                 toast.success(`Uploaded ${file.name}`);
         };
 
@@ -137,11 +137,11 @@ export function RevitPage() {
                                 >
                                         {connected ? (
                                                 <>
-                                                        <Wifi className="h-3 w-3 mr-1" /> Connected
+                                                        <Wifi aria-hidden="true" className="h-3 w-3 mr-1" /> Connected
                                                 </>
                                         ) : (
                                                 <>
-                                                        <WifiOff className="h-3 w-3 mr-1" /> Disconnected
+                                                        <WifiOff aria-hidden="true" className="h-3 w-3 mr-1" /> Disconnected
                                                 </>
                                         )}
                                 </Badge>
@@ -154,7 +154,7 @@ export function RevitPage() {
                                         role="alert"
                                         aria-live="polite"
                                 >
-                                        <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                        <AlertTriangle aria-hidden="true" className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                                         <div className="space-y-1">
                                                 <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                                                         SIMULATION MODE — No real Revit instance is connected
@@ -175,7 +175,7 @@ export function RevitPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 text-foreground">
-                                                        <Power className="h-5 w-5 text-primary" /> Connection
+                                                        <Power aria-hidden="true" className="h-5 w-5 text-primary" /> Connection
                                                 </CardTitle>
                                                 <CardDescription className="text-muted-foreground">
                                                         Connect to Revit instance
@@ -199,9 +199,9 @@ export function RevitPage() {
                                                                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
                                                         >
                                                                 {connecting ? (
-                                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                                        <Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
                                                                 ) : (
-                                                                        <Power className="h-4 w-4 mr-2" />
+                                                                        <Power aria-hidden="true" className="h-4 w-4 mr-2" />
                                                                 )}
                                                                 Connect
                                                         </Button>
@@ -210,7 +210,7 @@ export function RevitPage() {
                                                                 disabled={!connected}
                                                                 variant="destructive"
                                                         >
-                                                                <PowerOff className="h-4 w-4 mr-2" /> Disconnect
+                                                                <PowerOff aria-hidden="true" className="h-4 w-4 mr-2" /> Disconnect
                                                         </Button>
                                                 </div>
                                         </CardContent>
@@ -219,7 +219,7 @@ export function RevitPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 text-foreground">
-                                                        <Activity className="h-5 w-5 text-primary" /> Status
+                                                        <Activity aria-hidden="true" className="h-5 w-5 text-primary" /> Status
                                                 </CardTitle>
                                                 <CardDescription className="text-muted-foreground">
                                                         Current Revit status
@@ -240,7 +240,7 @@ export function RevitPage() {
                         <Card className="border-border bg-card">
                                 <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-foreground">
-                                                <FileText className="h-5 w-5 text-primary" /> Read RVT File
+                                                <FileText aria-hidden="true" className="h-5 w-5 text-primary" /> Read RVT File
                                         </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">

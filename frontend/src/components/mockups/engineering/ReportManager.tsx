@@ -34,7 +34,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 				<div className="flex items-center gap-6">
 					<div className="flex items-center gap-2">
 						<div className="w-8 h-8 rounded bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
-							<FileText className="w-4 h-4 text-info" />
+							<FileText aria-hidden="true" className="w-4 h-4 text-info" />
 						</div>
 						<h1 className="font-bold text-sm tracking-wide">
 							Report Manager & Document Control
@@ -85,7 +85,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 						variant="ghost"
 						className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
 					>
-						<Settings className="w-4 h-4" />
+						<Settings aria-hidden="true" className="w-4 h-4" />
 					</Button>
 				</div>
 			</div>
@@ -95,7 +95,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 				<div className="w-[260px] flex flex-col border-r border-slate-800 bg-muted/50 shrink-0">
 					<div className="p-3 border-b border-slate-800 bg-card">
 						<div className="relative">
-							<Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+							<Search aria-hidden="true" className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
 							<input
 								type="text"
 								placeholder="Filter reports..."
@@ -120,13 +120,13 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 					<ScrollArea className="flex-1">
 						<div className="p-2 space-y-0.5 text-xs font-sans">
 							<div className="flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-card cursor-pointer text-foreground font-medium">
-								<Folder className="w-3.5 h-3.5 text-muted-foreground" /> All Reports{" "}
+								<Folder aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" /> All Reports{" "}
 								<span className="ml-auto text-muted-foreground text-[10px]">47</span>
 							</div>
 
 							<div className="flex items-center gap-1.5 px-2 py-1.5 rounded bg-card text-info font-medium cursor-pointer">
-								<ChevronDown className="w-3.5 h-3.5" />
-								<Folder className="w-3.5 h-3.5 fill-blue-400/20" />
+								<ChevronDown aria-hidden="true" className="w-3.5 h-3.5" />
+								<Folder aria-hidden="true" className="w-3.5 h-3.5 fill-blue-400/20" />
 								Electrical Engineering{" "}
 								<span className="ml-auto text-blue-500 text-[10px]">18</span>
 							</div>
@@ -158,26 +158,26 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 							</div>
 
 							<div className="flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-card text-foreground/90 font-medium cursor-pointer mt-1">
-								<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-								<Folder className="w-3.5 h-3.5 text-primary" />
+								<ChevronRight aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
+								<Folder aria-hidden="true" className="w-3.5 h-3.5 text-primary" />
 								Fire & Life Safety{" "}
 								<span className="ml-auto text-muted-foreground text-[10px]">8</span>
 							</div>
 							<div className="flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-card text-foreground/90 font-medium cursor-pointer">
-								<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-								<Folder className="w-3.5 h-3.5 text-purple-400" />
+								<ChevronRight aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
+								<Folder aria-hidden="true" className="w-3.5 h-3.5 text-purple-400" />
 								BIM & Coordination{" "}
 								<span className="ml-auto text-muted-foreground text-[10px]">5</span>
 							</div>
 							<div className="flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-card text-foreground/90 font-medium cursor-pointer">
-								<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-								<Folder className="w-3.5 h-3.5 text-success" />
+								<ChevronRight aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
+								<Folder aria-hidden="true" className="w-3.5 h-3.5 text-success" />
 								Compliance & Permitting{" "}
 								<span className="ml-auto text-muted-foreground text-[10px]">7</span>
 							</div>
 							<div className="flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-card text-foreground/90 font-medium cursor-pointer">
-								<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-								<Folder className="w-3.5 h-3.5 text-muted-foreground" />
+								<ChevronRight aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
+								<Folder aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
 								Project Management{" "}
 								<span className="ml-auto text-muted-foreground text-[10px]">9</span>
 							</div>
@@ -205,7 +205,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 							<div className="bg-card border-2 border-blue-500 rounded-lg p-4 shadow-lg shadow-blue-900/10 cursor-pointer">
 								<div className="flex justify-between items-start mb-2">
 									<div className="flex gap-3">
-										<FileText className="w-8 h-8 text-danger shrink-0" />
+										<FileText aria-hidden="true" className="w-8 h-8 text-danger shrink-0" />
 										<div>
 											<h3 className="font-bold text-foreground text-base">
 												Load Calculation Report — Tower-B Office Complex
@@ -288,7 +288,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 							<div className="bg-card border border-slate-800 rounded-lg p-4 hover:border-border cursor-pointer transition-colors">
 								<div className="flex justify-between items-start mb-2">
 									<div className="flex gap-3">
-										<FileText className="w-8 h-8 text-danger shrink-0" />
+										<FileText aria-hidden="true" className="w-8 h-8 text-danger shrink-0" />
 										<div>
 											<h3 className="font-semibold text-foreground text-sm">
 												Arc Flash Hazard Analysis — All Panels
@@ -345,7 +345,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 							<div className="bg-card border border-slate-800 rounded-lg p-4 hover:border-border cursor-pointer transition-colors">
 								<div className="flex justify-between items-start mb-2">
 									<div className="flex gap-3">
-										<FileText className="w-8 h-8 text-danger shrink-0" />
+										<FileText aria-hidden="true" className="w-8 h-8 text-danger shrink-0" />
 										<div>
 											<h3 className="font-semibold text-foreground text-sm">
 												NEC 2023 Compliance Report
@@ -402,7 +402,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 							<div className="bg-card border border-slate-800 rounded-lg p-4 hover:border-border cursor-pointer transition-colors opacity-75">
 								<div className="flex justify-between items-start mb-2">
 									<div className="flex gap-3">
-										<FileBox className="w-8 h-8 text-info shrink-0" />
+										<FileBox aria-hidden="true" className="w-8 h-8 text-info shrink-0" />
 										<div>
 											<h3 className="font-semibold text-foreground/90 text-sm">
 												BIM Coordination Clash Detection Report
@@ -429,7 +429,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 							<div className="bg-card border border-slate-800 rounded-lg p-4 hover:border-border cursor-pointer transition-colors opacity-75">
 								<div className="flex justify-between items-start mb-2">
 									<div className="flex gap-3">
-										<FileText className="w-8 h-8 text-danger/70 shrink-0" />
+										<FileText aria-hidden="true" className="w-8 h-8 text-danger/70 shrink-0" />
 										<div>
 											<h3 className="font-semibold text-foreground/90 text-sm">
 												NFPA 72 Compliance Verification
@@ -520,7 +520,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 											className="h-7 text-xs bg-background border-border text-foreground pl-7"
 											defaultValue="Nov 15, 2024"
 										/>
-										<Calendar className="w-3 h-3 absolute left-2 top-7 text-muted-foreground" />
+										<Calendar aria-hidden="true" className="w-3 h-3 absolute left-2 top-7 text-muted-foreground" />
 									</div>
 									<div className="space-y-1.5">
 										<label className="text-[10px] text-muted-foreground">Status</label>
@@ -730,7 +730,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 											key={i}  // NOSONAR: typescript:S6479
 											className="flex items-center gap-2 group hover:bg-muted/50 p-1 rounded -mx-1"
 										>
-											<GripVertical className="w-3.5 h-3.5 text-muted-foreground/70 cursor-grab opacity-0 group-hover:opacity-100" />
+											<GripVertical aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground/70 cursor-grab opacity-0 group-hover:opacity-100" />
 											<Checkbox
 												id={`sec-${i}`}
 												checked={item.checked}
@@ -817,7 +817,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 								</div>
 								<div className="bg-background p-2.5 rounded border border-slate-800 space-y-2 text-[10px]">
 									<div className="flex items-start gap-2">
-										<Check className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
+										<Check aria-hidden="true" className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
 										<div>
 											<span className="text-foreground">
 												Load calc worksheet (Rev 11)
@@ -827,7 +827,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 										</div>
 									</div>
 									<div className="flex items-start gap-2">
-										<Check className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
+										<Check aria-hidden="true" className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
 										<div>
 											<span className="text-foreground">Equipment schedule</span>
 											<br />
@@ -835,7 +835,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 										</div>
 									</div>
 									<div className="flex items-start gap-2">
-										<Check className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
+										<Check aria-hidden="true" className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
 										<div>
 											<span className="text-foreground">
 												BIM model (Revit v14)
@@ -926,19 +926,19 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 											variant="secondary"
 											className="h-5 text-[9px] px-1.5 bg-card text-foreground/90 hover:bg-secondary"
 										>
-											Eng. Khalid <X className="w-2.5 h-2.5 ml-1 opacity-50" />
+											Eng. Khalid <X aria-hidden="true" className="w-2.5 h-2.5 ml-1 opacity-50" />
 										</Badge>
 										<Badge
 											variant="secondary"
 											className="h-5 text-[9px] px-1.5 bg-card text-foreground/90 hover:bg-secondary"
 										>
-											PM Office <X className="w-2.5 h-2.5 ml-1 opacity-50" />
+											PM Office <X aria-hidden="true" className="w-2.5 h-2.5 ml-1 opacity-50" />
 										</Badge>
 										<Badge
 											variant="secondary"
 											className="h-5 text-[9px] px-1.5 bg-card text-foreground/90 hover:bg-secondary"
 										>
-											AHJ Filing <X className="w-2.5 h-2.5 ml-1 opacity-50" />
+											AHJ Filing <X aria-hidden="true" className="w-2.5 h-2.5 ml-1 opacity-50" />
 										</Badge>
 									</div>
 								</div>
@@ -961,7 +961,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 								variant="outline"
 								className="h-8 text-xs border-border bg-card text-foreground/90 hover:bg-card"
 							>
-								<Wand2 className="w-3.5 h-3.5 mr-1.5 text-info" /> Preview
+								<Wand2 aria-hidden="true" className="w-3.5 h-3.5 mr-1.5 text-info" /> Preview
 							</Button>
 						</div>
 						<Button

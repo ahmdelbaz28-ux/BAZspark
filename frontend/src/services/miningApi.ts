@@ -12,54 +12,21 @@
  * Standards: NFPA 120-2022, NFPA 122-2022, MSHA 30 CFR Part 75, IEC 60079-10-1
  */
 
-const API_BASE = "/api/v1";
+import { ApiClient } from "./apiClient";
 
-// V214 self-critique fix: import getApiKey to send X-API-Key header.
-// Without this, every mining endpoint returns 401 Unauthorized.
-import { getApiKey } from "./apiKey";
-
-async function miningApiCall<T>(
-        path: string,
-        options: RequestInit = {},
-): Promise<T> {
-        const headers: Record<string, string> = {
-                "Content-Type": "application/json",
-                ...((options.headers as Record<string, string>) || {}),
-        };
-
-        // V214: Add API key — all mining endpoints require authentication
-        const apiKey = getApiKey();
-        if (apiKey) {
-                headers["X-API-Key"] = apiKey;
-        }
-
-        const response = await fetch(`${API_BASE}${path}`, {
-                ...options,
-                headers,
-                credentials: "same-origin",
-        });
-
-        if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({}));
-                throw new Error(
-                        errorBody?.detail || `HTTP ${response.status}: ${response.statusText}`,
-                );
-        }
-
-        return response.json();
-}
+const client = new ApiClient("/api/v1");
 
 export const miningApi = {
         /** GET /mining/standards — List supported mining standards */
         getStandards: () =>
-                miningApiCall<{
+                client.get<{
                         success: boolean;
                         standards: Array<{ code: string; title: string }>;
                 }>("/mining/standards"),
 
         /** POST /mining/methane-check — Classify methane hazard per MSHA §75.323 */
         methaneCheck: (data: { concentration_pct: number; location?: string }) =>
-                miningApiCall<{
+                client.post<{
                         success: boolean;
                         concentration_pct: number;
                         hazard_level: string;
@@ -68,10 +35,7 @@ export const miningApi = {
                         location: string;
                         standard: string;
                         thresholds: Record<string, number>;
-                }>("/mining/methane-check", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
+                }>("/mining/methane-check", data),
 
         /** POST /mining/ventilation-check — Check MSHA ventilation compliance */
         ventilationCheck: (data: {
@@ -79,7 +43,7 @@ export const miningApi = {
                 location_type?: string;
                 cross_sectional_area_m2?: number;
         }) =>
-                miningApiCall<{
+                client.post<{
                         success: boolean;
                         airflow_m3_s: number;
                         location_type: string;
@@ -87,23 +51,17 @@ export const miningApi = {
                         violations: string[];
                         velocity_m_s: number | null;
                         standard: string;
-                }>("/mining/ventilation-check", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
+                }>("/mining/ventilation-check", data),
 
         /** POST /mining/co-check — Classify CO hazard per MSHA §75.351 */
         coCheck: (data: { co_ppm: number }) =>
-                miningApiCall<{
+                client.post<{
                         success: boolean;
                         co_ppm: number;
                         hazard_level: string;
                         thresholds: Record<string, number>;
                         standard: string;
-                }>("/mining/co-check", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
+                }>("/mining/co-check", data),
 
         /** POST /mining/conveyor-suppression — Design suppression per NFPA 120 §8.4 */
         conveyorSuppression: (data: {
@@ -112,7 +70,7 @@ export const miningApi = {
                 belt_speed_m_s?: number;
                 has_fire_resistant_belt?: boolean;
         }) =>
-                miningApiCall<{
+                client.post<{
                         success: boolean;
                         design: {
                                 number_of_nozzle_groups: number;
@@ -124,10 +82,7 @@ export const miningApi = {
                                 violations: string[];
                         };
                         standard: string;
-                }>("/mining/conveyor-suppression", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
+                }>("/mining/conveyor-suppression", data),
 
         /** POST /mining/compliance-report — Full MSHA + NFPA 120 compliance report */
         complianceReport: (data: {
@@ -141,7 +96,7 @@ export const miningApi = {
                 conveyor_width_m?: number;
                 has_fire_resistant_belt?: boolean;
         }) =>
-                miningApiCall<{
+                client.post<{
                         success: boolean;
                         overall_status: string;
                         checks: Array<{
@@ -153,8 +108,5 @@ export const miningApi = {
                                 remediation: string;
                         }>;
                         markdown_report: string;
-                }>("/mining/compliance-report", {
-                        method: "POST",
-                        body: JSON.stringify(data),
-                }),
+                }>("/mining/compliance-report", data),
 };

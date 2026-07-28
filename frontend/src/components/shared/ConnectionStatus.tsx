@@ -3,8 +3,7 @@
  */
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { autocadService } from "@/services/autocadService";
-import { revitService } from "@/services/revitService";
+import { autocadApi, revitApi } from "@/services/fullApi";
 
 type Status = "connected" | "disconnected" | "checking";
 
@@ -22,13 +21,13 @@ export function ConnectionStatus() {
 	useEffect(() => {
 		const checkStatus = async () => {
 			try {
-				await autocadService.getStatus();
+				await autocadApi.getStatus();
 				setStatus((p) => ({ ...p, autocad: "connected" }));
 			} catch {
 				setStatus((p) => ({ ...p, autocad: "disconnected" }));
 			}
 			try {
-				await revitService.getStatus();
+				await revitApi.getStatus();
 				setStatus((p) => ({ ...p, revit: "connected" }));
 			} catch {
 				setStatus((p) => ({ ...p, revit: "disconnected" }));

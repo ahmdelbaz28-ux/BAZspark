@@ -243,15 +243,15 @@ export function ProjectFileManager() {
 	const getFileIcon = (type: string, className?: string) => {
 		switch (type) {
 			case "DWG":
-				return <FileIcon className={`text-info ${className}`} />;
+				return <FileIcon aria-hidden="true" className={`text-info ${className}`} />;
 			case "PDF":
-				return <FileText className={`text-danger ${className}`} />;
+				return <FileText aria-hidden="true" className={`text-danger ${className}`} />;
 			case "XLSX":
-				return <TableProperties className={`text-green-400 ${className}`} />;
+				return <TableProperties aria-hidden="true" className={`text-green-400 ${className}`} />;
 			case "DOCX":
-				return <FileBox className={`text-info ${className}`} />;
+				return <FileBox aria-hidden="true" className={`text-info ${className}`} />;
 			default:
-				return <File className={`text-muted-foreground ${className}`} />;
+				return <File aria-hidden="true" className={`text-muted-foreground ${className}`} />;
 		}
 	};
 
@@ -263,7 +263,7 @@ export function ProjectFileManager() {
 			<div className="h-9 flex items-center justify-between px-4 bg-background border-b border-slate-800 shrink-0">
 				<div className="flex text-xs space-x-4 text-muted-foreground">
 					<span className="text-foreground font-bold flex items-center gap-2">
-						<Box className="w-3.5 h-3.5 text-blue-500" /> NexusCAD
+						<Box aria-hidden="true" className="w-3.5 h-3.5 text-blue-500" /> NexusCAD
 					</span>
 					<span className="hover:text-foreground cursor-pointer">File</span>
 					<span className="hover:text-foreground cursor-pointer">Edit</span>
@@ -277,7 +277,7 @@ export function ProjectFileManager() {
 				</div>
 				<div className="flex items-center gap-3">
 					<div className="relative">
-						<Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+						<Search aria-hidden="true" className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
 						<input
 							type="text"
 							placeholder="Search files..."
@@ -289,21 +289,21 @@ export function ProjectFileManager() {
 						variant="default"
 						className="h-6 text-[11px] px-3 bg-blue-600 hover:bg-blue-500 rounded flex gap-1 items-center"
 					>
-						New <ChevronDown className="w-3 h-3" />
+						New <ChevronDown aria-hidden="true" className="w-3 h-3" />
 					</Button>
 					<Button
 						size="sm"
 						variant="outline"
 						className="h-6 text-[11px] px-3 border-border hover:bg-card text-foreground/90 rounded flex gap-1 items-center"
 					>
-						<Upload className="w-3 h-3" /> Upload
+						<Upload aria-hidden="true" className="w-3 h-3" /> Upload
 					</Button>
 					<Button
 						size="sm"
 						variant="outline"
 						className="h-6 text-[11px] px-3 border-border hover:bg-card text-foreground/90 rounded flex gap-1 items-center"
 					>
-						<RefreshCw className="w-3 h-3 text-success" /> Sync Cloud
+						<RefreshCw aria-hidden="true" className="w-3 h-3 text-success" /> Sync Cloud
 					</Button>
 				</div>
 			</div>
@@ -317,41 +317,41 @@ export function ProjectFileManager() {
 							size="icon"
 							className="h-6 w-6 rounded hover:bg-card"
 						>
-							<ArrowLeft className="w-3.5 h-3.5" />
+							<ArrowLeft aria-hidden="true" className="w-3.5 h-3.5" />
 						</Button>
 						<Button
 							variant="ghost"
 							size="icon"
 							className="h-6 w-6 rounded hover:bg-card"
 						>
-							<ArrowRight className="w-3.5 h-3.5" />
+							<ArrowRight aria-hidden="true" className="w-3.5 h-3.5" />
 						</Button>
 						<Button
 							variant="ghost"
 							size="icon"
 							className="h-6 w-6 rounded hover:bg-card"
 						>
-							<ArrowUp className="w-3.5 h-3.5" />
+							<ArrowUp aria-hidden="true" className="w-3.5 h-3.5" />
 						</Button>
 						<Button
 							variant="ghost"
 							size="icon"
 							className="h-6 w-6 rounded hover:bg-card"
 						>
-							<RefreshCw className="w-3.5 h-3.5" />
+							<RefreshCw aria-hidden="true" className="w-3.5 h-3.5" />
 						</Button>
 					</div>
 					<div className="flex items-center text-xs text-muted-foreground gap-2 bg-background px-3 py-1 rounded border border-slate-800">
 						<span className="hover:text-info cursor-pointer">
 							NexusCAD Pro
 						</span>{" "}
-						<ChevronRight className="w-3 h-3" />
+						<ChevronRight aria-hidden="true" className="w-3 h-3" />
 						<span className="hover:text-info cursor-pointer">Projects</span>{" "}
-						<ChevronRight className="w-3 h-3" />
+						<ChevronRight aria-hidden="true" className="w-3 h-3" />
 						<span className="hover:text-info cursor-pointer text-foreground">
 							Tower-B Office Complex
 						</span>{" "}
-						<ChevronRight className="w-3 h-3 text-muted-foreground/70" />
+						<ChevronRight aria-hidden="true" className="w-3 h-3 text-muted-foreground/70" />
 						<span className="hover:text-info cursor-pointer text-info font-medium">
 							Electrical
 						</span>
@@ -366,7 +366,7 @@ export function ProjectFileManager() {
 								className={`h-6 w-8 rounded-none px-0 ${activeView === "Grid" ? "bg-card text-info" : "text-muted-foreground hover:text-foreground/90"}`}
 								onClick={() => setActiveView("Grid")}
 							>
-								<Grid className="w-3.5 h-3.5" />
+								<Grid aria-hidden="true" className="w-3.5 h-3.5" />
 							</Button>
 							<Button
 								variant="ghost"
@@ -374,7 +374,7 @@ export function ProjectFileManager() {
 								className={`h-6 w-8 rounded-none px-0 ${activeView === "List" ? "bg-card text-info" : "text-muted-foreground hover:text-foreground/90"}`}
 								onClick={() => setActiveView("List")}
 							>
-								<List className="w-3.5 h-3.5" />
+								<List aria-hidden="true" className="w-3.5 h-3.5" />
 							</Button>
 							<Button
 								variant="ghost"
@@ -382,7 +382,7 @@ export function ProjectFileManager() {
 								className={`h-6 w-8 rounded-none px-0 ${activeView === "Tree" ? "bg-card text-info" : "text-muted-foreground hover:text-foreground/90"}`}
 								onClick={() => setActiveView("Tree")}
 							>
-								<TableProperties className="w-3.5 h-3.5" />
+								<TableProperties aria-hidden="true" className="w-3.5 h-3.5" />
 							</Button>
 							<Button
 								variant="ghost"
@@ -390,7 +390,7 @@ export function ProjectFileManager() {
 								className={`h-6 w-8 rounded-none px-0 ${activeView === "Timeline" ? "bg-card text-info" : "text-muted-foreground hover:text-foreground/90"}`}
 								onClick={() => setActiveView("Timeline")}
 							>
-								<Clock className="w-3.5 h-3.5" />
+								<Clock aria-hidden="true" className="w-3.5 h-3.5" />
 							</Button>
 						</div>
 					</div>
@@ -401,28 +401,28 @@ export function ProjectFileManager() {
 							className="bg-muted/50 text-foreground/90 border-border h-6 cursor-pointer hover:bg-card pr-1"
 						>
 							DWG{" "}
-							<X className="w-3 h-3 ml-1 text-muted-foreground hover:text-foreground" />
+							<X aria-hidden="true" className="w-3 h-3 ml-1 text-muted-foreground hover:text-foreground" />
 						</Badge>
 						<Badge
 							variant="outline"
 							className="bg-green-900/20 text-green-400 border-green-900/50 h-6 cursor-pointer hover:bg-green-900/40 pr-1"
 						>
 							Approved{" "}
-							<X className="w-3 h-3 ml-1 text-green-600 hover:text-green-300" />
+							<X aria-hidden="true" className="w-3 h-3 ml-1 text-green-600 hover:text-green-300" />
 						</Badge>
 						<Badge
 							variant="outline"
 							className="bg-muted/50 text-foreground/90 border-border h-6 cursor-pointer hover:bg-card pr-1"
 						>
 							Rev 14+{" "}
-							<X className="w-3 h-3 ml-1 text-muted-foreground hover:text-foreground" />
+							<X aria-hidden="true" className="w-3 h-3 ml-1 text-muted-foreground hover:text-foreground" />
 						</Badge>
 						<Badge
 							variant="outline"
 							className="bg-muted/50 text-foreground/90 border-border h-6 cursor-pointer hover:bg-card pr-1"
 						>
 							Modified this week{" "}
-							<X className="w-3 h-3 ml-1 text-muted-foreground hover:text-foreground" />
+							<X aria-hidden="true" className="w-3 h-3 ml-1 text-muted-foreground hover:text-foreground" />
 						</Badge>
 						<Button
 							variant="ghost"
@@ -446,32 +446,32 @@ export function ProjectFileManager() {
 								</div>
 								<div className="space-y-0.5">
 									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-card cursor-pointer text-foreground/90">
-										<Clock3 className="w-3.5 h-3.5 text-muted-foreground" /> Recent
+										<Clock3 aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" /> Recent
 										Files
 									</div>
 									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-card cursor-pointer text-foreground/90">
-										<Star className="w-3.5 h-3.5 text-yellow-500" /> Starred
+										<Star aria-hidden="true" className="w-3.5 h-3.5 text-yellow-500" /> Starred
 										Items
 										<span className="ml-auto text-[10px] bg-card text-muted-foreground px-1.5 rounded">
 											3
 										</span>
 									</div>
 									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-card cursor-pointer text-foreground/90">
-										<Users className="w-3.5 h-3.5 text-info" /> Shared with
+										<Users aria-hidden="true" className="w-3.5 h-3.5 text-info" /> Shared with
 										Me
 										<span className="ml-auto text-[10px] bg-card text-muted-foreground px-1.5 rounded">
 											8
 										</span>
 									</div>
 									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-card cursor-pointer text-foreground/90">
-										<Eye className="w-3.5 h-3.5 text-primary" /> Pending
+										<Eye aria-hidden="true" className="w-3.5 h-3.5 text-primary" /> Pending
 										Review
 										<span className="ml-auto text-[10px] bg-primary text-white px-1.5 rounded">
 											3
 										</span>
 									</div>
 									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-card cursor-pointer text-foreground/90">
-										<Upload className="w-3.5 h-3.5 text-muted-foreground" /> My Uploads
+										<Upload aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" /> My Uploads
 										<span className="ml-auto text-[10px] bg-card text-muted-foreground px-1.5 rounded">
 											12
 										</span>
@@ -485,40 +485,40 @@ export function ProjectFileManager() {
 								</div>
 								<div className="space-y-0.5 font-sans text-xs">
 									<div className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-card cursor-pointer text-foreground font-medium">
-										<ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-										<FolderOpen className="w-3.5 h-3.5 text-info" />
+										<ChevronDown aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
+										<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-info" />
 										Tower-B Office Complex
 									</div>
 									<div className="pl-4 space-y-0.5">
 										<div className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-card cursor-pointer text-foreground font-medium">
-											<ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-											<FolderOpen className="w-3.5 h-3.5 text-info" />
+											<ChevronDown aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
+											<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-info" />
 											01_Electrical
 										</div>
 										<div className="pl-4 space-y-0.5">
 											<div className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-card cursor-pointer text-foreground/90">
-												<ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-												<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
+												<ChevronDown aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
+												<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
 												01.1_Power Distribution
 											</div>
 											<div className="pl-4 space-y-0.5">
 												<div className="flex items-center justify-between px-1 py-1 rounded hover:bg-card cursor-pointer text-muted-foreground">
 													<div className="flex items-center gap-1.5">
-														<FolderOpen className="w-3.5 h-3.5 text-muted-foreground/70" />{" "}
+														<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground/70" />{" "}
 														01.1.1_High Voltage
 													</div>
 													<span className="text-[9px] text-muted-foreground/70">2</span>
 												</div>
 												<div className="flex items-center justify-between px-1 py-1 rounded bg-blue-500/10 cursor-pointer text-info font-medium">
 													<div className="flex items-center gap-1.5">
-														<FolderOpen className="w-3.5 h-3.5 text-info fill-blue-400/20" />{" "}
+														<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-info fill-blue-400/20" />{" "}
 														01.1.2_Low Voltage
 													</div>
 													<span className="text-[9px] text-info">8</span>
 												</div>
 												<div className="flex items-center justify-between px-1 py-1 rounded hover:bg-card cursor-pointer text-muted-foreground">
 													<div className="flex items-center gap-1.5">
-														<FolderOpen className="w-3.5 h-3.5 text-muted-foreground/70" />{" "}
+														<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground/70" />{" "}
 														01.1.3_UPS & Emergency
 													</div>
 													<span className="text-[9px] text-muted-foreground/70">3</span>
@@ -537,8 +537,8 @@ export function ProjectFileManager() {
 													key={item}
 													className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-card cursor-pointer text-foreground/90"
 												>
-													<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-													<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
+													<ChevronRight aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
+													<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
 													{item}
 												</div>
 											))}
@@ -558,8 +558,8 @@ export function ProjectFileManager() {
 												key={item}
 												className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-card cursor-pointer text-foreground/90"
 											>
-												<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-												<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
+												<ChevronRight aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
+												<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
 												{item}
 											</div>
 										))}
@@ -576,14 +576,14 @@ export function ProjectFileManager() {
 								size="sm"
 								className="h-7 text-[10px] flex-1 border-border hover:bg-card"
 							>
-								<Plus className="w-3 h-3 mr-1" /> Folder
+								<Plus aria-hidden="true" className="w-3 h-3 mr-1" /> Folder
 							</Button>
 							<Button
 								variant="outline"
 								size="sm"
 								className="h-7 text-[10px] flex-1 border-border hover:bg-card"
 							>
-								<Upload className="w-3 h-3 mr-1" /> Files
+								<Upload aria-hidden="true" className="w-3 h-3 mr-1" /> Files
 							</Button>
 						</div>
 						<div className="space-y-1">
@@ -615,7 +615,7 @@ export function ProjectFileManager() {
 									</th>
 									<th className="w-8 px-2 py-2 font-medium"></th>
 									<th className="px-4 py-2 font-medium cursor-pointer hover:text-foreground">
-										Name <ChevronDown className="w-3 h-3 inline-block" />
+										Name <ChevronDown aria-hidden="true" className="w-3 h-3 inline-block" />
 									</th>
 									<th className="px-4 py-2 font-medium cursor-pointer hover:text-foreground">
 										Type
@@ -705,7 +705,7 @@ export function ProjectFileManager() {
 												size="icon"
 												className="h-6 w-6 text-muted-foreground hover:text-foreground"
 											>
-												<MoreHorizontal className="w-4 h-4" />
+												<MoreHorizontal aria-hidden="true" className="w-4 h-4" />
 											</Button>
 										</td>
 									</tr>
@@ -789,7 +789,7 @@ export function ProjectFileManager() {
 									<div className="flex justify-between items-center text-xs pt-2 border-t border-slate-800">
 										<span className="text-muted-foreground">Lock</span>
 										<span className="text-foreground/90 flex items-center gap-1">
-											<Lock className="w-3 h-3 text-primary" /> Checked out
+											<Lock aria-hidden="true" className="w-3 h-3 text-primary" /> Checked out
 											by {selectedFile.author}
 										</span>
 									</div>
@@ -1034,7 +1034,7 @@ export function ProjectFileManager() {
 								variant="ghost"
 								className="w-full h-7 text-xs text-muted-foreground hover:text-foreground/90 hover:bg-card"
 							>
-								<Archive className="w-3.5 h-3.5 mr-1.5" /> Archive
+								<Archive aria-hidden="true" className="w-3.5 h-3.5 mr-1.5" /> Archive
 							</Button>
 						</div>
 					</div>

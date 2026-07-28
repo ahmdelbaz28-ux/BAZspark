@@ -289,7 +289,7 @@ export function EngineeringPage() {
                                                 }
                                                 onClick={() => setActiveTab("voltage-drop")}
                                         >
-                                                <Zap className="h-4 w-4 mr-2" />
+                                                <Zap aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("engineering.voltageDrop")}
                                         </Button>
                                         <Button
@@ -301,7 +301,7 @@ export function EngineeringPage() {
                                                 }
                                                 onClick={() => setActiveTab("cable-sizing")}
                                         >
-                                                <Cable className="h-4 w-4 mr-2" />
+                                                <Cable aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("engineering.cableSizing")}
                                         </Button>
                                         <Button
@@ -313,7 +313,7 @@ export function EngineeringPage() {
                                                 }
                                                 onClick={() => setActiveTab("battery-calc")}
                                         >
-                                                <Battery className="h-4 w-4 mr-2" />
+                                                <Battery aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("engineering.batteryCalculation")}
                                         </Button>
                                 </div>
@@ -323,7 +323,7 @@ export function EngineeringPage() {
                                         <Card className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                                                                <Zap className="h-5 w-5" />
+                                                                <Zap aria-hidden="true" className="h-5 w-5" />
                                                                 {t("engineering.voltageDrop")}
                                                         </CardTitle>
                                                         <CardDescription className="text-muted-foreground">
@@ -506,7 +506,7 @@ export function EngineeringPage() {
                                         <Card className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                                                                <Cable className="h-5 w-5" />
+                                                                <Cable aria-hidden="true" className="h-5 w-5" />
                                                                 {t("engineering.cableSizing")}
                                                         </CardTitle>
                                                         <CardDescription className="text-muted-foreground">
@@ -672,7 +672,7 @@ export function EngineeringPage() {
                                         <Card className="border-border bg-card">
                                                 <CardHeader>
                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                                                                <Battery className="h-5 w-5" />
+                                                                <Battery aria-hidden="true" className="h-5 w-5" />
                                                                 {t("engineering.batteryCalculation")}
                                                         </CardTitle>
                                                         <CardDescription className="text-muted-foreground">

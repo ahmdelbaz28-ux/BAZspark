@@ -69,7 +69,7 @@ export function RiskAssessment() {
 	return (
 		<div className="p-4 space-y-4 h-full overflow-y-auto">
 			<h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-				<ShieldAlert className="text-primary" /> Risk Assessment
+				<ShieldAlert aria-hidden="true" className="text-primary" /> Risk Assessment
 			</h2>
 
 			<div className="space-y-2">
@@ -83,17 +83,17 @@ export function RiskAssessment() {
 					<SelectContent>
 						<SelectItem value="hospital">
 							<div className="flex items-center gap-2">
-								<Activity size={16} /> Hospital (Critical)
+								<Activity aria-hidden="true" size={16} /> Hospital (Critical)
 							</div>
 						</SelectItem>
 						<SelectItem value="industrial">
 							<div className="flex items-center gap-2">
-								<Factory size={16} /> Industrial Plant
+								<Factory aria-hidden="true" size={16} /> Industrial Plant
 							</div>
 						</SelectItem>
 						<SelectItem value="commercial">
 							<div className="flex items-center gap-2">
-								<MapPin size={16} /> Commercial Building
+								<MapPin aria-hidden="true" size={16} /> Commercial Building
 							</div>
 						</SelectItem>
 						<SelectItem value="residential">Residential</SelectItem>

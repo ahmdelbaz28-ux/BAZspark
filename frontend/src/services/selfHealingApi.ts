@@ -7,32 +7,9 @@
  *   POST /api/v1/self-healing/reset   — reset circuit breaker (admin)
  */
 
-import { getApiKey } from "./apiKey";
+import { ApiClient } from "./apiClient";
 
-const API_BASE = "/api/v1";
-
-async function shApiCall<T>(
-	path: string,
-	options: RequestInit = {},
-): Promise<T> {
-	const headers: Record<string, string> = {
-		"Content-Type": "application/json",
-		...((options.headers as Record<string, string>) || {}),
-	};
-	const apiKey = getApiKey();
-	if (apiKey) headers["X-API-Key"] = apiKey;
-
-	const resp = await fetch(`${API_BASE}${path}`, {
-		...options,
-		headers,
-		credentials: "same-origin",
-	});
-	if (!resp.ok) {
-		const body = await resp.json().catch(() => ({}));
-		throw new Error(body?.detail || `HTTP ${resp.status}: ${resp.statusText}`);
-	}
-	return resp.json();
-}
+const client = new ApiClient("/api/v1");
 
 export interface CircuitBreakerHealth {
 	state: string;
@@ -101,12 +78,11 @@ export interface SelfHealingAudit {
 }
 
 export const selfHealingApi = {
-	getHealth: () => shApiCall<SelfHealingHealth>("/self-healing/health"),
+	getHealth: () => client.get<SelfHealingHealth>("/self-healing/health"),
 	getAudit: (limit = 20) =>
-		shApiCall<SelfHealingAudit>(`/self-healing/audit?limit=${limit}`),
+		client.get<SelfHealingAudit>(`/self-healing/audit?limit=${limit}`),
 	reset: () =>
-		shApiCall<{ success: boolean; message: string; circuit_breaker: CircuitBreakerHealth }>(
+		client.post<{ success: boolean; message: string; circuit_breaker: CircuitBreakerHealth }>(
 			"/self-healing/reset",
-			{ method: "POST" },
 		),
 };

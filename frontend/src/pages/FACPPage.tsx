@@ -106,7 +106,7 @@ export function FACPPage() {
 			<div className="p-6 max-w-5xl mx-auto space-y-6">
 				<div>
 					<h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-						<Cpu className="h-5 w-5 text-primary" />
+						<Cpu aria-hidden="true" className="h-5 w-5 text-primary" />
 						FACP Panel Selection
 					</h1>
 					<p className="text-sm text-muted-foreground mt-1">
@@ -221,11 +221,11 @@ export function FACPPage() {
 				{/* Actions */}
 				<div className="flex gap-3">
 					<Button onClick={handleSelect} disabled={loading}>
-						{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cpu className="h-4 w-4" />}
+						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Cpu aria-hidden="true" className="h-4 w-4" />}
 						Select Panel
 					</Button>
 					<Button onClick={handleListPanels} disabled={loading} variant="outline">
-						{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ListChecks className="h-4 w-4" />}
+						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <ListChecks aria-hidden="true" className="h-4 w-4" />}
 						List All Panels
 					</Button>
 				</div>

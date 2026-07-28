@@ -75,7 +75,7 @@ export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intenti
 			<div className="h-14 flex items-center justify-between px-6 border-b border-slate-800 bg-[#0a0a14]/90 backdrop-blur-md shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="flex items-center gap-2">
-						<Cpu className="h-5 w-5 text-blue-500" />
+						<Cpu aria-hidden="true" className="h-5 w-5 text-blue-500" />
 						<span className="font-bold text-sm uppercase tracking-widest">
 							NexusCAD Pro
 						</span>
@@ -99,16 +99,16 @@ export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intenti
 
 				<div className="flex items-center gap-3">
 					<div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
-						<Shield className="h-4 w-4 text-emerald-500" />
+						<Shield aria-hidden="true" className="h-4 w-4 text-emerald-500" />
 						<span className="text-xs text-success font-medium">
 							WebGPU Acceleration Active
 						</span>
 					</div>
 					<button type="button" className="p-2 rounded-lg bg-card hover:bg-secondary transition-colors">
-						<Share2 className="h-4 w-4" />
+						<Share2 aria-hidden="true" className="h-4 w-4" />
 					</button>
 					<button type="button" className="p-2 rounded-lg bg-card hover:bg-secondary transition-colors">
-						<Settings className="h-4 w-4" />
+						<Settings aria-hidden="true" className="h-4 w-4" />
 					</button>
 				</div>
 			</div>
@@ -117,16 +117,16 @@ export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intenti
 				{/* Left Sidebar - Tools */}
 				<div className="w-16 flex flex-col items-center py-4 gap-4 border-r border-slate-800 bg-[#0a0a14]/90">
 					<button type="button" className="p-3 rounded-md bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-						<Box className="h-5 w-5" />
+						<Box aria-hidden="true" className="h-5 w-5" />
 					</button>
 					<button type="button" className="p-3 rounded-md text-muted-foreground hover:bg-card hover:text-white transition-colors">
-						<Layers className="h-5 w-5" />
+						<Layers aria-hidden="true" className="h-5 w-5" />
 					</button>
 					<button type="button" className="p-3 rounded-md text-muted-foreground hover:bg-card hover:text-white transition-colors">
-						<Globe className="h-5 w-5" />
+						<Globe aria-hidden="true" className="h-5 w-5" />
 					</button>
 					<button type="button" className="p-3 rounded-md text-muted-foreground hover:bg-card hover:text-white transition-colors">
-						<Terminal className="h-5 w-5" />
+						<Terminal aria-hidden="true" className="h-5 w-5" />
 					</button>
 				</div>
 
@@ -150,7 +150,7 @@ export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intenti
 							<div className="space-y-4">
 								<div className="flex items-center justify-between">
 									<div className="flex items-center gap-2">
-										<Zap className="h-4 w-4 text-amber-500" />
+										<Zap aria-hidden="true" className="h-4 w-4 text-amber-500" />
 										<span className="text-sm font-medium">
 											WebAssembly Engine
 										</span>
@@ -162,7 +162,7 @@ export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intenti
 
 								<div className="flex items-center justify-between">
 									<div className="flex items-center gap-2">
-										<Cpu className="h-4 w-4 text-blue-500" />
+										<Cpu aria-hidden="true" className="h-4 w-4 text-blue-500" />
 										<span className="text-sm font-medium">Worker Threads</span>
 									</div>
 									<span className="text-xs text-success font-mono">
@@ -180,7 +180,7 @@ export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intenti
 												: "bg-blue-600 hover:bg-blue-500 text-white"
 										}`}
 									>
-										<Play className="h-4 w-4" />
+										<Play aria-hidden="true" className="h-4 w-4" />
 										{isCalculating ? "Calculating..." : "Run Heavy Simulation"}
 									</button>
 								</div>
@@ -225,7 +225,7 @@ export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intenti
 						{/* Top Right Controls */}
 						<div className="absolute top-6 right-6 flex gap-2">
 							<button type="button" className="p-2.5 bg-[#0a0a14]/80 backdrop-blur-md border border-slate-800 rounded-lg hover:bg-card transition-colors">
-								<Maximize2 className="h-4 w-4" />
+								<Maximize2 aria-hidden="true" className="h-4 w-4" />
 							</button>
 						</div>
 					</div>

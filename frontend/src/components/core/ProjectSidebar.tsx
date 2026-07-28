@@ -37,7 +37,7 @@ export function ProjectSidebar() {
 								onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); actions.selectElement(el.id); } }}
 							>
 								<div className="flex items-center gap-2 truncate">
-									<Box className="h-4 w-4 text-info" />
+									<Box aria-hidden="true" className="h-4 w-4 text-info" />
 									<span className="text-xs truncate">{el.id}</span>
 								</div>
 								<Button
@@ -49,7 +49,7 @@ export function ProjectSidebar() {
 										handleDelete(el.id);
 									}}
 								>
-									<Trash2 className="h-3 w-3" />
+									<Trash2 aria-hidden="true" className="h-3 w-3" />
 								</Button>
 							</div>
 						))

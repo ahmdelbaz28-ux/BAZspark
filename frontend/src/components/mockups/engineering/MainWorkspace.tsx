@@ -77,7 +77,7 @@ export function MainWorkspace() {
                                 <div className="h-10 flex items-center justify-between px-4 border-b border-border/50">
                                         <div className="flex items-center gap-4">
                                                 <div className="flex items-center gap-2 text-primary">
-                                                        <Zap className="h-5 w-5 fill-current" />
+                                                        <Zap aria-hidden="true" className="h-5 w-5 fill-current" />
                                                         <span className="font-bold tracking-wider text-sm">
                                                                 NexusCAD Pro
                                                         </span>
@@ -109,18 +109,18 @@ export function MainWorkspace() {
                                         </div>
                                         <div className="flex items-center gap-4 text-muted-foreground">
                                                 <div className="flex items-center gap-2 text-xs">
-                                                        <Cloud className="h-4 w-4 text-success" />
+                                                        <Cloud aria-hidden="true" className="h-4 w-4 text-success" />
                                                         <span>Synced</span>
                                                 </div>
                                                 <Separator orientation="vertical" className="h-5" />
                                                 <div className="flex items-center gap-2 text-xs">
-                                                        <Cpu className="h-4 w-4" />
+                                                        <Cpu aria-hidden="true" className="h-4 w-4" />
                                                         <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                                                                 <div className="bg-primary h-full w-[45%]"></div>
                                                         </div>
                                                 </div>
                                                 <Separator orientation="vertical" className="h-5" />
-                                                <Bell className="h-4 w-4 hover:text-foreground cursor-pointer" />
+                                                <Bell aria-hidden="true" className="h-4 w-4 hover:text-foreground cursor-pointer" />
                                                 <div className="h-6 w-6 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center text-xs font-bold text-primary">
                                                         JS
                                                 </div>
@@ -130,21 +130,21 @@ export function MainWorkspace() {
                                 <div className="h-14 flex items-center px-2 space-x-1 bg-card/50 overflow-x-auto">
                                         {activeTab === "Electrical" && (
                                                 <>
-                                                        <RibbonBtn icon={<MinusSquare />} label="New Wire" />
-                                                        <RibbonBtn icon={<Plus />} label="Add Component" />
+                                                        <RibbonBtn icon={<MinusSquare aria-hidden="true" />} label="New Wire" />
+                                                        <RibbonBtn icon={<Plus aria-hidden="true" />} label="Add Component" />
                                                         <Separator orientation="vertical" className="h-8 mx-1" />
-                                                        <RibbonBtn icon={<Layout />} label="Bus Bar" />
-                                                        <RibbonBtn icon={<Layers />} label="Cable Tray" />
-                                                        <RibbonBtn icon={<Monitor />} label="Panel Board" />
-                                                        <RibbonBtn icon={<Zap />} label="Circuit Breaker" />
-                                                        <RibbonBtn icon={<ArrowRight />} label="Ground Symbol" />
+                                                        <RibbonBtn icon={<Layout aria-hidden="true" />} label="Bus Bar" />
+                                                        <RibbonBtn icon={<Layers aria-hidden="true" />} label="Cable Tray" />
+                                                        <RibbonBtn icon={<Monitor aria-hidden="true" />} label="Panel Board" />
+                                                        <RibbonBtn icon={<Zap aria-hidden="true" />} label="Circuit Breaker" />
+                                                        <RibbonBtn icon={<ArrowRight aria-hidden="true" />} label="Ground Symbol" />
                                                         <Separator orientation="vertical" className="h-8 mx-1" />
-                                                        <RibbonBtn icon={<Activity />} label="Load Calc" />
+                                                        <RibbonBtn icon={<Activity aria-hidden="true" />} label="Load Calc" />
                                                         <RibbonBtn
-                                                                icon={<Zap className="text-warning" />}
+                                                                icon={<Zap aria-hidden="true" className="text-warning" />}
                                                                 label="Arc Flash"
                                                         />
-                                                        <RibbonBtn icon={<Lock />} label="Protection Relay" />
+                                                        <RibbonBtn icon={<Lock aria-hidden="true" />} label="Protection Relay" />
                                                 </>
                                         )}
                                 </div>
@@ -162,7 +162,7 @@ export function MainWorkspace() {
                                                         size="icon"
                                                         className="h-5 w-5"
                                                         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} onKeyDown={(e) => { if (e.key === "Enter") (() => setIsSidebarCollapsed(!isSidebarCollapsed))(); }}                                          >
-                                                        <Menu className="h-3 w-3" />
+                                                        <Menu aria-hidden="true" className="h-3 w-3" />
                                                 </Button>
                                         </div>
                                         <ScrollArea className="flex-1">
@@ -228,7 +228,7 @@ export function MainWorkspace() {
                                         <div className="h-1/3 flex flex-col border-t bg-card/20">
                                                 <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b flex justify-between items-center bg-card/40">
                                                         <span>Layer Manager</span>
-                                                        <Settings className="h-3 w-3" />
+                                                        <Settings aria-hidden="true" className="h-3 w-3" />
                                                 </div>
                                                 <ScrollArea className="flex-1 p-2">
                                                         <LayerRow name="Grid" color="bg-slate-500" />
@@ -258,12 +258,12 @@ export function MainWorkspace() {
                                                                 className={`px-4 py-2 text-xs border-r flex items-center gap-2 cursor-pointer ${activeFile === file ? "bg-[#0f1115] text-primary border-t-2 border-t-primary" : "text-muted-foreground hover:bg-muted"}`}
                                                                 onClick={() => setActiveFile(file)} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile(file))(); }}                                                        >
                                                                 {file.endsWith(".dwg") ? (
-                                                                        <Layout className="h-3 w-3" />
+                                                                        <Layout aria-hidden="true" className="h-3 w-3" />
                                                                 ) : (
-                                                                        <Box className="h-3 w-3" />
+                                                                        <Box aria-hidden="true" className="h-3 w-3" />
                                                                 )}
                                                                 {file}
-                                                                <X className="h-3 w-3 ml-2 opacity-50 hover:opacity-100" />
+                                                                <X aria-hidden="true" className="h-3 w-3 ml-2 opacity-50 hover:opacity-100" />
                                                         </div>
                                                 ))}
                                         </div>
@@ -349,7 +349,7 @@ export function MainWorkspace() {
                                                                         </div>
                                                                         <div className="mt-4 p-4 border rounded border-slate-500/50 bg-slate-500/10">
                                                                                 <h3 className="font-semibold text-danger mb-2 flex items-center gap-2">
-                                                                                        <AlertTriangle className="h-4 w-4" />
+                                                                                        <AlertTriangle aria-hidden="true" className="h-4 w-4" />
                                                                                         Clash Detection / Conflicts
                                                                                 </h3>
                                                                                 <p className="text-sm text-foreground">
@@ -394,12 +394,12 @@ export function MainWorkspace() {
 
                                                 {/* Floating Mini Toolbar */}
                                                 <div className="absolute top-10 right-4 bg-card/80 backdrop-blur border rounded-md shadow-lg flex flex-col p-1 gap-1 z-20">
-                                                        <ToolBtn icon={<Crosshair />} active />
-                                                        <ToolBtn icon={<Maximize />} />
-                                                        <ToolBtn icon={<Focus />} />
+                                                        <ToolBtn icon={<Crosshair aria-hidden="true" />} active />
+                                                        <ToolBtn icon={<Maximize aria-hidden="true" />} />
+                                                        <ToolBtn icon={<Focus aria-hidden="true" />} />
                                                         <Separator />
-                                                        <ToolBtn icon={<PenTool />} />
-                                                        <ToolBtn icon={<Triangle />} />
+                                                        <ToolBtn icon={<PenTool aria-hidden="true" />} />
+                                                        <ToolBtn icon={<Triangle aria-hidden="true" />} />
                                                 </div>
 
                                                 {/* Canvas Footer */}
@@ -417,13 +417,13 @@ export function MainWorkspace() {
                                         <div className="h-1/2 flex flex-col border-b">
                                                 <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b flex justify-between items-center bg-card/40">
                                                         <span>Object Properties</span>
-                                                        <Settings className="h-3 w-3" />
+                                                        <Settings aria-hidden="true" className="h-3 w-3" />
                                                 </div>
                                                 <ScrollArea className="flex-1">
                                                         <div className="p-3">
                                                                 <div className="flex items-center gap-2 mb-4">
                                                                         <div className="h-8 w-8 rounded bg-primary/20 flex items-center justify-center">
-                                                                                <Monitor className="h-4 w-4 text-primary" />
+                                                                                <Monitor aria-hidden="true" className="h-4 w-4 text-primary" />
                                                                         </div>
                                                                         <div>
                                                                                 <div className="font-medium text-sm">Panel Board LP-3A</div>
@@ -448,7 +448,7 @@ export function MainWorkspace() {
                                                                                                 variant="outline"
                                                                                                 className="text-success border-success/30 bg-emerald-500/10"
                                                                                         >
-                                                                                                <CheckSquare className="w-3 h-3 mr-1" /> NFPA 70
+                                                                                                <CheckSquare aria-hidden="true" className="w-3 h-3 mr-1" /> NFPA 70
                                                                                         </Badge>
                                                                                 </div>
                                                                         </div>
@@ -469,7 +469,7 @@ export function MainWorkspace() {
                                         {/* AI Copilot mini */}
                                         <div className="flex-1 flex flex-col bg-card/20">
                                                 <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary border-b flex items-center gap-2 bg-card/40">
-                                                        <Zap className="h-3 w-3" />
+                                                        <Zap aria-hidden="true" className="h-3 w-3" />
                                                         <span>AI Copilot</span>
                                                 </div>
                                                 <ScrollArea className="flex-1 p-3">
@@ -483,7 +483,7 @@ export function MainWorkspace() {
 
                                                                 <div className="flex gap-2">
                                                                         <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground shrink-0 mt-1">
-                                                                                <Zap className="h-3 w-3" />
+                                                                                <Zap aria-hidden="true" className="h-3 w-3" />
                                                                         </div>
                                                                         <div className="flex flex-col gap-1">
                                                                                 <div className="bg-muted px-3 py-2 rounded-lg rounded-tl-none text-xs text-foreground border">
@@ -534,7 +534,7 @@ export function MainWorkspace() {
                                                         <div className="relative">
                                                                 <Input
                                                                         className="pr-8 bg-background border-muted text-xs h-8"
-                                                                        placeholder={isListening ? "Listening..." : "Ask Copilot..."}
+                                                                        placeholder={isListening ? "Listening…" : "Ask Copilot…"}
                                                                         value={voiceCommand}
                                                                         onChange={(e) => setVoiceCommand(e.target.value)}
                                                                 />
@@ -543,7 +543,7 @@ export function MainWorkspace() {
                                                                         variant="ghost"
                                                                         className={`absolute right-0 top-0 h-8 w-8 ${isListening ? "text-slate-400 animate-pulse" : "text-primary"}`}
                                                                         onClick={() => {                                                                                setIsListening(!isListening);                                                                           if (!isListening) {
-                                                                                        setVoiceCommand("Processing voice command...");
+                                                                                        setVoiceCommand("Processing voice command…");
                                                                                         setTimeout(
                                                                                                 () => setVoiceCommand("Show me active clashes"),
                                                                                                 1500,
@@ -554,9 +554,9 @@ export function MainWorkspace() {
                                                                         }}
                                                                 >
                                                                         {isListening ? (
-                                                                                <Volume2 className="h-4 w-4" />
+                                                                                <Volume2 aria-hidden="true" className="h-4 w-4" />
                                                                         ) : (
-                                                                                <Mic className="h-4 w-4" />
+                                                                                <Mic aria-hidden="true" className="h-4 w-4" />
                                                                         )}
                                                                 </Button>
                                                         </div>
@@ -605,7 +605,7 @@ export function MainWorkspace() {
                                                         onClick={(e) => {                                                               e.stopPropagation();                                                            setIsErrorLogPinned(!isErrorLogPinned);
                                                         }}
                                                 >
-                                                        <Pin className="h-3 w-3" />
+                                                        <Pin aria-hidden="true" className="h-3 w-3" />
                                                 </Button>
                                                 <Button
                                                         variant="ghost"
@@ -613,7 +613,7 @@ export function MainWorkspace() {
                                                         className="h-5 w-5 text-muted-foreground hover:text-foreground"
                                                         onClick={(e) => {                                                               e.stopPropagation();                                                    }}
                                                 >
-                                                        <Trash2 className="h-3 w-3" />
+                                                        <Trash2 aria-hidden="true" className="h-3 w-3" />
                                                 </Button>
                                                 <Separator orientation="vertical" className="h-4" />
                                                 <Button
@@ -622,9 +622,9 @@ export function MainWorkspace() {
                                                         className="h-5 w-5 text-muted-foreground hover:text-foreground"
                                                 >
                                                         {isErrorLogExpanded ? (
-                                                                <ChevronDown className="h-3 w-3" />
+                                                                <ChevronDown aria-hidden="true" className="h-3 w-3" />
                                                         ) : (
-                                                                <ChevronUp className="h-3 w-3" />
+                                                                <ChevronUp aria-hidden="true" className="h-3 w-3" />
                                                         )}
                                                 </Button>
                                         </div>
@@ -663,7 +663,7 @@ export function MainWorkspace() {
                                         <span>Last saved: 2 min ago</span>
                                         <Separator orientation="vertical" className="h-3 bg-primary/20" />
                                         <div className="flex items-center gap-1">
-                                                <User className="h-3 w-3" />
+                                                <User aria-hidden="true" className="h-3 w-3" />
                                                 <span>3 online</span>
                                         </div>
                                 </div>
@@ -708,7 +708,7 @@ function LogEntry({
                                                 Go To
                                         </span>
                                 )}
-                                <X className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-pointer" />
+                                <X aria-hidden="true" className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-pointer" />
                         </div>
                 </div>
         );  // NOSONAR: typescript:S6759
@@ -745,7 +745,7 @@ function TreeNode({
                                 <Triangle
                                         className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : "rotate-90"}`}
                                 />
-                                <FolderOpen className="h-4 w-4 text-info/80" />
+                                <FolderOpen aria-hidden="true" className="h-4 w-4 text-info/80" />
                                 <span className="text-xs truncate">{title}</span>
                         </div>
                         {open && children && (
@@ -779,7 +779,7 @@ function FileNode({
                 <div
                         className={`flex items-center gap-2 py-1 px-2 rounded cursor-pointer ${active ? "bg-primary/10 text-primary" : "hover:bg-muted/50 text-muted-foreground"}`}
                         onClick={onClick} onKeyDown={onKeyDown} tabIndex={0} role="button">
-                        <FileText className={`h-4 w-4 ${color}`} />
+                        <FileText aria-hidden="true" className={`h-4 w-4 ${color}`} />
                         <span className={`text-xs truncate ${active ? "font-medium" : ""}`}>
                                 {title}
                         </span>
@@ -814,12 +814,12 @@ function LayerRow({
                         </div>
                         <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100">
                                 {hidden ? (
-                                        <EyeOff className="h-3 w-3 text-muted-foreground" />
+                                        <EyeOff aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
                                 ) : (
-                                        <Eye className="h-3 w-3 text-foreground" />
+                                        <Eye aria-hidden="true" className="h-3 w-3 text-foreground" />
                                 )}
                                 {locked ? (
-                                        <Lock className="h-3 w-3 text-amber-500/70" />
+                                        <Lock aria-hidden="true" className="h-3 w-3 text-amber-500/70" />
                                 ) : (
                                         <div className="w-3 h-3"></div>
                                 )}

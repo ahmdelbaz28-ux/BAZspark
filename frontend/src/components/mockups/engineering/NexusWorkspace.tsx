@@ -38,7 +38,7 @@ export function NexusWorkspace() {  // NOSONAR - typescript:S9011: Intentionally
 				<div className="h-14 border-b border-border flex items-center justify-between px-6 bg-card/50 backdrop-blur-md shrink-0">
 					<div className="flex items-center gap-3">
 						<div className="flex items-center gap-2">
-							<Shield className="h-5 w-5 text-primary" />
+							<Shield aria-hidden="true" className="h-5 w-5 text-primary" />
 							<span className="font-bold text-sm uppercase tracking-widest">
 								NexusCAD Pro
 							</span>
@@ -49,11 +49,11 @@ export function NexusWorkspace() {  // NOSONAR - typescript:S9011: Intentionally
 
 					<div className="flex items-center gap-4 text-xs">
 						<span className="text-muted-foreground flex items-center gap-1">
-							<Layers size={12} /> Auto-Save: Active
+							<Layers aria-hidden="true" size={12} /> Auto-Save: Active
 						</span>
 						{hasCriticalErrors && (
 							<span className="flex items-center gap-1 text-destructive font-bold animate-pulse bg-destructive/10 px-2 py-1 rounded">
-								<AlertTriangle size={14} /> System Critical
+								<AlertTriangle aria-hidden="true" size={14} /> System Critical
 							</span>
 						)}
 					</div>
@@ -78,7 +78,7 @@ export function NexusWorkspace() {  // NOSONAR - typescript:S9011: Intentionally
 					<div className="absolute bottom-4 left-4 right-4 bg-destructive/10 border border-destructive/50 backdrop-blur-md rounded-lg p-3 max-h-48 overflow-y-auto shadow-2xl z-20">
 						<div className="flex justify-between items-center mb-2 sticky top-0 bg-transparent backdrop-blur-sm z-10">
 							<span className="text-xs font-bold text-destructive flex items-center gap-2">
-								<Activity size={14} /> System Alerts ({errors.length})
+								<Activity aria-hidden="true" size={14} /> System Alerts ({errors.length})
 							</span>
 							<button type="button"
 								onClick={() => actions.clearErrors()}
@@ -111,28 +111,28 @@ export function NexusWorkspace() {  // NOSONAR - typescript:S9011: Intentionally
 						className={`flex-1 py-3 flex justify-center border-b-2 transition-colors ${activeTab === "controls" ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
 						title="Controls"
 					>
-						<Settings size={18} />
+						<Settings aria-hidden="true" size={18} />
 					</button>
 					<button type="button"
 						onClick={() => setActiveTab("analyzer")}
 						className={`flex-1 py-3 flex justify-center border-b-2 transition-colors ${activeTab === "analyzer" ? "border-blue-500 text-blue-500 bg-blue-500/5" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
 						title="System Analyzer"
 					>
-						<Activity size={18} />
+						<Activity aria-hidden="true" size={18} />
 					</button>
 					<button type="button"
 						onClick={() => setActiveTab("optimizer")}
 						className={`flex-1 py-3 flex justify-center border-b-2 transition-colors ${activeTab === "optimizer" ? "border-emerald-500 text-emerald-500 bg-emerald-500/5" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
 						title="Optimizer"
 					>
-						<TrendingUp size={18} />
+						<TrendingUp aria-hidden="true" size={18} />
 					</button>
 					<button type="button"
 						onClick={() => setActiveTab("risk")}
 						className={`flex-1 py-3 flex justify-center border-b-2 transition-colors ${activeTab === "risk" ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
 						title="Risk Assessment"
 					>
-						<ShieldAlert size={18} />
+						<ShieldAlert aria-hidden="true" size={18} />
 					</button>
 				</div>
 
@@ -140,7 +140,7 @@ export function NexusWorkspace() {  // NOSONAR - typescript:S9011: Intentionally
 				<div className="flex-1 overflow-hidden">
 					{activeTab === "controls" && (
 						<div className="p-6 text-center text-muted-foreground text-sm flex flex-col items-center justify-center h-full">
-							<Settings className="h-12 w-12 opacity-20 mb-4" />
+							<Settings aria-hidden="true" className="h-12 w-12 opacity-20 mb-4" />
 							<p>Project controls and properties will appear here.</p>
 						</div>
 					)}

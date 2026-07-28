@@ -49,27 +49,27 @@ export function LoadFlowAnalysis() {  // NOSONAR - typescript:S9011: Intentional
 							size="sm"
 							className="h-8 text-xs border-border hover:bg-card"
 						>
-							<Settings className="h-4 w-4 mr-1" /> Settings
+							<Settings aria-hidden="true" className="h-4 w-4 mr-1" /> Settings
 						</Button>
 						<Button
 							variant="outline"
 							size="sm"
 							className="h-8 text-xs border-border hover:bg-card"
 						>
-							<Download className="h-4 w-4 mr-1" /> Export
+							<Download aria-hidden="true" className="h-4 w-4 mr-1" /> Export
 						</Button>
 						<Button
 							size="sm"
 							variant="destructive"
 							className="h-8 text-xs bg-card text-foreground/90 hover:bg-secondary border border-border"
 						>
-							<Square className="h-4 w-4 mr-1" fill="currentColor" /> Stop
+							<Square aria-hidden="true" className="h-4 w-4 mr-1" fill="currentColor" /> Stop
 						</Button>
 						<Button
 							size="sm"
 							className="h-8 text-xs bg-blue-600 hover:bg-blue-500 text-white"
 						>
-							<Play className="h-4 w-4 mr-1" fill="currentColor" /> Run
+							<Play aria-hidden="true" className="h-4 w-4 mr-1" fill="currentColor" /> Run
 							Analysis
 						</Button>
 					</div>
@@ -81,7 +81,7 @@ export function LoadFlowAnalysis() {  // NOSONAR - typescript:S9011: Intentional
 				<div className="w-[260px] flex flex-col border-r bg-card/30 shrink-0">
 					<div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b flex justify-between items-center bg-card/40">
 						<span>Network Tree</span>
-						<Search className="h-3 w-3" />
+						<Search aria-hidden="true" className="h-3 w-3" />
 					</div>
 					<ScrollArea className="flex-1 p-2">
 						<div className="text-[11px] font-mono space-y-1">
@@ -606,7 +606,7 @@ export function LoadFlowAnalysis() {  // NOSONAR - typescript:S9011: Intentional
 							{/* Warnings Box */}
 							<div className="border border-primary/50 bg-primary/10 rounded-md p-3">
 								<div className="flex items-center gap-2 text-primary font-bold text-xs mb-2 uppercase">
-									<AlertTriangle className="h-4 w-4" /> System Warnings
+									<AlertTriangle aria-hidden="true" className="h-4 w-4" /> System Warnings
 								</div>
 								<ul className="text-xs text-foreground/90 space-y-2 list-disc pl-4">
 									<li>

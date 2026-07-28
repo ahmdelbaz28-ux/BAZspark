@@ -62,7 +62,7 @@ def route_conduit_and_hatch(
     # Step 1: Route the conduit path — pass trade_size through to routing engine
     route_res = astar_route_3d(grid_map, start, end, conduit, conduit_id, trade_size=trade_size)
     if route_res.is_failure:
-        return Result(error=route_res.error())
+        return Result(error=route_res.error)
 
     conduit_run = route_res.unwrap()
 
@@ -75,7 +75,7 @@ def route_conduit_and_hatch(
         conduit_type=conduit.value  # Pass conduit type (EMT/RMC) for correct area lookup
     )
     if fill_res.is_failure:
-        return Result(error=fill_res.error())
+        return Result(error=fill_res.error)
 
     # Step 3: Generate boundary hatch points for conduit corridor
     pts = conduit_run.points
@@ -116,7 +116,7 @@ def route_conduit_and_hatch(
     if len(unique_points) >= 3:
         hatch_res = place_boundary_hatch(doc, unique_points, spec, conduit_id)
         if hatch_res.is_failure:
-            return Result(error=hatch_res.error())
+            return Result(error=hatch_res.error)
         hatch_entity = hatch_res.unwrap()
     else:
         # Zero-length or single-segment path — no meaningful boundary to hatch

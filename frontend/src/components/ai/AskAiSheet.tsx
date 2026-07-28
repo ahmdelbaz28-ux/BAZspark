@@ -95,7 +95,7 @@ export function AskAiSheet({
                                 <SheetHeader className="px-4 py-3 border-b border-border bg-card">
                                         <div className="flex items-center gap-3">
                                                 <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-danger/10 border border-slate-600/30">
-                                                        <Sparkles className="w-5 h-5 text-slate-400" />
+                                                        <Sparkles aria-hidden="true" className="w-5 h-5 text-slate-400" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                         <SheetTitle className="text-foreground text-base font-semibold">
@@ -113,7 +113,7 @@ export function AskAiSheet({
                                                         title={t("ai.clearChat", "Clear chat")}
                                                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                                 >
-                                                        <Trash2 className="w-4 h-4" />
+                                                        <Trash2 aria-hidden="true" className="w-4 h-4" />
                                                 </Button>
                                         </div>
                                 </SheetHeader>
@@ -124,7 +124,7 @@ export function AskAiSheet({
                                                 {messages.length === 0 && (
                                                         <div className="flex flex-col items-center justify-center py-12 text-center">
                                                                 <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center mb-4">
-                                                                        <Bot className="w-8 h-8 text-slate-400" />
+                                                                        <Bot aria-hidden="true" className="w-8 h-8 text-slate-400" />
                                                                 </div>
                                                                 <p className="text-foreground/90 text-sm font-medium mb-1">
                                                                         {t("ai.welcome", "Ask me anything about fire alarm engineering")}
@@ -148,7 +148,7 @@ export function AskAiSheet({
                                                 {loading && (
                                                         <div className="flex items-start gap-2.5">
                                                                 <div className="flex-shrink-0 w-7 h-7 rounded-full bg-card flex items-center justify-center">
-                                                                        <Bot className="w-4 h-4 text-slate-400" />
+                                                                        <Bot aria-hidden="true" className="w-4 h-4 text-slate-400" />
                                                                 </div>
                                                                 <div className="bg-card rounded-md rounded-tl-sm px-3.5 py-2.5">
                                                                         <div className="flex items-center gap-1.5">
@@ -162,7 +162,7 @@ export function AskAiSheet({
 
                                                 {error && (
                                                         <div className="flex items-start gap-2 text-sm text-danger bg-red-950/30 border border-red-900/50 rounded-lg p-3">
-                                                                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                                                <AlertCircle aria-hidden="true" className="w-4 h-4 flex-shrink-0 mt-0.5" />
                                                                 <span>{error}</span>
                                                         </div>
                                                 )}
@@ -212,7 +212,7 @@ export function AskAiSheet({
                                                         disabled={!input.trim() || loading}
                                                         className="bg-danger hover:bg-danger/90 text-white flex-shrink-0"
                                                 >
-                                                        <Send className="w-4 h-4" />
+                                                        <Send aria-hidden="true" className="w-4 h-4" />
                                                 </Button>
                                         </div>
                                         <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
@@ -240,7 +240,7 @@ const MessageBubble = memo(function MessageBubble({ message }: { readonly messag
                                         </p>
                                 </div>
                                 <div className="flex-shrink-0 w-7 h-7 rounded-full bg-secondary flex items-center justify-center">
-                                        <User className="w-4 h-4 text-foreground/90" />
+                                        <User aria-hidden="true" className="w-4 h-4 text-foreground/90" />
                                 </div>
                         </div>
                 );
@@ -249,7 +249,7 @@ const MessageBubble = memo(function MessageBubble({ message }: { readonly messag
         return (
                 <div className="flex items-start gap-2.5">
                         <div className="flex-shrink-0 w-7 h-7 rounded-full bg-card flex items-center justify-center">
-                                <Bot className="w-4 h-4 text-slate-400" />
+                                <Bot aria-hidden="true" className="w-4 h-4 text-slate-400" />
                         </div>
                         <div className="max-w-[85%]">
                                 <div className="bg-card text-foreground rounded-md rounded-tl-sm px-3.5 py-2">
@@ -263,7 +263,7 @@ const MessageBubble = memo(function MessageBubble({ message }: { readonly messag
                                 <div className="flex items-center gap-2 mt-1 px-1">
                                         {message.isStreaming ? (
                                                 <span className="text-[10px] text-danger animate-pulse">
-                                                        typing...
+                                                        typing…
                                                 </span>
                                         ) : (
                                                 <>

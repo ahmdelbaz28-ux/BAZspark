@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-        digitalTwinService,
+        digitalTwinApi,
         type VersionInfo,
-} from "@/services/digitalTwinService";
+} from "@/services/fullApi";
 
 export function HistoryTimeline() {
         const [versions, setVersions] = useState<VersionInfo[]>([]);
@@ -23,7 +23,7 @@ export function HistoryTimeline() {
         const fetchHistory = useCallback(async () => {
                 setLoading(true);
                 try {
-                        const history = await digitalTwinService.getHistory();
+                        const history = await digitalTwinApi.getHistory();
                         setVersions(Array.isArray(history) ? history : []);
                 } catch {
                         setVersions([]);
@@ -39,7 +39,7 @@ export function HistoryTimeline() {
         const handleRollback = async (versionId: string) => {
                 setRollingBack(versionId);
                 try {
-                        await digitalTwinService.rollback(versionId, `output_${versionId}.rvt`);
+                        await digitalTwinApi.rollback(versionId, `output_${versionId}.rvt`);
                         toast.success(`Rolled back to ${versionId}`);
                         fetchHistory();
                 } catch (err) {
@@ -61,7 +61,7 @@ export function HistoryTimeline() {
                 <Card className="border-border bg-card">
                         <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-foreground">
-                                        <History className="h-5 w-5 text-primary" />
+                                        <History aria-hidden="true" className="h-5 w-5 text-primary" />
                                         Conversion History
                                 </CardTitle>
                         </CardHeader>
@@ -95,14 +95,14 @@ export function HistoryTimeline() {
                                                                                         {v.conversion_type}
                                                                                 </Badge>
                                                                                 <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                                                        <Clock className="h-3 w-3" />
+                                                                                        <Clock aria-hidden="true" className="h-3 w-3" />
                                                                                         {new Date(v.timestamp).toLocaleString()}
                                                                                 </span>
                                                                         </div>
                                                                         <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                                                                                <FileUp className="h-3 w-3" />
+                                                                                <FileUp aria-hidden="true" className="h-3 w-3" />
                                                                                 <span className="truncate">{v.source_file}</span>
-                                                                                <FileDown className="h-3 w-3 ml-1" />
+                                                                                <FileDown aria-hidden="true" className="h-3 w-3 ml-1" />
                                                                                 <span className="truncate">{v.target_file}</span>
                                                                         </div>
                                                                         <div className="mt-1 text-xs text-muted-foreground">
@@ -116,7 +116,7 @@ export function HistoryTimeline() {
                                                                         disabled={rollingBack === v.version_id}
                                                                         className="border-border text-foreground/90 hover:bg-card shrink-0"
                                                                 >
-                                                                        <RotateCcw className="h-3 w-3 mr-1" />
+                                                                        <RotateCcw aria-hidden="true" className="h-3 w-3 mr-1" />
                                                                         {rollingBack === v.version_id
                                                                                 ? "Rolling back..."
                                                                                 : "Rollback"}

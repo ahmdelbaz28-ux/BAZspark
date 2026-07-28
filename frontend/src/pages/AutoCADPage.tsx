@@ -29,7 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { autocadService } from "@/services/autocadService";
+import { autocadApi } from "@/services/fullApi";
 
 export function AutoCADPage() {
         const [connected, setConnected] = useState(false);
@@ -42,7 +42,7 @@ export function AutoCADPage() {
 
         const checkStatus = useCallback(async () => {
                 try {
-                        const s = await autocadService.getStatus();
+                        const s = await autocadApi.getStatus();
                         setStatus(s as Record<string, unknown>);
                         setConnected(true);
                         // V214: Check simulation_mode from status response
@@ -62,7 +62,7 @@ export function AutoCADPage() {
         const handleConnect = async () => {
                 setConnecting(true);
                 try {
-                        const result = await autocadService.connect(visible, forceNew);
+                        const result = await autocadApi.connect({ visible, force_new: forceNew });
                         // V214: Check simulation_mode from connect response
                         const sim = (result as Record<string, unknown>)?.simulation_mode;
                         if (sim) {
@@ -90,7 +90,7 @@ export function AutoCADPage() {
 
         const handleDisconnect = async () => {
                 try {
-                        await autocadService.disconnect();
+                        await autocadApi.disconnect();
                         toast.success("Disconnected from AutoCAD");
                         setConnected(false);
                         setSimulationMode(false);
@@ -108,7 +108,7 @@ export function AutoCADPage() {
                         return;
                 }
                 try {
-                        await autocadService.readDwg(filepath);
+                        await autocadApi.readDwg({ filepath });
                         toast.success(`Read ${filepath} successfully`);
                 } catch (err) {
                         toast.error(
@@ -118,7 +118,7 @@ export function AutoCADPage() {
         };
 
         const handleUpload = async (file: File) => {
-                await autocadService.uploadDwg(file);
+                await autocadApi.uploadDwg(file);
                 toast.success(`Uploaded ${file.name}`);
         };
 
@@ -141,11 +141,11 @@ export function AutoCADPage() {
                                 >
                                         {connected ? (
                                                 <>
-                                                        <Wifi className="h-3 w-3 mr-1" /> Connected
+                                                        <Wifi aria-hidden="true" className="h-3 w-3 mr-1" /> Connected
                                                 </>
                                         ) : (
                                                 <>
-                                                        <WifiOff className="h-3 w-3 mr-1" /> Disconnected
+                                                        <WifiOff aria-hidden="true" className="h-3 w-3 mr-1" /> Disconnected
                                                 </>
                                         )}
                                 </Badge>
@@ -158,7 +158,7 @@ export function AutoCADPage() {
                                         role="alert"
                                         aria-live="polite"
                                 >
-                                        <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                        <AlertTriangle aria-hidden="true" className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                                         <div className="space-y-1">
                                                 <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                                                         SIMULATION MODE — No real AutoCAD instance is connected
@@ -178,7 +178,7 @@ export function AutoCADPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 text-foreground">
-                                                        <Power className="h-5 w-5 text-primary" />
+                                                        <Power aria-hidden="true" className="h-5 w-5 text-primary" />
                                                         Connection
                                                 </CardTitle>
                                                 <CardDescription className="text-muted-foreground">
@@ -213,9 +213,9 @@ export function AutoCADPage() {
                                                                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
                                                         >
                                                                 {connecting ? (
-                                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                                        <Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
                                                                 ) : (
-                                                                        <Power className="h-4 w-4 mr-2" />
+                                                                        <Power aria-hidden="true" className="h-4 w-4 mr-2" />
                                                                 )}
                                                                 Connect
                                                         </Button>
@@ -224,7 +224,7 @@ export function AutoCADPage() {
                                                                 disabled={!connected}
                                                                 variant="destructive"
                                                         >
-                                                                <PowerOff className="h-4 w-4 mr-2" />
+                                                                <PowerOff aria-hidden="true" className="h-4 w-4 mr-2" />
                                                                 Disconnect
                                                         </Button>
                                                 </div>
@@ -234,7 +234,7 @@ export function AutoCADPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 text-foreground">
-                                                        <Activity className="h-5 w-5 text-primary" />
+                                                        <Activity aria-hidden="true" className="h-5 w-5 text-primary" />
                                                         Status
                                                 </CardTitle>
                                                 <CardDescription className="text-muted-foreground">
@@ -256,7 +256,7 @@ export function AutoCADPage() {
                         <Card className="border-border bg-card">
                                 <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-foreground">
-                                                <FileText className="h-5 w-5 text-primary" />
+                                                <FileText aria-hidden="true" className="h-5 w-5 text-primary" />
                                                 Read DWG File
                                         </CardTitle>
                                 </CardHeader>

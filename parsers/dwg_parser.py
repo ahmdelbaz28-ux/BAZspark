@@ -3,14 +3,6 @@
 """
 dwg_parser.py — FireAI DWG Parser
 SAFETY-CRITICAL: Reads DWG via multiple conversion tools.
-
-DEPENDENCY: Multiple conversion tools are supported:
-1. LibreDWG tools (dxf-out) - Open source, preferred
-2. Teigha File Converter - Commercial alternative
-3. ODA File Converter - Another commercial alternative
-
-If none available, attempts direct DXF parsing or returns error.
-Same security contract as parsers/ddc_adapter.py.
 """
 
 import logging
@@ -21,6 +13,7 @@ import tempfile
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+from parsers._base import ParserBase
 from parsers._path_security import (
     UnsafePathError,
     validate_file_size,
@@ -29,32 +22,10 @@ from parsers._path_security import (
 
 logger = logging.getLogger("fireai.dwg_parser")
 
-# supports DXF as a fast-path (see parse() — skips LibreDWG when input
-# is already DXF).
-_DWG_ALLOWED_EXTENSIONS = frozenset({".dwg", ".dxf"})
-
-# either malformed, malicious, or beyond the engineering scope of this
-# system (a fire alarm floor plan does not need 500 MB of geometry).
-# Configurable via env var for legitimate edge cases.
-_DWG_MAX_FILE_SIZE_BYTES = int(
-    os.getenv("FIREAI_DWG_MAX_FILE_SIZE_BYTES", str(100 * 1024 * 1024))  # 100 MB
-)
-
-
-# ═══════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
-# EXCEPTIONS
-# ═══════════════════════════════════════════════════════
-
 
 class DWGConversionError(Exception):
-    """Raised when DWG → DXF conversion fails."""
-
+    """Raised when DWG -> DXF conversion fails."""
     pass
-
-
-# ═══════════════════════════════════════════════════════
-# DATA CLASS
-# ═══════════════════════════════════════════════════════
 
 
 @dataclass
@@ -69,60 +40,40 @@ class DWGParseResult:
     warnings: List[str] = field(default_factory=list)
 
 
-# ═══════════════════════════════════════════════════════
-# DWG PARSER
-# ═══════════════════════════════════════════════════════
-
-
-class DWGParser:
+class DWGParser(ParserBase):
     """
     Parses DWG files via LibreDWG conversion.
-
-    USAGE:
-        parser = DWGParser()
-        result = parser.parse("building.dwg")
-
-        if result.success:
-            print(f"Found {result.room_count} rooms")
-
-    SAFETY NOTE:
-        extract_rooms_from_chaos() sanitizes NaN/infinite coordinates from
-        adversarial or corrupted input data.  Poisoned entities are silently
-        skipped so that downstream NFPA analysis never receives geometrically
-        invalid rooms — a safety-critical requirement per NFPA 72 §17.7.
     """
+
+    allowed_extensions = {'.dwg', '.dxf'}
+    max_file_size_bytes = int(os.getenv("FIREAI_DWG_MAX_FILE_SIZE_BYTES", 100 * 1024 * 1024))
 
     DXF_OUT_CMD = "dxf-out"
 
     def __init__(self):
-        """Initialize parser."""
         self._tool_checked = False
         self._tool_available = False
         self._active_converter = None
         self._available_converters = [
-            "dxf-out",      # LibreDWG - open source
-            "TeighaFileConverter",  # ODA commercial solution
-            "ODAFileConverter",     # Alternative commercial solution
+            "dxf-out",
+            "TeighaFileConverter",
+            "ODAFileConverter",
         ]
 
     def _check_tool(self) -> bool:
-        """Check if any DWG conversion tool is available."""
         if self._tool_checked:
             return self._tool_available
 
-        # Try each converter in order of preference
         for converter_cmd in self._available_converters:
             try:
-                result = subprocess.run(  # noqa: S603  # NOSONAR — S603 — command from known list, not user input
+                result = subprocess.run(
                     [converter_cmd, "--help"], capture_output=True, timeout=5
                 )
-                # Only consider the tool available if it exits with code 0
                 if result.returncode == 0:
                     self._tool_available = True
                     self._active_converter = converter_cmd
                     logger.info(f"DWG converter available: {converter_cmd}")
                     break
-                # Non-zero exit means the tool is not usable; try next.
                 continue
             except (FileNotFoundError, subprocess.TimeoutExpired):
                 continue
@@ -130,74 +81,21 @@ class DWGParser:
         self._tool_checked = True
         return self._tool_available
 
-    # ───────────────────────────────────────────────────────────────
-    # Chaos / adversarial input handler (safety-critical)
-    # ───────────────────────────────────────────────────────────────
-
     @staticmethod
     def _is_valid_coordinate(value) -> bool:
-        """Return True if *value* is a finite float (not NaN, not inf)."""
         try:
             f = float(value)
-            import math
-
             return math.isfinite(f)
         except (TypeError, ValueError):
             return False
 
     @staticmethod
-    def _assemble_closed_polygons(lines: list, tolerance: float = 0.01) -> list:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-        """
-        Chain LINE segments into closed polygons by matching endpoints.
-
-        This solves the classic DWG/DXF problem where walls are drawn as
-        separate LINE entities instead of closed polylines.  The algorithm
-        uses a spatial grid index for O(n) expected-time endpoint lookup,
-        then chains segments greedily and returns only closed loops.
-
-        Safety rationale
-        ----------------
-        Missing a room because its walls were drawn as LINEs (not polylines)
-        means zero fire protection for that space — potentially fatal per
-        Life-Safety Rule 5 (conservative interpretation).
-
-        Performance
-        -----------
-        V29 optimisation: replaced O(n²) brute-force scan with a grid-based
-        spatial index.  Each endpoint is binned into a grid cell of size
-        *tolerance*.  To find a neighbour within *tolerance* we only check
-        the 9 surrounding cells (3×3 Moore neighbourhood), giving O(1)
-        expected lookup and O(n) total expected runtime for well-separated
-        buildings.
-
-        Parameters
-        ----------
-        lines : list of ((sx, sy), (ex, ey))
-            Validated line segments with finite coordinates.
-        tolerance : float
-            Maximum distance (metres) to consider two endpoints coincident.
-
-        Returns
-        -------
-        list of list of (x, y)
-            Each inner list is a closed polygon's vertex sequence
-            (first vertex == last vertex NOT duplicated; closing
-            is implied by polyline_closed=True downstream).
-
-        """
+    def _assemble_closed_polygons(lines: list, tolerance: float = 0.01) -> list:
         if not lines:
             return []
 
         tol_sq = tolerance * tolerance
-
-        # ── Phase 1: Build spatial grid index ──
-        # Grid cell size = tolerance.  Each cell stores the line indices
-        # whose start or end point falls inside that cell.
         cell_size = tolerance
-        # We index BOTH endpoints of every line so we can find lines
-        # whose start or end is near a query point.
-        # grid_start[(cx,cy)] = set of line indices whose start is in cell (cx,cy)
-        # grid_end[(cx,cy)]   = set of line indices whose end is in cell (cx,cy)
         grid_start: dict = {}
         grid_end: dict = {}
 
@@ -209,28 +107,24 @@ class DWGParser:
             grid_start.setdefault(cs, set()).add(idx)
             grid_end.setdefault(ce, set()).add(idx)
 
-        consumed = set()  # indices of lines already used
+        consumed = set()
         closed_polygons = []
 
         def _find_neighbours(px: float, py: float) -> list:
-            """Return line indices whose start or end is within tolerance of (px,py)."""
             cx = math.floor(px / cell_size)
             cy = math.floor(py / cell_size)
             candidates = set()
             for dx in (-1, 0, 1):
                 for dy in (-1, 0, 1):
                     cell = (cx + dx, cy + dy)
-                    # Lines whose START is near
                     for i in grid_start.get(cell, ()):
                         if i not in consumed:
                             candidates.add(i)
-                    # Lines whose END is near
                     for i in grid_end.get(cell, ()):
                         if i not in consumed:
                             candidates.add(i)
             return list(candidates)
 
-        # ── Phase 2: Chain lines into polygons ──
         for seed_idx in range(len(lines)):
             if seed_idx in consumed:
                 continue
@@ -239,14 +133,12 @@ class DWGParser:
             chain_vertices = [start, end]
             consumed.add(seed_idx)
 
-            # Extend chain from both ends until no more connections
             changed = True
             while changed:
                 changed = False
                 head = chain_vertices[0]
                 tail = chain_vertices[-1]
 
-                # Try to extend from tail first
                 for idx in _find_neighbours(tail[0], tail[1]):
                     if idx in consumed:
                         continue
@@ -269,7 +161,6 @@ class DWGParser:
                 if changed:
                     continue
 
-                # Try to extend from head
                 for idx in _find_neighbours(head[0], head[1]):
                     if idx in consumed:
                         continue
@@ -289,7 +180,6 @@ class DWGParser:
                         changed = True
                         break
 
-            # Check if chain is closed (head ≈ tail)
             if len(chain_vertices) >= 3:
                 head = chain_vertices[0]
                 tail = chain_vertices[-1]
@@ -299,46 +189,11 @@ class DWGParser:
 
         return closed_polygons
 
-    def extract_rooms_from_chaos(self, doc) -> list:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-        """
-        Extract rooms from a potentially-corrupted or adversarial document.
-
-        This method is the **chaos-safe** entry point.  It iterates over
-        entities in ``doc.modelspace()``, skips any entity whose coordinates
-        contain NaN or ±Infinity, and returns a list of
-        :class:`core.models.UniversalElement` objects with clean geometry.
-
-        Parameters
-        ----------
-        doc : object
-            Any object with a ``modelspace()`` method that returns an
-            iterable of entity-like objects.  Each entity must have a
-            ``dxftype()`` method and a ``dxf`` attribute with start/end
-            coordinates for LINE entities, or appropriate attributes for
-            other entity types.
-
-        Returns
-        -------
-        list[UniversalElement]
-            Rooms extracted from valid (non-poisoned) entities only.
-            Entities with NaN / Inf coordinates are silently dropped so
-            that downstream NFPA analysis never receives invalid geometry.
-
-        Safety rationale
-        ----------------
-        A NaN coordinate in a room polygon would silently propagate
-        through Shapely operations, producing zero-area coverage results
-        that could allow a building to be signed off as "protected" when
-        it is not.  Rejecting poisoned data at the parser boundary is
-        the conservative (safer) choice per Life-Safety Rule 5.
-
-        """
-        # manipulation needed. The old code hacked sys.path to work around
-        # the missing core/models.py, which was fragile and unsafe.
+    def extract_rooms_from_chaos(self, doc) -> list:
         from core.models import Geometry, Point3D, UniversalElement
 
         rooms: list = []
-        valid_lines: list = []  # Collect LINE segments for polygon assembly
+        valid_lines: list = []
 
         try:
             modelspace = doc.modelspace()
@@ -353,7 +208,6 @@ class DWGParser:
                 continue
 
             if etype == "LINE":
-                # ── Validate start / end coordinates ──
                 try:
                     sx = float(entity.dxf.start.x)
                     sy = float(entity.dxf.start.y)
@@ -371,25 +225,16 @@ class DWGParser:
                 ):
                     logger.warning(
                         "extract_rooms_from_chaos: LINE with NaN/Inf coords "
-                        "(%.4g,%.4g)→(%.4g,%.4g) — poisoned entity dropped",
-                        sx,
-                        sy,
-                        ex,
-                        ey,
+                        "(%.4g,%.4g)->(%.4g,%.4g) — poisoned entity dropped",
+                        sx, sy, ex, ey,
                     )
                     continue
 
-                # Collect valid line segments for later polygon assembly.
-                # Individual LINE entities can form closed rooms when their
-                # endpoints chain together (common in DWG/DXF files where
-                # walls are drawn as separate LINE entities, not polylines).
                 valid_lines.append(((sx, sy), (ex, ey)))
 
             elif etype in ("LWPOLYLINE", "POLYLINE"):
-                # ── Validate polyline vertices ──
                 try:
                     vertices = []
-                    # LWPOLYLINE: entity.get_points() or iterate
                     if hasattr(entity, "get_points"):
                         raw_pts = entity.get_points()
                     elif hasattr(entity, "__iter__"):
@@ -407,14 +252,14 @@ class DWGParser:
 
                         if not (self._is_valid_coordinate(vx) and self._is_valid_coordinate(vy)):
                             logger.warning("extract_rooms_from_chaos: POLYLINE vertex NaN/Inf — entity dropped")
-                            vertices = []  # reject entire entity
+                            vertices = []
                             break
                         vertices.append((vx, vy))
 
                     if len(vertices) >= 3:
                         points_3d = [Point3D(x=vx, y=vy, z=0.0) for vx, vy in vertices]
                         geom = Geometry(points=points_3d, polyline_closed=True)
-                        geom.calculate_area()  # Must compute for downstream NFPA analysis
+                        geom.calculate_area()
                         room = UniversalElement(geometry=geom)
                         rooms.append(room)
 
@@ -422,62 +267,26 @@ class DWGParser:
                     logger.warning("extract_rooms_from_chaos: POLYLINE parse error: %s — skipped", exc)
                     continue
 
-            # Other entity types (CIRCLE, ARC, TEXT, etc.) are not rooms.
-            # They are silently ignored.
-
-        # ── Assemble closed polygons from LINE segments ──
-        # In many DWG/DXF files, walls are drawn as separate LINE entities
-        # rather than closed polylines.  We must chain their endpoints to
-        # discover rooms.  This is safety-critical: missing a room means
-        # zero fire protection for that space.
         if valid_lines:
             closed_chains = self._assemble_closed_polygons(valid_lines)
             for chain in closed_chains:
                 if len(chain) >= 3:
                     points_3d = [Point3D(x=vx, y=vy, z=0.0) for vx, vy in chain]
                     geom = Geometry(points=points_3d, polyline_closed=True)
-                    geom.calculate_area()  # Must compute for downstream NFPA analysis
+                    geom.calculate_area()
                     room = UniversalElement(geometry=geom)
                     rooms.append(room)
 
         return rooms
 
     def parse(self, dwg_path: str) -> DWGParseResult:
-        """
-        Parse DWG or DXF file to rooms with enhanced security.
-
-        Args:
-            dwg_path: Path to .dwg or .dxf file. MUST be under one of
-                the directories listed in FIREAI_ALLOWED_UPLOAD_DIRS
-                (defaults: /tmp, /var/tmp, /var/fireai/uploads) and MUST
-                have a .dwg or .dxf extension.
-
-        Returns:
-            DWGParseResult with room count. On security/validation
-            failure, returns a result with success=False and the
-            specific error in result.errors.
-
-        Raises:
-            (no longer raises directly — see Returns)
-        """
         import time
 
         start = time.monotonic()
-        result = DWGParseResult(source_file=dwg_path, success=False)  # noqa: F841
+        result = DWGParseResult(source_file=dwg_path, success=False)
 
-        # This catches argument injection, path traversal, null bytes,
-        # bad extensions, and paths outside FIREAI_ALLOWED_UPLOAD_DIRS.
         try:
-            safe_path = validate_input_path(
-                dwg_path,
-                allowed_extensions=_DWG_ALLOWED_EXTENSIONS,
-                parser_name="DWGParser",
-            )
-            validate_file_size(
-                safe_path,
-                max_size_bytes=_DWG_MAX_FILE_SIZE_BYTES,
-                parser_name="DWGParser",
-            )
+            safe_path = self.validate_input(dwg_path)
         except FileNotFoundError as e:
             result.errors.append(str(e))
             return result
@@ -486,34 +295,24 @@ class DWGParser:
             logger.warning("DWGParser rejected unsafe path: %s", e)
             return result
 
-        # Use the RESOLVED (canonical) path for all subsequent operations.
-        # This prevents TOCTOU between validation and subprocess call:
-        # even if the original `dwg_path` symlink changes after our check,
-        # we hand the subprocess the resolved target instead.
-        dwg_path = str(safe_path.resolve())
+        dwg_path = str(safe_path)
 
-        # parse directly with ezdxf. This handles the common case where
-        # tests create DXF files and pass them to DWGParser.
         if dwg_path.lower().endswith(".dxf"):
             return self._parse_dxf_directly(dwg_path, start)
 
-        # Step 1: Check LibreDWG
         if not self._check_tool():
             result.errors.append("LibreDWG not installed. Install with: sudo apt install libredwg-tools")
             return result
 
-        # Step 2: Convert DWG → DXF
         try:
             dxf_path = self._convert_to_dxf(dwg_path)
         except DWGConversionError as e:
             result.errors.append(str(e))
             return result
 
-        # Step 3: Parse DXF
         try:
             return self._parse_dxf_directly(dxf_path, start)
         finally:
-            # Clean up temp file
             if dxf_path != dwg_path:
                 try:
                     os.unlink(dxf_path)
@@ -521,13 +320,6 @@ class DWGParser:
                     logger.debug("Temp file cleanup failed: %s", exc)
 
     def _parse_dxf_directly(self, dxf_path: str, start_time: Optional[float] = None) -> DWGParseResult:
-        """
-        Parse DXF file directly using ezdxf without LibreDWG conversion.
-
-        V46: Extracted from parse() to support both DWG→DXF pipeline and
-        direct DXF input. Also provides extract_rooms_from_chaos() for
-        adversarial/chaotic input handling.
-        """
         import time
 
         if start_time is None:
@@ -537,12 +329,8 @@ class DWGParser:
 
         try:
             import ezdxf
-
             doc = ezdxf.readfile(dxf_path)
-
-            # Use chaos-safe extractor for robust room extraction
             rooms = self.extract_rooms_from_chaos(doc)
-
             result.room_count = len(rooms)
             result.success = len(rooms) > 0
         except Exception as e:
@@ -552,65 +340,23 @@ class DWGParser:
             result.conversion_time_s = round(time.monotonic() - start_time, 3)
         return result
 
-    # instead of parse(). Returns a list of UniversalElement objects
-    # (from extract_rooms_from_chaos) for backward compatibility with
-    # tests that expect list output.
-    #
-    # as parse() before calling ezdxf.readfile. ezdxf is robust against
-    # malformed DXF content, but the path-level checks (extension,
-    # allowed dirs, no null bytes, no leading dash) are still required.
     def parse_dwg(self, dwg_path: str) -> list:
-        """
-        Parse DWG/DXF file and return list of room elements.
-        Backward compatibility alias — returns list, not DWGParseResult.
-
-        Raises:
-            UnsafePathError: if the input path fails security validation
-            FileNotFoundError: if the file does not exist
-
-        """
-        # that a malicious path is rejected even on systems without
-        # ezdxf installed. Order matters — validation is the first line
-        # of defense and must not be gated on optional dependencies.
-        safe_path = validate_input_path(
-            dwg_path,
-            allowed_extensions=_DWG_ALLOWED_EXTENSIONS,
-            parser_name="DWGParser.parse_dwg",
-        )
-        validate_file_size(
-            safe_path,
-            max_size_bytes=_DWG_MAX_FILE_SIZE_BYTES,
-            parser_name="DWGParser.parse_dwg",
-        )
+        safe_path = self.validate_input(dwg_path)
 
         import ezdxf
         doc = ezdxf.readfile(str(safe_path))
         return self.extract_rooms_from_chaos(doc)
 
-    def _convert_to_dxf(self, dwg_path: str) -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-        """
-        Convert DWG to DXF using available converter.
-
-        Args:
-            dwg_path: Path to input DWG file
-
-        Returns:
-            Path to converted DXF file
-
-        Raises:
-            DWGConversionError: If conversion fails
-        """
-        # Security validation – enforce path safety before any external call.
+    def _convert_to_dxf(self, dwg_path: str) -> str:
         try:
             safe_path = validate_input_path(
                 dwg_path,
-                allowed_extensions=_DWG_ALLOWED_EXTENSIONS,
+                allowed_extensions=frozenset(self.allowed_extensions),
                 parser_name="DWGParser._convert_to_dxf",
             )
         except UnsafePathError as e:
-            # Convert to DWGConversionError with a SECURITY marker for tests.
             raise DWGConversionError(f"SECURITY: {e}") from e
-        # Note: conversion operates on the validated path.
+
         if not self._tool_available:
             from unittest.mock import Mock
             if isinstance(subprocess.run, Mock):
@@ -622,34 +368,29 @@ class DWGParser:
                     "libredwg-tools (sudo apt install libredwg-tools), "
                     "Teigha File Converter, or ODA File Converter"
                 )
-        # Use safe_path for subsequent operations.
+
         dwg_path = str(safe_path)
 
-        # Create temporary output file
         output_dir = os.path.dirname(dwg_path)
         base_name = os.path.splitext(os.path.basename(dwg_path))[0]
         dxf_path = os.path.join(output_dir, f"{base_name}_converted.dxf")
 
         try:
             if self._active_converter == "dxf-out":
-                # LibreDWG approach
                 cmd = ["dxf-out", dwg_path, dxf_path]
             elif self._active_converter in ["TeighaFileConverter", "ODAFileConverter"]:
-                # Teigha/ODA approach: Command format is different
-                # TeighaFileConverter input_dir output_dir version format recurse
                 temp_dir = tempfile.mkdtemp()
                 input_dir = os.path.dirname(dwg_path)
                 output_dir = temp_dir
                 cmd = [
                     self._active_converter,
-                    input_dir,  # input directory
-                    output_dir,  # output directory
-                    "ACAD2018",  # output version
-                    "DXF",  # output format
-                    "0"  # recurse (0 = no, 1 = yes)
+                    input_dir,
+                    output_dir,
+                    "ACAD2018",
+                    "DXF",
+                    "0"
                 ]
 
-                # Execute the conversion
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
                 if result.returncode != 0:
@@ -657,7 +398,6 @@ class DWGParser:
                         f"{self._active_converter} conversion failed: {result.stderr}"
                     )
 
-                # Find the converted DXF file in the output directory
                 import glob
                 dxf_files = glob.glob(os.path.join(output_dir, "*.dxf"))
                 if not dxf_files:
@@ -665,14 +405,12 @@ class DWGParser:
                         f"No DXF file found after {self._active_converter} conversion"
                     )
 
-                # Move the converted file to expected location
                 import shutil
                 shutil.move(dxf_files[0], dxf_path)
                 return dxf_path
             else:
                 raise DWGConversionError(f"Unsupported converter: {self._active_converter}")
 
-            # Execute the conversion command
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
             if result.returncode != 0:
@@ -688,10 +426,6 @@ class DWGParser:
             raise
         except Exception as e:
             raise DWGConversionError(f"DWG conversion failed: {str(e)}")
-
-# ═══════════════════════════════════════════════════════
-# CONVENIENCE FUNCTION
-# ═══════════════════════════════════════════════════════
 
 
 def parse_dwg(dwg_path: str) -> DWGParseResult:

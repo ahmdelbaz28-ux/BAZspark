@@ -81,7 +81,7 @@ export function SystemAnalyzer() {
                 <div className="p-4 space-y-4 h-full overflow-y-auto">
                         <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                                        <Activity className="text-blue-500" /> System Analyzer
+                                        <Activity aria-hidden="true" className="text-blue-500" /> System Analyzer
                                 </h2>
                                 <Button
                                         onClick={analyzeSystem}
@@ -94,7 +94,7 @@ export function SystemAnalyzer() {
 
                         {issues.length === 0 ? (
                                 <div className="text-center p-8 text-muted-foreground bg-muted/30 rounded-lg border border-dashed">
-                                        <CheckCircle className="mx-auto h-12 w-12 text-emerald-500 mb-2" />
+                                        <CheckCircle aria-hidden="true" className="mx-auto h-12 w-12 text-emerald-500 mb-2" />
                                         <p>No issues detected. System is healthy.</p>
                                 </div>
                         ) : (
@@ -131,7 +131,7 @@ export function SystemAnalyzer() {
                                                                                 size="sm"
                                                                                 className="mt-2 w-full text-xs h-8"
                                                                         >
-                                                                                <Wrench className="h-3 w-3 mr-1" /> Apply Auto-Fix
+                                                                                <Wrench aria-hidden="true" className="h-3 w-3 mr-1" /> Apply Auto-Fix
                                                                         </Button>
                                                                 </div>
                                                         </div>

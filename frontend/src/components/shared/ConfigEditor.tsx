@@ -105,14 +105,14 @@ export function ConfigEditor({
 						<div className="flex items-center gap-2">
 							{error ? (
 								<Badge variant="destructive" className="gap-1">
-									<AlertCircle className="h-3 w-3" /> Invalid JSON
+									<AlertCircle aria-hidden="true" className="h-3 w-3" /> Invalid JSON
 								</Badge>
 							) : (
 								<Badge
 									variant="outline"
 									className="border-emerald-600/30 text-success gap-1"
 								>
-									<CheckCircle2 className="h-3 w-3" /> Valid JSON
+									<CheckCircle2 aria-hidden="true" className="h-3 w-3" /> Valid JSON
 								</Badge>
 							)}
 							{hasChanges && (
@@ -141,12 +141,12 @@ export function ConfigEditor({
 						>
 							{saving ? (
 								<>
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-									Saving...
+									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+									Saving…
 								</>
 							) : (
 								<>
-									<Save className="h-4 w-4 mr-2" />
+									<Save aria-hidden="true" className="h-4 w-4 mr-2" />
 									Save Configuration
 								</>
 							)}

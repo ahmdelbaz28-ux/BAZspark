@@ -104,10 +104,10 @@ export function SelfHealingPage() {
 
         const cbStateIcon = (state: string) => {
                 if (state === "CLOSED")
-                        return <CheckCircle2 className="h-5 w-5 text-emerald-600" />;
+                        return <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-emerald-600" />;
                 if (state === "OPEN")
-                        return <AlertTriangle className="h-5 w-5 text-red-600" />;
-                return <Activity className="h-5 w-5 text-amber-500" />;
+                        return <AlertTriangle aria-hidden="true" className="h-5 w-5 text-red-600" />;
+                return <Activity aria-hidden="true" className="h-5 w-5 text-amber-500" />;
         };
 
 
@@ -115,7 +115,7 @@ export function SelfHealingPage() {
         if (loading && !health) {
                 return (
                         <div className="flex-1 flex items-center justify-center">
-                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-primary" />
                         </div>
                 );
         }
@@ -132,7 +132,7 @@ export function SelfHealingPage() {
                         <div className="flex items-center justify-between">
                                 <div>
                                         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                                                <Shield className="h-6 w-6 text-primary" />
+                                                <Shield aria-hidden="true" className="h-6 w-6 text-primary" />
                                                 Self-Healing Engine
                                         </h1>
                                         <p className="text-sm text-muted-foreground mt-1">
@@ -151,7 +151,7 @@ export function SelfHealingPage() {
                                                 </Label>
                                         </div>
                                         <Button variant="outline" size="sm" onClick={fetchAll}>
-                                                <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+                                                <RefreshCw aria-hidden="true" className="h-4 w-4 mr-1" /> Refresh
                                         </Button>
                                 </div>
                         </div>
@@ -187,7 +187,7 @@ export function SelfHealingPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                                        <Zap className="h-4 w-4 text-amber-500" />
+                                                        <Zap aria-hidden="true" className="h-4 w-4 text-amber-500" />
                                                         Circuit Breaker
                                                 </CardTitle>
                                         </CardHeader>
@@ -240,7 +240,7 @@ export function SelfHealingPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                                        <Activity className="h-4 w-4 text-blue-500" />
+                                                        <Activity aria-hidden="true" className="h-4 w-4 text-blue-500" />
                                                         LRU Cache (Last Known Good)
                                                 </CardTitle>
                                         </CardHeader>
@@ -284,7 +284,7 @@ export function SelfHealingPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                                        <Shield className="h-4 w-4 text-purple-500" />
+                                                        <Shield aria-hidden="true" className="h-4 w-4 text-purple-500" />
                                                         Audit Logger (HMAC-Signed)
                                                 </CardTitle>
                                         </CardHeader>
@@ -336,7 +336,7 @@ export function SelfHealingPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                                        <AlertTriangle className="h-4 w-4 text-orange-500" />
+                                                        <AlertTriangle aria-hidden="true" className="h-4 w-4 text-orange-500" />
                                                         LLM Rate Limiter
                                                 </CardTitle>
                                         </CardHeader>
@@ -371,7 +371,7 @@ export function SelfHealingPage() {
                         <Card className="border-border bg-card">
                                 <CardHeader>
                                         <CardTitle className="flex items-center gap-2">
-                                                <Shield className="h-5 w-5 text-primary" />
+                                                <Shield aria-hidden="true" className="h-5 w-5 text-primary" />
                                                 Engine Configuration
                                         </CardTitle>
                                         <CardDescription>
@@ -444,9 +444,9 @@ export function SelfHealingPage() {
                                                         className="bg-amber-600 hover:bg-amber-700 text-white"
                                                 >
                                                         {resetting ? (
-                                                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                                <Loader2 aria-hidden="true" className="h-4 w-4 mr-1 animate-spin" />
                                                         ) : (
-                                                                <RotateCcw className="h-4 w-4 mr-1" />
+                                                                <RotateCcw aria-hidden="true" className="h-4 w-4 mr-1" />
                                                         )}
                                                         Reset Circuit Breaker
                                                 </Button>
@@ -458,7 +458,7 @@ export function SelfHealingPage() {
                         <Card className="border-border bg-card">
                                 <CardHeader>
                                         <CardTitle className="flex items-center gap-2">
-                                                <Shield className="h-5 w-5 text-primary" />
+                                                <Shield aria-hidden="true" className="h-5 w-5 text-primary" />
                                                 Protected Computation Methods
                                         </CardTitle>
                                         <CardDescription>

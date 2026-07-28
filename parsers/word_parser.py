@@ -3,26 +3,18 @@
 """
 word_parser.py — FireAI Word Specification Parser
 Parses project specifications from Word documents.
-
-Extracts:
-    - Project title/identifier
-    - Floor information
-    - Ceiling specifications
-    - Special requirements/notes
 """
 
 import logging
-import os
 import re
 from dataclasses import dataclass, field
 from typing import Dict, List
 
+from parsers._base import ParserBase
+from parsers._path_security import UnsafePathError
+
 logger = logging.getLogger("fireai.word_parser")
 
-
-# ═══════════════════════════════════════════════════════
-# DATA CLASS
-# ═══════════════════════════════════════════════════════
 
 @dataclass
 class WordParseResult:
@@ -40,24 +32,14 @@ class WordParseResult:
     errors: List[str] = field(default_factory=list)
 
 
-# ═══════════════════════════════════════════════════════
-# WORD PARSER
-# ═══════════════════════════════════════════════════════
-
-class WordParser:
+class WordParser(ParserBase):
     """
     Parses Word documents for project specifications.
-
-    USAGE:
-        parser = WordParser()
-        result = parser.parse("project_specs.docx")
-
-        if result.success:
-            print(f"Project: {result.project_name}")
-            print(f"Floor: {result.floor}")
     """
 
-    # Patterns for extraction
+    allowed_extensions = {'.docx'}
+    max_file_size_bytes = int(os.getenv("FIREAI_WORD_MAX_FILE_SIZE_BYTES", 25 * 1024 * 1024))
+
     FLOOR_PATTERNS = [
         r'floor\s*(\d+)',
         r'level\s*(\d+)',
@@ -84,41 +66,11 @@ class WordParser:
     ]
 
     def __init__(self):
-        # Explicit no-op constructor — class is stateless, patterns are
-        # class-level constants. Constructor exists for consistent
-        # instantiation API across all parsers in this package.
-        pass  # NOSONAR — S1186: intentional no-op stateless constructor
+        pass
 
     def parse(self, file_path: str) -> WordParseResult:
-        """
-        Parse Word document.
-
-        Args:
-            file_path: Path to .docx file. MUST be under
-                FIREAI_ALLOWED_UPLOAD_DIRS (V124 security hardening).
-
-        Returns:
-            WordParseResult with extracted info
-
-        """
-        from parsers._path_security import (
-            UnsafePathError,
-            validate_file_size,
-            validate_input_path,
-        )
-        _ALLOWED_EXTENSIONS = frozenset({".docx", ".doc"})
-        _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_WORD_MAX_FILE_SIZE_BYTES", 25 * 1024 * 1024))  # 25 MB default
         try:
-            safe_path = validate_input_path(
-                file_path,
-                allowed_extensions=_ALLOWED_EXTENSIONS,
-                parser_name="WordParser",
-            )
-            validate_file_size(
-                safe_path,
-                max_size_bytes=_MAX_FILE_SIZE_BYTES,
-                parser_name="WordParser",
-            )
+            safe_path = self.validate_input(file_path)
         except FileNotFoundError as e:
             return WordParseResult(source_file=file_path, success=False, errors=[str(e)])
         except UnsafePathError as e:
@@ -132,24 +84,14 @@ class WordParser:
 
             doc = Document(str(safe_path))
 
-            # Extract from all paragraphs
             all_text = '\n'.join(p.text for p in doc.paragraphs)
 
-            # Extract title (first heading)
             result.title = self._extract_title(doc.paragraphs)
-
-            # Extract project info
             result.project_name = self._extract_project_name(all_text)
             result.floor = self._extract_floor(all_text)
             result.building = self._extract_building(all_text)
-
-            # Extract ceiling specs
             result.ceiling_specs = self._extract_ceiling_specs(all_text)
-
-            # Extract requirements
             result.requirements = self._extract_requirements(doc.paragraphs)
-
-            # Extract notes
             result.notes = self._extract_notes(doc.paragraphs)
 
             result.success = bool(result.title or result.project_name or result.floor)
@@ -162,15 +104,12 @@ class WordParser:
         return result
 
     def _extract_title(self, paragraphs) -> str:
-        """Extract title from first heading."""
         for para in paragraphs:
             if para.style.name.startswith('Heading'):
                 return para.text.strip()
         return ""
 
     def _extract_project_name(self, text: str) -> str:
-        """Extract project/building name."""
-        # Look for project patterns
         patterns = [
             r'Project[:\s]*([^\n]+)',
             r'Building[:\s]*([^\n]+)',
@@ -185,7 +124,6 @@ class WordParser:
         return ""
 
     def _extract_floor(self, text: str) -> str:
-        """Extract floor number."""
         for pattern in self.FLOOR_PATTERNS:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
@@ -193,7 +131,6 @@ class WordParser:
         return ""
 
     def _extract_building(self, text: str) -> str:
-        """Extract building/block identifier."""
         for pattern in self.BUILDING_PATTERNS:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
@@ -201,7 +138,6 @@ class WordParser:
         return ""
 
     def _extract_ceiling_specs(self, text: str) -> List[Dict]:
-        """Extract ceiling specifications."""
         specs = []
 
         for pattern in self.CEILING_PATTERNS:
@@ -219,17 +155,14 @@ class WordParser:
         return specs
 
     def _extract_requirements(self, paragraphs) -> List[str]:
-        """Extract requirement bullets."""
         requirements = []
 
         for para in paragraphs:
             text = para.text.strip()
 
-            # Check for bullet points
-            if text.startswith('•') or text.startswith('- ') or text.startswith('* '):  # NOSONAR — S8513: trailing comma acceptable in this multi-line collection
+            if text.startswith('•') or text.startswith('- ') or text.startswith('* '):
                 clean_text = text.lstrip('•-* ').strip()
 
-                # Filter relevant requirements
                 if any(kw in clean_text.lower() for kw in [
                     'detector', 'alarm', 'fire', 'sprinkler',
                     'system', 'zone', 'coverage', 'code'
@@ -239,14 +172,12 @@ class WordParser:
         return requirements
 
     def _extract_notes(self, paragraphs) -> List[str]:
-        """Extract notes section."""
         notes = []
         in_notes = False
 
         for para in paragraphs:
             text = para.text.strip()
 
-            # Check for notes section
             if 'note' in text.lower() and len(text) < 20:
                 in_notes = True
                 continue
@@ -254,12 +185,8 @@ class WordParser:
             if in_notes and text:
                 notes.append(text)
 
-        return notes[:10]  # Limit to 10 notes
+        return notes[:10]
 
-
-# ═══════════════════════════════════════════════════════
-# CONVENIENCE FUNCTION
-# ═══════════════════════════════════════════════════════
 
 def parse_word(file_path: str) -> WordParseResult:
     """Quick parse Word file."""

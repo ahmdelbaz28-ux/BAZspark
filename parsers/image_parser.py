@@ -3,14 +3,6 @@
 """
 image_parser.py — FireAI Image Floor Plan Parser
 Parses floor plans from images (JPG, PNG, etc.) using Computer Vision.
-
-Features:
-    - Room detection via OpenCV contours
-    - OCR for room names with Tesseract
-    - Auto room classification
-    - Scale calibration
-
-Supported formats: JPEG, PNG, BMP, TIFF, GIF, WebP, HEIC
 """
 
 from __future__ import annotations
@@ -21,33 +13,20 @@ import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-# imported at module top-level. This crashed the entire module on systems
-# without opencv-python installed, even though path-security validation
-# (the first stage of parse()) does NOT require cv2. Tests
-# `test_parsers_security_v125.py::TestImageParserSecurity` only exercise
-# path validation, so they should pass without OpenCV.
-#
-# Root-cause fix: lazy-import cv2/numpy inside the methods that actually
-# need them. The ImageParser class can be instantiated and path-security
-# checks run successfully without OpenCV. Real image decoding raises a
-# clear ImportError if cv2 is missing — no silent failure.
-#
-# To enable full image-parsing functionality, install the parsing extras:
-#   pip install -e ".[parsing]"
-# or directly:
-#   pip install opencv-python numpy
-cv2 = None  # type: ignore[assignment]
-np = None   # type: ignore[assignment]
+from parsers._base import ParserBase
+from parsers._path_security import UnsafePathError
+
+cv2 = None
+np = None
 
 logger = logging.getLogger("fireai.image_parser")
 
 
 def _lazy_import_cv2():
-    """Lazily import cv2 and numpy on first actual use."""
     global cv2, np
     if cv2 is None:
         try:
-            import cv2 as _cv2  # type: ignore
+            import cv2 as _cv2
             import numpy as _np
             cv2 = _cv2
             np = _np
@@ -59,10 +38,6 @@ def _lazy_import_cv2():
             ) from e
     return cv2, np
 
-
-# ═══════════════════════════════════════════════════════
-# DATA CLASSES
-# ═══════════════════════════════════════════════════════
 
 @dataclass
 class ImageRoom:
@@ -98,10 +73,6 @@ class ImageParseResult:
     warnings: List[str] = field(default_factory=list)
 
 
-# ═══════════════════════════════════════════════════════
-# ROOM CLASSIFIER
-# ═══════════════════════════════════════════════════════
-
 ROOM_KEYWORDS = {
     "office": ["office", "مكتب", "مكتبه", "Administration"],
     "bedroom": ["bedroom", "bed room", "bedroom", "Sleeping", "bed", "غرفه نوم"],
@@ -128,82 +99,37 @@ def classify_room(text: str) -> str:
     return "unknown"
 
 
-# ═══════════════════════════════════════════════════════
-# IMAGE PARSER
-# ═══════════════════════════════════════════════════════
-
-class ImageParser:
+class ImageParser(ParserBase):
     """
     Parses floor plans from images.
-
-    USAGE:
-        parser = ImageParser(scale_factor=0.1)  # 10cm/pixel
-        result = parser.parse("floor_plan.jpg")
-
-        if result.success:
-            print(f"Found {result.room_count} rooms")
     """
+
+    allowed_extensions = {'.png', '.jpg', '.jpeg', '.tiff', '.bmp'}
+    max_file_size_bytes = int(os.getenv("FIREAI_IMAGE_MAX_FILE_SIZE_BYTES", 50 * 1024 * 1024))
 
     SUPPORTED_FORMATS = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.gif', '.webp', '.heic', '.heif']
 
-    # Room classification thresholds
-    MIN_ROOM_SIZE = 20  # pixels
-    MAX_ROOM_SIZE = 100000  # pixels
+    MIN_ROOM_SIZE = 20
+    MAX_ROOM_SIZE = 100000
 
     def __init__(self, scale_factor: float = 0.1):
-        """
-        Args:
-        scale_factor: Meters per pixel (default 0.1 = 10cm/pixel)
-
-        """
         self.scale_factor = scale_factor
 
     def set_scale(self, known_distance_m: float, known_pixels: int):
-        """Calibrate scale using known distance."""
         self.scale_factor = known_distance_m / known_pixels if known_pixels > 0 else 0.1
 
     def parse(self, image_path: str) -> ImageParseResult:
-        """
-        Parse image to rooms.
-
-        Args:
-            image_path: Path to image file. MUST be under
-                FIREAI_ALLOWED_UPLOAD_DIRS and have a supported extension
-                (V124 security hardening).
-
-        Returns:
-            ImageParseResult with detected rooms
-
-        """
-        from parsers._path_security import (
-            UnsafePathError,
-            validate_file_size,
-            validate_input_path,
-        )
-        _ALLOWED_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif", ".webp"})
-        _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_IMAGE_MAX_FILE_SIZE_BYTES", 50 * 1024 * 1024))  # 50 MB default
         try:
-            safe_path = validate_input_path(
-                image_path,
-                allowed_extensions=_ALLOWED_EXTENSIONS,
-                parser_name="ImageParser",
-            )
-            validate_file_size(
-                safe_path,
-                max_size_bytes=_MAX_FILE_SIZE_BYTES,
-                parser_name="ImageParser",
-            )
+            safe_path = self.validate_input(image_path)
         except FileNotFoundError as e:
             return ImageParseResult(source_file=image_path, success=False, errors=[str(e)])
         except UnsafePathError as e:
             return ImageParseResult(source_file=image_path, success=False, errors=[f"SECURITY: {e}"])
 
         image_path = str(safe_path)
-        safe_path.suffix.lower()  # NOSONAR: S2201 return value intentionally unused  # NOSONAR — S7632: test function documented via class name / module path
         result = ImageParseResult(source_file=image_path, success=False)
 
         try:
-            # Load image
             img = self._load_image(str(safe_path))
             if img is None:
                 result.errors.append("Failed to load image")
@@ -221,18 +147,14 @@ class ImageParser:
                 logger.info("YOLO segmentation: found %d rooms", result.room_count)
                 return result
 
-            # Fall back to OpenCV contour detection
-            # Preprocess
             _gray, edges = self._preprocess(img)
 
-            # Find contours (potential rooms)
             contours = self._find_contours(edges)
             logger.info("OpenCV: found %s potential regions", len(contours))
 
-            # Process each contour
             for contour in contours:
-                room = self._process_contour(contour, img, result.image_size)  # NOSONAR - python:S930
-                if room and room.floor_area > 2.0:  # Min 2m²
+                room = self._process_contour(contour, img, result.image_size)
+                if room and room.floor_area > 2.0:
                     result.rooms.append(room)
 
             result.room_count = len(result.rooms)
@@ -245,9 +167,7 @@ class ImageParser:
         return result
 
     def _load_image(self, path: str):
-        """Load image handling different formats."""
-        _lazy_import_cv2()  # V140: lazy import — raises clear error if cv2 missing
-        # Try HEIC first
+        _lazy_import_cv2()
         if path.lower().endswith(('.heic', '.heif')):
             try:
                 import pillow_heif
@@ -257,21 +177,15 @@ class ImageParser:
             except ImportError:
                 pass
 
-        # Regular image
         return cv2.imread(path)
 
-    def _try_yolo_segmentation(self, image_path: str, _image_size: tuple) -> list:  # NOSONAR — S1172: parameter retained for API stability
-        """
-        V140 Phase 10: Try YOLO segmentation service for layout analysis.
-        Returns list of ImageRoom if successful, empty list if unavailable.
-        """
+    def _try_yolo_segmentation(self, image_path: str, _image_size: tuple) -> list:
         try:
             from fireai.integration.document_intelligence import is_yolo_available, segment_image
 
             if not is_yolo_available():
                 return []
 
-            # Read image file as bytes
             with open(image_path, "rb") as f:
                 image_bytes = f.read()
 
@@ -279,16 +193,12 @@ class ImageParser:
             if not seg_results or len(seg_results) == 0:
                 return []
 
-            # Convert YOLO segments to ImageRoom objects
             rooms = []
             for seg in seg_results:
                 for segment in seg.segments:
-                    # Only treat "figure" and "text" segments as potential rooms
-                    # (YOLO detects layout elements, not architectural rooms directly,
-                    # but figure/text blocks often correspond to room boundaries)
                     if segment.segment_type in ("figure", "text", "abandon"):
                         left, top, width, height = segment.bbox
-                        if width > 20 and height > 20:  # Min 20px
+                        if width > 20 and height > 20:
                             x = left + width / 2
                             y = top + height / 2
                             area_px = width * height
@@ -311,55 +221,38 @@ class ImageParser:
             return []
 
     def _preprocess(self, img) -> Tuple[np.ndarray, np.ndarray]:
-        """Preprocess image for contour detection."""
-        _lazy_import_cv2()  # V140: lazy import
-        # Convert to grayscale
+        _lazy_import_cv2()
         if len(img.shape) == 3:
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         else:
             gray = img
 
-        # Apply Gaussian blur
         gray = cv2.GaussianBlur(gray, (5, 5), 0)
-
-        # Edge detection
         edges = cv2.Canny(gray, 50, 150)
-
-        # Dilate to close gaps
         kernel = np.ones((3, 3), np.uint8)
         edges = cv2.dilate(edges, kernel, iterations=2)
 
         return gray, edges
 
     def _find_contours(self, edges) -> List:
-        """Find contours in edge image."""
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # Filter by area
         valid = []
         for c in contours:
             area = cv2.contourArea(c)
             if self.MIN_ROOM_SIZE < area < self.MAX_ROOM_SIZE:
                 valid.append(c)
 
-        # Sort by area (largest first)
         valid.sort(key=cv2.contourArea, reverse=True)
+        return valid[:20]
 
-        return valid[:20]  # Max 20 rooms
-
-    def _process_contour(self, contour, img, image_size=None) -> Optional[ImageRoom]:  # NOSONAR — S1172: parameter retained for API stability
-        """Process contour to extract room info."""
-        # Get bounding box
+    def _process_contour(self, contour, img, image_size=None) -> Optional[ImageRoom]:
         x, y, w, h = cv2.boundingRect(contour)
 
-        # Calculate real dimensions
         width_m = w * self.scale_factor
         height_m = h * self.scale_factor
 
-        # Try to extract text (room name)
         room_name = self._extract_room_name(img, x, y, w, h)
-
-        # Classify room type
         room_type = classify_room(room_name)
 
         return ImageRoom(
@@ -371,14 +264,11 @@ class ImageParser:
         )
 
     def _extract_room_name(self, img, x: int, y: int, w: int, h: int) -> str:
-        """Extract room name using OCR."""
         try:
-
-            _lazy_import_cv2()  # V140: lazy import — needed for cvtColor below
+            _lazy_import_cv2()
             import pytesseract
             os.environ['TESSDATA_PREFIX'] = '/usr/share/tesseract-ocr'
 
-            # Crop region
             margin = 10
             x1 = max(0, x - margin)
             y1 = max(0, y - margin)
@@ -387,32 +277,25 @@ class ImageParser:
 
             roi = img[y1:y2, x1:x2]
 
-            # Convert to grayscale
             if len(roi.shape) == 3:
                 roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
             else:
                 roi_gray = roi
 
-            # OCR
             text = pytesseract.image_to_string(
                 roi_gray,
                 config='--tessdata-dir /usr/share/tesseract-ocr/5/tessdata'
             )
 
-            # Clean text
             text = text.strip()
             text = re.sub(r'[^\w\s]', '', text)
 
-            return text[:50]  # Limit length
+            return text[:50]
 
         except Exception as e:
             logger.debug("OCR failed: %s", e)
             return ""
 
-
-# ═══════════════════════════════════════════════════════
-# CONVENIENCE FUNCTION
-# ═══════════════════════════════════════════════════════
 
 def parse_image(image_path: str, scale_factor: float = 0.1) -> ImageParseResult:
     """Quick parse image."""

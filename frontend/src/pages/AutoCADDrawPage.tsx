@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { autocadService } from "@/services/autocadService";
+import { autocadApi } from "@/services/fullApi";
 
 export function AutoCADDrawPage() {
 	const [drawing, setDrawing] = useState(false);
@@ -50,11 +50,11 @@ export function AutoCADDrawPage() {
 	const drawLine = async () => {
 		setDrawing(true);
 		try {
-			await autocadService.drawLine(
-				parsePoint(lineStart),
-				parsePoint(lineEnd),
-				lineLayer || undefined,
-			);
+			await autocadApi.drawLine({
+				start_point: parsePoint(lineStart),
+				end_point: parsePoint(lineEnd),
+				layer: lineLayer || undefined,
+			});
 			toast.success("Line drawn");
 		} catch (err) {
 			toast.error(
@@ -69,7 +69,7 @@ export function AutoCADDrawPage() {
 		setDrawing(true);
 		try {
 			const points = polyPoints.split(";").map((p) => parsePoint(p.trim()));
-			await autocadService.drawPolyline(points, polyLayer || undefined);
+			await autocadApi.drawPolyline({ vertices: points, layer: polyLayer || undefined });
 			toast.success("Polyline drawn");
 		} catch (err) {
 			toast.error(
@@ -83,11 +83,11 @@ export function AutoCADDrawPage() {
 	const drawCircle = async () => {
 		setDrawing(true);
 		try {
-			await autocadService.drawCircle(
-				parsePoint(circleCenter),
-				Number.parseFloat(circleRadius),
-				circleLayer || undefined,
-			);
+			await autocadApi.drawCircle({
+				center: parsePoint(circleCenter),
+				radius: Number.parseFloat(circleRadius),
+				layer: circleLayer || undefined,
+			});
 			toast.success("Circle drawn");
 		} catch (err) {
 			toast.error(
@@ -101,12 +101,12 @@ export function AutoCADDrawPage() {
 	const drawText = async () => {
 		setDrawing(true);
 		try {
-			await autocadService.drawText(
-				parsePoint(textPoint),
-				textContent,
-				Number.parseFloat(textHeight),
-				textLayer || undefined,
-			);
+			await autocadApi.drawText({
+				text: textContent,
+				insertion_point: parsePoint(textPoint),
+				height: Number.parseFloat(textHeight),
+				layer: textLayer || undefined,
+			});
 			toast.success("Text drawn");
 		} catch (err) {
 			toast.error(
@@ -134,25 +134,25 @@ export function AutoCADDrawPage() {
 						value="line"
 						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
-						<Minus className="h-4 w-4 mr-1" /> Line
+						<Minus aria-hidden="true" className="h-4 w-4 mr-1" /> Line
 					</TabsTrigger>
 					<TabsTrigger
 						value="polyline"
 						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
-						<Spline className="h-4 w-4 mr-1" /> Polyline
+						<Spline aria-hidden="true" className="h-4 w-4 mr-1" /> Polyline
 					</TabsTrigger>
 					<TabsTrigger
 						value="circle"
 						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
-						<Circle className="h-4 w-4 mr-1" /> Circle
+						<Circle aria-hidden="true" className="h-4 w-4 mr-1" /> Circle
 					</TabsTrigger>
 					<TabsTrigger
 						value="text"
 						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
-						<Type className="h-4 w-4 mr-1" /> Text
+						<Type aria-hidden="true" className="h-4 w-4 mr-1" /> Text
 					</TabsTrigger>
 				</TabsList>
 
@@ -200,9 +200,9 @@ export function AutoCADDrawPage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{drawing ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
 								) : (
-									<Minus className="h-4 w-4 mr-2" />
+									<Minus aria-hidden="true" className="h-4 w-4 mr-2" />
 								)}
 								Draw Line
 							</Button>
@@ -245,9 +245,9 @@ export function AutoCADDrawPage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{drawing ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
 								) : (
-									<Spline className="h-4 w-4 mr-2" />
+									<Spline aria-hidden="true" className="h-4 w-4 mr-2" />
 								)}
 								Draw Polyline
 							</Button>
@@ -299,9 +299,9 @@ export function AutoCADDrawPage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{drawing ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
 								) : (
-									<Circle className="h-4 w-4 mr-2" />
+									<Circle aria-hidden="true" className="h-4 w-4 mr-2" />
 								)}
 								Draw Circle
 							</Button>
@@ -364,9 +364,9 @@ export function AutoCADDrawPage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{drawing ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
 								) : (
-									<Type className="h-4 w-4 mr-2" />
+									<Type aria-hidden="true" className="h-4 w-4 mr-2" />
 								)}
 								Draw Text
 							</Button>

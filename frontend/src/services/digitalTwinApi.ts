@@ -12,17 +12,9 @@
  * Supports retry logic, timeouts, and WebSocket real-time subscription
  */
 
-import { getApiKey as getApiKeyShared } from "./apiKey";
-// V193 (R5): CSRF token support for state-changing requests
-import {
-        CSRF_HEADER_NAME,
-        getCachedCsrfToken,
-} from "./csrf";
+import { ApiClient as BaseApiClient } from "./apiClient";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api/v1";
-const API_TIMEOUT = 15000;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000;
 
 export interface ApiResponse<T = unknown> {
         success: boolean;
@@ -51,148 +43,50 @@ export interface PaginatedResponse<T> {
 // API CLIENT
 // ============================================================================
 
-class ApiClient {
-        private readonly baseUrl: string;
-        private defaultHeaders: Record<string, string>;  // NOSONAR: typescript:S2933
+class DigitalTwinApiClient extends BaseApiClient {
         private wsConnection: WebSocket | null = null;
         private readonly wsCallbacks: Map<string, Set<(data: unknown) => void>> = new Map();
         private reconnectAttempts = 0;
         private readonly maxReconnectAttempts = 5;
         private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+        private authToken: string | null = null;
 
         constructor(baseUrl?: string) {
-                this.baseUrl = baseUrl || API_BASE_URL;
-                this.defaultHeaders = {
-                        "Content-Type": "application/json",
+                super(baseUrl || API_BASE_URL);
+        }
+
+        protected getDefaultHeaders(): Record<string, string> {
+                const headers: Record<string, string> = {
+                        ...super.getDefaultHeaders(),
                         "X-Client-Version": import.meta.env.VITE_APP_VERSION || "1.0.0",
                 };
+                if (this.authToken) {
+                        headers.Authorization = `Bearer ${this.authToken}`;
+                }
+                return headers;
         }
 
         setAuthToken(token: string): void {
-                this.defaultHeaders.Authorization = `Bearer ${token}`;
+                this.authToken = token;
         }
 
         clearAuthToken(): void {
-                delete this.defaultHeaders.Authorization;
+                this.authToken = null;
         }
 
-        private async fetchWithRetry<T>(
-                url: string,
-                options: RequestInit,
-                retries: number = MAX_RETRIES,
-        ): Promise<ApiResponse<T>> {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+        // ========================================================================
+        // HTTP METHODS — wrap base class results in ApiResponse<T> for backward compat
+        // ========================================================================
 
-                // If the caller provides an AbortSignal, link it to our controller
-                // so that external cancellation also aborts the request.
-                const externalSignal = options.signal;
-                if (externalSignal) {
-                        if (externalSignal.aborted) {
-                                controller.abort();
-                        } else {
-                                externalSignal.addEventListener("abort", () => controller.abort(), {
-                                        once: true,
-                                });
-                        }
-                }
-
+        private async wrapResult<T>(promise: Promise<T>): Promise<ApiResponse<T>> {
                 try {
-                        // V176 FIX: Inject X-API-Key header on every request (not just fetchBlob).
-                        // Previously, fetchWithRetry only sent defaultHeaders (Content-Type + X-Client-Version)
-                        // without the API key. This caused ALL GET/POST/PUT/DELETE requests to return
-                        // HTTP 401 from the backend (which requires X-API-Key on all /projects, /devices,
-                        // /connections, /reports endpoints). Only fetchBlob() injected the key — but
-                        // fetchBlob is only used for export endpoints. The main data-fetching path
-                        // (get/post/put/delete → fetchWithRetry) was silently unauthenticated.
-                        //
-                        // Symptoms: Dashboard cards showed "0" for all stats, Projects page showed
-                        // "No projects found" with error text, Elements/Connections pages were empty.
-                        // The pages LOOKED dimmed/empty because the loading skeletons never resolved
-                        // to real data (every API call failed with 401, which fetchWithRetry treated
-                        // as an error and returned success:false with no data).
-                        // V183 FIX: Type-safe header merge.
-                        // options.headers can be Headers | string[][] | Record<string,string> | undefined.
-                        // Spread directly into a Record<string,string> is unsafe (Headers has numeric
-                        // length, array methods, etc.). Convert to plain object first.
-                        const callerHeaders: Record<string, string> = {};
-                        if (options.headers) {
-                                if (options.headers instanceof Headers) {
-                                        options.headers.forEach((value: string, key: string) => {
-                                                callerHeaders[key] = value;
-                                        });
-                                } else if (Array.isArray(options.headers)) {
-                                        for (const [k, v] of options.headers) {
-                                                callerHeaders[k] = v;
-                                        }
-                                } else {
-                                        Object.assign(callerHeaders, options.headers);
-                                }
-                        }
-                        const authHeaders: Record<string, string> = {
-                                ...this.defaultHeaders,
-                                ...callerHeaders,
-                        };
-                        const apiKey = this.getApiKey();
-                        if (apiKey) {
-                                authHeaders["X-API-Key"] = apiKey;
-                        }
-                        // V193 (R5): Inject CSRF token on state-changing requests
-                        const method = (options.method || "GET").toUpperCase();
-                        if (["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
-                                const csrfToken = getCachedCsrfToken();
-                                if (csrfToken) {
-                                        authHeaders[CSRF_HEADER_NAME] = csrfToken;
-                                }
-                        }
-
-                        const response = await fetch(url, {
-                                ...options,
-                                headers: authHeaders,
-                                signal: controller.signal,
-                                // M-3: Send cookies (HttpOnly session) with same-origin requests
-                                credentials: "same-origin",
-                        });
-
-                        clearTimeout(timeoutId);
-
-                        const data = await response.json().catch(() => null);
-
-                        if (!response.ok) {
-                                throw new Error(
-                                        data?.error || data?.detail || `HTTP ${response.status}`,
-                                );
-                        }
-
-                        // ── UNWRAPPING CONTRACT ─────────────────────────────────────────
-                        // Backend always returns: { success: true, data: <payload> }
-                        // For paginated responses, <payload> = { data: T[], total, page, ... }
-                        // For single items, <payload> = { id, name, ... }
-                        //
-                        // We extract <payload> from the outer wrapper here, so the hooks
-                        // in useApi.ts receive it as `res.data`:
-                        //   - Paginated: res.data = { data: T[], total, page, ... } → res.data.data = T[]
-                        //   - Single:    res.data = { id, name, ... }
-                        //
-                        // IMPORTANT: Hooks access res.data (the payload), not the raw JSON.
-                        // For paginated endpoints, hooks further access res.data.data for the array.
-                        // ────────────────────────────────────────────────────────────────
-                        const payload = data?.data !== undefined ? data.data : data;
-
+                        const data = await promise;
                         return {
-                                success: data?.success ?? true,
-                                data: payload as T,
-                                message: data?.message,
+                                success: true,
+                                data: data as T,
                                 timestamp: new Date().toISOString(),
                         };
                 } catch (error) {
-                        clearTimeout(timeoutId);
-
-                        if (retries > 0 && this.isRetryableError(error)) {
-                                await this.delay(RETRY_DELAY * (MAX_RETRIES - retries + 1));
-                                return this.fetchWithRetry<T>(url, options, retries - 1);
-                        }
-
                         return {
                                 success: false,
                                 error: error instanceof Error ? error.message : "Unknown error",
@@ -201,81 +95,9 @@ class ApiClient {
                 }
         }
 
-        private isRetryableError(error: unknown): boolean {
-                // Don't retry timeout errors (AbortError) — saves user from 45s wait
-                if (error instanceof DOMException && error.name === "AbortError")
-                        return false;
-                // Retry network failures (TypeError from fetch)
-                if (error instanceof TypeError) return true;
-                return false;
-        }
-
-        private delay(ms: number): Promise<void> {
-                return new Promise((resolve) => setTimeout(resolve, ms));
-        }
-
-        // ============================================================================
-        // HTTP METHODS
-        // ============================================================================
-
-        async get<T>(
-                path: string,
-                params?: Record<string, string>,
-        ): Promise<ApiResponse<T>> {
-                // Build URL manually — new URL() crashes with relative base like "/api"
-                let url = path.startsWith("http") ? path : this.baseUrl + path;
-                if (params) {
-                        const sep = url.includes("?") ? "&" : "?";
-                        const qs = Object.entries(params)
-                                .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-                                .join("&");
-                        url += sep + qs;
-                }
-                return this.fetchWithRetry<T>(url, { method: "GET" });
-        }
-
-        async post<T>(path: string, body?: unknown): Promise<ApiResponse<T>> {
-                return this.fetchWithRetry<T>(
-                        path.startsWith("http") ? path : this.baseUrl + path,
-                        {
-                                method: "POST",
-                                body: body ? JSON.stringify(body) : undefined,
-                        },
-                );
-        }
-
-        async put<T>(path: string, body?: unknown): Promise<ApiResponse<T>> {
-                return this.fetchWithRetry<T>(
-                        path.startsWith("http") ? path : this.baseUrl + path,
-                        {
-                                method: "PUT",
-                                body: body ? JSON.stringify(body) : undefined,
-                        },
-                );
-        }
-
-        async patch<T>(path: string, body?: unknown): Promise<ApiResponse<T>> {
-                return this.fetchWithRetry<T>(
-                        path.startsWith("http") ? path : this.baseUrl + path,
-                        {
-                                method: "PATCH",
-                                body: body ? JSON.stringify(body) : undefined,
-                        },
-                );
-        }
-
-        async delete<T>(path: string): Promise<ApiResponse<T>> {
-                return this.fetchWithRetry<T>(
-                        path.startsWith("http") ? path : this.baseUrl + path,
-                        {
-                                method: "DELETE",
-                        },
-                );
-        }
-
-        // ============================================================================
+        // ========================================================================
         // WEBSOCKET
-        // ============================================================================
+        // ========================================================================
 
         connectWebSocket(channel: string, callback: (data: unknown) => void): void {
                 // Register the callback for this channel BEFORE connecting
@@ -374,9 +196,9 @@ class ApiClient {
                 }
         }
 
-        // ============================================================================
+        // ========================================================================
         // CONNECTION STATE & HEARTBEAT
-        // ============================================================================
+        // ========================================================================
 
         /** Callback invoked when WebSocket permanently loses connection after max retries.
          *  The UI should display a prominent warning that real-time updates have stopped.
@@ -423,7 +245,7 @@ class ApiClient {
 
                 this.heartbeatTimer = setInterval(() => {
                         if (
-                                !this.wsConnection ||  // NOSONAR: typescript:S6582
+                                !this.wsConnection ||
                                 this.wsConnection.readyState !== WebSocket.OPEN
                         ) {
                                 this.stopHeartbeat();
@@ -493,7 +315,7 @@ class ApiClient {
                         );
                 this.reconnectTimer = setTimeout(() => {
                         if (
-                                this.wsConnection &&  // NOSONAR: typescript:S6582
+                                this.wsConnection &&
                                 this.wsConnection.readyState === WebSocket.CLOSED
                         ) {
                                 // RACE CONDITION FIX: Nullify wsConnection and clean up heartbeat
@@ -509,49 +331,67 @@ class ApiClient {
                 }, delay);
         }
 
-        // ============================================================================
+        // ========================================================================
+        // EXPORT ENDPOINTS (use inherited fetchBlob via fetchWithRetry)
+        // ========================================================================
+
+        private async fetchBlob(url: string, retries = 3): Promise<Blob> {
+                return this.fetchWithRetry<Blob>(url, { method: "GET" }, retries);
+        }
+
+        // ========================================================================
         // PROJECT ENDPOINTS
-        // ============================================================================
+        // ========================================================================
 
         async getProjects(
                 params?: PaginationParams,
         ): Promise<ApiResponse<PaginatedResponse<Project>>> {
-                return this.get<PaginatedResponse<Project>>(
-                        "/projects",
-                        params as Record<string, string>,
+                return this.wrapResult(
+                        this.get<PaginatedResponse<Project>>(
+                                "/projects",
+                                params as Record<string, string>,
+                        ),
                 );
         }
 
         async getProject(id: string): Promise<ApiResponse<Project>> {
-                return this.get<Project>(`/projects/${encodeURIComponent(id)}`);
+                return this.wrapResult(
+                        this.get<Project>(`/projects/${encodeURIComponent(id)}`),
+                );
         }
 
         async createProject(data: CreateProjectInput): Promise<ApiResponse<Project>> {
-                return this.post<Project>("/projects", data);
+                return this.wrapResult(this.post<Project>("/projects", data));
         }
 
         async updateProject(
                 id: string,
                 data: UpdateProjectInput,
         ): Promise<ApiResponse<Project>> {
-                return this.put<Project>(`/projects/${encodeURIComponent(id)}`, data);
+                return this.wrapResult(
+                        this.put<Project>(`/projects/${encodeURIComponent(id)}`, data),
+                );
         }
 
         async deleteProject(id: string): Promise<ApiResponse<void>> {
-                return this.delete<void>(`/projects/${encodeURIComponent(id)}`);
+                return this.wrapResult(
+                        this.delete<void>(`/projects/${encodeURIComponent(id)}`),
+                );
         }
 
-        // ============================================================================
+        // ========================================================================
         // DEVICE ENDPOINTS
-        // ============================================================================
+        // ========================================================================
 
         async getDevices(
                 projectId: string,
                 params?: PaginationParams,
         ): Promise<ApiResponse<PaginatedResponse<Device>>> {
-                return this.get<PaginatedResponse<Device>>(
-                        `/projects/${encodeURIComponent(projectId)}/devices`,
-                        params as Record<string, string>,
+                return this.wrapResult(
+                        this.get<PaginatedResponse<Device>>(
+                                `/projects/${encodeURIComponent(projectId)}/devices`,
+                                params as Record<string, string>,
+                        ),
                 );
         }
 
@@ -559,11 +399,13 @@ class ApiClient {
                 projectId: string,
                 deviceId: string,
         ): Promise<ApiResponse<Device>> {
-                return this.get<Device>(
-                        "/projects/" +
-                                encodeURIComponent(projectId) +
-                                "/devices/" +
-                                encodeURIComponent(deviceId),
+                return this.wrapResult(
+                        this.get<Device>(
+                                "/projects/" +
+                                        encodeURIComponent(projectId) +
+                                        "/devices/" +
+                                        encodeURIComponent(deviceId),
+                        ),
                 );
         }
 
@@ -571,9 +413,11 @@ class ApiClient {
                 projectId: string,
                 data: CreateDeviceInput,
         ): Promise<ApiResponse<Device>> {
-                return this.post<Device>(
-                        `/projects/${encodeURIComponent(projectId)}/devices`,
-                        data,
+                return this.wrapResult(
+                        this.post<Device>(
+                                `/projects/${encodeURIComponent(projectId)}/devices`,
+                                data,
+                        ),
                 );
         }
 
@@ -582,12 +426,14 @@ class ApiClient {
                 deviceId: string,
                 data: UpdateDeviceInput,
         ): Promise<ApiResponse<Device>> {
-                return this.put<Device>(
-                        "/projects/" +
-                                encodeURIComponent(projectId) +
-                                "/devices/" +
-                                encodeURIComponent(deviceId),
-                        data,
+                return this.wrapResult(
+                        this.put<Device>(
+                                "/projects/" +
+                                        encodeURIComponent(projectId) +
+                                        "/devices/" +
+                                        encodeURIComponent(deviceId),
+                                data,
+                        ),
                 );
         }
 
@@ -595,25 +441,29 @@ class ApiClient {
                 projectId: string,
                 deviceId: string,
         ): Promise<ApiResponse<void>> {
-                return this.delete<void>(
-                        "/projects/" +
-                                encodeURIComponent(projectId) +
-                                "/devices/" +
-                                encodeURIComponent(deviceId),
+                return this.wrapResult(
+                        this.delete<void>(
+                                "/projects/" +
+                                        encodeURIComponent(projectId) +
+                                        "/devices/" +
+                                        encodeURIComponent(deviceId),
+                        ),
                 );
         }
 
-        // ============================================================================
+        // ========================================================================
         // CONNECTION ENDPOINTS
-        // ============================================================================
+        // ========================================================================
 
         async getConnections(
                 projectId: string,
                 params?: PaginationParams,
         ): Promise<ApiResponse<PaginatedResponse<Connection>>> {
-                return this.get<PaginatedResponse<Connection>>(
-                        `/projects/${encodeURIComponent(projectId)}/connections`,
-                        params as Record<string, string>,
+                return this.wrapResult(
+                        this.get<PaginatedResponse<Connection>>(
+                                `/projects/${encodeURIComponent(projectId)}/connections`,
+                                params as Record<string, string>,
+                        ),
                 );
         }
 
@@ -621,9 +471,11 @@ class ApiClient {
                 projectId: string,
                 data: CreateConnectionInput,
         ): Promise<ApiResponse<Connection>> {
-                return this.post<Connection>(
-                        `/projects/${encodeURIComponent(projectId)}/connections`,
-                        data,
+                return this.wrapResult(
+                        this.post<Connection>(
+                                `/projects/${encodeURIComponent(projectId)}/connections`,
+                                data,
+                        ),
                 );
         }
 
@@ -631,25 +483,29 @@ class ApiClient {
                 projectId: string,
                 connectionId: string,
         ): Promise<ApiResponse<void>> {
-                return this.delete<void>(
-                        "/projects/" +
-                                encodeURIComponent(projectId) +
-                                "/connections/" +
-                                encodeURIComponent(connectionId),
+                return this.wrapResult(
+                        this.delete<void>(
+                                "/projects/" +
+                                        encodeURIComponent(projectId) +
+                                        "/connections/" +
+                                        encodeURIComponent(connectionId),
+                        ),
                 );
         }
 
-        // ============================================================================
+        // ========================================================================
         // REPORT ENDPOINTS
-        // ============================================================================
+        // ========================================================================
 
         async generateReport(
                 projectId: string,
                 data: GenerateReportInput,
         ): Promise<ApiResponse<Report>> {
-                return this.post<Report>(
-                        `/projects/${encodeURIComponent(projectId)}/reports`,
-                        data,
+                return this.wrapResult(
+                        this.post<Report>(
+                                `/projects/${encodeURIComponent(projectId)}/reports`,
+                                data,
+                        ),
                 );
         }
 
@@ -657,9 +513,11 @@ class ApiClient {
                 projectId: string,
                 params?: PaginationParams,
         ): Promise<ApiResponse<PaginatedResponse<Report>>> {
-                return this.get<PaginatedResponse<Report>>(
-                        `/projects/${encodeURIComponent(projectId)}/reports`,
-                        params as Record<string, string>,
+                return this.wrapResult(
+                        this.get<PaginatedResponse<Report>>(
+                                `/projects/${encodeURIComponent(projectId)}/reports`,
+                                params as Record<string, string>,
+                        ),
                 );
         }
 
@@ -667,11 +525,13 @@ class ApiClient {
                 projectId: string,
                 reportId: string,
         ): Promise<ApiResponse<Report>> {
-                return this.get<Report>(
-                        "/projects/" +
-                                encodeURIComponent(projectId) +
-                                "/reports/" +
-                                encodeURIComponent(reportId),
+                return this.wrapResult(
+                        this.get<Report>(
+                                "/projects/" +
+                                        encodeURIComponent(projectId) +
+                                        "/reports/" +
+                                        encodeURIComponent(reportId),
+                        ),
                 );
         }
 
@@ -691,42 +551,9 @@ class ApiClient {
                 );
         }
 
-        // ============================================================================
+        // ========================================================================
         // EXPORT ENDPOINTS
-        // ============================================================================
-
-        private async fetchBlob(
-                url: string,
-                retries: number = MAX_RETRIES,
-        ): Promise<Blob> {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
-                try {
-                        // Include API key header (same pattern as api.ts)
-                        const headers: Record<string, string> = { ...this.defaultHeaders };
-                        const apiKey = this.getApiKey();
-                        if (apiKey) {
-                                headers["X-API-Key"] = apiKey;
-                        }
-                        const response = await fetch(url, {
-                                headers,
-                                signal: controller.signal,
-                                // M-3: Send cookies (HttpOnly session) with same-origin requests
-                                credentials: "same-origin",
-                        });
-                        clearTimeout(timeoutId);
-                        if (!response.ok)
-                                throw new Error(`Export failed: HTTP ${response.status}`);
-                        return response.blob();
-                } catch (error) {
-                        clearTimeout(timeoutId);
-                        if (retries > 0 && this.isRetryableError(error)) {
-                                await this.delay(RETRY_DELAY * (MAX_RETRIES - retries + 1));
-                                return this.fetchBlob(url, retries - 1);
-                        }
-                        throw error;
-                }
-        }
+        // ========================================================================
 
         async exportToDXF(projectId: string): Promise<Blob> {
                 return this.fetchBlob(
@@ -759,36 +586,32 @@ class ApiClient {
                 );
         }
 
-        // ============================================================================
+        // ========================================================================
         // SYNC ENDPOINTS
-        // ============================================================================
+        // ========================================================================
 
         async syncProject(projectId: string): Promise<ApiResponse<SyncStatus>> {
-                return this.post<SyncStatus>(
-                        `/projects/${encodeURIComponent(projectId)}/sync`,
+                return this.wrapResult(
+                        this.post<SyncStatus>(
+                                `/projects/${encodeURIComponent(projectId)}/sync`,
+                        ),
                 );
         }
 
         async getSyncStatus(projectId: string): Promise<ApiResponse<SyncStatus>> {
-                return this.get<SyncStatus>(
-                        `/projects/${encodeURIComponent(projectId)}/sync`,
+                return this.wrapResult(
+                        this.get<SyncStatus>(
+                                `/projects/${encodeURIComponent(projectId)}/sync`,
+                        ),
                 );
         }
 
-        // ============================================================================
+        // ========================================================================
         // HEALTH CHECK
-        // ============================================================================
+        // ========================================================================
 
         async healthCheck(): Promise<ApiResponse<HealthStatus>> {
-                return this.get<HealthStatus>("/health");
-        }
-
-        /**
-         * Get API key — delegates to shared getApiKey() from apiKey.ts.
-         * V184: deduplicated — was a 4th copy of the same logic.
-         */
-        private getApiKey(): string | null {
-                return getApiKeyShared();
+                return this.wrapResult(this.get<HealthStatus>("/health"));
         }
 }
 
@@ -922,5 +745,5 @@ export type { HealthStatus };
 // EXPORTED INSTANCE
 // ============================================================================
 
-export const api = new ApiClient();
+export const api = new DigitalTwinApiClient();
 export default api;

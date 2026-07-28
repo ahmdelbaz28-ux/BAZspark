@@ -111,7 +111,7 @@ export function ExportsPage() {
                 <div className="flex-1 overflow-auto p-6 max-w-3xl mx-auto space-y-6">
                         <div>
                                 <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                                        <Download className="h-6 w-6 text-primary" />
+                                        <Download aria-hidden="true" className="h-6 w-6 text-primary" />
                                         Data Exports
                                 </h1>
                                 <p className="text-sm text-muted-foreground mt-1">
@@ -155,7 +155,7 @@ export function ExportsPage() {
                                                 variant="outline"
                                                 className="w-full justify-start"
                                         >
-                                                <FileText className="h-4 w-4 mr-2" />
+                                                <FileText aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 DXF (AutoCAD Drawing Exchange) — ezdxf
                                         </Button>
                                         <Button
@@ -164,7 +164,7 @@ export function ExportsPage() {
                                                 variant="outline"
                                                 className="w-full justify-start"
                                         >
-                                                <FileText className="h-4 w-4 mr-2" />
+                                                <FileText aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 Revit JSON — structured Revit API format
                                         </Button>
                                         <Button
@@ -173,7 +173,7 @@ export function ExportsPage() {
                                                 variant="outline"
                                                 className="w-full justify-start"
                                         >
-                                                <FileText className="h-4 w-4 mr-2" />
+                                                <FileText aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 IFC4 (Industry Foundation Classes) — ifcopenshell
                                         </Button>
                                         <Button
@@ -182,12 +182,12 @@ export function ExportsPage() {
                                                 variant="outline"
                                                 className="w-full justify-start"
                                         >
-                                                <FileText className="h-4 w-4 mr-2" />
+                                                <FileText aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 Excel (.xlsx) — 4 sheets: Project, Devices, Connections, BOQ
                                         </Button>
                                         {loading && (
                                                 <div className="flex items-center justify-center py-4">
-                                                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                                        <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin text-muted-foreground" />
                                                 </div>
                                         )}
                                 </CardContent>

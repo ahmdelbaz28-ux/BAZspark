@@ -3,14 +3,6 @@
 """
 excel_parser.py — FireAI Excel Room Data Parser
 Parses room specifications from Excel files.
-
-Expected columns:
-    - name: Room name/number
-    - width_m: Room width in meters
-    - depth_m: Room depth in meters
-    - height_m: Ceiling height in meters
-    - detector_type: SMOKE, HEAT, COMBO (optional)
-    - occupancy_type: office, residential, etc. (optional)
 """
 
 from __future__ import annotations
@@ -20,25 +12,19 @@ import os
 from dataclasses import dataclass, field
 from typing import Dict, List
 
-# top-level. This crashed the module on systems without pandas installed,
-# even though path-security validation (the first stage of parse()) does NOT
-# require pandas. Tests `test_parsers_security_v125.py::TestExcelParserSecurity`
-# only exercise path validation, so they should pass without pandas.
-#
-# Root-cause fix: lazy-import pandas inside the methods that actually need it.
-# To enable Excel parsing, install the parsing extras:
-#   pip install -e ".[parsing]"
-pd = None  # type: ignore[assignment]
+from parsers._base import ParserBase
+from parsers._path_security import UnsafePathError
+
+pd = None
 
 logger = logging.getLogger("fireai.excel_parser")
 
 
 def _lazy_import_pandas():
-    """Lazily import pandas on first actual use."""
     global pd
     if pd is None:
         try:
-            import pandas as _pd  # type: ignore
+            import pandas as _pd
             pd = _pd
         except ImportError as e:
             raise ImportError(
@@ -49,18 +35,10 @@ def _lazy_import_pandas():
     return pd
 
 
-# EXCEPTIONS
-# ═══════════════════════════════════════════════════════
-
 class ExcelParseError(Exception):
     """Raised when Excel parsing fails."""
-
     pass
 
-
-# ═══════════════════════════════════════════════════════
-# DATA CLASS
-# ═══════════════════════════════════════════════════════
 
 @dataclass
 class ExcelRoom:
@@ -101,25 +79,16 @@ class ExcelParseResult:
     warnings: List[str] = field(default_factory=list)
 
 
-# ═══════════════════════════════════════════════════════
-# EXCEL PARSER
-# ═══════════════════════════════════════════════════════
-
-class ExcelParser:
+class ExcelParser(ParserBase):
     """
     Parses Excel room specifications into room objects.
-
-    USAGE:
-        parser = ExcelParser()
-        result = parser.parse("project_rooms.xlsx")
-
-        if result.success:
-            print(f"Found {result.room_count} rooms")
     """
+
+    allowed_extensions = {'.xlsx', '.xls'}
+    max_file_size_bytes = int(os.getenv("FIREAI_EXCEL_MAX_FILE_SIZE_BYTES", 25 * 1024 * 1024))
 
     REQUIRED_COLUMNS = ['name', 'width_m', 'depth_m', 'height_m']
 
-    # Column aliases (flexible matching)
     COLUMN_ALIASES = {
         'name': ['name', 'room', 'room_name', 'room_number', 'number', 'room_id'],
         'width_m': ['width_m', 'width', 'width_meters', 'w'],
@@ -130,43 +99,11 @@ class ExcelParser:
     }
 
     def __init__(self, min_area: float = 2.0):
-        """
-        Args:
-        min_area: Minimum room area in m² (default 2.0)
-
-        """
         self.min_area = min_area
 
     def parse(self, file_path: str) -> ExcelParseResult:
-        """
-        Parse Excel file to rooms.
-
-        Args:
-            file_path: Path to .xlsx or .xls file. MUST be under
-                FIREAI_ALLOWED_UPLOAD_DIRS (V124 security hardening).
-
-        Returns:
-            ExcelParseResult with room list
-
-        """
-        from parsers._path_security import (
-            UnsafePathError,
-            validate_file_size,
-            validate_input_path,
-        )
-        _ALLOWED_EXTENSIONS = frozenset({".xlsx", ".xls", ".csv"})
-        _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_EXCEL_MAX_FILE_SIZE_BYTES", 25 * 1024 * 1024))  # 25 MB default
         try:
-            safe_path = validate_input_path(
-                file_path,
-                allowed_extensions=_ALLOWED_EXTENSIONS,
-                parser_name="ExcelParser",
-            )
-            validate_file_size(
-                safe_path,
-                max_size_bytes=_MAX_FILE_SIZE_BYTES,
-                parser_name="ExcelParser",
-            )
+            safe_path = self.validate_input(file_path)
         except FileNotFoundError as e:
             return ExcelParseResult(source_file=file_path, success=False, errors=[str(e)])
         except UnsafePathError as e:
@@ -177,23 +114,19 @@ class ExcelParser:
 
         try:
             _lazy_import_pandas()
-            # Read Excel
             df = pd.read_excel(str(safe_path), engine='openpyxl')
 
             if df.empty:
                 result.errors.append("Excel file is empty")
                 return result
 
-            # Normalize columns
             df = self._normalize_columns(df)
 
-            # Verify required columns
             missing = set(self.REQUIRED_COLUMNS) - set(df.columns)
             if missing:
                 result.errors.append(f"Missing required columns: {missing}")
                 return result
 
-            # Parse rooms
             for idx, row in df.iterrows():
                 try:
                     room = self._parse_row(row)
@@ -214,8 +147,7 @@ class ExcelParser:
 
         return result
 
-    def _normalize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Normalize column names to standard format."""
+    def _normalize_columns(self, df) -> any:
         df = df.copy()
 
         for standard, aliases in self.COLUMN_ALIASES.items():
@@ -226,8 +158,7 @@ class ExcelParser:
 
         return df
 
-    def _parse_row(self, row: pd.Series) -> ExcelRoom:
-        """Parse single row to ExcelRoom."""
+    def _parse_row(self, row) -> ExcelRoom:
         name = str(row['name']).strip()
 
         width = float(row['width_m'])
@@ -249,10 +180,6 @@ class ExcelParser:
             occupancy_type=occupancy_str,
         )
 
-
-# ═══════════════════════════════════════════════════════
-# CONVENIENCE FUNCTION
-# ═══════════════════════════════════════════════════════
 
 def parse_excel(file_path: str) -> ExcelParseResult:
     """Quick parse Excel file."""

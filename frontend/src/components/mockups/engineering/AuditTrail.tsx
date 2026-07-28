@@ -26,7 +26,7 @@ export function AuditTrail() {  // NOSONAR - typescript:S9011: Intentionally com
 			<div className="flex flex-col border-b bg-card shrink-0">
 				<div className="h-12 flex items-center justify-between px-4 border-b border-border/50">
 					<div className="flex items-center gap-4">
-						<History className="h-5 w-5 text-info" />
+						<History aria-hidden="true" className="h-5 w-5 text-info" />
 						<div className="font-bold tracking-wider text-sm">
 							Engineering Audit Trail & Revision History
 						</div>
@@ -39,16 +39,16 @@ export function AuditTrail() {  // NOSONAR - typescript:S9011: Intentionally com
 				<div className="h-12 flex items-center justify-between px-4">
 					<div className="flex items-center gap-2">
 						<div className="flex items-center bg-background border rounded-md px-3 h-8 text-xs text-muted-foreground w-48 cursor-text">
-							<Calendar className="h-4 w-4 mr-2" /> Last 30 Days
+							<Calendar aria-hidden="true" className="h-4 w-4 mr-2" /> Last 30 Days
 						</div>
 						<div className="flex items-center bg-background border rounded-md px-3 h-8 text-xs text-muted-foreground w-40 cursor-pointer">
-							<Users className="h-4 w-4 mr-2" /> All Users
+							<Users aria-hidden="true" className="h-4 w-4 mr-2" /> All Users
 						</div>
 						<div className="flex items-center bg-background border rounded-md px-3 h-8 text-xs text-muted-foreground w-40 cursor-pointer">
-							<Filter className="h-4 w-4 mr-2" /> All Actions
+							<Filter aria-hidden="true" className="h-4 w-4 mr-2" /> All Actions
 						</div>
 						<div className="flex items-center bg-background border rounded-md px-3 h-8 text-xs text-muted-foreground w-64 cursor-pointer">
-							<FileText className="h-4 w-4 mr-2" />{" "}
+							<FileText aria-hidden="true" className="h-4 w-4 mr-2" />{" "}
 							Tower-B-Electrical-Floor3.dwg
 						</div>
 						<div className="relative">
@@ -56,7 +56,7 @@ export function AuditTrail() {  // NOSONAR - typescript:S9011: Intentionally com
 								className="h-8 w-64 text-xs bg-background pr-8"
 								placeholder="Search logs..."
 							/>
-							<Search className="h-4 w-4 absolute right-2.5 top-2.5 text-muted-foreground" />
+							<Search aria-hidden="true" className="h-4 w-4 absolute right-2.5 top-2.5 text-muted-foreground" />
 						</div>
 					</div>
 					<Button
@@ -64,7 +64,7 @@ export function AuditTrail() {  // NOSONAR - typescript:S9011: Intentionally com
 						variant="outline"
 						className="h-8 text-xs border-border"
 					>
-						<Download className="h-4 w-4 mr-1" /> Export Audit Log
+						<Download aria-hidden="true" className="h-4 w-4 mr-1" /> Export Audit Log
 					</Button>
 				</div>
 				{/* Active Filters */}
@@ -164,7 +164,7 @@ export function AuditTrail() {  // NOSONAR - typescript:S9011: Intentionally com
 							Restore Revision
 						</Button>
 						<Button variant="outline" className="w-full text-xs h-8">
-							<GitBranch className="h-4 w-4 mr-1" /> Branch from Here
+							<GitBranch aria-hidden="true" className="h-4 w-4 mr-1" /> Branch from Here
 						</Button>
 					</div>
 				</div>
@@ -441,14 +441,14 @@ export function AuditTrail() {  // NOSONAR - typescript:S9011: Intentionally com
 								</h4>
 								<div className="space-y-2">
 									<div className="flex items-start gap-2 text-primary bg-primary/10 border border-primary/30 rounded p-2 text-xs">
-										<AlertTriangle className="h-4 w-4 shrink-0" />
+										<AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0" />
 										<div>
 											<span className="font-bold">Load Calculations:</span>{" "}
 											Recalculation required
 										</div>
 									</div>
 									<div className="flex items-start gap-2 text-foreground/90 bg-card rounded p-2 text-xs">
-										<Activity className="h-4 w-4 shrink-0 text-info" />
+										<Activity aria-hidden="true" className="h-4 w-4 shrink-0 text-info" />
 										<div>
 											<span className="font-bold text-white">
 												Connected Elements:
@@ -457,7 +457,7 @@ export function AuditTrail() {  // NOSONAR - typescript:S9011: Intentionally com
 										</div>
 									</div>
 									<div className="flex items-start gap-2 text-primary bg-primary/10 border border-primary/30 rounded p-2 text-xs">
-										<ShieldCheck className="h-4 w-4 shrink-0" />
+										<ShieldCheck aria-hidden="true" className="h-4 w-4 shrink-0" />
 										<div>
 											<span className="font-bold">Compliance:</span> Re-check
 											NEC §408 required
@@ -547,7 +547,7 @@ function RevNode({ rev, time, user, msg, current, approved }: RevNodeProps) {
 						)}
 						{approved && (
 							<Badge className="bg-emerald-500/20 text-success border-transparent text-[8px] h-4 px-1 py-0 font-normal">
-								<CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> APPROVED
+								<CheckCircle2 aria-hidden="true" className="w-2.5 h-2.5 mr-0.5" /> APPROVED
 							</Badge>
 						)}
 					</div>

@@ -59,14 +59,14 @@ interface ThermalDevice {
 // ============================================================================
 
 const DEVICE_ICONS: Record<DeviceType, React.ReactNode> = {
-	GENERATOR: <Zap size={24} />,
-	BATTERY: <Battery size={24} />,
-	LOAD: <Power size={24} />,
-	PANEL: <Box size={24} />,
-	SENSOR_SMOKE: <Siren size={24} />,
-	SENSOR_MOTION: <Wifi size={24} />,
-	CAMERA: <Eye size={24} />,
-	SPEAKER: <Box size={24} />,
+	GENERATOR: <Zap aria-hidden="true" size={24} />,
+	BATTERY: <Battery aria-hidden="true" size={24} />,
+	LOAD: <Power aria-hidden="true" size={24} />,
+	PANEL: <Box aria-hidden="true" size={24} />,
+	SENSOR_SMOKE: <Siren aria-hidden="true" size={24} />,
+	SENSOR_MOTION: <Wifi aria-hidden="true" size={24} />,
+	CAMERA: <Eye aria-hidden="true" size={24} />,
+	SPEAKER: <Box aria-hidden="true" size={24} />,
 };
 
 const DEVICE_COLORS: Record<DeviceType, string> = {
@@ -316,7 +316,7 @@ export const EngineeringCanvas = memo(function EngineeringCanvas({ onItemDrop }:
 						<span className="text-white/50 w-20">Max V-Drop:</span>
 						<div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
 							<div
-								className={`h-full rounded-full transition-[width,colors] duration-300 ${globalMaxVoltageDrop > 5 ? "animate-pulse" : ""}`}
+								className={`h-full rounded-full transition-[width,color,background-color,border-color] duration-300 ${globalMaxVoltageDrop > 5 ? "animate-pulse" : ""}`}
 								style={{
 									width: `${Math.min(100, globalMaxVoltageDrop * 5)}%`,
 									backgroundColor: getVoltageDropColor(globalMaxVoltageDrop),
@@ -446,7 +446,7 @@ export const EngineeringCanvas = memo(function EngineeringCanvas({ onItemDrop }:
 								stroke={conn.color}
 								strokeWidth={conn.isCritical ? 5 : conn.isWarning ? 4 : 3}  // NOSONAR: typescript:S3358
 								className={`
-                  transition-[colors,transform,opacity] duration-150
+                  transition-[color,background-color,border-color,transform,opacity] duration-150
                   ${conn.isCritical ? "critical-animated" : ""}
                   ${conn.isCritical ? "" : conn.isWarning ? "" : "dash-animated"}
                 `}
@@ -592,7 +592,7 @@ export const EngineeringCanvas = memo(function EngineeringCanvas({ onItemDrop }:
 								}
 								strokeWidth={isSelected ? 3 : 2}
 								className={`
-                  transition-[colors,transform,opacity] duration-150
+                  transition-[color,background-color,border-color,transform,opacity] duration-150
                   ${dev.isOverloaded ? "critical-animated" : ""}
                   ${isHovered ? "scale-105" : ""}
                 `}
@@ -614,7 +614,7 @@ export const EngineeringCanvas = memo(function EngineeringCanvas({ onItemDrop }:
 								height="4"
 								rx="2"
 								fill={dev.stressColor}
-								className="transition-[colors,transform,opacity] duration-150"
+								className="transition-[color,background-color,border-color,transform,opacity] duration-150"
 							/>
 
 							{/* Icon */}

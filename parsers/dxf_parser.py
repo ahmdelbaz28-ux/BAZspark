@@ -17,6 +17,8 @@ from shapely.geometry import MultiPolygon, Point, Polygon
 from shapely.ops import polygonize, unary_union
 from shapely.validation import make_valid
 
+from parsers._base import ParserBase
+
 logger = logging.getLogger("fireai.dxf_parser")
 
 
@@ -51,27 +53,24 @@ class DXFParseResult:
         return round(sum(r.area_m2 for r in self.rooms), 2)
 
 
-class DXFParser:
+class DXFParser(ParserBase):
     """CRITICAL: Never trust DXF geometry. Always validate."""
 
-    MIN_ROOM_AREA_M2: float = 2.0  # Min 2m² per NFPA 72 (columns are ~1.5m²)
+    allowed_extensions = {'.dxf'}
+
+    MIN_ROOM_AREA_M2: float = 2.0
     MAX_ROOM_AREA_M2: float = 50_000.0
 
-    # Code 8 was mapped to 1000.0 (kilometers) but is actually Microinches
-    # (2.54e-8 m). Code 3 (Miles) and Code 7 (Kilometers) were missing
-    # entirely, causing ValueError on those unit types. Wrong unit mapping
-    # produces catastrophically wrong room areas → wrong detector count →
-    # building unprotected. Source: AutoCAD DXF Reference — $INSUNITS header.
     INSUNITS_TO_METERS = {
-        0: 1.0,         # Unspecified — assume meters (documented assumption)
-        1: 0.0254,      # Inches
-        2: 0.3048,      # Feet
-        3: 1609.344,    # Miles (was missing — caused ValueError)
-        4: 0.001,       # Millimeters
-        5: 0.01,        # Centimeters
-        6: 1.0,         # Meters
-        7: 1000.0,      # Kilometers (was missing — caused ValueError)
-        8: 2.54e-8,     # Microinches (was 1000.0 — 3.9×10¹⁰ error!)
+        0: 1.0,
+        1: 0.0254,
+        2: 0.3048,
+        3: 1609.344,
+        4: 0.001,
+        5: 0.01,
+        6: 1.0,
+        7: 1000.0,
+        8: 2.54e-8,
     }
 
     def __init__(self, min_area: float = MIN_ROOM_AREA_M2, max_area: float = MAX_ROOM_AREA_M2):
@@ -79,23 +78,19 @@ class DXFParser:
         self.max_area = max_area
 
     def parse(self, dxf_path: str) -> DXFParseResult:
-        from parsers._path_security import validate_input_path, validate_file_size
-        validate_input_path(dxf_path, parser_name='dxf')
-        validate_file_size(dxf_path)
-        logger.info("Parsing DXF: %s", dxf_path)
+        safe_path = self.validate_input(dxf_path)
+        logger.info("Parsing DXF: %s", safe_path)
 
-        # SAFETY: Try normal read first, then recovery
         try:
-            doc = ezdxf.readfile(dxf_path)
+            doc = ezdxf.readfile(safe_path)
         except ezdxf.DXFStructureError:
             logger.warning("DXF corrupt — attempting recovery")
-            doc, auditor = recover.readfile(dxf_path)
+            doc, auditor = recover.readfile(safe_path)
             if auditor.has_errors:
-                raise RuntimeError(f"DXF '{dxf_path}' unrecoverable. Errors: {len(auditor.errors)}")
+                raise RuntimeError(f"DXF '{safe_path}' unrecoverable. Errors: {len(auditor.errors)}")
 
         units = self._detect_units(doc)
 
-        # Validate and get scale
         if units not in self.INSUNITS_TO_METERS:
             raise ValueError(f"Unknown DXF units code: '{units}'")
         scale = self.INSUNITS_TO_METERS[units]
@@ -110,9 +105,6 @@ class DXFParser:
         for i, poly in enumerate(polys):
             rid = f"ROOM_{i + 1:03d}"
 
-            # NaN < 2.0 → False and NaN > 50000.0 → False in IEEE-754, so NaN
-            # area passes both checks and enters the pipeline, corrupting area-weighted
-            # calculations (NaN * anything = NaN → global coverage = NaN).
             area = poly.area
             if not math.isfinite(area):
                 logger.warning("%s: area is %s (NaN/Inf) — SKIPPED", rid, area)
@@ -123,9 +115,6 @@ class DXFParser:
                 skipped += 1
                 continue
             if area > self.max_area:
-                # A room with area 500,000 m² is likely a unit conversion error
-                # (DXF in mm parsed as meters). Accepting it produces catastrophically
-                # wrong detector counts — a 500,000 m² room would get 0 detectors/m².
                 logger.warning("%s: area %sm² > max %sm² — SKIPPED (possible unit error)", rid, poly.area, self.max_area)
                 skipped += 1
                 continue
@@ -140,7 +129,7 @@ class DXFParser:
             )
 
         if not rooms:
-            raise RuntimeError(f"No valid rooms in '{dxf_path}'")
+            raise RuntimeError(f"No valid rooms in '{safe_path}'")
 
         return DXFParseResult(
             source_file=dxf_path,
@@ -151,57 +140,34 @@ class DXFParser:
         )
 
     def _detect_units(self, doc) -> int:
-        """
-        Detect DXF units using heuristic for INSUNITS=0 files.
-
-        CRITICAL SAFETY: For unitless (0) DXF files, we must detect the actual unit
-        by analyzing coordinate values. Wrong unit = wrong room areas = failed coverage
-        detection = LIVES LOST.
-
-        Strategy:
-        1. If INSUNITS != 0, use standard mapping
-        2. If INSUNITS == 0, try multiple scales and validate
-        3. Reject if no valid scale found (safety-first)
-        """
         units = doc.header.get("$INSUNITS", 6)
 
-        # Non-zero units: trust the header
         if units != 0:
             return units
 
-        # INSUNITS = 0: Must detect actual unit via heuristic
-        # This is CRITICAL for safety - we cannot guess
         detected = self._detect_unit_heuristic(doc)
         if detected is not None:
             logger.info("Units auto-detected: %s", detected)
             return detected
 
-        # Failed to detect: safety-first approach
         raise RuntimeError(
             "Cannot determine DXF units. INSUNITS=0 and coordinate analysis inconclusive. "
             "File may be corrupted or use non-standard units. "
             "CRITICAL: Cannot proceed - incorrect unit = incorrect coverage calculation."
         )
 
-    def _detect_unit_heuristic(self, doc) -> int:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-        """
-        Detect actual unit by testing scale factors.
-
-        CRITICAL SAFETY: We try multiple scales and check which produces valid
-        NFPA 72-compliant room areas. Only accept if EXACTLY ONE scale works.
-        """
+    def _detect_unit_heuristic(self, doc) -> int | None:
         from shapely.geometry import LineString
         from shapely.ops import polygonize, unary_union
         from shapely.validation import make_valid
 
         msp = doc.modelspace()
 
-        # Try different unit scales
         candidates = [
-            (1, "meters"),  # 1:1 direct
-            (0.001, "mm x 1000 -> m"),  # mm
-            (0.01, "cm x 100 -> m"),  # cm
-            (0.3048, "feet x 0.3048 -> m"),  # feet
+            (1, "meters"),
+            (0.001, "mm x 1000 -> m"),
+            (0.01, "cm x 100 -> m"),
+            (0.3048, "feet x 0.3048 -> m"),
         ]
 
         valid_scales = []
@@ -225,7 +191,6 @@ class DXFParser:
             if not lines:
                 continue
 
-            # Try to create polygons
             merged = unary_union(lines)
             raw_polys = polygonize(merged)
 
@@ -239,24 +204,18 @@ class DXFParser:
             if valid_count > 0:
                 valid_scales.append((scale, unit_name, valid_count))
 
-        # CRITICAL: Must have exactly one valid scale OR pick the best one
-        # If multiple: pick the one with MOST valid rooms (most likely correct)
         if len(valid_scales) >= 1:
-            # Sort by room count descending - pick the one with most rooms
             valid_scales.sort(key=lambda x: -x[2])
             scale, name, count = valid_scales[0]
             logger.info("Unit detected: %s -> %s valid rooms", name, count)
 
-            # Map back to DXF unit code
             _SCALE_TO_UNIT = {0.001: 4, 0.01: 5, 0.3048: 2}
-            return _SCALE_TO_UNIT.get(scale, 6)  # default: meters
+            return _SCALE_TO_UNIT.get(scale, 6)
 
-        # No valid scale: fail closed (safety-first)
         logger.error("No valid unit scale found")
+        return None
 
-        return None  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
-
-    def _extract_lines(self, msp, scale: float) -> List:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _extract_lines(self, msp, scale: float) -> List:
         from shapely.geometry import LineString
 
         lines = []
@@ -264,7 +223,6 @@ class DXFParser:
             if ent.dxftype() == "LINE":
                 sx, sy = ent.dxf.start.x * scale, ent.dxf.start.y * scale
                 ex, ey = ent.dxf.end.x * scale, ent.dxf.end.y * scale
-                # produce invalid Shapely geometries that crash downstream analysis.
                 if not (math.isfinite(sx) and math.isfinite(sy) and math.isfinite(ex) and math.isfinite(ey)):
                     logger.warning("Skipping LINE with non-finite coordinates: start=(%s,%s) end=(%s,%s)", sx, sy, ex, ey)
                     continue
@@ -274,9 +232,6 @@ class DXFParser:
             elif ent.dxftype() in ("LWPOLYLINE", "POLYLINE"):
                 try:
                     raw_pts = [(p[0] * scale, p[1] * scale) for p in ent.get_points()]
-                    # corrupted. Removing middle points creates shortcuts across the
-                    # removed vertex, producing self-intersecting or significantly
-                    # different room boundaries. Skip the entire entity instead.
                     if not all(math.isfinite(x) and math.isfinite(y) for x, y in raw_pts):
                         bad_count = sum(1 for x, y in raw_pts if not (math.isfinite(x) and math.isfinite(y)))
                         logger.warning(
@@ -291,7 +246,6 @@ class DXFParser:
                 except Exception as e:
                     logger.debug("Polyline skip: %s", e)
             elif ent.dxftype() == "CIRCLE":
-                # Convert CIRCLE to polygon approximation
                 try:
                     poly = self._circle_to_polygon(ent, scale)
                     if poly and poly.is_valid:
@@ -299,14 +253,12 @@ class DXFParser:
                 except Exception as e:
                     logger.debug("Circle skip: %s", e)
             elif ent.dxftype() == "ARC":
-                # Convert ARC to line segments
                 try:
                     segments = self._arc_to_segments(ent, scale)
                     lines.extend(segments)
                 except Exception as e:
                     logger.debug("Arc skip: %s", e)
             elif ent.dxftype() == "SPLINE":
-                # Convert SPLINE to line segments (64 points approximation)
                 try:
                     segments = self._spline_to_segments(ent, scale)
                     lines.extend(segments)
@@ -315,27 +267,20 @@ class DXFParser:
         return lines
 
     def _circle_to_polygon(self, entity, scale):
-        """Convert CIRCLE to Polygon approximation (36 points)"""
         c = Point(entity.dxf.center.x * scale, entity.dxf.center.y * scale)
         r = entity.dxf.radius * scale
-        return c.buffer(r, quad_segs=36)  # V108 FIX: quad_segs= replaces deprecated resolution= in Shapely 2.x
+        return c.buffer(r, quad_segs=36)
 
     def _arc_to_segments(self, entity, scale, num_points: int = 32):
-        """Convert ARC to LineString segments (default 32 points)"""
-        import math
-
         c = Point(entity.dxf.center.x * scale, entity.dxf.center.y * scale)
         r = entity.dxf.radius * scale
 
-        # Get start and end angles in radians
         start_angle = math.radians(entity.dxf.start_angle)
         end_angle = math.radians(entity.dxf.end_angle)
 
-        # Handle the case where arc goes through 0/360 degrees
         if end_angle < start_angle:
             end_angle += 2 * math.pi
 
-        # Calculate angular step
         total_angle = end_angle - start_angle
         step = total_angle / num_points
 
@@ -346,7 +291,6 @@ class DXFParser:
             y = c.y + r * math.sin(angle)
             points.append((x, y))
 
-        # Add proper closing point if needed
         if len(points) >= 2:
             from shapely.geometry import LineString
 
@@ -355,26 +299,20 @@ class DXFParser:
         return []
 
     def _spline_to_segments(self, entity, scale, num_segments: int = 64):
-        """Convert SPLINE to LineString segments (64 points approximation)"""
         try:
-            # Get control points from SPLINE entity
             ctrl_pts = entity.control_points
             if ctrl_pts is None or len(ctrl_pts) < 2:
                 return []
 
-            # Convert to scaled coordinates
             points = [(p.dxf.location.x * scale, p.dxf.location.y * scale) for p in ctrl_pts]
 
-            # Generate more points along the spline using linear interpolation
             if len(points) < 2:
                 return []
 
-            # Create a line through control points and sample it
             from shapely.geometry import LineString
 
             base_line = LineString(points)
 
-            # Sample the line into num_segments points
             sampled_points = []
             for i in range(num_segments + 1):
                 t = i / num_segments
@@ -382,7 +320,6 @@ class DXFParser:
                     pt = base_line.interpolate(t, normalized=True)
                     sampled_points.append((pt.x, pt.y))
 
-            # Convert to line segments
             segments = []
             for i in range(len(sampled_points) - 1):
                 segments.append(LineString([sampled_points[i], sampled_points[i + 1]]))
@@ -393,7 +330,6 @@ class DXFParser:
             return []
 
     def _is_duplicate(self, poly1: Polygon, poly2: Polygon) -> bool:
-        """Check if two polygons are duplicates (>90% overlap)"""
         if not poly1.intersects(poly2):
             return False
 
@@ -404,11 +340,9 @@ class DXFParser:
             return False
 
         overlap_ratio = intersection.area / min_area
-
         return overlap_ratio > 0.9
 
     def _remove_duplicates(self, polygons: List[Polygon]) -> List[Polygon]:
-        """Remove duplicate polygons (keep larger one)"""
         if len(polygons) <= 1:
             return polygons
 
@@ -418,7 +352,6 @@ class DXFParser:
             for existing in unique:
                 if self._is_duplicate(poly, existing):
                     is_dup = True
-                    # Keep larger polygon
                     if poly.area > existing.area:
                         unique.remove(existing)
                         unique.append(poly)
@@ -429,19 +362,16 @@ class DXFParser:
         return unique
 
     def _lines_to_valid_polygons(self, lines) -> List[Polygon]:
-        """CRITICAL: Always validate geometry. Never trust raw DXF."""
         if not lines:
             return []
 
         merged = unary_union(lines)
         raw_polys = list(polygonize(merged))
 
-        # CRITICAL: Remove duplicate polygons (>90% overlap)
         valid_polys = self._remove_duplicates(raw_polys)
 
         valid = []
         for p in valid_polys:
-            # CRITICAL: make_valid fixes self-intersections
             if not p.is_valid:
                 p = make_valid(p)
 

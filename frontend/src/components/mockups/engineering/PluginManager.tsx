@@ -33,7 +33,7 @@ export function PluginManager() {
 			<div className="h-16 flex items-center justify-between px-6 border-b bg-card shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="w-10 h-10 rounded-md bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
-						<Puzzle className="h-5 w-5 text-purple-400" />
+						<Puzzle aria-hidden="true" className="h-5 w-5 text-purple-400" />
 					</div>
 					<div>
 						<h1 className="font-bold tracking-wide text-lg leading-tight">
@@ -66,7 +66,7 @@ export function PluginManager() {
 
 				<div className="flex items-center gap-4">
 					<div className="relative w-64 hidden xl:block">
-						<Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
+						<Search aria-hidden="true" className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
 						<Input
 							placeholder="Search 2,400+ plugins..."
 							className="pl-9 h-8 bg-[#0a0a0f] border-border text-xs focus-visible:ring-purple-500"
@@ -74,10 +74,10 @@ export function PluginManager() {
 					</div>
 					<div className="flex gap-2">
 						<Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
-							<UploadCloud className="h-4 w-4" /> Upload Plugin
+							<UploadCloud aria-hidden="true" className="h-4 w-4" /> Upload Plugin
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
-							<Key className="h-4 w-4" /> API Keys
+							<Key aria-hidden="true" className="h-4 w-4" /> API Keys
 						</Button>
 					</div>
 				</div>
@@ -297,10 +297,10 @@ export function PluginManager() {
 										</h2>
 										<div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
 											<span>ABB Digital</span>
-											<ShieldCheck className="h-3 w-3 text-info" />
+											<ShieldCheck aria-hidden="true" className="h-3 w-3 text-info" />
 										</div>
 										<div className="flex items-center gap-1 text-[10px] font-mono text-yellow-500">
-											<Star className="h-3 w-3 fill-yellow-500" />
+											<Star aria-hidden="true" className="h-3 w-3 fill-yellow-500" />
 											<span>4.9/5.0</span>
 											<span className="text-muted-foreground">(847 reviews)</span>
 										</div>
@@ -326,7 +326,7 @@ export function PluginManager() {
 									</div>
 								</div>
 
-								<Button className="w-full h-10 bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-[0_0_20px_rgba(37,99,235,0.4)] mb-6 transition-[colors,shadow]">
+								<Button className="w-full h-10 bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-[0_0_20px_rgba(37,99,235,0.4)] mb-6 transition-[color,background-color,border-color,box-shadow]">
 									Install Plugin — $49/mo
 								</Button>
 
@@ -384,13 +384,13 @@ export function PluginManager() {
 									</h3>
 									<div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
 										<div className="w-24 h-16 shrink-0 bg-card rounded border border-border flex items-center justify-center">
-											<Zap className="h-4 w-4 text-muted-foreground/70" />
+											<Zap aria-hidden="true" className="h-4 w-4 text-muted-foreground/70" />
 										</div>
 										<div className="w-24 h-16 shrink-0 bg-card rounded border border-border flex items-center justify-center">
-											<Box className="h-4 w-4 text-muted-foreground/70" />
+											<Box aria-hidden="true" className="h-4 w-4 text-muted-foreground/70" />
 										</div>
 										<div className="w-24 h-16 shrink-0 bg-card rounded border border-border flex items-center justify-center">
-											<FileCode2 className="h-4 w-4 text-muted-foreground/70" />
+											<FileCode2 aria-hidden="true" className="h-4 w-4 text-muted-foreground/70" />
 										</div>
 									</div>
 								</div>
@@ -405,21 +405,21 @@ export function PluginManager() {
 											variant="outline"
 											className="text-[10px] font-normal w-full justify-start border-border bg-muted/50"
 										>
-											<Search className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
+											<Search aria-hidden="true" className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
 											Read drawing data & properties
 										</Badge>
 										<Badge
 											variant="outline"
 											className="text-[10px] font-normal w-full justify-start border-border bg-muted/50"
 										>
-											<FileCode2 className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
+											<FileCode2 aria-hidden="true" className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
 											Write annotations to canvas
 										</Badge>
 										<Badge
 											variant="outline"
 											className="text-[10px] font-normal w-full justify-start border-border bg-muted/50"
 										>
-											<Box className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
+											<Box aria-hidden="true" className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
 											Access component library specs
 										</Badge>
 									</div>
@@ -431,19 +431,19 @@ export function PluginManager() {
 										variant="ghost"
 										className="h-8 text-xs justify-between w-full border border-slate-800 hover:bg-card"
 									>
-										View Documentation <ExternalLink className="h-3 w-3" />
+										View Documentation <ExternalLink aria-hidden="true" className="h-3 w-3" />
 									</Button>
 									<Button
 										variant="ghost"
 										className="h-8 text-xs justify-between w-full border border-slate-800 hover:bg-card"
 									>
-										Publisher Website <ExternalLink className="h-3 w-3" />
+										Publisher Website <ExternalLink aria-hidden="true" className="h-3 w-3" />
 									</Button>
 									<Button
 										variant="ghost"
 										className="h-8 text-xs justify-between w-full border border-slate-800 hover:bg-card text-muted-foreground"
 									>
-										Report Issue <AlertCircle className="h-3 w-3" />
+										Report Issue <AlertCircle aria-hidden="true" className="h-3 w-3" />
 									</Button>
 								</div>
 							</div>
@@ -574,7 +574,7 @@ function PluginCard({
 				size="sm"
 				className="w-full h-8 text-xs bg-card text-success hover:bg-secondary"
 			>
-				<CheckCircle className="h-3 w-3 mr-1.5" /> Installed
+				<CheckCircle aria-hidden="true" className="h-3 w-3 mr-1.5" /> Installed
 			</Button>
 		);
 	} else if (action === "Update") {
@@ -603,7 +603,7 @@ function PluginCard({
 		<div  // NOSONAR: typescript:S6848
 			role="button"
 			tabIndex={0}
-			className={`flex flex-col bg-card/40 border rounded-md p-5 cursor-pointer transition-[colors,shadow] hover:shadow-lg hover:border-border ${selected ? "border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)] bg-blue-950/10" : "border-slate-800"}`}
+			className={`flex flex-col bg-card/40 border rounded-md p-5 cursor-pointer transition-[color,background-color,border-color,box-shadow] hover:shadow-lg hover:border-border ${selected ? "border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)] bg-blue-950/10" : "border-slate-800"}`}
 			onClick={onClick}
 			onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
 		>
@@ -628,7 +628,7 @@ function PluginCard({
 					<div className="flex items-center gap-1 text-[11px] text-muted-foreground">
 						<span className="truncate">{publisher}</span>
 						{verified && (
-							<ShieldCheck className="h-3 w-3 text-info shrink-0" />
+							<ShieldCheck aria-hidden="true" className="h-3 w-3 text-info shrink-0" />
 						)}
 					</div>
 				</div>
@@ -638,10 +638,10 @@ function PluginCard({
 
 			<div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground mb-4 pb-4 border-b border-slate-800/50">
 				<div className="flex items-center gap-1 text-yellow-500">
-					<Star className="h-3 w-3 fill-yellow-500" /> {rating}
+					<Star aria-hidden="true" className="h-3 w-3 fill-yellow-500" /> {rating}
 				</div>
 				<div className="flex items-center gap-1">
-					<Download className="h-3 w-3" /> {downloads}
+					<Download aria-hidden="true" className="h-3 w-3" /> {downloads}
 				</div>
 				<div className="font-sans font-medium text-foreground/90">{price}</div>
 			</div>

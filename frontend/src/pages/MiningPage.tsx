@@ -157,7 +157,7 @@ export function MiningPage() {
                 <div className="flex-1 overflow-auto p-6 max-w-5xl mx-auto space-y-6">
                         <div>
                                 <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                                        <Pickaxe className="h-6 w-6 text-primary" />
+                                        <Pickaxe aria-hidden="true" className="h-6 w-6 text-primary" />
                                         Mining Fire Protection
                                 </h1>
                                 <p className="text-sm text-muted-foreground mt-1">
@@ -190,7 +190,7 @@ export function MiningPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
-                                                        <AlertTriangle className="h-5 w-5 text-amber-500" />
+                                                        <AlertTriangle aria-hidden="true" className="h-5 w-5 text-amber-500" />
                                                         Methane Hazard Classification
                                                 </CardTitle>
                                                 <CardDescription>MSHA 30 CFR §75.323 — Methane Detection</CardDescription>
@@ -208,7 +208,7 @@ export function MiningPage() {
                                                                 />
                                                         </div>
                                                         <Button onClick={handleMethaneCheck} disabled={loading}>
-                                                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check"}
+                                                                {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : "Check"}
                                                         </Button>
                                                 </div>
                                                 {methaneResult && (
@@ -237,7 +237,7 @@ export function MiningPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
-                                                        <Wind className="h-5 w-5 text-primary" />
+                                                        <Wind aria-hidden="true" className="h-5 w-5 text-primary" />
                                                         Ventilation Compliance Check
                                                 </CardTitle>
                                                 <CardDescription>MSHA 30 CFR §75.326-327 — Minimum Airflow Requirements</CardDescription>
@@ -266,15 +266,15 @@ export function MiningPage() {
                                                         </div>
                                                 </div>
                                                 <Button onClick={handleVentCheck} disabled={loading}>
-                                                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check Compliance"}
+                                                        {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : "Check Compliance"}
                                                 </Button>
                                                 {ventResult && (
                                                         <div className="space-y-2 p-4 rounded-lg bg-muted/50">
                                                                 <div className="flex items-center gap-2">
                                                                         {ventResult.is_compliant ? (
-                                                                                <><CheckCircle2 className="h-5 w-5 text-emerald-600" /><span className="text-emerald-600 font-semibold">COMPLIANT</span></>
+                                                                                <><CheckCircle2 aria-hidden="true" className="h-5 w-5 text-emerald-600" /><span className="text-emerald-600 font-semibold">COMPLIANT</span></>
                                                                         ) : (
-                                                                                <><AlertTriangle className="h-5 w-5 text-red-600" /><span className="text-red-600 font-semibold">NON-COMPLIANT</span></>
+                                                                                <><AlertTriangle aria-hidden="true" className="h-5 w-5 text-red-600" /><span className="text-red-600 font-semibold">NON-COMPLIANT</span></>
                                                                         )}
                                                                 </div>
                                                                 {(ventResult.violations as string[])?.map((v, i) => (
@@ -291,7 +291,7 @@ export function MiningPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
-                                                        <AlertTriangle className="h-5 w-5 text-amber-500" />
+                                                        <AlertTriangle aria-hidden="true" className="h-5 w-5 text-amber-500" />
                                                         CO Hazard Classification
                                                 </CardTitle>
                                                 <CardDescription>MSHA 30 CFR §75.351 — CO Monitoring at Belt Entries</CardDescription>
@@ -308,7 +308,7 @@ export function MiningPage() {
                                                                 />
                                                         </div>
                                                         <Button onClick={handleCoCheck} disabled={loading}>
-                                                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check"}
+                                                                {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : "Check"}
                                                         </Button>
                                                 </div>
                                                 {coResult && (
@@ -333,7 +333,7 @@ export function MiningPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
-                                                        <FileText className="h-5 w-5 text-primary" />
+                                                        <FileText aria-hidden="true" className="h-5 w-5 text-primary" />
                                                         Conveyor Belt Fire Suppression Design
                                                 </CardTitle>
                                                 <CardDescription>NFPA 120-2022 §8.4 + MSHA 30 CFR §75.1108</CardDescription>
@@ -350,7 +350,7 @@ export function MiningPage() {
                                                         </div>
                                                 </div>
                                                 <Button onClick={handleConveyor} disabled={loading}>
-                                                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Design Suppression"}
+                                                        {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : "Design Suppression"}
                                                 </Button>
                                                 {conveyorResult && (
                                                         <div className="space-y-2 p-4 rounded-lg bg-muted/50">
@@ -378,7 +378,7 @@ export function MiningPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
-                                                        <FileText className="h-5 w-5 text-primary" />
+                                                        <FileText aria-hidden="true" className="h-5 w-5 text-primary" />
                                                         Full MSHA + NFPA 120 Compliance Report
                                                 </CardTitle>
                                                 <CardDescription>Aggregated compliance check for mine section</CardDescription>
@@ -395,7 +395,7 @@ export function MiningPage() {
                                                         </div>
                                                 </div>
                                                 <Button onClick={handleReport} disabled={loading}>
-                                                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate Report"}
+                                                        {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : "Generate Report"}
                                                 </Button>
                                                 {reportResult && (
                                                         <div className="space-y-2 p-4 rounded-lg bg-muted/50">
@@ -427,7 +427,7 @@ export function MiningPage() {
                                                                                         setTimeout(() => URL.revokeObjectURL(url), 100);
                                                                                 }}
                                                                         >
-                                                                                <Download className="h-3 w-3 mr-1" /> Download Report
+                                                                                <Download aria-hidden="true" className="h-3 w-3 mr-1" /> Download Report
                                                                         </Button>
                                                                 ) : null}
                                                         </div>

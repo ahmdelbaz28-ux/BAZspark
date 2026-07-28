@@ -183,7 +183,7 @@ export function ContextPanel({
                                                 onClick={handleClose}
                                                 aria-label="Close context panel"
                                         >
-                                                <X className="h-4 w-4" />
+                                                <X aria-hidden="true" className="h-4 w-4" />
                                         </Button>
                                 </header>
 
@@ -256,7 +256,7 @@ export function ContextPanel({
                                                                                                 className={`rounded-md border p-3 ${getWarningClasses(warning.severity)}`}
                                                                                         >
                                                                                                 <div className="mb-1 flex items-center gap-2">
-                                                                                                        <AlertTriangle className="h-4 w-4" />
+                                                                                                        <AlertTriangle aria-hidden="true" className="h-4 w-4" />
                                                                                                         <span className="text-sm font-semibold">
                                                                                                                 {warning.title}
                                                                                                         </span>

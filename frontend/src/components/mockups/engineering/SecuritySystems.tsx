@@ -26,7 +26,7 @@ export function SecuritySystems() {
 			<div className="h-14 flex items-center justify-between px-4 border-b border-border bg-card shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="flex items-center gap-2 text-indigo-400 font-bold tracking-wide">
-						<Shield className="h-5 w-5" />
+						<Shield aria-hidden="true" className="h-5 w-5" />
 						<span>Security Systems — CCTV & Access</span>
 					</div>
 					<Separator orientation="vertical" className="h-6 bg-slate-600" />
@@ -43,7 +43,7 @@ export function SecuritySystems() {
 						size="sm"
 						className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white border-none"
 					>
-						<Video className="w-3 h-3 mr-2" /> Live Monitor
+						<Video aria-hidden="true" className="w-3 h-3 mr-2" /> Live Monitor
 					</Button>
 					<Button
 						size="sm"
@@ -57,7 +57,7 @@ export function SecuritySystems() {
 						variant="ghost"
 						className="h-8 w-8 text-muted-foreground"
 					>
-						<Settings className="w-4 h-4" />
+						<Settings aria-hidden="true" className="w-4 h-4" />
 					</Button>
 				</div>
 			</div>
@@ -67,7 +67,7 @@ export function SecuritySystems() {
 				<div className="w-[240px] flex flex-col border-r border-border bg-card shrink-0">
 					<div className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/50 flex justify-between">
 						<span>System Tree</span>
-						<Search className="h-3 w-3" />
+						<Search aria-hidden="true" className="h-3 w-3" />
 					</div>
 					<ScrollArea className="flex-1 p-2">
 						<NavNode title="Tower-B Security" expanded>
@@ -204,7 +204,7 @@ export function SecuritySystems() {
 				<div className="w-[300px] bg-card border-l border-border flex flex-col shrink-0">
 					<div className="p-3 border-b border-border flex justify-between items-center bg-muted/50">
 						<div className="flex items-center gap-2">
-							<Camera className="h-4 w-4 text-indigo-400" />
+							<Camera aria-hidden="true" className="h-4 w-4 text-indigo-400" />
 							<span className="font-bold text-foreground">CAM-EXT-01</span>
 						</div>
 						<Badge className="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/20">
@@ -287,7 +287,7 @@ export function SecuritySystems() {
 							{/* Related Access Control */}
 							<div>
 								<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
-									<Lock className="w-3 h-3" /> Linked Access Point
+									<Lock aria-hidden="true" className="w-3 h-3" /> Linked Access Point
 								</h3>
 								<div className="bg-card border border-border p-2 rounded">
 									<div className="flex justify-between items-center mb-2">
@@ -302,7 +302,7 @@ export function SecuritySystems() {
 										Suprema BioEntry W2 (Bio/Card)
 									</div>
 									<div className="flex items-center gap-2 p-1.5 bg-card rounded text-xs border border-border">
-										<UserCheck className="w-3 h-3 text-indigo-400" />
+										<UserCheck aria-hidden="true" className="w-3 h-3 text-indigo-400" />
 										<div className="flex flex-col">
 											<span className="text-foreground/90">
 												Access granted: Ahmed A.
@@ -332,7 +332,7 @@ export function SecuritySystems() {
 					</span>
 					<Separator orientation="vertical" className="h-4 bg-secondary" />
 					<span className="text-green-400 flex items-center gap-1">
-						<Shield className="w-3 h-3" /> IDS: ARMED
+						<Shield aria-hidden="true" className="w-3 h-3" /> IDS: ARMED
 					</span>
 				</div>
 				<div className="flex items-center gap-3">
@@ -391,9 +391,9 @@ function NavNode({
 				<div className="w-4 h-4 flex items-center justify-center">
 					{children ? (
 						expanded ? (
-							<ChevronDown className="h-3 w-3 text-muted-foreground" />
+							<ChevronDown aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
 						) : (
-							<ChevronRight className="h-3 w-3 text-muted-foreground" />
+							<ChevronRight aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
 						)
 					) : (
 						<div className="w-1 h-1" />

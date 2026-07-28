@@ -25,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { revitService } from "@/services/revitService";
+import { revitApi } from "@/services/fullApi";
 
 const parsePoint = (s: string): number[] =>
 	s.split(",").map((v) => Number.parseFloat(v.trim()));
@@ -80,60 +80,60 @@ export function RevitCreatePage() {
 			let result;
 			switch (type) {
 				case "wall":
-					result = await revitService.createWall(
-						parsePoint(wallStart),
-						parsePoint(wallEnd),
-						Number.parseFloat(wallHeight),
-						wallLevel,
-						wallType,
-					);
+					result = await revitApi.createWall({
+						start_point: parsePoint(wallStart),
+						end_point: parsePoint(wallEnd),
+						height: Number.parseFloat(wallHeight),
+						level: wallLevel,
+						wall_type: wallType,
+					});
 					break;
 				case "floor":
-					result = await revitService.createFloor(
-						parsePoints(floorBoundary),
-						floorLevel,
-						floorType,
-					);
+					result = await revitApi.createFloor({
+						boundary_points: parsePoints(floorBoundary),
+						level: floorLevel,
+						floor_type: floorType,
+					});
 					break;
 				case "column":
-					result = await revitService.createColumn(
-						parsePoint(colLocation),
-						Number.parseFloat(colHeight),
-						colLevel,
-						colType,
-					);
+					result = await revitApi.createColumn({
+						location_point: parsePoint(colLocation),
+						height: Number.parseFloat(colHeight),
+						level: colLevel,
+						column_type: colType,
+					});
 					break;
 				case "beam":
-					result = await revitService.createBeam(
-						parsePoint(beamStart),
-						parsePoint(beamEnd),
-						beamLevel,
-						beamType,
-					);
+					result = await revitApi.createBeam({
+						start_point: parsePoint(beamStart),
+						end_point: parsePoint(beamEnd),
+						level: beamLevel,
+						beam_type: beamType,
+					});
 					break;
 				case "door":
 					if (!doorWall) {
 						toast.error("Enter host wall ID");
 						return;
 					}
-					result = await revitService.createDoor(
-						doorWall,
-						parsePoint(doorLocation),
-						doorType,
-						doorLevel,
-					);
+					result = await revitApi.createDoor({
+						host_wall_id: doorWall,
+						location_point: parsePoint(doorLocation),
+						family_type: doorType,
+						level: doorLevel,
+					});
 					break;
 				case "window":
 					if (!winWall) {
 						toast.error("Enter host wall ID");
 						return;
 					}
-					result = await revitService.createWindow(
-						winWall,
-						parsePoint(winLocation),
-						winType,
-						winLevel,
-					);
+					result = await revitApi.createWindow({
+						host_wall_id: winWall,
+						location_point: parsePoint(winLocation),
+						family_type: winType,
+						level: winLevel,
+					});
 					break;
 			}
 			toast.success(`${type} created: ${result}`);
@@ -165,37 +165,37 @@ export function RevitCreatePage() {
 						value="wall"
 						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
-						<Ruler className="h-4 w-4 mr-1" /> Wall
+						<Ruler aria-hidden="true" className="h-4 w-4 mr-1" /> Wall
 					</TabsTrigger>
 					<TabsTrigger
 						value="floor"
 						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
-						<Square className="h-4 w-4 mr-1" /> Floor
+						<Square aria-hidden="true" className="h-4 w-4 mr-1" /> Floor
 					</TabsTrigger>
 					<TabsTrigger
 						value="column"
 						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
-						<Columns3 className="h-4 w-4 mr-1" /> Column
+						<Columns3 aria-hidden="true" className="h-4 w-4 mr-1" /> Column
 					</TabsTrigger>
 					<TabsTrigger
 						value="beam"
 						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
-						<Box className="h-4 w-4 mr-1" /> Beam
+						<Box aria-hidden="true" className="h-4 w-4 mr-1" /> Beam
 					</TabsTrigger>
 					<TabsTrigger
 						value="door"
 						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
-						<DoorOpen className="h-4 w-4 mr-1" /> Door
+						<DoorOpen aria-hidden="true" className="h-4 w-4 mr-1" /> Door
 					</TabsTrigger>
 					<TabsTrigger
 						value="window"
 						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
-						<AppWindow className="h-4 w-4 mr-1" /> Window
+						<AppWindow aria-hidden="true" className="h-4 w-4 mr-1" /> Window
 					</TabsTrigger>
 				</TabsList>
 
@@ -258,7 +258,7 @@ export function RevitCreatePage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
 								) : null}{" "}
 								Create Wall
 							</Button>
@@ -309,7 +309,7 @@ export function RevitCreatePage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
 								) : null}{" "}
 								Create Floor
 							</Button>
@@ -366,7 +366,7 @@ export function RevitCreatePage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
 								) : null}{" "}
 								Create Column
 							</Button>
@@ -425,7 +425,7 @@ export function RevitCreatePage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
 								) : null}{" "}
 								Create Beam
 							</Button>
@@ -483,7 +483,7 @@ export function RevitCreatePage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
 								) : null}{" "}
 								Create Door
 							</Button>
@@ -541,7 +541,7 @@ export function RevitCreatePage() {
 								className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 							>
 								{creating ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+									<Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
 								) : null}{" "}
 								Create Window
 							</Button>

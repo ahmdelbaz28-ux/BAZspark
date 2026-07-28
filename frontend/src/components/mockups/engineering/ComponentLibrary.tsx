@@ -116,36 +116,36 @@ export function ComponentLibrary() {
                         <div className="h-16 flex items-center justify-between px-4 border-b bg-card shrink-0">
                                 <div className="flex items-center gap-6">
                                         <div className="font-bold tracking-wide flex items-center gap-2">
-                                                <Library className="h-5 w-5 text-primary" />
+                                                <Library aria-hidden="true" className="h-5 w-5 text-primary" />
                                                 Engineering Component Library
                                         </div>
 
                                         <div className="relative w-[400px]">
-                                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                <Search aria-hidden="true" className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                                 <Input
                                                         placeholder="Search 14,832 components..."
                                                         className="pl-9 bg-muted/50 border-muted-foreground/20 h-9 text-sm"
                                                 />
-                                                <Filter className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground" />
+                                                <Filter aria-hidden="true" className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground" />
                                         </div>
                                 </div>
 
                                 <div className="flex items-center gap-4">
                                         <div className="flex border rounded-md overflow-hidden bg-muted/30">
-                                                <ToolBtn icon={<LayoutGrid />} active />
-                                                <ToolBtn icon={<List />} />
-                                                <ToolBtn icon={<Library />} />
+                                                <ToolBtn icon={<LayoutGrid aria-hidden="true" />} active />
+                                                <ToolBtn icon={<List aria-hidden="true" />} />
+                                                <ToolBtn icon={<Library aria-hidden="true" />} />
                                         </div>
                                         <Separator orientation="vertical" className="h-6" />
                                         <div className="flex gap-2">
                                                 <Button variant="outline" size="sm" className="h-8 gap-1">
-                                                        <Plus className="h-4 w-4" /> Import Custom
+                                                        <Plus aria-hidden="true" className="h-4 w-4" /> Import Custom
                                                 </Button>
                                                 <Button variant="outline" size="sm" className="h-8 gap-1">
-                                                        <FolderTree className="h-4 w-4" /> Manage Libraries
+                                                        <FolderTree aria-hidden="true" className="h-4 w-4" /> Manage Libraries
                                                 </Button>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <Settings className="h-4 w-4" />
+                                                        <Settings aria-hidden="true" className="h-4 w-4" />
                                                 </Button>
                                         </div>
                                 </div>
@@ -160,9 +160,9 @@ export function ComponentLibrary() {
                                                                 <div key={i} className="mb-2">
                                                                         <div className="flex items-center gap-1.5 py-1.5 px-2 rounded-md hover:bg-muted/50 cursor-pointer text-sm font-medium text-foreground">
                                                                                 {cat.open ? (
-                                                                                        <ChevronDown className="h-3 w-3" />
+                                                                                        <ChevronDown aria-hidden="true" className="h-3 w-3" />
                                                                                 ) : (
-                                                                                        <ChevronRight className="h-3 w-3" />
+                                                                                        <ChevronRight aria-hidden="true" className="h-3 w-3" />
                                                                                 )}
                                                                                 {cat.name}
                                                                         </div>
@@ -226,7 +226,7 @@ export function ComponentLibrary() {
                                                                         role="button"
                                                                         tabIndex={0}
                                                                         key={comp.id}
-                                                                        className={`group bg-card border rounded-lg overflow-hidden transition-[colors,shadow] hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,168,255,0.1)] cursor-pointer flex flex-col ${selectedComp === comp.id ? "border-primary shadow-[0_0_10px_rgba(0,168,255,0.2)]" : "border-border/60"}`}
+                                                                        className={`group bg-card border rounded-lg overflow-hidden transition-[color,background-color,border-color,box-shadow] hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,168,255,0.1)] cursor-pointer flex flex-col ${selectedComp === comp.id ? "border-primary shadow-[0_0_10px_rgba(0,168,255,0.2)]" : "border-border/60"}`}
                                                                         onClick={() => setSelectedComp(comp.id)}
                                                                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedComp(comp.id); } }}
                                                                 >
@@ -236,14 +236,14 @@ export function ComponentLibrary() {
                                                                                         className={`absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 transition-opacity ${selectedComp === comp.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                                                                                 >
                                                                                         <Button size="sm" className="h-8 shadow-lg">
-                                                                                                <FileSymlink className="h-4 w-4 mr-1" /> Insert
+                                                                                                <FileSymlink aria-hidden="true" className="h-4 w-4 mr-1" /> Insert
                                                                                         </Button>
                                                                                         <Button
                                                                                                 size="sm"
                                                                                                 variant="secondary"
                                                                                                 className="h-8 shadow-lg"
                                                                                         >
-                                                                                                <Heart className="h-4 w-4" />
+                                                                                                <Heart aria-hidden="true" className="h-4 w-4" />
                                                                                         </Button>
                                                                                 </div>
                                                                         </div>
@@ -308,10 +308,10 @@ export function ComponentLibrary() {
 
                                                                         <div className="flex gap-2">
                                                                                 <Button className="flex-1 h-9 shadow-md">
-                                                                                        <FileSymlink className="h-4 w-4 mr-2" /> Insert
+                                                                                        <FileSymlink aria-hidden="true" className="h-4 w-4 mr-2" /> Insert
                                                                                 </Button>
                                                                                 <Button variant="outline" size="icon" className="h-9 w-9">
-                                                                                        <Heart className="h-4 w-4" />
+                                                                                        <Heart aria-hidden="true" className="h-4 w-4" />
                                                                                 </Button>
                                                                         </div>
 
@@ -337,7 +337,7 @@ export function ComponentLibrary() {
                                                                                                 size="sm"
                                                                                                 className="text-xs h-8 justify-start"
                                                                                         >
-                                                                                                <FileSymlink className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
+                                                                                                <FileSymlink aria-hidden="true" className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
                                                                                                 Single Line
                                                                                         </Button>
                                                                                         <Button
@@ -345,7 +345,7 @@ export function ComponentLibrary() {
                                                                                                 size="sm"
                                                                                                 className="text-xs h-8 justify-start"
                                                                                         >
-                                                                                                <FileSymlink className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
+                                                                                                <FileSymlink aria-hidden="true" className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
                                                                                                 Schematic
                                                                                         </Button>
                                                                                         <Button
@@ -353,7 +353,7 @@ export function ComponentLibrary() {
                                                                                                 size="sm"
                                                                                                 className="text-xs h-8 justify-start"
                                                                                         >
-                                                                                                <PackagePlus className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
+                                                                                                <PackagePlus aria-hidden="true" className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
                                                                                                 3D Model
                                                                                         </Button>
                                                                                         <Button
@@ -361,7 +361,7 @@ export function ComponentLibrary() {
                                                                                                 size="sm"
                                                                                                 className="text-xs h-8 justify-start"
                                                                                         >
-                                                                                                <Download className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
+                                                                                                <Download aria-hidden="true" className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
                                                                                                 Datasheet
                                                                                         </Button>
                                                                                 </div>

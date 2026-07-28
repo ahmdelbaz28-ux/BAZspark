@@ -66,13 +66,13 @@ export function UserMenu() {
 					className="gap-2 text-foreground/90 hover:bg-card"
 					aria-label="User menu"
 				>
-					<User className="h-4 w-4" />
+					<User aria-hidden="true" className="h-4 w-4" />
 					<span className="hidden sm:inline">{roleLabel.split(" ")[0]}</span>
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-56">
 				<DropdownMenuLabel className="flex items-center gap-2">
-					<ShieldCheck className="h-4 w-4 text-primary" />
+					<ShieldCheck aria-hidden="true" className="h-4 w-4 text-primary" />
 					<div className="flex flex-col">
 						<span className="text-sm font-medium">Signed in</span>
 						<span
@@ -87,7 +87,7 @@ export function UserMenu() {
 					onClick={handleLogout}
 					className="text-danger focus:text-slate-400 focus:bg-slate-500/10 cursor-pointer"
 				>
-					<LogOut className="h-4 w-4 mr-2" />
+					<LogOut aria-hidden="true" className="h-4 w-4 mr-2" />
 					Sign out
 				</DropdownMenuItem>
 			</DropdownMenuContent>

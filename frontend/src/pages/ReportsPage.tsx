@@ -441,7 +441,7 @@ export function ReportsPage() {
                 if (!reports || reports.length === 0) {
                         return (
                                 <div className="text-center py-8 text-muted-foreground">
-                                        <FileText className="h-8 w-8 mx-auto mb-3 opacity-50" />
+                                        <FileText aria-hidden="true" className="h-8 w-8 mx-auto mb-3 opacity-50" />
                                         <p>{t("reports.noReports")}</p>
                                         <p className="text-sm mt-1">{t("reports.createFirst")}</p>
                                 </div>
@@ -458,7 +458,7 @@ export function ReportsPage() {
                                                 >
                                                         <div className="flex items-center gap-3">
                                                                 <div className="w-8 h-8 rounded bg-blue-500/10 flex items-center justify-center">
-                                                                        <FileText className="h-4 w-4 text-info" />
+                                                                        <FileText aria-hidden="true" className="h-4 w-4 text-info" />
                                                                 </div>
                                                                 <div>
                                                                         <div className="text-sm font-medium text-foreground">
@@ -468,11 +468,11 @@ export function ReportsPage() {
                                                                         </div>
                                                                         <div className="text-xs text-muted-foreground flex items-center gap-3">
                                                                                 <span className="flex items-center gap-1">
-                                                                                        <Calendar className="h-3 w-3" />
+                                                                                        <Calendar aria-hidden="true" className="h-3 w-3" />
                                                                                         {new Date(report.createdAt).toLocaleDateString()}
                                                                                 </span>
                                                                                 <span className="flex items-center gap-1">
-                                                                                        <Clock className="h-3 w-3" />
+                                                                                        <Clock aria-hidden="true" className="h-3 w-3" />
                                                                                         {new Date(report.createdAt).toLocaleTimeString()}
                                                                                 </span>
                                                                         </div>
@@ -524,7 +524,7 @@ export function ReportsPage() {
                                                                         title={t("common.download")}
                                                                         disabled={report.status !== "completed"}
                                                                 >
-                                                                        <Download className="h-4 w-4" />
+                                                                        <Download aria-hidden="true" className="h-4 w-4" />
                                                                 </Button>
                                                         </div>
                                                 </div>
@@ -552,7 +552,7 @@ export function ReportsPage() {
                                                 className="border-border text-foreground/90 hover:bg-card"
                                                 onClick={() => refetchReports()}
                                         >
-                                                <Clock className="h-4 w-4 mr-1" />
+                                                <Clock aria-hidden="true" className="h-4 w-4 mr-1" />
                                                 {t("reports.refresh")}
                                         </Button>
                                 </div>
@@ -679,12 +679,12 @@ export function ReportsPage() {
                                                 >
                                                         {generating ? (
                                                                 <>
-                                                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                                        <Loader2 aria-hidden="true" className="h-4 w-4 mr-1 animate-spin" />
                                                                         {t("reports.generating")}
                                                                 </>
                                                         ) : (
                                                                 <>
-                                                                        <FileText className="h-4 w-4 mr-1" />
+                                                                        <FileText aria-hidden="true" className="h-4 w-4 mr-1" />
                                                                         {t("reports.generate")}
                                                                 </>
                                                         )}
@@ -743,12 +743,11 @@ export function ReportsPage() {
                                                 >
                                                         {ahjGenerating ? (
                                                                 <>
-                                                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                                                        Generating AHJ...
-                                                                </>
+                                                                        <Loader2 aria-hidden="true" className="h-4 w-4 mr-1 animate-spin" />Generating AHJ…
+																						</>
                                                         ) : (
                                                                 <>
-                                                                        <FileText className="h-4 w-4 mr-1" />
+                                                                        <FileText aria-hidden="true" className="h-4 w-4 mr-1" />
                                                                         AHJ Submittal
                                                                 </>
                                                         )}
@@ -772,7 +771,7 @@ export function ReportsPage() {
                                                 role="alert"
                                                 aria-label="Sample data warning"
                                         >
-                                                <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                                                <AlertTriangle aria-hidden="true" className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
                                                 <div>
                                                         <div className="font-semibold text-amber-600 dark:text-amber-400">
                                                                 SAMPLE DATA — Not Real Calculations

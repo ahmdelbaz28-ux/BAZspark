@@ -45,7 +45,7 @@ export function ErrorRecoveryView({
 			<div className="w-full max-w-3xl rounded-3xl border border-danger/30 bg-background/90 p-6 shadow-2xl shadow-black/40">
 				<div className="flex items-start gap-4">
 					<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-danger/30 bg-red-500/10 text-danger">
-						<AlertTriangle className="h-6 w-6" />
+						<AlertTriangle aria-hidden="true" className="h-6 w-6" />
 					</div>
 					<div className="min-w-0 flex-1">
 						<p className="text-xs font-semibold uppercase tracking-[0.22em] text-danger">
@@ -102,7 +102,7 @@ export function ErrorRecoveryView({
 								className="flex-1 bg-danger text-white hover:bg-danger/90"
 								onClick={() => setHelpOpen(true)}
 							>
-								<BookOpenText className="h-4 w-4" />
+								<BookOpenText aria-hidden="true" className="h-4 w-4" />
 								Get Help
 							</Button>
 							<Button
@@ -111,7 +111,7 @@ export function ErrorRecoveryView({
 								className="flex-1 border-border text-foreground hover:bg-card hover:text-foreground"
 								onClick={reload ?? (() => window.location.reload())}
 							>
-								<RotateCcw className="h-4 w-4" />
+								<RotateCcw aria-hidden="true" className="h-4 w-4" />
 								{reload ? "Retry Component" : "Reload Application"}
 							</Button>
 						</div>
