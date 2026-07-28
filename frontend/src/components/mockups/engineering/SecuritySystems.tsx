@@ -442,7 +442,7 @@ function CamSymbol({
 			<div
 				className={`w-5 h-5 rounded-full border-2 bg-card flex items-center justify-center z-10 ${selected ? "border-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.5)]" : "border-slate-400"}`}
 			>
-				<Camera
+				<Camera aria-hidden="true"
 					className={`w-2.5 h-2.5 ${selected ? "text-indigo-400" : "text-muted-foreground"}`}
 				/>
 			</div>

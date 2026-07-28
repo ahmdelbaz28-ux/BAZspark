@@ -305,7 +305,7 @@ export function Collaboration() {
 
 							{/* Remote Cursor 1 */}
 							<div className="absolute top-[90px] left-[180px] flex items-start gap-1 z-20">
-								<MousePointer2
+								<MousePointer2 aria-hidden="true"
 									className="w-5 h-5 text-purple-400 fill-purple-400 rotate-[-15deg]"
 									style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
 								/>
@@ -316,7 +316,7 @@ export function Collaboration() {
 
 							{/* Remote Cursor 2 */}
 							<div className="absolute top-[220px] left-[320px] flex items-start gap-1 z-20">
-								<MousePointer2
+								<MousePointer2 aria-hidden="true"
 									className="w-5 h-5 text-rose-400 fill-rose-400 rotate-[-15deg]"
 									style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
 								/>
@@ -531,9 +531,8 @@ export function Collaboration() {
 										</div>
 
 										<div className="mt-3 flex gap-2">
-											<Input
-												placeholder="Reply..."
-												className="h-7 text-xs bg-muted/50"
+											<Input placeholder="Reply..."
+												autoComplete="off" className="h-7 text-xs bg-muted/50"
 											/>
 											<Button size="icon" className="h-7 w-7 shrink-0">
 												<Send aria-hidden="true" className="h-3 w-3" />

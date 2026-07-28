@@ -462,8 +462,7 @@ export function WorkspaceArabic() {
                                                                 </Badge>
                                                         </div>
                                                         <div className="relative">
-                                                                <Input
-                                                                        className="pl-8 pr-3 bg-background border-muted text-xs h-8"
+                                                                <Input autoComplete="off" className="pl-8 pr-3 bg-background border-muted text-xs h-8"
                                                                         placeholder="اسأل المساعد..."
                                                                 />
                                                                 <Button
@@ -662,7 +661,7 @@ function TreeNode({
                         <div  // NOSONAR: typescript:S6848
                                 className="flex items-center gap-1 py-1 hover:bg-muted/50 cursor-pointer rounded px-1"
                                 onClick={() => setOpen(!open)} onKeyDown={(e) => { if (e.key === "Enter") (() => setOpen(!open))(); }}                  >
-                                <Triangle
+                                <Triangle aria-hidden="true"
                                         className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : "-rotate-90"}`}
                                 />
                                 <FolderOpen aria-hidden="true" className="h-4 w-4 text-info/80" />

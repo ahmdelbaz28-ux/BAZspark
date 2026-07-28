@@ -67,9 +67,8 @@ export function PluginManager() {
 				<div className="flex items-center gap-4">
 					<div className="relative w-64 hidden xl:block">
 						<Search aria-hidden="true" className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
-						<Input
-							placeholder="Search 2,400+ plugins..."
-							className="pl-9 h-8 bg-[#0a0a0f] border-border text-xs focus-visible:ring-purple-500"
+						<Input placeholder="Search 2,400+ plugins..."
+							autoComplete="off" className="pl-9 h-8 bg-[#0a0a0f] border-border text-xs focus-visible:ring-purple-500"
 						/>
 					</div>
 					<div className="flex gap-2">
@@ -501,7 +500,7 @@ function CategoryItem({
 			>
 				<div className="flex items-center gap-2">
 					{children && (
-						<ChevronRight
+						<ChevronRight aria-hidden="true"
 							className={`h-3 w-3 transition-transform ${expanded ? "rotate-90" : ""}`}
 						/>
 					)}

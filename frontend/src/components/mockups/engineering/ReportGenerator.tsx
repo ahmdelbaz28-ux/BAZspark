@@ -814,7 +814,7 @@ function TreeFolder({
 				onClick={() => setOpen(!open)}
 				onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(!open); } }}
 			>
-				<Triangle
+				<Triangle aria-hidden="true"
 					className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : "rotate-90"}`}
 				/>
 				<span className="text-xs font-medium text-foreground/90">{title}</span>
@@ -839,7 +839,7 @@ function TreeItem({
 		<div
 			className={`flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors ${active ? "bg-blue-500/20 text-info font-medium border border-blue-500/30" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
 		>
-			<FileText
+			<FileText aria-hidden="true"
 				className={`h-4 w-4 ${active ? "text-info" : "text-muted-foreground"}`}
 			/>
 			<span className="text-[11px] truncate">{title}</span>
