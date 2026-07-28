@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { installApiMock } from './visual/helpers/authMock';
 
 test.describe('Marine Page End-to-End Tests', () => {
  test.beforeEach(async ({ page }) => {
+ await installApiMock(page, { preAuthenticated: true });
  await page.goto('http://localhost:5173/marine');
  });
 

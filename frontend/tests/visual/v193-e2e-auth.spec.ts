@@ -78,7 +78,7 @@ test("login page renders with correct elements", async ({ page }) => {
         // V246: 'BAZSPARK' wordmark is split into two spans ("BAZ" + "SPARK")
         // by BazSparkWordmark component. Use the logo's aria-label instead.
         await expect(page.getByLabel(/BAZSPARK logo/i)).toBeVisible({ timeout: 10000 });
-        await expect(page.getByText(/Autonomous 3D Routing/i)).toBeVisible();
+        await expect(page.getByText(/ENGINEERING INTELLIGENCE/i)).toBeVisible();
 
         // 'System Access' heading on the right panel
         await expect(page.getByRole("heading", { name: /System Access/i })).toBeVisible();

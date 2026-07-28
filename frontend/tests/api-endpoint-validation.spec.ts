@@ -1,5 +1,6 @@
 // NOSONAR
 import { expect, type Page, test } from "@playwright/test";
+import { installApiMock } from "./visual/helpers/authMock";
 
 /**
  * API Endpoint Validation Tests
@@ -57,6 +58,7 @@ function setupApiInterceptor(page: Page) {
 
 test.describe("API Endpoint Validation Tests", () => {
 	test.beforeEach(async ({ page }) => {
+		await installApiMock(page, { preAuthenticated: true });
 		setupApiInterceptor(page);
 	});
 

@@ -1,5 +1,6 @@
 // NOSONAR
 import { expect, test } from "@playwright/test";
+import { installApiMock } from "./visual/helpers/authMock";
 
 /**
  * Simplified Button and API Connection Tests
@@ -7,6 +8,10 @@ import { expect, test } from "@playwright/test";
  * This test suite verifies UI buttons and their corresponding backend API calls
  * for the CAD/BIM Integration Platform.
  */
+
+test.beforeEach(async ({ page }) => {
+	await installApiMock(page, { preAuthenticated: true });
+});
 
 /**
  * Test Dashboard Page Buttons

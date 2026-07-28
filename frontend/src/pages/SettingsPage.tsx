@@ -186,6 +186,20 @@ export function SettingsPage() {
                                                                 </>
                                                         )}
                                                 </div>
+                                        <div className="pt-4 flex items-center justify-between border-t border-border">
+                                                <div>
+                                                        <p className="text-sm font-medium text-foreground">Database Administration</p>
+                                                        <p className="text-xs text-muted-foreground">Manage Redis, Neo4j, Qdrant connections</p>
+                                                </div>
+                                                <Button
+                                                        variant="outline"
+                                                        className="border-border text-foreground/90 hover:bg-card"
+                                                        onClick={() => navigate("/settings/database")}
+                                                >
+                                                        <Database aria-hidden="true" className="h-4 w-4 mr-1" />
+                                                        Manage Databases
+                                                </Button>
+                                        </div>
                                         </CardContent>
                                 </Card>
 
