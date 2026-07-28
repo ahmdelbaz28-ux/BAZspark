@@ -721,9 +721,8 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                                                                 <span className="text-[10px] lg:text-[11px] font-extrabold tracking-widest text-slate-500 uppercase">
                                                                                                         SECURE ACCESS PORTAL
                                                                                                 </span>
-                                                                                                <a
-                                                                                                        href="mailto:ahmdelbaz28@gmail.com"
-                                                                                                        className="text-[11px] lg:text-[12px] font-extrabold uppercase tracking-widest text-cyan-400 hover:text-cyan-300 transition-colors hover:underline"
+                                                                                                <a                                        href="mailto:ahmdelbaz28@gmail.com"
+                                                                                        className="text-[11px] lg:text-[12px] font-extrabold uppercase tracking-widest text-cyan-400 hover:text-cyan-300 focus-visible:text-cyan-200 transition-colors hover:underline"
                                                                                                 >
                                                                                                         SUPPORT
                                                                                                 </a>
@@ -732,9 +731,9 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                                                         {/* Floating Label Wrapper */}
                                                                                         <div className="relative mt-2">
                                                                                                 <KeyRound aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-slate-500 z-10" />
-                                                                                                <Input
-                                                                                                        id="api-key"
+                                                                                                <Input id="api-key"
                                                                                                         type={showKey ? "text" : "password"}
+                                                                                                        name="api_key"
                                                                                                         autoComplete="off"
                                                                                                         autoFocus
                                                                                                         placeholder=" "

@@ -109,7 +109,7 @@ export function SystemAnalyzer() {
                                                         }`}
                                                 >
                                                         <div className="flex items-start gap-3">
-                                                                <AlertTriangle
+                                                                <AlertTriangle aria-hidden="true"
                                                                         className={`h-5 w-5 shrink-0 ${issue.type === "critical" ? "text-slate-400" : "text-amber-500"}`}
                                                                 />
                                                                 <div className="flex-1">

@@ -52,8 +52,7 @@ export function AuditTrail() {  // NOSONAR - typescript:S9011: Intentionally com
 							Tower-B-Electrical-Floor3.dwg
 						</div>
 						<div className="relative">
-							<Input
-								className="h-8 w-64 text-xs bg-background pr-8"
+							<Input autoComplete="off" className="h-8 w-64 text-xs bg-background pr-8"
 								placeholder="Search logs..."
 							/>
 							<Search aria-hidden="true" className="h-4 w-4 absolute right-2.5 top-2.5 text-muted-foreground" />
