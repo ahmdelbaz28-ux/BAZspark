@@ -83,17 +83,52 @@ _os.environ.setdefault("CORS_ORIGINS", "http://localhost:3000,http://localhost:5
 
 
 @pytest.fixture(autouse=True)
-def _enforce_root_test_api_key(request):
+def _enforce_root_test_api_key(request, monkeypatch):
     """
     Ensure root integration tests under tests/ maintain their configured FIREAI_API_KEY
     without contamination from backend/tests/ fixtures during combined suite runs.
 
-    Uses setdefault (not setenv/monkeypatch) so test files with specific API key
-    requirements (e.g. test_auth_router.py with "test_key_for_auth_123") are not overridden.
+    V216 FIX (Gate 2 — FIREAI_API_KEY contamination):
+    Previously used `setdefault`, which does NOT overwrite a value that
+    `backend/tests/conftest.py` line 71 unconditionally sets at IMPORT time
+    via `os.environ["FIREAI_API_KEY"] = TEST_API_KEY`. When pytest collects
+    both `tests/` and `backend/tests/` in the same run (as CI does), the
+    backend conftest's import-time side effect leaks its key into root tests
+    that expect a different value (e.g. tests/test_v2_api.py expects
+    "test-key-for-v2-api-testing-1234567890"). The setdefault was a no-op
+    against the leaked value, causing cascading 401 failures across the root suite.
+
+    Fix: use monkeypatch.setenv (properly scoped — auto-restored after the
+    test) to FORCE the root key for root tests — BUT only if the env var
+    currently holds the backend-leaked value. This preserves the ability
+    of tests that set their OWN custom key (e.g. tests/test_auth_router.py
+    sets "test_key_for_auth_123" via a module-scoped _setup_env_module
+    fixture) to override.
+
+    Detection logic: the backend conftest leaks "test-api-key-for-testing-only"
+    (TEST_API_KEY constant in backend/tests/conftest.py). If FIREAI_API_KEY
+    equals that value at fixture-resolution time, we know no other test
+    fixture has overridden it — so we apply the root default. If it equals
+    anything else (a custom key set by the test), we leave it alone.
+
+    For non-root tests (backend/tests/, fireai/core/tests/), we do nothing
+    — their own conftest is authoritative for their API key.
     """
     fpath = str(getattr(request, "fspath", ""))
+    # "tests" must appear in path AND "backend" must NOT — this identifies
+    # root tests/ exclusively. backend/tests/ paths contain both substrings.
     if "tests" in fpath and "backend" not in fpath:
-        _os.environ.setdefault("FIREAI_API_KEY", "test-key-for-v2-api-testing-1234567890")
+        # The value backend/tests/conftest.py leaks at import time. We must
+        # import this constant lazily (the backend conftest may not be loaded
+        # when running tests/ alone, e.g. `pytest tests/test_v2_api.py`).
+        _BACKEND_LEAKED_KEY = "test-api-key-for-testing-only"
+        _ROOT_DEFAULT_KEY = "test-key-for-v2-api-testing-1234567890"
+        current = _os.environ.get("FIREAI_API_KEY", "")
+        # Only overwrite the leaked backend value — never clobber a key
+        # that the test itself has set (e.g. test_auth_router.py's
+        # "test_key_for_auth_123" via _setup_env_module).
+        if current == _BACKEND_LEAKED_KEY or current == "":
+            monkeypatch.setenv("FIREAI_API_KEY", _ROOT_DEFAULT_KEY)
 
 
 # Without it, TestClient-based tests in tests/ fail at startup with:
