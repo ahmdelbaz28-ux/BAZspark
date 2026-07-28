@@ -5,6 +5,17 @@
  * to ensure consistent, professional engineering feel across the platform.
  */
 
+// V216/V287 FIX (Gate 4b — Visual Regression):
+// The root cause of Gate 4b was `external: [...]` in vite.config.ts (now
+// removed), which told Rollup to leave `gsap/CustomEase` (and SplitText,
+// DrawSVGPlugin) as bare specifiers in the production bundle. The browser
+// could not resolve these (no import map) and threw
+// "TypeError: Failed to resolve module specifier 'gsap/CustomEase'",
+// which propagated to React's ErrorRecovery boundary and failed Gate 4b.
+// Now that `external` is removed, Vite/Rollup bundles these subpaths
+// correctly via the gsap package.json exports map. The bare specifier
+// `gsap/CustomEase` (without `.js`) resolves correctly at build time
+// and at runtime. (Adding `.js` broke TypeScript — see gsap-club.d.ts.)
 import { CustomEase } from "gsap/CustomEase";
 import gsap from "gsap";
 
