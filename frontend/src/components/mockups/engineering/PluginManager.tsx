@@ -68,7 +68,7 @@ export function PluginManager() {
 					<div className="relative w-64 hidden xl:block">
 						<Search aria-hidden="true" className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
 						<Input placeholder="Search 2,400+ plugins..."
-							autoComplete="off" className="pl-9 h-8 bg-[#0a0a0f] border-border text-xs focus-visible:ring-purple-500"
+							autoComplete="off"  className="pl-9 h-8 bg-[#0a0a0f] border-border text-xs focus-visible:ring-purple-500"
 						/>
 					</div>
 					<div className="flex gap-2">

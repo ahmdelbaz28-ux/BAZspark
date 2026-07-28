@@ -78,7 +78,7 @@ export function FileManager() {
 						<div className="p-4">
 							<div className="relative">
 								<Search aria-hidden="true" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-								<Input autoComplete="off" className="h-9 w-full bg-[#15181e] border-white/10 pl-9 text-xs"
+								<Input autoComplete="off"  className="h-9 w-full bg-[#15181e] border-white/10 pl-9 text-xs"
 									placeholder="Search files..."
 								/>
 							</div>

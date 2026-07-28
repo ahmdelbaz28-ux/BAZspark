@@ -462,7 +462,7 @@ export function WorkspaceArabic() {
                                                                 </Badge>
                                                         </div>
                                                         <div className="relative">
-                                                                <Input autoComplete="off" className="pl-8 pr-3 bg-background border-muted text-xs h-8"
+                                                                <Input autoComplete="off"  className="pl-8 pr-3 bg-background border-muted text-xs h-8"
                                                                         placeholder="اسأل المساعد..."
                                                                 />
                                                                 <Button

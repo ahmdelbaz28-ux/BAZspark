@@ -532,7 +532,7 @@ export function MainWorkspace() {
                                                                 </Badge>
                                                         </div>
                                                         <div className="relative">
-                                                                <Input autoComplete="off" className="pr-8 bg-background border-muted text-xs h-8"
+                                                                <Input autoComplete="off"  className="pr-8 bg-background border-muted text-xs h-8"
                                                                         placeholder={isListening ? "Listening…" : "Ask Copilot…"}
                                                                         value={voiceCommand}
                                                                         onChange={(e) => setVoiceCommand(e.target.value)}

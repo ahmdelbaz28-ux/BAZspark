@@ -123,7 +123,7 @@ export function ComponentLibrary() {
                                         <div className="relative w-[400px]">
                                                 <Search aria-hidden="true" className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                                 <Input placeholder="Search 14,832 components..."
-                                                        autoComplete="off" className="pl-9 bg-muted/50 border-muted-foreground/20 h-9 text-sm"
+                                                        autoComplete="off"  className="pl-9 bg-muted/50 border-muted-foreground/20 h-9 text-sm"
                                                 />
                                                 <Filter aria-hidden="true" className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground" />
                                         </div>

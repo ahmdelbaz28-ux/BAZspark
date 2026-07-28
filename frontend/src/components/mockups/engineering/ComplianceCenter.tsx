@@ -180,7 +180,7 @@ export function ComplianceCenter() {
 							<div className="relative w-48">
 								<Search aria-hidden="true" className="absolute left-2 top-1.5 h-4 w-4 text-muted-foreground" />
 								<Input placeholder="Search issues..."
-									autoComplete="off" className="h-7 text-xs pl-7 bg-background border-muted"
+									autoComplete="off"  className="h-7 text-xs pl-7 bg-background border-muted"
 								/>
 							</div>
 						</div>
