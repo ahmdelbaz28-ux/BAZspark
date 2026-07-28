@@ -390,8 +390,8 @@ function BrandSafetyHUD() {
         }, []);
 
         return (
-                <div className="w-full rounded-xl border border-slate-800/80 bg-slate-950/70 p-3.5 space-y-3.5 shadow-2xl relative overflow-hidden group hover:border-cyan-500/20 transition-all duration-300">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-cyan-500/10 transition-all" />
+                <div className="w-full rounded-xl border border-slate-800/80 bg-slate-950/70 p-3.5 space-y-3.5 shadow-2xl relative overflow-hidden group hover:border-cyan-500/20 transition-[border-color,shadow] duration-300">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-cyan-500/10 transition-[background-color]" />
                         
                         {/* HUD Header */}
                         <div className="flex justify-between items-center text-[9px] border-b border-slate-900 pb-2">
@@ -613,7 +613,7 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
 
                                         {/* Glowing Metrics Grid with Enhanced Spacing & Typography */}
                                         <motion.div ref={metricsRef} variants={leftPanelItem} className="grid grid-cols-3 gap-4 lg:gap-5 pt-2">
-                                                <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-3.5 lg:p-4 text-center space-y-1 hover:border-cyan-500/20 hover:shadow-[0_0_15px_rgba(6,182,212,0.08)] transition-all duration-300">
+                                                <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-3.5 lg:p-4 text-center space-y-1 hover:border-cyan-500/20 hover:shadow-[0_0_15px_rgba(6,182,212,0.08)] transition-[colors,shadow] duration-300">
                                                         <div className="text-2xl lg:text-3xl font-black tracking-tight font-mono">
                                                                 <span className="gsap-counter bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent" data-value="80" data-suffix="%">0%</span>
                                                         </div>
@@ -622,7 +622,7 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                         </p>
                                                 </div>
 
-                                                <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-3.5 lg:p-4 text-center space-y-1 hover:border-cyan-500/20 hover:shadow-[0_0_15px_rgba(34,211,238,0.08)] transition-all duration-300">
+                                                <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-3.5 lg:p-4 text-center space-y-1 hover:border-cyan-500/20 hover:shadow-[0_0_15px_rgba(34,211,238,0.08)] transition-[colors,shadow] duration-300">
                                                         <div className="text-2xl lg:text-3xl font-black tracking-tight font-mono">
                                                                 <span className="gsap-counter bg-gradient-to-r from-rose-400 to-orange-400 bg-clip-text text-transparent" data-value="100" data-suffix="%">0%</span>
                                                         </div>
@@ -631,7 +631,7 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                         </p>
                                                 </div>
 
-                                                <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-3.5 lg:p-4 text-center space-y-1 hover:border-purple-500/20 hover:shadow-[0_0_15px_rgba(168,85,247,0.08)] transition-all duration-300">
+                                                <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-3.5 lg:p-4 text-center space-y-1 hover:border-purple-500/20 hover:shadow-[0_0_15px_rgba(168,85,247,0.08)] transition-[colors,shadow] duration-300">
                                                         <div className="text-2xl lg:text-3xl font-black tracking-tight font-mono">
                                                                 <span className="gsap-counter bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent" data-value="0" data-prefix="" data-suffix="">0</span>
                                                         </div>
@@ -741,11 +741,11 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                                                                         value={apiKey}
                                                                                                         onChange={(e) => setApiKey(e.target.value)}
                                                                                                         disabled={submitting}
-                                                                                                        className="peer pl-11 pr-11 font-mono text-sm tracking-widest bg-slate-950/80 border-slate-800 text-white rounded-lg h-12 transition-all duration-300 focus:border-cyan-400/80 focus:ring-1 focus:ring-cyan-400/20 focus:shadow-[0_0_15px_rgba(34,211,238,0.15)]"
+                                                                                                        className="peer pl-11 pr-11 font-mono text-sm tracking-widest bg-slate-950/80 border-slate-800 text-white rounded-lg h-12 transition-[colors,shadow,box-shadow] duration-300 focus:border-cyan-400/80 focus:ring-1 focus:ring-cyan-400/20 focus:shadow-[0_0_15px_rgba(34,211,238,0.15)]"
                                                                                                 />
                                                                                                 <Label
                                                                                                         htmlFor="api-key"
-                                                                                                        className="absolute left-11 top-1/2 -translate-y-1/2 text-xs text-slate-500 transition-all duration-300 pointer-events-none origin-[0]
+                                                                                                        className="absolute left-11 top-1/2 -translate-y-1/2 text-xs text-slate-500 transition-[top,transform,colors,font-size] duration-300 pointer-events-none origin-[0]
                                                                                                                 peer-focus:top-2 peer-focus:scale-85 peer-focus:-translate-y-4 peer-focus:text-cyan-400 peer-focus:bg-[#05070f] peer-focus:px-1
                                                                                                                 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:scale-85 peer-[:not(:placeholder-shown)]:-translate-y-4 peer-[:not(:placeholder-shown)]:bg-[#05070f] peer-[:not(:placeholder-shown)]:px-1"
                                                                                                 >
@@ -779,9 +779,9 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                                                                                 </span>
                                                                                                         </div>
                                                                                                         <div className="grid grid-cols-3 gap-1">
-                                                                                                                <div className={`h-1 rounded-full transition-all duration-300 ${strength.score >= 1 ? strength.color : "bg-slate-900"}`} />
-                                                                                                                <div className={`h-1 rounded-full transition-all duration-300 ${strength.score >= 2 ? strength.color : "bg-slate-900"}`} />
-                                                                                                                <div className={`h-1 rounded-full transition-all duration-300 ${strength.score >= 3 ? strength.color : "bg-slate-900"}`} />
+                                                                                                                <div className={`h-1 rounded-full transition-colors duration-300 ${strength.score >= 1 ? strength.color : "bg-slate-900"}`} />
+                                                                                                                <div className={`h-1 rounded-full transition-colors duration-300 ${strength.score >= 2 ? strength.color : "bg-slate-900"}`} />
+                                                                                                                <div className={`h-1 rounded-full transition-colors duration-300 ${strength.score >= 3 ? strength.color : "bg-slate-900"}`} />
                                                                                                         </div>
                                                                                                 </div>
                                                                                         )}
@@ -808,7 +808,7 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                                                                 {/* Submit button with enhanced size & typography */}
                                                                                 <Button
                                                                                         type="submit"
-                                                                                        className="w-full h-12 lg:h-13 text-xs lg:text-sm font-extrabold tracking-widest rounded-lg transition-all duration-300 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold shadow-lg hover:shadow-cyan-500/25 disabled:opacity-50 disabled:pointer-events-none mt-3"
+                                                                                        className="w-full h-12 lg:h-13 text-xs lg:text-sm font-extrabold tracking-widest rounded-lg transition-[colors,shadow] duration-300 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold shadow-lg hover:shadow-cyan-500/25 disabled:opacity-50 disabled:pointer-events-none mt-3"
                                                                                         disabled={submitting || !apiKey.trim()}
                                                                                 >
                                                                                         {submitting ? (

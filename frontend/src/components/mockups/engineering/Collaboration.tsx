@@ -109,7 +109,7 @@ export function Collaboration() {
 							.map((m) => (
 								<Avatar
 									key={m.id}
-									className={`h-8 w-8 border-2 border-card ring-2 ring-transparent hover:ring-${m.color.split("-")[1]}-400 z-10 transition-all`}
+									className={`h-8 w-8 border-2 border-card ring-2 ring-transparent hover:ring-${m.color.split("-")[1]}-400 z-10 transition-[colors,ring,shadow]`}
 								>
 									<AvatarFallback
 										className={`${m.color} text-white text-[10px] font-bold`}

@@ -316,7 +316,7 @@ export const EngineeringCanvas = memo(function EngineeringCanvas({ onItemDrop }:
 						<span className="text-white/50 w-20">Max V-Drop:</span>
 						<div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
 							<div
-								className={`h-full rounded-full transition-all duration-300 ${globalMaxVoltageDrop > 5 ? "animate-pulse" : ""}`}
+								className={`h-full rounded-full transition-[width,colors] duration-300 ${globalMaxVoltageDrop > 5 ? "animate-pulse" : ""}`}
 								style={{
 									width: `${Math.min(100, globalMaxVoltageDrop * 5)}%`,
 									backgroundColor: getVoltageDropColor(globalMaxVoltageDrop),
@@ -446,7 +446,7 @@ export const EngineeringCanvas = memo(function EngineeringCanvas({ onItemDrop }:
 								stroke={conn.color}
 								strokeWidth={conn.isCritical ? 5 : conn.isWarning ? 4 : 3}  // NOSONAR: typescript:S3358
 								className={`
-                  transition-all duration-150
+                  transition-[colors,transform,opacity] duration-150
                   ${conn.isCritical ? "critical-animated" : ""}
                   ${conn.isCritical ? "" : conn.isWarning ? "" : "dash-animated"}
                 `}
@@ -592,7 +592,7 @@ export const EngineeringCanvas = memo(function EngineeringCanvas({ onItemDrop }:
 								}
 								strokeWidth={isSelected ? 3 : 2}
 								className={`
-                  transition-all duration-150
+                  transition-[colors,transform,opacity] duration-150
                   ${dev.isOverloaded ? "critical-animated" : ""}
                   ${isHovered ? "scale-105" : ""}
                 `}
@@ -614,7 +614,7 @@ export const EngineeringCanvas = memo(function EngineeringCanvas({ onItemDrop }:
 								height="4"
 								rx="2"
 								fill={dev.stressColor}
-								className="transition-all duration-150"
+								className="transition-[colors,transform,opacity] duration-150"
 							/>
 
 							{/* Icon */}

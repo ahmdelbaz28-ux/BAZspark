@@ -420,7 +420,7 @@ function PaletteItem({
 }) {
 	return (
 		<div
-			className={`p-2 rounded cursor-grab hover:ring-1 ring-blue-500 transition-all ${bg} ${border}`}
+			className={`p-2 rounded cursor-grab hover:ring-1 ring-blue-500 transition-[colors,ring,shadow] ${bg} ${border}`}
 		>
 			<div className="text-[10px] font-semibold text-foreground">{label}</div>
 			<div className="text-[9px] text-muted-foreground font-mono mt-1">{size}</div>

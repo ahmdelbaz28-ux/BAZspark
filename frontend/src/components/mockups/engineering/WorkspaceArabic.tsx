@@ -481,7 +481,7 @@ export function WorkspaceArabic() {
 
                         {/* Error Log Panel */}
                         <div
-                                className={`flex flex-col border-t bg-card/95 backdrop-blur-md transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${isErrorLogExpanded ? "h-48" : "h-7"}`}
+                                className={`flex flex-col border-t bg-card/95 backdrop-blur-md transition-[height,opacity] duration-300 ease-in-out shrink-0 overflow-hidden ${isErrorLogExpanded ? "h-48" : "h-7"}`}
                         >
                                 {/* Header row (always visible) */}
                                 <div  // NOSONAR: typescript:S6848

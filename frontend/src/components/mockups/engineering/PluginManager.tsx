@@ -326,7 +326,7 @@ export function PluginManager() {
 									</div>
 								</div>
 
-								<Button className="w-full h-10 bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-[0_0_20px_rgba(37,99,235,0.4)] mb-6 transition-all">
+								<Button className="w-full h-10 bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-[0_0_20px_rgba(37,99,235,0.4)] mb-6 transition-[colors,shadow]">
 									Install Plugin — $49/mo
 								</Button>
 
@@ -603,7 +603,7 @@ function PluginCard({
 		<div  // NOSONAR: typescript:S6848
 			role="button"
 			tabIndex={0}
-			className={`flex flex-col bg-card/40 border rounded-md p-5 cursor-pointer transition-all hover:shadow-lg hover:border-border ${selected ? "border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)] bg-blue-950/10" : "border-slate-800"}`}
+			className={`flex flex-col bg-card/40 border rounded-md p-5 cursor-pointer transition-[colors,shadow] hover:shadow-lg hover:border-border ${selected ? "border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)] bg-blue-950/10" : "border-slate-800"}`}
 			onClick={onClick}
 			onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
 		>

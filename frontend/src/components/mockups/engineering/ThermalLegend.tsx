@@ -256,7 +256,7 @@ export const MiniIndicator = memo(function MiniIndicator({
 	return (
 		<div
 			className={`
-        ${sizeClasses[size]} rounded-full transition-all duration-300
+        ${sizeClasses[size]} rounded-full transition-[width,colors] duration-300
         ${isCritical ? "animate-pulse" : ""}
       `}
 			style={{
@@ -300,7 +300,7 @@ export const AnimatedBar = memo(function AnimatedBar({
 			<div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
 				<div
 					className={`
-            h-full rounded-full transition-all duration-300
+            h-full rounded-full transition-[width,colors] duration-300
             ${isCritical ? "animate-pulse" : ""}
           `}
 					style={{

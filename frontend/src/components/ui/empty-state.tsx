@@ -37,7 +37,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 			{action && (
 				<Button
 					onClick={action.onClick}
-					className="bg-danger hover:bg-danger/90 text-white shadow-lg shadow-red-500/20 transition-all duration-200 hover:shadow-red-500/30"
+					className="bg-danger hover:bg-danger/90 text-white shadow-lg shadow-red-500/20 transition-[colors,shadow] duration-200 hover:shadow-red-500/30"
 				>
 					{action.label}
 				</Button>

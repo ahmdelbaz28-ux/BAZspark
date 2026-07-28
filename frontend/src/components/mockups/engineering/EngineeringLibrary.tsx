@@ -118,7 +118,7 @@ export function EngineeringLibrary({ onDragStart }: EngineeringLibraryProps) {
 									key={item.id}
 									draggable
 									onDragStart={(e) => handleDrag(e, item)}
-									className="group flex items-center gap-3 p-3 rounded-md border border-border bg-background hover:border-primary hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
+									className="group flex items-center gap-3 p-3 rounded-md border border-border bg-background hover:border-primary hover:shadow-md transition-[colors,shadow] cursor-grab active:cursor-grabbing"
 								>
 									<div className="text-primary group-hover:scale-110 transition-transform">
 										{item.icon}

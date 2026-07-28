@@ -94,7 +94,7 @@ export function ContextualHelpButton({
                 <button
                         type="button"
                         onClick={handleClick}
-                        className="p-1.5 text-muted-foreground hover:text-primary hover:bg-card transition-all duration-200 hover:scale-110 rounded flex items-center gap-1"
+                        className="p-1.5 text-muted-foreground hover:text-primary hover:bg-card transition-[colors,transform] duration-200 hover:scale-110 rounded flex items-center gap-1"
                         title={
                                 label ||
                                 (i18n.language === "ar" ? "مساعدة هذه الصفحة" : "Help for this page")
