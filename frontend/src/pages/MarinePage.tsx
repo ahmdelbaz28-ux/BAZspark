@@ -168,7 +168,7 @@ const AnalogGauge = React.memo(({
             stroke={color}
             strokeWidth="10"
             strokeLinecap="round"
-            className="transition-all duration-300 ease-out"
+            className="transition-[stroke,stroke-dashoffset] duration-300 ease-out"
           />
           {/* Gauge Ticks */}
           {ticks}

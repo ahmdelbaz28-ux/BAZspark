@@ -153,7 +153,7 @@ export function MainWorkspace() {
                         <div className="flex flex-1 overflow-hidden">
                                 {/* Left Explorer (Project Manager Sidebar) */}
                                 <div
-                                        className={`${isSidebarCollapsed ? "w-12" : "w-60"} flex flex-col border-r bg-card/30 transition-all duration-300 overflow-hidden`}
+                                        className={`${isSidebarCollapsed ? "w-12" : "w-60"} flex flex-col border-r bg-card/30 transition-[width] duration-300 overflow-hidden`}
                                 >
                                         <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b flex justify-between items-center bg-card/50">
                                                 {!isSidebarCollapsed && <span>Project Manager</span>}
@@ -567,7 +567,7 @@ export function MainWorkspace() {
 
                         {/* Global Error Log Bar */}
                         <div
-                                className={`flex flex-col border-t bg-card/95 backdrop-blur-md transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${isErrorLogPinned ? "h-48" : isErrorLogExpanded ? "h-48" : "h-7"}`}  // NOSONAR: typescript:S3358
+                                className={`flex flex-col border-t bg-card/95 backdrop-blur-md transition-[height,opacity] duration-300 ease-in-out shrink-0 overflow-hidden ${isErrorLogPinned ? "h-48" : isErrorLogExpanded ? "h-48" : "h-7"}`}  // NOSONAR: typescript:S3358
                         >
                                 {/* Header row (always visible) */}
                                 <div  // NOSONAR: typescript:S6848

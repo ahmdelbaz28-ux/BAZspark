@@ -288,7 +288,7 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
 
         return (
                 <aside
-                        className={`${width} h-full glass flex flex-col transition-all duration-300 ${isRTL ? "order-last" : "order-first"}`}
+                        className={`${width} h-full glass flex flex-col transition-[width] duration-300 ${isRTL ? "order-last" : "order-first"}`}
                         style={{
                                 borderRight: isRTL ? "none" : "1px solid rgba(255,255,255,0.1)",
                                 borderLeft: isRTL ? "1px solid rgba(255,255,255,0.1)" : "none",
@@ -325,7 +325,7 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                                                 <div key={item.path} className="relative px-3 mb-1">
                                                         <Link
                                                                 to={item.path}
-                                                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                                                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-[colors,transform] duration-200 ${
                                                                         isActive
                                                                                 ? "bg-cyan-400/10 text-cyan-300 border border-cyan-400/20"
                                                                                 : "text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent"
@@ -353,7 +353,7 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                                 {!collapsed && (
                                         <Link
                                                 to="/settings"
-                                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground transition-all duration-200"
+                                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground transition-[colors,transform] duration-200"
                                         >
                                                 <Info className="h-[18px] w-[18px] shrink-0" />
                                                 <span className="text-[13px] font-medium">About BAZSPARK</span>
@@ -361,7 +361,7 @@ const Sidebar: React.FC<SidebarProps> = memo(() => {
                                 )}
                                 <button type="button"
                                         onClick={() => setCollapsed(!collapsed)}
-                                        className="flex items-center justify-center w-full py-2.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-white/5 transition-all duration-200 mt-1"
+                                        className="flex items-center justify-center w-full py-2.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-white/5 transition-[colors] duration-200 mt-1"
                                         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
                                         data-onboarding="sidebar-toggle"
                                 >

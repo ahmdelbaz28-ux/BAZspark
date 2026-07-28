@@ -61,7 +61,7 @@ export function DevicePalette({ onSelect, selectedType }: DevicePaletteProps) {
 					<button type="button"
 						key={dev.type}
 						onClick={() => onSelect(dev.type, dev.defaultLoad)}
-						className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
+						className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-[colors,shadow] ${
 							selectedType === dev.type
 								? "bg-primary/10 border-primary ring-1 ring-primary"
 								: "bg-muted/50 border-border hover:bg-muted hover:border-muted-foreground"

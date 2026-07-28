@@ -521,7 +521,7 @@ export function ReportGenerator() {
 
 								<div className="h-1.5 w-full bg-card rounded-full overflow-hidden mb-4">
 									<div
-										className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] transition-all duration-500 ease-out"
+										className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] transition-[width] duration-500 ease-out"
 										style={{ width: `${progress}%` }}
 									></div>
 								</div>

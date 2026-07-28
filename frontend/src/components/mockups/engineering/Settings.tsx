@@ -482,7 +482,7 @@ function SettingRow({
 function ThemeCard({ mode, active }: { mode: string; active?: boolean }) {
 	return (
 		<div
-			className={`flex flex-col gap-2 p-3 rounded-md border cursor-pointer transition-all w-32 ${active ? "bg-primary/5 border-primary ring-1 ring-primary/30" : "bg-[#15181e] border-white/5 hover:border-white/20"}`}
+			className={`flex flex-col gap-2 p-3 rounded-md border cursor-pointer transition-[colors,shadow] w-32 ${active ? "bg-primary/5 border-primary ring-1 ring-primary/30" : "bg-[#15181e] border-white/5 hover:border-white/20"}`}
 		>
 			<div
 				className={`w-full h-16 rounded-md overflow-hidden flex flex-col border ${active ? "border-primary/50" : "border-white/10"}`}

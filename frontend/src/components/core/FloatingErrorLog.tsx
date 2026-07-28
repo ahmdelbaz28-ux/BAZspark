@@ -31,7 +31,7 @@ export function FloatingErrorLog() {
 
 	return (
 		<div
-			className={`flex flex-col border-t bg-card/95 backdrop-blur-md transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${panelHeight} ${panelPosition}`}
+			className={`flex flex-col border-t bg-card/95 backdrop-blur-md transition-[height,opacity] duration-300 ease-in-out shrink-0 overflow-hidden ${panelHeight} ${panelPosition}`}
 		>
 			{/* Header */}
 			<div  // NOSONAR: typescript:S6819

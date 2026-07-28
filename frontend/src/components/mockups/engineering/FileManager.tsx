@@ -463,7 +463,7 @@ function FileCard({
 
 	return (
 		<div
-			className={`p-4 rounded-lg border transition-all cursor-pointer group flex flex-col gap-3 ${selected ? "bg-primary/5 border-primary/40 shadow-[0_0_15px_rgba(0,168,255,0.1)] ring-1 ring-primary/20" : "bg-[#15181e] border-white/5 hover:border-white/20 hover:bg-[#1a1d24]"}`}
+			className={`p-4 rounded-lg border transition-[colors,shadow] cursor-pointer group flex flex-col gap-3 ${selected ? "bg-primary/5 border-primary/40 shadow-[0_0_15px_rgba(0,168,255,0.1)] ring-1 ring-primary/20" : "bg-[#15181e] border-white/5 hover:border-white/20 hover:bg-[#1a1d24]"}`}
 		>
 			<div className="flex justify-between items-start">
 				<div

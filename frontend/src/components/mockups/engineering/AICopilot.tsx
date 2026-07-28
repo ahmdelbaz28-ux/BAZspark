@@ -255,7 +255,7 @@ export function AICopilot() {
                                         )}
 
                                         <button type="button"
-                                                className={`w-16 h-16 rounded-full flex items-center justify-center z-10 transition-all duration-500 shadow-[0_0_30px_rgba(0,168,255,0.2)] ${isListening ? "bg-primary text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                                                className={`w-16 h-16 rounded-full flex items-center justify-center z-10 transition-[colors,shadow,transform] duration-500 shadow-[0_0_30px_rgba(0,168,255,0.2)] ${isListening ? "bg-primary text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
                                                 onClick={() => setIsListening(!isListening)}
                                         >
                                                 <Mic className={`h-6 w-6 ${isListening ? "animate-pulse" : ""}`} />

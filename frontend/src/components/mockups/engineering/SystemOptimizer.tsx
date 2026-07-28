@@ -90,7 +90,7 @@ export function SystemOptimizer() {
 						strokeWidth="8"
 						fill="none"
 						strokeDasharray={`${(optimizationScore / 100) * 377} 377`}
-						className="transition-all duration-1000"
+						className="transition-[width,colors,opacity] duration-1000"
 					/>
 				</svg>
 				<div className="absolute text-2xl font-bold text-foreground">

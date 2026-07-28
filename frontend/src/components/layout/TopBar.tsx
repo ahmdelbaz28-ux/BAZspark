@@ -92,17 +92,17 @@ const TopBar: React.FC<TopBarProps> = memo(({  // NOSONAR - typescript:S9011: In
 
                         {/* Action buttons */}						<button type="button"
 								onClick={onSearchOpen}
-								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
-								aria-label="Search"
-								title="Search (Ctrl+K)"
+								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[colors,transform] duration-200 rounded-lg"
+                                aria-label="Search"
+                                title="Search (Ctrl+K)"
 						>
                                 <Search className="h-[18px] w-[18px]" />
                         </button>
 
                         <ContextualHelpButton />						<button type="button"
 								onClick={onHelpOpen}
-								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
-								aria-label="Help"
+								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[colors,transform] duration-200 rounded-lg"
+                                aria-label="Help"
 								data-onboarding="help-button"
 								title="Global help (F1)"
 						>
@@ -111,7 +111,7 @@ const TopBar: React.FC<TopBarProps> = memo(({  // NOSONAR - typescript:S9011: In
 
                         <Link
                                 to="/settings"
-                                className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
+                                className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[colors,transform] duration-200 rounded-lg"
                                 aria-label="Settings"
                                 title="Settings"
                         >
@@ -121,15 +121,15 @@ const TopBar: React.FC<TopBarProps> = memo(({  // NOSONAR - typescript:S9011: In
                         {/* Dark mode toggle */}						<button type="button"
 								onClick={toggle}
 								aria-label="Toggle dark mode"
-								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
-						>
+								className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[colors,transform] duration-200 rounded-lg"
+                        >
                                 {dark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
                         </button>
 
                         {/* Language selector */}
                         <div className="relative" ref={langRef}>							<button type="button"
 									onClick={() => setLangOpen(!langOpen)}
-									className="flex items-center gap-1.5 px-3 py-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 text-[13px] rounded-lg border border-white/10 font-medium"
+									className="flex items-center gap-1.5 px-3 py-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-[colors,transform] duration-200 text-[13px] rounded-lg border border-white/10 font-medium"
 									aria-label="Change language"
 							>
                                         <Globe className="h-4 w-4" />
@@ -143,7 +143,7 @@ const TopBar: React.FC<TopBarProps> = memo(({  // NOSONAR - typescript:S9011: In
 																	onLanguageChange(lang);
 																	setLangOpen(false);
 																}}
-															className={`block w-full text-left px-3 py-2.5 text-[13px] transition-all duration-200 ${
+															className={`block w-full text-left px-3 py-2.5 text-[13px] transition-colors duration-200 ${
 																	currentLanguage === lang
 																		? "text-cyan-300 bg-cyan-400/10"
 																		: "text-foreground hover:bg-white/5"
