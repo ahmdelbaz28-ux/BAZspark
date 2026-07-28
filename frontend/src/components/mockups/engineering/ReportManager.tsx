@@ -474,7 +474,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 									<label className="text-[10px] text-muted-foreground">
 										Report Title
 									</label>
-									<Input autoComplete="off" className="h-7 text-xs bg-background border-border text-foreground"
+									<Input autoComplete="off"  className="h-7 text-xs bg-background border-border text-foreground"
 										defaultValue="Load Calculation Report — Tower-B Office Complex"
 									/>
 								</div>
@@ -483,7 +483,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 										<label className="text-[10px] text-muted-foreground">
 											Report Number
 										</label>
-										<Input autoComplete="off" className="h-7 text-xs bg-background border-border text-foreground"
+										<Input autoComplete="off"  className="h-7 text-xs bg-background border-border text-foreground"
 											defaultValue="EL-LC-2024-014"
 										/>
 									</div>
@@ -498,7 +498,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 											>
 												-
 											</Button>
-											<Input autoComplete="off" className="h-7 text-xs bg-background border-border border-x-0 rounded-none text-center font-mono w-full"
+											<Input autoComplete="off"  className="h-7 text-xs bg-background border-border border-x-0 rounded-none text-center font-mono w-full"
 												defaultValue="3"
 											/>
 											<Button
@@ -513,7 +513,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 								<div className="grid grid-cols-2 gap-3">
 									<div className="space-y-1.5 relative">
 										<label className="text-[10px] text-muted-foreground">Date</label>
-										<Input autoComplete="off" className="h-7 text-xs bg-background border-border text-foreground pl-7"
+										<Input autoComplete="off"  className="h-7 text-xs bg-background border-border text-foreground pl-7"
 											defaultValue="Nov 15, 2024"
 										/>
 										<Calendar aria-hidden="true" className="w-3 h-3 absolute left-2 top-7 text-muted-foreground" />
@@ -567,7 +567,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 										<span className="text-[10px] text-muted-foreground">
 											Client Rep
 										</span>
-										<Input autoComplete="off" className="h-7 text-xs bg-background border-border text-foreground"
+										<Input autoComplete="off"  className="h-7 text-xs bg-background border-border text-foreground"
 											defaultValue="Eng. Khalid Al-Mansouri"
 										/>
 									</div>

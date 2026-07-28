@@ -532,7 +532,7 @@ export function Collaboration() {
 
 										<div className="mt-3 flex gap-2">
 											<Input placeholder="Reply..."
-												autoComplete="off" className="h-7 text-xs bg-muted/50"
+												autoComplete="off"  className="h-7 text-xs bg-muted/50"
 											/>
 											<Button size="icon" className="h-7 w-7 shrink-0">
 												<Send aria-hidden="true" className="h-3 w-3" />
