@@ -210,7 +210,7 @@ export function ContextPanel({
                                                                                         </p>
                                                                                         <p className="text-xs text-muted-foreground">{selected.id}</p>
                                                                                 </div>
-                                                                                <CheckCircle2
+                                                                                <CheckCircle2 aria-hidden="true"
                                                                                         className={`mt-1 h-5 w-5 ${selected.status === "normal" ? "text-success" : "text-danger"}`}
                                                                                 />
                                                                         </div>

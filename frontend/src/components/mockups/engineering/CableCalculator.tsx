@@ -81,8 +81,7 @@ export function CableCalculator() {
 										<label className="text-xs text-muted-foreground col-span-1">
 											Circuit Name
 										</label>
-										<Input
-											className="h-7 text-xs col-span-2 bg-background"
+										<Input autoComplete="off"  className="h-7 text-xs col-span-2 bg-background"
 											defaultValue="Feeder to MDB-A"
 										/>
 									</div>
@@ -114,8 +113,7 @@ export function CableCalculator() {
 											<label className="text-[10px] text-muted-foreground">
 												Voltage (V)
 											</label>
-											<Input
-												className="h-7 text-xs bg-background"
+											<Input autoComplete="off"  className="h-7 text-xs bg-background"
 												defaultValue="480"
 											/>
 										</div>
@@ -123,8 +121,7 @@ export function CableCalculator() {
 											<label className="text-[10px] text-muted-foreground">
 												Freq (Hz)
 											</label>
-											<Input
-												className="h-7 text-xs bg-background"
+											<Input autoComplete="off"  className="h-7 text-xs bg-background"
 												defaultValue="60"
 											/>
 										</div>
@@ -132,8 +129,7 @@ export function CableCalculator() {
 											<label className="text-[10px] text-muted-foreground">
 												PF
 											</label>
-											<Input
-												className="h-7 text-xs bg-background"
+											<Input autoComplete="off"  className="h-7 text-xs bg-background"
 												defaultValue="0.85"
 											/>
 										</div>
@@ -161,8 +157,7 @@ export function CableCalculator() {
 											<label className="text-[10px] text-muted-foreground">
 												Conn. Load (kW)
 											</label>
-											<Input
-												className="h-7 text-xs bg-background"
+											<Input autoComplete="off"  className="h-7 text-xs bg-background"
 												defaultValue="185"
 											/>
 										</div>
@@ -170,8 +165,7 @@ export function CableCalculator() {
 											<label className="text-[10px] text-muted-foreground">
 												Demand Factor
 											</label>
-											<Input
-												className="h-7 text-xs bg-background"
+											<Input autoComplete="off"  className="h-7 text-xs bg-background"
 												defaultValue="0.85"
 											/>
 										</div>
@@ -179,8 +173,7 @@ export function CableCalculator() {
 											<label className="text-[10px] text-muted-foreground">
 												Starting Cur.
 											</label>
-											<Input
-												className="h-7 text-xs bg-background"
+											<Input autoComplete="off"  className="h-7 text-xs bg-background"
 												defaultValue="7x FLC"
 											/>
 										</div>
@@ -213,8 +206,7 @@ export function CableCalculator() {
 											Length
 										</label>
 										<div className="col-span-2 flex items-center">
-											<Input
-												className="h-7 text-xs bg-background rounded-r-none border-r-0"
+											<Input autoComplete="off"  className="h-7 text-xs bg-background rounded-r-none border-r-0"
 												defaultValue="145"
 											/>
 											<div className="h-7 border border-input bg-muted px-2 flex items-center rounded-r-md text-[10px] text-muted-foreground font-mono">
@@ -243,8 +235,7 @@ export function CableCalculator() {
 										<label className="text-xs text-muted-foreground col-span-1">
 											Grouped Circ.
 										</label>
-										<Input
-											className="h-7 text-xs bg-background col-span-2"
+										<Input autoComplete="off"  className="h-7 text-xs bg-background col-span-2"
 											defaultValue="4"
 										/>
 									</div>
@@ -252,8 +243,7 @@ export function CableCalculator() {
 										<label className="text-xs text-muted-foreground col-span-1">
 											Depth of burial
 										</label>
-										<Input
-											className="h-7 text-xs bg-background col-span-2"
+										<Input autoComplete="off"  className="h-7 text-xs bg-background col-span-2"
 											defaultValue="N/A"
 											disabled
 										/>
@@ -271,8 +261,7 @@ export function CableCalculator() {
 										<span className="text-muted-foreground">
 											Temp. Correction (Ca)
 										</span>
-										<Input
-											className="h-6 w-16 text-right text-xs bg-transparent border-none p-0"
+										<Input autoComplete="off"  className="h-6 w-16 text-right text-xs bg-transparent border-none p-0"
 											defaultValue="0.87"
 										/>
 									</div>
@@ -280,8 +269,7 @@ export function CableCalculator() {
 										<span className="text-muted-foreground">
 											Grouping Correction (Cg)
 										</span>
-										<Input
-											className="h-6 w-16 text-right text-xs bg-transparent border-none p-0"
+										<Input autoComplete="off"  className="h-6 w-16 text-right text-xs bg-transparent border-none p-0"
 											defaultValue="0.65"
 										/>
 									</div>
@@ -312,8 +300,7 @@ export function CableCalculator() {
 											<label className="text-[10px] text-muted-foreground">
 												Rating (A)
 											</label>
-											<Input
-												className="h-7 text-xs bg-background"
+											<Input autoComplete="off"  className="h-7 text-xs bg-background"
 												defaultValue="250"
 											/>
 										</div>
@@ -330,8 +317,7 @@ export function CableCalculator() {
 											<label className="text-[10px] text-muted-foreground">
 												SC Rating
 											</label>
-											<Input
-												className="h-7 text-xs bg-background"
+											<Input autoComplete="off"  className="h-7 text-xs bg-background"
 												defaultValue="65 kA"
 											/>
 										</div>
