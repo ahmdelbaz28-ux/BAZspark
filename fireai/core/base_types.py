@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Generic, Optional, Tuple, TypeVar
+from typing import Dict, Generic, Tuple, TypeVar
 
 T = TypeVar("T")
 E = TypeVar("E")
@@ -182,9 +182,9 @@ class Point3D:
 __all__ = [
     "ConduitType",
     "DeviceType",
+    "E",
     "FittingType",
     "Point3D",
     "Result",
     "T",
-    "E",
 ]
