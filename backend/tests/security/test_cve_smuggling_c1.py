@@ -20,6 +20,7 @@ Per pip-audit (run 2026-07-28):
 """
 import re
 import sys
+from typing import Optional, Tuple
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -27,7 +28,7 @@ REQUIREMENTS_TXT = REPO_ROOT / "requirements.txt"
 PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 
 
-def _extract_min_version(text: str, package: str) -> str | None:
+def _extract_min_version(text: str, package: str) -> Optional[str]:
     """Extract the minimum required version of a package from text.
 
     Handles both requirements.txt and pyproject.toml formats, and both
@@ -58,7 +59,8 @@ def _extract_min_version(text: str, package: str) -> str | None:
 _extract_version = _extract_min_version
 
 
-def _version_tuple(v: str) -> tuple[int, ...]:
+def _version_tuple(v: str) -> Tuple[int, ...]:
+
     return tuple(int(p) for p in v.split("."))
 
 

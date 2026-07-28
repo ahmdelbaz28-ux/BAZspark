@@ -255,7 +255,7 @@ export function MonitorPage() {
 											key={i}  // NOSONAR: typescript:S6479
 											className="flex items-center gap-3 text-sm border-b border-border pb-2"
 										>
-											<AlertCircle
+											<AlertCircle aria-hidden="true"
 												className={`h-4 w-4 shrink-0 ${
 													alert.severity === "critical"
 														? "text-danger"

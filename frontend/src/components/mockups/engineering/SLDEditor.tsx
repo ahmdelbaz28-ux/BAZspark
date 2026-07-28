@@ -914,7 +914,7 @@ function TreeFolder({
 				onClick={() => setOpen(!open)}
 				onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(!open); } }}
 			>
-				<Triangle
+				<Triangle aria-hidden="true"
 					className={`h-2.5 w-2.5 text-muted-foreground transition-transform ${open ? "rotate-180" : "rotate-90"}`}
 				/>
 				{icon}

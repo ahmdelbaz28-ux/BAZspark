@@ -440,9 +440,8 @@ export function ClashDetection() {
 								</div>
 
 								<div className="pt-2">
-									<Input
-										placeholder="Type a comment..."
-										className="text-xs h-8 bg-background"
+									<Input placeholder="Type a comment..."
+										autoComplete="off"  className="text-xs h-8 bg-background"
 									/>
 								</div>
 							</div>
