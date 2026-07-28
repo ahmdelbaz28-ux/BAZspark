@@ -32,7 +32,7 @@ export function ReportGenerator() {
 			<div className="h-16 flex items-center justify-between px-4 border-b bg-card shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="w-10 h-10 rounded-md bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
-						<FileText className="h-5 w-5 text-info" />
+						<FileText aria-hidden="true" className="h-5 w-5 text-info" />
 					</div>
 					<div>
 						<h1 className="font-bold tracking-wide text-lg leading-tight">
@@ -63,16 +63,16 @@ export function ReportGenerator() {
 
 				<div className="flex gap-2">
 					<Button variant="outline" size="sm" className="h-8 gap-1">
-						<DownloadCloud className="h-4 w-4" /> Import Data
+						<DownloadCloud aria-hidden="true" className="h-4 w-4" /> Import Data
 					</Button>
 					<Button variant="outline" size="sm" className="h-8 gap-1">
-						<Settings className="h-4 w-4" /> Settings
+						<Settings aria-hidden="true" className="h-4 w-4" /> Settings
 					</Button>
 					<Button
 						size="sm"
 						className="h-8 gap-1 shadow-[0_0_15px_rgba(0,168,255,0.4)]"
 					>
-						<Wand2 className="h-4 w-4" /> Generate with AI
+						<Wand2 aria-hidden="true" className="h-4 w-4" /> Generate with AI
 					</Button>
 				</div>
 			</div>
@@ -509,7 +509,7 @@ export function ReportGenerator() {
 							<div className="absolute bottom-6 left-6 right-6 bg-card/95 backdrop-blur-md border border-border shadow-2xl rounded-lg p-5 flex flex-col z-20">
 								<div className="flex justify-between items-center mb-4">
 									<div className="flex items-center gap-3">
-										<Wand2 className="h-5 w-5 text-info" />
+										<Wand2 aria-hidden="true" className="h-5 w-5 text-info" />
 										<span className="font-semibold text-sm text-foreground">
 											AI is analyzing project data...
 										</span>
@@ -528,18 +528,18 @@ export function ReportGenerator() {
 
 								<div className="grid grid-cols-2 gap-3 text-xs font-mono text-foreground/90">
 									<div className="flex items-center gap-2 text-success">
-										<CheckCircle className="h-4 w-4" /> Lighting loads
+										<CheckCircle aria-hidden="true" className="h-4 w-4" /> Lighting loads
 										extracted
 									</div>
 									<div className="flex items-center gap-2 text-success">
-										<CheckCircle className="h-4 w-4" /> HVAC loads
+										<CheckCircle aria-hidden="true" className="h-4 w-4" /> HVAC loads
 										calculated
 									</div>
 									<div className="flex items-center gap-2 text-success">
-										<CheckCircle className="h-4 w-4" /> Motor loads verified
+										<CheckCircle aria-hidden="true" className="h-4 w-4" /> Motor loads verified
 									</div>
 									<div className="flex items-center gap-2 text-info">
-										<Play className="h-4 w-4 animate-pulse" /> Demand
+										<Play aria-hidden="true" className="h-4 w-4 animate-pulse" /> Demand
 										factors applied...
 									</div>
 								</div>
@@ -583,7 +583,7 @@ export function ReportGenerator() {
 										Company Logo
 									</label>
 									<div className="border border-dashed border-border rounded-md p-3 flex flex-col items-center justify-center bg-card/50 cursor-pointer hover:bg-card">
-										<Upload className="h-4 w-4 text-muted-foreground mb-1" />
+										<Upload aria-hidden="true" className="h-4 w-4 text-muted-foreground mb-1" />
 										<span className="text-[10px] text-muted-foreground">
 											Upload image (PNG, JPG)
 										</span>
@@ -597,7 +597,7 @@ export function ReportGenerator() {
 										</label>
 										<div className="flex items-center justify-between bg-background border border-border rounded px-2 py-1.5 cursor-pointer">
 											<span className="text-xs">English</span>
-											<ChevronDown className="h-3 w-3 text-muted-foreground" />
+											<ChevronDown aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
 										</div>
 									</div>
 									<div className="space-y-1.5">
@@ -606,7 +606,7 @@ export function ReportGenerator() {
 										</label>
 										<div className="flex items-center justify-between bg-background border border-border rounded px-2 py-1.5 cursor-pointer">
 											<span className="text-xs">A4</span>
-											<ChevronDown className="h-3 w-3 text-muted-foreground" />
+											<ChevronDown aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
 										</div>
 									</div>
 								</div>
@@ -618,19 +618,19 @@ export function ReportGenerator() {
 									<div className="space-y-2">
 										<label className="flex items-center gap-2 cursor-pointer">
 											<div className="w-3.5 h-3.5 bg-primary rounded-[2px] flex items-center justify-center">
-												<Check className="h-2.5 w-2.5 text-primary-foreground" />
+												<Check aria-hidden="true" className="h-2.5 w-2.5 text-primary-foreground" />
 											</div>
 											<span className="text-xs">Executive Summary</span>
 										</label>
 										<label className="flex items-center gap-2 cursor-pointer">
 											<div className="w-3.5 h-3.5 bg-primary rounded-[2px] flex items-center justify-center">
-												<Check className="h-2.5 w-2.5 text-primary-foreground" />
+												<Check aria-hidden="true" className="h-2.5 w-2.5 text-primary-foreground" />
 											</div>
 											<span className="text-xs">Detailed Calculations</span>
 										</label>
 										<label className="flex items-center gap-2 cursor-pointer">
 											<div className="w-3.5 h-3.5 bg-primary rounded-[2px] flex items-center justify-center">
-												<Check className="h-2.5 w-2.5 text-primary-foreground" />
+												<Check aria-hidden="true" className="h-2.5 w-2.5 text-primary-foreground" />
 											</div>
 											<span className="text-xs">References & Codes</span>
 										</label>
@@ -648,10 +648,10 @@ export function ReportGenerator() {
 							<div className="space-y-3">
 								<div className="flex items-center justify-between">
 									<div className="text-xs font-bold text-info uppercase flex items-center gap-1">
-										<Wand2 className="h-3 w-3" /> AI Assist
+										<Wand2 aria-hidden="true" className="h-3 w-3" /> AI Assist
 									</div>
 									<div className="text-[10px] font-mono text-success flex items-center gap-1">
-										<CheckCircle className="h-2.5 w-2.5" /> 94% Confidence
+										<CheckCircle aria-hidden="true" className="h-2.5 w-2.5" /> 94% Confidence
 									</div>
 								</div>
 
@@ -679,16 +679,16 @@ export function ReportGenerator() {
 
 								<div className="grid grid-cols-2 gap-2">
 									<Button variant="outline" className="h-8 text-xs bg-card">
-										<FileDigit className="h-4 w-4 mr-1.5" /> PDF
+										<FileDigit aria-hidden="true" className="h-4 w-4 mr-1.5" /> PDF
 									</Button>
 									<Button variant="outline" className="h-8 text-xs bg-card">
-										<FileText className="h-4 w-4 mr-1.5" /> DOCX
+										<FileText aria-hidden="true" className="h-4 w-4 mr-1.5" /> DOCX
 									</Button>
 									<Button variant="outline" className="h-8 text-xs bg-card">
-										<FileDigit className="h-4 w-4 mr-1.5" /> Excel
+										<FileDigit aria-hidden="true" className="h-4 w-4 mr-1.5" /> Excel
 									</Button>
 									<Button variant="default" className="h-8 text-xs">
-										<AlertCircle className="h-4 w-4 mr-1.5" /> For Review
+										<AlertCircle aria-hidden="true" className="h-4 w-4 mr-1.5" /> For Review
 									</Button>
 								</div>
 
@@ -716,7 +716,7 @@ export function ReportGenerator() {
 											<span className="text-xs text-primary font-semibold uppercase">
 												Preliminary
 											</span>
-											<ChevronDown className="h-3 w-3 text-muted-foreground" />
+											<ChevronDown aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
 										</div>
 									</div>
 								</div>
@@ -746,7 +746,7 @@ export function ReportGenerator() {
 											>
 												Approved
 											</Badge>
-											<Download className="h-4 w-4 text-muted-foreground" />
+											<Download aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
 										</div>
 									</div>
 									<div className="flex items-center justify-between p-2 rounded bg-card/50 border border-border/50 hover:bg-muted cursor-pointer transition-colors">
@@ -765,7 +765,7 @@ export function ReportGenerator() {
 											>
 												Review
 											</Badge>
-											<Download className="h-4 w-4 text-muted-foreground" />
+											<Download aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
 										</div>
 									</div>
 									<div className="flex items-center justify-between p-2 rounded bg-card/50 border border-border/50 hover:bg-muted cursor-pointer transition-colors">
@@ -782,7 +782,7 @@ export function ReportGenerator() {
 											>
 												Approved
 											</Badge>
-											<Download className="h-4 w-4 text-muted-foreground" />
+											<Download aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
 										</div>
 									</div>
 								</div>

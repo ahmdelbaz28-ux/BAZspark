@@ -24,19 +24,12 @@
  *   - Health & Cache
  */
 
-import { ApiError } from "./api";
+import { ApiClient } from "./apiClient";
 import { getApiKey } from "./apiKey";
-// F-14 FIX (Engineering Review): import the CSRF helpers used by api.ts so that
-// every state-changing call made through fullApi goes through the same CSRF
-// protection as calls made through api.ts. Previously, fullApi defined its own
-// `apiCall` that did NOT inject the X-CSRF-Token header, meaning all 184
-// endpoints exposed here bypassed CSRF entirely — a real Cross-Site Request
-// Forgery risk.
 import {
         CSRF_HEADER_NAME,
         getCachedCsrfToken,
         getCsrfToken,
-        invalidateCsrfToken,
 } from "./csrf";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -56,6 +49,27 @@ export interface PaginatedResponse<T> {
         totalPages: number;
 }
 
+// ─── Digital Twin types (moved from digitalTwinService.ts) ──────────────────
+
+export interface ConversionResult {
+        success: boolean;
+        source_file: string;
+        target_file: string;
+        conversion_type: string;
+        elements_count: number;
+        duration_seconds: number;
+}
+
+export interface VersionInfo {
+        version_id: string;
+        timestamp: string;
+        source_file: string;
+        target_file: string;
+        conversion_type: "autocad_to_revit" | "revit_to_autocad";
+        elements_count: number;
+        status: "success" | "partial" | "failed";
+}
+
 // ─── API Base Configuration ─────────────────────────────────────────────────
 
 // V187 FIX: Use VITE_API_URL env var (same pattern as digitalTwinApi.ts).
@@ -63,185 +77,32 @@ export interface PaginatedResponse<T> {
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 const API_V2_BASE = `${(import.meta.env.VITE_API_URL || "/api").replace("/v1", "")}/v2`;
 
-// V184: getApiKey() is now imported from ./apiKey (line 28). The local
-// duplicate definition was removed to avoid a redeclaration error.
+/**
+ * Shared ApiClient subclass that exposes a public `call` method matching
+ * the original standalone `apiCall` signature for backward compatibility.
+ */
+class FullApiClient extends ApiClient {
+        async call<T>(
+                path: string,
+                options: RequestInit = {},
+                baseUrl: string = API_BASE,
+                retries = 3,
+        ): Promise<T> {
+                const url = path.startsWith("http") ? path : baseUrl + path;
+                return this.fetchWithRetry<T>(url, options, retries);
+        }
+}
 
+const client = new FullApiClient();
+
+/** Unifies auth, CSRF, timeout, retry for all fullApi endpoints. */
 async function apiCall<T>(
         path: string,
         options: RequestInit = {},
         baseUrl: string = API_BASE,
         retries = 3,
 ): Promise<T> {
-        // F-14 FIX (Engineering Review): mirror the CSRF injection logic from
-        // api.ts.fetchWithRetry(). On state-changing methods (POST/PUT/DELETE/PATCH),
-        // attach the X-CSRF-Token header. On a 403 that mentions CSRF, invalidate
-        // the cached token, force-refresh, and retry once.
-        const method = (options.method || "GET").toUpperCase();
-        const needsCsrf = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
-
-        const buildHeaders = async (): Promise<Record<string, string>> => {
-                const headers: Record<string, string> = {
-                        "Content-Type": "application/json",
-                };
-                const apiKey = getApiKey();
-                if (apiKey) {
-                        headers["X-API-Key"] = apiKey;
-                }
-                if (needsCsrf) {
-                        let token = getCachedCsrfToken();
-                        if (!token) {
-                                token = await getCsrfToken();
-                        }
-                        if (token) {
-                                headers[CSRF_HEADER_NAME] = token;
-                        }
-                }
-                // Merge caller headers last so they can override Content-Type for file uploads
-                if (options.headers) {
-                        Object.assign(headers, options.headers as Record<string, string>);
-                }
-                return headers;
-        };
-
-        const doFetch = async (headers: Record<string, string>) =>
-                fetch(`${baseUrl}${path}`, {
-                        ...options,
-                        headers,
-                        signal: options.signal || AbortSignal.timeout(30000),
-                        // M-3: Send cookies (HttpOnly session) with same-origin requests
-                        credentials: "same-origin",
-                });
-
-        let response = await doFetch(await buildHeaders());
-
-        // V193 (R5): if the server rejected with 403 due to CSRF, refresh and retry once.
-        if (response.status === 403 && needsCsrf) {
-                const bodyText = await response.text().catch(() => "");
-                if (
-                        bodyText.toLowerCase().includes("csrf") ||
-                        bodyText.toLowerCase().includes("token")
-                ) {
-                        invalidateCsrfToken();
-                        await getCsrfToken(true); // force-refresh
-                        response = await doFetch(await buildHeaders());
-                } else {
-                        // Re-throw below using the already-read bodyText — restore via a new Response
-                        response = new Response(bodyText, {
-                                status: response.status,
-                                statusText: response.statusText,
-                                headers: response.headers,
-                        });
-                }
-        }
-
-        let lastError: Error | null = null;
-
-        for (let attempt = 0; attempt < retries; attempt++) {
-                try {
-                        const headers: Record<string, string> = {
-                                "Content-Type": "application/json",
-                                ...((options.headers as Record<string, string>) || {}),  // NOSONAR: typescript:S7744
-                        };
-                        const apiKey = getApiKey();
-                        if (apiKey) {
-                                headers["X-API-Key"] = apiKey;
-                        }
-
-                        // C-08 FIX: Inject CSRF token on state-changing requests
-                        if (needsCsrf) {
-                                let token = getCachedCsrfToken();
-                                if (!token) {
-                                        token = await getCsrfToken();
-                                }
-                                if (token) {
-                                        headers[CSRF_HEADER_NAME] = token;
-                                }
-                        }
-
-                        const response = await fetch(`${baseUrl}${path}`, {
-                                ...options,
-                                headers,
-                                signal: options.signal || AbortSignal.timeout(30000),
-                                // M-3: Send cookies (HttpOnly session) with same-origin requests
-                                credentials: "same-origin",
-                        });
-
-                        // C-08 FIX: On 403, check if it was a CSRF rejection.
-                        // If so, invalidate the cached token and retry once with a
-                        // fresh token. This handles token rotation/expiry gracefully.
-                        if (
-                                response.status === 403 &&
-                                needsCsrf &&
-                                attempt === 0
-                        ) {
-                                const body = await response.text().catch(() => "");
-                                if (
-                                        body.toLowerCase().includes("csrf") ||
-                                        body.toLowerCase().includes("token")
-                                ) {
-                                        invalidateCsrfToken();
-                                        await getCsrfToken(true); // force-refresh
-                                        continue; // retry with fresh token
-                                }
-                        }
-
-                        if (!response.ok) {
-                                const errorBody = await response.json().catch(() => ({}));
-                                // V185 FIX: Throw ApiError (not generic Error) for consistency with api.ts.
-                                // Consumers were forced to handle two different error types — now they handle one.
-                                throw new ApiError(
-                                        errorBody?.detail ||
-                                                errorBody?.message ||
-                                                `HTTP ${response.status}: ${response.statusText}`,
-                                        response.status,
-                                );
-                        }
-
-                        // Handle blob responses (file downloads)
-                        if (
-                                response.headers
-                                        .get("content-type")
-                                        ?.includes("application/octet-stream") ||
-                                response.headers.get("content-type")?.includes("application/pdf")
-                        ) {
-                                return response.blob() as unknown as T;
-                        }
-
-                        const body = await response.json();
-                        // Unwrap {success, data, message} envelope
-                        if (body && typeof body === "object" && "success" in body && "data" in body) {
-                                if (!body.success) {
-                                        // V185 FIX: ApiError for consistency
-                                        throw new ApiError(
-                                                body.message || "API returned success=false",
-                                                response.status,
-                                        );
-                                }
-                                return body.data as T;
-                        }
-                        return body as T;
-                } catch (error) {
-                        lastError = error instanceof Error ? error : new Error(String(error));
-
-                        // Don't retry on client errors (4xx) except 429
-                        if (
-                                error instanceof ApiError &&
-                                error.status >= 400 &&
-                                error.status < 500 &&
-                                error.status !== 429
-                        ) {
-                                throw error;
-                        }
-
-                        // Exponential backoff: 1s, 2s, 4s
-                        if (attempt < retries - 1) {
-                                const delay = 2 ** attempt * 1000;
-                                await new Promise((resolve) => setTimeout(resolve, delay));
-                        }
-                }
-        }
-
-        throw lastError ?? new Error("Request failed after retries");
+        return client.call<T>(path, options, baseUrl, retries);
 }
 
 // ─── Engineering API (QOMN) ─────────────────────────────────────────────────

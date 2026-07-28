@@ -60,22 +60,10 @@ export function SettingsPage() {
         const [reportFormat, setReportFormat] = useState("pdf");
         const [reportQuality, setReportQuality] = useState("high");
 
-        const [_saveStatus, setSaveStatus] = useState<string | null>(null);  // NOSONAR: typescript:S6754
+        const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
         const persistSettings = (key: string, value: Record<string, unknown>) => {
-                // CodeQL: js/clear-text-storage-of-sensitive-data — FALSE POSITIVE.
-                // localStorage is used ONLY for non-sensitive UI preferences:
-                //   - theme (light/dark)
-                //   - language (en/ar)
-                //   - notifications (on/off)
-                //   - reportFormat (pdf/dxf)
-                //   - reportQuality (high/medium)
-                // API keys are NEVER stored in localStorage — they use HttpOnly cookies
-                // set by POST /api/v1/auth/login (see backend/routers/auth.py).
-                // sessionStorage is used as a legacy fallback for the API key, but
-                // that is being deprecated in favor of cookie-based auth.
                 try {
-                        // Strip any sensitive fields before storing
                         const safeValue: Record<string, unknown> = {};
                         const SENSITIVE_KEYS = [
                                 "apiKey",
@@ -138,7 +126,7 @@ export function SettingsPage() {
                                                 className="border-border text-foreground/90 hover:bg-card"
                                                 onClick={() => refetchHealth()}
                                         >
-                                                <Activity className="h-4 w-4 mr-1" />
+                                                <Activity aria-hidden="true" className="h-4 w-4 mr-1" />
                                                 {t("common.refresh")}
                                         </Button>
                                 </div>
@@ -147,12 +135,16 @@ export function SettingsPage() {
                                 <Card className="border-border bg-card">
                                         <CardHeader className="pb-3">
                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                                                        <Activity className="h-5 w-5 text-info" />
+                                                        <Activity aria-hidden="true" className="h-5 w-5 text-info" />
                                                         {t("settings.systemHealth")}
                                                 </CardTitle>
-                                                <CardDescription className="text-muted-foreground">
+                                                <CardDescription
+                                                        className="text-muted-foreground"
+                                                        aria-live="polite"
+                                                        aria-atomic="true"
+                                                >
                                                         {healthLoading
-                                                                ? "Checking system status..."
+                                                                ? "Checking system status…"
                                                                 : "Current system status and performance metrics"}
                                                 </CardDescription>
                                         </CardHeader>
@@ -160,9 +152,9 @@ export function SettingsPage() {
                                                 <div className="flex items-center gap-4 text-sm">
                                                         <div className="flex items-center gap-2">
                                                                 {connected ? (
-                                                                        <CheckCircle2 className="h-5 w-5 text-success" />
+                                                                        <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-success" />
                                                                 ) : (
-                                                                        <XCircle className="h-5 w-5 text-danger" />
+                                                                        <XCircle aria-hidden="true" className="h-5 w-5 text-danger" />
                                                                 )}
                                                                 <span>{connected ? "Connected" : "Disconnected"}</span>
                                                         </div>
@@ -222,7 +214,7 @@ export function SettingsPage() {
 									className="bg-primary hover:bg-primary/90 text-primary-foreground border-none flex items-center gap-2"
 									aria-label={t("settings.openReportGenerator")}
 								>
-									<Calculator className="h-4 w-4" />
+									<Calculator aria-hidden="true" className="h-4 w-4" />
 									{t("settings.openReportGenerator")}
 								</Button>
                                                 </div>
@@ -236,25 +228,25 @@ export function SettingsPage() {
                                                         value="general"
                                                         className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
                                                 >
-                                                        <Settings className="h-4 w-4 mr-1" /> {t("settings.general")}
+                                                        <Settings aria-hidden="true" className="h-4 w-4 mr-1" /> {t("settings.general")}
                                                 </TabsTrigger>
                                                 <TabsTrigger
                                                         value="security"
                                                         className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
                                                 >
-                                                        <Shield className="h-4 w-4 mr-1" /> {t("settings.security")}
+                                                        <Shield aria-hidden="true" className="h-4 w-4 mr-1" /> {t("settings.security")}
                                                 </TabsTrigger>
                                                 <TabsTrigger
                                                         value="api"
                                                         className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
                                                 >
-                                                        <Database className="h-4 w-4 mr-1" /> {t("settings.api")}
+                                                        <Database aria-hidden="true" className="h-4 w-4 mr-1" /> {t("settings.api")}
                                                 </TabsTrigger>
                                                 <TabsTrigger
                                                         value="reports"
                                                         className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
                                                 >
-                                                        <Calculator className="h-4 w-4 mr-1" /> {t("settings.reports")}
+                                                        <Calculator aria-hidden="true" className="h-4 w-4 mr-1" /> {t("settings.reports")}
                                                 </TabsTrigger>
                                         </TabsList>
 
@@ -522,6 +514,27 @@ export function SettingsPage() {
                                                 </Card>
                                         </TabsContent>
                                 </Tabs>
+
+                                {/* Save status announcement for screen readers */}
+                                <div
+                                        role="status"
+                                        aria-live="polite"
+                                        aria-atomic="true"
+                                        className="text-sm text-center"
+                                >
+                                        {saveStatus === "saved" && (
+                                                <span className="text-success">
+                                                        <CheckCircle2 aria-hidden="true" className="h-4 w-4 inline mr-1" />
+                                                        Settings saved successfully
+                                                </span>
+                                        )}
+                                        {saveStatus === "error" && (
+                                                <span className="text-danger">
+                                                        <XCircle aria-hidden="true" className="h-4 w-4 inline mr-1" />
+                                                        Failed to save settings
+                                                </span>
+                                        )}
+                                </div>
                         </div>
                 </div>
         );

@@ -27,7 +27,7 @@ export function ComplianceCenter() {
 			<div className="h-16 flex items-center justify-between px-4 border-b bg-card shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="w-10 h-10 rounded-md bg-emerald-500/20 flex items-center justify-center border border-success/30">
-						<ShieldCheck className="h-5 w-5 text-success" />
+						<ShieldCheck aria-hidden="true" className="h-5 w-5 text-success" />
 					</div>
 					<div>
 						<h1 className="font-bold tracking-wide text-lg leading-tight">
@@ -46,19 +46,19 @@ export function ComplianceCenter() {
 				<div className="flex items-center gap-4">
 					<div className="flex gap-2">
 						<Button variant="outline" size="sm" className="h-8 gap-1">
-							<History className="h-4 w-4" /> History
+							<History aria-hidden="true" className="h-4 w-4" /> History
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 gap-1">
-							<Settings className="h-4 w-4" /> Configure Standards
+							<Settings aria-hidden="true" className="h-4 w-4" /> Configure Standards
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 gap-1">
-							<FileText className="h-4 w-4" /> Generate Report
+							<FileText aria-hidden="true" className="h-4 w-4" /> Generate Report
 						</Button>
 						<Button
 							size="sm"
 							className="h-8 gap-1 shadow-[0_0_15px_rgba(0,168,255,0.4)]"
 						>
-							<Play className="h-4 w-4" /> Run Full Check
+							<Play aria-hidden="true" className="h-4 w-4" /> Run Full Check
 						</Button>
 					</div>
 				</div>
@@ -178,7 +178,7 @@ export function ComplianceCenter() {
 							</TabsList>
 
 							<div className="relative w-48">
-								<Search className="absolute left-2 top-1.5 h-4 w-4 text-muted-foreground" />
+								<Search aria-hidden="true" className="absolute left-2 top-1.5 h-4 w-4 text-muted-foreground" />
 								<Input
 									placeholder="Search issues..."
 									className="h-7 text-xs pl-7 bg-background border-muted"
@@ -308,7 +308,7 @@ export function ComplianceCenter() {
 								<div className="p-3 border border-primary/40 bg-primary/5 rounded-md relative overflow-hidden">
 									<div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
 									<div className="flex items-center gap-2 text-primary font-semibold text-xs mb-2">
-										<Zap className="h-4 w-4 fill-primary/20" /> AI
+										<Zap aria-hidden="true" className="h-4 w-4 fill-primary/20" /> AI
 										Resolution
 									</div>
 									<p className="text-xs text-muted-foreground mb-4">
@@ -331,14 +331,14 @@ export function ComplianceCenter() {
 									size="sm"
 									className="text-xs h-8 justify-start"
 								>
-									<Target className="h-4 w-4 mr-2" /> View in Drawing
+									<Target aria-hidden="true" className="h-4 w-4 mr-2" /> View in Drawing
 								</Button>
 								<Button
 									variant="outline"
 									size="sm"
 									className="text-xs h-8 justify-start"
 								>
-									<AlertOctagon className="h-4 w-4 mr-2" /> Suppress with
+									<AlertOctagon aria-hidden="true" className="h-4 w-4 mr-2" /> Suppress with
 									Reason
 								</Button>
 							</div>
@@ -373,7 +373,7 @@ function StandardGroup({ title, items }: { title: string; items: StandardItem[] 
 	return (
 		<div className="mb-4">
 			<div className="text-xs font-semibold text-foreground mb-2 flex items-center">
-				<ChevronRight className="h-3 w-3 mr-1 opacity-50" /> {title}
+				<ChevronRight aria-hidden="true" className="h-3 w-3 mr-1 opacity-50" /> {title}
 			</div>
 			<div className="space-y-1 pl-4 border-l border-border/30 ml-1.5">
 				{items.map((item, i) => (

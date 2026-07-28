@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { type ElementItem, ElementList } from "@/components/shared/ElementList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { revitService } from "@/services/revitService";
+import { revitApi } from "@/services/fullApi";
 
 export function RevitElementsPage() {
 	const [elements, setElements] = useState<ElementItem[]>([]);
@@ -18,7 +18,7 @@ export function RevitElementsPage() {
 	const fetchElements = useCallback(async () => {
 		setLoading(true);
 		try {
-			const result = await revitService.getElements();
+			const result = await revitApi.getElements();
 			const items = Array.isArray(result)
 				? result
 				: (result as { elements?: unknown[] })?.elements || [];
@@ -43,7 +43,7 @@ export function RevitElementsPage() {
 
 	const handleDelete = async (el: ElementItem) => {
 		try {
-			await revitService.deleteElement(el.id);
+			await revitApi.deleteElement(el.id);
 			toast.success(`Deleted element: ${el.name}`);
 			fetchElements();
 		} catch (err) {
@@ -67,7 +67,7 @@ export function RevitElementsPage() {
 					variant="outline"
 					className="border-border text-foreground/90"
 				>
-					<RefreshCw className="h-4 w-4 mr-2" /> Refresh
+					<RefreshCw aria-hidden="true" className="h-4 w-4 mr-2" /> Refresh
 				</Button>
 			</div>
 			<Card className="border-border bg-card">

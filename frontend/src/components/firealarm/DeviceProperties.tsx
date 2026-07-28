@@ -97,7 +97,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 								{t("fireAlarm.deviceProperties")}
 							</CardTitle>
 							<Button variant="ghost" size="sm" onClick={onClose}>
-								<X className="h-4 w-4" />
+								<X aria-hidden="true" className="h-4 w-4" />
 							</Button>
 						</div>
 					</CardHeader>
@@ -118,7 +118,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 							{t("fireAlarm.deviceProperties")}
 						</CardTitle>
 						<Button variant="ghost" size="sm" onClick={onClose}>
-							<X className="h-4 w-4" />
+							<X aria-hidden="true" className="h-4 w-4" />
 						</Button>
 					</div>
 				</CardHeader>
@@ -281,13 +281,13 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 									}
 								>
 									{editedDevice.status === "normal" && (
-										<CheckCircle2 className="h-3 w-3 mr-1" />
+										<CheckCircle2 aria-hidden="true" className="h-3 w-3 mr-1" />
 									)}
 									{editedDevice.status === "warning" && (
-										<AlertTriangle className="h-3 w-3 mr-1" />
+										<AlertTriangle aria-hidden="true" className="h-3 w-3 mr-1" />
 									)}
 									{editedDevice.status === "fault" && (
-										<XCircle className="h-3 w-3 mr-1" />
+										<XCircle aria-hidden="true" className="h-3 w-3 mr-1" />
 									)}
 									{editedDevice.status}
 								</Badge>
@@ -311,7 +311,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 								className="flex-1 bg-danger hover:bg-danger/90 text-white border-none"
 								onClick={handleSave}
 							>
-								<Save className="h-4 w-4 mr-2" />
+								<Save aria-hidden="true" className="h-4 w-4 mr-2" />
 								{t("common.save")}
 							</Button>
 							<Button

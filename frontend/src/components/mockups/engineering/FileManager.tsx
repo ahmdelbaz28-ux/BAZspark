@@ -41,9 +41,9 @@ export function FileManager() {
 							<span className="hover:text-white cursor-pointer">
 								NexusCAD Pro
 							</span>
-							<ChevronRight className="w-3 h-3" />
+							<ChevronRight aria-hidden="true" className="w-3 h-3" />
 							<span className="hover:text-white cursor-pointer">Projects</span>
-							<ChevronRight className="w-3 h-3" />
+							<ChevronRight aria-hidden="true" className="w-3 h-3" />
 							<span className="text-primary font-medium">
 								Tower-B Office Complex
 							</span>
@@ -52,22 +52,22 @@ export function FileManager() {
 
 					<div className="flex items-center gap-2">
 						<div className="flex gap-1 bg-[#0a0a0c] p-1 rounded-md border border-white/5 mr-4">
-							<ToolbarBtn icon={<FolderPlus />} label="New" />
-							<ToolbarBtn icon={<Upload />} label="Import" />
-							<ToolbarBtn icon={<Download />} label="Export" />
+							<ToolbarBtn icon={<FolderPlus aria-hidden="true" />} label="New" />
+							<ToolbarBtn icon={<Upload aria-hidden="true" />} label="Import" />
+							<ToolbarBtn icon={<Download aria-hidden="true" />} label="Export" />
 							<Separator
 								orientation="vertical"
 								className="h-6 mx-1 bg-white/10"
 							/>
-							<ToolbarBtn icon={<RefreshCw />} label="Convert" />
-							<ToolbarBtn icon={<Database />} label="Backup" />
+							<ToolbarBtn icon={<RefreshCw aria-hidden="true" />} label="Convert" />
+							<ToolbarBtn icon={<Database aria-hidden="true" />} label="Backup" />
 						</div>
 						<Button
 							variant="ghost"
 							size="icon"
 							className="h-8 w-8 text-muted-foreground hover:bg-destructive/20 hover:text-destructive rounded-full"
 						>
-							<X className="w-5 h-5" />
+							<X aria-hidden="true" className="w-5 h-5" />
 						</Button>
 					</div>
 				</div>
@@ -77,7 +77,7 @@ export function FileManager() {
 					<div className="w-64 border-r border-white/10 bg-[#0a0a0c] flex flex-col">
 						<div className="p-4">
 							<div className="relative">
-								<Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+								<Search aria-hidden="true" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
 								<Input
 									className="h-9 w-full bg-[#15181e] border-white/10 pl-9 text-xs"
 									placeholder="Search files..."
@@ -86,9 +86,9 @@ export function FileManager() {
 						</div>
 						<ScrollArea className="flex-1 px-2">
 							<div className="space-y-1 pb-4">
-								<NavGroup icon={<Clock />} title="Recent Files" />
+								<NavGroup icon={<Clock aria-hidden="true" />} title="Recent Files" />
 								<NavGroup
-									icon={<FolderOpen />}
+									icon={<FolderOpen aria-hidden="true" />}
 									title="Projects"
 									active
 									expanded
@@ -97,9 +97,9 @@ export function FileManager() {
 									<NavItem title="City Water Treatment Plant" />
 									<NavItem title="Highway Bridge Expansion" />
 								</NavGroup>
-								<NavGroup icon={<Cloud />} title="Cloud Storage" />
-								<NavGroup icon={<LayoutTemplate />} title="Templates" />
-								<NavGroup icon={<Archive />} title="Archived" />
+								<NavGroup icon={<Cloud aria-hidden="true" />} title="Cloud Storage" />
+								<NavGroup icon={<LayoutTemplate aria-hidden="true" />} title="Templates" />
+								<NavGroup icon={<Archive aria-hidden="true" />} title="Archived" />
 							</div>
 						</ScrollArea>
 					</div>
@@ -194,7 +194,7 @@ export function FileManager() {
 					<div className="w-80 border-l border-white/10 bg-[#15181e] flex flex-col">
 						<div className="p-6 border-b border-white/5 flex flex-col items-center justify-center text-center">
 							<div className="w-20 h-20 bg-blue-500/10 rounded-md border border-blue-500/30 flex items-center justify-center mb-4">
-								<Layout className="w-10 h-10 text-info" />
+								<Layout aria-hidden="true" className="w-10 h-10 text-info" />
 							</div>
 							<h3 className="font-semibold text-white text-sm break-all">
 								Tower-B-Electrical-Rev14.dwg
@@ -256,7 +256,7 @@ export function FileManager() {
 								{/* Revisions */}
 								<div className="space-y-3">
 									<h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
-										<History className="w-3 h-3" /> History
+										<History aria-hidden="true" className="w-3 h-3" /> History
 									</h4>
 									<div className="relative pl-3 border-l border-white/10 ml-2 space-y-4">
 										<div className="relative">
@@ -303,15 +303,15 @@ export function FileManager() {
 										</div>
 										<div className="space-y-2">
 											<div className="flex items-center gap-2 text-xs text-muted-foreground">
-												<Box className="w-3 h-3 text-primary" />{" "}
+												<Box aria-hidden="true" className="w-3 h-3 text-primary" />{" "}
 												Structural-BIM.rvt
 											</div>
 											<div className="flex items-center gap-2 text-xs text-muted-foreground">
-												<Layout className="w-3 h-3 text-info" />{" "}
+												<Layout aria-hidden="true" className="w-3 h-3 text-info" />{" "}
 												Site-Plan.dwg
 											</div>
 											<div className="flex items-center gap-2 text-xs text-muted-foreground">
-												<FileText className="w-3 h-3 text-success" />{" "}
+												<FileText aria-hidden="true" className="w-3 h-3 text-success" />{" "}
 												Equipment-Specs.xlsx
 											</div>
 										</div>
@@ -347,7 +347,7 @@ export function FileManager() {
 				<div className="h-8 border-t border-white/10 bg-[#0a0a0c] flex items-center justify-between px-6 text-[10px] font-mono text-muted-foreground">
 					<div className="flex items-center gap-4">
 						<div className="flex items-center gap-2">
-							<RefreshCw className="w-3 h-3 animate-spin text-primary" />
+							<RefreshCw aria-hidden="true" className="w-3 h-3 animate-spin text-primary" />
 							<span>Conversion queue: 2 items</span>
 						</div>
 						<Separator orientation="vertical" className="h-4 bg-white/10" />
@@ -463,7 +463,7 @@ function FileCard({
 
 	return (
 		<div
-			className={`p-4 rounded-lg border transition-[colors,shadow] cursor-pointer group flex flex-col gap-3 ${selected ? "bg-primary/5 border-primary/40 shadow-[0_0_15px_rgba(0,168,255,0.1)] ring-1 ring-primary/20" : "bg-[#15181e] border-white/5 hover:border-white/20 hover:bg-[#1a1d24]"}`}
+			className={`p-4 rounded-lg border transition-[color,background-color,border-color,box-shadow] cursor-pointer group flex flex-col gap-3 ${selected ? "bg-primary/5 border-primary/40 shadow-[0_0_15px_rgba(0,168,255,0.1)] ring-1 ring-primary/20" : "bg-[#15181e] border-white/5 hover:border-white/20 hover:bg-[#1a1d24]"}`}
 		>
 			<div className="flex justify-between items-start">
 				<div
@@ -476,7 +476,7 @@ function FileCard({
 					size="icon"
 					className="w-6 h-6 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-white"
 				>
-					<MoreHorizontal className="w-4 h-4" />
+					<MoreHorizontal aria-hidden="true" className="w-4 h-4" />
 				</Button>
 			</div>
 

@@ -29,7 +29,7 @@ export function BMSDashboard() {
 			<div className="h-14 flex items-center justify-between px-4 bg-card border-b border-border shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="flex items-center gap-2 text-info font-bold tracking-wide">
-						<Building2 className="h-5 w-5" />
+						<Building2 aria-hidden="true" className="h-5 w-5" />
 						<span>NexusCAD Pro — BMS Integration</span>
 					</div>
 					<Separator orientation="vertical" className="h-6 bg-slate-600" />
@@ -98,22 +98,22 @@ export function BMSDashboard() {
 					</div>
 					<Separator orientation="vertical" className="h-6 bg-slate-600" />
 					<div className="flex items-center gap-1 text-foreground/90">
-						<Thermometer className="h-4 w-4" />
+						<Thermometer aria-hidden="true" className="h-4 w-4" />
 						<span>34°C</span>
 					</div>
 					<Separator orientation="vertical" className="h-6 bg-slate-600" />
 					<div className="relative cursor-pointer">
-						<Bell className="h-5 w-5 text-foreground/90 hover:text-white" />
+						<Bell aria-hidden="true" className="h-5 w-5 text-foreground/90 hover:text-white" />
 						<Badge className="absolute -top-2 -right-2 h-4 w-4 p-0 flex items-center justify-center bg-slate-500 text-[9px] hover:bg-danger">
 							3
 						</Badge>
 					</div>
 					<Separator orientation="vertical" className="h-6 bg-slate-600" />
 					<div className="flex items-center gap-2 text-foreground/90 cursor-pointer hover:text-white">
-						<User className="h-4 w-4" />
+						<User aria-hidden="true" className="h-4 w-4" />
 						<span>Ahmed</span>
 					</div>
-					<Settings className="h-5 w-5 text-muted-foreground cursor-pointer hover:text-white" />
+					<Settings aria-hidden="true" className="h-5 w-5 text-muted-foreground cursor-pointer hover:text-white" />
 				</div>
 			</div>
 
@@ -165,7 +165,7 @@ export function BMSDashboard() {
 								<div className="mt-auto text-[10px] text-muted-foreground font-mono">
 									22.4°C | 65% RH | CO2: 412ppm | Occ: 24/30
 								</div>
-								<Thermometer className="absolute top-2 right-2 h-4 w-4 text-green-400" />
+								<Thermometer aria-hidden="true" className="absolute top-2 right-2 h-4 w-4 text-green-400" />
 								<div className="absolute top-8 left-8 w-4 h-4 border border-blue-400 bg-blue-500/20"></div>{" "}
 								{/* FCU */}
 								<svg className="absolute inset-0 w-full h-full pointer-events-none">
@@ -194,7 +194,7 @@ export function BMSDashboard() {
 								<div className="mt-auto text-[10px] text-muted-foreground font-mono">
 									23.1°C | 61% RH | CO2: 438ppm | Occ: 18/30
 								</div>
-								<Thermometer className="absolute top-2 right-2 h-4 w-4 text-green-400" />
+								<Thermometer aria-hidden="true" className="absolute top-2 right-2 h-4 w-4 text-green-400" />
 								<div className="absolute top-8 right-8 w-4 h-4 border border-blue-400 bg-blue-500/20"></div>{" "}
 								{/* FCU */}
 							</div>
@@ -202,13 +202,13 @@ export function BMSDashboard() {
 							{/* Server Room */}
 							<div className="absolute top-0 right-0 w-[20%] h-[40%] border-b border-border bg-slate-500/20 p-2 flex flex-col shadow-[inset_0_0_20px_rgba(100, 116, 139,0.5)] animate-pulse">
 								<span className="text-xs font-bold text-foreground flex items-center gap-1">
-									<AlertTriangle className="h-3 w-3 text-slate-400" />
+									<AlertTriangle aria-hidden="true" className="h-3 w-3 text-slate-400" />
 									Server Room
 								</span>
 								<div className="mt-auto text-[10px] text-slate-400 font-mono font-bold">
 									19.8°C | ALARM
 								</div>
-								<Thermometer className="absolute top-2 right-2 h-4 w-4 text-slate-400" />
+								<Thermometer aria-hidden="true" className="absolute top-2 right-2 h-4 w-4 text-slate-400" />
 							</div>
 
 							{/* Meeting Room 201 */}
@@ -270,7 +270,7 @@ export function BMSDashboard() {
 							size="icon"
 							className="h-8 w-8 text-muted-foreground hover:text-white"
 						>
-							<Plus className="h-4 w-4" />
+							<Plus aria-hidden="true" className="h-4 w-4" />
 						</Button>
 						<Separator orientation="vertical" className="h-8 bg-secondary" />
 						<Button
@@ -513,7 +513,7 @@ export function BMSDashboard() {
 					<span>Peak: 1.24 MW @ 11:20</span>
 					<Separator orientation="vertical" className="h-4 bg-secondary" />
 					<span className="text-green-400 flex items-center gap-1">
-						<CheckCircle2 className="h-3 w-3" /> BMS Server Online
+						<CheckCircle2 aria-hidden="true" className="h-3 w-3" /> BMS Server Online
 					</span>
 					<Separator orientation="vertical" className="h-4 bg-secondary" />
 					<span>BACnet/IP</span>
@@ -551,9 +551,9 @@ function NavNode({
 				<div className="w-4 h-4 flex items-center justify-center">
 					{children ? (
 						expanded ? (
-							<ChevronDown className="h-3 w-3 text-muted-foreground" />
+							<ChevronDown aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
 						) : (
-							<ChevronRight className="h-3 w-3 text-muted-foreground" />
+							<ChevronRight aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
 						)
 					) : (
 						<div className="w-1 h-1" />

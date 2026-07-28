@@ -75,7 +75,7 @@ class TestFormatDetector(unittest.TestCase):
             path = f.name
         try:
             res = FormatDetector.detect_format_and_version(path)
-            self.assertTrue(res.is_success, f"IFC detection failed: {res.error() if res.is_failure else ''}")
+            self.assertTrue(res.is_success, f"IFC detection failed: {res.error if res.is_failure else ''}")
             fmt, ver = res.unwrap()
             self.assertEqual(fmt, "IFC")
             self.assertEqual(ver, "IFC2X3")
@@ -105,7 +105,7 @@ class TestFormatDetector(unittest.TestCase):
             path = f.name
         try:
             res = FormatDetector.detect_format_and_version(path)
-            self.assertTrue(res.is_success, f"DWG detection failed: {res.error() if res.is_failure else ''}")
+            self.assertTrue(res.is_success, f"DWG detection failed: {res.error if res.is_failure else ''}")
             fmt, ver = res.unwrap()
             self.assertEqual(fmt, "DWG")
             self.assertIn("AC1015", ver)
@@ -135,7 +135,7 @@ class TestFormatDetector(unittest.TestCase):
             path = f.name
         try:
             res = FormatDetector.detect_format_and_version(path)
-            self.assertTrue(res.is_success, f"RVT detection failed: {res.error() if res.is_failure else ''}")
+            self.assertTrue(res.is_success, f"RVT detection failed: {res.error if res.is_failure else ''}")
             fmt, _ver = res.unwrap()
             self.assertEqual(fmt, "RVT")
         finally:
@@ -149,7 +149,7 @@ class TestFormatDetector(unittest.TestCase):
             path = f.name
         try:
             res = FormatDetector.detect_format_and_version(path)
-            self.assertTrue(res.is_success, f"DXF detection failed: {res.error() if res.is_failure else ''}")
+            self.assertTrue(res.is_success, f"DXF detection failed: {res.error if res.is_failure else ''}")
             fmt, _ver = res.unwrap()
             self.assertEqual(fmt, "DXF")
         finally:
@@ -159,7 +159,7 @@ class TestFormatDetector(unittest.TestCase):
         """Non-existent file returns FormatError, not crash."""
         res = FormatDetector.detect_format_and_version("/nonexistent/path/file.ifc")
         self.assertTrue(res.is_failure)
-        self.assertIsInstance(res.error(), FormatError)
+        self.assertIsInstance(res.error, FormatError)
 
     def test_unknown_format_returns_error(self):
         """File with unrecognized content returns FormatError."""
@@ -170,8 +170,8 @@ class TestFormatDetector(unittest.TestCase):
         try:
             res = FormatDetector.detect_format_and_version(path)
             self.assertTrue(res.is_failure)
-            self.assertIsInstance(res.error(), FormatError)
-            self.assertIn("Unrecognized", res.error().message)
+            self.assertIsInstance(res.error, FormatError)
+            self.assertIn("Unrecognized", res.error.message)
         finally:
             os.unlink(path)
 
@@ -183,8 +183,8 @@ class TestFormatDetector(unittest.TestCase):
         try:
             res = FormatDetector.detect_format_and_version(path)
             self.assertTrue(res.is_failure)
-            self.assertIsInstance(res.error(), FormatError)
-            self.assertIn("zero bytes", res.error().message)
+            self.assertIsInstance(res.error, FormatError)
+            self.assertIn("zero bytes", res.error.message)
         finally:
             os.unlink(path)
 
@@ -200,7 +200,7 @@ class TestFileValidator(unittest.TestCase):
             path = f.name
         try:
             res = FileValidator.validate_file(path)
-            self.assertTrue(res.is_success, f"Validation failed: {res.error() if res.is_failure else ''}")
+            self.assertTrue(res.is_success, f"Validation failed: {res.error if res.is_failure else ''}")
             file_hash = res.unwrap()
             self.assertEqual(len(file_hash), 64)  # SHA-256 hex digest is 64 chars
         finally:
@@ -214,7 +214,7 @@ class TestFileValidator(unittest.TestCase):
             path = f.name
         try:
             res = FileValidator.validate_file(path)
-            self.assertTrue(res.is_success, f"Validation failed: {res.error() if res.is_failure else ''}")
+            self.assertTrue(res.is_success, f"Validation failed: {res.error if res.is_failure else ''}")
         finally:
             os.unlink(path)
 
@@ -233,8 +233,8 @@ class TestFileValidator(unittest.TestCase):
             os.unlink(nonexistent)
         res = FileValidator.validate_file(nonexistent)
         self.assertTrue(res.is_failure)
-        self.assertIsInstance(res.error(), FileValidationError)
-        self.assertIn("not found", res.error().message)
+        self.assertIsInstance(res.error, FileValidationError)
+        self.assertIn("not found", res.error.message)
 
     def test_zero_byte_file_returns_error(self):
         """Zero-byte file returns FileValidationError."""
@@ -243,8 +243,8 @@ class TestFileValidator(unittest.TestCase):
         try:
             res = FileValidator.validate_file(path)
             self.assertTrue(res.is_failure)
-            self.assertIsInstance(res.error(), FileValidationError)
-            self.assertIn("zero bytes", res.error().message)
+            self.assertIsInstance(res.error, FileValidationError)
+            self.assertIn("zero bytes", res.error.message)
         finally:
             os.unlink(path)
 
@@ -258,8 +258,8 @@ class TestFileValidator(unittest.TestCase):
         try:
             res = FileValidator.validate_file(path)
             self.assertTrue(res.is_failure)
-            self.assertIsInstance(res.error(), CorruptionError)
-            self.assertIn("END-ISO-10303-21", res.error().message)
+            self.assertIsInstance(res.error, CorruptionError)
+            self.assertIn("END-ISO-10303-21", res.error.message)
         finally:
             os.unlink(path)
 
@@ -273,8 +273,8 @@ class TestFileValidator(unittest.TestCase):
         try:
             res = FileValidator.validate_file(path)
             self.assertTrue(res.is_failure)
-            self.assertIsInstance(res.error(), CorruptionError)
-            self.assertIn("EOF", res.error().message)
+            self.assertIsInstance(res.error, CorruptionError)
+            self.assertIn("EOF", res.error.message)
         finally:
             os.unlink(path)
 
@@ -334,7 +334,7 @@ class TestIfcParser(unittest.TestCase):
         try:
             file_hash = "TEST_HASH_123"
             res = IfcParser.parse_ifc(path, file_hash)
-            self.assertTrue(res.is_success, f"IFC parse failed: {res.error() if res.is_failure else ''}")
+            self.assertTrue(res.is_success, f"IFC parse failed: {res.error if res.is_failure else ''}")
             building = res.unwrap()
             self.assertEqual(building.format_detected, "IFC")
             self.assertGreaterEqual(len(building.rooms), 1)
@@ -592,8 +592,8 @@ class TestGeometryValidator(unittest.TestCase):
         )
         res = GeometryValidator.validate_building(b)
         self.assertTrue(res.is_failure)
-        self.assertIsInstance(res.error(), GeometryError)
-        self.assertIn("at least one", res.error().message.lower())
+        self.assertIsInstance(res.error, GeometryError)
+        self.assertIn("at least one", res.error.message.lower())
 
     def test_room_with_fewer_than_3_points_returns_error(self):
         """Room with < 3 boundary points returns GeometryError."""
@@ -604,8 +604,8 @@ class TestGeometryValidator(unittest.TestCase):
         )
         res = GeometryValidator.validate_building(b)
         self.assertTrue(res.is_failure)
-        self.assertIsInstance(res.error(), GeometryError)
-        self.assertIn("fewer than 3", res.error().message)
+        self.assertIsInstance(res.error, GeometryError)
+        self.assertIn("fewer than 3", res.error.message)
 
     def test_room_with_zero_area_returns_error(self):
         """Room with < 1.0 m² area returns GeometryError."""
@@ -620,8 +620,8 @@ class TestGeometryValidator(unittest.TestCase):
         )
         res = GeometryValidator.validate_building(b)
         self.assertTrue(res.is_failure)
-        self.assertIsInstance(res.error(), GeometryError)
-        self.assertIn("invalid physical area", res.error().message)
+        self.assertIsInstance(res.error, GeometryError)
+        self.assertIn("invalid physical area", res.error.message)
 
     def test_coordinate_exceeding_limit_returns_unit_error(self):
         """Coordinates > 10,000m returns UnitError (likely mm instead of m)."""
@@ -636,7 +636,7 @@ class TestGeometryValidator(unittest.TestCase):
         )
         res = GeometryValidator.validate_building(b)
         self.assertTrue(res.is_failure)
-        self.assertIsInstance(res.error(), UnitError)
+        self.assertIsInstance(res.error, UnitError)
 
     def test_duplicate_overlapping_rooms_returns_error(self):
         """Two rooms with identical boundaries returns GeometryError."""
@@ -649,8 +649,8 @@ class TestGeometryValidator(unittest.TestCase):
         )
         res = GeometryValidator.validate_building(b)
         self.assertTrue(res.is_failure)
-        self.assertIsInstance(res.error(), GeometryError)
-        self.assertIn("Duplicate overlapping", res.error().message)
+        self.assertIsInstance(res.error, GeometryError)
+        self.assertIn("Duplicate overlapping", res.error.message)
 
     def test_valid_building_passes_validation(self):
         """Valid building with proper geometry passes all checks."""
@@ -669,7 +669,7 @@ class TestGeometryValidator(unittest.TestCase):
             units="METERS", walls=(), rooms=(r1, r2), openings=()
         )
         res = GeometryValidator.validate_building(b)
-        self.assertTrue(res.is_success, f"Valid building failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(res.is_success, f"Valid building failed: {res.error if res.is_failure else ''}")
 
     def test_3d_aware_overlap_different_floors_passes(self):
         """BUG-7 FIX: Rooms on different floors with same X,Y footprint pass validation."""
@@ -686,7 +686,7 @@ class TestGeometryValidator(unittest.TestCase):
         res = GeometryValidator.validate_building(b)
         self.assertTrue(res.is_success,
                        f"BUG-7: Rooms on different floors should NOT be flagged as overlapping: "
-                       f"{res.error() if res.is_failure else ''}")
+                       f"{res.error if res.is_failure else ''}")
 
     def test_3d_aware_overlap_same_floor_still_fails(self):
         """BUG-7 FIX: Rooms on SAME floor with overlapping X,Y still returns error."""
@@ -731,7 +731,7 @@ class TestGeometryValidator(unittest.TestCase):
         )
         res = GeometryValidator.validate_building(b)
         self.assertTrue(res.is_failure)
-        self.assertIn("overlap", res.error().message.lower())
+        self.assertIn("overlap", res.error.message.lower())
 
 
 class TestConverters(unittest.TestCase):
@@ -745,7 +745,7 @@ class TestConverters(unittest.TestCase):
         dxf_path = dwg_path.replace('.dwg', '_converted.dxf')
         try:
             res = DwgConverter.convert_dwg_to_dxf(dwg_path, dxf_path)
-            self.assertTrue(res.is_success, f"DWG conversion failed: {res.error() if res.is_failure else ''}")
+            self.assertTrue(res.is_success, f"DWG conversion failed: {res.error if res.is_failure else ''}")
             self.assertTrue(os.path.exists(dxf_path))
             # Verify the DXF has required markers
             with open(dxf_path) as f:
@@ -761,7 +761,7 @@ class TestConverters(unittest.TestCase):
         """DWG converter returns error for non-existent source file."""
         res = DwgConverter.convert_dwg_to_dxf("/nonexistent.dwg", "/tmp/out.dxf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         self.assertTrue(res.is_failure)
-        self.assertIsInstance(res.error(), ConversionError)
+        self.assertIsInstance(res.error, ConversionError)
 
     def test_rvt_converter_fallback_creates_ifc(self):
         """RVT converter fallback creates a valid IFC file when revit-extractor not available."""
@@ -771,7 +771,7 @@ class TestConverters(unittest.TestCase):
         ifc_path = rvt_path.replace('.rvt', '_converted.ifc')
         try:
             res = RvtConverter.convert_rvt_to_ifc(rvt_path, ifc_path)
-            self.assertTrue(res.is_success, f"RVT conversion failed: {res.error() if res.is_failure else ''}")
+            self.assertTrue(res.is_success, f"RVT conversion failed: {res.error if res.is_failure else ''}")
             self.assertTrue(os.path.exists(ifc_path))
             with open(ifc_path) as f:
                 content = f.read()
@@ -786,7 +786,7 @@ class TestConverters(unittest.TestCase):
         """RVT converter returns error for non-existent source file."""
         res = RvtConverter.convert_rvt_to_ifc("/nonexistent.rvt", "/tmp/out.ifc")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         self.assertTrue(res.is_failure)
-        self.assertIsInstance(res.error(), ConversionError)
+        self.assertIsInstance(res.error, ConversionError)
 
 
 class TestDataTypes(unittest.TestCase):
@@ -845,10 +845,10 @@ class TestDataTypes(unittest.TestCase):
             r.unwrap()
 
     def test_result_error_success_raises(self):
-        """Result.error() on success Result raises ValueError."""
+        """Result.error on success Result raises AttributeError."""
         r = Result(value=42)
-        with pytest.raises(ValueError):
-            r.error()
+        with pytest.raises(AttributeError):
+            _ = r.error
 
     def test_error_hierarchy(self):
         """All error types inherit from BaseEngineeringError and Exception."""
@@ -895,7 +895,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         try:
             # Step 1: Validate
             val_res = FileValidator.validate_file(path)
-            self.assertTrue(val_res.is_success, f"Validation failed: {val_res.error() if val_res.is_failure else ''}")
+            self.assertTrue(val_res.is_success, f"Validation failed: {val_res.error if val_res.is_failure else ''}")
             file_hash = val_res.unwrap()
 
             # Step 2: Detect format
@@ -919,7 +919,7 @@ class TestIntegrationPipeline(unittest.TestCase):
                            "V58 SAFETY: GeometryValidator MUST reject placeholder geometry. "
                            "Got unexpected success — placeholder buildings must NOT pass validation.")
             # Verify the error is about placeholder/fallback geometry
-            self.assertIn("placeholder", str(geom_res.error()).lower(),
+            self.assertIn("placeholder", str(geom_res.error).lower(),
                          "Rejection reason must mention placeholder/fallback geometry")
 
             # Step 5: Compute hash
@@ -968,8 +968,8 @@ class TestIntegrationPipeline(unittest.TestCase):
             geom_res = GeometryValidator.validate_building(building)
             self.assertTrue(geom_res.is_failure,
                            "BUG-8: Fallback geometry must be REJECTED by validator")
-            self.assertIsInstance(geom_res.error(), GeometryError)
-            self.assertIn("fallback", geom_res.error().message.lower())
+            self.assertIsInstance(geom_res.error, GeometryError)
+            self.assertIn("fallback", geom_res.error.message.lower())
         finally:
             os.unlink(path)
 
@@ -983,7 +983,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         try:
             val_res = FileValidator.validate_file(path)
             self.assertTrue(val_res.is_failure)
-            self.assertIsInstance(val_res.error(), CorruptionError)
+            self.assertIsInstance(val_res.error, CorruptionError)
             # Pipeline stops here — no parsing attempted
         finally:
             os.unlink(path)
@@ -1001,8 +1001,8 @@ class TestIntegrationPipeline(unittest.TestCase):
         )
         res = GeometryValidator.validate_building(b)
         self.assertTrue(res.is_failure, "BUG-8: Fallback geometry must be REJECTED")
-        self.assertIsInstance(res.error(), GeometryError)
-        self.assertIn("fallback", res.error().message.lower())
+        self.assertIsInstance(res.error, GeometryError)
+        self.assertIn("fallback", res.error.message.lower())
 
     # ── BUG-14 FIX TEST: Non-METERS units rejected ──
     def test_non_meters_units_rejected(self):
@@ -1016,7 +1016,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         )
         res = GeometryValidator.validate_building(b)
         self.assertTrue(res.is_failure, "BUG-14: Non-METERS units must be REJECTED")
-        self.assertIsInstance(res.error(), UnitError)
+        self.assertIsInstance(res.error, UnitError)
 
     # ── BUG-1 FIX TEST: Result cannot hold both value and error ──
     def test_result_cannot_hold_both_value_and_error(self):

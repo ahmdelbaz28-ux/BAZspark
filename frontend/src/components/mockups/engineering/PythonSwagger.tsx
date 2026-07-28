@@ -102,28 +102,28 @@ export function PythonSwagger() {
 						variant="ghost"
 						className="h-7 w-7 text-green-400 hover:text-green-300 hover:bg-green-400/10"
 					>
-						<Play className="w-4 h-4" fill="currentColor" />
+						<Play aria-hidden="true" className="w-4 h-4" fill="currentColor" />
 					</Button>
 					<Button
 						size="icon"
 						variant="ghost"
 						className="h-7 w-7 text-danger hover:text-slate-400 hover:bg-slate-500/10"
 					>
-						<Square className="w-3.5 h-3.5" fill="currentColor" />
+						<Square aria-hidden="true" className="w-3.5 h-3.5" fill="currentColor" />
 					</Button>
 					<Button
 						size="icon"
 						variant="ghost"
 						className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-card"
 					>
-						<Trash2 className="w-4 h-4" />
+						<Trash2 aria-hidden="true" className="w-4 h-4" />
 					</Button>
 					<Button
 						size="icon"
 						variant="ghost"
 						className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-card"
 					>
-						<Settings className="w-4 h-4" />
+						<Settings aria-hidden="true" className="w-4 h-4" />
 					</Button>
 				</div>
 			</div>
@@ -137,108 +137,108 @@ export function PythonSwagger() {
 					<ScrollArea className="flex-1 border-b border-slate-800">
 						<div className="p-2 text-xs font-mono text-muted-foreground space-y-0.5">
 							<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer text-foreground">
-								<ChevronDown className="w-3.5 h-3.5" />{" "}
-								<FolderOpen className="w-3.5 h-3.5 text-info" /> My Scripts
+								<ChevronDown aria-hidden="true" className="w-3.5 h-3.5" />{" "}
+								<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-info" /> My Scripts
 							</div>
 							<div className="pl-4 space-y-0.5 border-l border-slate-800 ml-2.5">
 								{/* analysis folder */}
 								<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer text-foreground/90">
-									<ChevronDown className="w-3 h-3" />{" "}
-									<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+									<ChevronDown aria-hidden="true" className="w-3 h-3" />{" "}
+									<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />{" "}
 									analysis/
 								</div>
 								<div className="pl-4 space-y-0.5 border-l border-slate-800 ml-2">
 									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
-										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
+										<FileCode2 aria-hidden="true" className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										load_flow_export.py
 									</div>
 									<div className="flex items-center gap-1.5 py-1 px-1 rounded bg-blue-500/15 text-info font-medium cursor-pointer">
-										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]" />{" "}
+										<FileCode2 aria-hidden="true" className="w-3.5 h-3.5 text-[#FFD43B]" />{" "}
 										cable_sizing_batch.py
 									</div>
 									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
-										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
+										<FileCode2 aria-hidden="true" className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										compliance_checker.py
 									</div>
 									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
-										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
+										<FileCode2 aria-hidden="true" className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										arc_flash_calc.py
 									</div>
 								</div>
 
 								{/* automation folder */}
 								<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer text-foreground/90">
-									<ChevronDown className="w-3 h-3" />{" "}
-									<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+									<ChevronDown aria-hidden="true" className="w-3 h-3" />{" "}
+									<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />{" "}
 									automation/
 								</div>
 								<div className="pl-4 space-y-0.5 border-l border-slate-800 ml-2">
 									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
-										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
+										<FileCode2 aria-hidden="true" className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										auto_save_all.py
 									</div>
 									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
-										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
+										<FileCode2 aria-hidden="true" className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										batch_export_pdf.py
 									</div>
 									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
-										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
+										<FileCode2 aria-hidden="true" className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										drawing_renamer.py
 									</div>
 									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
-										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
+										<FileCode2 aria-hidden="true" className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										revision_bump.py
 									</div>
 								</div>
 
 								{/* integrations folder */}
 								<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer text-foreground/90">
-									<ChevronDown className="w-3 h-3" />{" "}
-									<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+									<ChevronDown aria-hidden="true" className="w-3 h-3" />{" "}
+									<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />{" "}
 									integrations/
 								</div>
 								<div className="pl-4 space-y-0.5 border-l border-slate-800 ml-2">
 									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
-										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
+										<FileCode2 aria-hidden="true" className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										etap_sync.py
 									</div>
 									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
-										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
+										<FileCode2 aria-hidden="true" className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										revit_link.py
 									</div>
 									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
-										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
+										<FileCode2 aria-hidden="true" className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										sharepoint_upload.py
 									</div>
 									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
-										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
+										<FileCode2 aria-hidden="true" className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										weather_api_fetch.py
 									</div>
 								</div>
 
 								{/* reporting folder */}
 								<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer text-foreground/90">
-									<ChevronRight className="w-3 h-3" />{" "}
-									<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+									<ChevronRight aria-hidden="true" className="w-3 h-3" />{" "}
+									<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />{" "}
 									reporting/
 								</div>
 							</div>
 
 							<div className="flex items-center gap-1.5 py-1.5 px-1 rounded hover:bg-card cursor-pointer text-foreground/90 mt-2">
-								<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-								<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" /> Shared
+								<ChevronRight aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+								<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" /> Shared
 								Scripts{" "}
 								<span className="ml-auto text-[10px] text-muted-foreground">12</span>
 							</div>
 							<div className="flex items-center gap-1.5 py-1.5 px-1 rounded hover:bg-card cursor-pointer text-foreground/90">
-								<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-								<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" /> System
+								<ChevronRight aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+								<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" /> System
 								Scripts{" "}
 								<span className="ml-auto text-[10px] text-muted-foreground">8</span>
 							</div>
 							<div className="flex items-center gap-1.5 py-1.5 px-1 rounded hover:bg-card cursor-pointer text-foreground/90">
-								<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />{" "}
-								<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" /> Examples/
+								<ChevronRight aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+								<FolderOpen aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" /> Examples/
 							</div>
 						</div>
 					</ScrollArea>
@@ -249,7 +249,7 @@ export function PythonSwagger() {
 							<span className="font-semibold text-[11px] text-muted-foreground uppercase tracking-wider">
 								Installed Packages
 							</span>
-							<Package className="w-3 h-3 text-muted-foreground" />
+							<Package aria-hidden="true" className="w-3 h-3 text-muted-foreground" />
 						</div>
 						<ScrollArea className="flex-1">
 							<div className="p-2 text-xs font-mono space-y-1 text-muted-foreground">
@@ -305,7 +305,7 @@ export function PythonSwagger() {
 				<div className="flex-1 flex flex-col bg-[#020617] border-r border-slate-800 min-w-0 font-mono">
 					<div className="h-10 border-b border-slate-800/80 flex items-center px-4 gap-3 bg-[#050B14]">
 						<span className="text-xs text-muted-foreground flex items-center gap-2">
-							<Terminal className="w-3.5 h-3.5 text-blue-500" /> NexusCAD Pro
+							<Terminal aria-hidden="true" className="w-3.5 h-3.5 text-blue-500" /> NexusCAD Pro
 							Python Terminal — nexuscad-env
 						</span>
 					</div>
@@ -561,7 +561,7 @@ export function PythonSwagger() {
 					<div className="h-14 border-b border-slate-800 flex justify-between items-center px-4 bg-card shadow-sm shrink-0">
 						<div className="flex flex-col">
 							<div className="flex items-center gap-1.5">
-								<Globe className="w-3.5 h-3.5 text-purple-400" />{" "}
+								<Globe aria-hidden="true" className="w-3.5 h-3.5 text-purple-400" />{" "}
 								<span className="font-bold text-foreground text-sm">
 									NexusCAD API v4
 								</span>
@@ -575,7 +575,7 @@ export function PythonSwagger() {
 							variant="outline"
 							className="h-7 w-7 border-green-500/50 bg-green-500/10 hover:bg-green-500/20 text-green-400"
 						>
-							<Lock className="w-3.5 h-3.5" />
+							<Lock aria-hidden="true" className="w-3.5 h-3.5" />
 						</Button>
 					</div>
 					<div className="p-3 border-b border-slate-800 bg-muted/50 space-y-2">
@@ -593,7 +593,7 @@ export function PythonSwagger() {
 						<div className="flex items-center justify-between text-xs">
 							<span className="text-muted-foreground">Auth:</span>
 							<span className="text-green-400 flex items-center gap-1">
-								<Shield className="w-3 h-3" /> Bearer Token
+								<Shield aria-hidden="true" className="w-3 h-3" /> Bearer Token
 							</span>
 						</div>
 					</div>
@@ -615,9 +615,9 @@ export function PythonSwagger() {
 											7
 										</Badge>
 										{swaggerExpanded.Projects ? (
-											<ChevronDown className="w-4 h-4 text-muted-foreground" />
+											<ChevronDown aria-hidden="true" className="w-4 h-4 text-muted-foreground" />
 										) : (
-											<ChevronRight className="w-4 h-4 text-muted-foreground" />
+											<ChevronRight aria-hidden="true" className="w-4 h-4 text-muted-foreground" />
 										)}
 									</div>
 								</div>
@@ -722,9 +722,9 @@ export function PythonSwagger() {
 												{group.count}
 											</Badge>
 											{swaggerExpanded[group.name] ? (
-												<ChevronDown className="w-4 h-4 text-muted-foreground" />
+												<ChevronDown aria-hidden="true" className="w-4 h-4 text-muted-foreground" />
 											) : (
-												<ChevronRight className="w-4 h-4 text-muted-foreground" />
+												<ChevronRight aria-hidden="true" className="w-4 h-4 text-muted-foreground" />
 											)}
 										</div>
 									</div>
@@ -826,7 +826,7 @@ export function PythonSwagger() {
 										</div>
 										<div className="bg-background border border-slate-800 rounded p-2 text-[10px] font-mono">
 											<div className="text-green-400 mb-1 flex items-center gap-1">
-												<CheckCircle2 className="w-3 h-3" /> 200 OK
+												<CheckCircle2 aria-hidden="true" className="w-3 h-3" /> 200 OK
 											</div>
 											<span className="text-muted-foreground">{"{"}</span>{" "}
 											<span className="text-purple-300">"status"</span>

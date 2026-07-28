@@ -88,7 +88,7 @@ export function Header({
 				{/* ── Brand ─────────────────────────────────────────────────────── */}
 				<div className="flex items-center gap-4">
 					<div className="flex items-center gap-2">
-						<Shield className="h-5 w-5 text-primary" />
+						<Shield aria-hidden="true" className="h-5 w-5 text-primary" />
 						<span className="font-bold text-sm uppercase tracking-widest">
 							NexusCAD Pro
 						</span>
@@ -124,9 +124,9 @@ export function Header({
 
 						{/* Icon + label */}
 						{isConnected ? (
-							<Wifi className="h-3 w-3 text-green-500" />
+							<Wifi aria-hidden="true" className="h-3 w-3 text-green-500" />
 						) : (
-							<WifiOff className="h-3 w-3 text-slate-400" />
+							<WifiOff aria-hidden="true" className="h-3 w-3 text-slate-400" />
 						)}
 						<span
 							className="text-[10px] font-bold uppercase"
@@ -222,14 +222,14 @@ export function Header({
 							onClick={() => onThemeChange("light")}
 							className={`p-1.5 rounded-md ${theme === "light" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
 						>
-							<Sun className="h-4 w-4" />
+							<Sun aria-hidden="true" className="h-4 w-4" />
 						</button>
 						<button type="button"
 							id="theme-btn-dark"
 							onClick={() => onThemeChange("dark")}
 							className={`p-1.5 rounded-md ${theme === "dark" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
 						>
-							<Moon className="h-4 w-4" />
+							<Moon aria-hidden="true" className="h-4 w-4" />
 						</button>
 						<button type="button"
 							id="theme-btn-blue"
@@ -268,7 +268,7 @@ export function Header({
 						onClick={onHelpToggle}
 						className="p-2 rounded-lg bg-muted hover:bg-accent hover:text-accent-foreground transition-colors"
 					>
-						<HelpCircle className="h-4 w-4" />
+						<HelpCircle aria-hidden="true" className="h-4 w-4" />
 					</button>
 				</div>
 			</div>

@@ -183,19 +183,19 @@ export function ReportGeneratorPage() {
         const getReportIcon = (type: string) => {
                 switch (type) {
                         case "nfpa72_coverage":
-                                return <Zap className="h-4 w-4" />;
+                                return <Zap aria-hidden="true" className="h-4 w-4" />;
                         case "nfpa72_battery":
-                                return <Battery className="h-4 w-4" />;
+                                return <Battery aria-hidden="true" className="h-4 w-4" />;
                         case "voltage_drop":
-                                return <Zap className="h-4 w-4" />;
+                                return <Zap aria-hidden="true" className="h-4 w-4" />;
                         case "cable_sizing":
-                                return <Cable className="h-4 w-4" />;
+                                return <Cable aria-hidden="true" className="h-4 w-4" />;
                         case "conduit_fill":
-                                return <Ruler className="h-4 w-4" />;
+                                return <Ruler aria-hidden="true" className="h-4 w-4" />;
                         case "cable_schedule":
-                                return <Ruler className="h-4 w-4" />;
+                                return <Ruler aria-hidden="true" className="h-4 w-4" />;
                         default:
-                                return <FileText className="h-4 w-4" />;
+                                return <FileText aria-hidden="true" className="h-4 w-4" />;
                 }
         };
 
@@ -224,7 +224,7 @@ export function ReportGeneratorPage() {
                                                                 className="border-border text-foreground/90"
                                                                 onClick={() => refetchReports()}
                                                         >
-                                                                <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+                                                                <RefreshCw aria-hidden="true" className="h-4 w-4 mr-1" /> Refresh
                                                         </Button>
                                                 )}
                                         </div>
@@ -243,12 +243,12 @@ export function ReportGeneratorPage() {
                                         <CardContent>
                                                 {projectsLoading ? (
                                                         <div className="flex items-center gap-2 text-muted-foreground">
-                                                                <Activity className="h-4 w-4 animate-pulse" />
-                                                                <span className="text-sm">Loading projects...</span>
+                                                                <Activity aria-hidden="true" className="h-4 w-4 animate-pulse" />
+                                                                <span className="text-sm">Loading projects…</span>
                                                         </div>
                                                 ) : !projects || projects.length === 0 ? (
                                                         <div className="text-center py-6 text-muted-foreground">
-                                                                <FolderKanban className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                                                <FolderKanban aria-hidden="true" className="h-8 w-8 mx-auto mb-2 opacity-50" />
                                                                 <p className="text-sm">
                                                                         No projects available. Create a project first.
                                                                 </p>
@@ -262,7 +262,7 @@ export function ReportGeneratorPage() {
                                                                 }}
                                                         >
                                                                 <SelectTrigger className="bg-card border-border text-foreground">
-                                                                        <SelectValue placeholder="Choose a project..." />
+                                                                        <SelectValue placeholder="Choose a project…" />
                                                                 </SelectTrigger>
                                                                 <SelectContent className="bg-card border-border">
                                                                         {projects.map((project: Project) => (
@@ -292,7 +292,7 @@ export function ReportGeneratorPage() {
                                                                         setShowGenerateForm(true);
                                                                 }}
                                                         >
-                                                                <Plus className="h-4 w-4 mr-1" /> Generate Report
+                                                                <Plus aria-hidden="true" className="h-4 w-4 mr-1" /> Generate Report
                                                         </Button>
                                                 </div>
 
@@ -322,12 +322,11 @@ export function ReportGeneratorPage() {
                                                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                                                                         {REPORT_TYPES.map((type) => (
                                                                                                 <button type="button"
-                                                                                                        key={type.id}
-                                                                                                        className={`p-4 rounded-lg border text-left transition-all ${
-                                                                                                                reportType === type.id
-                                                                                                                        ? "border-slate-500 bg-slate-500/10"
-                                                                                                                        : "border-border bg-muted/50 hover:border-border"
-                                                                                                        }`}
+                                                                                                        key={type.id}className={`p-4 rounded-lg border text-left transition-[color,background-color,border-color] ${
+                                                reportType === type.id
+                                                        ? "border-slate-500 bg-slate-500/10"
+                                                        : "border-border bg-muted/50 hover:border-border"
+                                        }`}
                                                                                                         onClick={() => setReportType(type.id)}
                                                                                                 >
                                                                                                         <div className="flex items-start gap-3">
@@ -484,7 +483,7 @@ export function ReportGeneratorPage() {
                                                                         {/* Kernel Information */}
                                                                         <div className="p-4 rounded-lg border border-border bg-card/30">
                                                                                 <div className="flex items-center gap-2 mb-2">
-                                                                                        <Calculator className="h-4 w-4 text-info" />
+                                                                                        <Calculator aria-hidden="true" className="h-4 w-4 text-info" />
                                                                                         <h4 className="text-sm font-medium text-foreground uppercase tracking-wider">
                                                                                                 QOMN-FIRE Deterministic Kernel
                                                                                         </h4>
@@ -504,7 +503,7 @@ export function ReportGeneratorPage() {
                                                                                         onClick={handleGenerateReport}
                                                                                         disabled={generating}
                                                                                 >
-                                                                                        {generating ? "Generating..." : "Generate Report"}
+                                                                                        {generating ? "Generating…" : "Generate Report"}
                                                                                 </Button>
                                                                                 <Button
                                                                                         variant="outline"
@@ -540,21 +539,21 @@ export function ReportGeneratorPage() {
                                                                 </CardTitle>
                                                                 <CardDescription className="text-muted-foreground">
                                                                         {reportsLoading
-                                                                                ? "Loading..."
+                                                                                ? "Loading…"
                                                                                 : `${reports?.length || 0} reports`}
                                                                 </CardDescription>
                                                         </CardHeader>
                                                         <CardContent>
                                                                 {reportsLoading ? (
                                                                         <div className="flex items-center justify-center py-8">
-                                                                                <Activity className="h-5 w-5 text-muted-foreground animate-pulse" />
+                                                                                <Activity aria-hidden="true" className="h-5 w-5 text-muted-foreground animate-pulse" />
                                                                                 <span className="ml-2 text-muted-foreground">
-                                                                                        Loading reports...
+                                                                                        Loading reports…
                                                                                 </span>
                                                                         </div>
                                                                 ) : !reports || reports.length === 0 ? (
                                                                         <div className="text-center py-8 text-muted-foreground">
-                                                                                <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                                                                <FileText aria-hidden="true" className="h-8 w-8 mx-auto mb-2 opacity-50" />
                                                                                 <p className="text-sm">No reports generated yet</p>
                                                                                 <p className="text-xs mt-1">
                                                                                         Click "Generate Report" to create your first report
@@ -595,7 +594,7 @@ export function ReportGeneratorPage() {
                                                                                                                                         }
                                                                                                                                         disabled={exporting === report.id}
                                                                                                                                 >
-                                                                                                                                        <Download className="h-3 w-3 mr-1" /> JSON
+                                                                                                                                        <Download aria-hidden="true" className="h-3 w-3 mr-1" /> JSON
                                                                                                                                 </Button>
                                                                                                                                 <Button
                                                                                                                                         variant="ghost"
@@ -606,7 +605,7 @@ export function ReportGeneratorPage() {
                                                                                                                                         }
                                                                                                                                         disabled={exporting === report.id}
                                                                                                                                 >
-                                                                                                                                        <Download className="h-3 w-3 mr-1" /> PDF
+                                                                                                                                        <Download aria-hidden="true" className="h-3 w-3 mr-1" /> PDF
                                                                                                                                 </Button>
                                                                                                                         </div>
                                                                                                                 )}
@@ -625,7 +624,7 @@ export function ReportGeneratorPage() {
                                 {selectedProjectId === null && (
                                         <Card className="border-border bg-card">
                                                 <CardContent className="py-16 text-center">
-                                                        <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/70" />
+                                                        <FileText aria-hidden="true" className="h-16 w-16 mx-auto mb-4 text-muted-foreground/70" />
                                                         <h3 className="text-lg font-medium text-foreground/90">
                                                                 Select a Project
                                                         </h3>

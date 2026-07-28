@@ -26,7 +26,7 @@ export function MCCDesigner() {  // NOSONAR - typescript:S9011: Intentionally co
 							MCC-3
 						</button>
 						<button type="button" className="px-3 py-1 rounded text-muted-foreground hover:bg-muted flex items-center">
-							<Plus className="h-3 w-3 mr-1" /> Add
+							<Plus aria-hidden="true" className="h-3 w-3 mr-1" /> Add
 						</button>
 					</div>
 				</div>
@@ -36,34 +36,34 @@ export function MCCDesigner() {  // NOSONAR - typescript:S9011: Intentionally co
 						size="sm"
 						className="h-8 text-xs border-border hover:bg-card"
 					>
-						<Plus className="h-4 w-4 mr-1" /> Add Section
+						<Plus aria-hidden="true" className="h-4 w-4 mr-1" /> Add Section
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
 						className="h-8 text-xs border-border hover:bg-card"
 					>
-						<Plus className="h-4 w-4 mr-1" /> Add Bucket
+						<Plus aria-hidden="true" className="h-4 w-4 mr-1" /> Add Bucket
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
 						className="h-8 text-xs border-border hover:bg-card"
 					>
-						<Settings className="h-4 w-4 mr-1" /> Validate
+						<Settings aria-hidden="true" className="h-4 w-4 mr-1" /> Validate
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
 						className="h-8 text-xs border-border hover:bg-card"
 					>
-						<FileText className="h-4 w-4 mr-1" /> Generate Schedule
+						<FileText aria-hidden="true" className="h-4 w-4 mr-1" /> Generate Schedule
 					</Button>
 					<Button
 						size="sm"
 						className="h-8 text-xs bg-blue-600 hover:bg-blue-500 text-white"
 					>
-						<Download className="h-4 w-4 mr-1" /> Export to DWG
+						<Download aria-hidden="true" className="h-4 w-4 mr-1" /> Export to DWG
 					</Button>
 				</div>
 			</div>
@@ -300,7 +300,7 @@ export function MCCDesigner() {  // NOSONAR - typescript:S9011: Intentionally co
 							{/* Fault Details */}
 							<div className="border border-slate-500/50 bg-slate-500/10 rounded-md p-3 space-y-2">
 								<div className="flex items-center gap-2 text-danger font-bold text-xs uppercase">
-									<AlertCircle className="h-4 w-4" /> Fault Detected
+									<AlertCircle aria-hidden="true" className="h-4 w-4" /> Fault Detected
 								</div>
 								<div className="text-xs text-foreground/90">
 									<span className="text-muted-foreground">Code:</span> OL-01 (Overload
@@ -420,7 +420,7 @@ function PaletteItem({
 }) {
 	return (
 		<div
-			className={`p-2 rounded cursor-grab hover:ring-1 ring-blue-500 transition-[colors,ring,shadow] ${bg} ${border}`}
+			className={`p-2 rounded cursor-grab hover:ring-1 ring-blue-500 transition-[color,background-color,border-color,box-shadow] ${bg} ${border}`}
 		>
 			<div className="text-[10px] font-semibold text-foreground">{label}</div>
 			<div className="text-[9px] text-muted-foreground font-mono mt-1">{size}</div>

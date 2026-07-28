@@ -299,7 +299,7 @@ export function DigitalTwinPage() {
                                                 className="border-border text-foreground/90 hover:bg-card"
                                                 onClick={fetchVersionHistory}
                                         >
-                                                <History className="h-4 w-4 mr-2" />
+                                                <History aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 Refresh History
                                         </Button>
                                 </div>
@@ -311,21 +311,21 @@ export function DigitalTwinPage() {
                                                         value="convert"
                                                         className="data-[state=active]:bg-secondary"
                                                 >
-                                                        <ArrowRightLeft className="h-4 w-4 mr-2" />
+                                                        <ArrowRightLeft aria-hidden="true" className="h-4 w-4 mr-2" />
                                                         Convert
                                                 </TabsTrigger>
                                                 <TabsTrigger
                                                         value="settings"
                                                         className="data-[state=active]:bg-secondary"
                                                 >
-                                                        <Settings className="h-4 w-4 mr-2" />
+                                                        <Settings aria-hidden="true" className="h-4 w-4 mr-2" />
                                                         Settings
                                                 </TabsTrigger>
                                                 <TabsTrigger
                                                         value="history"
                                                         className="data-[state=active]:bg-secondary"
                                                 >
-                                                        <Clock className="h-4 w-4 mr-2" />
+                                                        <Clock aria-hidden="true" className="h-4 w-4 mr-2" />
                                                         History
                                                 </TabsTrigger>
                                         </TabsList>
@@ -336,7 +336,7 @@ export function DigitalTwinPage() {
                                                 <Card className="border-border bg-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                                                                        <FileUp className="h-5 w-5 text-info" />
+                                                                        <FileUp aria-hidden="true" className="h-5 w-5 text-info" />
                                                                         Upload File
                                                                 </CardTitle>
                                                                 <CardDescription className="text-muted-foreground">
@@ -353,7 +353,7 @@ export function DigitalTwinPage() {
                                                                                 id="file-upload"
                                                                         />
                                                                         <label htmlFor="file-upload" className="cursor-pointer">
-                                                                                <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                                                                <Upload aria-hidden="true" className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                                                                                 <p className="text-foreground/90 font-medium mb-2">
                                                                                         {selectedFile
                                                                                                 ? selectedFile.name
@@ -406,12 +406,12 @@ export function DigitalTwinPage() {
                                                                 >
                                                                         {converting ? (
                                                                                 <>
-                                                                                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                                                                                        <Loader2 aria-hidden="true" className="h-5 w-5 mr-2 animate-spin" />
                                                                                         Converting...
                                                                                 </>
                                                                         ) : (
                                                                                 <>
-                                                                                        <ArrowRightLeft className="h-5 w-5 mr-2" />
+                                                                                        <ArrowRightLeft aria-hidden="true" className="h-5 w-5 mr-2" />
                                                                                         Start Conversion
                                                                                 </>
                                                                         )}
@@ -427,9 +427,9 @@ export function DigitalTwinPage() {
                                                                 <CardHeader>
                                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                                 {conversionResult.success ? (
-                                                                                        <CheckCircle2 className="h-5 w-5 text-success" />
+                                                                                        <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-success" />
                                                                                 ) : (
-                                                                                        <AlertCircle className="h-5 w-5 text-danger" />
+                                                                                        <AlertCircle aria-hidden="true" className="h-5 w-5 text-danger" />
                                                                                 )}
                                                                                 Conversion{" "}
                                                                                 {conversionResult.success ? "Completed" : "Failed"}
@@ -468,7 +468,7 @@ export function DigitalTwinPage() {
                                                                         {conversionResult.warnings.length > 0 && (
                                                                                 <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                                                                                         <div className="flex items-start gap-2">
-                                                                                                <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5" />
+                                                                                                <AlertTriangle aria-hidden="true" className="h-5 w-5 text-yellow-400 mt-0.5" />
                                                                                                 <div className="flex-1">
                                                                                                         <p className="text-sm font-medium text-yellow-200 mb-2">
                                                                                                                 Warnings
@@ -486,7 +486,7 @@ export function DigitalTwinPage() {
                                                                         {conversionResult.errors.length > 0 && (
                                                                                 <div className="p-4 bg-slate-500/10 border border-danger/30 rounded-lg">
                                                                                         <div className="flex items-start gap-2">
-                                                                                                <AlertCircle className="h-5 w-5 text-danger mt-0.5" />
+                                                                                                <AlertCircle aria-hidden="true" className="h-5 w-5 text-danger mt-0.5" />
                                                                                                 <div className="flex-1">
                                                                                                         <p className="text-sm font-medium text-red-200 mb-2">
                                                                                                                 Errors
@@ -677,7 +677,7 @@ export function DigitalTwinPage() {
                                                 <Card className="border-border bg-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                                                                        <History className="h-5 w-5 text-info" />
+                                                                        <History aria-hidden="true" className="h-5 w-5 text-info" />
                                                                         Conversion History
                                                                 </CardTitle>
                                                                 <CardDescription className="text-muted-foreground">
@@ -687,11 +687,11 @@ export function DigitalTwinPage() {
                                                         <CardContent>
                                                                 {loadingHistory ? (
                                                                         <div className="flex items-center justify-center py-12">
-                                                                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                                                                                <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-muted-foreground" />
                                                                         </div>
                                                                 ) : versions.length === 0 ? (  // NOSONAR: typescript:S3358
                                                                         <div className="text-center py-12 text-muted-foreground">
-                                                                                <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                                                                <Clock aria-hidden="true" className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                                                                 <p>No conversion history yet</p>
                                                                         </div>
                                                                 ) : (
@@ -724,7 +724,7 @@ export function DigitalTwinPage() {
                                                                                                                 className="border-border text-foreground/90 hover:bg-card"
                                                                                                                 onClick={() => handleRollback(version.version_id)}
                                                                                                         >
-                                                                                                                <RefreshCw className="h-4 w-4 mr-2" />
+                                                                                                                <RefreshCw aria-hidden="true" className="h-4 w-4 mr-2" />
                                                                                                                 Rollback
                                                                                                         </Button>
                                                                                                 </div>

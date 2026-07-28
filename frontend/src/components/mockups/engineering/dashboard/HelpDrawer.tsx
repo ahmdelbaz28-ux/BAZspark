@@ -16,14 +16,14 @@ export function HelpDrawer({ helpOpen, onHelpToggle }: HelpDrawerProps) {
 			<div className="h-full flex flex-col">
 				<div className="h-14 flex items-center justify-between px-6 border-b border-border bg-muted/50">
 					<div className="text-sm font-bold flex items-center gap-2">
-						<Book className="h-4 w-4 text-primary" />
+						<Book aria-hidden="true" className="h-4 w-4 text-primary" />
 						<span>NexusCAD Help Center</span>
 					</div>
 					<button type="button"
 						onClick={onHelpToggle}
 						className="p-1.5 rounded-md hover:bg-muted transition-colors"
 					>
-						<X className="h-4 w-4" />
+						<X aria-hidden="true" className="h-4 w-4" />
 					</button>
 				</div>
 
@@ -31,7 +31,7 @@ export function HelpDrawer({ helpOpen, onHelpToggle }: HelpDrawerProps) {
 					{/* Simulated Markdown Content */}
 					<div className="prose prose-sm dark:prose-invert">
 						<div className="flex items-center gap-2 text-primary font-bold mb-1">
-							<FileText className="h-4 w-4" />
+							<FileText aria-hidden="true" className="h-4 w-4" />
 							<span>User Guide: Fault Handling</span>
 						</div>
 						<div className="text-xs text-muted-foreground leading-relaxed">
@@ -64,7 +64,7 @@ export function HelpDrawer({ helpOpen, onHelpToggle }: HelpDrawerProps) {
 					</div>
 
 					<div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-start gap-3">
-						<LifeBuoy className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+						<LifeBuoy aria-hidden="true" className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
 						<div>
 							<div className="text-xs font-bold text-blue-500">
 								Need Expert Support?

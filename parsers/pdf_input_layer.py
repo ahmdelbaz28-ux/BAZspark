@@ -3,10 +3,6 @@
 """
 FIREAI PDF INPUT LAYER — Real Drawing Parser
 =====================================
-الطبقة التي تربط البوابة بالمحرك.
-تفتح PDF. تستخرج البيانات الحقيقية. تُمرر للمحرك فقط إن كان جديراً.
-
-Author: The Eye That Refuses to Stay Closed
 """
 
 import logging
@@ -16,7 +12,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional, Tuple
 
-# Local imports
+from parsers._device_types import DeviceType
 from parsers.parser_confidence import ConfidenceResult, GateDecision, ParserConfidence
 
 logger = logging.getLogger("fireai.input_layer")
@@ -26,24 +22,11 @@ logger = logging.getLogger("fireai.input_layer")
 # DATA CLASSES
 # ═══════════════════════════════════════════════════════
 
-class DeviceType(Enum):
-    """NFPA 170 device types."""
-
-    SMOKE_DETECTOR = "SMOKE_DETECTOR"
-    HEAT_DETECTOR = "HEAT_DETECTOR"
-    PULL_STATION = "PULL_STATION"
-    HORN = "HORN"
-    STROBE = "STROBE"
-    HORN_STROBE = "HORN_STROBE"
-    SPEAKER = "SPEAKER"
-    BELL = "BELL"
+class InputDeviceType(DeviceType):
     NOTIFICATION_APPLIANCE = "NOTIFICATION_APPLIANCE"
     FIRE_ALARM_PANEL = "FIRE_ALARM_PANEL"
     POWER_SUPPLY = "POWER_SUPPLY"
     BATTERY = "BATTERY"
-    SPRINKLER = "SPRINKLER"
-    FLOW_SWITCH = "FLOW_SWITCH"
-    TAMPER_SWITCH = "TAMPER_SWITCH"
     UNKNOWN = "UNKNOWN"
 
 
@@ -51,13 +34,13 @@ class DeviceType(Enum):
 class ExtractedDevice:
     """Device extracted from PDF with real coordinates."""
 
-    device_type: DeviceType
-    x: float              # Real-world X (converted from page coords)
-    y: float              # Real-world Y (converted from page coords)
+    device_type: InputDeviceType
+    x: float
+    y: float
     page: int
     room: Optional[str] = None
     zone: Optional[str] = None
-    elevation: Optional[float] = None  # Ceiling height at this location
+    elevation: Optional[float] = None
     confidence: float = 1.0
 
     def to_dict(self) -> dict:
@@ -77,11 +60,11 @@ class ExtractedDevice:
 class RoomBoundary:
     """Room extracted from floor plan."""
 
-    name: str              # Room number/name
-    area_sqft: float       # Calculated area
+    name: str
+    area_sqft: float
     center_x: float
     center_y: float
-    ceiling_height: float = 9.0  # Default feet
+    ceiling_height: float = 9.0
     boundary_points: List[Tuple[float, float]] = field(default_factory=list)
 
     def to_dict(self) -> dict:
@@ -133,7 +116,6 @@ class InputLayerResult:
 
     @property
     def is_accepted(self) -> bool:
-        """Was drawing accepted by confidence gate?"""
         return self.confidence_result.gate != GateDecision.REJECT
 
     @property
@@ -145,7 +127,6 @@ class InputLayerResult:
         return len(self.rooms)
 
     def to_engine_input(self) -> dict:
-        """Convert to engine-compatible format."""
         return {
             "source_pdf": self.source_pdf,
             "accepted": self.is_accepted,
@@ -167,49 +148,36 @@ class InputLayerResult:
 # ═══════════════════════════════════════════════════════
 
 NFPA_170_SYMBOLS = {
-    # Smoke Detector
-    "smoke": DeviceType.SMOKE_DETECTOR,
-    "sd": DeviceType.SMOKE_DETECTOR,
-    "smoke detector": DeviceType.SMOKE_DETECTOR,
-
-    # Heat Detector
-    "heat": DeviceType.HEAT_DETECTOR,
-    "hd": DeviceType.HEAT_DETECTOR,
-    "heat detector": DeviceType.HEAT_DETECTOR,
-    "rate-of-rise": DeviceType.HEAT_DETECTOR,
-    "fixed temp": DeviceType.HEAT_DETECTOR,
-
-    # Pull Station
-    "pull": DeviceType.PULL_STATION,
-    "ps": DeviceType.PULL_STATION,
-    "pull station": DeviceType.PULL_STATION,
-    "manual pull": DeviceType.PULL_STATION,
-    "break glass": DeviceType.PULL_STATION,
-
-    # Notification
-    "horn": DeviceType.HORN,
-    "strobe": DeviceType.STROBE,
-    "hs": DeviceType.HORN_STROBE,
-    "horn/strobe": DeviceType.HORN_STROBE,
-    "horn strobe": DeviceType.HORN_STROBE,
-    "speaker": DeviceType.SPEAKER,
-    "bell": DeviceType.BELL,
-
-    # Panel
-    "fap": DeviceType.FIRE_ALARM_PANEL,
-    "panel": DeviceType.FIRE_ALARM_PANEL,
-    "facp": DeviceType.FIRE_ALARM_PANEL,
-    "fire alarm panel": DeviceType.FIRE_ALARM_PANEL,
-    "control panel": DeviceType.FIRE_ALARM_PANEL,
-
-    # Power
-    "power": DeviceType.POWER_SUPPLY,
-    "battery": DeviceType.BATTERY,
-
-    # Sprinkler
-    "sprinkler": DeviceType.SPRINKLER,
-    "flow switch": DeviceType.FLOW_SWITCH,
-    "tamper": DeviceType.TAMPER_SWITCH,
+    "smoke": InputDeviceType.SMOKE_DETECTOR,
+    "sd": InputDeviceType.SMOKE_DETECTOR,
+    "smoke detector": InputDeviceType.SMOKE_DETECTOR,
+    "heat": InputDeviceType.HEAT_DETECTOR,
+    "hd": InputDeviceType.HEAT_DETECTOR,
+    "heat detector": InputDeviceType.HEAT_DETECTOR,
+    "rate-of-rise": InputDeviceType.HEAT_DETECTOR,
+    "fixed temp": InputDeviceType.HEAT_DETECTOR,
+    "pull": InputDeviceType.MANUAL_PULL_STATION,
+    "ps": InputDeviceType.MANUAL_PULL_STATION,
+    "pull station": InputDeviceType.MANUAL_PULL_STATION,
+    "manual pull": InputDeviceType.MANUAL_PULL_STATION,
+    "break glass": InputDeviceType.MANUAL_PULL_STATION,
+    "horn": InputDeviceType.HORN,
+    "strobe": InputDeviceType.STROBE,
+    "hs": InputDeviceType.HORN_STROBE,
+    "horn/strobe": InputDeviceType.HORN_STROBE,
+    "horn strobe": InputDeviceType.HORN_STROBE,
+    "speaker": InputDeviceType.SPEAKER,
+    "bell": InputDeviceType.BELL,
+    "fap": InputDeviceType.FIRE_ALARM_PANEL,
+    "panel": InputDeviceType.FIRE_ALARM_PANEL,
+    "facp": InputDeviceType.FIRE_ALARM_PANEL,
+    "fire alarm panel": InputDeviceType.FIRE_ALARM_PANEL,
+    "control panel": InputDeviceType.FIRE_ALARM_PANEL,
+    "power": InputDeviceType.POWER_SUPPLY,
+    "battery": InputDeviceType.BATTERY,
+    "sprinkler": InputDeviceType.SPRINKLER,
+    "flow switch": InputDeviceType.FLOW_SWITCH,
+    "tamper": InputDeviceType.TAMPER_SWITCH,
 }
 
 
@@ -219,49 +187,19 @@ NFPA_170_SYMBOLS = {
 
 class PDFInputLayer:
     """
-    الطبقة الحقيقية للمدخلات.
-
-    1. يفتح PDF
-    2. يمرر عبر بوابة الثقة
-    3. يستخرج الأجهزة والإحداثيات
-    4. يستخرج الغرف والارتفاعات
-    5. يمرر للمحرك
-
-    USAGE:
-        layer = PDFInputLayer()
-        result = layer.process("drawing.pdf")
-
-        if result.is_accepted:
-            engine_input = result.to_engine_input()
-            # feed to engine...
     """
 
     def __init__(self, scale_factor: float = 1.0):
-        """
-        Args:
-        scale_factor: Convert page units to real-world feet
-
-        """
         self.scale_factor = scale_factor
 
     def process(self, pdf_path: str) -> InputLayerResult:
-        """
-        Process PDF through complete input layer.
-
-        Args:
-            pdf_path: Path to PDF floor plan
-
-        Returns:
-            InputLayerResult with extracted data
-
-        """
         from parsers._path_security import (
             UnsafePathError,
             validate_file_size,
             validate_input_path,
         )
         _ALLOWED_EXTENSIONS = frozenset({".pdf"})
-        _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_PDF_MAX_FILE_SIZE_BYTES", 200 * 1024 * 1024))  # 200 MB default
+        _MAX_FILE_SIZE_BYTES = int(os.getenv("FIREAI_PDF_MAX_FILE_SIZE_BYTES", 200 * 1024 * 1024))
         try:
             safe_path = validate_input_path(
                 pdf_path,
@@ -281,7 +219,6 @@ class PDFInputLayer:
             confidence_result=None
         )
 
-        # Step 1: Check confidence gate FIRST
         try:
             confidence = ParserConfidence(str(safe_path)).evaluate()
             result.confidence_result = confidence
@@ -298,7 +235,6 @@ class PDFInputLayer:
             result.errors.append(f"Confidence check failed: {e}")
             return result
 
-        # Step 2: Extract actual data
         try:
             self._extract_data(str(safe_path), result)
         except Exception as e:
@@ -311,88 +247,67 @@ class PDFInputLayer:
         return result
 
     def _extract_data(self, pdf_path: str, result: InputLayerResult):
-        """Extract devices, rooms, metadata from PDF."""
-        import _fitz_compat as fitz  # PyMuPDF
+        import _fitz_compat as fitz
 
         doc = fitz.open(pdf_path)
 
         for page_num, page in enumerate(doc, 1):
-            # Extract metadata from first page only
             if page_num == 1:
                 result.metadata = self._extract_metadata(page)
 
-            # Extract devices from this page
             devices = self._extract_devices(page, page_num)
             result.devices.extend(devices)
 
-            # Extract rooms from this page
             rooms = self._extract_rooms(page, page_num)
             result.rooms.extend(rooms)
 
         doc.close()
 
     def _extract_metadata(self, page) -> DrawingMetadata:
-        """Extract drawing metadata from text."""
         text = page.get_text().lower()
 
         metadata = DrawingMetadata()
 
-        # Building name (look for project/building)
         match = re.search(r'(?:project|building)[:\s]*([^\n]+)', text)
         if match:
             metadata.building_name = match.group(1).strip()[:50]
 
-        # Floor level
         floor_match = re.search(r'(?:floor|level)[:\s]*(ground|first|second|third|1st|2nd|3rd|\d+)', text)
         if floor_match:
             metadata.floor_level = floor_match.group(1).strip()
 
-        # Scale
         scale_match = re.search(r'scale[:\s]*(\d+[:/]\d+|1/8"|1/4"|3/32")', text)
         if scale_match:
             metadata.drawing_scale = scale_match.group(1).strip()
 
-        # Date
         date_match = re.search(r'(?:date|drawn)[:\s]*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})', text)
         if date_match:
             metadata.date = date_match.group(1).strip()
 
-        # Designer
         designer_match = re.search(r'(?:designer|drawn by|prepared by)[:\s]*([^\n]+)', text)
         if designer_match:
             metadata.designer = designer_match.group(1).strip()[:50]
 
-        # Revision
         rev_match = re.search(r'rev(?:ision)?[:\s]*([A-Z0-9]+)', text)
         if rev_match:
             metadata.revision = rev_match.group(1).strip()
 
-        # North arrow check
         metadata.north_arrow = 'north' in text and 'arrow' in text
 
         return metadata
 
     def _extract_devices(self, page, page_num: int) -> List[ExtractedDevice]:
-        """Extract fire alarm devices from page."""
         devices = []
         text = page.get_text().lower()
 
-        # Get page dimensions for coordinate conversion
         page_rect = page.rect
         page_width = page_rect.width
         page_height = page_rect.height
 
-        # Find each device type in text
         for symbol_pattern, device_type in NFPA_170_SYMBOLS.items():
-            # Find all occurrences
             for match in re.finditer(re.escape(symbol_pattern), text):
-                # Try to extract coordinates from nearby text
                 x, y = self._extract_coordinates_near(text, match.start(), page_width, page_height)
-
-                # Try to extract room from nearby text
                 room = self._extract_room_near(text, match.start())
-
-                # Calculate confidence based on position
                 confidence = 0.7 if (x, y) != (0, 0) else 0.5
 
                 devices.append(ExtractedDevice(
@@ -407,23 +322,18 @@ class PDFInputLayer:
         return self._deduplicate_devices(devices)
 
     def _extract_coordinates_near(self, text: str, position: int,
-                              _page_width: float, _page_height: float) -> Tuple[float, float]:  # NOSONAR — S1172: parameter retained for API stability
-        """Try to extract coordinates near match position."""
-        # Look at text window around match
-        window = text[max(0, position-30):position+30]
+                              _page_width: float, _page_height: float) -> Tuple[float, float]:
+        window = text[max(0, position - 30):position + 30]
 
-        # Try coordinates pattern (e.g., "12.5, 8.3" or "X=12.5 Y=8.3")
-        coord_match = re.search(r'(\d+\.?\d*)[,\s]+(\d+\.?\d*)', window)  # NOSONAR — S8786: assert kept for test clarity
+        coord_match = re.search(r'(\d+\.?\d*)[,\s]+(\d+\.?\d*)', window)
         if coord_match:
             try:
                 x_raw = coord_match.group(1)
                 y_raw = coord_match.group(2)
-                # Ensure these are actually numeric, not sequences
                 if not x_raw.replace('.', '').isdigit() or not y_raw.replace('.', '').isdigit():
                     return (0.0, 0.0)
                 x = float(x_raw)
                 y = float(y_raw)
-                # Convert from page coords to real-world
                 return (x * float(self.scale_factor), y * float(self.scale_factor))
             except (ValueError, TypeError):
                 pass
@@ -431,10 +341,8 @@ class PDFInputLayer:
         return (0.0, 0.0)
 
     def _extract_room_near(self, text: str, position: int) -> Optional[str]:
-        """Extract room number near match position."""
-        window = text[max(0, position-50):position+50]
+        window = text[max(0, position - 50):position + 50]
 
-        # Room patterns
         room_patterns = [
             r'(?:room|r\.?|#)\s*(\d+[A-Za-z]?)',
             r'(?:rm|r)[\s.-]*(\d+)',
@@ -448,24 +356,19 @@ class PDFInputLayer:
 
         return None
 
-    def _extract_rooms(self, page, _page_num: int) -> List[RoomBoundary]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-        """Extract room boundaries from page."""
+    def _extract_rooms(self, page, _page_num: int) -> List[RoomBoundary]:
         rooms = []
         text = page.get_text()
         text_lower = text.lower()
 
-        # Get page dimensions
-
-        # Known room names to look for
         KNOWN_ROOM_NAMES = [
             'corridor', 'lobby', 'office', 'kitchen', 'meeting',
             'bathroom', 'bedroom', 'warehouse', 'storage', 'server',
             'atrium'
         ]
 
-        # First: try explicit "Room X" patterns
         room_matches = re.finditer(
-            r'room\s*([A-Z]?\d+[A-Za-z]?)',  # NOSONAR — S5869: f-string without placeholders kept for future expansion
+            r'room\s*([A-Z]?\d+[A-Za-z]?)',
             text_lower,
             re.IGNORECASE
         )
@@ -475,7 +378,6 @@ class PDFInputLayer:
             area = self._extract_room_area(text_lower, match.start())
             ceiling = self._extract_ceiling_height(text_lower, match.start())
 
-            # Get position safely
             try:
                 bbox = page.get_text("bbox", match.span())
                 if bbox and isinstance(bbox, (list, tuple)) and len(bbox) >= 4:
@@ -497,12 +399,10 @@ class PDFInputLayer:
                 ceiling_height=ceiling
             ))
 
-        # Second: find known room names in text (Corridor, Lobby, etc)
         for room_keyword in KNOWN_ROOM_NAMES:
             pattern = re.compile(rf'\b{re.escape(room_keyword)}\b', re.IGNORECASE)
             for match in pattern.finditer(text_lower):
                 room_name = match.group(0).title()
-                # Skip if already have this room
                 if any(r.name.lower() == room_name.lower() for r in rooms):
                     continue
 
@@ -533,24 +433,19 @@ class PDFInputLayer:
         return rooms
 
     def _extract_room_area(self, text: str, position: int) -> Optional[float]:
-        """Extract room area near position - ONLY look AFTER the room name."""
-        # IMPORTANT: Only look AFTER position, not before (we need the area of THIS room)
-        window = text[position:position+200]
+        window = text[position:position + 200]
 
-        # Area patterns: sqft
-        area_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sf|sqft)', window)  # NOSONAR — S8786: assert kept for test clarity  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        area_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sf|sqft)', window)
         if area_match:
             try:
                 return float(area_match.group(1))
             except ValueError:
                 pass
 
-        # Area patterns: m² (convert to sqft)
-        area_match2 = re.search(r'(\d+(?:\.\d+)?)\s*(?:m2|m\.?²|sq\.?\s*m|square\s*m)', window)  # NOSONAR — S8786: assert kept for test clarity
+        area_match2 = re.search(r'(\d+(?:\.\d+)?)\s*(?:m2|m\.?²|sq\.?\s*m|square\s*m)', window)
         if area_match2:
             try:
                 area_val = float(area_match2.group(1))
-                # Convert m² to sqft
                 return area_val * 10.764
             except ValueError:
                 pass
@@ -558,10 +453,8 @@ class PDFInputLayer:
         return None
 
     def _extract_ceiling_height(self, text: str, position: int) -> float:
-        """Extract ceiling height from nearby text."""
-        window = text[max(0, position-200):position+200]
+        window = text[max(0, position - 200):position + 200]
 
-        # Height patterns
         height_patterns = [
             r'ceiling[:\s]*(\d+(?:\.\d+)?)\s*(?:ft|feet|\')',
             r'(\d+(?:\.\d+)?)\s*ft\s+ceiling',
@@ -576,10 +469,9 @@ class PDFInputLayer:
                 except ValueError:
                     pass
 
-        return 9.0  # Default
+        return 9.0
 
     def _deduplicate_devices(self, devices: List[ExtractedDevice]) -> List[ExtractedDevice]:
-        """Remove duplicate devices."""
         seen = {}
         unique = []
 
@@ -597,28 +489,11 @@ class PDFInputLayer:
 # ═══════════════════════════════════════════════════════
 
 def process_drawing(pdf_path: str) -> InputLayerResult:
-    """
-    Process a single drawing through the input layer.
-
-    Args:
-        pdf_path: Path to PDF floor plan
-
-    Returns:
-        InputLayerResult with extracted data
-
-    """
     layer = PDFInputLayer()
     return layer.process(pdf_path)
 
 
 def quick_accept_check(pdf_path: str) -> Tuple[bool, str]:
-    """
-    Quick check if drawing passes confidence gate.
-
-    Returns:
-        (accepted: bool, message: str)
-
-    """
     try:
         confidence = ParserConfidence(pdf_path).evaluate()
         return (

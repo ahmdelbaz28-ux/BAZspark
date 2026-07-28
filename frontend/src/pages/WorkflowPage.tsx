@@ -208,7 +208,7 @@ export function WorkflowPage() {
                                 {/* Engine Status */}
                                 <div className="flex items-center gap-3">
                                         <Button onClick={handleStatus} disabled={loading} variant="outline">
-                                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                                {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <RefreshCw aria-hidden="true" className="h-4 w-4" />}
                                                 Check Engine Status
                                         </Button>
                                         {globalStatus && (
@@ -261,7 +261,7 @@ export function WorkflowPage() {
                                                         </div>
                                                         <div className="flex items-end">
                                                                 <Button onClick={handleStart} disabled={loading} className="w-full">
-                                                                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                                                                        {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Play aria-hidden="true" className="h-4 w-4" />}
                                                                         Start
                                                                 </Button>
                                                         </div>
@@ -283,11 +283,11 @@ export function WorkflowPage() {
                                                                 placeholder="Enter workflow ID..."
                                                         />
                                                         <Button onClick={handleGetStatus} disabled={loading || !workflowId} variant="outline">
-                                                                <RefreshCw className="h-4 w-4" />
+                                                                <RefreshCw aria-hidden="true" className="h-4 w-4" />
                                                                 Refresh
                                                         </Button>
                                                         <Button onClick={handleAudit} disabled={loading || !workflowId} variant="ghost">
-                                                                <History className="h-4 w-4" />
+                                                                <History aria-hidden="true" className="h-4 w-4" />
                                                                 Audit
                                                         </Button>
                                                 </div>
@@ -340,7 +340,7 @@ export function WorkflowPage() {
                                                                                                         placeholder="Optional comment..."
                                                                                                 />
                                                                                                 <Button onClick={handleApprove} disabled={loading} size="icon">
-                                                                                                        <CheckCircle2 className="h-4 w-4 text-success" />
+                                                                                                        <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-success" />
                                                                                                 </Button>
                                                                                         </div>
                                                                                 </div>
@@ -353,7 +353,7 @@ export function WorkflowPage() {
                                                                                                         placeholder="Reason for rejection..."
                                                                                                 />
                                                                                                 <Button onClick={handleReject} disabled={loading} size="icon" variant="destructive">
-                                                                                                        <XCircle className="h-4 w-4" />
+                                                                                                        <XCircle aria-hidden="true" className="h-4 w-4" />
                                                                                                 </Button>
                                                                                         </div>
                                                                                 </div>
@@ -369,7 +369,7 @@ export function WorkflowPage() {
                                         <Card>
                                                 <CardHeader>
                                                         <CardTitle className="flex items-center gap-2">
-                                                                <History className="h-4 w-4 text-primary" />
+                                                                <History aria-hidden="true" className="h-4 w-4 text-primary" />
                                                                 Audit Trail ({auditTrail.length})
                                                         </CardTitle>
                                                 </CardHeader>

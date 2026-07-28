@@ -162,7 +162,7 @@ export function EnvironmentPage() {
 			<div className="p-6 max-w-5xl mx-auto space-y-6">
 				<div>
 					<h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-						<Cloud className="h-5 w-5 text-primary" />
+						<Cloud aria-hidden="true" className="h-5 w-5 text-primary" />
 						Environmental Context
 					</h1>
 					<p className="text-sm text-muted-foreground mt-1">
@@ -187,7 +187,7 @@ export function EnvironmentPage() {
 										placeholder="123 Main St, New York, NY"
 									/>
 									<Button onClick={handleGeocode} disabled={loading} size="icon">
-										{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+										{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Search aria-hidden="true" className="h-4 w-4" />}
 									</Button>
 								</div>
 							</div>
@@ -206,19 +206,19 @@ export function EnvironmentPage() {
 				{/* Quick Actions */}
 				<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 					<Button onClick={handleWeather} disabled={loading} variant="outline">
-						{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cloud className="h-4 w-4" />}
+						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Cloud aria-hidden="true" className="h-4 w-4" />}
 						Weather
 					</Button>
 					<Button onClick={handleElevation} disabled={loading} variant="outline">
-						{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <MapPin aria-hidden="true" className="h-4 w-4" />}
 						Elevation
 					</Button>
 					<Button onClick={handleAirQuality} disabled={loading} variant="outline">
-						{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cloud className="h-4 w-4" />}
+						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Cloud aria-hidden="true" className="h-4 w-4" />}
 						Air Quality
 					</Button>
 					<Button onClick={handleSevereWeather} disabled={loading} variant="outline">
-						{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
+						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <AlertTriangle aria-hidden="true" className="h-4 w-4" />}
 						Severe Weather
 					</Button>
 				</div>
@@ -229,7 +229,7 @@ export function EnvironmentPage() {
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
-									<Cloud className="h-4 w-4 text-primary" />
+									<Cloud aria-hidden="true" className="h-4 w-4 text-primary" />
 									Weather
 								</CardTitle>
 							</CardHeader>
@@ -240,7 +240,7 @@ export function EnvironmentPage() {
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
-									<MapPin className="h-4 w-4 text-primary" />
+									<MapPin aria-hidden="true" className="h-4 w-4 text-primary" />
 									Elevation
 								</CardTitle>
 							</CardHeader>
@@ -251,7 +251,7 @@ export function EnvironmentPage() {
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
-									<Cloud className="h-4 w-4 text-primary" />
+									<Cloud aria-hidden="true" className="h-4 w-4 text-primary" />
 									Air Quality
 								</CardTitle>
 							</CardHeader>
@@ -262,7 +262,7 @@ export function EnvironmentPage() {
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
-									<AlertTriangle className="h-4 w-4 text-warning" />
+									<AlertTriangle aria-hidden="true" className="h-4 w-4 text-warning" />
 									Severe Weather
 								</CardTitle>
 							</CardHeader>
@@ -287,7 +287,7 @@ export function EnvironmentPage() {
 								placeholder="gasoline, propane, ammonia..."
 							/>
 							<Button onClick={handleHazmat} disabled={loading}>
-								{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+								{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Search aria-hidden="true" className="h-4 w-4" />}
 								Search
 							</Button>
 							<Button onClick={handleKnownHazmat} disabled={loading} variant="outline">

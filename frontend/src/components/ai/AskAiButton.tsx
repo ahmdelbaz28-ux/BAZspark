@@ -52,7 +52,7 @@ export function AskAiButton({ onClick, label }: AskAiButtonProps) {
                         title={ariaLabel}
                         className={`ask-ai-button fixed bottom-6 ${positionClass} z-50 inline-flex h-12 items-center gap-2 rounded-full px-5 font-medium tracking-wide shadow-lg`}
                 >
-                        <Sparkles className="ask-ai-sparkle h-4 w-4 text-cyan-300" />
+                        <Sparkles aria-hidden="true" className="ask-ai-sparkle h-4 w-4 text-cyan-300" />
                         <span className="hidden text-sm sm:inline">
                                 {buttonText}
                         </span>

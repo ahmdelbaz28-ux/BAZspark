@@ -70,8 +70,29 @@ export function DashboardPage() {
         const dangerDevices = 0;  // No health endpoint available — honest zero
         const okDevices = totalDevices; // All devices assumed operational
 
+        // Announce when data finishes loading for screen readers
+        const loadingAnnouncement = useMemo(() => {
+                if (healthLoading || projectsLoading || devicesLoading) {
+                        return null;
+                }
+                return `Dashboard loaded: ${totalProjects} projects, ${totalDevices} devices, ${
+                        connected ? "connected" : "disconnected"
+                }.`;
+        }, [healthLoading, projectsLoading, devicesLoading, totalProjects, totalDevices, connected]);
+
         return (
                 <div className="flex-1 overflow-auto" aria-label={t("dashboard.title")}>
+                        {/* Loading announcement for screen readers */}
+                        {loadingAnnouncement && (
+                                <div
+                                        role="status"
+                                        aria-live="polite"
+                                        aria-atomic="true"
+                                        className="sr-only"
+                                >
+                                        {loadingAnnouncement}
+                                </div>
+                        )}
                         <div className="p-6 max-w-7xl mx-auto space-y-6">
                                 {/* Header */}
                                 <div className="flex items-center justify-between">
@@ -88,7 +109,7 @@ export function DashboardPage() {
                                                 className="border-border text-foreground/90 hover:bg-card"
                                                 onClick={() => refetchHealth()}
                                         >
-                                                <Activity className="h-4 w-4 mr-1" />
+                                                <Activity aria-hidden="true" className="h-4 w-4 mr-1" />
                                                 {t("dashboard.refresh")}
                                         </Button>
                                 </div>
@@ -175,14 +196,14 @@ export function DashboardPage() {
                                                                 <div className="flex items-center gap-2">
                                                                         {connected ? (
                                                                                 <>
-                                                                                        <CheckCircle2 className="h-5 w-5 text-success" />
+                                                                                        <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-success" />
                                                                                         <span className="text-success">
                                                                                                 {t("dashboard.connected")}
                                                                                         </span>
                                                                                 </>
                                                                         ) : (
                                                                                 <>
-                                                                                        <XCircle className="h-5 w-5 text-danger" />
+                                                                                        <XCircle aria-hidden="true" className="h-5 w-5 text-danger" />
                                                                                         <span className="text-danger">
                                                                                                 {t("dashboard.disconnected")}
                                                                                         </span>
@@ -208,7 +229,7 @@ export function DashboardPage() {
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                         <div className="flex items-center gap-3">
                                                                 <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                                                                        <CheckCircle2 className="h-5 w-5 text-success" />
+                                                                        <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-success" />
                                                                 </div>
                                                                 <div>
                                                                         <div className="text-2xl font-bold text-success">
@@ -221,7 +242,7 @@ export function DashboardPage() {
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                                 <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-                                                                        <AlertTriangle className="h-5 w-5 text-warning" />
+                                                                        <AlertTriangle aria-hidden="true" className="h-5 w-5 text-warning" />
                                                                 </div>
                                                                 <div>
                                                                         <div className="text-2xl font-bold text-warning">
@@ -234,7 +255,7 @@ export function DashboardPage() {
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                                 <div className="w-10 h-10 rounded-full bg-slate-500/20 flex items-center justify-center">
-                                                                        <XCircle className="h-5 w-5 text-danger" />
+                                                                        <XCircle aria-hidden="true" className="h-5 w-5 text-danger" />
                                                                 </div>
                                                                 <div>
                                                                         <div className="text-2xl font-bold text-danger">
@@ -255,7 +276,11 @@ export function DashboardPage() {
                                                 <CardTitle className="text-lg text-foreground">
                                                         {t("dashboard.systemHealth")}
                                                 </CardTitle>
-                                                <CardDescription className="text-muted-foreground">
+                                                <CardDescription
+                                                        className="text-muted-foreground"
+                                                        aria-live="polite"
+                                                        aria-atomic="true"
+                                                >
                                                         {healthLoading
                                                                 ? t("dashboard.loading")
                                                                 : t("dashboard.lastUpdated") +
@@ -273,19 +298,19 @@ export function DashboardPage() {
                                                 ) : health ? (
                                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                                 <div className="flex items-center gap-2">
-                                                                        <Server className="h-5 w-5 text-info" />
+                                                                        <Server aria-hidden="true" className="h-5 w-5 text-info" />
                                                                         <span className="text-foreground/90">
                                                                                 {t("dashboard.version")}: v{health.version}
                                                                         </span>
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
-                                                                        <Database className="h-5 w-5 text-info" />
+                                                                        <Database aria-hidden="true" className="h-5 w-5 text-info" />
                                                                         <span className="text-foreground/90">
                                                                                 {t("dashboard.database")}: {health.database}
                                                                         </span>
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
-                                                                        <Clock className="h-5 w-5 text-info" />
+                                                                        <Clock aria-hidden="true" className="h-5 w-5 text-info" />
                                                                         <span className="text-foreground/90">
                                                                                 {t("dashboard.uptime")}:{" "}
                                                                                 {Math.floor((health.uptime || 0) / 60)} min
@@ -323,7 +348,7 @@ export function DashboardPage() {
                                                                 className="bg-danger hover:bg-danger/90 text-white border-none flex items-center gap-2"
                                                                 aria-label={t("settings.openReportGenerator")}
                                                         >
-                                                                <Calculator className="h-4 w-4" />
+                                                                <Calculator aria-hidden="true" className="h-4 w-4" />
                                                                 {t("settings.openReportGenerator")}
                                                         </Button>
                                                 </div>

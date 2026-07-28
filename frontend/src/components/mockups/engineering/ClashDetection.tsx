@@ -102,7 +102,7 @@ export function ClashDetection() {
 			<div className="h-14 flex items-center justify-between px-4 border-b bg-card shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="font-bold tracking-wide flex items-center gap-2">
-						<AlertTriangle className="h-5 w-5 text-amber-500" />
+						<AlertTriangle aria-hidden="true" className="h-5 w-5 text-amber-500" />
 						Clash Detection & BIM Coordination
 					</div>
 					<Separator orientation="vertical" className="h-6" />
@@ -136,16 +136,16 @@ export function ClashDetection() {
 					<Separator orientation="vertical" className="h-6 hidden lg:block" />
 					<div className="flex items-center gap-2">
 						<Button variant="outline" size="sm" className="h-8 gap-1">
-							<Filter className="h-4 w-4" /> Filter
+							<Filter aria-hidden="true" className="h-4 w-4" /> Filter
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 gap-1">
-							<Download className="h-4 w-4" /> Export
+							<Download aria-hidden="true" className="h-4 w-4" /> Export
 						</Button>
 						<Button size="sm" className="h-8 gap-1">
-							<Play className="h-4 w-4" /> Run Detection
+							<Play aria-hidden="true" className="h-4 w-4" /> Run Detection
 						</Button>
 						<Button variant="ghost" size="icon" className="h-8 w-8">
-							<Settings className="h-4 w-4" />
+							<Settings aria-hidden="true" className="h-4 w-4" />
 						</Button>
 					</div>
 				</div>
@@ -165,7 +165,7 @@ export function ClashDetection() {
 									role="button"
 									tabIndex={0}
 									key={clash.id}
-									className={`p-3 rounded-md border cursor-pointer transition-[colors,shadow] hover:bg-muted/50 ${activeClash === clash.id ? "bg-primary/10 border-primary/50" : "bg-card border-border/50"}`}
+									className={`p-3 rounded-md border cursor-pointer transition-[color,background-color,border-color,box-shadow] hover:bg-muted/50 ${activeClash === clash.id ? "bg-primary/10 border-primary/50" : "bg-card border-border/50"}`}
 									onClick={() => setActiveClash(clash.id)}
 									onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActiveClash(clash.id); } }}
 								>
@@ -276,15 +276,15 @@ export function ClashDetection() {
 
 					<div className="absolute bottom-4 right-4 flex flex-col gap-2">
 						<div className="bg-card/80 backdrop-blur border rounded-md shadow-lg flex flex-col p-1 gap-1">
-							<ToolBtn icon={<Navigation />} active />
-							<ToolBtn icon={<MousePointer2 />} />
-							<ToolBtn icon={<BoxSelect />} />
+							<ToolBtn icon={<Navigation aria-hidden="true" />} active />
+							<ToolBtn icon={<MousePointer2 aria-hidden="true" />} />
+							<ToolBtn icon={<BoxSelect aria-hidden="true" />} />
 							<Separator />
-							<ToolBtn icon={<LocateFixed />} />
+							<ToolBtn icon={<LocateFixed aria-hidden="true" />} />
 						</div>
 						<div className="bg-card/80 backdrop-blur border rounded-md shadow-lg flex flex-col p-1 gap-1">
-							<ToolBtn icon={<Maximize />} />
-							<ToolBtn icon={<Minimize />} />
+							<ToolBtn icon={<Maximize aria-hidden="true" />} />
+							<ToolBtn icon={<Minimize aria-hidden="true" />} />
 						</div>
 					</div>
 
@@ -294,7 +294,7 @@ export function ClashDetection() {
 							size="icon"
 							className="h-6 w-6 rounded-full"
 						>
-							<ChevronLeft className="h-4 w-4" />
+							<ChevronLeft aria-hidden="true" className="h-4 w-4" />
 						</Button>
 						<div className="text-xs font-mono">CLH-014 of 47</div>
 						<Button
@@ -302,7 +302,7 @@ export function ClashDetection() {
 							size="icon"
 							className="h-6 w-6 rounded-full"
 						>
-							<ChevronRight className="h-4 w-4" />
+							<ChevronRight aria-hidden="true" className="h-4 w-4" />
 						</Button>
 					</div>
 				</div>
@@ -503,10 +503,10 @@ function SeverityBadge({ severity }: { severity: string }) {
 
 function StatusIcon({ status }: { status: string }) {
 	if (status === "Resolved")
-		return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+		return <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-emerald-500" />;
 	if (status === "Accepted")
-		return <Info className="h-4 w-4 text-info" />;
-	return <AlertCircle className="h-4 w-4 text-muted-foreground" />;  // NOSONAR: typescript:S6759
+		return <Info aria-hidden="true" className="h-4 w-4 text-info" />;
+	return <AlertCircle aria-hidden="true" className="h-4 w-4 text-muted-foreground" />;  // NOSONAR: typescript:S6759
 }
 
 function ToolBtn({

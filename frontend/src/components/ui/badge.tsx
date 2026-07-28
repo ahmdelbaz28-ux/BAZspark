@@ -33,5 +33,5 @@ function Badge({ className, variant, ...props }: BadgeProps) {
 	);
 }
 
-export { badgeVariants };
+export { badgeVariants, Badge };
 export default React.memo(Badge);

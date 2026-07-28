@@ -99,7 +99,7 @@ export function FileUploader({
 						if (file) setSelectedFile(file);
 					}}
 				/>
-				<Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+				<Upload aria-hidden="true" className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
 				<p className="text-sm text-muted-foreground">
 					{dragging ? "Drop file here" : "Drag & drop or click to browse"}
 				</p>
@@ -109,7 +109,7 @@ export function FileUploader({
 			</div>
 			{selectedFile && (
 				<div className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border">
-					<FileText className="h-5 w-5 text-primary shrink-0" />
+					<FileText aria-hidden="true" className="h-5 w-5 text-primary shrink-0" />
 					<div className="flex-1 min-w-0">
 						<p className="text-sm text-foreground truncate">
 							{selectedFile.name}
@@ -125,7 +125,7 @@ export function FileUploader({
 						disabled={uploading}
 						className="bg-primary hover:bg-cyan-400 text-slate-950 font-semibold"
 					>
-						{uploading ? "Uploading..." : "Upload"}
+						{uploading ? "Uploading…" : "Upload"}
 					</Button>
 					<Button
 						size="sm"
@@ -135,7 +135,7 @@ export function FileUploader({
 						disabled={uploading}
 						aria-label="Remove selected file"
 					>
-						<X className="h-4 w-4" />
+						<X aria-hidden="true" className="h-4 w-4" />
 					</Button>
 				</div>
 			)}

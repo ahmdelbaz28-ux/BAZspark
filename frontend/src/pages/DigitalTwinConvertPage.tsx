@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { ConversionPanel } from "@/components/shared/ConversionPanel";
 import { HistoryTimeline } from "@/components/shared/HistoryTimeline";
 import { Badge } from "@/components/ui/badge";
-import { digitalTwinService } from "@/services/digitalTwinService";
+import { digitalTwinApi } from "@/services/fullApi";
 
 export function DigitalTwinConvertPage() {
 	const [status, setStatus] = useState<Record<string, unknown> | null>(null);
@@ -15,7 +15,7 @@ export function DigitalTwinConvertPage() {
 	useEffect(() => {
 		const fetchStatus = async () => {
 			try {
-				const s = await digitalTwinService.getStatus();
+				const s = await digitalTwinApi.getStatus();
 				setStatus(s as Record<string, unknown>);
 			} catch {
 				setStatus(null);

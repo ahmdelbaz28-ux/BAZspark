@@ -141,7 +141,7 @@ function ElementDetail() {
 						className="px-4 py-2 bg-danger/10 hover:bg-danger text-danger hover:text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
 						aria-label={t("common.delete")}
 					>
-						{deleteMutation.isPending ? "Deleting..." : t("common.delete")}
+						{deleteMutation.isPending ? "Deleting…" : t("common.delete")}
 					</button>
 				</div>
 			</div>
@@ -228,7 +228,7 @@ function ElementDetail() {
 								disabled={updateMutation.isPending}
 								className="px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
 							>
-								{updateMutation.isPending ? "Saving..." : "Save Changes"}
+								{updateMutation.isPending ? "Saving…" : "Save Changes"}
 							</button>
 						</div>
 					</div>

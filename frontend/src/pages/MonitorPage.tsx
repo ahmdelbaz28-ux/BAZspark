@@ -112,7 +112,7 @@ export function MonitorPage() {
 			<div className="p-6 max-w-5xl mx-auto space-y-6">
 				<div>
 				<h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-					<Activity className="h-5 w-5 text-primary" />
+					<Activity aria-hidden="true" className="h-5 w-5 text-primary" />
 					System Monitor
 				</h1>
 					<p className="text-sm text-muted-foreground mt-1">
@@ -123,23 +123,23 @@ export function MonitorPage() {
 				{/* Quick Actions */}
 				<div className="grid grid-cols-2 md:grid-cols-5 gap-3">
 					<Button onClick={handleHealth} disabled={loading} variant="outline">
-						{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Activity aria-hidden="true" className="h-4 w-4" />}
 						Health
 					</Button>
 					<Button onClick={handleEngineStatus} disabled={loading} variant="outline">
-						{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cpu className="h-4 w-4" />}
+						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Cpu aria-hidden="true" className="h-4 w-4" />}
 						Engine Status
 					</Button>
 					<Button onClick={handleAgentActivity} disabled={loading} variant="outline">
-						{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Activity aria-hidden="true" className="h-4 w-4" />}
 						Agent Activity
 					</Button>
 					<Button onClick={handleSecurityAlerts} disabled={loading} variant="outline">
-						{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldAlert className="h-4 w-4" />}
+						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <ShieldAlert aria-hidden="true" className="h-4 w-4" />}
 						Security Alerts
 					</Button>
 					<Button onClick={handleMetrics} disabled={loading} variant="outline">
-						{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Activity aria-hidden="true" className="h-4 w-4" />}
 						Prometheus
 					</Button>
 				</div>
@@ -149,7 +149,7 @@ export function MonitorPage() {
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
-								<Activity className="h-4 w-4 text-success" />
+								<Activity aria-hidden="true" className="h-4 w-4 text-success" />
 								System Health
 							</CardTitle>
 						</CardHeader>
@@ -181,7 +181,7 @@ export function MonitorPage() {
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
-								<Cpu className="h-4 w-4 text-primary" />
+								<Cpu aria-hidden="true" className="h-4 w-4 text-primary" />
 								Engine Status
 							</CardTitle>
 						</CardHeader>
@@ -237,7 +237,7 @@ export function MonitorPage() {
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
-								<ShieldAlert className="h-4 w-4 text-warning" />
+								<ShieldAlert aria-hidden="true" className="h-4 w-4 text-warning" />
 								Security Alerts ({securityAlerts.length})
 							</CardTitle>
 						</CardHeader>

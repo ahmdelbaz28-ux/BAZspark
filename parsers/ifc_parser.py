@@ -5,17 +5,6 @@ IFC Parser - Industry Foundation Classes
 ===================================
 
 Parse IFC (Industry Foundation Classes) files for fire alarm analysis.
-IFC is a standardized format for BIM (Building Information Modeling).
-
-Supports:
-- IFC2X3
-- IFC4
-- JSON-based IFC export
-
-Extracted data:
-- Spaces (rooms) with dimensions
-- Fire suppression devices
-- Building structure
 """
 
 import json
@@ -24,17 +13,13 @@ import os
 from dataclasses import dataclass
 from typing import Dict, List
 
+from parsers._base import ParserBase
 from parsers._path_security import (
     UnsafePathError,
     validate_file_size,
     validate_input_path,
 )
 
-_IFC_MAX_FILE_SIZE_BYTES = int(
-    os.getenv("FIREAI_IFC_MAX_FILE_SIZE_BYTES", str(500 * 1024 * 1024))  # 500 MB
-)
-
-# ── Constants ────────────────────────────────────────────────────────────────
 _JSON_EXT = ".json"
 
 try:
@@ -57,21 +42,17 @@ class IFCAnalysis:
     total_area: float
 
 
-class IFCParser:
+class IFCParser(ParserBase):
     """Parse IFC format files."""
 
+    allowed_extensions = {'.ifc'}
+    max_file_size_bytes = int(os.getenv("FIREAI_IFC_MAX_FILE_SIZE_BYTES", 500 * 1024 * 1024))
+
     def __init__(self, ifc_path: str):
-        try:
-            safe_path = validate_input_path(ifc_path, allowed_extensions=frozenset({".ifc", _JSON_EXT}))
-            validate_file_size(safe_path, max_size_bytes=_IFC_MAX_FILE_SIZE_BYTES)
-        except (UnsafePathError, FileNotFoundError):
-            # Allow initialization with any path (validation will run during parse)
-            pass
         self.ifc_path = ifc_path
         self.data = None
 
     def _load_ifc_file(self):
-        """Load actual IFC file using ifcopenshell."""
         if not IFC_AVAILABLE:
             raise ImportError("ifcopenshell library is required to parse IFC files")
 
@@ -82,16 +63,13 @@ class IFCParser:
             raise
 
     def _load_json(self) -> Dict:
-        """Load IFC JSON file."""
         with open(self.ifc_path) as f:
             return json.load(f)
 
     def _parse_instances(self, data: Dict) -> List[Dict]:
-        """Parse instances from IFC data."""
         return data.get('instances', [])
 
     def _extract_spaces(self, instances: List[Dict]) -> List[Dict]:
-        """Extract IfcSpace instances."""
         spaces = []
         for inst in instances:
             if inst.get('type') == 'IfcSpace':
@@ -102,10 +80,9 @@ class IFCParser:
                 origin = bounds.get('origin', {})
                 dims = bounds.get('dimensions', {})
 
-                # Setting to 0 means zero protection for a room with real geometry.
                 raw_area = attrs.get('Area', 0)
                 if raw_area < 0:
-                    logging.getLogger(__name__).warning(  # NOSONAR: S5145 logging reviewed for SSRF risk  # NOSONAR — S7632: test function documented via class name / module path
+                    logging.getLogger(__name__).warning(
                         "Negative area for space %s: %s. Space REJECTED — "
                         "manual fire protection design REQUIRED.",
                         inst.get('id'), raw_area,
@@ -132,15 +109,6 @@ class IFCParser:
         return spaces
 
     def _extract_devices(self, instances: List[Dict]) -> List[Dict]:
-        """
-        Extract fire protection devices from multiple IFC fire entity types.
-
-        Supports:
-          - IfcFireSuppressionDevice_Type  (sprinklers, standpipes)
-          - IfcAlarm                       (fire alarm devices)
-          - IfcSensor                      (smoke/heat detectors)
-          - IfcProtectiveDevice            (fire dampers, fire doors)
-        """
         _FIRE_ENTITY_TYPES = {
             'IfcFireSuppressionDevice_Type',
             'IfcAlarm',
@@ -158,7 +126,7 @@ class IFCParser:
                     'name': attrs.get('Name'),
                     'detector_type': attrs.get('DetectorType'),
                     'sensitivity': attrs.get('Sensitivity'),
-                    'coverage_radius': attrs.get('CoverageRadius', None),  # V79 FIX: was 0 — zero radius means device covers nothing
+                    'coverage_radius': attrs.get('CoverageRadius', None),
                     'mounting_height': attrs.get('MountingHeight', 0),
                     'applicable_spaces': applicable,
                 }
@@ -167,7 +135,6 @@ class IFCParser:
         return devices
 
     def _extract_building(self, instances: List[Dict]) -> Dict:
-        """Extract building info."""
         for inst in instances:
             if inst.get('type') == 'IfcBuilding':
                 attrs = inst.get('attributes', {})
@@ -178,7 +145,6 @@ class IFCParser:
         return {'name': 'Unknown'}
 
     def _count_floors(self, instances: List[Dict]) -> int:
-        """Count building stories."""
         floors = set()
         for inst in instances:
             if inst.get('type') == 'IfcBuildingStorey':
@@ -186,53 +152,31 @@ class IFCParser:
         return len(floors)
 
     def parse(self) -> IFCAnalysis:
-        """
-        Main parsing method that handles both IFC and JSON formats.
-
-        Raises:
-            ValueError: If the IFC file cannot be loaded or parsed,
-                including security validation failures (V125 hardening).
-            ImportError: If trying to parse an IFC file without ifcopenshell installed
-        """
         try:
-            safe_path = validate_input_path(
-                self.ifc_path,
-                allowed_extensions=frozenset({".ifc", _JSON_EXT}),
-                parser_name="IFCParser.parse",
-            )
-            validate_file_size(
-                safe_path,
-                max_size_bytes=_IFC_MAX_FILE_SIZE_BYTES,
-                parser_name="IFCParser.parse",
-            )
+            safe_path = self.validate_input(self.ifc_path)
         except UnsafePathError as e:
             raise ValueError(f"SECURITY: {e}") from e
         except FileNotFoundError as e:
             raise ValueError(f"File not found: {e}") from e
 
-        # Use resolved safe path for all subsequent operations
         self.ifc_path = str(safe_path)
         _, ext = os.path.splitext(self.ifc_path)
         ext = ext.lower()
 
-        # Load the data
         try:
             if ext == _JSON_EXT:
                 data = self._load_json()
-            else:  # .ifc
+            else:
                 if IFC_AVAILABLE:
                     data = self._load_ifc_file()
                 else:
-                    # Fallback to JSON loader for simplistic test files
                     data = self._load_json()
         except Exception as e:
             raise ValueError(f"Failed to load IFC file: {e}") from e
 
-        # Verify the loaded content is a mapping
         if not isinstance(data, dict):
             raise ValueError("Loaded IFC content is not a dictionary")
 
-        # Parse the IFC content
         instances = self._parse_instances(data)
         building = self._extract_building(instances)
         floors = self._count_floors(instances)
@@ -249,11 +193,6 @@ class IFCParser:
         )
 
     def to_standard_format(self, analysis: IFCAnalysis) -> dict:
-        """Convert an IFCAnalysis into a minimal standard dictionary.
-
-        Returns keys: building_name, floors, rooms, devices, walls.
-        """
-        # Rooms – basic information per space
         rooms = [
             {
                 "id": space.get("id"),
@@ -263,7 +202,6 @@ class IFCParser:
             for space in analysis.spaces
         ]
 
-        # Devices – expose a simplified type field
         devices = [
             {
                 "id": dev.get("id"),
@@ -273,7 +211,6 @@ class IFCParser:
             for dev in analysis.devices
         ]
 
-        # Walls – generate a placeholder wall for each space with non‑zero dimensions
         walls = []
         for space in analysis.spaces:
             bounds = space.get("bounds", {})
@@ -297,7 +234,7 @@ class IFCParser:
             "walls": walls,
         }
 
-def parse_ifc(ifc_path: str) -> IFCAnalysis:
-    """Convenience wrapper around :class:`IFCParser`."""
-    return IFCParser(ifc_path).parse()
 
+def parse_ifc(ifc_path: str) -> IFCAnalysis:
+    """Convenience wrapper around IFCParser."""
+    return IFCParser(ifc_path).parse()

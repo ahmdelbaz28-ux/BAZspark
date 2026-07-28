@@ -81,7 +81,7 @@ export function Collaboration() {
 			<div className="h-16 flex items-center justify-between px-6 border-b bg-card shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="w-10 h-10 rounded-md bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
-						<Users className="h-5 w-5 text-info" />
+						<Users aria-hidden="true" className="h-5 w-5 text-info" />
 					</div>
 					<div>
 						<h1 className="font-bold tracking-wide text-lg leading-tight">
@@ -109,7 +109,7 @@ export function Collaboration() {
 							.map((m) => (
 								<Avatar
 									key={m.id}
-									className={`h-8 w-8 border-2 border-card ring-2 ring-transparent hover:ring-${m.color.split("-")[1]}-400 z-10 transition-[colors,ring,shadow]`}
+									className={`h-8 w-8 border-2 border-card ring-2 ring-transparent hover:ring-${m.color.split("-")[1]}-400 z-10 transition-[color,background-color,border-color,box-shadow]`}
 								>
 									<AvatarFallback
 										className={`${m.color} text-white text-[10px] font-bold`}
@@ -120,10 +120,10 @@ export function Collaboration() {
 							))}
 					</div>
 					<Button variant="outline" size="sm" className="h-9 gap-1.5">
-						<UserPlus className="h-4 w-4" /> Invite
+						<UserPlus aria-hidden="true" className="h-4 w-4" /> Invite
 					</Button>
 					<Button variant="outline" size="sm" className="h-9 gap-1.5">
-						<Link2 className="h-4 w-4" /> Copy Link
+						<Link2 aria-hidden="true" className="h-4 w-4" /> Copy Link
 					</Button>
 					<Separator orientation="vertical" className="h-6" />
 					<Button
@@ -131,7 +131,7 @@ export function Collaboration() {
 						size="sm"
 						className="h-9 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
 					>
-						<Phone className="h-4 w-4" /> Join Voice
+						<Phone aria-hidden="true" className="h-4 w-4" /> Join Voice
 					</Button>
 				</div>
 			</div>
@@ -183,9 +183,9 @@ export function Collaboration() {
 												</div>
 												<div className="text-[10px] text-muted-foreground flex items-center gap-1 truncate">
 													{member.action.includes("Edit") ? (
-														<FileEdit className="h-3 w-3 shrink-0" />
+														<FileEdit aria-hidden="true" className="h-3 w-3 shrink-0" />
 													) : (
-														<Eye className="h-3 w-3 shrink-0" />
+														<Eye aria-hidden="true" className="h-3 w-3 shrink-0" />
 													)}
 													<span className="truncate">{member.action}</span>
 												</div>
@@ -251,28 +251,28 @@ export function Collaboration() {
 											size="icon"
 											className="h-8 w-8 rounded-full bg-secondary hover:bg-slate-600 border-none"
 										>
-											<Mic className="h-4 w-4" />
+											<Mic aria-hidden="true" className="h-4 w-4" />
 										</Button>
 										<Button
 											variant="secondary"
 											size="icon"
 											className="h-8 w-8 rounded-full bg-secondary hover:bg-slate-600 border-none"
 										>
-											<Video className="h-4 w-4" />
+											<Video aria-hidden="true" className="h-4 w-4" />
 										</Button>
 										<Button
 											variant="secondary"
 											size="icon"
 											className="h-8 w-8 rounded-full bg-secondary hover:bg-slate-600 border-none"
 										>
-											<MonitorPlay className="h-4 w-4" />
+											<MonitorPlay aria-hidden="true" className="h-4 w-4" />
 										</Button>
 										<Button
 											variant="destructive"
 											size="icon"
 											className="h-8 w-8 rounded-full"
 										>
-											<Phone className="h-4 w-4 rotate-[135deg]" />
+											<Phone aria-hidden="true" className="h-4 w-4 rotate-[135deg]" />
 										</Button>
 									</div>
 								</div>
@@ -347,7 +347,7 @@ export function Collaboration() {
 					{/* Activity Feed */}
 					<div className="flex-1 flex flex-col bg-card/10">
 						<div className="p-2 border-b bg-card/40 flex items-center gap-2">
-							<History className="h-4 w-4 text-muted-foreground" />
+							<History aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
 							<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
 								Recent Activity
 							</span>
@@ -475,7 +475,7 @@ export function Collaboration() {
 									<div className="bg-card border rounded-lg p-3">
 										<div className="flex justify-between items-start mb-3">
 											<div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-												<MessageSquare className="h-4 w-4 text-primary" />{" "}
+												<MessageSquare aria-hidden="true" className="h-4 w-4 text-primary" />{" "}
 												Panel LP-3A
 											</div>
 											<Badge
@@ -536,7 +536,7 @@ export function Collaboration() {
 												className="h-7 text-xs bg-muted/50"
 											/>
 											<Button size="icon" className="h-7 w-7 shrink-0">
-												<Send className="h-3 w-3" />
+												<Send aria-hidden="true" className="h-3 w-3" />
 											</Button>
 										</div>
 									</div>
@@ -545,14 +545,14 @@ export function Collaboration() {
 									<div className="bg-card border border-emerald-500/20 rounded-lg p-3">
 										<div className="flex justify-between items-start mb-3">
 											<div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-												<MessageSquare className="h-4 w-4 text-emerald-500" />{" "}
+												<MessageSquare aria-hidden="true" className="h-4 w-4 text-emerald-500" />{" "}
 												Cable Route Level 3
 											</div>
 											<Badge
 												variant="outline"
 												className="text-[9px] h-4 px-1 text-success border-success/30"
 											>
-												<CheckCircle2 className="w-3 h-3 mr-1" />
+												<CheckCircle2 aria-hidden="true" className="w-3 h-3 mr-1" />
 												Resolved
 											</Badge>
 										</div>
@@ -602,7 +602,7 @@ export function Collaboration() {
 								<div className="space-y-4 relative before:absolute before:inset-0 before:ml-3 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
 									<div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
 										<div className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-emerald-500 bg-card text-emerald-500 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow">
-											<CheckCircle2 className="w-3.5 h-3.5" />
+											<CheckCircle2 aria-hidden="true" className="w-3.5 h-3.5" />
 										</div>
 										<div className="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] text-xs text-muted-foreground px-2">
 											Draft
@@ -662,7 +662,7 @@ export function Collaboration() {
 							</div>
 
 							<Button className="w-full h-10 mt-auto">
-								<UploadCloud className="h-4 w-4 mr-2" /> Request Final Approval
+								<UploadCloud aria-hidden="true" className="h-4 w-4 mr-2" /> Request Final Approval
 							</Button>
 						</TabsContent>
 					</Tabs>
@@ -685,7 +685,7 @@ function ActivityItem({ color, initials, text, time, isSystem = false }: Activit
 		<div className="flex gap-3">
 			{isSystem ? (
 				<div className="w-7 h-7 rounded bg-card border border-border flex items-center justify-center shrink-0 mt-0.5">
-					<Settings className="w-3.5 h-3.5 text-muted-foreground" />
+					<Settings aria-hidden="true" className="w-3.5 h-3.5 text-muted-foreground" />
 				</div>
 			) : (
 				<Avatar className="w-7 h-7 shrink-0 mt-0.5">

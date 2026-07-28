@@ -604,7 +604,7 @@ useEffect(() => {
                                         <div>
                                                 <div className="flex items-center gap-3 mb-2">
                                                         <div className="p-2.5 rounded-md bg-[rgba(201,168,76,0.1)] border border-[rgba(201,168,76,0.25)] text-[#c9a84c]">
-                                                                <Anchor className="h-6 w-6" />
+                                                                <Anchor aria-hidden="true" className="h-6 w-6" />
                                                         </div>
                                                         <h1 className="marine-display text-3xl md:text-4xl tracking-tight">
                                                                 Marine Fire Protection & Safety Studio

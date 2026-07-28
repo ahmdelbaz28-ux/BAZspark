@@ -224,7 +224,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                         />
                         <div className="relative w-full max-w-xl mx-4 bg-card border border-border rounded-md shadow-2xl overflow-hidden">
                                 <div className="flex items-center gap-3 p-4 border-b border-border">
-                                        <Search className="h-5 w-5 text-muted-foreground shrink-0" />
+                                        <Search aria-hidden="true" className="h-5 w-5 text-muted-foreground shrink-0" />
                                         <input
                                                 ref={inputRef}
                                                 type="text"
@@ -267,7 +267,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                                                                                 )}
                                                                         >
                                                                                 <span className="flex h-8 w-8 items-center justify-center rounded bg-card text-muted-foreground">
-                                                                                        {result.item.icon || <Search className="h-4 w-4" />}
+                                                                                        {result.item.icon || <Search aria-hidden="true" className="h-4 w-4" />}
                                                                                 </span>
                                                                                 <span className="flex-1 text-left">
                                                                                         {result.item.label}
@@ -298,7 +298,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                                                                         )}
                                                                 >
                                                                         <span className="flex h-8 w-8 items-center justify-center rounded bg-card text-muted-foreground">
-                                                                                <Search className="h-4 w-4" />
+                                                                                <Search aria-hidden="true" className="h-4 w-4" />
                                                                         </span>
                                                                         <span className="flex-1 text-left">
                                                                                 <span className="block text-foreground">{title}</span>

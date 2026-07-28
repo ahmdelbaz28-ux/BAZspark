@@ -330,21 +330,21 @@ export function CADSettingsPage() {
                                                         value="autocad"
                                                         className="data-[state=active]:bg-secondary"
                                                 >
-                                                        <Monitor className="h-4 w-4 mr-2" />
+                                                        <Monitor aria-hidden="true" className="h-4 w-4 mr-2" />
                                                         AutoCAD
                                                 </TabsTrigger>
                                                 <TabsTrigger
                                                         value="revit"
                                                         className="data-[state=active]:bg-secondary"
                                                 >
-                                                        <FileText className="h-4 w-4 mr-2" />
+                                                        <FileText aria-hidden="true" className="h-4 w-4 mr-2" />
                                                         Revit
                                                 </TabsTrigger>
                                                 <TabsTrigger
                                                         value="cloud"
                                                         className="data-[state=active]:bg-secondary"
                                                 >
-                                                        <Settings className="h-4 w-4 mr-2" />
+                                                        <Settings aria-hidden="true" className="h-4 w-4 mr-2" />
                                                         Cloud Integration
                                                 </TabsTrigger>
                                         </TabsList>
@@ -356,7 +356,7 @@ export function CADSettingsPage() {
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center justify-between">
                                                                         <span className="flex items-center gap-2">
-                                                                                <Monitor className="h-5 w-5 text-info" />
+                                                                                <Monitor aria-hidden="true" className="h-5 w-5 text-info" />
                                                                                 AutoCAD Connection Status
                                                                         </span>
                                                                         <Button
@@ -367,9 +367,9 @@ export function CADSettingsPage() {
                                                                                 disabled={checkingAcad}
                                                                         >
                                                                                 {checkingAcad ? (
-                                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                                                                                 ) : (
-                                                                                        <RefreshCw className="h-4 w-4" />
+                                                                                        <RefreshCw aria-hidden="true" className="h-4 w-4" />
                                                                                 )}
                                                                         </Button>
                                                                 </CardTitle>
@@ -378,9 +378,9 @@ export function CADSettingsPage() {
                                                                 {acadStatus ? (
                                                                         <div className="flex items-center gap-4">
                                                                                 {acadStatus.connected ? (
-                                                                                        <CheckCircle2 className="h-8 w-8 text-success" />
+                                                                                        <CheckCircle2 aria-hidden="true" className="h-8 w-8 text-success" />
                                                                                 ) : (
-                                                                                        <XCircle className="h-8 w-8 text-danger" />
+                                                                                        <XCircle aria-hidden="true" className="h-8 w-8 text-danger" />
                                                                                 )}
                                                                                 <div className="flex-1">
                                                                                         <p className="text-sm font-medium text-foreground">
@@ -405,7 +405,7 @@ export function CADSettingsPage() {
                                                                         </div>
                                                                 ) : (
                                                                         <div className="text-center py-6 text-muted-foreground">
-                                                                                <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                                                                <AlertCircle aria-hidden="true" className="h-12 w-12 mx-auto mb-3 opacity-50" />
                                                                                 <p>Connection status unknown</p>
                                                                                 <p className="text-xs mt-1">Click refresh to check</p>
                                                                         </div>
@@ -417,7 +417,7 @@ export function CADSettingsPage() {
                                                 <Card className="border-border bg-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                                                                        <Settings className="h-5 w-5 text-info" />
+                                                                        <Settings aria-hidden="true" className="h-5 w-5 text-info" />
                                                                         AutoCAD Configuration
                                                                 </CardTitle>
                                                                 <CardDescription className="text-muted-foreground">
@@ -457,7 +457,7 @@ export function CADSettingsPage() {
                                                                                                         input.click();
                                                                                                 }}
                                                                                 >
-                                                                                        <FolderOpen className="h-4 w-4" />
+                                                                                        <FolderOpen aria-hidden="true" className="h-4 w-4" />
                                                                                 </Button>
                                                                         </div>
                                                                         <p className="text-xs text-muted-foreground">
@@ -525,7 +525,7 @@ export function CADSettingsPage() {
                                                                                                 input.click();
                                                                                         }}
                                                                                 >
-                                                                                        <FolderOpen className="h-4 w-4" />
+                                                                                        <FolderOpen aria-hidden="true" className="h-4 w-4" />
                                                                                 </Button>
                                                                         </div>
                                                                         <p className="text-xs text-muted-foreground">
@@ -550,7 +550,7 @@ export function CADSettingsPage() {
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center justify-between">
                                                                         <span className="flex items-center gap-2">
-                                                                                <FileText className="h-5 w-5 text-info" />
+                                                                                <FileText aria-hidden="true" className="h-5 w-5 text-info" />
                                                                                 Revit Connection Status
                                                                         </span>
                                                                         <Button
@@ -561,9 +561,9 @@ export function CADSettingsPage() {
                                                                                 disabled={checkingRevit}
                                                                         >
                                                                                 {checkingRevit ? (
-                                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                                                                                 ) : (
-                                                                                        <RefreshCw className="h-4 w-4" />
+                                                                                        <RefreshCw aria-hidden="true" className="h-4 w-4" />
                                                                                 )}
                                                                         </Button>
                                                                 </CardTitle>
@@ -572,9 +572,9 @@ export function CADSettingsPage() {
                                                                 {revitStatus ? (
                                                                         <div className="flex items-center gap-4">
                                                                                 {revitStatus.connected ? (
-                                                                                        <CheckCircle2 className="h-8 w-8 text-success" />
+                                                                                        <CheckCircle2 aria-hidden="true" className="h-8 w-8 text-success" />
                                                                                 ) : (
-                                                                                        <XCircle className="h-8 w-8 text-danger" />
+                                                                                        <XCircle aria-hidden="true" className="h-8 w-8 text-danger" />
                                                                                 )}
                                                                                 <div className="flex-1">
                                                                                         <p className="text-sm font-medium text-foreground">
@@ -601,7 +601,7 @@ export function CADSettingsPage() {
                                                                         </div>
                                                                 ) : (
                                                                         <div className="text-center py-6 text-muted-foreground">
-                                                                                <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                                                                <AlertCircle aria-hidden="true" className="h-12 w-12 mx-auto mb-3 opacity-50" />
                                                                                 <p>Connection status unknown</p>
                                                                                 <p className="text-xs mt-1">Click refresh to check</p>
                                                                         </div>
@@ -613,7 +613,7 @@ export function CADSettingsPage() {
                                                 <Card className="border-border bg-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                                                                        <Wrench className="h-5 w-5 text-info" />
+                                                                        <Wrench aria-hidden="true" className="h-5 w-5 text-info" />
                                                                         Revit Configuration
                                                                 </CardTitle>
                                                                 <CardDescription className="text-muted-foreground">
@@ -648,7 +648,7 @@ export function CADSettingsPage() {
                                                                                                 input.click();
                                                                                         }}
                                                                                 >
-                                                                                        <FolderOpen className="h-4 w-4" />
+                                                                                        <FolderOpen aria-hidden="true" className="h-4 w-4" />
                                                                                 </Button>
                                                                         </div>
                                                                         <p className="text-xs text-muted-foreground">
@@ -719,7 +719,7 @@ export function CADSettingsPage() {
                                                                                                 input.click();
                                                                                         }}
                                                                                 >
-                                                                                        <FolderOpen className="h-4 w-4" />
+                                                                                        <FolderOpen aria-hidden="true" className="h-4 w-4" />
                                                                                 </Button>
                                                                         </div>
                                                                         <p className="text-xs text-muted-foreground">
@@ -743,7 +743,7 @@ export function CADSettingsPage() {
                                                 <Card className="border-border bg-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                                                                        <Settings className="h-5 w-5 text-info" />
+                                                                        <Settings aria-hidden="true" className="h-5 w-5 text-info" />
                                                                         Speckle Live Synchronization
                                                                 </CardTitle>
                                                                 <CardDescription className="text-muted-foreground">
@@ -791,7 +791,7 @@ export function CADSettingsPage() {
                                                 <Card className="border-border bg-card">
                                                         <CardHeader>
                                                                 <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                                                                        <Wrench className="h-5 w-5 text-info" />
+                                                                        <Wrench aria-hidden="true" className="h-5 w-5 text-info" />
                                                                         Autodesk Platform Services (APS)
                                                                 </CardTitle>
                                                                 <CardDescription className="text-muted-foreground">

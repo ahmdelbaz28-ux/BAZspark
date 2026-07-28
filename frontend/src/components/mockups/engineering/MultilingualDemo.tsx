@@ -40,7 +40,7 @@ export function MultilingualDemo() {
 							size="sm"
 							className="bg-card border-border"
 						>
-							<Settings className="w-4 h-4 mr-2" />
+							<Settings aria-hidden="true" className="w-4 h-4 mr-2" />
 							Language Settings
 						</Button>
 						<Button
@@ -48,7 +48,7 @@ export function MultilingualDemo() {
 							size="sm"
 							className="bg-card border-border"
 						>
-							<Plus className="w-4 h-4 mr-2" />
+							<Plus aria-hidden="true" className="w-4 h-4 mr-2" />
 							Add Language
 						</Button>
 						<Button
@@ -56,7 +56,7 @@ export function MultilingualDemo() {
 							size="sm"
 							className="bg-blue-600 hover:bg-blue-700 text-white"
 						>
-							<Download className="w-4 h-4 mr-2" />
+							<Download aria-hidden="true" className="w-4 h-4 mr-2" />
 							Export Translations
 						</Button>
 					</div>
@@ -153,7 +153,7 @@ export function MultilingualDemo() {
 									| Rev: 14
 								</span>
 								<div className="flex items-center text-[10px] text-muted-foreground gap-1 cursor-pointer">
-									Hide Panel <ChevronDown className="w-3 h-3" />
+									Hide Panel <ChevronDown aria-hidden="true" className="w-3 h-3" />
 								</div>
 							</div>
 						</div>
@@ -216,7 +216,7 @@ export function MultilingualDemo() {
 									المراجعة: 14
 								</span>
 								<div className="flex items-center text-[10px] text-muted-foreground gap-1 cursor-pointer">
-									إخفاء اللوحة <ChevronDown className="w-3 h-3" />
+									إخفاء اللوحة <ChevronDown aria-hidden="true" className="w-3 h-3" />
 								</div>
 							</div>
 						</div>
@@ -282,7 +282,7 @@ export function MultilingualDemo() {
 									| Rév: 14
 								</span>
 								<div className="flex items-center text-[10px] text-muted-foreground gap-1 cursor-pointer">
-									Masquer le panneau <ChevronDown className="w-3 h-3" />
+									Masquer le panneau <ChevronDown aria-hidden="true" className="w-3 h-3" />
 								</div>
 							</div>
 						</div>
@@ -354,7 +354,7 @@ export function MultilingualDemo() {
 								<div className="w-1/3 h-full bg-card rounded-sm ml-2"></div>
 							</div>
 							<div className="flex items-center">
-								<ArrowRight className="text-muted-foreground/70" />
+								<ArrowRight aria-hidden="true" className="text-muted-foreground/70" />
 							</div>
 							<div
 								className="flex-1 h-24 bg-card border border-slate-800 rounded p-2 flex"
@@ -501,7 +501,7 @@ function LanguageCard({
 				>
 					{isActive ? (
 						<>
-							<CheckCircle2 className="w-3 h-3 mr-1" /> Active
+							<CheckCircle2 aria-hidden="true" className="w-3 h-3 mr-1" /> Active
 						</>
 					) : (
 						"Set Active"

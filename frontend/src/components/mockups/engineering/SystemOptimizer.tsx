@@ -59,7 +59,7 @@ export function SystemOptimizer() {
 		<div className="p-4 space-y-6 h-full overflow-y-auto">
 			<div className="text-center">
 				<h2 className="text-lg font-bold text-foreground flex items-center justify-center gap-2">
-					<TrendingUp className="text-emerald-500" /> System Optimizer
+					<TrendingUp aria-hidden="true" className="text-emerald-500" /> System Optimizer
 				</h2>
 				<p className="text-xs text-muted-foreground">
 					Cost & Efficiency Analysis
@@ -90,7 +90,7 @@ export function SystemOptimizer() {
 						strokeWidth="8"
 						fill="none"
 						strokeDasharray={`${(optimizationScore / 100) * 377} 377`}
-						className="transition-[width,colors,opacity] duration-1000"
+						className="transition-[width,color,background-color,border-color,opacity] duration-1000"
 					/>
 				</svg>
 				<div className="absolute text-2xl font-bold text-foreground">
@@ -100,7 +100,7 @@ export function SystemOptimizer() {
 
 			<div className="space-y-3">
 				<h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-					<DollarSign className="h-4 w-4 text-green-500" /> Cost Saving
+					<DollarSign aria-hidden="true" className="h-4 w-4 text-green-500" /> Cost Saving
 					Opportunities
 				</h3>
 				{suggestions.length === 0 ? (
@@ -113,7 +113,7 @@ export function SystemOptimizer() {
 							key={i}  // NOSONAR: typescript:S6479
 							className="text-xs p-2 bg-green-900/20 border border-green-500/30 rounded text-green-200 flex items-start gap-2"
 						>
-							<ArrowRight className="h-3 w-3 mt-0.5 shrink-0" /> {s}
+							<ArrowRight aria-hidden="true" className="h-3 w-3 mt-0.5 shrink-0" /> {s}
 						</div>
 					))
 				)}

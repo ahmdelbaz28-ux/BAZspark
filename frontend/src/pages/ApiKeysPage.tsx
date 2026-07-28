@@ -163,7 +163,7 @@ export function ApiKeysPage() {
                 <div className="flex-1 overflow-auto p-6 max-w-4xl mx-auto space-y-6">
                         <div>
                                 <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                                        <Key className="h-6 w-6 text-primary" />
+                                        <Key aria-hidden="true" className="h-6 w-6 text-primary" />
                                         API Key Management
                                 </h1>
                                 <p className="text-sm text-muted-foreground mt-1">
@@ -179,7 +179,7 @@ export function ApiKeysPage() {
                                                         <CardDescription>{keys.length} key(s) registered</CardDescription>
                                                 </div>
                                                 <Button onClick={() => setShowCreate(!showCreate)} size="sm">
-                                                        <Plus className="h-4 w-4 mr-1" /> New Key
+                                                        <Plus aria-hidden="true" className="h-4 w-4 mr-1" /> New Key
                                                 </Button>
                                         </div>
                                 </CardHeader>
@@ -210,7 +210,7 @@ export function ApiKeysPage() {
                                                                 </div>
                                                         </div>
                                                         <Button onClick={handleCreate} disabled={creating} size="sm">
-                                                                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate Key"}
+                                                                {creating ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : "Generate Key"}
                                                         </Button>
                                                         {newKeyValue && (
                                                                 <div className="p-3 rounded bg-amber-500/10 border border-amber-500/30">
@@ -225,7 +225,7 @@ export function ApiKeysPage() {
 
                                         {loading ? (
                                                 <div className="flex items-center justify-center py-8">
-                                                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                                        <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-muted-foreground" />
                                                 </div>
                                         ) : keys.length === 0 ? (
                                                 <p className="text-sm text-muted-foreground text-center py-8">
@@ -254,7 +254,7 @@ export function ApiKeysPage() {
                                                                                 onClick={() => handleDelete(key.key_hash)}
                                                                                 className="text-red-600 hover:text-red-700"
                                                                         >
-                                                                                <Trash2 className="h-4 w-4" />
+                                                                                <Trash2 aria-hidden="true" className="h-4 w-4" />
                                                                         </Button>
                                                                 </div>
                                                         ))}

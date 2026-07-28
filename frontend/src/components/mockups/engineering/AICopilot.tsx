@@ -206,7 +206,7 @@ export function AICopilot() {
                                 <div className="h-14 flex items-center justify-between px-4 border-b border-white/5 bg-[#0f1115]">
                                         <div className="flex items-center gap-2">
                                                 <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center border border-primary/30">
-                                                        <Zap className="h-4 w-4 text-primary" />
+                                                        <Zap aria-hidden="true" className="h-4 w-4 text-primary" />
                                                 </div>
                                                 <div>
                                                         <h2 className="font-bold text-sm tracking-wide text-white">
@@ -225,21 +225,21 @@ export function AICopilot() {
                                                         onClick={clearChat}
                                                         disabled={messages.length === 0 || loading}
                                                 >
-                                                        <Trash2 className="h-4 w-4" />
+                                                        <Trash2 aria-hidden="true" className="h-4 w-4" />
                                                 </Button>
                                                 <Button
                                                         variant="ghost"
                                                         size="icon"
                                                         className="h-8 w-8 text-muted-foreground hover:text-white"
                                                 >
-                                                        <Settings className="h-4 w-4" />
+                                                        <Settings aria-hidden="true" className="h-4 w-4" />
                                                 </Button>
                                                 <Button
                                                         variant="ghost"
                                                         size="icon"
                                                         className="h-8 w-8 text-muted-foreground hover:text-white"
                                                 >
-                                                        <X className="h-4 w-4" />
+                                                        <X aria-hidden="true" className="h-4 w-4" />
                                                 </Button>
                                         </div>
                                 </div>
@@ -255,10 +255,10 @@ export function AICopilot() {
                                         )}
 
                                         <button type="button"
-                                                className={`w-16 h-16 rounded-full flex items-center justify-center z-10 transition-[colors,shadow,transform] duration-500 shadow-[0_0_30px_rgba(0,168,255,0.2)] ${isListening ? "bg-primary text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                                                className={`w-16 h-16 rounded-full flex items-center justify-center z-10 transition-[color,background-color,border-color,box-shadow,transform] duration-500 shadow-[0_0_30px_rgba(0,168,255,0.2)] ${isListening ? "bg-primary text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
                                                 onClick={() => setIsListening(!isListening)}
                                         >
-                                                <Mic className={`h-6 w-6 ${isListening ? "animate-pulse" : ""}`} />
+                                                <Mic aria-hidden="true" className={`h-6 w-6 ${isListening ? "animate-pulse" : ""}`} />
                                         </button>
 
                                         <div className="mt-4 flex gap-1 items-end h-8 z-10">
@@ -294,7 +294,7 @@ export function AICopilot() {
                                                 {messages.length === 0 && (
                                                         <div className="flex flex-col items-center justify-center py-8 text-center">
                                                                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                                                                        <Bot className="w-6 h-6 text-primary" />
+                                                                        <Bot aria-hidden="true" className="w-6 h-6 text-primary" />
                                                                 </div>
                                                                 <p className="text-white/70 text-sm font-medium mb-1">
                                                                         Ask me anything about engineering
@@ -315,7 +315,7 @@ export function AICopilot() {
                                                         ) : (
                                                                 <div key={idx} className="flex gap-3">
                                                                         <div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center border border-primary/50 shrink-0 shadow-[0_0_10px_rgba(0,168,255,0.2)]">
-                                                                                <Zap className="h-4 w-4 text-primary" />
+                                                                                <Zap aria-hidden="true" className="h-4 w-4 text-primary" />
                                                                         </div>
                                                                         <div className="flex flex-col gap-2 w-full">
                                                                                 <div className="bg-[#1a1d24] border border-white/10 px-4 py-3 rounded-md rounded-tl-sm text-sm text-foreground/90">
@@ -349,7 +349,7 @@ export function AICopilot() {
                                                 {/* Error state */}
                                                 {messages.length > 0 && !loading && messages[messages.length - 1]?.content?.startsWith("(Error:") && (
                                                         <div className="flex items-start gap-2 text-sm text-danger bg-red-950/30 border border-red-900/50 rounded-lg p-3">
-                                                                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                                                <AlertCircle aria-hidden="true" className="w-4 h-4 flex-shrink-0 mt-0.5" />
                                                                 <span>Failed to get AI response. Please try again.</span>
                                                         </div>
                                                 )}
@@ -380,7 +380,7 @@ export function AICopilot() {
                                                         variant="ghost"
                                                         className="absolute left-1 h-8 w-8 text-muted-foreground z-10"
                                                 >
-                                                        <Plus className="h-4 w-4" />
+                                                        <Plus aria-hidden="true" className="h-4 w-4" />
                                                 </Button>
                                                 <Input
                                                         ref={inputRef}
@@ -398,9 +398,9 @@ export function AICopilot() {
                                                         className="absolute right-1 h-8 w-8 text-primary z-10 hover:bg-primary/10 rounded-full"
                                                 >
                                                         {loading ? (
-                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                                                         ) : (
-                                                                <Send className="h-4 w-4" />
+                                                                <Send aria-hidden="true" className="h-4 w-4" />
                                                         )}
                                                 </Button>
                                         </form>
@@ -410,10 +410,10 @@ export function AICopilot() {
                                 <div className="h-8 bg-[#0a0a0c] border-t border-white/5 flex items-center justify-between px-4 text-[10px] font-mono text-muted-foreground">
                                         <div className="flex items-center gap-3">
                                                 <span className="flex items-center gap-1">
-                                                        <Cpu className="w-3 h-3" /> Expert
+                                                        <Cpu aria-hidden="true" className="w-3 h-3" /> Expert
                                                 </span>
                                                 <span className="flex items-center gap-1">
-                                                        <Server className="w-3 h-3" /> Current Proj
+                                                        <Server aria-hidden="true" className="w-3 h-3" /> Current Proj
                                                 </span>
                                         </div>
                                         <div className="flex items-center gap-1 text-emerald-500">

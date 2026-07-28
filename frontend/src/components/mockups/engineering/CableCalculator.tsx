@@ -35,7 +35,7 @@ export function CableCalculator() {
 						</button>
 					</div>
 					<Badge className="bg-emerald-500/10 text-success border-success/30 font-normal">
-						<CheckCircle className="h-3 w-3 mr-1" /> All inputs valid — results
+						<CheckCircle aria-hidden="true" className="h-3 w-3 mr-1" /> All inputs valid — results
 						updated
 					</Badge>
 				</div>
@@ -45,20 +45,20 @@ export function CableCalculator() {
 						size="sm"
 						className="h-8 text-xs border-border hover:bg-card"
 					>
-						<Trash2 className="h-4 w-4 mr-1" /> Clear All
+						<Trash2 aria-hidden="true" className="h-4 w-4 mr-1" /> Clear All
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
 						className="h-8 text-xs border-border hover:bg-card"
 					>
-						<FileText className="h-4 w-4 mr-1" /> Add to Report
+						<FileText aria-hidden="true" className="h-4 w-4 mr-1" /> Add to Report
 					</Button>
 					<Button
 						size="sm"
 						className="h-8 text-xs bg-blue-600 hover:bg-blue-500 text-white"
 					>
-						<Save className="h-4 w-4 mr-1" /> Save Calculation
+						<Save aria-hidden="true" className="h-4 w-4 mr-1" /> Save Calculation
 					</Button>
 				</div>
 			</div>
@@ -92,7 +92,7 @@ export function CableCalculator() {
 										</label>
 										<div className="col-span-2 flex items-center justify-between border rounded-md px-2 h-7 bg-background text-xs cursor-pointer">
 											<span>3-Phase, 4-Wire (3P+N)</span>
-											<ChevronDown className="h-3 w-3 text-muted-foreground" />
+											<ChevronDown aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
 										</div>
 									</div>
 									<div className="grid grid-cols-3 items-center gap-2">
@@ -103,7 +103,7 @@ export function CableCalculator() {
 											<span className="truncate">
 												Method B2 — Multicore in conduit
 											</span>
-											<ChevronDown className="h-3 w-3 text-muted-foreground absolute right-2 top-1.5" />
+											<ChevronDown aria-hidden="true" className="h-3 w-3 text-muted-foreground absolute right-2 top-1.5" />
 											<Badge className="absolute -right-1 -top-2 text-[8px] h-4 px-1 bg-blue-500/20 text-info border-blue-500/30">
 												IEC Ref
 											</Badge>
@@ -153,7 +153,7 @@ export function CableCalculator() {
 										</label>
 										<div className="col-span-2 flex items-center justify-between border rounded-md px-2 h-7 bg-background text-xs cursor-pointer">
 											<span>Motor Load</span>
-											<ChevronDown className="h-3 w-3 text-muted-foreground" />
+											<ChevronDown aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
 										</div>
 									</div>
 									<div className="grid grid-cols-3 gap-2">
@@ -304,7 +304,7 @@ export function CableCalculator() {
 										</label>
 										<div className="col-span-2 flex items-center justify-between border rounded-md px-2 h-7 bg-background text-xs cursor-pointer">
 											<span>Motor Circuit Breaker</span>
-											<ChevronDown className="h-3 w-3 text-muted-foreground" />
+											<ChevronDown aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
 										</div>
 									</div>
 									<div className="grid grid-cols-3 gap-2">
@@ -323,7 +323,7 @@ export function CableCalculator() {
 											</label>
 											<div className="flex items-center justify-between border rounded-md px-2 h-7 bg-background text-[10px] cursor-pointer">
 												<span>Inv. Time</span>
-												<ChevronDown className="h-3 w-3" />
+												<ChevronDown aria-hidden="true" className="h-3 w-3" />
 											</div>
 										</div>
 										<div className="space-y-1 col-span-1">
@@ -425,7 +425,7 @@ export function CableCalculator() {
 								</div>
 
 								<div className="flex items-center gap-2 p-2 rounded bg-primary/10 border border-primary/30">
-									<AlertTriangle className="h-4 w-4 text-primary shrink-0" />
+									<AlertTriangle aria-hidden="true" className="h-4 w-4 text-primary shrink-0" />
 									<div className="text-xs text-orange-200">
 										<span className="font-bold text-primary">
 											7.2% at motor start
@@ -576,7 +576,7 @@ export function CableCalculator() {
 								<span className="text-foreground/90 font-medium">
 									Alternative Sizes (120mm², 70mm²)
 								</span>
-								<ChevronDown className="h-4 w-4 text-muted-foreground" />
+								<ChevronDown aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
 							</div>
 						</div>
 					</ScrollArea>

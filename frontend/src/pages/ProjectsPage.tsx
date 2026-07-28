@@ -167,7 +167,7 @@ export function ProjectsPage() {
 										className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
 										onClick={() => setShowCreateForm(true)}
 									>
-										<FolderPlus className="h-4 w-4 mr-1" />
+										<FolderPlus aria-hidden="true" className="h-4 w-4 mr-1" />
 										{t("projects.newProject")}
 									</Button>
                                 </div>
@@ -228,7 +228,7 @@ export function ProjectsPage() {
 										>
                                                                         {creating ? (
                                                                                 <>
-                                                                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                                                        <Loader2 aria-hidden="true" className="h-4 w-4 mr-1 animate-spin" />
                                                                                         {t("common.creating")}
                                                                                 </>
                                                                         ) : (
@@ -259,7 +259,7 @@ export function ProjectsPage() {
                                                 className="border-border text-foreground/90 hover:bg-card"
                                                 onClick={() => refetch()}
                                         >
-                                                <RefreshCw className="h-4 w-4 mr-1" />
+                                                <RefreshCw aria-hidden="true" className="h-4 w-4 mr-1" />
                                                 {t("projects.refresh")}
                                         </Button>
                                 </div>
@@ -313,7 +313,7 @@ export function ProjectsPage() {
                                         (!filteredProjects || filteredProjects.length === 0) && (
                                                 <div className="py-12">
                                                         <EmptyState
-                                                                icon={<Folder className="h-12 w-12" />}
+                                                                icon={<Folder aria-hidden="true" className="h-12 w-12" />}
                                                                 title={t("projects.noProjects")}
                                                                 description={t("projects.createFirst")}
                                                                 action={{
@@ -376,11 +376,11 @@ export function ProjectsPage() {
                                                                                 <div className="flex items-center justify-between">
                                                                                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                                                                                 <div className="flex items-center gap-1">
-                                                                                                        <User className="h-4 w-4" />
+                                                                                                        <User aria-hidden="true" className="h-4 w-4" />
                                                                                                         {project.author}
                                                                                                 </div>
                                                                                                 <div className="flex items-center gap-1">
-                                                                                                        <Clock className="h-4 w-4" />
+                                                                                                        <Clock aria-hidden="true" className="h-4 w-4" />
                                                                                                         {new Date(project.createdAt).toLocaleDateString()}
                                                                                                 </div>
                                                                                                 <div className="flex items-center gap-1">
@@ -410,9 +410,9 @@ export function ProjectsPage() {
                                                                                                         onClick={() => setSyncTarget(project)}
                                                                                                 >
                                                                                                         {syncing && syncTarget?.id === project.id ? (
-                                                                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                                                <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                                                                                                         ) : (
-                                                                                                                <RefreshCw className="h-4 w-4" />
+                                                                                                                <RefreshCw aria-hidden="true" className="h-4 w-4" />
                                                                                                         )}
                                                                                                 </Button>
                                                                                                 <Button
@@ -423,7 +423,7 @@ export function ProjectsPage() {
                                                                                                                 window.location.hash = `/projects/${project.id}`;
                                                                                                         }}
                                                                                                 >
-                                                                                                        <Eye className="h-4 w-4" />
+                                                                                                        <Eye aria-hidden="true" className="h-4 w-4" />
                                                                                                 </Button>
                                                                                                 <Button
                                                                                                         variant="outline"
@@ -431,7 +431,7 @@ export function ProjectsPage() {
                                                                                                         className="border-border text-foreground/90"
                                                                                                         onClick={() => setDeleteTarget(project)}
                                                                                                 >
-                                                                                                        <Trash2 className="h-4 w-4" />
+                                                                                                        <Trash2 aria-hidden="true" className="h-4 w-4" />
                                                                                                 </Button>
                                                                                         </div>
                                                                                 </div>
@@ -466,7 +466,7 @@ export function ProjectsPage() {
                                                                 >
                                                                         {syncing ? (
                                                                                 <>
-                                                                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                                                        <Loader2 aria-hidden="true" className="h-4 w-4 mr-1 animate-spin" />
                                                                                         {t("projects.syncing")}
                                                                                 </>
                                                                         ) : (
@@ -505,7 +505,7 @@ export function ProjectsPage() {
                                                                 >
                                                                         {deleting ? (
                                                                                 <>
-                                                                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                                                        <Loader2 aria-hidden="true" className="h-4 w-4 mr-1 animate-spin" />
                                                                                         {t("common.deleting")}
                                                                                 </>
                                                                         ) : (

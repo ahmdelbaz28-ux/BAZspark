@@ -15,7 +15,7 @@ export function NotFoundPage() {
 		<div className="min-h-[60vh] flex items-center justify-center p-4">
 			<div className="text-center max-w-lg">
 				<div className="inline-flex items-center justify-center h-20 w-20 rounded-md bg-gradient-to-br from-primary to-primary mb-6 shadow-lg shadow-primary/20">
-					<Compass className="h-10 w-10 text-white" />
+					<Compass aria-hidden="true" className="h-10 w-10 text-white" />
 				</div>
 				<h1 className="text-7xl font-bold text-primary bg-clip-text text-transparent mb-3">
 					404
@@ -33,7 +33,7 @@ export function NotFoundPage() {
 						onClick={() => navigate("/dashboard")}
 						className="bg-gradient-to-r from-primary to-cyan-500 hover:from-cyan-400 hover:to-cyan-600 text-slate-950 font-semibold shadow-lg shadow-cyan-500/20"
 					>
-						<Home className="h-4 w-4 mr-2" />
+						<Home aria-hidden="true" className="h-4 w-4 mr-2" />
 						Back to Dashboard
 					</Button>
 					<Button
@@ -41,7 +41,7 @@ export function NotFoundPage() {
 						onClick={() => navigate(-1)}
 						className="border-border text-foreground/90 hover:bg-card"
 					>
-						<ArrowLeft className="h-4 w-4 mr-2" />
+						<ArrowLeft aria-hidden="true" className="h-4 w-4 mr-2" />
 						Go Back
 					</Button>
 				</div>

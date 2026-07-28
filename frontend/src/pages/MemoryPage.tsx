@@ -126,7 +126,7 @@ export function MemoryPage() {
                         <div className="p-6 max-w-5xl mx-auto space-y-6">
                                 <div>
                                         <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                                                <Brain className="h-5 w-5 text-primary" />
+                                                <Brain aria-hidden="true" className="h-5 w-5 text-primary" />
                                                 Engineering Memory
                                         </h1>
                                         <p className="text-sm text-muted-foreground mt-1">
@@ -137,11 +137,11 @@ export function MemoryPage() {
                                 {/* Status + Actions */}
                                 <div className="flex gap-3">
                                         <Button onClick={handleStatus} disabled={loading} variant="outline">
-                                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+                                                {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Brain aria-hidden="true" className="h-4 w-4" />}
                                                 Status
                                         </Button>
                                         <Button onClick={handleGetAll} disabled={loading} variant="outline">
-                                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+                                                {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Brain aria-hidden="true" className="h-4 w-4" />}
                                                 Load All
                                         </Button>
                                 </div>
@@ -189,7 +189,7 @@ export function MemoryPage() {
                                                                 rows={3}
                                                         />
                                                         <Button onClick={handleAdd} disabled={loading || !newContent.trim()}>
-                                                                <Plus className="h-4 w-4" />
+                                                                <Plus aria-hidden="true" className="h-4 w-4" />
                                                                 Add Memory
                                                         </Button>
                                                 </div>
@@ -210,7 +210,7 @@ export function MemoryPage() {
                                                                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                                                         />
                                                         <Button onClick={handleSearch} disabled={loading || !searchQuery.trim()}>
-                                                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                                                                {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Search aria-hidden="true" className="h-4 w-4" />}
                                                                 Search
                                                         </Button>
                                                 </div>
@@ -250,7 +250,7 @@ export function MemoryPage() {
                                                                                         variant="ghost"
                                                                                         size="icon"
                                                                                 >
-                                                                                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                                                                        <Trash2 aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
                                                                                 </Button>
                                                                         </div>
                                                                 ))}

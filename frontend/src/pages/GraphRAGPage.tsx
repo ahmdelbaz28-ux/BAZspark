@@ -118,7 +118,7 @@ export function GraphRAGPage() {
 			<div className="p-6 max-w-5xl mx-auto space-y-6">
 				<div>
 					<h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-						<Network className="h-5 w-5 text-primary" />
+						<Network aria-hidden="true" className="h-5 w-5 text-primary" />
 						GraphRAG Knowledge Engine
 					</h1>
 					<p className="text-sm text-muted-foreground mt-1">
@@ -129,7 +129,7 @@ export function GraphRAGPage() {
 				{/* Health Check */}
 				<div className="flex items-center gap-3">
 					<Button onClick={handleHealth} disabled={loading} variant="outline">
-						{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+						{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Activity aria-hidden="true" className="h-4 w-4" />}
 						Check Health
 					</Button>
 					{health && (
@@ -165,7 +165,7 @@ export function GraphRAGPage() {
 									onKeyDown={(e) => e.key === "Enter" && handleAsk()}
 								/>
 								<Button onClick={handleAsk} disabled={loading || !question.trim()}>
-									{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+									{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Send aria-hidden="true" className="h-4 w-4" />}
 									Ask
 								</Button>
 							</div>
@@ -196,7 +196,7 @@ export function GraphRAGPage() {
 								onKeyDown={(e) => e.key === "Enter" && handleSearch()}
 							/>
 							<Button onClick={handleSearch} disabled={loading || !searchQuery.trim()} variant="outline">
-								{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+								{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Search aria-hidden="true" className="h-4 w-4" />}
 								Search
 							</Button>
 						</div>
@@ -232,7 +232,7 @@ export function GraphRAGPage() {
 							/>
 							<div className="flex items-center gap-4">
 								<Button onClick={handleIngest} disabled={loading || !knowledgeText.trim()}>
-									{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+									{loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Upload aria-hidden="true" className="h-4 w-4" />}
 									Ingest
 								</Button>
 								<Button

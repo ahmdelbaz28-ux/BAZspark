@@ -26,7 +26,7 @@ const LIBRARY_ITEMS: LibraryItem[] = [
 		id: "GENERATOR",
 		label: "Generator",
 		category: "Power",
-		icon: <Zap size={18} />,
+		icon: <Zap aria-hidden="true" size={18} />,
 		defaultLoad: 500,
 		description: "Main Power Source",
 	},
@@ -34,7 +34,7 @@ const LIBRARY_ITEMS: LibraryItem[] = [
 		id: "BATTERY",
 		label: "Battery Bank",
 		category: "Power",
-		icon: <Battery size={18} />,
+		icon: <Battery aria-hidden="true" size={18} />,
 		defaultLoad: 300,
 		description: "DC Backup System",
 	},
@@ -42,7 +42,7 @@ const LIBRARY_ITEMS: LibraryItem[] = [
 		id: "LOAD",
 		label: "Critical Load",
 		category: "Power",
-		icon: <Power size={18} />,
+		icon: <Power aria-hidden="true" size={18} />,
 		defaultLoad: 150,
 		description: "General Consumption",
 	},
@@ -52,7 +52,7 @@ const LIBRARY_ITEMS: LibraryItem[] = [
 		id: "SENSOR_SMOKE",
 		label: "Smoke Detector",
 		category: "Safety",
-		icon: <Siren size={18} />,
+		icon: <Siren aria-hidden="true" size={18} />,
 		defaultLoad: 5,
 		description: "Fire Alarm Sensor",
 	},
@@ -60,7 +60,7 @@ const LIBRARY_ITEMS: LibraryItem[] = [
 		id: "SENSOR_MOTION",
 		label: "Motion Sensor",
 		category: "Safety",
-		icon: <Wifi size={18} />,
+		icon: <Wifi aria-hidden="true" size={18} />,
 		defaultLoad: 2,
 		description: "Intrusion Detection",
 	},
@@ -70,7 +70,7 @@ const LIBRARY_ITEMS: LibraryItem[] = [
 		id: "CAMERA",
 		label: "IP Camera",
 		category: "Security",
-		icon: <Eye size={18} />,
+		icon: <Eye aria-hidden="true" size={18} />,
 		defaultLoad: 15,
 		description: "Surveillance Unit",
 	},
@@ -78,7 +78,7 @@ const LIBRARY_ITEMS: LibraryItem[] = [
 		id: "SPEAKER",
 		label: "PA Speaker",
 		category: "Security",
-		icon: <Box size={18} />,
+		icon: <Box aria-hidden="true" size={18} />,
 		defaultLoad: 20,
 		description: "Public Address",
 	},
@@ -99,7 +99,7 @@ export function EngineeringLibrary({ onDragStart }: EngineeringLibraryProps) {
 		<div className="w-72 bg-card border-r border-border flex flex-col h-full select-none">
 			<div className="p-4 border-b border-border bg-muted/30">
 				<h3 className="font-bold text-sm text-foreground flex items-center gap-2">
-					<Box className="w-4 h-4" /> Engineering Library
+					<Box aria-hidden="true" className="w-4 h-4" /> Engineering Library
 				</h3>
 				<p className="text-[10px] text-muted-foreground mt-1">
 					Drag components to the canvas
@@ -118,7 +118,7 @@ export function EngineeringLibrary({ onDragStart }: EngineeringLibraryProps) {
 									key={item.id}
 									draggable
 									onDragStart={(e) => handleDrag(e, item)}
-									className="group flex items-center gap-3 p-3 rounded-md border border-border bg-background hover:border-primary hover:shadow-md transition-[colors,shadow] cursor-grab active:cursor-grabbing"
+									className="group flex items-center gap-3 p-3 rounded-md border border-border bg-background hover:border-primary hover:shadow-md transition-[color,background-color,border-color,box-shadow] cursor-grab active:cursor-grabbing"
 								>
 									<div className="text-primary group-hover:scale-110 transition-transform">
 										{item.icon}

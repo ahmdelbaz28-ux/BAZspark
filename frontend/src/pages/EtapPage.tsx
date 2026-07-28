@@ -364,7 +364,7 @@ export function EtapPage() {
                                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                         <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                                                                <Zap className="h-6 w-6 text-amber-400" />
+                                                                <Zap aria-hidden="true" className="h-6 w-6 text-amber-400" />
                                                         </div>
                                                         <div>
                                                                 <h1 className="etap-title">ETAP Integration</h1>
@@ -385,19 +385,19 @@ export function EtapPage() {
                                         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
                                                 <TabsList className="etap-tabs w-full justify-start rounded-none bg-transparent border-b border-white/10 p-0">
                                                         <TabsTrigger value="connection" className="etap-tab rounded-none border-b-2 border-transparent">
-                                                                <Settings2 className="h-4 w-4 mr-2" />
+                                                                <Settings2 aria-hidden="true" className="h-4 w-4 mr-2" />
                                                                 Connection
                                                         </TabsTrigger>
                                                         <TabsTrigger value="projects" className="etap-tab rounded-none border-b-2 border-transparent">
-                                                                <Globe className="h-4 w-4 mr-2" />
+                                                                <Globe aria-hidden="true" className="h-4 w-4 mr-2" />
                                                                 Projects
                                                         </TabsTrigger>
                                                         <TabsTrigger value="sync" className="etap-tab rounded-none border-b-2 border-transparent">
-                                                                <RefreshCw className="h-4 w-4 mr-2" />
+                                                                <RefreshCw aria-hidden="true" className="h-4 w-4 mr-2" />
                                                                 Synchronization
                                                         </TabsTrigger>
                                                         <TabsTrigger value="logs" className="etap-tab rounded-none border-b-2 border-transparent">
-                                                                <Activity className="h-4 w-4 mr-2" />
+                                                                <Activity aria-hidden="true" className="h-4 w-4 mr-2" />
                                                                 Sync Logs
                                                         </TabsTrigger>
                                                 </TabsList>
@@ -408,7 +408,7 @@ export function EtapPage() {
                                                                 <Card className="etap-panel lg:col-span-2">
                                                                         <CardHeader className="etap-panel-header">
                                                                                 <CardTitle className="etap-panel-title">
-                                                                                        <Server className="h-5 w-5 etap-panel-title-icon" />
+                                                                                        <Server aria-hidden="true" className="h-5 w-5 etap-panel-title-icon" />
                                                                                         Host Configuration
                                                                                 </CardTitle>
                                                                                 <CardDescription className="etap-panel-description">
@@ -482,26 +482,26 @@ export function EtapPage() {
                                                                                 <div className="flex flex-wrap items-center gap-2 mt-6">
                                                                                         <Button onClick={handleTestConnection} disabled={connectionStatus === "connecting"} className="etap-btn etap-btn-primary">
                                                                                                 {connectionStatus === "connecting" ? (
-                                                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                                        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                                                                                                 ) : (
-                                                                                                        <Play className="h-4 w-4" />
+                                                                                                        <Play aria-hidden="true" className="h-4 w-4" />
                                                                                                 )}
                                                                                                 Test Connection
                                                                                         </Button>
                                                                                         <Button onClick={handleSaveSettings} disabled={loading === "saving-settings"} className="etap-btn etap-btn-primary">
                                                                                                 {loading === "saving-settings" ? (
-                                                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                                        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                                                                                                 ) : (
-                                                                                                        <Save className="h-4 w-4" />
+                                                                                                        <Save aria-hidden="true" className="h-4 w-4" />
                                                                                                 )}
                                                                                                 Save Configuration
                                                                                         </Button>
                                                                                         {savedSettings && (
                                                                                                 <Button onClick={handleDeleteSettings} disabled={loading === "deleting-settings"} className="etap-btn etap-btn-danger">
                                                                                                         {loading === "deleting-settings" ? (
-                                                                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                                                <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                                                                                                         ) : (
-                                                                                                                <Trash2 className="h-4 w-4" />
+                                                                                                                <Trash2 aria-hidden="true" className="h-4 w-4" />
                                                                                                         )}
                                                                                                         Remove Configuration
                                                                                                 </Button>
@@ -510,9 +510,9 @@ export function EtapPage() {
 
                                                                                 {connectionMessage && (
                                                                                         <div className={`etap-alert mt-4 ${connectionStatus === "connected" ? "etap-alert-success" : connectionStatus === "error" ? "etap-alert-error" : ""}`}>
-                                                                                                {connectionStatus === "connected" ? <CheckCircle2 className="h-5 w-5 mt-0.5" /> :
-                                                                                                 connectionStatus === "error" ? <AlertTriangle className="h-5 w-5 mt-0.5" /> :
-                                                                                                 <Activity className="h-5 w-5 mt-0.5" />}
+                                                                                                {connectionStatus === "connected" ? <CheckCircle2 aria-hidden="true" className="h-5 w-5 mt-0.5" /> :
+                                                                                                 connectionStatus === "error" ? <AlertTriangle aria-hidden="true" className="h-5 w-5 mt-0.5" /> :
+                                                                                                 <Activity aria-hidden="true" className="h-5 w-5 mt-0.5" />}
                                                                                                 <div>
                                                                                                         <p className="font-medium">{connectionMessage}</p>
                                                                                                         {serverVersion && <p className="text-sm mt-1 opacity-80 font-mono">{serverVersion}</p>}
@@ -524,7 +524,7 @@ export function EtapPage() {
 
                                                                                 <div className="flex items-center justify-between p-4 rounded-lg border border-white/10 bg-black/20">
                                                                                         <div className="flex items-center gap-3">
-                                                                                                <RefreshCw className="h-5 w-5 text-amber-400" />
+                                                                                                <RefreshCw aria-hidden="true" className="h-5 w-5 text-amber-400" />
                                                                                                 <div>
                                                                                                         <Label className="etap-label" style={{ marginBottom: 0 }}>Auto Synchronization</Label>
                                                                                                         <p className="text-sm text-slate-400 mt-1">Enable scheduled sync between ETAP and local project store.</p>
@@ -539,7 +539,7 @@ export function EtapPage() {
                                                                         <Card className="etap-panel">
                                                                                 <CardHeader className="etap-panel-header">
                                                                                         <CardTitle className="etap-panel-title">
-                                                                                                <ShieldAlert className="h-5 w-5 etap-panel-title-icon" />
+                                                                                                <ShieldAlert aria-hidden="true" className="h-5 w-5 etap-panel-title-icon" />
                                                                                                 Security Notice
                                                                                         </CardTitle>
                                                                                 </CardHeader>
@@ -557,7 +557,7 @@ export function EtapPage() {
                                                         <Card className="etap-panel">
                                                                         <CardHeader className="etap-panel-header">
                                                                                 <CardTitle className="etap-panel-title">
-                                                                                        <Globe className="h-5 w-5 etap-panel-title-icon" />
+                                                                                        <Globe aria-hidden="true" className="h-5 w-5 etap-panel-title-icon" />
                                                                                         Project Mapping
                                                                                 </CardTitle>
                                                                                 <CardDescription className="etap-panel-description">
@@ -605,7 +605,7 @@ export function EtapPage() {
                                                                 <Card className="etap-panel">
                                                                         <CardHeader className="etap-panel-header">
                                                                                 <CardTitle className="etap-panel-title">
-                                                                                        <Download className="h-5 w-5 etap-panel-title-icon" />
+                                                                                        <Download aria-hidden="true" className="h-5 w-5 etap-panel-title-icon" />
                                                                                         Export to ETAP
                                                                                 </CardTitle>
                                                                                 <CardDescription className="etap-panel-description">
@@ -639,9 +639,9 @@ export function EtapPage() {
                                                                                 </div>
                                                                                 <Button onClick={handleExport} disabled={loading === "exporting"} className="etap-btn etap-btn-primary w-full">
                                                                                         {loading === "exporting" ? (
-                                                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                                <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                                                                                         ) : (
-                                                                                                <Download className="h-4 w-4" />
+                                                                                                <Download aria-hidden="true" className="h-4 w-4" />
                                                                                         )}
                                                                                         Execute Export
                                                                                 </Button>
@@ -651,7 +651,7 @@ export function EtapPage() {
                                                                 <Card className="etap-panel">
                                                                         <CardHeader className="etap-panel-header">
                                                                                 <CardTitle className="etap-panel-title">
-                                                                                        <Import className="h-5 w-5 etap-panel-title-icon" />
+                                                                                        <Import aria-hidden="true" className="h-5 w-5 etap-panel-title-icon" />
                                                                                         Import from ETAP
                                                                                 </CardTitle>
                                                                                 <CardDescription className="etap-panel-description">
@@ -682,9 +682,9 @@ export function EtapPage() {
                                                                                 </div>
                                                                                 <Button onClick={handleImport} disabled={loading === "importing" || !selectedEtapProject} className="etap-btn etap-btn-primary w-full">
                                                                                         {loading === "importing" ? (
-                                                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                                <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                                                                                         ) : (
-                                                                                                <Upload className="h-4 w-4" />
+                                                                                                <Upload aria-hidden="true" className="h-4 w-4" />
                                                                                         )}
                                                                                         Execute Import
                                                                                 </Button>
@@ -698,7 +698,7 @@ export function EtapPage() {
                                                         <Card className="etap-panel">
                                                                         <CardHeader className="etap-panel-header">
                                                                                 <CardTitle className="etap-panel-title">
-                                                                                        <Activity className="h-5 w-5 etap-panel-title-icon" />
+                                                                                        <Activity aria-hidden="true" className="h-5 w-5 etap-panel-title-icon" />
                                                                                         Synchronization Log
                                                                                 </CardTitle>
                                                                                 <CardDescription className="etap-panel-description">
@@ -729,7 +729,7 @@ export function EtapPage() {
                                                                                                                         <tr key={log.id}>
                                                                                                                                 <td>
                                                                                                                                         <span className={`etap-badge ${log.direction === "export" ? "etap-badge-success" : "etap-badge-warning"}`}>
-                                                                                                                                                {log.direction === "export" ? <Download className="h-3 w-3" /> : <Upload className="h-3 w-3" />}
+                                                                                                                                                {log.direction === "export" ? <Download aria-hidden="true" className="h-3 w-3" /> : <Upload aria-hidden="true" className="h-3 w-3" />}
                                                                                                                                                 {log.direction}
                                                                                                                                         </span>
                                                                                                                                 </td>

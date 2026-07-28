@@ -298,7 +298,7 @@ export function FireAlarmDesigner() {
         if (loading) {
                 return (
                         <div className="flex-1 flex items-center justify-center">
-                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-primary" />
                                 <span className="ml-2 text-muted-foreground">{t("common.loading")}</span>
                         </div>
                 );
@@ -325,9 +325,9 @@ export function FireAlarmDesigner() {
                                                         disabled={saving}
                                                 >
                                                         {saving ? (
-                                                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                                <Loader2 aria-hidden="true" className="h-4 w-4 mr-1 animate-spin" />
                                                         ) : (
-                                                                <Save className="h-4 w-4 mr-1" />
+                                                                <Save aria-hidden="true" className="h-4 w-4 mr-1" />
                                                         )}
                                                         {t("common.save")}
                                                 </Button>
@@ -336,7 +336,7 @@ export function FireAlarmDesigner() {
                                                         className="border-border text-foreground/90 hover:bg-card"
                                                         onClick={handleExport}
                                                 >
-                                                        <Download className="h-4 w-4 mr-1" />
+                                                        <Download aria-hidden="true" className="h-4 w-4 mr-1" />
                                                         {t("common.export")}
                                                 </Button>
                                                 <Button
@@ -344,7 +344,7 @@ export function FireAlarmDesigner() {
                                                         className="border-border text-foreground/90 hover:bg-card"
                                                         onClick={handleImport}
                                                 >
-                                                        <Upload className="h-4 w-4 mr-1" />
+                                                        <Upload aria-hidden="true" className="h-4 w-4 mr-1" />
                                                         {t("common.import")}
                                                 </Button>
                                         </div>
@@ -405,7 +405,7 @@ export function FireAlarmDesigner() {
                                                                 className="border-border text-foreground/90 hover:bg-card"
                                                                 onClick={() => handleAddDetector("smoke")}
                                                         >
-                                                                <Plus className="h-4 w-4 mr-1" />
+                                                                <Plus aria-hidden="true" className="h-4 w-4 mr-1" />
                                                                 {t("fireAlarm.addSmoke")}
                                                         </Button>
                                                         <Button
@@ -413,7 +413,7 @@ export function FireAlarmDesigner() {
                                                                 className="border-border text-foreground/90 hover:bg-card"
                                                                 onClick={() => handleAddDetector("heat")}
                                                         >
-                                                                <Plus className="h-4 w-4 mr-1" />
+                                                                <Plus aria-hidden="true" className="h-4 w-4 mr-1" />
                                                                 {t("fireAlarm.addHeat")}
                                                         </Button>
                                                         <Button
@@ -421,7 +421,7 @@ export function FireAlarmDesigner() {
                                                                 className="border-border text-foreground/90 hover:bg-card"
                                                                 onClick={() => handleAddDetector("pull")}
                                                         >
-                                                                <Plus className="h-4 w-4 mr-1" />
+                                                                <Plus aria-hidden="true" className="h-4 w-4 mr-1" />
                                                                 {t("fireAlarm.addPull")}
                                                         </Button>
                                                         <Button
@@ -429,7 +429,7 @@ export function FireAlarmDesigner() {
                                                                 className="border-border text-foreground/90 hover:bg-card"
                                                                 onClick={() => handleAddDetector("horns")}
                                                         >
-                                                                <Plus className="h-4 w-4 mr-1" />
+                                                                <Plus aria-hidden="true" className="h-4 w-4 mr-1" />
                                                                 {t("fireAlarm.addHornStrobe")}
                                                         </Button>
                                                         <Button
@@ -437,7 +437,7 @@ export function FireAlarmDesigner() {
                                                                 className="border-border text-foreground/90 hover:bg-card"
                                                                 onClick={handleClearCanvas}
                                                         >
-                                                                <Trash2 className="h-4 w-4 mr-1" />
+                                                                <Trash2 aria-hidden="true" className="h-4 w-4 mr-1" />
                                                                 {t("fireAlarm.clearCanvas")}
                                                         </Button>
                                                         <Separator
@@ -457,9 +457,9 @@ export function FireAlarmDesigner() {
                                                                         onClick={() => setShowGrid(!showGrid)}
                                                                 >
                                                                         {showGrid ? (
-                                                                                <Eye className="h-4 w-4" />
+                                                                                <Eye aria-hidden="true" className="h-4 w-4" />
                                                                         ) : (
-                                                                                <EyeOff className="h-4 w-4" />
+                                                                                <EyeOff aria-hidden="true" className="h-4 w-4" />
                                                                         )}
                                                                 </Button>
                                                         </div>
@@ -476,9 +476,9 @@ export function FireAlarmDesigner() {
                                                                         onClick={() => setSnapToGrid(!snapToGrid)}
                                                                 >
                                                                         {snapToGrid ? (
-                                                                                <CheckCircle2 className="h-4 w-4" />
+                                                                                <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
                                                                         ) : (
-                                                                                <XCircle className="h-4 w-4" />
+                                                                                <XCircle aria-hidden="true" className="h-4 w-4" />
                                                                         )}
                                                                 </Button>
                                                         </div>

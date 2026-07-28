@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { ConfigEditor } from "@/components/shared/ConfigEditor";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { digitalTwinService } from "@/services/digitalTwinService";
+import { digitalTwinApi } from "@/services/fullApi";
 
 export function DigitalTwinConfigPage() {
 	const [mappings, setMappings] = useState<unknown[]>([]);
@@ -15,7 +15,7 @@ export function DigitalTwinConfigPage() {
 	useEffect(() => {
 		const fetchMappings = async () => {
 			try {
-				const m = await digitalTwinService.getMappings();
+				const m = await digitalTwinApi.getMappings();
 				setMappings(Array.isArray(m) ? m : []);
 			} catch {
 				setMappings([]);
@@ -38,10 +38,10 @@ export function DigitalTwinConfigPage() {
 				title="Conversion Configuration"
 				description="JSON configuration for the digital twin conversion engine"
 				loadConfig={async () =>
-					(await digitalTwinService.getConfig()) as Record<string, unknown>
+					(await digitalTwinApi.getConfig()) as Record<string, unknown>
 				}
 				saveConfig={async (config) => {
-					await digitalTwinService.setConfig(config);
+					await digitalTwinApi.setConfig(config);
 				}}
 			/>
 			<Card className="border-border bg-card">

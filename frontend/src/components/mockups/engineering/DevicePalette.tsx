@@ -15,28 +15,28 @@ const DEVICES: PaletteItem[] = [
 	{
 		type: "GENERATOR",
 		label: "Generator",
-		icon: <Zap size={16} />,
+		icon: <Zap aria-hidden="true" size={16} />,
 		defaultLoad: 500,
 		color: "text-warning",
 	},
 	{
 		type: "BATTERY",
 		label: "Battery Bank",
-		icon: <Battery size={16} />,
+		icon: <Battery aria-hidden="true" size={16} />,
 		defaultLoad: 300,
 		color: "text-success",
 	},
 	{
 		type: "LOAD",
 		label: "Critical Load",
-		icon: <Power size={16} />,
+		icon: <Power aria-hidden="true" size={16} />,
 		defaultLoad: 150,
 		color: "text-info",
 	},
 	{
 		type: "PANEL",
 		label: "Distribution Panel",
-		icon: <Box size={16} />,
+		icon: <Box aria-hidden="true" size={16} />,
 		defaultLoad: 50,
 		color: "text-muted-foreground",
 	},
@@ -61,7 +61,7 @@ export function DevicePalette({ onSelect, selectedType }: DevicePaletteProps) {
 					<button type="button"
 						key={dev.type}
 						onClick={() => onSelect(dev.type, dev.defaultLoad)}
-						className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-[colors,shadow] ${
+						className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-[color,background-color,border-color,box-shadow] ${
 							selectedType === dev.type
 								? "bg-primary/10 border-primary ring-1 ring-primary"
 								: "bg-muted/50 border-border hover:bg-muted hover:border-muted-foreground"
@@ -77,7 +77,7 @@ export function DevicePalette({ onSelect, selectedType }: DevicePaletteProps) {
 							</div>
 						</div>
 						{selectedType === dev.type && (
-							<Plus size={14} className="ml-auto text-primary" />
+							<Plus aria-hidden="true" size={14} className="ml-auto text-primary" />
 						)}
 					</button>
 				))}

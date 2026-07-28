@@ -29,7 +29,7 @@ export function ProjectDashboard() {
 			<div className="h-16 flex items-center justify-between px-6 border-b bg-card shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="w-10 h-10 rounded bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-						<LayoutDashboard className="h-5 w-5 text-white" />
+						<LayoutDashboard aria-hidden="true" className="h-5 w-5 text-white" />
 					</div>
 					<div>
 						<h1 className="font-bold tracking-wide text-lg leading-tight">
@@ -59,16 +59,16 @@ export function ProjectDashboard() {
 					</div>
 					<div className="flex gap-2">
 						<Button variant="outline" size="sm" className="h-8 text-xs bg-card">
-							<BarChart2 className="h-4 w-4 mr-1.5" /> Add Widget
+							<BarChart2 aria-hidden="true" className="h-4 w-4 mr-1.5" /> Add Widget
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 text-xs bg-card">
-							<FileDown className="h-4 w-4 mr-1.5" /> Export Dashboard
+							<FileDown aria-hidden="true" className="h-4 w-4 mr-1.5" /> Export Dashboard
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 text-xs bg-card">
-							<Share2 className="h-4 w-4 mr-1.5" /> Share
+							<Share2 aria-hidden="true" className="h-4 w-4 mr-1.5" /> Share
 						</Button>
 						<Button variant="ghost" size="icon" className="h-8 w-8">
-							<Maximize className="h-4 w-4" />
+							<Maximize aria-hidden="true" className="h-4 w-4" />
 						</Button>
 					</div>
 				</div>
@@ -84,7 +84,7 @@ export function ProjectDashboard() {
 								<div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
 									Overall Progress
 								</div>
-								<Activity className="h-4 w-4 text-info" />
+								<Activity aria-hidden="true" className="h-4 w-4 text-info" />
 							</div>
 							<div className="flex items-end gap-3 mb-3">
 								<div className="text-4xl font-bold font-mono tracking-tighter">
@@ -111,14 +111,14 @@ export function ProjectDashboard() {
 								<div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
 									Compliance Score
 								</div>
-								<ShieldAlert className="h-4 w-4 text-success" />
+								<ShieldAlert aria-hidden="true" className="h-4 w-4 text-success" />
 							</div>
 							<div className="flex items-end gap-3 mb-3">
 								<div className="text-4xl font-bold font-mono tracking-tighter text-success">
 									94.7<span className="text-2xl">%</span>
 								</div>
 								<div className="text-xs font-mono text-success flex items-center mb-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-									<ArrowUpRight className="h-3 w-3 mr-0.5" /> 2.1%
+									<ArrowUpRight aria-hidden="true" className="h-3 w-3 mr-0.5" /> 2.1%
 								</div>
 							</div>
 							<div className="flex items-center gap-2 text-xs">
@@ -135,7 +135,7 @@ export function ProjectDashboard() {
 								<div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
 									Active Drawings
 								</div>
-								<FolderOpen className="h-4 w-4 text-primary" />
+								<FolderOpen aria-hidden="true" className="h-4 w-4 text-primary" />
 							</div>
 							<div className="flex items-end gap-3 mb-4">
 								<div className="text-4xl font-bold font-mono tracking-tighter">
@@ -173,7 +173,7 @@ export function ProjectDashboard() {
 								<div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
 									Team Activity
 								</div>
-								<Users className="h-4 w-4 text-purple-400" />
+								<Users aria-hidden="true" className="h-4 w-4 text-purple-400" />
 							</div>
 							<div className="flex items-end gap-3 mb-3">
 								<div className="text-2xl font-bold">5 Online Now</div>
@@ -202,7 +202,7 @@ export function ProjectDashboard() {
 							{/* Widget 1: Task Progress */}
 							<Widget
 								title="Task Progress by Discipline"
-								icon={<BarChart2 className="w-4 h-4" />}
+								icon={<BarChart2 aria-hidden="true" className="w-4 h-4" />}
 							>
 								<div className="space-y-4 py-2">
 									<ProgressBar
@@ -247,20 +247,20 @@ export function ProjectDashboard() {
 							{/* Widget 2: Timeline */}
 							<Widget
 								title="Recent Activity Timeline"
-								icon={<Clock className="w-4 h-4" />}
+								icon={<Clock aria-hidden="true" className="w-4 h-4" />}
 							>
 								<div className="relative pl-4 space-y-6 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-700 before:to-transparent pt-2 pb-2">
 									<TimelineItem
 										time="14 min ago"
 										user="Ahmed"
-										icon={<ShieldAlert className="w-3.5 h-3.5 text-white" />}
+										icon={<ShieldAlert aria-hidden="true" className="w-3.5 h-3.5 text-white" />}
 										color="bg-slate-500"
 										text="Compliance check run — 3 critical issues flagged in Fire Alarm."
 									/>
 									<TimelineItem
 										time="1h ago"
 										user="Sarah"
-										icon={<FileDown className="w-3.5 h-3.5 text-white" />}
+										icon={<FileDown aria-hidden="true" className="w-3.5 h-3.5 text-white" />}
 										color="bg-blue-500"
 										text="Rev 14 Electrical plan submitted for review."
 									/>
@@ -268,7 +268,7 @@ export function ProjectDashboard() {
 										time="2h ago"
 										user="System"
 										icon={
-											<AlertTriangle className="w-3.5 h-3.5 text-slate-800" />
+											<AlertTriangle aria-hidden="true" className="w-3.5 h-3.5 text-slate-800" />
 										}
 										color="bg-orange-400"
 										text="Clash detection complete: 5 new clashes in MEP vs Structural."
@@ -276,21 +276,21 @@ export function ProjectDashboard() {
 									<TimelineItem
 										time="3h ago"
 										user="James"
-										icon={<Zap className="w-3.5 h-3.5 text-white" />}
+										icon={<Zap aria-hidden="true" className="w-3.5 h-3.5 text-white" />}
 										color="bg-yellow-500"
 										text="Arc flash labels generated for panels MDB-A, MDB-B."
 									/>
 									<TimelineItem
 										time="4h ago"
 										user="Ahmed"
-										icon={<Activity className="w-3.5 h-3.5 text-white" />}
+										icon={<Activity aria-hidden="true" className="w-3.5 h-3.5 text-white" />}
 										color="bg-blue-400"
 										text="Load calculation updated — total demand increased 3.2%."
 									/>
 									<TimelineItem
 										time="5h ago"
 										user="System"
-										icon={<GitCommit className="w-3.5 h-3.5 text-white" />}
+										icon={<GitCommit aria-hidden="true" className="w-3.5 h-3.5 text-white" />}
 										color="bg-emerald-500"
 										text="BIM model automatically synchronized with Revit central file."
 									/>
@@ -300,7 +300,7 @@ export function ProjectDashboard() {
 							{/* Widget 3: Milestones */}
 							<Widget
 								title="Upcoming Milestones"
-								icon={<CheckCircle2 className="w-4 h-4" />}
+								icon={<CheckCircle2 aria-hidden="true" className="w-4 h-4" />}
 							>
 								<div className="overflow-hidden border border-slate-800 rounded-lg">
 									<table className="w-full text-left text-sm">
@@ -388,7 +388,7 @@ export function ProjectDashboard() {
 							{/* Widget 4: Issue Tracker */}
 							<Widget
 								title="Issue Tracker Summary"
-								icon={<ShieldAlert className="w-4 h-4" />}
+								icon={<ShieldAlert aria-hidden="true" className="w-4 h-4" />}
 							>
 								<div className="flex flex-col items-center justify-center py-6">
 									{/* CSS Donut Chart */}
@@ -439,7 +439,7 @@ export function ProjectDashboard() {
 							{/* Widget 5: File Size */}
 							<Widget
 								title="Project Storage"
-								icon={<FolderOpen className="w-4 h-4" />}
+								icon={<FolderOpen aria-hidden="true" className="w-4 h-4" />}
 							>
 								<div className="py-2">
 									<div className="flex justify-between items-end mb-2">
@@ -503,7 +503,7 @@ export function ProjectDashboard() {
 							{/* Widget 6: Engineering Hours */}
 							<Widget
 								title="Engineering Hours (Week)"
-								icon={<Clock className="w-4 h-4" />}
+								icon={<Clock aria-hidden="true" className="w-4 h-4" />}
 							>
 								<div className="space-y-3 py-1">
 									<HourRow
@@ -542,7 +542,7 @@ export function ProjectDashboard() {
 							{/* Widget 7: Collaboration Stats */}
 							<Widget
 								title="Collaboration Pulse"
-								icon={<MessageSquare className="w-4 h-4" />}
+								icon={<MessageSquare aria-hidden="true" className="w-4 h-4" />}
 							>
 								<div className="grid grid-cols-2 gap-4">
 									<div className="bg-card/50 border border-slate-800 p-3 rounded-lg text-center">

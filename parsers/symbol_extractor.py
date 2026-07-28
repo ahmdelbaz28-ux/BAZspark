@@ -3,11 +3,6 @@
 """
 SYMBOL EXTRACTOR — Fire Protection Symbols Detection
 =====================================================
-يستخلص مواقع الرموز من نصوص PDF (labels) فقط.
-لا يستخدم رؤية حاسوبية. كل رمز مستخلص يُوسم بـ MODERATE
-ويجب أن يراجعه مهندس.
-
-Author: The Consultant Who Refused to Lie
 """
 
 import os
@@ -18,10 +13,11 @@ from typing import Dict, List, Tuple
 
 import _fitz_compat as fitz
 
+from parsers._device_types import DeviceType
+
 
 class SymbolType(Enum):
     """NFPA 170 device types."""
-
     SMOKE_DETECTOR = "SMOKE_DETECTOR"
     HEAT_DETECTOR = "HEAT_DETECTOR"
     PULL_STATION = "PULL_STATION"
@@ -37,8 +33,6 @@ class SymbolType(Enum):
 
 
 class ConfidenceLevel(Enum):
-    """مستويات الثقة."""
-
     CERTAIN = "CERTAIN"
     HIGH = "HIGH"
     MODERATE = "MODERATE"
@@ -47,10 +41,8 @@ class ConfidenceLevel(Enum):
 
 @dataclass
 class SymbolElement:
-    """رمز مستخلص من الرسم."""
-
     symbol_type: SymbolType
-    bbox: Tuple[float, float, float, float]  # x0,y0,x1,y1
+    bbox: Tuple[float, float, float, float]
     confidence: ConfidenceLevel
     text: str
     page: int = 0
@@ -66,19 +58,21 @@ class SymbolElement:
         }
 
 
+# Mapping from shared DeviceType to SymbolType for cross-reference
+DEVICE_TYPE_TO_SYMBOL = {
+    DeviceType.SMOKE_DETECTOR: SymbolType.SMOKE_DETECTOR,
+    DeviceType.HEAT_DETECTOR: SymbolType.HEAT_DETECTOR,
+    DeviceType.MANUAL_PULL_STATION: SymbolType.PULL_STATION,
+    DeviceType.HORN_STROBE: SymbolType.HORN_STROBE,
+    DeviceType.SPEAKER: SymbolType.SPEAKER,
+    DeviceType.STROBE: SymbolType.STROBE,
+    DeviceType.HORN: SymbolType.HORN,
+    DeviceType.SPRINKLER: SymbolType.SPRINKLER,
+    DeviceType.FLOW_SWITCH: SymbolType.FLOW_SWITCH,
+}
+
+
 class SymbolExtractor:
-    """
-    يقرأ نصوص PDF بحثاً عن أسماء رموز NFPA.
-
-    USAGE:
-        extractor = SymbolExtractor("drawing.pdf", 0)
-        symbols = extractor.extract_symbols()
-
-        for sym in symbols:
-            print(f"{sym.symbol_type.value}: {sym.text} at {sym.bbox}")
-    """
-
-    # الكلمات المفتاحية لكل نوع رمز
     KEYWORDS = {
         SymbolType.SMOKE_DETECTOR: [
             r'\bSD\b', r'\bSMOKE\b', r'\bSMOKE\s*DETECTOR\b',
@@ -133,8 +127,7 @@ class SymbolExtractor:
         self.page_number = page_number
 
     def extract_symbols(self) -> List[SymbolElement]:
-        """استخراج جميع الرموز المحتملة من النصوص."""
-        words = self.page.get_text("words")  # (x0,y0,x1,y1,text,block,line,word)
+        words = self.page.get_text("words")
         symbols = []
 
         for word in words:
@@ -157,12 +150,10 @@ class SymbolExtractor:
         return symbols
 
     def extract_by_type(self, symbol_type: SymbolType) -> List[SymbolElement]:
-        """استخراج رموز من نوع محدد."""
         all_symbols = self.extract_symbols()
         return [s for s in all_symbols if s.symbol_type == symbol_type]
 
     def get_symbol_count(self) -> Dict[str, int]:
-        """إحصاء الرموز المستخلصة."""
         symbols = self.extract_symbols()
         counts = {}
         for sym in symbols:
@@ -171,38 +162,18 @@ class SymbolExtractor:
         return counts
 
     def close(self):
-        """إغلاق المستند."""
         if self.doc:
             self.doc.close()
 
 
 def extract_symbols_from_pdf(pdf_path: str, page: int = 0) -> List[SymbolElement]:
-    """
-    دالة مساعدة سريعة لاستخراج الرموز.
-
-    Args:
-        pdf_path: مسار ملف PDF
-        page: رقم الصفحة (يبدأ من 0)
-
-    Returns:
-        List of SymbolElement objects
-
-    """
     extractor = SymbolExtractor(pdf_path, page)
     return extractor.extract_symbols()
 
 
 def extract_devices_from_pdf(pdf_path: str, page: int = 0) -> Dict[str, List[SymbolElement]]:
-    """
-    استخراج جميع الأجهزة من PDF وتصنيفها حسب النوع.
-
-    Returns:
-        Dict mapping SymbolType to list of symbols
-
-    """
     symbols = extract_symbols_from_pdf(pdf_path, page)
 
-    # Group by type
     devices = {}
     for sym in symbols:
         key = sym.symbol_type.value

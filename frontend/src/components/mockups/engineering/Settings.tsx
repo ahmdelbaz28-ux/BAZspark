@@ -37,7 +37,7 @@ export function Settings() {
 			{/* Header */}
 			<div className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-[#0f1115]">
 				<div className="flex items-center gap-3 text-white">
-					<Settings2 className="w-6 h-6 text-primary" />
+					<Settings2 aria-hidden="true" className="w-6 h-6 text-primary" />
 					<h1 className="text-xl font-bold tracking-wide">
 						Settings Architecture
 					</h1>
@@ -53,31 +53,31 @@ export function Settings() {
 					<ScrollArea className="flex-1 py-4">
 						<div className="space-y-1 px-3">
 							<NavItem
-								icon={<Settings2 />}
+								icon={<Settings2 aria-hidden="true" />}
 								title="General"
 								active={activeTab === "General"}
 								onClick={() => setActiveTab("General")}
 							/>
 							<NavItem
-								icon={<Monitor />}
+								icon={<Monitor aria-hidden="true" />}
 								title="Display & Graphics"
 								active={activeTab === "Display & Graphics"}
 								onClick={() => setActiveTab("Display & Graphics")}
 							/>
 							<NavItem
-								icon={<Cpu />}
+								icon={<Cpu aria-hidden="true" />}
 								title="GPU & Performance"
 								active={activeTab === "GPU & Performance"}
 								onClick={() => setActiveTab("GPU & Performance")}
 							/>
 							<NavItem
-								icon={<Layout />}
+								icon={<Layout aria-hidden="true" />}
 								title="Workspace"
 								active={activeTab === "Workspace"}
 								onClick={() => setActiveTab("Workspace")}
 							/>
 							<NavItem
-								icon={<Mic />}
+								icon={<Mic aria-hidden="true" />}
 								title="AI & Voice"
 								active={activeTab === "AI & Voice"}
 								onClick={() => setActiveTab("AI & Voice")}
@@ -89,31 +89,31 @@ export function Settings() {
 							</div>
 
 							<NavItem
-								icon={<HardDrive />}
+								icon={<HardDrive aria-hidden="true" />}
 								title="File Handling"
 								active={activeTab === "File Handling"}
 								onClick={() => setActiveTab("File Handling")}
 							/>
 							<NavItem
-								icon={<Users />}
+								icon={<Users aria-hidden="true" />}
 								title="Collaboration"
 								active={activeTab === "Collaboration"}
 								onClick={() => setActiveTab("Collaboration")}
 							/>
 							<NavItem
-								icon={<ShieldCheck />}
+								icon={<ShieldCheck aria-hidden="true" />}
 								title="Standards & Compliance"
 								active={activeTab === "Standards & Compliance"}
 								onClick={() => setActiveTab("Standards & Compliance")}
 							/>
 							<NavItem
-								icon={<Zap />}
+								icon={<Zap aria-hidden="true" />}
 								title="Plugin Manager"
 								active={activeTab === "Plugin Manager"}
 								onClick={() => setActiveTab("Plugin Manager")}
 							/>
 							<NavItem
-								icon={<Keyboard />}
+								icon={<Keyboard aria-hidden="true" />}
 								title="Keyboard Shortcuts"
 								active={activeTab === "Keyboard Shortcuts"}
 								onClick={() => setActiveTab("Keyboard Shortcuts")}
@@ -125,19 +125,19 @@ export function Settings() {
 							</div>
 
 							<NavItem
-								icon={<Cloud />}
+								icon={<Cloud aria-hidden="true" />}
 								title="Cloud & Backup"
 								active={activeTab === "Cloud & Backup"}
 								onClick={() => setActiveTab("Cloud & Backup")}
 							/>
 							<NavItem
-								icon={<Lock />}
+								icon={<Lock aria-hidden="true" />}
 								title="Security"
 								active={activeTab === "Security"}
 								onClick={() => setActiveTab("Security")}
 							/>
 							<NavItem
-								icon={<Key />}
+								icon={<Key aria-hidden="true" />}
 								title="Licensing"
 								active={activeTab === "Licensing"}
 								onClick={() => setActiveTab("Licensing")}
@@ -337,7 +337,7 @@ export function Settings() {
 								<div className="bg-[#15181e] border border-white/5 rounded-lg p-4 mb-6 flex items-center justify-between">
 									<div className="flex items-center gap-3">
 										<div className="w-10 h-10 rounded bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-											<Cpu className="w-5 h-5 text-success" />
+											<Cpu aria-hidden="true" className="w-5 h-5 text-success" />
 										</div>
 										<div>
 											<div className="text-sm font-semibold text-white">
@@ -482,7 +482,7 @@ function SettingRow({
 function ThemeCard({ mode, active }: { mode: string; active?: boolean }) {
 	return (
 		<div
-			className={`flex flex-col gap-2 p-3 rounded-md border cursor-pointer transition-[colors,shadow] w-32 ${active ? "bg-primary/5 border-primary ring-1 ring-primary/30" : "bg-[#15181e] border-white/5 hover:border-white/20"}`}
+			className={`flex flex-col gap-2 p-3 rounded-md border cursor-pointer transition-[color,background-color,border-color,box-shadow] w-32 ${active ? "bg-primary/5 border-primary ring-1 ring-primary/30" : "bg-[#15181e] border-white/5 hover:border-white/20"}`}
 		>
 			<div
 				className={`w-full h-16 rounded-md overflow-hidden flex flex-col border ${active ? "border-primary/50" : "border-white/10"}`}

@@ -74,7 +74,7 @@ export const ElementList = memo(function ElementList({
                 <div className="space-y-3">
                         <div className="flex gap-2">
                                 <div className="relative flex-1">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                         <Input
                                                 placeholder="Search by name or ID..."
                                                 value={search}
@@ -146,7 +146,7 @@ export const ElementList = memo(function ElementList({
                                                                                                         variant="ghost"
                                                                                                         onClick={() => onView(el)}
                                                                                                 >
-                                                                                                        <Eye className="h-4 w-4" />
+                                                                                                        <Eye aria-hidden="true" className="h-4 w-4" />
                                                                                                 </Button>
                                                                                         )}
                                                                                         {onDelete && (
@@ -156,7 +156,7 @@ export const ElementList = memo(function ElementList({
                                                                                                         onClick={() => onDelete(el)}
                                                                                                         className="text-danger hover:text-slate-400"
                                                                                                 >
-                                                                                                        <Trash2 className="h-4 w-4" />
+                                                                                                        <Trash2 aria-hidden="true" className="h-4 w-4" />
                                                                                                 </Button>
                                                                                         )}
                                                                                 </div>

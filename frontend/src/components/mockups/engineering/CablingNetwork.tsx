@@ -29,7 +29,7 @@ export function CablingNetwork() {  // NOSONAR - typescript:S9011: Intentionally
 				<div className="h-10 flex items-center justify-between px-4 border-b border-border/50 bg-muted/50">
 					<div className="flex items-center gap-4">
 						<div className="flex items-center gap-2 text-success font-bold tracking-wide">
-							<Network className="h-5 w-5" />
+							<Network aria-hidden="true" className="h-5 w-5" />
 							<span>Structured Cabling, Network & AV</span>
 						</div>
 						<Separator orientation="vertical" className="h-5 bg-secondary" />
@@ -58,57 +58,57 @@ export function CablingNetwork() {  // NOSONAR - typescript:S9011: Intentionally
 					{/* Outlets */}
 					<div className="flex items-center px-2 border-r border-border">
 						<RibbonBtn
-							icon={<LayoutGrid className="text-foreground/90" />}
+							icon={<LayoutGrid aria-hidden="true" className="text-foreground/90" />}
 							label="Data Outlet"
 							active
 						/>
 						<RibbonBtn
-							icon={<Monitor className="text-foreground/90" />}
+							icon={<Monitor aria-hidden="true" className="text-foreground/90" />}
 							label="Voice Outlet"
 						/>
 						<RibbonBtn
-							icon={<MonitorPlay className="text-foreground/90" />}
+							icon={<MonitorPlay aria-hidden="true" className="text-foreground/90" />}
 							label="AV Outlet"
 						/>
 					</div>
 					{/* Active Equip */}
 					<div className="flex items-center px-2 border-r border-border">
 						<RibbonBtn
-							icon={<ArrowRightLeft className="text-foreground/90" />}
+							icon={<ArrowRightLeft aria-hidden="true" className="text-foreground/90" />}
 							label="Switch"
 						/>
 						<RibbonBtn
-							icon={<Layout className="text-foreground/90" />}
+							icon={<Layout aria-hidden="true" className="text-foreground/90" />}
 							label="Patch Panel"
 						/>
 						<RibbonBtn
-							icon={<Wifi className="text-foreground/90" />}
+							icon={<Wifi aria-hidden="true" className="text-foreground/90" />}
 							label="Wi-Fi AP"
 						/>
 					</div>
 					{/* Pathways & Rooms */}
 					<div className="flex items-center px-2 border-r border-border">
 						<RibbonBtn
-							icon={<Cable className="text-success" />}
+							icon={<Cable aria-hidden="true" className="text-success" />}
 							label="Cable Tray"
 						/>
 						<RibbonBtn
-							icon={<Server className="text-foreground/90" />}
+							icon={<Server aria-hidden="true" className="text-foreground/90" />}
 							label="Telecom Room"
 						/>
 					</div>
 					{/* AV */}
 					<div className="flex items-center px-2 border-r border-border">
 						<RibbonBtn
-							icon={<Speaker className="text-foreground/90" />}
+							icon={<Speaker aria-hidden="true" className="text-foreground/90" />}
 							label="Speaker"
 						/>
 						<RibbonBtn
-							icon={<Mic className="text-foreground/90" />}
+							icon={<Mic aria-hidden="true" className="text-foreground/90" />}
 							label="Microphone"
 						/>
 						<RibbonBtn
-							icon={<Volume2 className="text-foreground/90" />}
+							icon={<Volume2 aria-hidden="true" className="text-foreground/90" />}
 							label="Amplifier"
 						/>
 					</div>
@@ -120,7 +120,7 @@ export function CablingNetwork() {  // NOSONAR - typescript:S9011: Intentionally
 				<div className="w-[240px] flex flex-col border-r border-border bg-card shrink-0">
 					<div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border flex justify-between items-center bg-muted/50">
 						<span>Infrastructure Tree</span>
-						<Search className="h-3 w-3" />
+						<Search aria-hidden="true" className="h-3 w-3" />
 					</div>
 					<ScrollArea className="flex-1 p-2">
 						<NavNode title="Tower-B Infrastructure" expanded>
@@ -253,13 +253,13 @@ export function CablingNetwork() {  // NOSONAR - typescript:S9011: Intentionally
 							{/* Wi-Fi APs */}
 							<div className="absolute top-[20%] left-[25%] -translate-x-1/2 -translate-y-1/2">
 								<div className="w-6 h-6 rounded-full border border-blue-400 bg-blue-500/20 flex items-center justify-center">
-									<Radio className="w-3 h-3 text-info" />
+									<Radio aria-hidden="true" className="w-3 h-3 text-info" />
 								</div>
 								<div className="w-24 h-24 rounded-full border border-blue-400/20 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
 							</div>
 							<div className="absolute top-[20%] right-[25%] -translate-x-1/2 -translate-y-1/2">
 								<div className="w-6 h-6 rounded-full border border-blue-400 bg-blue-500/20 flex items-center justify-center">
-									<Radio className="w-3 h-3 text-info" />
+									<Radio aria-hidden="true" className="w-3 h-3 text-info" />
 								</div>
 							</div>
 							{/* Outlets */}
@@ -278,7 +278,7 @@ export function CablingNetwork() {  // NOSONAR - typescript:S9011: Intentionally
 					<div className="p-3 border-b border-border bg-muted/50">
 						<div className="flex items-center gap-2 mb-1">
 							<div className="w-6 h-6 rounded bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center">
-								<LayoutGrid className="w-3 h-3 text-success" />
+								<LayoutGrid aria-hidden="true" className="w-3 h-3 text-success" />
 							</div>
 							<div className="font-bold text-foreground">DA-2-047</div>
 						</div>
@@ -363,7 +363,7 @@ export function CablingNetwork() {  // NOSONAR - typescript:S9011: Intentionally
 							{/* Mini AV preview for context */}
 							<div>
 								<h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
-									<MonitorPlay className="w-3 h-3" /> Selected Room AV
+									<MonitorPlay aria-hidden="true" className="w-3 h-3" /> Selected Room AV
 								</h3>
 								<div className="bg-card border border-border p-2 rounded text-xs space-y-1">
 									<div className="text-foreground/90 font-medium mb-1">
@@ -388,7 +388,7 @@ export function CablingNetwork() {  // NOSONAR - typescript:S9011: Intentionally
 					<span>Max cable: 67.4m (Pass)</span>
 					<Separator orientation="vertical" className="h-4 bg-secondary" />
 					<span className="flex items-center gap-1">
-						<Wifi className="w-3 h-3 text-info" /> 98.2% cvg @ -65dBm
+						<Wifi aria-hidden="true" className="w-3 h-3 text-info" /> 98.2% cvg @ -65dBm
 					</span>
 				</div>
 				<div className="flex items-center gap-3">
