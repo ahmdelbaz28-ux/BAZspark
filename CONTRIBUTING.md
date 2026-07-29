@@ -2,6 +2,18 @@
 
 Thank you for contributing to BAZSpark. This is a **safety-critical system** for fire protection engineering. All contributions must meet high standards for correctness, testing, and documentation.
 
+## CI/CD Policy
+
+All contributions **MUST** follow the [**CI/CD Policy**](./CI-CD-POLICY.md) — 12
+mandatory rules for root-cause analysis, safe push, and pipeline integrity.
+
+> **Key rules every contributor must know:**
+> - **Rule 1:** Never apply quick fixes — find the root cause first.
+> - **Rule 4:** Never push without local validation (`pre-commit`, `pytest`, `ruff`).
+> - **Rule 5:** Never merge unless the full pipeline is green.
+> - **Rule 8:** Never force push or rewrite history.
+> - **Rule 12:** A task is complete only when ALL checks pass.
+
 ## Safety-First Principles
 
 - All changes must preserve the safety-critical nature of the system
@@ -53,20 +65,23 @@ git checkout -b bugfix/issue-number-description
 - Document your changes
 - Ensure all tests pass
 
-### 3. Run Checks
+### 3. Run Checks (Mandatory — per CI/CD Policy Rule 4)
 
 ```bash
-# Lint
-ruff check .
+# Pre-commit hooks (fastest feedback)
+pre-commit run --all-files
 
-# Type check
-mypy fireai/
+# Python lint
+ruff check backend/ fireai/ core/ parsers/ qomn_conduit/ qomn_fire/
 
-# Tests
-pytest --cov=fireai
+# Python type check
+mypy backend/ fireai/ core/ parsers/ --ignore-missing-imports
+
+# Python tests
+python -m pytest tests/ backend/tests/ -x --tb=short -q
 
 # Frontend
-cd frontend && npm test
+cd frontend && npm run typecheck && npm run lint && npm run build
 ```
 
 ### 4. Submit a Pull Request

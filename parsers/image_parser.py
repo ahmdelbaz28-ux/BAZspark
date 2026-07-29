@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
 from parsers._base import ParserBase
-from parsers._path_security import UnsafePathError
+from parsers._path_security import UnsafePathError, validate_file_size, validate_input_path  # V125/Rule #23
 
 cv2 = None
 np = None
@@ -104,7 +104,7 @@ class ImageParser(ParserBase):
     Parses floor plans from images.
     """
 
-    allowed_extensions = {'.png', '.jpg', '.jpeg', '.tiff', '.bmp'}
+    allowed_extensions = {'.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.webp'}
     max_file_size_bytes = int(os.getenv("FIREAI_IMAGE_MAX_FILE_SIZE_BYTES", 50 * 1024 * 1024))
 
     SUPPORTED_FORMATS = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.gif', '.webp', '.heic', '.heif']

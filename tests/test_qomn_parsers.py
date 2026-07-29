@@ -194,7 +194,7 @@ class TestFileValidator(unittest.TestCase):
 
         res = FileValidator.validate_file(ifc_path)
         self.assertTrue(res.is_failure, "Corrupted IFC should fail validation")
-        self.assertIn("corrupted", res.error().message.lower())
+        self.assertIn("corrupted", res.error.message.lower())
 
     def test_corrupted_dxf_detected(self):
         """
@@ -361,7 +361,7 @@ class TestGeometryValidator(unittest.TestCase):
 
         res = GeometryValidator.validate_building(building)
         self.assertTrue(res.is_failure, "Duplicate rooms should fail validation")
-        self.assertIn("Duplicate overlapping rooms", res.error().message)
+        self.assertIn("Duplicate overlapping rooms", res.error.message)
 
     def test_partial_overlap_detected(self):
         """
@@ -671,8 +671,8 @@ class TestDxfParser(unittest.TestCase):
         res = DxfParser.parse_dxf(dxf_path, "test_hash")
         # BUG-DP2 FIX: Without height info, parser must return error (safety-critical)
         self.assertTrue(res.is_failure, "Expected failure for DXF without height information")
-        self.assertIn("height", str(res.error()).lower(),
-                       f"Error should mention height: {res.error()}")
+        self.assertIn("height", str(res.error).lower(),
+                       f"Error should mention height: {res.error}")
 
     def test_dxf_fallback_room_with_height(self):
         """

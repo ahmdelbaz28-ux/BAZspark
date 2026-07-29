@@ -19,7 +19,11 @@ from fastapi.testclient import TestClient
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from backend.app import app
+# Import ApsService at module level (no side effects — pure class import).
+# backend.app is imported LAZILY inside the `client` fixture to avoid
+# triggering _ensure_default_admin_key() at module-collection time, which
+# causes intermittent 401 failures when combined suites run together
+# (pytest tests/ backend/tests/).
 from backend.services.aps_service import ApsService, get_aps_service
 
 
@@ -81,6 +85,10 @@ class TestApsRouterEndpoints:
 
     @pytest.fixture
     def client(self):
+        # Lazy import: backend.app is imported INSIDE the fixture so that
+        # _ensure_default_admin_key() runs with the correct FIREAI_API_KEY
+        # (set by conftest's autouse fixture), not at module-collection time.
+        from backend.app import app
         return TestClient(app)
 
     @pytest.fixture

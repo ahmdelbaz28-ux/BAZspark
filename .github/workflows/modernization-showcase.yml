@@ -1,32 +1,23 @@
 name: Repository Modernization Showcase
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
-concurrency:
-  group: modernization-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
 
 jobs:
   showcase-modernization:
-    name: "Modernization Check"
+    name: "Modernization Health Check"
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    strategy:
-      matrix:
-        python-version: ["3.12"]
 
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python 3.12
       uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: "3.12"
 
     - name: Display repository structure
       run: |

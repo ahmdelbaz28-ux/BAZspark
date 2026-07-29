@@ -393,7 +393,7 @@ class TestConnectionManager:
 class TestSyncWSValidation:
     """Unit tests for WebSocket origin/api key validation functions."""
 
-    def test_validate_ws_origin_no_api_key(self) -> None:
+    def test_validate_ws_origin_no_api_key(self, monkeypatch) -> None:
         """Test WS origin validation when no API key is set (dev mode)."""
         # now reads os.getenv("FIREAI_API_KEY") at runtime. Tests must
         # monkeypatch os.environ instead of the removed module attribute.
@@ -402,7 +402,7 @@ class TestSyncWSValidation:
         from backend.routers.sync import _validate_ws_origin
         original_key = os.environ.get("FIREAI_API_KEY")
         try:
-            os.environ.pop("FIREAI_API_KEY", None)  # No API key → dev mode
+            monkeypatch.delenv("FIREAI_API_KEY", raising=False)  # No API key → dev mode
             class MockWS:
                 client = None
                 class headers:
@@ -413,36 +413,36 @@ class TestSyncWSValidation:
             assert result is True  # Dev mode allows
         finally:
             if original_key is not None:
-                os.environ["FIREAI_API_KEY"] = original_key
+                monkeypatch.setenv("FIREAI_API_KEY", original_key)
             else:
-                os.environ.pop("FIREAI_API_KEY", None)
+                monkeypatch.delenv("FIREAI_API_KEY", raising=False)
 
-    def test_validate_ws_api_key_no_key_configured(self) -> None:
+    def test_validate_ws_api_key_no_key_configured(self, monkeypatch) -> None:
         """Test WS API key validation when no key is configured."""
         import os
 
         from backend.routers.sync import _validate_ws_api_key
         original_key = os.environ.get("FIREAI_API_KEY")
         try:
-            os.environ.pop("FIREAI_API_KEY", None)  # No API key configured
+            monkeypatch.delenv("FIREAI_API_KEY", raising=False)  # No API key configured
             class MockWS:
                 client = None
             result = _validate_ws_api_key(MockWS())  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
             assert result is True  # No key configured → auth disabled
         finally:
             if original_key is not None:
-                os.environ["FIREAI_API_KEY"] = original_key
+                monkeypatch.setenv("FIREAI_API_KEY", original_key)
             else:
-                os.environ.pop("FIREAI_API_KEY", None)
+                monkeypatch.delenv("FIREAI_API_KEY", raising=False)
 
-    def test_validate_ws_api_key_with_key_configured(self) -> None:
+    def test_validate_ws_api_key_with_key_configured(self, monkeypatch) -> None:
         """Test WS API key validation when key is configured (query param rejected)."""
         import os
 
         from backend.routers.sync import _validate_ws_api_key
         original_key = os.environ.get("FIREAI_API_KEY")
         try:
-            os.environ["FIREAI_API_KEY"] = "test-key-123"  # API key configured
+            monkeypatch.setenv("FIREAI_API_KEY", "test-key-123")  # API key configured
             class MockWS:
                 client = None
             result = _validate_ws_api_key(MockWS())  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
@@ -451,6 +451,6 @@ class TestSyncWSValidation:
             assert result is False
         finally:
             if original_key is not None:
-                os.environ["FIREAI_API_KEY"] = original_key
+                monkeypatch.setenv("FIREAI_API_KEY", original_key)
             else:
-                os.environ.pop("FIREAI_API_KEY", None)
+                monkeypatch.delenv("FIREAI_API_KEY", raising=False)

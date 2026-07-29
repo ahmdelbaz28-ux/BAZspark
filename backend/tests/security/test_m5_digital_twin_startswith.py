@@ -119,7 +119,7 @@ def test_path_import_exists():
 # ─── RUNTIME: path traversal is still blocked after the fix ─────────────────
 
 
-def test_path_traversal_with_dotdot_is_blocked():
+def test_path_traversal_with_dotdot_is_blocked(monkeypatch):
     """RUNTIME REGRESSION GUARD: verify ../../../etc/passwd is still blocked
     after the M-5 fix.
 
@@ -138,35 +138,32 @@ def test_path_traversal_with_dotdot_is_blocked():
 
     assert target_func is not None, "_safe_resolve_upload_path function not found"
 
-    sys.path.insert(0, str(REPO_ROOT))
+    monkeypatch.syspath_prepend(str(REPO_ROOT))
+    import importlib
+    spec = importlib.util.spec_from_file_location(
+        "digital_twin_router", DT_ROUTER_PY
+    )
+    mod = importlib.util.module_from_spec(spec)
     try:
-        import importlib
-        spec = importlib.util.spec_from_file_location(
-            "digital_twin_router", DT_ROUTER_PY
-        )
-        mod = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(mod)
-        except Exception:
-            pytest.skip("Could not load digital_twin.py module")
+        spec.loader.exec_module(mod)
+    except Exception:
+        pytest.skip("Could not load digital_twin.py module")
 
-        func = getattr(mod, "_safe_resolve_upload_path", None)
-        if func is None:
-            pytest.skip("_safe_resolve_upload_path not found in module")
+    func = getattr(mod, "_safe_resolve_upload_path", None)
+    if func is None:
+        pytest.skip("_safe_resolve_upload_path not found in module")
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch.dict(os.environ, {"FIREAI_UPLOAD_DIR": tmpdir}):
-                from fastapi import HTTPException
-                with pytest.raises(HTTPException) as exc_info:
-                    func("../../../etc/passwd")
-                assert exc_info.value.status_code == 400, (
-                    f"Path traversal not blocked: got status {exc_info.value.status_code}"
-                )
-    finally:
-        sys.path.pop(0)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with patch.dict(os.environ, {"FIREAI_UPLOAD_DIR": tmpdir}):
+            from fastapi import HTTPException
+            with pytest.raises(HTTPException) as exc_info:
+                func("../../../etc/passwd")
+            assert exc_info.value.status_code == 400, (
+                f"Path traversal not blocked: got status {exc_info.value.status_code}"
+            )
 
 
-def test_legitimate_filename_is_accepted():
+def test_legitimate_filename_is_accepted(monkeypatch):
     """RUNTIME REGRESSION GUARD: verify a legitimate filename is accepted.
 
     The M-5 fix must not break legitimate file uploads.
@@ -182,30 +179,27 @@ def test_legitimate_filename_is_accepted():
 
     assert target_func is not None
 
-    sys.path.insert(0, str(REPO_ROOT))
+    monkeypatch.syspath_prepend(str(REPO_ROOT))
+    import importlib
+    spec = importlib.util.spec_from_file_location(
+        "digital_twin_router", DT_ROUTER_PY
+    )
+    mod = importlib.util.module_from_spec(spec)
     try:
-        import importlib
-        spec = importlib.util.spec_from_file_location(
-            "digital_twin_router", DT_ROUTER_PY
-        )
-        mod = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(mod)
-        except Exception:
-            pytest.skip("Could not load digital_twin.py module")
+        spec.loader.exec_module(mod)
+    except Exception:
+        pytest.skip("Could not load digital_twin.py module")
 
-        func = getattr(mod, "_safe_resolve_upload_path", None)
-        if func is None:
-            pytest.skip("_safe_resolve_upload_path not found")
+    func = getattr(mod, "_safe_resolve_upload_path", None)
+    if func is None:
+        pytest.skip("_safe_resolve_upload_path not found")
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch.dict(os.environ, {"FIREAI_UPLOAD_DIR": tmpdir}):
-                result = func("legitimate_file.dwg")
-                assert tmpdir in result, (
-                    f"Legitimate file not accepted: {result}"
-                )
-    finally:
-        sys.path.pop(0)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with patch.dict(os.environ, {"FIREAI_UPLOAD_DIR": tmpdir}):
+            result = func("legitimate_file.dwg")
+            assert tmpdir in result, (
+                f"Legitimate file not accepted: {result}"
+            )
 
 
 # ─── Claim text regression guard ─────────────────────────────────────────────

@@ -241,15 +241,15 @@ class TestFaultInjector:
         injector.deactivate_all()
         assert injector.active_faults == {}
 
-    def test_restores_original_value(self) -> None:
+    def test_restores_original_value(self, monkeypatch) -> None:
         """Deactivate must restore the original env var value."""
-        os.environ["FIREAI_FAULT_DB_FAULT"] = "original_value"
+        monkeypatch.setenv("FIREAI_FAULT_DB_FAULT", "original_value")
         injector = FaultInjector()
         injector.activate(db_fault="new_value")
         assert os.environ["FIREAI_FAULT_DB_FAULT"] == "new_value"
         injector.deactivate_all()
         assert os.environ["FIREAI_FAULT_DB_FAULT"] == "original_value"
-        os.environ.pop("FIREAI_FAULT_DB_FAULT", None)
+        monkeypatch.delenv("FIREAI_FAULT_DB_FAULT", raising=False)
 
     def test_fault_catalog_has_descriptions(self) -> None:
         """Every fault type must have a description."""

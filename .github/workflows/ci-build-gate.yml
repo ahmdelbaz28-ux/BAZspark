@@ -113,8 +113,11 @@ jobs:
           # metadata isn't registered and some imports may fail silently.
           pip install -e . || echo "::warning::Editable install failed (non-blocking)"
 
-      - name: Set FIREAI_SESSION_SECRET (required since V193)
-        run: echo "FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" >> $GITHUB_ENV
+      - name: Generate ephemeral test secrets (V288 SECURITY — no hardcoded creds)
+        run: |
+          echo "FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" >> $GITHUB_ENV
+          echo "FIREAI_API_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> $GITHUB_ENV
+          echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> $GITHUB_ENV
 
       - name: Clean test artifacts
         # V207 FIX: Remove stale db/api_keys.secret from previous runs.
@@ -147,12 +150,12 @@ jobs:
         # block the pipeline (pytest will catch real issues).
         env:
           FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
-          FIREAI_API_KEY: ci-test-admin-key
+          FIREAI_API_KEY: ${{ env.FIREAI_API_KEY }}
           CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
           DATABASE_URL: "sqlite:////tmp/fireai_smoke_test.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_smoke_test.db"
           UDM_DB_PATH: "/tmp/udm_smoke_test.db"
-          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
+          SECRET_KEY: ${{ env.SECRET_KEY }}
         run: |
           echo "=== Smoke test: import backend.app ==="
           python -c "
@@ -180,10 +183,10 @@ jobs:
         # Added --timeout=300 to prevent runaway tests from blocking CI.
         # FIREAI_SESSION_SECRET is already in GITHUB_ENV from step above.
         env:
-          FIREAI_API_KEY: ci-test-admin-key
+          FIREAI_API_KEY: ${{ env.FIREAI_API_KEY }}
           CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
           DATABASE_URL: "sqlite:////tmp/fireai_buildgate_test.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_buildgate_test.db"
           UDM_DB_PATH: "/tmp/udm_buildgate_test.db"
-          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
+          SECRET_KEY: ${{ env.SECRET_KEY }}
         run: pytest backend/tests/ -v --tb=short --timeout=300 --continue-on-collection-errors

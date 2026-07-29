@@ -201,7 +201,7 @@ class TestFillLimits:
         assert FILL_LIMITS[2] == pytest.approx(0.31)
 
     def test_three_plus_conductors_40_pct(self):
-        assert pytest.approx(0.40) == DEFAULT_FILL_LIMIT
+        assert DEFAULT_FILL_LIMIT == pytest.approx(0.40)
 
     def test_fill_limits_sum_reasonable(self):
         """All fill limits must be between 0 and 1."""
