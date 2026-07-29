@@ -12,7 +12,7 @@ import {
         Shield,
         XCircle,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -155,6 +155,26 @@ export function SettingsPage() {
         const [settingsUpdateStatus, setSettingsUpdateStatus] = useState<Record<string, "saving" | "saved" | "error">>({});
 
         const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
+
+        // Fetch Placebo settings from backend on mount (apiTimeout, reportFormat)
+        useEffect(() => {
+                const fetchBackendSettings = async () => {
+                        try {
+                                const res = await fetch(`${API_BASE}/settings`, { credentials: "same-origin" });
+                                if (res.ok) {
+                                        const data = await res.json();
+                                        if (data.api_timeout != null) setApiTimeout(data.api_timeout);
+                                        if (data.retry_attempts != null) setRetryAttempts(data.retry_attempts);
+                                        if (data.report_format) setReportFormat(data.report_format);
+                                        if (data.auto_save_reports != null) setAutoSaveReports(data.auto_save_reports);
+                                        if (data.report_quality) setReportQuality(data.report_quality);
+                                }
+                        } catch {
+                                // Backend unavailable — use localStorage defaults already set by useState
+                        }
+                };
+                fetchBackendSettings();
+        }, [API_BASE]);
 
         const persistSettings = (key: string, value: Record<string, unknown>) => {
                 try {

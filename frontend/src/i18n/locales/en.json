@@ -1066,7 +1066,9 @@
     "deleteProject": "Delete Project",
     "deleteConfirm": "Are you sure you want to delete this project?",
     "deleteConfirmTitle": "Confirm Delete",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "viewProject": "View Project",
+    "yesDelete": "Yes, Delete"
   },
   "projects": {
     "title": "Projects",
