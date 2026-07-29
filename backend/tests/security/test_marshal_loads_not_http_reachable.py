@@ -610,6 +610,7 @@ def _http_probe_routes(client, routes, raw_log, filtered_log):
     return status_counter
 
 
+@pytest.mark.timeout(45)
 def test_marshal_never_invoked_during_http_traffic():
     """RUNTIME REACHABILITY TEST.
 
@@ -737,6 +738,7 @@ def test_marshal_never_invoked_during_http_traffic():
 # ─── Test 3b: measure handler-execution coverage ─────────────────────────────
 
 
+@pytest.mark.timeout(45)
 def test_http_probe_actually_exercises_handlers():
     """COVERAGE MEASUREMENT FOR TEST 3.
 
