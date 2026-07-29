@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { v2Api } from "@/services/fullApi";
+import { v2Api, multiDbApi } from "@/services/fullApi";
 import { api } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -76,6 +76,12 @@ export function DatabaseAdminPage() {
 
   // Qdrant
   const [qdrantCollections, setQdrantCollections] = useState<string[]>([]);
+
+  // BIM Operations
+  const [bimElementId, setBimElementId] = useState("");
+  const [bimTopK, setBimTopK] = useState(5);
+  const [bimCachedResult, setBimCachedResult] = useState<unknown | null>(null);
+  const [bimSimilarResults, setBimSimilarResults] = useState<unknown[] | null>(null);
 
   const handleCheckHealth = async () => {
     setLoading(true);
@@ -188,6 +194,54 @@ export function DatabaseAdminPage() {
       toast({
         title: "Qdrant request failed",
         description: err instanceof Error ? err.message : "Qdrant may not be configured",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGetCachedElement = async () => {
+    if (!bimElementId) {
+      toast({ title: "Enter an element ID", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    setBimCachedResult(null);
+    try {
+      const res = (await multiDbApi.getCachedElement(bimElementId)) as {
+        data?: unknown;
+      };
+      setBimCachedResult(res.data ?? null);
+      toast({ title: "Cached element retrieved" });
+    } catch (err) {
+      toast({
+        title: "Get cached element failed",
+        description: err instanceof Error ? err.message : "Element not found or BIM API unavailable",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFindSimilar = async () => {
+    if (!bimElementId) {
+      toast({ title: "Enter an element ID", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    setBimSimilarResults(null);
+    try {
+      const res = (await multiDbApi.findSimilar({ element_id: bimElementId, top_k: bimTopK })) as {
+        data?: { results?: unknown[] };
+      };
+      setBimSimilarResults(res.data?.results ?? []);
+      toast({ title: "Similar elements found" });
+    } catch (err) {
+      toast({
+        title: "Find similar failed",
+        description: err instanceof Error ? err.message : "BIM API unavailable",
         variant: "destructive",
       });
     } finally {
@@ -593,57 +647,83 @@ export function DatabaseAdminPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <Database aria-hidden="true" className="h-4 w-4 text-primary" />
-                    Cache BIM Element
+                    <FileSearch aria-hidden="true" className="h-4 w-4 text-primary" />
+                    Retrieve Cached Element
                   </CardTitle>
-                  <CardDescription>Cache a BIM element in Redis for fast retrieval</CardDescription>
+                  <CardDescription>Fetch a cached BIM element from Redis by ID</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-xs text-muted-foreground">
-                    POST /multi-db/bim/cache-element — Stores a BIM element in Redis with optional TTL for caching.
-                  </p>
+                  <div className="flex gap-2 mb-3">
+                    <Input
+                      autoComplete="off"
+                      value={bimElementId}
+                      onChange={(e) => setBimElementId(e.target.value)}
+                      placeholder="element-id"
+                    />
+                    <Button onClick={handleGetCachedElement} disabled={loading} variant="outline">
+                      {loading ? (
+                        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <FileSearch aria-hidden="true" className="h-4 w-4" />
+                      )}
+                      Fetch
+                    </Button>
+                  </div>
+                  {bimCachedResult !== null && (
+                    <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                      <span className="text-xs text-muted-foreground block mb-1">Result:</span>
+                      <pre className="text-xs font-mono whitespace-pre-wrap break-all text-foreground max-h-48 overflow-auto">
+                        {JSON.stringify(bimCachedResult, null, 2)}
+                      </pre>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Layers aria-hidden="true" className="h-4 w-4 text-primary" />
-                    Store Embeddings
-                  </CardTitle>
-                  <CardDescription>Store BIM element embeddings in Qdrant for vector search</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground">
-                    POST /multi-db/bim/store-embeddings — Stores vector embeddings for BIM elements in Qdrant for similarity search.
-                  </p>
-                </CardContent>
-              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Search aria-hidden="true" className="h-4 w-4 text-primary" />
                     Find Similar Elements
                   </CardTitle>
-                  <CardDescription>Find similar BIM elements using vector similarity search</CardDescription>
+                  <CardDescription>Search for similar BIM elements using vector similarity</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-xs text-muted-foreground">
-                    POST /multi-db/bim/find-similar — Searches for similar BIM elements using Qdrant vector similarity.
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Share2 aria-hidden="true" className="h-4 w-4 text-primary" />
-                    Create Relationships
-                  </CardTitle>
-                  <CardDescription>Create relationships between BIM elements in Neo4j</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground">
-                    POST /multi-db/bim/create-relationships — Creates graph relationships between BIM elements in Neo4j.
-                  </p>
+                  <div className="flex gap-2 mb-3">
+                    <Input
+                      autoComplete="off"
+                      value={bimElementId}
+                      onChange={(e) => setBimElementId(e.target.value)}
+                      placeholder="element-id"
+                      className="flex-1"
+                    />
+                    <Input
+                      autoComplete="off"
+                      type="number"
+                      value={bimTopK}
+                      onChange={(e) => setBimTopK(Number(e.target.value))}
+                      placeholder="top_k"
+                      className="w-20"
+                    />
+                    <Button onClick={handleFindSimilar} disabled={loading} variant="outline">
+                      {loading ? (
+                        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search aria-hidden="true" className="h-4 w-4" />
+                      )}
+                      Search
+                    </Button>
+                  </div>
+                  {bimSimilarResults !== null && (
+                    <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                      <span className="text-xs text-muted-foreground block mb-1">
+                        Results ({bimSimilarResults.length})
+                      </span>
+                      <pre className="text-xs font-mono whitespace-pre-wrap break-all text-foreground max-h-48 overflow-auto">
+                        {JSON.stringify(bimSimilarResults, null, 2)}
+                      </pre>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

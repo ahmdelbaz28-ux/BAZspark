@@ -126,6 +126,7 @@ const navItems: NavItem[] = [
                 defaultLabel: "Marine",
                 icon: Ship,
                 path: "/marine",
+                dataOnboarding: "nav-marine",
         },
         {
                 labelKey: "nav.mining",
@@ -146,6 +147,7 @@ const navItems: NavItem[] = [
                 defaultLabel: "AutoCAD",
                 icon: PencilRuler,
                 path: "/autocad",
+                dataOnboarding: "nav-autocad",
         },
         {
                 labelKey: "nav.autocadDraw",
@@ -158,6 +160,7 @@ const navItems: NavItem[] = [
                 defaultLabel: "Revit",
                 icon: Building2,
                 path: "/revit",
+                dataOnboarding: "nav-revit",
         },
         {
                 labelKey: "nav.revitCreate",
@@ -215,6 +218,7 @@ const navItems: NavItem[] = [
                 defaultLabel: "ETAP",
                 icon: Server,
                 path: "/etap",
+                dataOnboarding: "nav-etap",
         },
         {
                 labelKey: "nav.environment",
@@ -260,18 +264,21 @@ const navItems: NavItem[] = [
                 defaultLabel: "Workflows",
                 icon: WorkflowIcon,
                 path: "/workflow",
+                dataOnboarding: "nav-workflow",
         },
         {
                 labelKey: "nav.elements",
                 defaultLabel: "Elements",
                 icon: Layers,
                 path: "/elements",
+                dataOnboarding: "nav-elements",
         },
         {
                 labelKey: "nav.connections",
                 defaultLabel: "Connections",
                 icon: Cable,
                 path: "/connections",
+                dataOnboarding: "nav-connections",
         },
         {
                 labelKey: "nav.conflicts",

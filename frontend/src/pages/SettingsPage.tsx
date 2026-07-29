@@ -43,23 +43,56 @@ export function SettingsPage() {
 
         const [activeTab, setActiveTab] = useState("general");
 
-        // General settings
-        const [theme, setTheme] = useState("dark");
-        const [language, setLanguage] = useState("en");
-        const [notifications, setNotifications] = useState(true);
+        // Load saved settings from localStorage on mount
+        const loadSettings = useCallback((key: string): Record<string, unknown> => {
+                try {
+                        const raw = localStorage.getItem(`fireai_settings_${key}`);
+                        return raw ? JSON.parse(raw) : {};
+                } catch {
+                        return {};
+                }
+        }, []);
 
-        // Security settings
-        const [twoFactorAuth, setTwoFactorAuth] = useState(false);
-        const [passwordExpiry, setPasswordExpiry] = useState(90);
+        // General settings — initialize from localStorage if available
+        const [theme, setTheme] = useState(() => {
+                const saved = loadSettings("general");
+                return (saved.theme as string) || "dark";
+        });
+        const [language, setLanguage] = useState(() => {
+                const saved = loadSettings("general");
+                return (saved.language as string) || "en";
+        });
+        const [notifications, setNotifications] = useState(() => {
+                const saved = loadSettings("general");
+                return (saved.notifications as boolean) ?? true;
+        });
 
-        // API settings
-        const [apiTimeout, setApiTimeout] = useState(30);
-        const [retryAttempts, setRetryAttempts] = useState(3);
+        // Security settings — twoFactorAuth and passwordExpiry removed per V290 audit fix.
+        // The Security tab now shows a "coming soon" notice instead of deceptive non-functional toggles.
 
-        // Report settings
-        const [autoSaveReports, setAutoSaveReports] = useState(true);
-        const [reportFormat, setReportFormat] = useState("pdf");
-        const [reportQuality, setReportQuality] = useState("high");
+        // API settings — initialize from localStorage if available
+        const [apiTimeout, setApiTimeout] = useState(() => {
+                const saved = loadSettings("api");
+                return (saved.apiTimeout as number) ?? 30;
+        });
+        const [retryAttempts, setRetryAttempts] = useState(() => {
+                const saved = loadSettings("api");
+                return (saved.retryAttempts as number) ?? 3;
+        });
+
+        // Report settings — initialize from localStorage if available
+        const [autoSaveReports, setAutoSaveReports] = useState(() => {
+                const saved = loadSettings("reports");
+                return (saved.autoSaveReports as boolean) ?? true;
+        });
+        const [reportFormat, setReportFormat] = useState(() => {
+                const saved = loadSettings("reports");
+                return (saved.reportFormat as string) || "pdf";
+        });
+        const [reportQuality, setReportQuality] = useState(() => {
+                const saved = loadSettings("reports");
+                return (saved.reportQuality as string) || "high";
+        });
 
         // Feature flags
         const FEATURE_FLAG_DEFINITIONS = [
@@ -151,7 +184,10 @@ export function SettingsPage() {
         };
 
         const handleSaveSecurity = () => {
-                persistSettings("security", { twoFactorAuth, passwordExpiry });
+                // V290: No-op — security settings are coming soon (backend enforcement not implemented).
+                // The "Save" button is kept for UX consistency but does nothing.
+                setSaveStatus("saved");
+                setTimeout(() => setSaveStatus(null), 2000);
         };
 
         const handleSaveApi = () => {
@@ -438,48 +474,16 @@ export function SettingsPage() {
                                                                 </CardDescription>
                                                         </CardHeader>
                                                         <CardContent className="space-y-4">
-                                                                <div className="flex items-center justify-between py-3">
-                                                                        <div>
-                                                                                <Label className="text-foreground/90">
-                                                                                        {t("settings.twoFactorAuth")}
-                                                                                        <span className="ml-2 text-xs text-amber-500">(Coming Soon)</span>
-                                                                                </Label>
-                                                                                <p className="text-xs text-muted-foreground mt-1">
-                                                                                        {t("settings.twoFactorAuthDescription")}
-                                                                                </p>
-                                                                                <p className="text-xs text-amber-500 mt-1">
-                                                                                        This feature is not yet functional — enabling it has no effect until backend support is implemented.
-                                                                                </p>
+                                                                <div className="rounded-md border border-blue-500/30 bg-blue-500/10 p-4">
+                                                                        <div className="flex items-center gap-3">
+                                                                                <Shield aria-hidden="true" className="h-8 w-8 text-blue-400" />
+                                                                                <div>
+                                                                                        <h3 className="text-sm font-medium text-foreground">Security settings coming soon</h3>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">
+                                                                                                Two-factor authentication and password expiry policies will be available once backend enforcement is implemented. Contact your administrator for current security settings.
+                                                                                        </p>
+                                                                                </div>
                                                                         </div>
-                                                                        {/* V253: 2FA toggle is disabled until backend enforcement
-                                                                            is implemented. Currently only persists to localStorage
-                                                                            with no server-side verification. */}
-                                                                        <Switch
-                                                                                checked={twoFactorAuth}
-                                                                                onCheckedChange={setTwoFactorAuth}
-                                                                                disabled
-                                                                                className="data-[state=checked]:bg-danger opacity-50 cursor-not-allowed"
-                                                                        />
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                        <Label className="text-foreground/90">
-                                                                                {t("settings.passwordExpiry")}
-                                                                        </Label>
-                                                                        <Input
-                                                                                type="number"
-                                                                                value={passwordExpiry}
-                                                                                onChange={(e) =>
-                                                                                        setPasswordExpiry(Number.parseInt(e.target.value, 10))
-                                                                                }
-                                                                                className="bg-card border-border text-foreground opacity-50 cursor-not-allowed"
-                                                                                disabled
-                                                                        />
-                                                                        <p className="text-xs text-muted-foreground">
-                                                                                {t("settings.passwordExpiryDescription")}
-                                                                        </p>
-                                                                        <p className="text-xs text-amber-500 mt-1">
-                                                                                This feature is not yet functional — no backend enforcement exists. Setting saved to localStorage only.
-                                                                        </p>
                                                                 </div>
                                                                                 <div className="pt-4">
                                                                                         <Button
