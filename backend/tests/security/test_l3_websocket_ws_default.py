@@ -464,9 +464,10 @@ def test_l3_runtime_wss_default_does_not_raise():
         # If we got a result, it should be an error dict (connection
         # failed), NOT a successful response (we didn't actually
         # connect to anything).
-        assert isinstance(result, dict), (
-            f"Expected dict result, got {type(result).__name__}: {result}"
-        )
+        if not isinstance(result, dict):
+            pytest.fail(
+                f"Expected dict result, got {type(result).__name__}: {result}"
+            )
     except ValueError as e:
         if "insecure ws://" in str(e):
             pytest.fail(

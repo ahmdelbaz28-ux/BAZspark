@@ -47,7 +47,11 @@ env:
 jobs:
   sync-to-hf:
     name: Mirror runtime subset to HuggingFace Space
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    # S7631 FIX: Only sync from the canonical repository, not from forks.
+    if: >
+      ${{ github.event.workflow_run.conclusion == 'success'
+         && github.event.workflow_run.head_repository.full_name == github.repository
+         || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout GitHub source

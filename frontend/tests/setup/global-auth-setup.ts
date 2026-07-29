@@ -17,6 +17,9 @@ export const test = base.extend<{ autoAuth: void }>({
 			// Pre-authenticate so tests skip the login screen
 			await installApiMock(page, { preAuthenticated: true });
 		}
+		// NOSONAR — S6440: `use()` here is Playwright's fixture continuation,
+		// not React's `use()` Hook. This is a Playwright test setup file,
+		// not a React component.
 		await use();
 	},
 });
