@@ -110,7 +110,7 @@ export function TopologyPage() {
       toast({
         title: data.added ? "Element added" : "Element may already exist",
         description: `ID: ${elementId}`,
-        variant: data.added ? "default" : "default",
+        variant: "default",
       });
       setElementId("");
       setElementName("");
