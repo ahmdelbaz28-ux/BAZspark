@@ -80,8 +80,8 @@ test("login page renders with correct elements", async ({ page }) => {
         await expect(page.getByLabel(/BAZSPARK logo/i)).toBeVisible({ timeout: 10000 });
         await expect(page.getByText(/ENGINEERING INTELLIGENCE/i)).toBeVisible();
 
-        // 'System Access' heading on the right panel
-        await expect(page.getByRole("heading", { name: /System Access/i })).toBeVisible();
+        // 'Engineering Workspace' heading on the right panel
+        await expect(page.getByRole("heading", { name: /Engineering Workspace/i })).toBeVisible();
 
         // V236: API Key input — use #api-key selector (label text 'API Key' also
         // matches the input's placeholder 'Enter your API key', causing strict mode violation)
