@@ -509,6 +509,7 @@ for _router_name in (
     "analyze",
     "llm",  # V207: AI Copilot (Zenmux OpenAI-compatible LLM service)
     "auth",  # M-3: session-based auth with HttpOnly cookies
+    "settings",  # User settings persistence (apiTimeout, reportFormat, etc.)
 ):
     _safe_include_router(_router_name)
 

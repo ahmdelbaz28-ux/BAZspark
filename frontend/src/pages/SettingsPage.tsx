@@ -307,8 +307,8 @@ export function SettingsPage() {
                                                         aria-atomic="true"
                                                 >
                                                         {healthLoading
-                                                                ? "Checking system status…"
-                                                                : "Current system status and performance metrics"}
+                                                                ? t("settings.checkingStatus")
+                                                                : t("settings.systemStatusDesc")}
                                                 </CardDescription>
                                         </CardHeader>
                                         <CardContent>
@@ -319,7 +319,7 @@ export function SettingsPage() {
                                                                 ) : (
                                                                         <XCircle aria-hidden="true" className="h-5 w-5 text-danger" />
                                                                 )}
-                                                                <span>{connected ? "Connected" : "Disconnected"}</span>
+                                                                <span>{connected ? t("settings.connected") : t("settings.disconnected")}</span>
                                                         </div>
                                                         {health && (
                                                                 <>
