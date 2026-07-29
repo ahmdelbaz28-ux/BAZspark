@@ -444,16 +444,15 @@ class TestSafetyLedger:
         assert len(r1_entries) == 2
         assert all(e.room_id == "R1" for e in r1_entries)
 
-    def test_ledger_requires_secret_key(self, tmp_path):
+    def test_ledger_requires_secret_key(self, tmp_path, monkeypatch):
         """Without secret_key or env var, SafetyLedger must raise."""
         # Temporarily clear env var
-        saved = os.environ.pop("FIREAI_HMAC_SECRET_KEY", None)
+        monkeypatch.delenv("FIREAI_HMAC_SECRET_KEY", raising=False)
         try:
             with pytest.raises(ValueError, match="secret_key"):
                 SafetyLedger(tmp_path / "fail.ledger")
         finally:
-            if saved is not None:
-                os.environ["FIREAI_HMAC_SECRET_KEY"] = saved
+            pass
 
     def test_ledger_uses_env_var_when_no_key_passed(self, tmp_path):
         """FIREAI_HMAC_SECRET_KEY env var must satisfy the secret requirement."""
