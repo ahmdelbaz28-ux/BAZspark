@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>FireAI.RevitAddin</RootNamespace>
+    <AssemblyName>FireAIRevitAddin</AssemblyName>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Version>1.0.0</Version>
+    <Company>FireAI / BAZSPARK</Company>
+    <Product>FireAI Revit Add-in</Product>
+    <Description>
+      Thread-safe Revit add-in for FireAI / BAZSPARK.
+      Consumes model update actions from the Python MCP server via named pipe
+      and executes them on the Revit UI thread via IExternalEventHandler.
+    </Description>
+    <Copyright>Copyright (c) 2026 FireAI Engineering</Copyright>
+  </PropertyGroup>
+
+  <!-- Revit API references — these DLLs ship with Revit (not on NuGet).
+       Update the HintPath to match your Revit installation, e.g.:
+         C:\Program Files\Autodesk\Revit 2024\RevitAPI.dll
+         C:\Program Files\Autodesk\Revit 2024\RevitAPIUI.dll
+  -->
+  <ItemGroup>
+    <Reference Include="RevitAPI">
+      <HintPath>C:\Program Files\Autodesk\Revit 2024\RevitAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>C:\Program Files\Autodesk\Revit 2024\RevitAPIUI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Named pipe support is built into .NET (System.IO.Pipes) -->
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <!-- Source files -->
+  <ItemGroup>
+    <Compile Include="ThreadSafeQueueHandler.cs" />
+    <Compile Include="NamedPipeServer.cs" />
+    <Compile Include="FireAIApplication.cs" />
+    <Compile Include="FireAIStatusCommand.cs" />
+  </ItemGroup>
+
+  <!-- Build output: copy .dll + .addin to Revit Addins folder on build.
+       The .addin file registers the add-in with Revit on startup. -->
+  <Target Name="CopyToRevitAddins" AfterTargets="Build">
+    <PropertyGroup>
+      <RevitAddinsFolder>$(APPDATA)\Autodesk\Revit\Addins\2024</RevitAddinsFolder>
+    </PropertyGroup>
+    <Copy SourceFiles="$(OutputPath)FireAIRevitAddin.dll"
+          DestinationFolder="$(RevitAddinsFolder)\FireAI"
+          Condition="Exists('$(RevitAddinsFolder)')" />
+    <Copy SourceFiles="FireAIRevitAddin.addin"
+          DestinationFolder="$(RevitAddinsFolder)"
+          Condition="Exists('$(RevitAddinsFolder)')" />
+  </Target>
+
+</Project>

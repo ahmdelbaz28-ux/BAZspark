@@ -1,0 +1,140 @@
+name: Auto-merge Dependabot PRs
+
+# Auto-merge is restricted to DEV dependencies only.
+# Safety-critical production packages require manual review.
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: read
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Check if dependency is safe to auto-merge
+        id: check-safe
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const title = pr.title || '';
+            const headRef = pr.head.ref || '';
+
+            const CRITICAL_PACKAGES = [
+              'fastapi', 'starlette', 'uvicorn', 'gunicorn',
+              'cryptography', 'pyjwt', 'passlib', 'bcrypt',
+              'pydantic', 'pydantic-settings', 'sqlalchemy', 'alembic',
+              'aiohttp', 'requests', 'httpx', 'websockets', 'asyncpg',
+              'numpy', 'scipy', 'shapely',
+              'python-multipart', 'pillow', 'lxml',
+              'redis', 'celery', 'kombu',
+              'langgraph', 'langgraph-checkpoint-sqlite',
+              'react', 'react-dom', 'react-router-dom', 'vite',
+              'typescript', '@vitejs/plugin-react',
+            ];
+
+            let packageName = '';
+            const titleMatch = title.match(/bump\s+([^\s]+)/i);
+            if (titleMatch) {
+              packageName = titleMatch[1].replace(/[^a-zA-Z0-9@/_-]/g, '');
+            }
+            if (!packageName) {
+              const branchMatch = headRef.match(/dependabot\/[^/]+\/(?:frontend\/)?([^/-]+)/);
+              if (branchMatch) packageName = branchMatch[1];
+            }
+
+            const pkgLower = packageName.toLowerCase();
+            const isCritical = CRITICAL_PACKAGES.some(p =>
+              pkgLower === p || pkgLower === p.replace('/', '-') || pkgLower.endsWith('/' + p)
+            );
+
+            console.log(`PR title: ${title}`);
+            console.log(`Package: ${packageName}`);
+            console.log(`Is critical: ${isCritical}`);
+
+            core.setOutput('package', packageName);
+            core.setOutput('is_critical', isCritical.toString());
+            core.setOutput('safe', isCritical ? 'false' : 'true');
+
+      - name: Wait for status checks (with timeout protection)
+        id: wait-for-status-checks
+        if: steps.check-safe.outputs.safe == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        with:
+          script: |
+            const ref = context.payload.pull_request.head.sha;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Wait up to 10 minutes (reduced from 30 to prevent timeout failures)
+            const timeout = 10 * 60 * 1000;
+            const start = Date.now();
+            let attempts = 0;
+
+            while (Date.now() - start < timeout) {
+              attempts++;
+              try {
+                const { data: statuses } = await github.rest.repos.listCommitStatuses({
+                  owner, repo, ref
+                });
+
+                const { data: checkRuns } = await github.rest.checks.listForRef({
+                  owner, repo, ref
+                });
+
+                const pendingStatuses = statuses.filter(s => s.state === 'pending');
+                const pendingChecks = checkRuns.check_runs.filter(c =>
+                  c.status !== 'completed' && c.name !== 'auto-merge'
+                );
+
+                console.log(`Attempt ${attempts}: ${pendingStatuses.length} pending statuses, ${pendingChecks.length} pending checks`);
+
+                if (pendingStatuses.length === 0 && pendingChecks.length === 0) {
+                  const allStatusesOk = statuses.length === 0 || statuses.every(s => s.state === 'success');
+                  const allChecksOk = checkRuns.check_runs.length === 0 ||
+                    checkRuns.check_runs.every(c => c.status !== 'completed' || c.conclusion === 'success' || c.conclusion === 'skipped' || c.conclusion === 'neutral');
+
+                  if (allStatusesOk && allChecksOk) {
+                    core.setOutput('ready', 'true');
+                    console.log('All checks passed — ready to merge');
+                    return;
+                  } else {
+                    console.log('Some checks failed — skipping auto-merge');
+                    core.setOutput('ready', 'false');
+                    return;
+                  }
+                }
+              } catch (err) {
+                console.log(`Error checking status: ${err.message}`);
+              }
+
+              await new Promise(resolve => setTimeout(resolve, 15000));
+            }
+
+            // Timeout — DO NOT auto-merge without CI greenlight (security)
+            console.log('Timeout reached — CI checks did not complete, skipping auto-merge');
+            core.setOutput('ready', 'false');
+
+      - name: Enable auto-merge (dev deps only)
+        if: steps.check-safe.outputs.safe == 'true' && steps.wait-for-status-checks.outputs.ready == 'true'
+        run: |
+          echo "Auto-merging dev dependency: ${{ steps.check-safe.outputs.package }}"
+          gh pr merge --auto --squash "${{ github.event.pull_request.number }}" || \
+          echo "::warning::Auto-merge not available - PR may need manual merge"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip auto-merge (critical dep)
+        if: steps.check-safe.outputs.is_critical == 'true'
+        run: |
+          echo "::notice::Auto-merge skipped for critical package: ${{ steps.check-safe.outputs.package }}"
+          echo "This PR requires manual review."

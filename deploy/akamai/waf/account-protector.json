@@ -1,0 +1,92 @@
+{
+  "_comment": "Akamai Account Protector — credential stuffing + account takeover (ATO) protection for /api/v1/auth/*. Uses Akamai's ML model trained on billions of auth events. See docs/AKAMAI_DEPLOYMENT_GUIDE.md.",
+  "configName": "BAZSPARK-ACCOUNT-PROTECTOR",
+  "protectedEndpoints": [
+    {
+      "path": "/api/v1/auth/login",
+      "type": "LOGIN",
+      "policy": "STRICT"
+    },
+    {
+      "path": "/api/v1/auth/reset-password",
+      "type": "PASSWORD_RESET",
+      "policy": "STRICT"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "type": "TOKEN_REFRESH",
+      "policy": "MODERATE"
+    },
+    {
+      "path": "/api/v1/admin/api-keys",
+      "type": "API_KEY_GENERATION",
+      "policy": "STRICT"
+    }
+  ],
+  "detectionRules": [
+    {
+      "name": "Credential stuffing attack",
+      "signals": [
+        "MORE_THAN_20_DISTINCT_USERNAMES_FROM_SAME_IP_IN_5MIN",
+        "MORE_THAN_50_TOTAL_LOGIN_ATTEMPTS_FROM_SAME_IP_IN_5MIN",
+        "SUCCESSFUL_LOGIN_FOLLOWED_BY_IMMEDIATE_SENSITIVE_ACTION"
+      ],
+      "threshold": 2,
+      "action": "BLOCK_IP_FOR_1H_AND_REQUIRE_CAPTCHA",
+      "comments": "Require 2 out of 3 signals to fire to reduce false positives."
+    },
+    {
+      "name": "Brute force single account",
+      "signals": [
+        "MORE_THAN_10_FAILED_LOGINS_FOR_SAME_USERNAME_IN_5MIN",
+        "FAILED_LOGINS_FROM_MULTIPLE_IPS_FOR_SAME_USERNAME"
+      ],
+      "threshold": 1,
+      "action": "LOCK_ACCOUNT_30MIN_AND_NOTIFY_USER",
+      "comments": "Account lockout must be coordinated with backend/session_secret.py."
+    },
+    {
+      "name": "Account takeover (ATO) indicators",
+      "signals": [
+        "LOGIN_FROM_NEW_GEOLOCATION_500KM_FROM_PREVIOUS",
+        "LOGIN_FROM_NEW_DEVICE_FINGERPRINT",
+        "PASSWORD_CHANGE_FOLLOWED_BY_EMAIL_CHANGE",
+        "API_KEY_GENERATION_IMMEDIATELY_AFTER_LOGIN"
+      ],
+      "threshold": 2,
+      "action": "REQUIRE_STEP_UP_AUTHENTICATION",
+      "comments": "Require 2FA / email verification before sensitive action."
+    },
+    {
+      "name": "Credential dump detection (newly compromised credentials)",
+      "signals": [
+        "USERNAME_FOUND_IN_KNOWN_DATA_BREACH",
+        "PASSWORD_MATCHES_KNOWN_BREACH_PASSWORD"
+      ],
+      "threshold": 1,
+      "action": "FORCE_PASSWORD_RESET_AND_NOTIFY_USER",
+      "comments": "Akamai integrates with HaveIBeenPwned to detect compromised credentials."
+    }
+  ],
+  "headerInjection": {
+    "headers": [
+      {
+        "name": "Akamai-Account-Risk-Score",
+        "value": "${account_risk_score}",
+        "comments": "0-100 risk score for this login attempt — backend can use for adaptive auth."
+      },
+      {
+        "name": "Akamai-Account-Action",
+        "value": "${account_action}",
+        "comments": "ALLOW / CHALLENGE / BLOCK — backend can act on this instead of Akamai blocking."
+      }
+    ]
+  },
+  "notifications": {
+    "webhook": "${AKAMAI_ALERT_WEBHOOK_URL}",
+    "events": ["CREDENTIAL_STUFFING_DETECTED", "ATO_DETECTED", "ACCOUNT_LOCKED", "BRUTE_FORCE_DETECTED"],
+    "format": "JSON",
+    "retry": {"count": 3, "backoff": "exponential"},
+    "comments": "Webhook receives JSON alerts — point to backend endpoint like /api/v1/admin/security/alerts."
+  }
+}

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="BAZSPARK Digital Twin — Safety-Critical Fire Alarm Engineering Platform" />
+    <meta name="theme-color" content="#070b12" />
+
+    <!-- Favicon set for all platforms -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- V242: Vite automatically injects modulepreload links for the entry
+         chunk and its direct dependencies at build time. We don't add manual
+         preload links here because the chunk hashes change on every build —
+         hardcoding them would cause 404s. Vite's buildModulePreload config
+         handles this correctly. -->
+
+    <!-- H-01 FIX: Critical CSS extracted to /critical.css for CSP compliance.
+         External stylesheet (loaded via <link>) is allowed by style-src 'self'
+         without requiring 'unsafe-inline'. React inline style={{...}} props
+         are handled by style-src-attr 'unsafe-inline' separately. -->
+    <link rel="stylesheet" href="/critical.css" />
+
+    <!-- Inter font — loaded async for progressive enhancement (non-blocking).
+         V242: Uses preload + a tiny inline <script> (allowed by CSP because
+         script-src 'self' covers <script> tags without inline JS — this
+         snippet has no inline handler, just a defer-loaded module that
+         swaps the stylesheet media). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      media="print"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      />
+    </noscript>
+
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="" />
+
+<!-- H-01 FIX: Removed 'unsafe-inline' from style-src.
+          - style-src 'self' covers /critical.css (external stylesheet)
+            and Vite's hashed CSS chunks.
+          - style-src-attr 'unsafe-inline' covers React style={{...}}
+            props (this is CSP Level 3 — only style ATTRIBUTES, not
+            arbitrary <style> elements).
+          - https://fonts.googleapis.com is needed for the Inter font
+            progressive enhancement loaded via <link> above.
+     -->
+     <meta http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+    script-src 'self';
+    style-src 'self' https://fonts.googleapis.com;
+    style-src-attr 'unsafe-inline';
+    img-src 'self' data: blob:;
+    font-src 'self' data: https://fonts.gstatic.com;
+    connect-src 'self' http://localhost:8000 ws://localhost:* http://127.0.0.1:8000 https://ahmdelbaz28-bazspark.hf.space https://revit-rust.vercel.app __CSP_CONNECT_SRC__;
+    base-uri 'self';
+    form-action 'self';" />
+
+    <!-- Security: Prevent MIME-type sniffing -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+
+    <!-- Security: Control referrer information -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- Security: Disable unnecessary browser features -->
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
+
+    <title>BAZSPARK Digital Twin</title>
+  </head>
+  <body>
+    <noscript>
+      <div style="text-align:center;padding:2rem;color:#e8f0fe;background:#070b12;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+        <h1 style="font-size:1.5rem;margin-bottom:1rem;">BAZSPARK requires JavaScript</h1>
+        <p style="color:#94a3b8;">Please enable JavaScript in your browser settings to use this application.</p>
+      </div>
+    </noscript>
+    <div id="root">
+      <div class="app-loader">
+        <div class="app-loader-spinner"></div>
+        <div class="app-loader-text">Loading BAZSPARK Digital Twin…</div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

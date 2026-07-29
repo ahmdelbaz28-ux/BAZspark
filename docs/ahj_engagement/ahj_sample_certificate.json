@@ -1,0 +1,49 @@
+{
+  "room_id": "AHJ_SAMPLE_001",
+  "room_width_m": 10.0,
+  "room_length_m": 10.0,
+  "room_ceiling_height_m": 3.0,
+  "room_area_sqm": 100.0,
+  "n_detectors": 4,
+  "detector_positions": [
+    [
+      2.5,
+      2.5
+    ],
+    [
+      7.5,
+      2.5
+    ],
+    [
+      2.5,
+      7.5
+    ],
+    [
+      7.5,
+      7.5
+    ]
+  ],
+  "detector_type": "smoke",
+  "detector_radius_m": 6.37,
+  "proof_method": "delta_conservative_grid",
+  "grid_step_m": 0.2,
+  "delta_margin_m": 0.1414,
+  "effective_radius_m": 6.2286,
+  "max_spacing_m": 9.1,
+  "wall_min_m": 0.1,
+  "n_grid_points": 2704,
+  "n_covered": 2704,
+  "n_uncovered": 0,
+  "coverage_guaranteed": true,
+  "coverage_lower_bound_pct": 100.0,
+  "uncovered_area_upper_bound_sqm": 0.0,
+  "nfpa_compliant": true,
+  "wall_coverage_complete": true,
+  "spacing_compliant": true,
+  "nfpa_reference": "NFPA 72-2022 Table 17.6.3.1.1",
+  "proof_hash": "e844fadfaf8661a7898660407483e66ae2fada538c9c359ce8a48d2235e44406",
+  "timestamp": "2026-07-08T09:16:49.241833+00:00",
+  "fireai_version": "1.0.0",
+  "certificate_version": "1.0",
+  "warnings": []
+}

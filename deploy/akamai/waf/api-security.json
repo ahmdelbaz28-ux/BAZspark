@@ -1,0 +1,141 @@
+{
+  "_comment": "Akamai API Security configuration — schema-based protection for BAZSPARK's 30+ API routers. Upload the OpenAPI spec (from /api/v1/openapi.json) and Akamai auto-discovers endpoints + enforces schema conformance. See docs/AKAMAI_DEPLOYMENT_GUIDE.md.",
+  "configName": "BAZSPARK-API-SECURITY",
+  "openApiSpecSource": "/api/v1/openapi.json",
+  "discoveryMode": "AUTO_DISCOVER_AND_ENFORCE",
+  "endpoints": [
+    {
+      "path": "/api/v1/auth/login",
+      "method": "POST",
+      "schema": {
+        "body": {
+          "type": "object",
+          "required": ["api_key"],
+          "properties": {
+            "api_key": {"type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[a-fA-F0-9]{64}$"},
+            "user_email": {"type": "string", "format": "email"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "rateLimit": {
+        "perIp": "10/minute",
+        "perUser": "5/minute"
+      },
+      "protections": [
+        "BLOCK_IF_BODY_DOES_NOT_MATCH_SCHEMA",
+        "BLOCK_IF_API_KEY_IN_QUERY_STRING",
+        "BLOCK_IF_API_KEY_IN_URL_PATH",
+        "REQUIRE_HTTPS"
+      ]
+    },
+    {
+      "path": "/api/v1/projects",
+      "method": "GET",
+      "rateLimit": {
+        "perIp": "60/minute",
+        "perUser": "60/minute"
+      },
+      "protections": ["REQUIRE_API_KEY", "REQUIRE_HTTPS"]
+    },
+    {
+      "path": "/api/v1/projects",
+      "method": "POST",
+      "schema": {
+        "body": {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": {"type": "string", "minLength": 1, "maxLength": 200},
+            "description": {"type": "string", "maxLength": 5000},
+            "author": {"type": "string", "maxLength": 100}
+          },
+          "additionalProperties": false
+        }
+      },
+      "rateLimit": {"perUser": "20/minute"},
+      "protections": ["BLOCK_IF_BODY_DOES_NOT_MATCH_SCHEMA", "REQUIRE_API_KEY", "REQUIRE_HTTPS"]
+    },
+    {
+      "path": "/api/v1/qomn/*",
+      "method": "POST",
+      "_comment": "NFPA 72 engineering calculation endpoints — strict schema validation required for safety.",
+      "rateLimit": {"perUser": "30/minute"},
+      "protections": [
+        "BLOCK_IF_BODY_DOES_NOT_MATCH_SCHEMA",
+        "REQUIRE_API_KEY",
+        "REQUIRE_HTTPS",
+        "LOG_ENGINEERING_CALCULATION_FOR_AUDIT_TRAIL"
+      ],
+      "comments": "Engineering calculations are auditable events per NFPA 72 §14.2.4 — must log to immutable audit trail."
+    },
+    {
+      "path": "/api/v1/marine/*",
+      "method": "POST",
+      "_comment": "SOLAS / IMO ship design pipeline — same audit requirements as qomn.",
+      "rateLimit": {"perUser": "20/minute"},
+      "protections": [
+        "BLOCK_IF_BODY_DOES_NOT_MATCH_SCHEMA",
+        "REQUIRE_API_KEY",
+        "REQUIRE_HTTPS",
+        "LOG_ENGINEERING_CALCULATION_FOR_AUDIT_TRAIL"
+      ]
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/reports/*",
+      "method": "GET",
+      "_comment": "Report generation (PDF/DXF/Excel) — large responses, allow long TTL.",
+      "rateLimit": {"perUser": "30/minute"},
+      "responseTimeout": "5m",
+      "protections": ["REQUIRE_API_KEY", "REQUIRE_HTTPS", "ALLOW_LARGE_RESPONSE"]
+    },
+    {
+      "path": "/api/v1/environment/*",
+      "method": "GET",
+      "_comment": "Weather/geocode/hazmat endpoints — public data, allow higher rate.",
+      "rateLimit": {"perUser": "120/minute"},
+      "protections": ["REQUIRE_API_KEY", "REQUIRE_HTTPS"]
+    },
+    {
+      "path": "/api/v1/admin/*",
+      "method": "*",
+      "_comment": "Admin endpoints — require admin role + IP allowlist.",
+      "rateLimit": {"perUser": "30/minute"},
+      "protections": [
+        "REQUIRE_API_KEY",
+        "REQUIRE_HTTPS",
+        "REQUIRE_ADMIN_ROLE",
+        "IP_ALLOWLIST_OPTIONAL"
+      ],
+      "ipAllowlist": "${AKAMAI_ADMIN_IP_ALLOWLIST}",
+      "comments": "If env var set, only listed IPs can access admin endpoints."
+    }
+  ],
+  "globalProtections": [
+    {
+      "name": "Block API key in URL",
+      "description": "Never allow X-API-Key as a query parameter — only header.",
+      "condition": "url.query contains \"api_key=\" OR url.query contains \"apikey=\" OR url.query contains \"X-API-Key=\"",
+      "action": "DENY",
+      "comments": "API keys in URLs leak into server logs, browser history, and Referer headers."
+    },
+    {
+      "name": "Require HTTPS",
+      "description": "All API requests must use HTTPS.",
+      "condition": "request.protocol equals \"HTTP\"",
+      "action": "REDIRECT_TO_HTTPS"
+    },
+    {
+      "name": "Block path traversal",
+      "description": "Block ../ and ..\\ in URL paths.",
+      "condition": "url.path contains \"../\" OR url.path contains \"..\\\\\"",
+      "action": "DENY"
+    },
+    {
+      "name": "Block null bytes in URL",
+      "description": "Null byte injection attack.",
+      "condition": "url.path contains \"%00\" OR url.path contains \"\\x00\"",
+      "action": "DENY"
+    }
+  ]
+}

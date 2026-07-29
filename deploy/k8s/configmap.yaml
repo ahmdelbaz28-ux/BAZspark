@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fireai-config
+  namespace: fireai
+  labels:
+    app.kubernetes.io/name: fireai
+    app.kubernetes.io/part-of: fireai
+data:
+  FIREAI_ENV: "production"
+  LOG_LEVEL: "WARNING"
+  FIREAI_MEMORY_LLM_PROVIDER: "gemini"
+  FIREAI_MEMORY_LLM_MODEL: "gemini-2.0-flash"
+  # V248 FIX: DATABASE_URL and REDIS_URL are now in secret.yaml (not ConfigMap)
+  # to avoid leaking passwords via `kubectl describe pod`. The full URLs with
+  # credentials are assembled at runtime from the individual DB_HOST, DB_PORT,
+  # DB_NAME, DB_USER (ConfigMap) and DB_PASSWORD (Secret) env vars.
+  WORKER_MODE: "default"
+  API_HOST: "0.0.0.0"
+  API_PORT: "8000"
+  API_WORKERS: "4"
+  # V248 FIX: Correct env var name — backend reads CORS_ALLOWED_ORIGINS
+  # (was CORS_ORIGINS, which the backend ignores → CORS check skipped in prod)
+  CORS_ALLOWED_ORIGINS: "https://fireai.example.com"
+  DB_HOST: "fireai-db"
+  DB_PORT: "5432"
+  DB_NAME: "fireai"
+  DB_USER: "fireai"
+  REDIS_HOST: "fireai-redis"
+  REDIS_PORT: "6379"
+  TZ: "UTC"

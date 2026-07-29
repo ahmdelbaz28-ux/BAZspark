@@ -1,0 +1,84 @@
+# Vercel ignore file - only deploy the frontend
+# This dramatically reduces checkout time and fixes "Resource provisioning failed"
+
+# Backend (runs on HuggingFace Space, not Vercel)
+backend/
+fireai/
+marine/
+qomn_fire/
+qomn_conduit/
+facp_distributed/
+facp_system/
+parsers/
+integration/
+revit_data/
+revit_samples/
+
+# Python files (not needed for Vite static build)
+*.py
+*.pyc
+__pycache__/
+pyproject.toml
+requirements.txt
+requirements-optional.txt
+requirements_multi_db.txt
+
+# Tests
+tests/
+frontend/tests/
+
+# Documentation (not needed for deployment)
+docs/
+*.md
+!frontend/README.md
+
+# Scripts
+scripts/
+deploy/
+*.sh
+*.bat
+
+# Reports and coverage
+reports/
+coverage.json
+*.coverage
+.coverage*
+
+# IDE and misc
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Skills (internal tools, not part of deployment)
+skills/
+
+# Todo app (separate project)
+todo-app/
+
+# Templates
+templates/
+
+# Nginx/Traefik (not used on Vercel)
+nginx/
+traefik/
+
+# Services (root-level Docker services, not used on Vercel)
+# NOTE: leading slash ensures we only ignore the top-level /services/ directory,
+# NOT frontend/src/services/ which contains the frontend API client modules.
+/services/
+
+# Test helpers
+frontend/src/test/
+
+# Vite cache
+frontend/node_modules/.vite/
+
+# Large data files
+*.dxf
+*.ifc
+*.rvt
+
+# Electron (not needed for Vercel)
+frontend/electron/
+frontend/release/

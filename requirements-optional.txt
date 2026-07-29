@@ -1,0 +1,54 @@
+# Optional dependencies for FACP distributed system and integration modules
+# Install with: pip install -r requirements-optional.txt
+# Or use the extras: pip install -e ".[facp,parsing,dev]"
+
+# V140 FIX: aiohttp + nats-py are MANDATORY if importing facp_distributed.transport
+# The transport layer does `import aiohttp` at module top-level. Without it,
+# `import fireai.bridges.enterprise_pipeline` (which transitively touches
+# facp_distributed) crashes the entire process.
+aiohttp>=3.8.0,<4.0.0
+nats-py>=2.0.0,<3.0.0
+
+# FACP Distributed System — Redis-backed event bus and task queue
+# V263 FIX: Added upper bound + hiredis for consistency with main requirements.txt
+redis[hiredis]>=4.5.0,<5.0.0
+celery>=5.1.0
+asyncio-mqtt>=0.10.0
+
+# Observability (fireai.infrastructure.metrics imports prometheus_client)
+prometheus_client>=0.16.0,<1.0.0
+
+# Load testing (dev)
+locust>=2.45.0  # V265: bump lower bound (PR #150)
+
+# HTTP test client (required by backend/tests/conftest.py)
+httpx>=0.24.0,<1.0.0
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V214: DWG file conversion — system binaries (NOT pip packages)
+# ═══════════════════════════════════════════════════════════════════════════
+# The dwg_converter.py module (qomn_fire/parsers/dwg_converter.py) tries
+# these binaries in order to convert DWG→DXF without requiring AutoCAD:
+#
+#   1. dwg2dxf       — LibreDWG (open source, Linux/Mac/Windows)
+#   2. ODAFileConverter — ODA SDK (freeware, Windows/Linux)
+#   3. oda_file_converter — ODA SDK alternate name
+#
+# These are SYSTEM BINARIES, not pip packages. They cannot be installed
+# via pip. Install them via:
+#
+#   Linux (Debian/Ubuntu):
+#     sudo apt-get install -y libredwg-tools
+#   macOS (Homebrew):
+#     brew install libredwg
+#   Windows:
+#     See scripts/install_dwg_converter_windows.ps1
+#   Docker:
+#     The Dockerfile (V214) installs libredwg-tools automatically.
+#
+# If none are available, dwg_converter.py falls back to a mock that writes
+# a structurally-valid but entity-empty DXF file (with an explicit
+# "dwg2dxf not installed" warning in the output).
+#
+# To verify installation:  dwg2dxf --version
+# ═══════════════════════════════════════════════════════════════════════════

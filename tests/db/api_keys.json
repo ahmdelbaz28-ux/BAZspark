@@ -1,0 +1,8 @@
+{
+  "hk$480f7b233ab20a30875fc8783fb42e784412a6a6fd0fe4be3827e03cc9fac332": {
+    "role": "admin",
+    "description": "Default admin key (from FIREAI_API_KEY)",
+    "bcrypt_hash": "$2b$12$YOqpo6WxMM.ZoMESTKenf.WcXYyxw8Lxm9dgOV6JS0p5O33cgeIzm",
+    "key_hash": "$2b$12$YOqpo6WxMM.ZoMESTKenf.WcXYyxw8Lxm9dgOV6JS0p5O33cgeIzm"
+  }
+}

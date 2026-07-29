@@ -1,0 +1,86 @@
+# Container image vulnerability scanning with Trivy
+# Reports CRITICAL/HIGH vulnerabilities without blocking the pipeline.
+
+name: Container Security Scan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/container-scan.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'backend/**'
+      - 'frontend/**'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  trivy-scan:
+    name: Trivy Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: Build Docker image
+        id: docker-build
+        run: |
+          docker build -t bazspark:scan . || {
+            echo "::warning::Docker build failed - running filesystem scan instead"
+            echo "build_failed=true" >> "$GITHUB_OUTPUT"
+          }
+
+      - name: Run Trivy on Docker image
+        if: steps.docker-build.outputs.build_failed != 'true'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          image-ref: 'bazspark:scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+        continue-on-error: true
+
+      - name: Run Trivy filesystem scan (fallback)
+        if: steps.docker-build.outputs.build_failed == 'true'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          ignore-unfixed: true
+        continue-on-error: true
+
+      - name: Ensure SARIF file exists
+        if: always()
+        run: |
+          if [ ! -f trivy-results.sarif ]; then
+            echo '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"Trivy","rules":[]}},"results":[]}]}' > trivy-results.sarif
+            echo "Created empty SARIF (no scan results)"
+          fi
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a  # v4
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+
+      - name: Scan summary
+        if: always()
+        run: echo "Container security scan complete. Check Security tab for vulnerability details."
