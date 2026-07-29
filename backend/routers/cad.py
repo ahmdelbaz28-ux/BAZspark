@@ -173,7 +173,11 @@ async def get_cad_status(provider: str) -> CADStatusResponse:
         raise _safe_error(500, f"Error getting status for {provider}", e)
 
 
-@router.post("/read", response_model=CADReadResponse)
+@router.post("/read", response_model=CADReadResponse, responses={
+    400: {"description": "File path is outside allowed directories."},
+    404: {"description": "File not found."},
+    503: {"description": "Provider not connected."}
+})
 @limiter.limit("10/minute")
 async def read_drawing(request: Request, body: CADReadRequest) -> CADReadResponse:
     """Read drawing entities/elements from the file."""
@@ -198,7 +202,11 @@ async def read_drawing(request: Request, body: CADReadRequest) -> CADReadRespons
         raise _safe_error(500, f"Error reading drawing from {body.provider}", e)
 
 
-@router.post("/write", response_model=CADWriteResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post("/write", response_model=CADWriteResponse, responses={
+    400: {"description": "File path is outside allowed directories."},
+    404: {"description": "File not found."},
+    503: {"description": "Provider not connected."}
+}, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("10/minute")
 async def write_drawing(request: Request, body: CADWriteRequest) -> CADWriteResponse:
     """Write elements/entities back to the drawing file."""
@@ -220,7 +228,9 @@ async def write_drawing(request: Request, body: CADWriteRequest) -> CADWriteResp
         raise _safe_error(500, f"Error writing drawing to {body.provider}", e)
 
 
-@router.post("/draw_line", response_model=CADOperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post("/draw_line", response_model=CADOperationResponse, responses={
+    503: {"description": "Provider not connected."}
+}, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
 async def draw_line(request: Request, body: CADDrawLineRequest) -> CADOperationResponse:
     """Draw a line in the CAD application."""
@@ -248,7 +258,9 @@ async def draw_line(request: Request, body: CADDrawLineRequest) -> CADOperationR
         raise _safe_error(500, f"Error drawing line in {body.provider}", e)
 
 
-@router.post("/draw_polyline", response_model=CADOperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post("/draw_polyline", response_model=CADOperationResponse, responses={
+    503: {"description": "Provider not connected."}
+}, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
 async def draw_polyline(request: Request, body: CADDrawPolylineRequest) -> CADOperationResponse:
     """Draw a polyline/floor outline in the CAD/BIM application."""
@@ -276,7 +288,9 @@ async def draw_polyline(request: Request, body: CADDrawPolylineRequest) -> CADOp
         raise _safe_error(500, f"Error drawing polyline in {body.provider}", e)
 
 
-@router.post("/draw_circle", response_model=CADOperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post("/draw_circle", response_model=CADOperationResponse, responses={
+    503: {"description": "Provider not connected."}
+}, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
 async def draw_circle(request: Request, body: CADDrawCircleRequest) -> CADOperationResponse:
     """Draw a circle/column in the CAD/BIM application."""
@@ -304,7 +318,9 @@ async def draw_circle(request: Request, body: CADDrawCircleRequest) -> CADOperat
         raise _safe_error(500, f"Error drawing circle in {body.provider}", e)
 
 
-@router.post("/draw_text", response_model=CADOperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post("/draw_text", response_model=CADOperationResponse, responses={
+    503: {"description": "Provider not connected."}
+}, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
 async def draw_text(request: Request, body: CADDrawTextRequest) -> CADOperationResponse:
     """Draw text/text notes in the CAD/BIM application."""
