@@ -88,7 +88,7 @@ class GeocodingService:
             self._client = httpx.AsyncClient(
                 timeout=httpx.Timeout(10.0),
                 headers={"User-Agent": "FireAI-DigitalTwin/1.0"},
-                follow_redirects=True,
+                follow_redirects=False,  # V288 SECURITY: disable redirect following to prevent SSRF
             )
         return self._client
 
