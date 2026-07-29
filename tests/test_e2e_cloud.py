@@ -461,7 +461,7 @@ class TestFullStackE2E:
 
     def test_v2_api_topology_endpoint_e2e(self):
         """V2 API /api/v2/topology/health should report status."""
-        os.environ["FIREAI_API_KEY"] = "e2e-test-key-1234567890"
+        os.environ["FIREAI_API_KEY"] = "e2e-test-key-1234567890"  # NOSONAR S8997: kept because backend.app import/startup may cache env state here
         from fastapi.testclient import TestClient
 
         from backend.app import app
@@ -482,7 +482,7 @@ class TestFullStackE2E:
 
     def test_v2_api_memory_endpoint_e2e(self):
         """V2 API /api/v2/memory/health should report status."""
-        os.environ["FIREAI_API_KEY"] = "e2e-test-key-1234567890"
+        os.environ["FIREAI_API_KEY"] = "e2e-test-key-1234567890"  # NOSONAR S8997: kept because backend.app import/startup may cache env state here
         from fastapi.testclient import TestClient
 
         from backend.app import app
