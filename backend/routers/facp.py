@@ -38,8 +38,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
-from backend.limiter import limiter
 from backend.rbac import Permission
+
+try:
+    from backend.limiter import limiter
+    _HAS_LIMITER = True
+except ImportError:
+    _HAS_LIMITER = False
+    limiter = None
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +174,12 @@ class FACPSpecRequest(BaseModel):
 
 # ── Helper: Safe FACP module import ──────────────────────────────────────────
 
+if _HAS_LIMITER:
+    _rate_limit = limiter.limit
+else:
+    def _rate_limit(s: str) -> object:
+        return lambda f: f
+
 _facp_available: Optional[bool] =  None
 
 
@@ -221,7 +233,7 @@ def _require_facp() -> None:
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.post("/facp/select", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
-@limiter.limit("30/minute")
+@_rate_limit("30/minute")
 async def select_facp(request: Request, req: FACPSelectionRequest):
     """
     Select optimal FACP for project requirements.
@@ -307,7 +319,7 @@ async def select_facp(request: Request, req: FACPSelectionRequest):
 
 
 @router.post("/facp/verify", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
-@limiter.limit("30/minute")
+@_rate_limit("30/minute")
 async def verify_facp(request: Request, req: FACPVerificationRequest):
     """
     Verify compliance of a panel recommendation.
@@ -394,7 +406,7 @@ async def verify_facp(request: Request, req: FACPVerificationRequest):
 
 
 @router.post("/facp/schedule", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
-@limiter.limit("10/minute")
+@_rate_limit("10/minute")
 async def generate_facp_schedule(request: Request, req: FACPScheduleRequest):
     """
     Generate DXF schedule table for the selected FACP.
@@ -455,7 +467,7 @@ async def generate_facp_schedule(request: Request, req: FACPScheduleRequest):
 
 
 @router.post("/facp/spec", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
-@limiter.limit("10/minute")
+@_rate_limit("10/minute")
 async def generate_facp_spec(request: Request, req: FACPSpecRequest):
     """
     Generate CSI specification (Section 28 31 11) for the selected FACP.
