@@ -1,0 +1,2 @@
+revit_data/*.json filter=lfs diff=lfs merge=lfs -text
+skills/ppt/scripts/tectonic filter=lfs diff=lfs merge=lfs -text
