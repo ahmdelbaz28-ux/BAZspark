@@ -1,0 +1,54 @@
+import { act, renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { dataService } from "@/services/dataService";
+import { setState } from "@/store/simpleStore";
+import { useTelemetryStream } from "../useTelemetryStream";
+
+// Mock Worker — jsdom does not support Web Workers.
+// dataService.connect() → connectMockWorker() creates a Worker,
+// which throws "Worker is not defined" in the test environment.
+class MockWorker {
+	onmessage: ((e: { data: unknown }) => void) | null = null;
+	postMessage = vi.fn();
+	terminate = vi.fn();
+	addEventListener = vi.fn();
+	removeEventListener = vi.fn();
+	dispatchEvent = vi.fn();
+}
+
+describe("useTelemetryStream", () => {
+	beforeEach(() => {
+		// @ts-expect-error — injecting mock Worker into global scope for jsdom
+		globalThis.Worker = MockWorker;
+		setState({
+			dataMode: "mock",
+			connectionStatus: "connected",
+		});
+		vi.clearAllMocks();
+	});
+
+	it("should cleanup resources correctly after 100 mount/unmount cycles", () => {
+		const disconnectSpy = vi.spyOn(dataService, "disconnect");
+
+		// Set to live to trigger connect/disconnect
+		setState({ dataMode: "live" });
+
+		for (let i = 0; i < 100; i++) {
+			const { unmount } = renderHook(() => useTelemetryStream());
+			unmount();
+		}
+
+		// Each unmount should call disconnect.
+		expect(disconnectSpy).toHaveBeenCalledTimes(100);
+	});
+
+	it("should update connectionStatus on disconnect", () => {
+		const { result } = renderHook(() => useTelemetryStream());
+
+		act(() => {
+			setState({ connectionStatus: "disconnected" });
+		});
+
+		expect(result.current.connectionStatus).toBe("disconnected");
+	});
+});

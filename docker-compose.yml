@@ -1,0 +1,239 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# FireAI — Docker Compose for Development and Testing
+# ═══════════════════════════════════════════════════════════════════════════
+
+services:
+  fireai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fireai-api
+    # V248 FIX: Dockerfile EXPOSEs 7860 + CMD uses PORT=7860.
+    # Was 8000:8000 which didn't match → service unreachable.
+    ports:
+      - "7860:7860"
+    environment:
+      - FIREAI_ENV=${FIREAI_ENV:-production}
+      - "FIREAI_API_KEY=${FIREAI_API_KEY:?ERROR: FIREAI_API_KEY must be set}"
+      # Session secret: REQUIRED in production.
+      # Generate with: python3 -m backend.session_secret generate
+      # Option A (env var): set FIREAI_SESSION_SECRET
+      # Option B (file-based, MORE secure): set FIREAI_SESSION_SECRET_FILE
+      # See env.example.txt for rotation instructions.
+      - FIREAI_SESSION_SECRET=${FIREAI_SESSION_SECRET:-}
+      - FIREAI_SESSION_SECRET_FILE=${FIREAI_SESSION_SECRET_FILE:-/run/secrets/fireai_session_secret}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/data/fireai.db}
+      - UDM_DB_PATH=${UDM_DB_PATH:-/app/data/udm_elements.db}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - CSP_UNSAFE_EVAL=${CSP_UNSAFE_EVAL:-false}
+      - CSP_CONNECT_SRC=${CSP_CONNECT_SRC:-http://localhost:5173 ws://localhost:5173 http://localhost:8000}
+      - FIREAI_DATA_DIRS=${FIREAI_DATA_DIRS:-/tmp/fireai_uploads:/data:/uploads}
+      - FIREAI_ALLOWED_UPLOAD_DIRS=${FIREAI_ALLOWED_UPLOAD_DIRS:-/tmp:/var/tmp:/var/fireai/uploads}
+      - FIREAI_DWG_MAX_FILE_SIZE_BYTES=${FIREAI_DWG_MAX_FILE_SIZE_BYTES:-104857600}
+      # V254 FIX: Wire REDIS_URL to the fireai container so session store
+      # and rate limiter use Redis (not in-memory per-worker). Without this,
+      # login succeeds but the next request 401s (different worker, no session).
+      - REDIS_URL=${REDIS_URL:-redis://:${REDIS_PASSWORD}@fireai-redis:6379/0}
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
+      - LANGFUSE_HOST=${LANGFUSE_HOST:-https://cloud.langfuse.com}
+      - LANGFUSE_ENABLED=${LANGFUSE_ENABLED:-true}
+    volumes:
+      - fireai-data:/app/data
+      - fireai-logs:/app/logs
+      # Mount Docker secret for session signing (more secure than env var).
+      # Create with: echo -n '<secret>' | docker secret create fireai_session_secret -
+      # Or use a bind mount: - ./secrets/fireai_session_secret:/run/secrets/fireai_session_secret:ro
+    healthcheck:
+      # V248 FIX: Healthcheck port matches the actual port (7860, was 8000)
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    # V248 FIX: Add network isolation (was missing → couldn't reach redis/qdrant/neo4j)
+    networks:
+      - fireai-net
+    security_opt:
+      - no-new-privileges:true
+    # V248 FIX: Drop all capabilities and set read-only root filesystem
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=100M
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  redis:
+    image: redis:7-alpine
+    container_name: fireai-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?ERROR: REDIS_PASSWORD must be set}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?ERROR: REDIS_PASSWORD must be set}
+    restart: unless-stopped
+    # V248 FIX: Add network isolation
+    networks:
+      - fireai-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  # ── V141: Qdrant — Vector Database for AI Semantic Memory ──────────────
+  # Provides RAG capabilities for 24+ AI agents. Without this, every
+  # question is treated as if heard for the first time.
+  qdrant:
+    # V248 FIX: Pin to specific version (was :latest)
+    image: qdrant/qdrant:v1.12.4
+    container_name: fireai-qdrant
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    volumes:
+      - qdrant-storage:/qdrant/storage
+    environment:
+      - QDRANT__LOG_LEVEL=INFO
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY:-}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+    networks:
+      - fireai-net
+    # V248 FIX: Add healthcheck (was missing)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6333/healthz')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # ── V141: Neo4j — Graph Database for Network Topology ──────────────────
+  # Provides topology awareness for electrical networks.
+  # "If I trip this breaker, which loads are affected?" — answered in <10ms.
+  neo4j:
+    image: neo4j:5-community
+    container_name: fireai-neo4j
+    environment:
+      # V248 FIX: Use env var for password (was hardcoded 'etap_password')
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:?ERROR: NEO4J_PASSWORD must be set}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_memory_heap_max__size=512M
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+    networks:
+      - fireai-net
+    # V248 FIX: Add healthcheck (was missing)
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p $$NEO4J_PASSWORD 'RETURN 1' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
+  # ── V140 Phase 10: DocTR OCR Service ──────────────────────────────────
+  # Provides OCR with bounding boxes for scanned floor plans.
+  # Optional — FireAI falls back to Tesseract if this service is unavailable.
+  doctr-ocr:
+    build:
+      context: ./services/doctr
+      dockerfile: Dockerfile
+    container_name: fireai-doctr
+    ports:
+      - "127.0.0.1:8001:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+    profiles:
+      - document-intelligence
+
+  # ── V140 Phase 10: YOLO Segmentation Service ──────────────────────────
+  # Provides layout analysis for floor plan images.
+  # Optional — FireAI falls back to OpenCV contours if unavailable.
+  yolo-segmentation:
+    build:
+      context: ./services/yolo
+      dockerfile: Dockerfile
+    container_name: fireai-yolo
+    ports:
+      - "127.0.0.1:8002:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+    profiles:
+      - document-intelligence
+
+volumes:
+  fireai-data:
+    driver: local
+  fireai-logs:
+    driver: local
+  redis-data:
+    driver: local
+  qdrant-storage:
+    driver: local
+  neo4j-data:
+    driver: local
+  neo4j-logs:
+    driver: local
+
+networks:
+  fireai-net:
+    driver: bridge

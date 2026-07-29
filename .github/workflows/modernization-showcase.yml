@@ -1,0 +1,66 @@
+name: Repository Modernization Showcase
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: modernization-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  showcase-modernization:
+    name: "Modernization Check"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Display repository structure
+      run: |
+        echo "=== FireAI Repository Structure ==="
+        find . -type f -not -path "./.*" -not -path "./.git/*" -not -path "./__pycache__/*" -not -name "*.pyc" | head -50
+        echo "=== Documentation Files ==="
+        find . -name "*.md" -type f | head -20
+
+    - name: Check documentation completeness
+      run: |
+        echo "=== Checking Documentation Completeness ==="
+        for doc in README.md CONTRIBUTING.md SECURITY.md CHANGELOG.md CODE_OF_CONDUCT.md ARCHITECTURE.md ROADMAP.md LICENSE; do
+          if [ -f "$doc" ] || [ -f ".github/$doc" ]; then
+            echo "  OK: $doc"
+          else
+            echo "  MISSING: $doc"
+          fi
+        done
+
+    - name: Validate configuration files
+      run: |
+        echo "=== Validating Configuration Files ==="
+        test -f pyproject.toml && echo "  OK: pyproject.toml" || echo "  MISSING: pyproject.toml"
+        test -f .gitignore && echo "  OK: .gitignore" || echo "  MISSING: .gitignore"
+        test -f requirements.txt && echo "  OK: requirements.txt" || echo "  MISSING: requirements.txt"
+
+    - name: Check GitHub templates
+      run: |
+        echo "=== Checking GitHub Templates ==="
+        test -d .github/ISSUE_TEMPLATE && echo "  OK: Issue templates" || echo "  MISSING: Issue templates"
+        test -f .github/PULL_REQUEST_TEMPLATE.md && echo "  OK: PR template" || echo "  MISSING: PR template"
+        test -f .github/CODEOWNERS && echo "  OK: CODEOWNERS" || echo "  MISSING: CODEOWNERS"
+
+    - name: Run basic Python validation
+      run: |
+        python -c "print('Python interpreter working correctly')"
+        python -c "import sys; assert sys.version_info >= (3, 12), f'Python 3.12+ required, got {sys.version}'"

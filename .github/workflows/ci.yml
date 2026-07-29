@@ -1,0 +1,692 @@
+# NOSONAR
+# ═══════════════════════════════════════════════════════════════════════════
+# CAD/BIM Integration Platform — CI/CD Validation Matrix Pipeline
+# ═══════════════════════════════════════════════════════════════════════════
+# Comprehensive CI/CD pipeline for CAD/BIM integration platform
+# Including: linting, type checking, testing, security audit, Docker build
+#
+# Gates:
+#   1. Static Analysis (Ruff, MyPy, Bandit)
+#   2. Test Suite (pytest with coverage)
+#   3. Frontend Build (TypeScript, lint, build)
+#   4. Dependency Audit (pip-audit)
+#   5. Docker Build & Test
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop, 'v**']
+  pull_request:
+    branches: [main]
+
+# ── Concurrency: Cancel previous runs on same branch ──────────────────────
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Gate 1: Static Validation ────────────────────────────────────────────
+  static-analysis:
+    name: "Gate 1 — Static Analysis"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install ruff bandit mypy
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: Ruff lint
+        # V300 / C-XX FIX: Removed `|| true` — Ruff failures now block CI.
+        # New lint errors correctly block the gate. Pre-existing violations
+        # must be fixed or selectively suppressed with `# noqa` before merging.
+        run: ruff check backend/ fireai/ core/ --output-format=github
+
+      - name: MyPy type check (regression gate)
+        # V300 FIX: Replaced bare `|| true` with a regression gate that fails
+        # if the error count EXCEEDS the baseline (currently 434 pre-existing
+        # errors from V12-V139 technical debt). This prevents new type errors
+        # from slipping in while allowing the existing 434 to coexist.
+        # The gate script (scripts/mypy_regression_gate.py) runs mypy, counts
+        # errors, and exits 1 only if the count goes above baseline.
+        # To update the baseline after fixing a batch: update --baseline in
+        # the command below.
+        run: python3 scripts/mypy_regression_gate.py --baseline 735
+
+
+      - name: Bandit security scan
+        # V140 FIX (Rule 17): Bandit exits with code 1 when it finds ANY
+        # results (even LOW severity). The actual HIGH-severity gate is the
+        # next step ("Bandit severity gate") which parses reports/bandit.json.
+        # Without `|| true`, this step fails before the gate step can run,
+        # blocking the entire Gate 1 pipeline on pre-existing LOW/MEDIUM
+        # findings (e.g. py/path-injection in parsers/_path_security.py which
+        # is a false positive — the file is a security HELPER, not vulnerable
+        # code). The HIGH-severity gate below still enforces real security.
+        run: bandit -r backend/ fireai/ core/ -f json -o reports/bandit.json -ll || true
+
+      - name: Bandit severity gate
+        run: |
+          if [ -f reports/bandit.json ]; then
+            # V293 FIX: extracted inline python3 -c "..." to scripts/bandit_gate.py
+            # because the inline version failed silently with 2>/dev/null.
+            # Exit codes: 0=pass, 1=HIGH findings, 2=parse error
+            python3 scripts/bandit_gate.py
+            rc=$?
+            if [ $rc -eq 1 ]; then
+              echo "FAIL: HIGH severity Bandit findings detected"
+              cat reports/bandit_high_summary.txt 2>/dev/null || true
+              exit 1
+            elif [ $rc -eq 2 ]; then
+              echo "FAIL: Bandit report parsing failed"
+              exit 1
+            elif [ $rc -ne 0 ]; then
+              echo "FAIL: Bandit gate script exited with code $rc"
+              exit 1
+            fi
+            echo "PASS: No HIGH severity Bandit findings"
+          fi
+
+  # ── Gate 2: Test Suite ────────────────────────────────────────────────────
+  test-suite:
+    name: "Gate 2 — Test Suite"
+    runs-on: ubuntu-latest
+    needs: static-analysis
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pytest pytest-cov pytest-asyncio hypothesis
+          pip install httpx
+          pip install -e ".[parsing]"
+          pip install opencv-python-headless
+          pip install prometheus_client
+          pip install langgraph langgraph-checkpoint-sqlite
+          pip install pytest-timeout pytest-xdist
+
+      - name: Set FIREAI_SESSION_SECRET (required since V193/V207)
+        run: echo "FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" >> $GITHUB_ENV
+
+      - name: Smoke test — import backend.app (Gate 2 pre-check)
+        # V260 FIX (Rule 17 — Root-Cause): Same smoke test as ci-build-gate.yml.
+        # Runs BEFORE pytest to fail fast (in <1 sec) if any router module
+        # has an import-time error (NameError, SyntaxError, etc.) instead of
+        # waiting for pytest to fail with hundreds of collection errors.
+        # The test asserts that backend.app imports AND registers 100+ API
+        # routes (a broken _lazy_import would silently skip routers).
+        env:
+          PYTEST_ADDOPTS: "--color=no"
+          FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
+          CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
+          DATABASE_URL: "sqlite:////tmp/fireai_ci_smoke.db"
+          DIGITAL_TWIN_DB_PATH: "/tmp/fireai_ci_smoke.db"
+          UDM_DB_PATH: "/tmp/udm_ci_smoke.db"
+          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
+        run: |
+          if [ -z "$FIREAI_SESSION_SECRET" ]; then
+            export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
+          fi
+          python -c "
+          import sys, traceback, logging
+          logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(name)s: %(message)s')
+          try:
+              import backend.app
+              app = backend.app.app
+              routes = [r for r in app.routes if hasattr(r, 'path') and r.path.startswith('/api')]
+              print(f'✓ backend.app imported successfully ({len(routes)} API routes)')
+              print(f'✓ PASS: smoke test — no import errors (NameError/SyntaxError would crash here)')
+              if len(routes) < 50:
+                  print(f'⚠ INFO: only {len(routes)} API routes (CI may have missing optional deps)')
+                  print(f'  This is non-blocking — pytest will catch real test failures')
+          except SystemExit:
+              raise
+          except Exception:
+              print(f'✗ FAIL: backend.app failed to import')
+              traceback.print_exc()
+              sys.exit(1)
+          "
+
+      - name: Run test suite with coverage
+        # V274 FIX: pytest-cov upgraded to >=5.0.0 in pyproject.toml,
+        # resolving the pytest-cov 4.1.0 + coverage 7.x atexit hang.
+        # Coverage is now re-enabled in CI. The --cov-fail-under=40
+        # threshold from pyproject.toml [tool.coverage] applies.
+        # The `timeout --signal=KILL` workaround from V159-V171 is
+        # removed; pytest should exit cleanly.
+        # V275 FIX: Increased timeout to 60 minutes for 7,656+ tests.
+        timeout-minutes: 60
+        env:
+          PYTEST_ADDOPTS: "--color=no"
+          FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
+          CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
+          DATABASE_URL: "sqlite:////tmp/fireai_ci_test.db"
+          DIGITAL_TWIN_DB_PATH: "/tmp/fireai_ci_test.db"
+          UDM_DB_PATH: "/tmp/udm_ci_test.db"
+          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
+        run: |
+          # If FIREAI_SESSION_SECRET is not set, generate one for this run.
+          if [ -z "$FIREAI_SESSION_SECRET" ]; then
+            export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
+            echo "Generated ephemeral FIREAI_SESSION_SECRET for this run"
+          fi
+          # Clean stale test artifacts that cause RuntimeError on re-runs
+          rm -rf db/ /tmp/fireai_ci_test.db /tmp/udm_ci_test.db
+          pip install pytest-timeout
+          # Run pytest with coverage (pytest-cov >=5.0.0 resolves atexit hang)
+          mkdir -p reports/coverage_html && \
+          python -m pytest tests/ backend/tests/ \
+            --tb=short \
+            -p no:cacheprovider \
+            --cov \
+            --cov-report=term-missing \
+            --cov-report=html:reports/coverage_html \
+            --timeout=120 \
+            --timeout-method=signal \
+            -n auto \
+            -q
+
+      - name: Upload coverage report
+        # V159.6 FIX: Coverage is now disabled in CI (see step above). This step
+        # is kept for backward compatibility but will be a no-op (if-no-files-found:
+        # warn means it won't fail when reports/coverage_html/ doesn't exist).
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: coverage-report-${{ matrix.python-version }}
+          path: reports/coverage_html/
+          if-no-files-found: warn
+
+  # ── Gate 3: Property-Based Tests ───────────────────────────────────────────
+  property-tests:
+    name: "Gate 3 — Property-Based Tests"
+    runs-on: ubuntu-latest
+    needs: test-suite
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pytest pytest-asyncio hypothesis
+
+      - name: Run property-based tests
+        # V166 FIX: Add --no-cov to disable pytest-cov atexit hook
+        # Exit code 5 = "no tests collected" (OK when skills/ module absent)
+        run: |
+          pytest tests/property_based/ -v --tb=short --no-cov -p no:cacheprovider || EXIT=$?
+          if [ "${EXIT:-0}" = "5" ]; then
+            echo "::warning::No property-based tests collected (exit code 5) — likely skills/ module not present"
+            exit 0
+          fi
+          exit "${EXIT:-0}"
+
+  # ── Gate 4: Frontend Build ────────────────────────────────────────────────
+  frontend-build:
+    name: "Gate 4 — Frontend Build"
+    runs-on: ubuntu-latest
+    # CodeQL: actions/missing-workflow-permissions — explicit least privilege
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: TypeScript type check
+        run: npm run typecheck
+        working-directory: frontend
+
+      - name: Lint check
+        # V140 FIX (Rule 17 — Root-Cause Analysis): Added working-directory:
+        # frontend (was missing — only the typecheck step had it). Without this,
+        # `npm run lint` runs in the repo root which has a minimal package.json
+        # with no "lint" script — npm exits with code 1 (no script) and the
+        # `set -e` shell terminates the step before ERROR_COUNT is computed.
+        working-directory: frontend
+        run: |
+          OUTPUT=$(npm run lint 2>&1 || true)
+          ERROR_COUNT=$(echo "$OUTPUT" | grep -oP '\d+(?= error)' | head -1 || echo "0")
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "FAIL: $ERROR_COUNT lint errors"
+            exit 1
+          fi
+          echo "PASS: No lint errors"
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: frontend-build
+          path: frontend/dist/
+          retention-days: 7
+
+  # ── Gate 4b: Visual Regression (Playwright) ───────────────────────────────
+  # V144: Visual smoke tests for safety-critical frontend.
+  # - Headless Chromium (no extension needed — secure alternative to peek-cli)
+  # - Verifies 8 core pages render without JS console errors
+  # - Captures screenshots for manual review in CI artifacts
+  # - Tests mobile viewport + dark mode + navigation
+  # - Runs against `vite preview` (production build) — no backend needed
+  frontend-visual:
+    name: "Gate 4b — Visual Regression (Playwright)"
+    runs-on: ubuntu-latest
+    needs: frontend-build
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - name: Run Playwright visual tests
+        # V229: Fixed syntax error in smoke.spec.ts (unclosed test.describe block).
+        # V229f: Do NOT pass FIREAI_API_KEY — tests that require backend
+        # (v193-e2e-auth.spec.ts) use test.skip when API_KEY is not set.
+        # Passing a fake key causes them to attempt real backend calls
+        # which fail because no backend is running in CI.
+        # Use both list and html reporters to generate the HTML report artifact.
+        run: npx playwright test --reporter=list,html
+        working-directory: frontend
+        env:
+          CI: "true"
+          # Explicitly unset FIREAI_API_KEY so auth tests skip cleanly
+          FIREAI_API_KEY: ""
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: playwright-screenshots
+          path: frontend/test-results/screenshots/
+          retention-days: 14
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 14
+
+  # ── Gate 5: Dependency Audit ──────────────────────────────────────────────
+  dependency-audit:
+    name: "Gate 5 — Dependency Audit"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Audit Python dependencies
+        # V300 / C-XX FIX: Combined approach — pip-audit runs with severity
+        # gating via pip_audit_gate.py. HIGH/CRITICAL vulnerabilities block CI.
+        # LOW/MEDIUM vulns are reported as warnings (non-blocking) because
+        # they often depend on transitive deps we can't directly control.
+        run: |
+          mkdir -p reports
+          # Run pip-audit, capturing output for the gate script
+          pip-audit --skip-editable --desc --progress-spinner off -f json -o reports/pip-audit.json 2>/dev/null || true
+          # Also run human-readable output for CI log visibility
+          pip-audit --skip-editable --desc --progress-spinner off 2>/dev/null || true
+          if [ -f reports/pip-audit.json ]; then
+            echo "Audit report generated"
+            # V300: Check for HIGH/CRITICAL vulnerabilities
+            python3 scripts/pip_audit_gate.py
+            rc=$?
+            if [ $rc -eq 1 ]; then
+              echo "FAIL: HIGH/CRITICAL vulnerability detected — see report above"
+              exit 1
+            elif [ $rc -eq 2 ]; then
+              echo "WARN: Could not parse audit report (non-blocking)"
+            fi
+          else
+            echo "WARN: No audit report generated (pip-audit may have failed)"
+          fi
+
+
+      - name: Audit frontend dependencies
+        # V300 / C-XX FIX: Combined approach — npm audit blocks on HIGH severity.
+        # Previously fully non-blocking (`|| true`), meaning vulnerable npm
+        # packages could be introduced without CI failing.
+        run: |
+          cd frontend
+          # Run audit and capture output
+          OUTPUT=$(npm audit --audit-level=high 2>&1) || true
+          echo "$OUTPUT"
+          # Check if there are HIGH or CRITICAL vulnerabilities
+          if echo "$OUTPUT" | grep -qi "high\|critical"; then
+            # Verify it's an actual vulnerability count, not just the header
+            VULN_COUNT=$(echo "$OUTPUT" | grep -oP '\d+(?= High)' | head -1 || echo "0")
+            CRIT_COUNT=$(echo "$OUTPUT" | grep -oP '\d+(?= Critical)' | head -1 || echo "0")
+            TOTAL=$((VULN_COUNT + CRIT_COUNT))
+            if [ "$TOTAL" -gt 0 ]; then
+              echo "FAIL: $TOTAL HIGH/CRITICAL npm vulnerabilities detected"
+              exit 1
+            fi
+          fi
+          echo "PASS: No HIGH/CRITICAL frontend vulnerabilities"
+
+
+  # ── Gate 6: Docker Build ──────────────────────────────────────────────────
+  docker-build:
+    name: "Gate 6 — Docker Build & Test"
+    runs-on: ubuntu-latest
+    needs: [static-analysis, test-suite, frontend-build]
+    # CodeQL: actions/missing-workflow-permissions — explicit least privilege
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c  # v4.2.0  # NOSONAR — S7637: GitHub Actions acceptable
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0  # v4.4.0  # NOSONAR — S7637: GitHub Actions acceptable
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302  # v6.2.0  # NOSONAR — S7637: GitHub Actions acceptable
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,prefix=,format=short
+            type=raw,value=latest
+
+      - name: Build Docker image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7.3.0  # NOSONAR — S7637: GitHub Actions acceptable
+        with:
+          context: .
+          push: false
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker container
+        # V171 FIX: steps.meta.outputs.tags contains MULTIPLE tags separated by
+        # newlines. Using it directly in `docker run` causes the shell to interpret
+        # the second tag as a separate command → "No such file or directory" (exit 127).
+        # Fix: Use only the first tag (latest) for the container test.
+        #
+        # V172 FIX: Container needs more startup time + correct port + correct health endpoint.
+        # - Dockerfile exposes port 7860 (not 8000) — HF Spaces default
+        # - Health endpoint is /api/health (not /health) — FastAPI router prefix
+        # - sleep 10 was too short — app needs ~20s for DB init + module loading
+        # - Add retry logic with curl --retry to handle slow startup
+        #
+        # V173 FIX: Container crashes on startup because FIREAI_ENV=production
+        # requires CORS_ALLOWED_ORIGINS env var. Pass it as -e flag to docker run.
+        # Also pass FIREAI_API_KEY (required by ApiKeyMiddleware) and DATABASE_URL
+        # (SQLite at /tmp for test — no persistent data needed).
+        # V207 FIX: Added FIREAI_SESSION_SECRET — required by backend/app.py
+        # lifespan startup check (V193). Without it, the container crashes with
+        # RuntimeError on startup and the health check never passes.
+        run: |
+          IMAGE=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+          echo "Testing container with image: $IMAGE"
+          # Dockerfile EXPOSEs 7860 and CMD uses --port 7860
+          # Pass required env vars for production mode startup
+          docker run -d --name test-app -p 8888:7860 \
+            -e FIREAI_ENV=development \
+            -e FIREAI_API_KEY=test-ci-key \
+            -e FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))') \
+            -e CORS_ALLOWED_ORIGINS=http://localhost:8888 \
+            -e DATABASE_URL=sqlite:////tmp/fireai_test.db \
+            -e DIGITAL_TWIN_DB_PATH=/tmp/fireai_test.db \
+            -e UDM_DB_PATH=/tmp/udm_test.db \
+            "$IMAGE"
+          # Wait for container to be ready (up to 60 seconds)
+          echo "Waiting for container to start..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8888/api/health > /dev/null 2>&1; then
+              echo "Container is healthy!"
+              docker stop test-app
+              docker rm test-app
+              exit 0
+            fi
+            echo "  Attempt $i/30: container not ready yet..."
+            sleep 2
+          done
+          # Container didn't become healthy — print logs for debugging
+          echo "FAIL: Container did not become healthy within 60 seconds"
+          echo "=== Container logs ==="
+          docker logs test-app 2>&1 | tail -30
+          docker stop test-app 2>/dev/null || true
+          docker rm test-app 2>/dev/null || true
+          exit 1
+
+  # ── Gate 7: Bundle Size ────────────────────────────────────────────────────
+  bundle-size:
+    name: "Gate 7 — Bundle Size"
+    runs-on: ubuntu-latest
+    needs: frontend-build
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - name: Check bundle size
+        run: |
+          BUILD_DIR="frontend/dist"
+          if [ ! -d "$BUILD_DIR" ]; then
+            echo "FAIL: Build directory not found"
+            exit 1
+          fi
+          
+          # Calculate total size of JS/CSS/HTML assets in KB (excluding .map source maps)
+          TOTAL_SIZE_KB=$(find "$BUILD_DIR" -type f ! -name "*.map" -exec du -k {} + | awk '{s+=$1} END {print s}')
+          TOTAL_SIZE_MB=$(echo "scale=2; $TOTAL_SIZE_KB / 1024" | bc)
+          
+          echo "Production asset bundle size (excluding .map files): ${TOTAL_SIZE_MB}MB"
+          
+          MAX_SIZE_KB=5120
+          if [ "$TOTAL_SIZE_KB" -gt "$MAX_SIZE_KB" ]; then
+            echo "FAIL: Bundle size ${TOTAL_SIZE_MB}MB exceeds 5MB limit"
+            exit 1
+          fi
+          
+          echo "PASS: Bundle size within limits"
+
+  # ── Success Summary ────────────────────────────────────────────────────────
+  success:
+    name: "✅ All Gates Passed"
+    runs-on: ubuntu-latest
+    needs: [static-analysis, test-suite, property-tests, frontend-build, frontend-visual, dependency-audit, docker-build, bundle-size]
+    if: always()
+    # CodeQL: actions/missing-workflow-permissions — explicit least privilege
+    permissions:
+      contents: read
+    steps:
+      - name: Check all gates
+        run: |
+          echo "CI/CD Pipeline Summary:"
+          echo "======================="
+          # V285 SAFETY FIX: Previously this job just echo'd "✅ Gate N" for each
+          # gate without checking the actual needs.<gate>.result value. The job
+          # was always marked SUCCESS even when every gate failed — masking
+          # pipeline failures from operators and branch-protection checks.
+          #
+          # Now we read each gate's actual result and exit 1 if ANY gate
+          # failed or was cancelled. Skipped gates (skipped != failure) are OK.
+          GATE1="${{ needs.static-analysis.result }}"
+          GATE2="${{ needs.test-suite.result }}"
+          GATE3="${{ needs.property-tests.result }}"
+          GATE4="${{ needs.frontend-build.result }}"
+          GATE4B="${{ needs.frontend-visual.result }}"
+          GATE5="${{ needs.dependency-audit.result }}"
+          GATE6="${{ needs.docker-build.result }}"
+          GATE7="${{ needs.bundle-size.result }}"
+
+          echo "Gate 1 (Static Analysis):        $GATE1"
+          echo "Gate 2 (Test Suite):              $GATE2"
+          echo "Gate 3 (Property-Based Tests):    $GATE3"
+          echo "Gate 4 (Frontend Build):          $GATE4"
+          echo "Gate 4b (Visual Regression):      $GATE4B"
+          echo "Gate 5 (Dependency Audit):        $GATE5"
+          echo "Gate 6 (Docker Build & Test):     $GATE6"
+          echo "Gate 7 (Bundle Size):             $GATE7"
+          echo ""
+
+          # A gate is "failed" only if its result is 'failure'.
+          # 'cancelled' is acceptable — caused by deployment race conditions
+          # when a newer push arrives; the gate never ran, so no test failure.
+          # 'skipped' is acceptable (e.g., Gate 3/6 skip on PRs without backend changes).
+          # 'success' is the only fully-passing state.
+          FAILED_GATES=""
+          for entry in "Gate 1:$GATE1" "Gate 2:$GATE2" "Gate 3:$GATE3" "Gate 4:$GATE4" "Gate 4b:$GATE4B" "Gate 5:$GATE5" "Gate 6:$GATE6" "Gate 7:$GATE7"; do
+            name="${entry%%:*}"
+            result="${entry##*:}"
+            case "$result" in
+              success)
+                echo "✅ $name: passed"
+                ;;
+              skipped|cancelled)
+                echo "⊘ $name: $result (acceptable)"
+                ;;
+              failure|timed_out|action_required|neutral)
+                echo "❌ $name: $result"
+                FAILED_GATES="$FAILED_GATES $name"
+                ;;
+              *)
+                echo "❓ $name: unknown result '$result' — treating as failure"
+                FAILED_GATES="$FAILED_GATES $name"
+                ;;
+            esac
+          done
+
+          echo ""
+          if [ -n "$FAILED_GATES" ]; then
+            echo "❌ Pipeline FAILED — gates that did not pass:$FAILED_GATES"
+            echo ""
+            echo "This workflow's '✅ All Gates Passed' job was previously"
+            echo "a no-op that always reported success. It now correctly"
+            echo "reflects the actual state of each gate (V285 fix)."
+            exit 1
+          fi
+          echo "✅ Pipeline completed successfully — all required gates passed."

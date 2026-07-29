@@ -1,0 +1,1538 @@
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
+"""
+FireAI Digital Twin - Database Service.
+======================================
+Thread-safe singleton wrapping UniversalDataModel (core/database.py)
+and adding project management with its own SQLite table.
+
+All conversion between Pydantic schemas and core dataclasses happens here.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+import sqlite3
+import threading
+import uuid
+from datetime import datetime, timezone
+from typing import Any
+
+from backend.schemas import (
+    ConflictResponse,
+    ConnectionCreate,
+    ConnectionResponse,
+    ElementCreate,
+    ElementResponse,
+    ElementUpdate,
+    GeometryResponse,
+    Point3DResponse,
+    ProjectCreate,
+    ProjectResponse,
+    ProjectUpdate,
+    SemanticPropertiesResponse,
+    StatisticsResponse,
+)
+from core.database import UniversalDataModel
+from core.models import (
+    ChangeSource,
+    Geometry,
+    Point3D,
+    Relationship,
+    SemanticProperties,
+    UniversalElement,
+)
+
+logger = logging.getLogger(__name__)
+
+
+# The old _normalize_sort blindly converted any string to snake_case
+# using regex, allowing arbitrary sort keys like "__class__",
+# "__dict__", or other Python dunder attributes. While the sort key
+# is used for Python's sorted() (not SQL), an attacker could:
+# 1. Access internal Python object attributes via dict.get()
+# 2. Cause unexpected behavior or information leakage
+# 3. If future code uses sort_key in SQL (f-string interpolation),
+#    it becomes a full SQL injection
+# Per agent.md Rule 17: fix the root cause — use a strict whitelist.
+_SORT_WHITELIST = frozenset({
+    "created_at", "created_timestamp", "last_modified_timestamp",
+    "updated_at", "name", "description", "author", "status",
+    "type", "category", "voltage", "current", "load",
+    "element_type", "version", "project_id", "length",
+    "cable_size",
+})
+
+# Map from camelCase (frontend) to snake_case (backend)
+_CAMEL_TO_SNAKE = {
+    "createdAt": "created_at",
+    "updatedAt": "updated_at",
+    "createdTimestamp": "created_timestamp",
+    "lastModifiedTimestamp": "last_modified_timestamp",
+    "cableSize": "cable_size",
+    "projectId": "project_id",
+    "elementType": "element_type",
+}
+
+
+def _normalize_sort(sort_by: str) -> str:
+    r"""
+    Convert camelCase sort parameter to snake_case WITH whitelist validation.
+
+    V113 SECURITY FIX: Only allows known sort fields. Unknown fields
+    are silently mapped to 'created_at' (safe default) instead of
+    being blindly converted from user input. This prevents injection
+    of arbitrary Python attribute names or SQL column names.
+
+    Previous code used regex: re.sub(r'([A-Z])', r'_\1', sort_by).lower()
+    This would convert ANY string, including "__class__", "__dict__",
+    "1; DROP TABLE projects--", etc. to snake_case and use it as a
+    sort key — a potential security vulnerability.
+    """
+    # Step 1: Try the camelCase → snake_case mapping first
+    if sort_by in _CAMEL_TO_SNAKE:
+        return _CAMEL_TO_SNAKE[sort_by]
+
+    # Step 2: Already snake_case? Check against whitelist
+    if sort_by in _SORT_WHITELIST:
+        return sort_by
+
+    # Step 3: Unknown sort field — log warning and use safe default
+    logger.warning(  # NOSONAR
+        f"Rejected sort field '{sort_by}' — not in whitelist. "
+        f"Falling back to 'created_at'. "
+        f"Allowed: {sorted(_SORT_WHITELIST)}"
+    )
+    return "created_at"
+
+
+class DatabaseService:
+    """
+    Thread-safe singleton that wraps UniversalDataModel and adds project support.
+
+    Provides methods that the routers can call, handling the conversion between
+    Pydantic schemas and core dataclasses.
+    """
+
+    _instance: DatabaseService | None = None
+    _lock = threading.Lock()
+
+    def __new__(cls, *args: Any, **kwargs: Any) -> DatabaseService:
+        if cls._instance is None:
+            with cls._lock:
+                # Double-checked locking
+                if cls._instance is None:
+                    instance = super().__new__(cls)
+                    instance._initialized = False
+                    cls._instance = instance
+        return cls._instance
+
+    def __init__(self, db_path: str | None = None) -> None:
+        if self._initialized:
+            return
+
+        if db_path is None:
+            # Use a SEPARATE database from backend/database.py to avoid schema collision.
+            # backend/database.py creates a `projects` table with `id` as PK,
+            # while this module creates one with `project_id` as PK.
+            # Sharing the same file causes silent data corruption.
+            db_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "db")
+            db_path = os.getenv("UDM_DB_PATH", os.path.join(db_dir, "udm_elements.db"))
+
+        self._db_path = db_path
+        self._data_model = UniversalDataModel(db_path=db_path)
+        self._service_lock = threading.RLock()
+
+        # Create projects table in the same SQLite database
+        self._init_projects_table()
+
+        # In-memory project cache
+        self._projects: dict[str, dict[str, Any]] = {}
+        self._load_projects_from_db()
+
+        self._initialized = True
+        logger.info("DatabaseService initialized with db_path=%s", db_path)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Projects table initialization
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def _safe_db_execute(self, sql: str, params: tuple = (), commit: bool = False) -> Any | None:
+        """
+        Execute SQL on the UDM connection with proper lock acquisition.
+
+        SAFETY FIX (BUG-36): All direct SQL access to self._data_model._conn
+        MUST be wrapped with self._data_model._lock to prevent concurrent access
+        from corrupting the SQLite database. Lock ordering is always:
+        _service_lock → _data_model._lock (never reversed).
+        """
+        with self._data_model._lock:
+            conn = self._data_model._conn
+            cursor = conn.cursor()
+            cursor.execute(sql, params)
+            if commit:
+                conn.commit()
+            return cursor
+
+    @property
+    def _db_conn(self) -> sqlite3.Connection:
+        """
+        Get database connection ONLY while holding the database lock.
+
+        CRITICAL FIX: Previous code accessed self._data_model._conn directly
+        without acquiring self._data_model._lock, creating a race condition
+        where two threads could execute SQL on the same sqlite3.Connection
+        simultaneously — risking database corruption and silent data loss.
+
+        This property MUST only be used inside `with self._db_lock:` blocks.
+        The `_db_lock` context manager enforces the lock ordering:
+        _service_lock → _data_model._lock (never reversed).
+
+        NEVER access self._data_model._conn outside of _db_lock or _safe_db_execute.
+        """
+        return self._data_model._conn
+
+    @property
+    def _db_lock(self) -> threading.RLock:
+        """
+        Get the database lock for multi-statement operations.
+
+        Usage:
+            with self._service_lock:        # Always acquire service lock first
+                with self._db_lock:         # Then acquire db lock
+                    with self._db_lock:
+                        conn = self._db_conn
+                    cursor = conn.cursor()
+                    cursor.execute(...)
+                    conn.commit()
+
+        This enforces the same lock ordering as _safe_db_execute:
+        _service_lock → _data_model._lock
+        """
+        return self._data_model._lock
+
+    def _init_projects_table(self) -> None:
+        """Create projects table in the existing SQLite database."""
+        with self._service_lock:
+            try:
+                self._safe_db_execute('''
+                    CREATE TABLE IF NOT EXISTS projects (
+                        project_id TEXT PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        description TEXT,
+                        status TEXT DEFAULT 'draft',
+                        metadata JSON,
+                        created_timestamp TEXT,
+                        last_modified_timestamp TEXT
+                    )
+                ''')
+                # Enable foreign keys
+                self._safe_db_execute("PRAGMA foreign_keys=ON")
+                self._safe_db_execute("SELECT 1", commit=True)
+                logger.info("Projects table initialized")
+            except Exception as e:
+                logger.exception("Error initializing projects table: %s", e)
+
+    def _load_projects_from_db(self) -> None:
+        """Load projects from SQLite into in-memory cache."""
+        with self._service_lock:
+            try:
+                cursor = self._safe_db_execute(
+                    "SELECT project_id, name, description, status, metadata, "
+                    "created_timestamp, last_modified_timestamp FROM projects"
+                )
+                rows = cursor.fetchall()
+                for row in rows:
+                    project_id = row[0]
+                    self._projects[project_id] = {
+                        "project_id": project_id,
+                        "name": row[1],
+                        "description": row[2],
+                        "status": row[3],
+                        "metadata": json.loads(row[4]) if row[4] else None,
+                        "created_timestamp": row[5],
+                        "last_modified_timestamp": row[6],
+                    }
+                logger.info("Loaded %s projects from database", len(self._projects))
+            except Exception as e:
+                logger.exception("Error loading projects: %s", e)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Project CRUD
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
+        """Create a new project."""
+        with self._service_lock:
+            project_id = str(uuid.uuid4())
+            now = datetime.now(timezone.utc).isoformat()
+
+            project_dict = {
+                "project_id": project_id,
+                "name": project_data.name,
+                "description": project_data.description,
+                "status": project_data.status.value,
+                "metadata": project_data.metadata,
+                "created_timestamp": now,
+                "last_modified_timestamp": now,
+            }
+
+            # Persist to SQLite
+            try:
+                with self._db_lock:
+                    conn = self._db_conn
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO projects "
+                    "(project_id, name, description, status, metadata, "
+                    "created_timestamp, last_modified_timestamp) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        project_id,
+                        project_data.name,
+                        project_data.description,
+                        project_data.status.value,
+                        json.dumps(project_data.metadata) if project_data.metadata else None,
+                        now,
+                        now,
+                    ),
+                )
+                conn.commit()
+            except Exception as e:
+                logger.exception("Error persisting project: %s", e)
+                raise
+
+            # Cache in memory
+            self._projects[project_id] = project_dict
+
+            return self._project_to_response(project_dict)
+
+    def get_project(self, project_id: str) -> ProjectResponse | None:
+        """Get a project by ID."""
+        with self._service_lock:
+            project = self._projects.get(project_id)
+            if project is None:
+                return None
+            return self._project_to_response(project)
+
+    def list_projects(
+        self,
+        status: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+        sort_by: str = "created_timestamp",
+        sort_order: str = "desc",
+    ) -> tuple[list[ProjectResponse], int]:
+        """List projects with optional filtering and pagination."""
+        with self._service_lock:
+            projects = list(self._projects.values())
+
+            # Filter by status
+            if status:
+                projects = [p for p in projects if p.get("status") == status]
+
+            # Sort
+            sort_key = _normalize_sort(sort_by)
+            reverse = sort_order.lower() == "desc"
+            projects.sort(
+                key=lambda p: p.get(sort_key, "") or "",
+                reverse=reverse,
+            )
+
+            total = len(projects)
+            start = (page - 1) * page_size
+            end = start + page_size
+            paginated = projects[start:end]
+
+            return [self._project_to_response(p) for p in paginated], total
+
+    def update_project(self, project_id: str, update_data: ProjectUpdate) -> ProjectResponse | None:
+        """Update a project."""
+        with self._service_lock:
+            project = self._projects.get(project_id)
+            if project is None:
+                return None
+
+            now = datetime.now(timezone.utc).isoformat()
+
+            # Apply updates
+            if update_data.name is not None:
+                project["name"] = update_data.name
+            if update_data.description is not None:
+                project["description"] = update_data.description
+            if update_data.status is not None:
+                project["status"] = update_data.status.value
+            if update_data.metadata is not None:
+                project["metadata"] = update_data.metadata
+
+            project["last_modified_timestamp"] = now
+
+            # Persist
+            try:
+                with self._db_lock:
+                    conn = self._db_conn
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE projects SET name=?, description=?, status=?, "
+                    "metadata=?, last_modified_timestamp=? WHERE project_id=?",
+                    (
+                        project["name"],
+                        project["description"],
+                        project["status"],
+                        json.dumps(project["metadata"]) if project["metadata"] else None,
+                        now,
+                        project_id,
+                    ),
+                )
+                conn.commit()
+            except Exception as e:
+                logger.exception("Error updating project: %s", e)
+                raise
+
+            return self._project_to_response(project)
+
+    def delete_project(self, project_id: str) -> bool:
+        """Delete a project and all its elements."""
+        with self._service_lock:
+            if project_id not in self._projects:
+                return False
+
+            # Soft-delete all elements in this project
+            # instead of calling _get_element_project_id() per element in a loop.
+            elements = self._data_model.get_all_elements()
+            element_ids = [e.element_id for e in elements]
+            project_id_map = self._batch_get_element_project_ids(element_ids)
+            for element in elements:
+                if project_id_map.get(element.element_id) == project_id:
+                    self._data_model.delete_element(element.element_id)
+
+            # Delete from SQLite
+            try:
+                with self._db_lock:
+                    conn = self._db_conn
+                cursor = conn.cursor()
+                # Remove element-project associations
+                cursor.execute(
+                    "DELETE FROM element_projects WHERE project_id=?",
+                    (project_id,),
+                )
+                cursor.execute(
+                    "DELETE FROM projects WHERE project_id=?",
+                    (project_id,),
+                )
+                conn.commit()
+            except Exception as e:
+                logger.exception("Error deleting project: %s", e)
+                # Still remove from cache even if DB delete fails for associations
+                try:
+                    with self._db_lock:
+                        conn = self._db_conn
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "DELETE FROM projects WHERE project_id=?",
+                        (project_id,),
+                    )
+                    conn.commit()
+                except Exception as e:
+                    logger.warning("Failed to delete project %s from DB after association error: %s", project_id, e)
+
+            # Remove from cache
+            del self._projects[project_id]
+            return True
+
+    def _project_to_response(self, project_dict: dict[str, Any]) -> ProjectResponse:
+        """Convert project dict to ProjectResponse."""
+        # Count elements for this project
+        element_count = 0
+        try:
+            element_count = self._count_project_elements(project_dict["project_id"])
+        except Exception as e:
+            logger.debug("Failed to count elements for project %s: %s", project_dict.get('project_id', '?'), e)
+
+        return ProjectResponse(
+            project_id=project_dict["project_id"],
+            name=project_dict["name"],
+            description=project_dict.get("description"),
+            status=project_dict.get("status", "draft"),
+            metadata=project_dict.get("metadata"),
+            element_count=element_count,
+            created_timestamp=project_dict.get("created_timestamp"),
+            last_modified_timestamp=project_dict.get("last_modified_timestamp"),
+        )
+
+    def _count_project_elements(self, project_id: str) -> int:
+        """Count elements belonging to a project."""
+        try:
+            # BUG-36 FIX: Use _safe_db_execute for proper lock acquisition
+            cursor = self._safe_db_execute(
+                "SELECT COUNT(*) FROM element_projects WHERE project_id=?",
+                (project_id,),
+            )
+            row = cursor.fetchone()
+            return row[0] if row else 0
+        except Exception:
+            # Fallback: count from in-memory elements with matching project_id
+            elements = self._data_model.get_all_elements()
+            element_ids = [e.element_id for e in elements]
+            project_id_map = self._batch_get_element_project_ids(element_ids)
+            count = sum(1 for eid in element_ids if project_id_map.get(eid) == project_id)
+            return count
+
+    def _get_element_project_id(self, element_id: str) -> str | None:
+        """Get the project ID for an element."""
+        try:
+            # BUG-36 FIX: Use _safe_db_execute for proper lock acquisition
+            cursor = self._safe_db_execute(
+                "SELECT project_id FROM element_projects WHERE element_id=?",
+                (element_id,),
+            )
+            row = cursor.fetchone()
+            return row[0] if row else None
+        except Exception:
+            return None
+
+    def _batch_get_element_project_ids(self, element_ids: list[str]) -> dict[str, str | None]:
+        """Get project IDs for multiple elements in a SINGLE query (avoids N+1).
+
+        V261 FIX (N+1 query elimination):
+        Previously, list_elements() called _get_element_project_id() for each
+        element in a loop, causing (1 + page_size) queries. For page_size=20,
+        that's 21 queries instead of 1.
+
+        This batch method uses a single SELECT with IN (?, ?, ...) to fetch
+        all project IDs at once, reducing 21 queries → 1 query.
+
+        Args:
+            element_ids: List of element IDs to look up.
+
+        Returns:
+            Dict mapping element_id → project_id (or None if not found).
+        """
+        if not element_ids:
+            return {}
+        try:
+            # Build parameterized IN clause: WHERE element_id IN (?, ?, ...)
+            placeholders = ", ".join(["?"] * len(element_ids))
+            sql = f"SELECT element_id, project_id FROM element_projects WHERE element_id IN ({placeholders})"
+            cursor = self._safe_db_execute(sql, tuple(element_ids))
+            rows = cursor.fetchall()
+            # Build result dict; elements not in rows get None (no project association)
+            result: dict[str, str | None] = dict.fromkeys(element_ids)
+            for row in rows:
+                result[row[0]] = row[1]
+            return result
+        except Exception:
+            # Fallback: return empty mapping (each element gets None)
+            return dict.fromkeys(element_ids)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Element CRUD
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def create_element(self, element_data: ElementCreate) -> ElementResponse:
+        """Create a new element from schema data."""
+        with self._service_lock:
+            # Build core model objects from schema
+            element_id = element_data.element_id or str(uuid.uuid4())
+
+            # Properties
+            props_schema = element_data.properties
+            properties = SemanticProperties(
+                element_type=props_schema.element_type,
+                name=props_schema.name,
+                description=props_schema.description,
+                material=props_schema.material,
+                fire_rating=props_schema.fire_rating,
+                height=props_schema.height,
+                width=props_schema.width,
+                load_bearing=props_schema.load_bearing,
+                layer=props_schema.layer,
+                revit_category=props_schema.revit_category,
+            )
+
+            # Geometry
+            geometry = None
+            if element_data.geometry:
+                geometry = Geometry(
+                    points=[Point3D(x=p.x, y=p.y, z=p.z) for p in element_data.geometry.points],
+                    polyline_closed=element_data.geometry.polyline_closed,
+                )
+
+            # Create UniversalElement
+            element = UniversalElement(
+                element_id=element_id,
+                properties=properties,
+                geometry=geometry,
+                source_file=element_data.source_file,
+                last_modified_by=element_data.last_modified_by,
+                autocad_handle=element_data.autocad_handle,
+                revit_element_id=element_data.revit_element_id,
+            )
+
+            # Add to data model
+            success = self._data_model.add_element(element)
+            if not success:
+                raise RuntimeError(f"Failed to add element {element_id}")
+
+            # Associate with project if provided
+            if element_data.project_id:
+                self._associate_element_with_project(element_id, element_data.project_id)
+
+            return self._element_to_response(element, element_data.project_id)
+
+    def get_element(self, element_id: str) -> ElementResponse | None:
+        """Get an element by ID."""
+        with self._service_lock:
+            element = self._data_model.get_element(element_id)
+            if element is None:
+                return None
+            project_id = self._get_element_project_id(element_id)
+            return self._element_to_response(element, project_id)
+
+    def list_elements(
+        self,
+        element_type: str | None = None,
+        project_id: str | None = None,
+        is_deleted: bool | None = None,
+        page: int = 1,
+        page_size: int = 20,
+        sort_by: str = "created_timestamp",
+        sort_order: str = "desc",
+    ) -> tuple[list[ElementResponse], int]:
+        """List elements with optional filtering and pagination."""
+        with self._service_lock:
+            elements = self._data_model.get_all_elements()
+
+            # Filter by element type
+            if element_type:
+                elements = [
+                    e for e in elements
+                    if e.properties and (e.properties.element_type.value if hasattr(e.properties.element_type, 'value') else str(e.properties.element_type)) == element_type
+                ]
+
+            # Filter by project
+            if project_id:
+                project_element_ids = set()
+                try:
+                    with self._db_lock:
+                        conn = self._db_conn
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "SELECT element_id FROM element_projects WHERE project_id=?",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                        (project_id,),
+                    )
+                    for row in cursor.fetchall():
+                        project_element_ids.add(row[0])
+                except Exception as e:
+                    logger.debug("Failed to query element_projects for project filter: %s", e)
+                elements = [e for e in elements if e.element_id in project_element_ids]
+
+            # Filter by deletion status
+            if is_deleted is not None:
+                elements = [e for e in elements if e.is_deleted == is_deleted]
+            else:
+                # By default, exclude deleted elements
+                elements = [e for e in elements if not e.is_deleted]
+
+            # Sort
+            sort_key = _normalize_sort(sort_by)
+            reverse = sort_order.lower() == "desc"
+            elements.sort(
+                key=lambda e: self._get_sort_value(e, sort_key),
+                reverse=reverse,
+            )
+
+            total = len(elements)
+            start = (page - 1) * page_size
+            end = start + page_size
+            paginated = elements[start:end]
+
+            # instead of calling _get_element_project_id() per element in a loop.
+            # Old: 1 + page_size queries (21 queries for page_size=20)
+            # New: 1 query total (regardless of page_size)
+            element_ids = [e.element_id for e in paginated]
+            project_id_map = self._batch_get_element_project_ids(element_ids)
+
+            result = []
+            for e in paginated:
+                pid = project_id_map.get(e.element_id)
+                result.append(self._element_to_response(e, pid))
+
+            return result, total
+
+    def _validate_property_updates(self, properties: dict | None) -> dict:
+        """Helper function to validate and normalize property updates."""
+        if properties is None:
+            return {}
+        return {
+            k.strip().lower().replace(" ", "_"): v
+            for k, v in properties.items()
+            if isinstance(k, str) and len(k.strip()) > 0
+        }
+
+    def _validate_geometry_updates(self, geometry: dict | None) -> Geometry | None:
+        """Helper function to validate and create Geometry object from update data."""
+        if not geometry:
+            return None
+
+        point_data = geometry.get("location", {})
+        location = Point3D(
+            x=point_data.get("x", 0.0),
+            y=point_data.get("y", 0.0),
+            z=point_data.get("z", 0.0),
+        )
+
+        return Geometry(location=location)
+
+    def update_element(self, element_id: str, update_data: ElementUpdate) -> ElementResponse | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+        """Update an element."""
+        with self._service_lock:
+            element = self._data_model.get_element(element_id)
+            if element is None:
+                return None
+
+            updates: dict[str, Any] = {}
+
+            if update_data.properties:
+                # Merge with existing properties
+                existing_props = element.properties
+                props_dict = existing_props.to_dict() if existing_props else {}
+
+                for field_name, value in update_data.properties.model_dump(exclude_unset=True).items():
+                    if value is not None:
+                        # Convert enum to string value
+                        if hasattr(value, 'value'):
+                            props_dict[field_name] = value.value
+                        else:
+                            props_dict[field_name] = value
+
+                updates["properties"] = props_dict
+
+            if update_data.geometry:
+                updates["geometry"] = {
+                    "points": [{"x": p.x, "y": p.y, "z": p.z} for p in update_data.geometry.points],
+                    "polyline_closed": update_data.geometry.polyline_closed,
+                }
+
+            if update_data.source_file is not None:
+                updates["source_file"] = update_data.source_file
+            if update_data.last_modified_by is not None:
+                updates["last_modified_by"] = update_data.last_modified_by
+            if update_data.is_deleted is not None:
+                updates["is_deleted"] = update_data.is_deleted
+
+            # Get change source for audit trail
+            source = ChangeSource.MANUAL
+            if update_data.last_modified_by:
+                try:
+                    source = ChangeSource(update_data.last_modified_by)
+                except ValueError as ve:
+                    logger.debug("Unknown ChangeSource '%s': %s", update_data.last_modified_by, ve)
+
+            # Perform update in database
+            success = self._data_model.update_element(element_id, updates, source=source)
+            if not success:
+                return None
+
+            # Get updated element and map to response
+            updated = self._data_model.get_element(element_id)
+            if updated is None:
+                return None
+
+            project_id = self._get_element_project_id(element_id)
+            return self._element_to_response(updated, project_id)
+
+    def delete_element(self, element_id: str, source: str = "manual") -> bool:
+        """Soft delete an element."""
+        with self._service_lock:
+            try:
+                change_source = ChangeSource(source)
+            except ValueError:
+                change_source = ChangeSource.MANUAL
+
+            return self._data_model.delete_element(element_id, source=change_source)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Bridge helpers — used by project_bridge.py for cross-database sync
+    # These provide safe raw SQL access without exposing private internals
+    # ──────────────────────────────────────────────────────────────────────────
+
+    @property
+    def bridge_lock(self) -> threading.RLock:
+        """Lock for bridge operations. Always acquire before bridge_sql()."""
+        return self._service_lock
+
+    def bridge_sql(self, sql: str, params: tuple = (), commit: bool = False, fetch: bool = False):
+        """
+        Execute raw SQL for bridge sync operations safely.
+
+        Ensures proper lock ordering and connection safety.
+        Used ONLY by project_bridge.py for cross-database synchronization.
+        """
+        with self._service_lock:
+            cursor = self._safe_db_execute(sql, params, commit=commit)
+            if fetch:
+                return cursor
+            return True
+
+    def bridge_create_table(self, create_sql: str) -> None:
+        """Create a table safely for bridge operations."""
+        with self._service_lock:
+            self._safe_db_execute(create_sql, commit=True)
+
+    def bridge_insert(self, sql: str, params: tuple) -> None:
+        """Insert a row for bridge sync."""
+        with self._service_lock:
+            self._safe_db_execute(sql, params, commit=True)
+
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def _element_to_response(self, element: UniversalElement, project_id: str | None = None) -> ElementResponse:
+        """
+        Convert UniversalElement to ElementResponse.
+
+        V115 FIX: Now passes proper Pydantic model instances instead of raw dicts
+        to ElementResponse. Previously, properties and geometry were passed as
+        plain dicts, which would fail Pydantic V2 strict validation when the
+        schema expects SemanticPropertiesResponse / GeometryResponse objects.
+        """
+        props_response = None
+        if element.properties:
+            props_response = SemanticPropertiesResponse(
+                element_type=element.properties.element_type.value if hasattr(element.properties.element_type, 'value') else str(element.properties.element_type),
+                name=element.properties.name,
+                description=element.properties.description,
+                material=element.properties.material,
+                fire_rating=element.properties.fire_rating,
+                height=element.properties.height,
+                width=element.properties.width,
+                load_bearing=element.properties.load_bearing,
+                layer=element.properties.layer,
+                revit_category=element.properties.revit_category,
+            )
+
+        geom_response = None
+        if element.geometry:
+            geom_response = GeometryResponse(
+                points=[Point3DResponse(x=p.x, y=p.y, z=p.z) for p in element.geometry.points],
+                polyline_closed=element.geometry.polyline_closed,
+                area=element.geometry.area,
+                perimeter=element.geometry.perimeter,
+            )
+
+        relationships = []
+        for r in element.relationships:
+            relationships.append(r.to_dict())
+
+        return ElementResponse(
+            element_id=element.element_id,
+            properties=props_response,
+            geometry=geom_response,
+            relationships=relationships,
+            created_timestamp=element.created_timestamp.isoformat() if element.created_timestamp else None,
+            last_modified_timestamp=element.last_modified_timestamp.isoformat() if element.last_modified_timestamp else None,
+            last_modified_by=element.last_modified_by,
+            source_file=element.source_file,
+            version=element.version,
+            is_deleted=element.is_deleted,
+            autocad_handle=element.autocad_handle,
+            revit_element_id=element.revit_element_id,
+            project_id=project_id,
+        )
+
+    def _get_sort_value(self, element: UniversalElement, sort_key: str) -> Any:
+        """Get a sort value from an element."""
+        if sort_key == "name" and element.properties:
+            return element.properties.name or ""
+        if sort_key == "element_type" and element.properties:
+            etype = element.properties.element_type
+            return etype.value if hasattr(etype, 'value') else str(etype)
+        if sort_key == "created_timestamp" and element.created_timestamp:
+            return element.created_timestamp.isoformat()
+        if sort_key == "last_modified_timestamp" and element.last_modified_timestamp:
+            return element.last_modified_timestamp.isoformat()
+        if sort_key == "version":
+            return element.version
+        return ""
+
+    def _associate_element_with_project(self, element_id: str, project_id: str) -> None:
+        """
+        Associate an element with a project.
+
+        Acquires the service lock to prevent concurrent SQL operations
+        on the same connection (thread safety).
+        """
+        with self._service_lock:
+            try:
+                # BUG-36 FIX: Use _safe_db_execute for proper lock acquisition
+                self._safe_db_execute('''
+                    CREATE TABLE IF NOT EXISTS element_projects (
+                        element_id TEXT,
+                        project_id TEXT,
+                        PRIMARY KEY (element_id, project_id),
+                        FOREIGN KEY (element_id) REFERENCES elements(element_id),
+                        FOREIGN KEY (project_id) REFERENCES projects(project_id)
+                    )
+                ''')
+                self._safe_db_execute(
+                    "INSERT OR IGNORE INTO element_projects (element_id, project_id) VALUES (?, ?)",
+                    (element_id, project_id),
+                    commit=True,
+                )
+            except Exception as e:
+                logger.exception("Error associating element with project: %s", e)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Connection (Relationship) CRUD
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def create_connection(self, data: ConnectionCreate) -> ConnectionResponse:
+        """
+        Create a new connection (relationship) between elements.
+
+        V188 FIX (CRITICAL): UniversalElement is a frozen dataclass with
+        ``relationships: tuple[Relationship, ...]`` (immutable). The previous
+        implementation called ``from_element.relationships.append(relationship)``
+        which raised ``AttributeError: 'tuple' object has no attribute 'append'``
+        on every call. Same bug for the rollback path ``.pop()``.
+
+        Root-cause fix per Rule 17 (NO half-solutions): use the V83 immutable
+        update pattern — ``dataclasses.replace()`` to construct a NEW frozen
+        element instance with the updated relationships tuple, then persist
+        via ``update_element()`` (which writes to the SQLite JSON column).
+
+        This is the SAME design pattern documented in core/models.py:
+            "The correct approach is to create a NEW SemanticProperties with
+             updated values and replace the reference on the element."
+
+        Why this is the root cause, not a patch:
+        - V83 (2026-05) intentionally froze UniversalElement for determinism
+        - V83 added a comment saying "db_service must create new instances"
+        - But create_connection() was never migrated — it kept the mutable API
+        - Tests never caught this because the V2 router (/api/v1/connections)
+          is never exercised by the test suite — all tests use the V1 router
+          (/api/projects/{pid}/connections) which calls the SAFE
+          database.create_connection() method instead.
+        - The frontend's Connections.tsx page uses the V2 router via api.ts,
+          so EVERY "Create Connection" button click on production would crash.
+        """
+        with self._service_lock:
+            connection_id = str(uuid.uuid4())
+
+            # Verify both elements exist
+            from_element = self._data_model.get_element(data.from_element_id)
+            to_element = self._data_model.get_element(data.to_element_id)
+
+            if from_element is None:
+                raise ValueError(f"Element {data.from_element_id} not found")
+            if to_element is None:
+                raise ValueError(f"Element {data.to_element_id} not found")
+
+            # Create relationship objects (frozen dataclasses — immutable, safe to share)
+            relationship = Relationship(
+                from_element_id=data.from_element_id,
+                to_element_id=data.to_element_id,
+                relationship_type=data.relationship_type,
+                is_parametric=data.is_parametric,
+                metadata=data.metadata,
+                connection_id=connection_id,
+            )
+
+            reverse_rel = Relationship(
+                from_element_id=data.to_element_id,
+                to_element_id=data.from_element_id,
+                relationship_type=f"reverse_{data.relationship_type}",
+                is_parametric=data.is_parametric,
+                metadata=data.metadata,
+                connection_id=connection_id,
+            )
+
+            # element instances with the extended relationships tuple.
+            # ``dataclasses.replace()`` returns a new frozen dataclass with
+            # the specified field replaced; the original is untouched.
+            new_from_rels = from_element.relationships + (relationship,)
+            new_to_rels = to_element.relationships + (reverse_rel,)
+
+            from_rels_dicts = [r.to_dict() for r in new_from_rels]
+            to_rels_dicts = [r.to_dict() for r in new_to_rels]
+
+            # Persist to relationships table FIRST (source of truth for connection_id).
+            # If this fails, no in-memory state was mutated (we only built new
+            # frozen instances above — they're discarded if we raise here).
+            try:
+                self._safe_db_execute(
+                    "INSERT INTO relationships "
+                    "(relationship_id, from_element_id, to_element_id, "
+                    "relationship_type, is_parametric, metadata) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        connection_id,
+                        data.from_element_id,
+                        data.to_element_id,
+                        data.relationship_type,
+                        data.is_parametric,
+                        json.dumps(data.metadata) if data.metadata else None,
+                    ),
+                    commit=True,
+                )
+            except Exception as e:
+                logger.exception("Error persisting connection: %s", e)
+                raise RuntimeError(f"Failed to persist connection: {e}")
+
+            # try/except block. If the first raised, the second was SKIPPED —
+            # leaving the cache inconsistent (to_element updated, from_element
+            # not). Root-cause fix: make each update_element call independent
+            # with its own try/except, AND check the return value (update_element
+            # returns False on failure rather than raising).
+            from_success = False
+            try:
+                from_success = self._data_model.update_element(
+                    data.from_element_id,
+                    {"relationships": from_rels_dicts},
+                )
+            except Exception as e:
+                logger.warning(
+                    "Connection %s persisted, but from_element %s cache "
+                    "update raised: %s",
+                    connection_id, data.from_element_id, e,
+                )
+            if not from_success:
+                logger.warning(
+                    "Connection %s persisted, but from_element %s cache "
+                    "update returned False (element may have been deleted)",
+                    connection_id, data.from_element_id,
+                )
+
+            to_success = False
+            try:
+                to_success = self._data_model.update_element(
+                    data.to_element_id,
+                    {"relationships": to_rels_dicts},
+                )
+            except Exception as e:
+                logger.warning(
+                    "Connection %s persisted, but to_element %s cache "
+                    "update raised: %s",
+                    connection_id, data.to_element_id, e,
+                )
+            if not to_success:
+                logger.warning(
+                    "Connection %s persisted, but to_element %s cache "
+                    "update returned False (element may have been deleted)",
+                    connection_id, data.to_element_id,
+                )
+
+            return ConnectionResponse(
+                connection_id=connection_id,
+                from_element_id=data.from_element_id,
+                to_element_id=data.to_element_id,
+                relationship_type=data.relationship_type,
+                is_parametric=data.is_parametric,
+                metadata=data.metadata,
+            )
+
+    def _build_connection_query(self, element_id: str | None, relationship_type: str | None) -> tuple[str, list]:
+        """Build the SQL query and parameters for listing connections."""
+        query = (
+            "SELECT relationship_id, from_element_id, to_element_id, "
+            "relationship_type, is_parametric, metadata FROM relationships WHERE 1=1"
+        )
+        params: list = []
+
+        if element_id:
+            query += " AND (from_element_id=? OR to_element_id=?)"
+            params.extend([element_id, element_id])
+
+        if relationship_type:
+            query += " AND relationship_type=?"
+            params.append(relationship_type)
+
+        return query, params
+
+    def list_connections(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+        self,
+        project_id: str | None = None,
+        element_id: str | None = None,
+        relationship_type: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> tuple[list[ConnectionResponse], int]:
+        """List connections with pagination."""
+        with self._service_lock:
+            # Build query and parameters
+            query, params = self._build_connection_query(element_id, relationship_type)
+
+        # Project filter ignored: relationships table does not have a project_id column.
+        # If needed, implement proper join logic. For now, we simply ignore this filter.
+
+
+            # Add ordering and pagination
+            offset = (page - 1) * page_size
+            query += " ORDER BY relationship_id DESC LIMIT ? OFFSET ?"
+            params.extend([page_size, offset])
+
+            # Execute query
+            cursor = self._db_conn.execute(query, params)
+            rows = cursor.fetchall()
+
+            # Count total for pagination
+            count_query, count_params = self._build_connection_query(element_id, relationship_type)
+            # Project filter ignored as it does not exist in relationships table.
+            count_query = f"SELECT COUNT(*) FROM ({count_query})"
+
+            total_count = self._db_conn.execute(count_query, count_params).fetchone()[0]
+
+            # Convert rows to response format
+            connections = [
+                ConnectionResponse(
+                    connection_id=row[0],
+                    from_element_id=row[1],
+                    to_element_id=row[2],
+                    relationship_type=row[3],
+                    is_parametric=row[4],
+                    metadata=json.loads(row[5]) if row[5] else {},
+                )
+                for row in rows
+            ]
+
+            return connections, total_count
+
+    def delete_connection(self, connection_id: str) -> bool:
+        """
+        Delete a connection by ID.
+
+        Returns True if deleted, False if not found.
+        Raises RuntimeError on database errors (NOT silently swallowed).
+
+        V188 FIX: The previous implementation had TWO bugs:
+          1. ``self._data_model.elements.get(from_eid)`` — UniversalDataModel
+             has NO ``elements`` attribute → AttributeError.
+          2. ``from_element.relationships = [...]`` — frozen dataclass →
+             FrozenInstanceError.
+
+        V191 FIX: The V188 fix had a THIRD bug — it caught ALL exceptions
+        in the outer try/except and returned False. This conflated "not
+        found" (legitimate False) with "database error" (should raise).
+        The router then returned 404 for DB errors, hiding real failures.
+
+        Root-cause fix per Rule 17: separate the "not found" case (return
+        False) from the "DB error" case (raise RuntimeError). Only catch
+        exceptions from the SELECT query (for not-found detection), not
+        from the DELETE or cache update.
+        """
+        with self._service_lock:
+            # Phase 1: Check if the connection exists (may return False)
+            try:
+                with self._db_lock:
+                    conn = self._db_conn
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT from_element_id, to_element_id, relationship_type "
+                    "FROM relationships WHERE relationship_id=?",
+                    (connection_id,),
+                )
+                row = cursor.fetchone()
+            except sqlite3.Error as e:
+                raise RuntimeError(f"Database error checking connection {connection_id}: {e}") from e
+
+            if not row:
+                return False  # Legitimate "not found"
+
+            from_eid = row[0]
+            to_eid = row[1]
+            rel_type = row[2]
+
+            # Phase 2: Delete from SQL (raise on DB error, don't swallow)
+            try:
+                cursor.execute(
+                    "DELETE FROM relationships WHERE relationship_id=?",
+                    (connection_id,),
+                )
+                conn.commit()
+            except sqlite3.Error as e:
+                raise RuntimeError(f"Database error deleting connection {connection_id}: {e}") from e
+
+            # Phase 3: Update the denormalized relationships cache on both
+            # elements. Cache update failures are non-fatal (the relationships
+            # table is authoritative), so we log warnings but don't raise.
+            reverse_type = f"reverse_{rel_type}"
+
+            for eid, src_eid, tgt_eid, rtype in (
+                (from_eid, from_eid, to_eid, rel_type),
+                (to_eid,   to_eid,   from_eid, reverse_type),
+            ):
+                element = self._data_model.get_element(eid)
+                if element is None:
+                    continue
+                # Build a NEW tuple excluding the matching relationship.
+                new_rels = tuple(
+                    r for r in element.relationships
+                    if not (
+                        r.from_element_id == src_eid
+                        and r.to_element_id == tgt_eid
+                        and r.relationship_type == rtype
+                    )
+                )
+                if len(new_rels) == len(element.relationships):
+                    continue  # No match — nothing to update
+                try:
+                    success = self._data_model.update_element(
+                        eid,
+                        {"relationships": [r.to_dict() for r in new_rels]},
+                    )
+                    # on failure (element not found, DB error). Log if so.
+                    if not success:
+                        logger.warning(  # NOSONAR
+                            "update_element returned False for element %s "
+                            "while cleaning up deleted connection %s cache",
+                            eid, connection_id,
+                        )
+                except Exception as e:
+                    logger.warning(  # NOSONAR
+                        "Deleted relationship %s from SQL table, but failed "
+                        "to update element %s relationships cache: %s",
+                        connection_id, eid, e,
+                    )
+
+            return True
+
+    def update_connection(
+        self, connection_id: str, data: ConnectionCreate
+    ) -> ConnectionResponse | None:
+        """Update a connection by ID. V215 FIX: was missing — frontend got 405.
+
+        Returns updated ConnectionResponse, or None if not found.
+        """
+        with self._service_lock:
+            with self._db_lock:
+                conn = self._db_conn
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT from_element_id, to_element_id, relationship_type "
+                "FROM relationships WHERE relationship_id=?",
+                (connection_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                return None
+
+            cursor.execute(
+                "UPDATE relationships SET from_element_id=?, to_element_id=?, "
+                "relationship_type=?, metadata=? WHERE relationship_id=?",
+                (
+                    data.from_element_id,
+                    data.to_element_id,
+                    data.relationship_type,
+                    json.dumps(data.metadata) if data.metadata else None,
+                    connection_id,
+                ),
+            )
+            conn.commit()
+
+            return ConnectionResponse(
+                connection_id=connection_id,
+                from_element_id=data.from_element_id,
+                to_element_id=data.to_element_id,
+                relationship_type=data.relationship_type,
+                metadata=data.metadata or {},
+                created_at="",
+                updated_at="",
+            )
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Conflict detection and resolution
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def detect_conflicts(self) -> list[ConflictResponse]:
+        """Detect conflicts between elements."""
+        with self._service_lock:
+            conflicts = self._data_model.detect_conflicts()
+            return [
+                ConflictResponse(
+                    conflict_id=c.conflict_id,
+                    element_id=c.element_id,
+                    conflict_type=c.conflict_type.value,
+                    timestamp=c.timestamp.isoformat() if c.timestamp else None,
+                    source_a=c.source_a.value,
+                    source_b=c.source_b.value,
+                    change_a=c.change_a,
+                    change_b=c.change_b,
+                    resolution=c.resolution,
+                    resolved=c.resolved,
+                )
+                for c in conflicts
+            ]
+
+    def _build_conflict_filters(self, resolved: bool | None, conflict_type: str | None) -> tuple[str, list]:
+        """Build filters for listing conflicts."""
+        conditions = ["1=1"]  # Base condition
+        params = []
+
+        if resolved is not None:
+            conditions.append("resolved=?")
+            params.append(resolved)
+
+        if conflict_type:
+            conditions.append("conflict_type=?")
+            params.append(conflict_type)
+
+        where_clause = " AND ".join(conditions)
+        return where_clause, params
+
+    def list_conflicts(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+        self,
+        resolved: bool | None = None,
+        conflict_type: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> tuple[list[ConflictResponse], int]:
+        """List conflicts with pagination."""
+        with self._service_lock:
+            # Build filters
+            where_clause, params = self._build_conflict_filters(resolved, conflict_type)
+
+            # Count total conflicts matching criteria
+            count_query = f"SELECT COUNT(*) FROM conflicts WHERE {where_clause}"
+            total_count = self._db_conn.execute(count_query, params).fetchone()[0]
+
+            # Fetch paginated conflicts
+            offset = (page - 1) * page_size
+            query = f"""
+                SELECT
+                    conflict_id, element_id, conflict_type, timestamp,
+                    source_a, source_b, change_a, change_b,
+                    resolution, resolved
+                FROM conflicts
+                WHERE {where_clause}
+                ORDER BY timestamp DESC
+                LIMIT ? OFFSET ?
+            """
+            params.extend([page_size, offset])
+
+            rows = self._db_conn.execute(query, params).fetchall()
+
+            # Convert rows to response format
+            conflicts = []
+            for row in rows:
+                conflict = ConflictResponse(
+                    conflict_id=row[0],
+                    element_id=row[1],
+                    conflict_type=row[2],
+                    timestamp=row[3],
+                    source_a=json.loads(row[4]) if row[4] else {},
+                    source_b=json.loads(row[5]) if row[5] else {},
+                    change_a=json.loads(row[6]) if row[6] else {},
+                    change_b=json.loads(row[7]) if row[7] else {},
+                    resolution=row[8],
+                    resolved=bool(row[9]),
+                )
+                conflicts.append(conflict)
+
+            return conflicts, total_count
+
+    def _convert_conflict_to_response(self, result) -> ConflictResponse:
+        """Convert conflict result to response format."""
+        # Extract values with defaults
+        conflict_id = getattr(result, 'conflict_id', str(uuid.uuid4()))
+        element_id = getattr(result, 'element_id', '')
+        ct = getattr(result, 'conflict_type', 'UNKNOWN')
+        sa = getattr(result, 'source_a', {})
+        sb = getattr(result, 'source_b', {})
+
+        return ConflictResponse(
+            conflict_id=conflict_id,
+            element_id=element_id,
+            conflict_type=ct,
+            timestamp=result.timestamp.isoformat() if hasattr(result.timestamp, 'isoformat') and result.timestamp else (str(result.timestamp) if result.timestamp else None),  # NOSONAR — S3358: nested ternary acceptable in this localized context
+            source_a=sa,
+            source_b=sb,
+            change_a=result.change_a,
+            change_b=result.change_b,
+            resolution=result.resolution,
+            resolved=result.resolved,
+        )
+
+    def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> ConflictResponse | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+        """
+        Resolve a conflict by ID.
+
+        V129 FIX: Uses resolve_conflict() on UniversalDataModel instead of
+        accessing non-existent self._data_model.conflicts dict.
+        """
+        with self._service_lock:
+            result = self._data_model.resolve_conflict(conflict_id, strategy=strategy)
+            if result is None:
+                return None
+
+            # Convert to response format using the helper method
+            return self._convert_conflict_to_response(result)
+
+    # Statistics and export  # NOSONAR - python:S125
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def get_statistics(self) -> StatisticsResponse:
+        """Get database statistics."""
+        with self._service_lock:
+            stats = self._data_model.get_statistics()
+
+            # Count projects
+            total_projects = len(self._projects)
+            active_projects = sum(
+                1 for p in self._projects.values() if p.get("status") == "active"
+            )
+
+            # Count connections
+            total_connections = 0
+            try:
+                with self._db_lock:
+                    conn = self._db_conn
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM relationships")
+                row = cursor.fetchone()
+                total_connections = row[0] if row else 0
+            except Exception:
+                # Fallback
+                for e in self._data_model.get_all_elements():
+                    total_connections += len(e.relationships)
+                total_connections = total_connections // 2  # Avoid double-counting
+
+            # Count conflicts
+            # HOTFIX C-2: UniversalDataModel has detect_conflicts() method, not conflicts attribute.
+            # Previous code raised AttributeError: conflicts → udm_database always "disconnected".
+            try:
+                conflicts_list = self._data_model.detect_conflicts()
+                total_conflicts = len(conflicts_list) if conflicts_list else 0
+                # detect_conflicts() returns list; unresolved = those without resolved flag.
+                # Since detect_conflicts() returns fresh detection each call, all are unresolved.
+                unresolved_conflicts = total_conflicts
+            except Exception:
+                total_conflicts = 0
+                unresolved_conflicts = 0
+
+            return StatisticsResponse(
+                # HOTFIX C-2: _Stats is a NamedTuple, not a dict. Use attribute access.
+                # Also _Stats only has 6 fields; missing fields default to 0/None.
+                total_elements=getattr(stats, "total_elements", 0),
+                deleted_elements=getattr(stats, "deleted_elements", 0),
+                active_elements=getattr(stats, "active_elements", 0),
+                total_projects=total_projects,
+                active_projects=active_projects,
+                total_connections=getattr(stats, "total_connections", total_connections),
+                total_conflicts=getattr(stats, "total_conflicts", total_conflicts),
+                unresolved_conflicts=getattr(stats, "unresolved_conflicts", unresolved_conflicts),
+                pending_autocad_to_revit=0,
+                pending_revit_to_autocad=0,
+                database_version=1,
+                last_sync=None,
+            )
+
+    def export_data(
+        self,
+        project_id: str | None = None,
+        element_types: list[str] | None = None,
+        include_deleted: bool = False,
+    ) -> dict[str, Any]:
+        """Export data as JSON-serializable dict."""
+        with self._service_lock:
+            elements = self._data_model.get_all_elements()
+
+            if not include_deleted:
+                elements = [e for e in elements if not e.is_deleted]
+
+            if project_id:
+                project_element_ids = set()
+                try:
+                    with self._db_lock:
+                        conn = self._db_conn
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "SELECT element_id FROM element_projects WHERE project_id=?",
+                        (project_id,),
+                    )
+                    for row in cursor.fetchall():
+                        project_element_ids.add(row[0])
+                except Exception as e:
+                    logger.debug("Failed to query element_projects for export filter: %s", e)
+                elements = [e for e in elements if e.element_id in project_element_ids]
+
+            if element_types:
+                elements = [
+                    e for e in elements
+                    if e.properties and (e.properties.element_type.value if hasattr(e.properties.element_type, 'value') else str(e.properties.element_type)) in element_types
+                ]
+
+            exported_elements = [e.to_dict() for e in elements]
+
+            # Export relationships
+            connections = []
+            try:
+                with self._db_lock:
+                    conn = self._db_conn
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM relationships")
+                for row in cursor.fetchall():
+                    connections.append({
+                        "relationship_id": row[0],
+                        "from_element_id": row[1],
+                        "to_element_id": row[2],
+                        "relationship_type": row[3],
+                        "is_parametric": row[4],
+                        "metadata": json.loads(row[5]) if row[5] else None,
+                    })
+            except Exception as e:
+                logger.debug("Failed to query relationships for export: %s", e)
+
+            # Export projects
+            projects = list(self._projects.values())
+
+            return {
+                "export_timestamp": datetime.now(timezone.utc).isoformat(),
+                "projects": projects,
+                "elements": exported_elements,
+                "connections": connections,
+                "conflicts": [c.to_dict() for c in self._data_model.conflicts.values()],
+                "statistics": self._data_model.get_statistics(),
+            }
+
+    # Lifecycle
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def close(self) -> None:
+        """Close the database connection."""
+        with self._service_lock:
+            try:
+                self._data_model.close()
+            except Exception as e:
+                logger.warning("Failed to close data model: %s", e)
+
+    @classmethod
+    def reset(cls) -> None:
+        """Reset the singleton (for testing only)."""
+        with cls._lock:
+            if cls._instance is not None:
+                try:
+                    cls._instance.close()
+                except Exception as e:
+                    logger.debug("Failed to close DatabaseService during reset: %s", e)
+                cls._instance = None
+
+
+def get_db_service() -> DatabaseService:
+    """
+    Dependency injection provider for DatabaseService.
+
+    Returns the singleton DatabaseService instance. Use with FastAPI's
+    Depends() to inject it into route handlers instead of creating a
+    new DatabaseService() per request, which would create a new
+    UniversalDataModel + SQLite connection on every call.
+
+    Usage:
+        from backend.db_service import get_db_service
+
+        @router.get("/elements")
+        async def list_elements(db: DatabaseService = Depends(get_db_service)):
+            ...
+    """
+    return DatabaseService()

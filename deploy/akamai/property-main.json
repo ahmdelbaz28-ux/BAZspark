@@ -1,0 +1,233 @@
+{
+  "_comment": "Akamai Property Manager — main configuration template for BAZSPARK. Import via Property Manager API: POST /papi/v1/properties/{propertyId}/versions/{versionId}/rules. Replace placeholders: {EDGE_HOSTNAME}, {ORIGIN_HOSTNAME}, {ORIGIN_PROTOCOL}, {CERTIFICATE_ID}, {CONTRACT_ID}, {GROUP_ID}. See docs/AKAMAI_DEPLOYMENT_GUIDE.md.",
+  "propertyVersion": 1,
+  "etag": "",
+  "productId": "prd_SPM",
+  "ruleFormat": "latest",
+  "rules": {
+    "name": "default",
+    "comments": "BAZSPARK — Safety-Critical Fire Protection Platform. Top-level rule with global behaviors.",
+    "behaviors": [
+      {
+        "name": "origin",
+        "options": {
+          "originType": "CUSTOM",
+          "customValidCertificate": true,
+          "useStandardTls": false,
+          "hostname": "{ORIGIN_HOSTNAME}",
+          "originSni": "{ORIGIN_HOSTNAME}",
+          "verify": false,
+          "httpPort": 80,
+          "httpsPort": 443,
+          "originProtocol": "HTTPS",
+          "originCertsHeaderName": "",
+          "compression": true,
+          "bypassCache": false,
+          "cacheTag": "",
+          "cachePartition": "default",
+          "uniqueCacheKey": false,
+          "forwardHostHeader": "ORIGIN_HOST",
+          "customValidCn": "",
+          "mTLS": {
+            "authType": "DISABLED"
+          }
+        }
+      },
+      {
+        "name": "trueClientIp",
+        "options": {
+          "enabled": true,
+          "behavior": "ALWAYS"
+        }
+      }
+    ],
+    "children": [
+      {
+        "name": "Criteria: API routes (api.bazspark.com)",
+        "comments": "Match /api/* paths — these go to the FastAPI backend with no caching.",
+        "criteria": [
+          {
+            "name": "path",
+            "options": {
+              "matchOperator": "MATCHES_ONE_OF",
+              "values": ["/api/*", "/api/v1/*"],
+              "caseSensitive": false,
+              "normalize": false
+            }
+          }
+        ],
+        "behaviors": [
+          {
+            "name": "caching",
+            "options": {
+              "behavior": "NO_STORE"
+            }
+          },
+          {
+            "name": "cacheResponse",
+            "options": {
+              "cacheabilitySetting": "NEVER"
+            }
+          },
+          {
+            "name": "downstreamCache",
+            "options": {
+              "behavior": "ALLOW",
+              "ttl": "0s",
+              "mustRevalidate": true
+            }
+          },
+          {
+            "name": "timeoutResponse",
+            "options": {
+              "ttl": "300s"
+            }
+          },
+          {
+            "name": "sureRoute",
+            "options": {
+              "enabled": false,
+              "testRuleUrl": "https://{EDGE_HOSTNAME}/api/health",
+              "type": "BUILT_IN"
+            }
+          }
+        ],
+        "children": []
+      },
+      {
+        "name": "Criteria: Static assets (frontend/dist/*)",
+        "comments": "Cache static React/Vite assets for 30 days. Hashed filenames enable aggressive caching.",
+        "criteria": [
+          {
+            "name": "fileExtension",
+            "options": {
+              "matchCaseSensitive": false,
+              "matchOperator": "IS_ONE_OF",
+              "values": ["js", "css", "woff2", "woff", "ttf", "png", "jpg", "jpeg", "gif", "svg", "ico", "webp", "avif"]
+            }
+          }
+        ],
+        "behaviors": [
+          {
+            "name": "caching",
+            "options": {
+              "behavior": "MAX_AGE",
+              "mustRevalidate": false,
+              "ttl": "30d"
+            }
+          },
+          {
+            "name": "cacheResponse",
+            "options": {
+              "cacheabilitySetting": "CACHEABLE"
+            }
+          },
+          {
+            "name": "downstreamCache",
+            "options": {
+              "behavior": "ALLOW",
+              "ttl": "30d",
+              "mustRevalidate": false
+            }
+          },
+          {
+            "name": "cacheKeyExtended",
+            "options": {
+              "useIncomingScheme": false,
+              "useIncomingHost": true,
+              "useIncomingMethod": false,
+              "useIncomingPath": true,
+              "useIncomingQueryString": "IGNORE",
+              "queryCacheKeyParameters": [],
+              "includeAllExcept": [],
+              "useRegex": false
+            }
+          },
+          {
+            "name": "gzipResponse",
+            "options": {
+              "behavior": "ALWAYS"
+            }
+          },
+          {
+            "name": "brotliResponse",
+            "options": {
+              "enabled": true
+            }
+          }
+        ],
+        "children": []
+      },
+      {
+        "name": "Criteria: HTML (SPA fallback)",
+        "comments": "index.html for SPA routing — never cache (deployment updates need immediate propagation).",
+        "criteria": [
+          {
+            "name": "path",
+            "options": {
+              "matchOperator": "MATCHES_ONE_OF",
+              "values": ["/", "/index.html"],
+              "caseSensitive": false,
+              "normalize": false
+            }
+          }
+        ],
+        "behaviors": [
+          {
+            "name": "caching",
+            "options": {
+              "behavior": "NO_STORE"
+            }
+          },
+          {
+            "name": "downstreamCache",
+            "options": {
+              "behavior": "ALLOW",
+              "ttl": "0s",
+              "mustRevalidate": true
+            }
+          }
+        ],
+        "children": []
+      },
+      {
+        "name": "Security: Inject Akamai-Internal header (origin verification)",
+        "comments": "Critical: inject a shared secret that backend/akamai_middleware.py verifies to prevent direct origin access. Rotate quarterly.",
+        "criteria": [
+          {
+            "name": "requestType",
+            "options": {
+              "matchOperator": "IS",
+              "value": "CLIENT_REQ"
+            }
+          }
+        ],
+        "behaviors": [
+          {
+            "name": "modifyHeader",
+            "options": {
+              "action": "ADD",
+              "headerName": "Akamai-Internal",
+              "headerValue": "{AKAMAI_ORIGIN_TOKEN}",
+              "avoidDuplicateHeaders": false,
+              "newHeaderValue": ""
+            }
+          },
+          {
+            "name": "modifyHeader",
+            "options": {
+              "action": "ADD",
+              "headerName": "X-Forwarded-By",
+              "headerValue": "akamai-edge",
+              "avoidDuplicateHeaders": false,
+              "newHeaderValue": ""
+            }
+          }
+        ],
+        "children": []
+      }
+    ],
+    "options": {},
+    "advanced": ""
+  }
+}

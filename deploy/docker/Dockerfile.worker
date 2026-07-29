@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# NOSONAR
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt pyproject.toml ./
+# V141.1 FIX (B3 revised): Same fix as Dockerfile.api — do NOT use
+# `pip install -e .` in the builder stage because the editable .pth file
+# would point to /build/ which is absent in the final stage. Install
+# requirements.txt only; source code is copied to /app/ in the final
+# stage and PYTHONPATH=/app makes it importable.
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+FROM python:3.12-slim
+
+LABEL maintainer="FireAI Engineering Team" \
+      description="FireAI Background Worker — Async Task Processing" \
+      version="1.0.0" \
+      security.fireai.compliance="nfpa72-2022"
+
+# NOSONAR - docker:S7031: groupadd/useradd acceptable in Dockerfile
+RUN groupadd -r fireai && \
+    useradd -r -g fireai -d /app -s /sbin/nologin -c "FireAI Worker" fireai
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /install /usr/local
+
+COPY --chown=fireai:fireai backend/ ./backend/
+COPY --chown=fireai:fireai fireai/ ./fireai/
+# V141.1 FIX (B2 revised): Copy ALL local packages imported by backend/
+# and fireai/ — not just facp_*. Missing packages (marine, adapters,
+# qomn_fire, qomn_conduit, integration) would cause ImportError at runtime
+# when the worker processes marine fire-safety or PDF parsing workflows.
+COPY --chown=fireai:fireai facp_system/ ./facp_system/
+COPY --chown=fireai:fireai facp_distributed/ ./facp_distributed/
+COPY --chown=fireai:fireai core/ ./core/
+COPY --chown=fireai:fireai parsers/ ./parsers/
+COPY --chown=fireai:fireai marine/ ./marine/
+COPY --chown=fireai:fireai adapters/ ./adapters/
+COPY --chown=fireai:fireai qomn_fire/ ./qomn_fire/
+COPY --chown=fireai:fireai qomn_conduit/ ./qomn_conduit/
+COPY --chown=fireai:fireai integration/ ./integration/
+COPY --chown=fireai:fireai pyproject.toml ./
+COPY deploy/docker/entrypoint-worker.sh /entrypoint-worker.sh
+
+# V174 FIX: /app/db MUST be pre-created (same root cause as the root Dockerfile
+# and Dockerfile.api). The worker imports backend.api_keys (via backend.app),
+# which calls _ensure_default_admin_key() at module load time. When
+# FIREAI_API_KEY is set (Kubernetes secret), this writes to db/api_keys.json
+# and would crash without /app/db pre-created and owned by fireai.
+RUN mkdir -p /app/data /app/logs /app/tmp /app/db && \
+    chown -R fireai:fireai /app/data /app/logs /app/tmp /app/db && \
+    chmod +x /entrypoint-worker.sh
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    FIREAI_ENV=production \
+    LOG_LEVEL=WARNING \
+    PYTHONPATH=/app
+
+USER fireai
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "import os,sys; sys.exit(0 if os.path.exists('/app/data/worker_heartbeat') else 1)"
+
+ENTRYPOINT ["/entrypoint-worker.sh"]

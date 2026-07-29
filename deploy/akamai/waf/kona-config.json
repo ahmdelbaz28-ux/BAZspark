@@ -1,0 +1,171 @@
+{
+  "_comment": "Kona Site Defender WAF configuration for BAZSPARK. This template defines attack groups, rule actions, and custom rules. Apply via /papi/v1/wafconfigs POST. See docs/AKAMAI_DEPLOYMENT_GUIDE.md.",
+  "configName": "BAZSPARK-PRODUCTION-WAF",
+  "configDescription": "Safety-critical Fire Protection platform — strict WAF policy for engineering API.",
+  "mode": "KRS_FULL_PROTECTION",
+  "attackGroups": [
+    {
+      "group": "SQL",
+      "action": "DENY",
+      "threshold": 5,
+      "window": "1m",
+      "comments": "Block SQL injection — FireAI uses psycopg2 with parameterized queries, but WAF is defense-in-depth."
+    },
+    {
+      "group": "XSS",
+      "action": "DENY",
+      "threshold": 5,
+      "window": "1m",
+      "comments": "Block Cross-Site Scripting — frontend renders engineering data that could be exploited."
+    },
+    {
+      "group": "LFI",
+      "action": "DENY",
+      "threshold": 1,
+      "window": "1m",
+      "comments": "Block Local File Inclusion — file upload endpoints parse IFC/DXF/CAD files."
+    },
+    {
+      "group": "RFI",
+      "action": "DENY",
+      "threshold": 1,
+      "window": "1m",
+      "comments": "Block Remote File Inclusion."
+    },
+    {
+      "group": "RCE",
+      "action": "DENY",
+      "threshold": 1,
+      "window": "1m",
+      "comments": "Block Remote Code Execution — critical for engineering API."
+    },
+    {
+      "group": "PHP",
+      "action": "DENY",
+      "threshold": 1,
+      "window": "1m",
+      "comments": "Block PHP injection — backend is Python but RCE payloads often probe PHP."
+    },
+    {
+      "group": "CMD",
+      "action": "DENY",
+      "threshold": 1,
+      "window": "1m",
+      "comments": "Block OS command injection."
+    },
+    {
+      "group": "SCANNER",
+      "action": "ALERT",
+      "threshold": 10,
+      "window": "5m",
+      "comments": "Alert on vulnerability scanners — investigate before blocking (could be pen-test)."
+    },
+    {
+      "group": "PROTOCOL",
+      "action": "DENY",
+      "threshold": 5,
+      "window": "1m",
+      "comments": "Block protocol violations (malformed requests)."
+    },
+    {
+      "group": "BOTS",
+      "action": "ALERT",
+      "threshold": 30,
+      "window": "1m",
+      "comments": "Alert on bot signatures — Bot Manager handles this more granularly."
+    }
+  ],
+  "customRules": [
+    {
+      "name": "Block direct origin access (HF Space URL leak)",
+      "description": "If someone discovers the HF Space direct URL (ahmdelbaz28-bazspark.hf.space) and tries to bypass Akamai, block them. The HF Space URL should never appear in a Referer or Host header from a legitimate client.",
+      "condition": "OR(http.header.referer contains \"ahmdelbaz28-bazspark.hf.space\", http.header.host contains \"ahmdelbaz28-bazspark.hf.space\")",
+      "action": "DENY",
+      "rateLimit": {
+        "threshold": 1,
+        "window": "1m"
+      },
+      "comments": "Defense-in-depth: backend/akamai_middleware.py also checks this via the AKAMAI_REQUIRE_ORIGIN_TOKEN env var."
+    },
+    {
+      "name": "Rate limit /api/v1/auth/login (credential stuffing protection)",
+      "description": "Limit login attempts to 10 per minute per IP. Bot Manager + Account Protector also engage, but this rate limit catches missed traffic.",
+      "condition": "http.path matches \"/api/v1/auth/login\"",
+      "action": "RATE_LIMIT",
+      "rateLimit": {
+        "threshold": 10,
+        "window": "1m",
+        "action": "DENY",
+        "penalty": "5m"
+      },
+      "comments": "Backend slowapi limiter also enforces this at app level — defense in depth."
+    },
+    {
+      "name": "Rate limit /api/v1/* (general API flood protection)",
+      "description": "Limit all API calls to 300 per minute per IP. Frontend uses 1-10 calls per page typically.",
+      "condition": "http.path matches \"/api/v1/*\"",
+      "action": "RATE_LIMIT",
+      "rateLimit": {
+        "threshold": 300,
+        "window": "1m",
+        "action": "DENY",
+        "penalty": "1m"
+      }
+    },
+    {
+      "name": "Block requests without User-Agent",
+      "description": "Most legitimate browsers and HTTP clients include a User-Agent header. Missing UA often indicates scripted attack.",
+      "condition": "http.header.user-agent equals \"\"",
+      "action": "DENY",
+      "comments": "Exceptions: curl with -A '', but legitimate users use curl with explicit UA."
+    },
+    {
+      "name": "Block requests with suspicious User-Agent (sqlmap, nikto, masscan, etc.)",
+      "description": "Common attack tool signatures in User-Agent header.",
+      "condition": "OR(http.header.user-agent contains \"sqlmap\", http.header.user-agent contains \"nikto\", http.header.user-agent contains \"masscan\", http.header.user-agent contains \"nmap\", http.header.user-agent contains \"wpscan\", http.header.user-agent contains \"dirbuster\", http.header.user-agent contains \"gobuster\", http.header.user-agent contains \"hydra\", http.header.user-agent contains \"metasploit\")",
+      "action": "DENY"
+    },
+    {
+      "name": "Block HTTP methods other than GET/POST/PUT/DELETE/OPTIONS/HEAD/PATCH",
+      "description": "Block TRACE/CONNECT and other unusual methods.",
+      "condition": "NOT(http.method in [\"GET\", \"POST\", \"PUT\", \"DELETE\", \"OPTIONS\", \"HEAD\", \"PATCH\"])",
+      "action": "DENY"
+    },
+    {
+      "name": "Allow ONLY valid Content-Type on POST/PUT/PATCH",
+      "description": "Block non-JSON content types on API mutation endpoints.",
+      "condition": "AND(http.method in [\"POST\", \"PUT\", \"PATCH\"], NOT(http.header.content-type starts with \"application/json\"), NOT(http.header.content-type starts with \"multipart/form-data\"))",
+      "action": "DENY",
+      "comments": "multipart/form-data allowed for file uploads (IFC/DXF parsers)."
+    },
+    {
+      "name": "Block oversized request bodies (>50MB)",
+      "description": "FireAI largest legitimate upload is IFC files (~10-20MB). 50MB gives headroom while blocking DoS.",
+      "condition": "http.request.body.length > 52428800",
+      "action": "DENY"
+    },
+    {
+      "name": "Geo-block sanctioned countries",
+      "description": "Block requests from US-sanctioned countries (OFAC list). Backend also enforces via AKAMAI_BLOCKED_COUNTRIES env var.",
+      "condition": "user.geo.country in [\"IR\", \"KP\", \"SY\", \"CU\", \"VE\", \"BY\", \"RU\"]",
+      "action": "DENY",
+      "comments": "Update sanctioned countries list quarterly per OFAC updates."
+    }
+  ],
+  "exceptions": [
+    {
+      "name": "Health check endpoint",
+      "description": "Allow /api/health without rate limiting — used by uptime monitors (HF Space healthcheck, Vercel cron, Akamai SureRoute).",
+      "condition": "http.path equals \"/api/health\"",
+      "applyTo": "ALL_RULES",
+      "comments": "Without this exception, uptime monitors would be rate-limited."
+    },
+    {
+      "name": "Akamai monitoring IPs",
+      "description": "Allow Akamai's monitoring IPs without rate limiting.",
+      "condition": "client.ip in [\"23.32.0.0/11\", \"23.64.0.0/14\", \"23.192.0.0/11\", \"72.246.0.0/13\", \"95.100.0.0/14\"]",
+      "applyTo": "RATE_LIMITS_ONLY",
+      "comments": "Akamai edge IP ranges — fetch updated list from /papi/v1/ips."
+    }
+  ]
+}

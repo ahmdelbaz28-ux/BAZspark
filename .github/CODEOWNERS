@@ -1,0 +1,58 @@
+# CODEOWNERS for FireAI Digital Twin
+#
+# This file defines who must review changes to specific files.
+# When combined with branch protection ("Require review from Code Owners"),
+# it prevents anyone (including AI agents) from modifying safety-critical
+# regulated code without explicit owner approval.
+#
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
+#
+# Last reviewer wins; use most-specific path matches.
+
+# ─────────────────────────────────────────────────────────────────────────
+# Default: any unmatched file requires owner review
+# ─────────────────────────────────────────────────────────────────────────
+*  @ahmdelbaz28-ux
+
+# ─────────────────────────────────────────────────────────────────────────
+# Safety-critical regulated data (NFPA 72, NEC, IEC, ASHRAE)
+# Touch these → owner MUST review. No exceptions.
+# ─────────────────────────────────────────────────────────────────────────
+fireai/core/qomn_kernel.py        @ahmdelbaz28-ux
+fireai/core/nfpa72_*.py           @ahmdelbaz28-ux
+fireai/core/device_placement.py   @ahmdelbaz28-ux
+fireai/core/voltage_drop.py       @ahmdelbaz28-ux
+fireai/core/battery_aging_derating.py  @ahmdelbaz28-ux
+fireai/core/floor_orchestrator.py @ahmdelbaz28-ux
+fireai/core/floor_analyser.py     @ahmdelbaz28-ux
+fireai/constants/                 @ahmdelbaz28-ux
+qomn_fire/core/constants.py       @ahmdelbaz28-ux
+qomn_conduit/                     @ahmdelbaz28-ux
+facp_system/                      @ahmdelbaz28-ux
+
+# ─────────────────────────────────────────────────────────────────────────
+# Project governance / contract with the agent
+# ─────────────────────────────────────────────────────────────────────────
+agent.md                          @ahmdelbaz28-ux
+GOVERNANCE_PROPOSALS.md           @ahmdelbaz28-ux
+SMOKE_SPACING_AUDIT_FINDING_1.md  @ahmdelbaz28-ux
+OPERATOR_ACTION_ITEMS.md          @ahmdelbaz28-ux
+VULNERABILITY_TRIAGE.md           @ahmdelbaz28-ux
+CODE_REVIEW_REPORT.md             @ahmdelbaz28-ux
+
+# ─────────────────────────────────────────────────────────────────────────
+# Security infrastructure
+# ─────────────────────────────────────────────────────────────────────────
+parsers/_path_security.py         @ahmdelbaz28-ux
+backend/app.py                    @ahmdelbaz28-ux
+backend/request_context.py        @ahmdelbaz28-ux
+backend/routers/qomn.py           @ahmdelbaz28-ux
+backend/routers/facp.py           @ahmdelbaz28-ux
+.github/                          @ahmdelbaz28-ux
+Dockerfile                        @ahmdelbaz28-ux
+docker-compose.yml                @ahmdelbaz28-ux
+.env.example                      @ahmdelbaz28-ux
+.pre-commit-config.yaml           @ahmdelbaz28-ux
+.secrets.baseline                 @ahmdelbaz28-ux
+pyproject.toml                    @ahmdelbaz28-ux
+requirements.txt                  @ahmdelbaz28-ux

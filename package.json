@@ -1,0 +1,32 @@
+{
+	"name": "bazspark-monorepo",
+	"version": "1.55.0",
+	"private": true,
+	"description": "BAZSpark — Safety-Critical Fire Alarm Engineering Platform (monorepo root)",
+	"author": {
+		"name": "Eng. Ahmed Elbaz",
+		"email": "engineering@bazspark.com"
+	},
+	"homepage": "https://bazspark.com",
+	"license": "MIT",
+	"workspaces": [],
+	"scripts": {
+		"install:frontend": "cd frontend && npm install",
+		"dev": "cd frontend && npm run dev",
+		"build": "cd frontend && npm run build",
+		"test": "cd frontend && npm run test",
+		"lint": "cd frontend && npm run lint",
+		"typecheck": "cd frontend && npm run typecheck",
+		"test:visual": "cd frontend && npm run test:visual"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.2",
+		"@playwright/test": "^1.61.1",
+		"dependency-cruiser": "^18.1.0"
+	},
+	"dependencies": {
+		"@gsap/react": "^2.1.1",
+		"gsap": "^3.12.5",
+		"split-type": "^0.3.4"
+	}
+}

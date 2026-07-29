@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# NOSONAR
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt pyproject.toml ./
+# V141.1 FIX (B3 revised after adversarial critique): V141 used
+# `pip install --prefix=/install -e ".[parsing]"` which creates an EDITABLE
+# install with a .pth file pointing to /build/. In Docker multi-stage build,
+# /build/ does NOT exist in the final stage — so the .pth file would be a
+# dangling pointer and `import fireai` would fail with ModuleNotFoundError.
+#
+# Root-cause fix: install requirements.txt (which mirrors pyproject.toml
+# dependencies exactly — see V141 B3 fix) into /install prefix. Do NOT
+# install the package itself in the builder — the source code is copied
+# directly to /app/ in the final stage and PYTHONPATH=/app makes it
+# importable. This matches the existing pattern and avoids the editable
+# .pth dangling pointer problem.
+#
+# Note: pyproject.toml is still COPYed so that future tools (e.g., pip
+# metadata queries) can read package metadata, but it is NOT installed.
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+FROM python:3.12-slim
+
+LABEL maintainer="FireAI Engineering Team" \
+      description="FireAI API Server — Safety-Critical Fire Protection Platform" \
+      version="1.0.0" \
+      security.fireai.compliance="nfpa72-2022"
+
+# NOSONAR - docker:S7031: groupadd/useradd acceptable in Dockerfile
+RUN groupadd -r fireai && \
+    useradd -r -g fireai -d /app -s /sbin/nologin -c "FireAI Service" fireai
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /install /usr/local
+
+COPY --chown=fireai:fireai backend/ ./backend/
+COPY --chown=fireai:fireai fireai/ ./fireai/
+# V141.1 FIX (B2 revised after adversarial critique): V141 only copied
+# facp_system/ + facp_distributed/ but MISSED marine/, adapters/,
+# qomn_fire/, qomn_conduit/, integration/ — all of which are imported by
+# backend/routers/marine.py, backend/services/marine_service.py, and
+# backend/services/workflow_service.py. A Docker image built with V141
+# would have crashed at runtime when any marine fire-safety endpoint was
+# called (ImportError: No module named 'marine'). This is SAFETY-CRITICAL
+# because marine fire protection (SOLAS, NFPA 302, IEC 60092) is a core
+# feature. Now ALL local packages referenced by backend/ and fireai/ are
+# copied into the image.
+COPY --chown=fireai:fireai facp_system/ ./facp_system/
+COPY --chown=fireai:fireai facp_distributed/ ./facp_distributed/
+COPY --chown=fireai:fireai core/ ./core/
+COPY --chown=fireai:fireai parsers/ ./parsers/
+COPY --chown=fireai:fireai marine/ ./marine/
+COPY --chown=fireai:fireai adapters/ ./adapters/
+COPY --chown=fireai:fireai qomn_fire/ ./qomn_fire/
+COPY --chown=fireai:fireai qomn_conduit/ ./qomn_conduit/
+COPY --chown=fireai:fireai integration/ ./integration/
+COPY --chown=fireai:fireai pyproject.toml ./
+
+# V174 FIX: /app/db MUST be pre-created (same root cause as the root Dockerfile).
+# backend/api_keys.py line 648 calls _ensure_default_admin_key() at module load
+# time; when FIREAI_API_KEY is set (injected as Kubernetes secret in deploy.yml
+# lines 210, 269), it tries to mkdir("db") relative to CWD (/app). Without this
+# pre-created directory, the fireai user cannot create /app/db (root-owned)
+# and the API container crashes on startup with PermissionError.
+RUN mkdir -p /app/data /app/logs /app/tmp /app/db && \
+    chown -R fireai:fireai /app/data /app/logs /app/tmp /app/db
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    FIREAI_ENV=production \
+    LOG_LEVEL=WARNING \
+    PYTHONPATH=/app \
+    DIGITAL_TWIN_DB_PATH=/app/data/digital_twin.db \
+    UDM_DB_PATH=/app/data/udm_elements.db
+
+USER fireai
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')" || exit 1
+
+CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--limit-max-requests", "10000"]

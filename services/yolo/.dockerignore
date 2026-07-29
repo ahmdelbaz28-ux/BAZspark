@@ -1,0 +1,57 @@
+# services/yolo/.dockerignore — S6470 fix: explicit ignore list so
+# `COPY . .` in the Dockerfile cannot leak sensitive files into the image.
+# Anything not matched here is still copied, but these patterns guarantee
+# no secrets, VCS, caches, or local dev artifacts sneak in.
+
+# Version control
+.git
+.gitignore
+.github
+
+# Python caches
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Virtual envs / local installs
+.venv
+venv
+env
+
+# Test / coverage artifacts
+tests
+test_*.py
+*_test.py
+coverage.xml
+.coverage
+htmlcov
+
+# IDE / editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Build outputs
+build
+dist
+*.egg-info
+
+# Docs / configs not needed at runtime
+*.md
+docs
+LICENSE
+CHANGELOG.md
+
+# CI / deploy manifests
+Dockerfile*
+.dockerignore
+docker-compose*.yml

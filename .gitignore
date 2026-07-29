@@ -1,0 +1,314 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# C extensions
+*.o
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+# PyInstaller
+*.manifest
+*.spec
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+# Translations
+*.mo
+*.pot
+# Django stuff:
+*.log
+logs/
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+# Flask stuff:
+instance/
+.webassets-cache
+# Scrapy stuff:
+.scrapy
+# Sphinx documentation
+docs/_build/
+# PyBuilder
+target/
+# Jupyter Notebook
+.ipynb_checkpoints
+# IPython
+profile_default/
+ipython_config.py
+# pyenv
+.python-version
+.pyenv
+.pyenvrc
+# pipenv
+Pipfile.lock
+# PEP 582
+__pypackages__/
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+# SageMath parsed files
+*.sage.py
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+# Spyder project settings
+.spyderproject
+.spyproject
+# Rope project settings
+.ropeproject
+# mkdocs documentation
+/site
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+# Pyre checker
+.pyre/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+# Database
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+fireai_learning.sqlite3
+/db/
+backend/db/api_keys.json
+backend/db/api_keys.secret
+# Logs
+# Coverage
+.coverage*
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# Secrets
+secrets/
+secret.json
+config/secrets.json
+# API key server-side HMAC secret (per-instance, must never be committed)
+db/api_keys.secret
+*.secret
+.env.backup.*
+# Testing
+.pytest_cache/
+# Reports (generated)
+reports/
+coverage.json
+audit/
+# But allow phase reports in docs
+!docs/reports/
+# Node.js
+node_modules/
+# Electron
+frontend/release/
+frontend/electron/backend/
+frontend/electron/core/
+frontend/electron/fireai/
+frontend/electron/parsers/
+frontend/electron/requirements.txt
+# Build artifacts
+frontend/dist/
+# Database files (M-1 FIX: also exclude root-level .db files)
+*.db
+*.db-shm
+*.db-wal
+# Audit logs
+*.jsonl
+skills/ppt/scripts/tectonic
+# Python
+# Environment Variables - NEVER COMMIT THESE
+.env.*.local
+# Virtual environments
+.venv/
+# IDE files
+*~
+.project
+.settings/
+# OS files
+# Secrets and keys
+*.key
+*.pem
+*.cert
+*.crt
+# Node modules (frontend)
+frontend/node_modules/
+# Downloaded files
+download/
+# Audit logs (optional - archive periodically)
+audit/*.json
+# Memory storage
+mem0_qdrant_data/
+# Database files
+*.sqlite
+# Test artifacts
+coverage/
+tmp/
+temp/
+# FireAI artifacts
+fireai/.cache/
+qomn_fire/integration/output/
+# Backup files
+*.bak
+*.backup
+*.old
+# Generated files
+*.pyd
+# Git worktrees
+worktree-*/
+# V127 SAFETY HARDENING — additional sensitive file patterns
+# Private keys (all formats)
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+authorized_keys
+*_rsa
+*_dsa
+*_ecdsa
+# Cloud credentials
+.aws/
+.gcp/
+.azure/
+*.kubeconfig
+# Database dump files (may contain PII / audit data)
+*.db-journal
+*.sql
+*.dump
+*.dmp
+# HashiCorp Vault tokens / secrets
+.vault-token
+*.vault
+# OS-level sensitive files
+# IDE state that may leak secrets (when env vars are inline)
+.vscode/settings.json
+# Coverage reports may contain source paths
+.ruff_cache/
+.bandit/
+.venv-audit/
+# Runtime data files (modified by backend, should not be committed
+conversion_history.json
+# V141.4: Runtime data directories (Mem0, Qdrant, SQLite checkpoints)
+data/
+# Vercel linkage folder
+.vercel/
+# Temporary Hugging Face deployment folder and script
+hf_deploy/
+deploy_to_hf.py
+.vercel
+.env*
+# C-09 FIX: Auto-generated project index (regenerate in CI as artifact)
+PROJECT_INDEX.json
+# Vercel Python build cache
+.vercel_python_packages/
+sonar_issues.json
+# Large/test output files
+newman_test_results.json
+postman_collection.json
+postman_collection_updated.json
+API_Test_Collection_Updated.postman_collection.json
+BAZSPARK/
+BAZSPARK-hf/
+BAZSPARK_HF/
+BAZspark/
+revit/
+.playwright-mcp/
+nul
+.kilo/
+postman_collection*.json
+*.sonarbak
+# ── V230 FIX: Reject accidental Python repr filenames ──────────────────────
+# A BytesIO object accidentally passed to ezdxf.saveas() would create a file
+# named "<_io.BytesIO object at 0x7f...>". The < > characters break Vercel's
+# git checkout ("Resource provisioning failed" — every deployment fails).
+# These explicit patterns block any accidental repr-named file from being
+# tracked by git, while leaving all normal files alone.
+<_io*
+*BytesIO object at 0x*
+*object at 0x[0-9a-f]*
+# ── Cloudflare ───────────────────────────────────────────────────────────────
+.wrangler/
+.dev.vars
+.mf/
+test.ledger
+quick_shots.cjs
+# Revit API data files (too large for git, downloaded on demand)
+revit_data/RevitAPI*.json
+# Coverage reports (regenerated on each test run)
+reports/coverage.json
+uploads/
+testsprite_tests\tmp\config.json
+# ── V234: Generated artifacts and runtime outputs ───────────────────────────
+# Playwright test results (regenerated on each test run)
+test-results/
+playwright-report/
+# Download directory (runtime output, not source code)
+# Worklog files (transient agent work logs)
+worklog.md
+worklog_entry.md
+# Stress test / benchmark result JSONs (regenerated on demand)
+HTTP_STRESS_TEST_RESULTS.json
+STRESS_TEST_RESULTS.json
+STRICT_STRESS_V3_RESULTS.json
+sonar_fix_plan.json
+# .NET build artifacts (AutoCAD/Revit add-ins)
+bin/
+obj/
+# Agent workspace directories
+.mimocode/
+API_Test_Collection.postman_collection.json
+# Environment files (contain secrets — NEVER commit)
+.env
+.env.*
+*.secret
+!.env.example
+!.env.example.txt

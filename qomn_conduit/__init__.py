@@ -1,0 +1,118 @@
+"""
+qomn_conduit — NFPA 72 Fire Alarm Conduit Fitting Engine
+========================================================
+
+Public API for conduit fill calculation, bend radius verification,
+orthogonal pathfinding, fitting placement, and BIM output generation.
+
+All functions return Result[T, E] — never raise in computation paths.
+
+ENGINEERING SOURCES:
+  NEC 2022 Chapter 9     — Conduit fill and area tables
+  NEC 358 / 352 / 344    — EMT, PVC, RGD conduit standards
+  NFPA 72-2022 §12.2     — Fire alarm circuit class and conduit requirements
+
+Usage:
+    from qomn_conduit import (
+        ConduitType, TradeSize, FittingType, Point3D,
+        calculate_fill, verify_bend_radius,
+        orthogonal_astar, place_fittings,
+        generate_revit_conduit, generate_schedules,
+    )
+"""
+
+from qomn_conduit.bend import (
+    MAX_CUMULATIVE_BEND_DEG,
+    calculate_developed_length,
+    verify_bend_radius,
+    verify_cumulative_bends,
+)
+from qomn_conduit.catalog import (
+    Fitting,
+    all_fittings,
+    catalog_size,
+    get_fitting,
+)
+from qomn_conduit.errors import (
+    CatalogError,
+    CodeViolationError,
+    ConduitError,
+    PhysicsError,
+    RoutingError,
+    Severity,
+)
+from qomn_conduit.fill import (
+    calculate_fill,
+    get_internal_area,
+)
+from qomn_conduit.fitting_engine import place_fittings
+from qomn_conduit.output import (
+    generate_autocad_entities,
+    generate_revit_conduit,
+    generate_schedules,
+)
+from qomn_conduit.router import (
+    BoundingBox,
+    ConduitRouter,
+    orthogonal_astar,
+)
+from qomn_conduit.types import (
+    BendResult,
+    ConduitRun,
+    ConduitSegment,
+    ConduitType,
+    FillResult,
+    FittingType,
+    PlacedFitting,
+    Point3D,
+    Result,
+    RoutePath,
+    TradeSize,
+)
+
+__all__ = [
+    "MAX_CUMULATIVE_BEND_DEG",
+    "BendResult",
+    # Router
+    "BoundingBox",
+    "CatalogError",
+    "CodeViolationError",
+    # Errors
+    "ConduitError",
+    "ConduitRouter",
+    "ConduitRun",
+    "ConduitSegment",
+    # Types
+    "ConduitType",
+    "FillResult",
+    # Catalog
+    "Fitting",
+    "FittingType",
+    "PhysicsError",
+    "PlacedFitting",
+    "Point3D",
+    "Result",
+    "RoutePath",
+    "RoutingError",
+    "Severity",
+    "TradeSize",
+    "all_fittings",
+    "calculate_developed_length",
+    # Fill
+    "calculate_fill",
+    "catalog_size",
+    "generate_autocad_entities",
+    # Output
+    "generate_revit_conduit",
+    "generate_schedules",
+    "get_fitting",
+    "get_internal_area",
+    "orthogonal_astar",
+    # Fitting engine
+    "place_fittings",
+    # Bend
+    "verify_bend_radius",
+    "verify_cumulative_bends",
+]
+
+__version__ = "1.0.0"

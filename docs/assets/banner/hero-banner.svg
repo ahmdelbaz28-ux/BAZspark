@@ -1,0 +1,191 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 480" font-family="'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <!-- Background gradient: deep navy → black with red ember glow -->
+    <linearGradient id="bgMain" x1="0" y1="0" x2="1400" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#070b12"/>
+      <stop offset="35%" stop-color="#0f1729"/>
+      <stop offset="70%" stop-color="#1a0f1f"/>
+      <stop offset="100%" stop-color="#0a0608"/>
+    </linearGradient>
+
+    <!-- Red ember glow (bottom-left, evokes fire/safety) -->
+    <radialGradient id="emberGlow" cx="180" cy="420" r="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ef4444" stop-opacity="0.45"/>
+      <stop offset="40%" stop-color="#dc2626" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#7f1d1d" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Cyan tech glow (top-right, evokes digital twin/tech) -->
+    <radialGradient id="techGlow" cx="1280" cy="80" r="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity="0.35"/>
+      <stop offset="40%" stop-color="#0891b2" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#0e7490" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Logo badge gradient: lightning bolt -->
+    <linearGradient id="boltGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fde047"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+
+    <!-- Logo badge background -->
+    <linearGradient id="badgeGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+
+    <!-- Title gradient: cyan → white -->
+    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="50%" stop-color="#e0f2fe"/>
+      <stop offset="100%" stop-color="#fde047"/>
+    </linearGradient>
+
+    <!-- Grid pattern (subtle engineering blueprint feel) -->
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#22d3ee" stroke-opacity="0.05" stroke-width="1"/>
+    </pattern>
+
+    <!-- Flame shape (decorative, right side) -->
+    <symbol id="flame" viewBox="0 0 100 140">
+      <path d="M50 5 C 30 30, 15 50, 20 80 C 22 95, 30 110, 50 135 C 70 110, 78 95, 80 80 C 85 50, 70 30, 50 5 Z"
+            fill="url(#boltGrad)" opacity="0.85"/>
+      <path d="M50 30 C 40 50, 35 65, 38 85 C 40 100, 45 115, 50 130 C 55 115, 60 100, 62 85 C 65 65, 60 50, 50 30 Z"
+            fill="#fef3c7" opacity="0.7"/>
+    </symbol>
+
+    <!-- Shield icon (safety) -->
+    <symbol id="shield" viewBox="0 0 100 120">
+      <path d="M50 5 L 90 20 L 90 60 C 90 90, 70 110, 50 115 C 30 110, 10 90, 10 60 L 10 20 Z"
+            fill="none" stroke="#22d3ee" stroke-width="2" opacity="0.6"/>
+      <path d="M50 5 L 90 20 L 90 60 C 90 90, 70 110, 50 115 C 30 110, 10 90, 10 60 L 10 20 Z"
+            fill="#22d3ee" opacity="0.08"/>
+    </symbol>
+
+    <!-- Circuit/connection lines (digital twin concept) -->
+    <symbol id="circuit" viewBox="0 0 200 100">
+      <circle cx="20" cy="20" r="3" fill="#22d3ee" opacity="0.7"/>
+      <circle cx="180" cy="20" r="3" fill="#22d3ee" opacity="0.7"/>
+      <circle cx="100" cy="80" r="3" fill="#fde047" opacity="0.7"/>
+      <line x1="20" y1="20" x2="100" y2="80" stroke="#22d3ee" stroke-width="1" opacity="0.4"/>
+      <line x1="180" y1="20" x2="100" y2="80" stroke="#fde047" stroke-width="1" opacity="0.4"/>
+    </symbol>
+  </defs>
+
+  <!-- Background layers -->
+  <rect width="1400" height="480" fill="url(#bgMain)"/>
+  <rect width="1400" height="480" fill="url(#grid)"/>
+  <rect width="1400" height="480" fill="url(#emberGlow)"/>
+  <rect width="1400" height="480" fill="url(#techGlow)"/>
+
+  <!-- Decorative flame icons (right side) -->
+  <use href="#flame" x="1180" y="60" width="80" height="112" opacity="0.55"/>
+  <use href="#flame" x="1280" y="100" width="60" height="84" opacity="0.4"/>
+  <use href="#flame" x="1100" y="280" width="100" height="140" opacity="0.65"/>
+
+  <!-- Shield icons (left side, behind logo) -->
+  <use href="#shield" x="40" y="280" width="80" height="96" opacity="0.35"/>
+  <use href="#shield" x="120" y="320" width="60" height="72" opacity="0.25"/>
+
+  <!-- Circuit connections (top corners) -->
+  <use href="#circuit" x="40" y="40" width="200" height="100" opacity="0.5"/>
+  <use href="#circuit" x="1160" y="320" width="200" height="100" opacity="0.4"/>
+
+  <!-- Status indicator dots (top bar feel) -->
+  <g opacity="0.8">
+    <circle cx="60" cy="60" r="4" fill="#22c55e"/>
+    <circle cx="78" cy="60" r="4" fill="#22c55e"/>
+    <circle cx="96" cy="60" r="4" fill="#22c55e"/>
+    <circle cx="114" cy="60" r="4" fill="#facc15"/>
+    <text x="135" y="64" font-size="11" fill="#94a3b8" font-weight="500" letter-spacing="2">NFPA 72 · UL 864 · SOLAS · IEC 60092</text>
+  </g>
+
+  <!-- Main content container -->
+  <g transform="translate(80, 130)">
+
+    <!-- Logo badge (square with bolt) -->
+    <rect x="0" y="0" width="96" height="96" rx="20" fill="url(#badgeGrad)" stroke="#22d3ee" stroke-width="1.5" stroke-opacity="0.6"/>
+    <rect x="0" y="0" width="96" height="96" rx="20" fill="none" stroke="#22d3ee" stroke-width="0.5" stroke-opacity="0.3" transform="translate(4,4)"/>
+    <!-- Lightning bolt inside badge -->
+    <path d="M 56 16 L 28 56 L 46 56 L 40 80 L 68 40 L 50 40 Z"
+          fill="url(#boltGrad)" stroke="#fef3c7" stroke-width="0.5" stroke-linejoin="round"/>
+
+    <!-- Title text -->
+    <text x="120" y="48" font-size="56" font-weight="800" fill="url(#titleGrad)" letter-spacing="-1">BazSpark</text>
+    <text x="120" y="78" font-size="16" font-weight="500" fill="#22d3ee" letter-spacing="6" opacity="0.85">FIREAI · DIGITAL TWIN PLATFORM</text>
+  </g>
+
+  <!-- Subtitle (one line) -->
+  <text x="80" y="290" font-size="24" font-weight="600" fill="#e2e8f0">
+    Safety-Critical Fire Alarm Engineering Platform
+  </text>
+
+  <!-- Description (two lines) -->
+  <text x="80" y="325" font-size="15" font-weight="400" fill="#94a3b8" letter-spacing="0.3">
+    منصة هندسية متكاملة لتصميم أنظمة الإنذار من الحريق وفق NFPA 72-2022 —
+  </text>
+  <text x="80" y="347" font-size="15" font-weight="400" fill="#94a3b8" letter-spacing="0.3">
+    with bidirectional AutoCAD ↔ Revit Digital Twin conversion and deterministic compliance verification.
+  </text>
+
+  <!-- Tech badges row -->
+  <g transform="translate(80, 385)">
+    <!-- Badge 1: Python -->
+    <rect x="0" y="0" width="92" height="28" rx="14" fill="#1e293b" stroke="#22c55e" stroke-width="1" stroke-opacity="0.5"/>
+    <circle cx="16" cy="14" r="4" fill="#22c55e"/>
+    <text x="28" y="18" font-size="11" font-weight="600" fill="#e2e8f0">Python 3.12</text>
+
+    <!-- Badge 2: FastAPI -->
+    <rect x="102" y="0" width="92" height="28" rx="14" fill="#1e293b" stroke="#22c55e" stroke-width="1" stroke-opacity="0.5"/>
+    <circle cx="118" cy="14" r="4" fill="#22c55e"/>
+    <text x="130" y="18" font-size="11" font-weight="600" fill="#e2e8f0">FastAPI 0.138</text>
+
+    <!-- Badge 3: React -->
+    <rect x="204" y="0" width="80" height="28" rx="14" fill="#1e293b" stroke="#22c55e" stroke-width="1" stroke-opacity="0.5"/>
+    <circle cx="220" cy="14" r="4" fill="#22c55e"/>
+    <text x="232" y="18" font-size="11" font-weight="600" fill="#e2e8f0">React 18</text>
+
+    <!-- Badge 4: Vite -->
+    <rect x="294" y="0" width="68" height="28" rx="14" fill="#1e293b" stroke="#22c55e" stroke-width="1" stroke-opacity="0.5"/>
+    <circle cx="310" cy="14" r="4" fill="#22c55e"/>
+    <text x="322" y="18" font-size="11" font-weight="600" fill="#e2e8f0">Vite 8</text>
+
+    <!-- Badge 5: MIT License -->
+    <rect x="372" y="0" width="68" height="28" rx="14" fill="#1e293b" stroke="#22c55e" stroke-width="1" stroke-opacity="0.5"/>
+    <circle cx="388" cy="14" r="4" fill="#22c55e"/>
+    <text x="400" y="18" font-size="11" font-weight="600" fill="#e2e8f0">MIT</text>
+
+    <!-- Badge 6: Version -->
+    <rect x="450" y="0" width="100" height="28" rx="14" fill="#1e293b" stroke="#f59e0b" stroke-width="1" stroke-opacity="0.6"/>
+    <circle cx="466" cy="14" r="4" fill="#f59e0b"/>
+    <text x="478" y="18" font-size="11" font-weight="600" fill="#fde047">v1.55.0</text>
+
+    <!-- Badge 7: Tests -->
+    <rect x="560" y="0" width="118" height="28" rx="14" fill="#1e293b" stroke="#22c55e" stroke-width="1" stroke-opacity="0.5"/>
+    <circle cx="576" cy="14" r="4" fill="#22c55e"/>
+    <text x="588" y="18" font-size="11" font-weight="600" fill="#e2e8f0">8,557+ tests</text>
+  </g>
+
+  <!-- Bottom bar: deployment URLs -->
+  <g transform="translate(80, 440)">
+    <text x="0" y="0" font-size="12" font-weight="500" fill="#64748b" letter-spacing="1">
+      🚀 Production:
+    </text>
+    <text x="105" y="0" font-size="12" font-weight="600" fill="#22d3ee">
+      ba-zspark.vercel.app
+    </text>
+    <text x="245" y="0" font-size="12" font-weight="500" fill="#64748b" letter-spacing="1">
+      · Backend:
+    </text>
+    <text x="318" y="0" font-size="12" font-weight="600" fill="#22d3ee">
+      ahmdelbaz28-bazspark.hf.space
+    </text>
+    <text x="510" y="0" font-size="12" font-weight="500" fill="#64748b" letter-spacing="1">
+      · Maintained by Eng. Ahmed Elbaz
+    </text>
+  </g>
+
+  <!-- Subtle border at bottom -->
+  <rect x="0" y="478" width="1400" height="2" fill="url(#titleGrad)" opacity="0.5"/>
+</svg>

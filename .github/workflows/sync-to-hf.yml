@@ -1,0 +1,129 @@
+name: Sync to HuggingFace Space
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Auto-sync GitHub → HuggingFace Space (ahmdelbaz28/BAZSPARK)
+#
+# ARCHITECTURE
+# ─────────────
+# - GitHub repo is the SINGLE SOURCE OF TRUTH (full monorepo).
+# - HuggingFace Space is a DEPLOYMENT TARGET that hosts the runtime subset.
+# - On every push to `main`, this workflow mirrors the runtime subset to HF.
+#
+# WHAT GETS SYNCED (matches HF Dockerfile COPY statements):
+#   Dockerfile, README.md, pyproject.toml, requirements.txt, .dockerignore
+#   adapters/ backend/ core/ facp_system/ fireai/ frontend/ integration/
+#   marine/ parsers/ qomn_conduit/ qomn_fire/
+#
+# WHAT IS EXCLUDED: .github/ skills/ deploy/ docs/ tests/ alemmbic/
+#   services/ templates/ vercel.json, revit_data/, etc.
+#
+# AUTH
+# ────
+# Uses the `HF_TOKEN` repository secret (write scope on the HF Space).
+# ═══════════════════════════════════════════════════════════════════════════
+
+on:
+  workflow_run:
+    workflows: ["CI Build Gate"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: sync-to-hf
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  HF_USERNAME: "ahmdelbaz28"
+  HF_SPACE_NAME: "BAZSPARK"
+  RUNTIME_PATHS: >-
+    Dockerfile pyproject.toml requirements.txt .dockerignore
+    adapters backend core facp_system fireai frontend
+    integration marine parsers qomn_conduit qomn_fire
+
+jobs:
+  sync-to-hf:
+    name: Mirror runtime subset to HuggingFace Space
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitHub source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          fetch-depth: 1
+
+      - name: Checkout HF Space
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          repository: ${{ env.HF_USERNAME }}/${{ env.HF_SPACE_NAME }}
+          token: ${{ secrets.HF_TOKEN }}
+          path: hf_space
+          fetch-depth: 1
+
+      - name: Configure git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Sync runtime files
+        run: |
+          # Wipe HF working tree clean (keep .git/)
+          find hf_space -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+
+          # Copy each whitelisted path
+          for p in $RUNTIME_PATHS; do
+            if [ -e "${{ github.workspace }}/${p}" ]; then
+              if [ -d "${{ github.workspace }}/${p}" ]; then
+                mkdir -p "hf_space/${p}"
+                cp -r "${{ github.workspace }}/${p}/" "hf_space/${p}/"
+                echo "  + synced (dir): ${p}/"
+              else
+                cp "${{ github.workspace }}/${p}" "hf_space/${p}"
+                echo "  + synced (file): ${p}"
+              fi
+            else
+              echo "  ! skipped (not in repo): ${p}"
+            fi
+          done
+
+          # Copy HF-specific README (with YAML front matter required by HF Spaces)
+          if [ -f "${{ github.workspace }}/HF_README.md" ]; then
+            cp "${{ github.workspace }}/HF_README.md" "hf_space/README.md"
+            echo "  + synced: HF_README.md → README.md"
+          else
+            echo "  ! WARNING: HF_README.md not found — HF Space may fail to build"
+          fi
+
+          echo ""
+          echo "=== HF Space contents after sync ==="
+          ls -la hf_space/ | head -20
+
+      - name: Commit & push to HuggingFace
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GH_SHA: ${{ github.sha }}
+        run: |
+          cd hf_space
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "ℹ️ No changes to sync — HF Space is already up-to-date"
+            exit 0
+          fi
+
+          git commit -m "Auto-sync from GitHub @ ${GH_SHA::7}" \
+                     -m "Source: github.com/${{ github.repository }}@${GH_SHA}"
+
+          echo "machine huggingface.co login ${HF_USERNAME} password ${HF_TOKEN}" > ~/.netrc
+          chmod 600 ~/.netrc
+
+          git remote set-url origin "https://huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
+          git push origin HEAD:main
+
+          echo "=== Sync complete ==="
+          echo "GitHub SHA: ${GH_SHA::7}"
+          echo "HF SHA: $(git rev-parse --short HEAD)"

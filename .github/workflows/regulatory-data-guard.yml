@@ -1,0 +1,100 @@
+name: Regulatory Data Guard
+
+# Enforces attestation for PRs that modify regulatory data files (NFPA/NEC/IEC).
+#
+# C-XX FIX (Engineering Review): the previous version was "informational only"
+# (exit 0 always) — it warned but did NOT block merges. This defeated the
+# purpose of the guard: any PR could modify NFPA 72 constants, AWG resistance
+# tables, or device placement formulas without PE sign-off or a verbatim
+# standard citation. The guard now FAILS the PR (exit 1) when attestation is
+# missing, with one documented escape hatch: the `NON-ENGINEERING` bypass
+# for commits that genuinely do not touch engineering logic (e.g., formatting,
+# dependency bumps). Bot commits (dependabot/github-actions/renovate) are
+# still auto-passed.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'fireai/core/qomn_kernel.py'
+      - 'fireai/core/nfpa72_*.py'
+      - 'fireai/core/voltage_drop.py'
+      - 'fireai/core/battery_aging_derating.py'
+      - 'fireai/core/device_placement.py'
+      - 'fireai/constants/**'
+      - 'qomn_fire/core/constants.py'
+      - 'qomn_conduit/**'
+      - 'facp_system/**'
+  workflow_dispatch:
+
+jobs:
+  check-regulatory-attestation:
+    name: "Require PE sign-off or standard citation"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Inspect commit messages in PR
+        id: check
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "OK: Not a pull request - skipping attestation check"
+            exit 0
+          fi
+          echo "Checking commits ${BASE_SHA}..${HEAD_SHA} for attestation..."
+          MESSAGES=$(git log "${BASE_SHA}..${HEAD_SHA}" --format='%B' 2>/dev/null || echo "")
+
+          # Pattern (a): PE/FPE sign-off trailer
+          PE_PATTERN='Signed-off-by:.*(PE|FPE|P\.E\.)'
+          # Pattern (b): verbatim NFPA/NEC/IEC/ASHRAE section citation with year
+          STD_PATTERN='(NFPA [0-9]+-[0-9]{4}|NEC [0-9]{4}|IEC [0-9]+|ASHRAE [0-9]+)[^.]*§[0-9]'
+          # Pattern (c): NON-ENGINEERING bypass (for formatting/dep bumps only)
+          NON_ENG_PATTERN='Signed-off-by:.+NON-ENGINEERING'
+          # Pattern (d): automated/bot commits
+          BOT_PATTERN='(dependabot|github-actions|renovate|automated|auto-generated)'
+
+          # Auto-pass for automated commits
+          if echo "$MESSAGES" | grep -qiE "$BOT_PATTERN"; then
+            echo "OK: Automated commit - skipping regulatory check"
+            exit 0
+          fi
+
+          if [ -z "$MESSAGES" ]; then
+            echo "OK: No commits to check (empty range)"
+            exit 0
+          fi
+
+          if echo "$MESSAGES" | grep -qE "$PE_PATTERN"; then
+            echo "OK: PE sign-off detected"
+            exit 0
+          fi
+
+          if echo "$MESSAGES" | grep -qE "$STD_PATTERN"; then
+            echo "OK: Verbatim standard citation with section number detected"
+            exit 0
+          fi
+
+          if echo "$MESSAGES" | grep -qE "$NON_ENG_PATTERN"; then
+            echo "OK: NON-ENGINEERING bypass used (verified non-engineering change)"
+            exit 0
+          fi
+
+          # C-XX FIX: FAIL the PR (was: warn + exit 0). This guard exists to
+          # prevent unreviewed changes to life-safety constants. A warning
+          # that does not block merges is no guard at all.
+          echo "::error::This PR modifies regulatory data files but commits lack PE sign-off or standard citation."
+          echo "::error::To merge, add one of the following to your commit message:"
+          echo "::error::  - 'Signed-off-by: Your Name PE' (PE/FPE sign-off)"
+          echo "::error::  - 'NFPA 72-2022 §17.7.3.2.3' (verbatim standard citation with year)"
+          echo "::error::  - 'Signed-off-by: Your Name NON-ENGINEERING' (ONLY for non-engineering changes like formatting/dep bumps)"
+          echo "Regulatory attestation check: FAILED (blocking)"
+          exit 1
