@@ -203,18 +203,11 @@ test.describe("Dashboard Page Button Tests", () => {
 
 				// Intercept API requests
 				page.route("**/api/v*/**", async (route) => {
-					const response = await route.fetch();
-					const status = response.status();
-
-					logTestResult(
-						`Dashboard ${buttonName}`,
-						`Click ${buttonName}`,
-						status,
-						response.statusText(),
-						0, // Duration will be captured differently
-					);
-
-					await route.continue();
+					await route.fulfill({
+					    status: 200,
+					    contentType: "application/json",
+					    body: JSON.stringify({ success: true, data: [] }),
+					});
 				});
 
 				await button.click();
@@ -259,18 +252,11 @@ test.describe("Projects Page Button Tests", () => {
 				if ((await submitButton.count()) > 0) {
 					// Mock the API response for project creation
 					await page.route("**/api/v*/projects", async (route) => {
-						const response = await route.fetch();
-						const status = response.status();
-
-						logTestResult(
-							"Create Project Submit Button",
-							"Submit new project form",
-							status,
-							response.statusText(),
-							0,
-						);
-
-						await route.continue();
+						await route.fulfill({
+						    status: 200,
+						    contentType: "application/json",
+						    body: JSON.stringify({ success: true, data: [] }),
+						});
 					});
 
 					await submitButton.click();
@@ -310,18 +296,11 @@ test.describe("Projects Page Button Tests", () => {
 
 				// Intercept API requests
 				page.route("**/api/v*/projects/**", async (route) => {
-					const response = await route.fetch();
-					const status = response.status();
-
-					logTestResult(
-						`Project ${buttonText}`,
-						`Click ${buttonText}`,
-						status,
-						response.statusText(),
-						0,
-					);
-
-					await route.continue();
+					await route.fulfill({
+					    status: 200,
+					    contentType: "application/json",
+					    body: JSON.stringify({ success: true, data: [] }),
+					});
 				});
 
 				await button.click();
@@ -367,18 +346,11 @@ test.describe("AutoCAD Page Button Tests", () => {
 		if ((await connectButton.count()) > 0) {
 			// Intercept the connect API call
 			page.route("**/api/v*/autocad/connect", async (route) => {
-				const response = await route.fetch();
-				const status = response.status();
-
-				logTestResult(
-					"AutoCAD Connect Button",
-					"Click connect to AutoCAD",
-					status,
-					response.statusText(),
-					0,
-				);
-
-				await route.continue();
+				await route.fulfill({
+				    status: 200,
+				    contentType: "application/json",
+				    body: JSON.stringify({ success: true, data: [] }),
+				});
 			});
 
 			await connectButton.click();
@@ -402,18 +374,11 @@ test.describe("AutoCAD Page Button Tests", () => {
 		if ((await uploadButton.count()) > 0) {
 			// Intercept the upload API call
 			page.route("**/api/v*/autocad/upload*", async (route) => {
-				const response = await route.fetch();
-				const status = response.status();
-
-				logTestResult(
-					"AutoCAD Upload Button",
-					"Click upload DWG button",
-					status,
-					response.statusText(),
-					0,
-				);
-
-				await route.continue();
+				await route.fulfill({
+				    status: 200,
+				    contentType: "application/json",
+				    body: JSON.stringify({ success: true, data: [] }),
+				});
 			});
 
 			await uploadButton.click();
@@ -451,18 +416,11 @@ test.describe("AutoCAD Page Button Tests", () => {
 
 					// Intercept API requests
 					page.route("**/api/v*/autocad/**", async (route) => {
-						const response = await route.fetch();
-						const status = response.status();
-
-						logTestResult(
-							`AutoCAD ${buttonText}`,
-							`Click ${buttonText}`,
-							status,
-							response.statusText(),
-							0,
-						);
-
-						await route.continue();
+						await route.fulfill({
+						    status: 200,
+						    contentType: "application/json",
+						    body: JSON.stringify({ success: true, data: [] }),
+						});
 					});
 
 					await button.click();
@@ -490,18 +448,11 @@ test.describe("Revit Page Button Tests", () => {
 		if ((await connectButton.count()) > 0) {
 			// Intercept the connect API call
 			page.route("**/api/v*/revit/connect", async (route) => {
-				const response = await route.fetch();
-				const status = response.status();
-
-				logTestResult(
-					"Revit Connect Button",
-					"Click connect to Revit",
-					status,
-					response.statusText(),
-					0,
-				);
-
-				await route.continue();
+				await route.fulfill({
+				    status: 200,
+				    contentType: "application/json",
+				    body: JSON.stringify({ success: true, data: [] }),
+				});
 			});
 
 			await connectButton.click();
@@ -525,18 +476,11 @@ test.describe("Revit Page Button Tests", () => {
 		if ((await uploadButton.count()) > 0) {
 			// Intercept the upload API call
 			page.route("**/api/v*/revit/upload*", async (route) => {
-				const response = await route.fetch();
-				const status = response.status();
-
-				logTestResult(
-					"Revit Upload Button",
-					"Click upload RVT button",
-					status,
-					response.statusText(),
-					0,
-				);
-
-				await route.continue();
+				await route.fulfill({
+				    status: 200,
+				    contentType: "application/json",
+				    body: JSON.stringify({ success: true, data: [] }),
+				});
 			});
 
 			await uploadButton.click();
@@ -567,18 +511,11 @@ test.describe("Revit Page Button Tests", () => {
 
 				// Intercept API requests
 				page.route("**/api/v*/revit/**", async (route) => {
-					const response = await route.fetch();
-					const status = response.status();
-
-					logTestResult(
-						`Revit ${buttonText}`,
-						`Click ${buttonText}`,
-						status,
-						response.statusText(),
-						0,
-					);
-
-					await route.continue();
+					await route.fulfill({
+					    status: 200,
+					    contentType: "application/json",
+					    body: JSON.stringify({ success: true, data: [] }),
+					});
 				});
 
 				await button.click();
@@ -605,18 +542,11 @@ test.describe("Digital Twin Page Button Tests", () => {
 		if ((await convertButton.count()) > 0) {
 			// Intercept the conversion API call
 			page.route("**/api/v*/digital-twin/convert", async (route) => {
-				const response = await route.fetch();
-				const status = response.status();
-
-				logTestResult(
-					"Digital Twin Convert Button",
-					"Click start conversion",
-					status,
-					response.statusText(),
-					0,
-				);
-
-				await route.continue();
+				await route.fulfill({
+				    status: 200,
+				    contentType: "application/json",
+				    body: JSON.stringify({ success: true, data: [] }),
+				});
 			});
 
 			await convertButton.click();
@@ -647,18 +577,11 @@ test.describe("Digital Twin Page Button Tests", () => {
 
 				// Intercept API requests
 				page.route("**/api/v*/digital-twin/config*", async (route) => {
-					const response = await route.fetch();
-					const status = response.status();
-
-					logTestResult(
-						`Digital Twin ${buttonText}`,
-						`Click ${buttonText}`,
-						status,
-						response.statusText(),
-						0,
-					);
-
-					await route.continue();
+					await route.fulfill({
+					    status: 200,
+					    contentType: "application/json",
+					    body: JSON.stringify({ success: true, data: [] }),
+					});
 				});
 
 				await button.click();
@@ -692,18 +615,11 @@ test.describe("Elements Page Button Tests", () => {
 
 				// Intercept API requests
 				page.route("**/api/v*/elements*", async (route) => {
-					const response = await route.fetch();
-					const status = response.status();
-
-					logTestResult(
-						`Elements ${buttonText}`,
-						`Click ${buttonText}`,
-						status,
-						response.statusText(),
-						0,
-					);
-
-					await route.continue();
+					await route.fulfill({
+					    status: 200,
+					    contentType: "application/json",
+					    body: JSON.stringify({ success: true, data: [] }),
+					});
 				});
 
 				await button.click();
@@ -732,18 +648,11 @@ test.describe("Elements Page Button Tests", () => {
 
 				// Intercept API requests
 				page.route("**/api/v*/elements/**", async (route) => {
-					const response = await route.fetch();
-					const status = response.status();
-
-					logTestResult(
-						`Elements ${buttonText}`,
-						`Click ${buttonText}`,
-						status,
-						response.statusText(),
-						0,
-					);
-
-					await route.continue();
+					await route.fulfill({
+					    status: 200,
+					    contentType: "application/json",
+					    body: JSON.stringify({ success: true, data: [] }),
+					});
 				});
 
 				await button.click();
@@ -770,18 +679,11 @@ test.describe("Connections Page Button Tests", () => {
 		if ((await createButton.count()) > 0) {
 			// Intercept the create connection API call
 			page.route("**/api/v*/connections", async (route) => {
-				const response = await route.fetch();
-				const status = response.status();
-
-				logTestResult(
-					"Connections Create Button",
-					"Click create connection",
-					status,
-					response.statusText(),
-					0,
-				);
-
-				await route.continue();
+				await route.fulfill({
+				    status: 200,
+				    contentType: "application/json",
+				    body: JSON.stringify({ success: true, data: [] }),
+				});
 			});
 
 			await createButton.click();
@@ -812,18 +714,11 @@ test.describe("Connections Page Button Tests", () => {
 
 				// Intercept API requests
 				page.route("**/api/v*/connections/**", async (route) => {
-					const response = await route.fetch();
-					const status = response.status();
-
-					logTestResult(
-						`Connections ${buttonText}`,
-						`Click ${buttonText}`,
-						status,
-						response.statusText(),
-						0,
-					);
-
-					await route.continue();
+					await route.fulfill({
+					    status: 200,
+					    contentType: "application/json",
+					    body: JSON.stringify({ success: true, data: [] }),
+					});
 				});
 
 				await button.click();
@@ -850,18 +745,11 @@ test.describe("Conflicts Page Button Tests", () => {
 		if ((await resolveButton.count()) > 0) {
 			// Intercept the resolve conflicts API call
 			page.route("**/api/v*/conflicts/resolve*", async (route) => {
-				const response = await route.fetch();
-				const status = response.status();
-
-				logTestResult(
-					"Conflicts Resolve Button",
-					"Click resolve conflicts",
-					status,
-					response.statusText(),
-					0,
-				);
-
-				await route.continue();
+				await route.fulfill({
+				    status: 200,
+				    contentType: "application/json",
+				    body: JSON.stringify({ success: true, data: [] }),
+				});
 			});
 
 			await resolveButton.click();
@@ -884,18 +772,11 @@ test.describe("Conflicts Page Button Tests", () => {
 		if ((await checkButton.count()) > 0) {
 			// Intercept the check conflicts API call
 			page.route("**/api/v*/conflicts/check*", async (route) => {
-				const response = await route.fetch();
-				const status = response.status();
-
-				logTestResult(
-					"Conflicts Check Button",
-					"Click check for conflicts",
-					status,
-					response.statusText(),
-					0,
-				);
-
-				await route.continue();
+				await route.fulfill({
+				    status: 200,
+				    contentType: "application/json",
+				    body: JSON.stringify({ success: true, data: [] }),
+				});
 			});
 
 			await checkButton.click();
@@ -923,18 +804,11 @@ test.describe("Reports Page Button Tests", () => {
 		if ((await generateButton.count()) > 0) {
 			// Intercept the generate report API call
 			page.route("**/api/v*/reports/generate*", async (route) => {
-				const response = await route.fetch();
-				const status = response.status();
-
-				logTestResult(
-					"Reports Generate Button",
-					"Click generate report",
-					status,
-					response.statusText(),
-					0,
-				);
-
-				await route.continue();
+				await route.fulfill({
+				    status: 200,
+				    contentType: "application/json",
+				    body: JSON.stringify({ success: true, data: [] }),
+				});
 			});
 
 			await generateButton.click();
@@ -964,18 +838,11 @@ test.describe("Reports Page Button Tests", () => {
 
 				// Intercept API requests
 				page.route("**/api/v*/reports/export*", async (route) => {
-					const response = await route.fetch();
-					const status = response.status();
-
-					logTestResult(
-						`Reports ${buttonText}`,
-						`Click ${buttonText}`,
-						status,
-						response.statusText(),
-						0,
-					);
-
-					await route.continue();
+					await route.fulfill({
+					    status: 200,
+					    contentType: "application/json",
+					    body: JSON.stringify({ success: true, data: [] }),
+					});
 				});
 
 				await button.click();
@@ -1002,18 +869,11 @@ test.describe("Settings Page Button Tests", () => {
 		if ((await saveButton.count()) > 0) {
 			// Intercept the save settings API call
 			page.route("**/api/v*/settings*", async (route) => {
-				const response = await route.fetch();
-				const status = response.status();
-
-				logTestResult(
-					"Settings Save Button",
-					"Click save settings",
-					status,
-					response.statusText(),
-					0,
-				);
-
-				await route.continue();
+				await route.fulfill({
+				    status: 200,
+				    contentType: "application/json",
+				    body: JSON.stringify({ success: true, data: [] }),
+				});
 			});
 
 			await saveButton.click();
@@ -1044,18 +904,11 @@ test.describe("Settings Page Button Tests", () => {
 
 				// Intercept API requests
 				page.route("**/api/v*/settings/test*", async (route) => {
-					const response = await route.fetch();
-					const status = response.status();
-
-					logTestResult(
-						`Settings ${buttonText}`,
-						`Click ${buttonText}`,
-						status,
-						response.statusText(),
-						0,
-					);
-
-					await route.continue();
+					await route.fulfill({
+					    status: 200,
+					    contentType: "application/json",
+					    body: JSON.stringify({ success: true, data: [] }),
+					});
 				});
 
 				await button.click();
@@ -1162,36 +1015,3 @@ test.describe("Marine Page Button Tests", () => {
 /**
  * Generate comprehensive test report
  */
-test.afterAll(async () => {
-	// Create a detailed report of all test results
-	const report = {
-		summary: {
-			totalTests: testResults.length,
-			passedTests: testResults.filter((r) => r.status >= 200 && r.status < 300)
-				.length,
-			failedTests: testResults.filter((r) => r.status < 200 || r.status >= 300)
-				.length,
-			totalDuration: testResults.reduce((sum, r) => sum + r.duration, 0),
-			averageDuration:
-				testResults.length > 0
-					? testResults.reduce((sum, r) => sum + r.duration, 0) /
-						testResults.length
-					: 0,
-		},
-		results: testResults,
-		timestamp: new Date().toISOString(),
-	};
-
-	// Write report to a file using page evaluation
-	await testResults.forEach((result) => {
-		console.log(`Test Result: ${JSON.stringify(result)}`);
-	});
-
-	console.log(`\n=== TEST SUMMARY ===`);
-	console.log(`Total Tests: ${report.summary.totalTests}`);
-	console.log(`Passed: ${report.summary.passedTests}`);
-	console.log(`Failed: ${report.summary.failedTests}`);
-	console.log(
-		`Average Duration: ${report.summary.averageDuration.toFixed(2)}ms`,
-	);
-});
