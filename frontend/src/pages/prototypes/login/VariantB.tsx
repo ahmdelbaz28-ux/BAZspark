@@ -1,4 +1,7 @@
-import { AlertCircle, Eye, EyeOff, Globe, KeyRound, Loader2, ShieldCheck, Sparkles, X } from "lucide-react";
+import {
+	AlertCircle, Eye, EyeOff, Globe, KeyRound,
+	Loader2, ShieldCheck, Sparkles, X,
+} from "lucide-react";
 import { type FormEvent } from "react";
 import { BazSparkLogo, BazSparkWordmark } from "@/components/auth/BazSparkLogo";
 import { Button } from "@/components/ui/button";

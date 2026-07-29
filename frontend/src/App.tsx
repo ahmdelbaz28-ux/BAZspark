@@ -193,24 +193,26 @@ const WorkflowPage = lazy(() =>
         import("./pages/WorkflowPage").then((m) => ({ default: m.WorkflowPage })),
 );
 
+// V193 (R10): Skip-link for keyboard users to bypass the sidebar.
+// First focusable element on every page. WCAG 2.4.1 (Level A) requirement.
+// Wrapped in <nav> landmark so axe-core 'region' rule passes.
+const SkipLink = (
+        <nav aria-label="Skip links">
+                <a
+                        href="#main-content"
+                        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded focus:shadow-lg focus:outline-none"
+                >
+                        Skip to main content
+                </a>
+        </nav>
+);
+
 // C-07 FIX: Typed route structure with optional requiredRole for role-based access
 interface ProtectedRoute {
         path: string;
         element: ReactNode;
         requiredRole?: string;
-}        // V193 (R10): Skip-link for keyboard users to bypass the sidebar.
-        // First focusable element on every page. WCAG 2.4.1 (Level A) requirement.
-        // Wrapped in <nav> landmark so axe-core 'region' rule passes.
-        const SkipLink = (
-                <nav aria-label="Skip links">
-                        <a
-                                href="#main-content"
-                                className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded focus:shadow-lg focus:outline-none"
-                        >
-                                Skip to main content
-                        </a>
-                </nav>
-        );
+}
 
 /**
  * V193 (R1): Wrap the entire app in AuthProvider so any component can read
