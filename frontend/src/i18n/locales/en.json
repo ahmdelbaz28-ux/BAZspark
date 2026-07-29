@@ -1039,7 +1039,18 @@
     "statusSummary": "Status Summary",
     "deviceStatusOverview": "Overview of device statuses across all projects",
     "refresh": "Refresh",
-    "warning": "Warning"
+    "warning": "Warning",
+    "newProject": "New Project",
+    "createProject": "Create Project",
+    "creating": "Creating…",
+    "projectName": "Project Name",
+    "description": "Description",
+    "projectDetails": "Project Details",
+    "actions": "Actions",
+    "deleteProject": "Delete Project",
+    "deleteConfirm": "Are you sure you want to delete this project?",
+    "deleteConfirmTitle": "Confirm Delete",
+    "cancel": "Cancel"
   },
   "projects": {
     "title": "Projects",

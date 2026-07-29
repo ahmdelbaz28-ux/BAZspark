@@ -198,58 +198,58 @@ const COMMANDS: CommandItem[] = [
         },
         {
                 id: "cmd-create-project",
-                label: "Create New Project",
+                label: "Go to New Project",
                 shortcut: "N C",
-                category: "action",
+                category: "navigation",
                 path: "/projects",
         },
         {
                 id: "cmd-generate-report",
-                label: "Generate Report",
+                label: "Go to Reports",
                 shortcut: "N R",
-                category: "action",
+                category: "navigation",
                 path: "/reports",
         },
         {
                 id: "cmd-run-smoke-spacing",
-                label: "Run Smoke Spacing Calculation",
-                category: "action",
+                label: "Go to Smoke Spacing",
+                category: "navigation",
                 path: "/engineering",
         },
         {
                 id: "cmd-run-heat-spacing",
-                label: "Run Heat Spacing Calculation",
-                category: "action",
+                label: "Go to Heat Spacing",
+                category: "navigation",
                 path: "/engineering",
         },
         {
                 id: "cmd-place-detectors",
-                label: "Place Detectors in Room",
-                category: "action",
+                label: "Go to Detector Placement",
+                category: "navigation",
                 path: "/engineering",
         },
         {
                 id: "cmd-run-room-analysis",
-                label: "Run Room Analysis",
-                category: "action",
+                label: "Go to Room Analysis",
+                category: "navigation",
                 path: "/engineering",
         },
         {
                 id: "cmd-facp-verify",
-                label: "Verify FACP Compliance",
-                category: "action",
+                label: "Go to FACP Verify",
+                category: "navigation",
                 path: "/facp",
         },
         {
                 id: "cmd-facp-schedule",
-                label: "Generate FACP Schedule",
-                category: "action",
+                label: "Go to FACP Schedule",
+                category: "navigation",
                 path: "/facp",
         },
         {
                 id: "cmd-compliance-narrative",
-                label: "Generate Compliance Narrative",
-                category: "action",
+                label: "Go to Compliance Narrative",
+                category: "navigation",
                 path: "/reports",
         },
         {
@@ -354,6 +354,53 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                 if (result.type === "command") {
                         if (result.item.path) {
                                 navigate(result.item.path);
+                        }
+                } else if (result.type === "help") {
+                        // Navigate to the page that the help topic is contextual for
+                        const routeMap: Record<string, string> = {
+                                "dashboard.overview": "/dashboard",
+                                "projects.create": "/projects",
+                                "projects.manage": "/projects",
+                                "engineering.overview": "/engineering",
+                                "engineering.voltage-drop": "/engineering",
+                                "engineering.cable-sizing": "/engineering",
+                                "engineering.battery": "/engineering",
+                                "engineering.smoke-spacing": "/engineering",
+                                "engineering.detector-placement": "/engineering",
+                                "fire-alarm.detector-placement": "/fire-alarm/designer",
+                                "fire-alarm.symbol-library": "/fire-alarm/designer",
+                                "fire-alarm.zone-navigation": "/fire-alarm/designer",
+                                "facp.overview": "/facp",
+                                "autocad.connect": "/autocad",
+                                "autocad.draw": "/autocad/draw",
+                                "autocad.files": "/autocad",
+                                "revit.connect": "/revit",
+                                "revit.create": "/revit/create",
+                                "revit.elements": "/revit/elements",
+                                "revit.files": "/revit",
+                                "digital-twin.overview": "/digital-twin",
+                                "digital-twin.convert": "/digital-twin/convert",
+                                "digital-twin.config": "/digital-twin/config",
+                                "digital-twin.history": "/digital-twin/history",
+                                "reports.generate": "/reports",
+                                "elements.overview": "/elements",
+                                "connections.create": "/connections",
+                                "conflicts.overview": "/conflicts",
+                                "settings.backend": "/settings",
+                                "settings.api-keys": "/api-keys",
+                                "settings.feature-flags": "/settings",
+                                "environment.overview": "/environment",
+                                "monitor.overview": "/monitor",
+                                "getting-started.quickstart": "/dashboard",
+                                "getting-started.api-setup": "/api-keys",
+                                "troubleshooting.backend": "/monitor",
+                                "troubleshooting.api": "/monitor",
+                                "troubleshooting.auth": "/login",
+                                "troubleshooting.app-crash": "/dashboard",
+                        };
+                        const targetPath = routeMap[result.item.id];
+                        if (targetPath) {
+                                navigate(targetPath);
                         }
                 }
                 setQuery("");

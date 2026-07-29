@@ -34,7 +34,7 @@ const TOUR_STEPS: TourStep[] = [
                 target: "[data-onboarding='nav-projects']",
                 title: "Projects",
                 content:
-                        "Manage all your fire alarm engineering projects from here. Create, edit, and organize your work.",
+                        "Manage all your fire alarm engineering projects from here. Create, edit, and organize your work. Export to DXF, Revit, or IFC formats.",
                 position: "right",
         },
         {
@@ -50,7 +50,7 @@ const TOUR_STEPS: TourStep[] = [
                 target: "[data-onboarding='nav-fire-alarm-designer']",
                 title: "Fire Alarm Designer",
                 content:
-                        "Design fire alarm systems visually with our interactive designer tool.",
+                        "Design fire alarm systems visually with our interactive designer tool. Place devices, define zones, and create alarm layouts.",
                 position: "right",
         },
         {
@@ -58,7 +58,95 @@ const TOUR_STEPS: TourStep[] = [
                 target: "[data-onboarding='nav-facp']",
                 title: "FACP Selection",
                 content:
-                        "Select, verify, and generate schedules/specifications for Fire Alarm Control Panels per NFPA 72 Section 10.6.10.",
+                        "Select, verify, and generate schedules/specifications for Fire Alarm Control Panels per NFPA 72 Section 10.6.10. Includes compliance verification and DXF schedule generation.",
+                position: "right",
+        },
+        {
+                id: "nav-marine",
+                target: "[data-onboarding='nav-marine']",
+                title: "Marine Fire Safety",
+                content:
+                        "SOLAS/IEC 60092/NFPA 302 marine fire protection design. Ship zone design, extinguishing systems, alarm logic, and LR rule compliance.",
+                position: "right",
+        },
+        {
+                id: "nav-mining",
+                target: "[data-onboarding='nav-mining']",
+                title: "Mining Safety",
+                content:
+                        "MSHA/NFPA 120 mining fire safety compliance. Underground mine design, ventilation calculations, and compliance reporting.",
+                position: "right",
+        },
+        {
+                id: "nav-autocad",
+                target: "[data-onboarding='nav-autocad']",
+                title: "AutoCAD Integration",
+                content:
+                        "Connect to AutoCAD for live drawing operations. Read/write entities, draw lines, circles, and text directly in your CAD drawings.",
+                position: "right",
+        },
+        {
+                id: "nav-revit",
+                target: "[data-onboarding='nav-revit']",
+                title: "Revit Integration",
+                content:
+                        "Connect to Revit for BIM data exchange. Read/write RVT files, manage elements, search the Revit API, and execute natural language commands.",
+                position: "right",
+        },
+        {
+                id: "nav-digital-twin",
+                target: "[data-onboarding='nav-digital-twin']",
+                title: "Digital Twin",
+                content:
+                        "Convert and synchronize BIM models between AutoCAD and Revit formats with version control. Configure mappings and view conversion history.",
+                position: "right",
+        },
+        {
+                id: "nav-elements",
+                target: "[data-onboarding='nav-elements']",
+                title: "BIM Elements",
+                content:
+                        "Manage Universal Data Model (UDM) elements: walls, doors, windows, rooms, equipment, and more. Full CRUD with conflict detection.",
+                position: "right",
+        },
+        {
+                id: "nav-connections",
+                target: "[data-onboarding='nav-connections']",
+                title: "Connections",
+                content:
+                        "Manage connections between BIM elements. Define power, signal, data, fire alarm loop, and NAC circuit relationships.",
+                position: "right",
+        },
+        {
+                id: "nav-etap",
+                target: "[data-onboarding='nav-etap']",
+                title: "ETAP Integration",
+                content:
+                        "Integrate with ETAP for electrical engineering analysis. Sync data, manage settings, and run load flow calculations.",
+                position: "right",
+        },
+        {
+                id: "nav-environment",
+                target: "[data-onboarding='nav-environment']",
+                title: "Environment",
+                content:
+                        "Check weather, geocode, air quality, hazardous materials, regulatory region, and full environmental context for your project site.",
+                position: "right",
+        },
+        {
+                id: "nav-monitor",
+                target: "[data-onboarding='nav-monitor']",
+                title: "System Monitor",
+                content:
+                        "Monitor system health, engine status, agent activity, security alerts, and Prometheus metrics in real-time.",
+                position: "right",
+        },
+        {
+                id: "nav-workflow",
+                target: "[data-onboarding='nav-workflow']",
+                title: "Workflow",
+                content:
+                        "Manage LangGraph-based engineering workflows. Start, approve, reject, and audit workflow steps for fire protection design review.",
                 position: "right",
         },
         {
@@ -70,35 +158,11 @@ const TOUR_STEPS: TourStep[] = [
                 position: "right",
         },
         {
-                id: "nav-digital-twin",
-                target: "[data-onboarding='nav-digital-twin']",
-                title: "Digital Twin",
-                content:
-                        "Convert and synchronize BIM models between AutoCAD and Revit formats with version control.",
-                position: "right",
-        },
-        {
-                id: "nav-environment",
-                target: "[data-onboarding='nav-environment']",
-                title: "Environment",
-                content:
-                        "Check weather, geocode, air quality, hazardous materials, and regulatory region information for your project site.",
-                position: "right",
-        },
-        {
-                id: "nav-monitor",
-                target: "[data-onboarding='nav-monitor']",
-                title: "System Monitor",
-                content:
-                        "Monitor system health, engine status, security alerts, and performance metrics in real-time.",
-                position: "right",
-        },
-        {
                 id: "nav-settings",
                 target: "[data-onboarding='nav-settings']",
                 title: "Settings",
                 content:
-                        "Configure application preferences, integrations, feature flags, and user settings.",
+                        "Configure application preferences, feature flags, LLM provider, Akamai security, Langfuse observability, and pipeline tuning.",
                 position: "right",
         },
         {
@@ -106,7 +170,7 @@ const TOUR_STEPS: TourStep[] = [
                 target: "[data-onboarding='help-button']",
                 title: "Help & Support",
                 content:
-                        "Access help documentation and support. Press F1 or Ctrl+H for quick access anytime.",
+                        "Access help documentation and support. Press F1 or Ctrl+H for quick access anytime. Use Ctrl+K for the command palette.",
                 position: "bottom",
         },
         {
