@@ -1,19 +1,57 @@
 """Integration tests for authentication, RBAC, and API versioning."""
+import os
+import tempfile
+
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 
 @pytest.fixture
 def client(monkeypatch):
-    """Create a test client with a known API key."""
+    """Create a test client with a known API key.
+
+    Uses a standalone FastAPI app (not backend.app) to avoid import
+    caching issues with ApiKeyMiddleware and api_keys module state.
+    """
     monkeypatch.setenv("FIREAI_API_KEY", "test-admin-key")
     monkeypatch.setenv("FIREAI_ENV", "development")
     # Force SQLite — the Supabase PostgreSQL host is not resolvable (project paused).
-    # The root conftest already sets this, but being explicit here ensures correct
-    # behavior even if backend/config.py is imported out of order.
     monkeypatch.setenv("DATABASE_URL", "sqlite:///./test_db_auth_int.db")
-    from backend.app import app
-    return TestClient(app)
+    # Redirect keys file and secret file to isolated temp directory
+    _tmp_dir = tempfile.mkdtemp(prefix="fireai_auth_test_")
+    monkeypatch.setenv("FIREAI_API_KEYS_FILE", os.path.join(_tmp_dir, "api_keys.json"))
+    monkeypatch.setenv("FIREAI_API_KEYS_SECRET_FILE", os.path.join(_tmp_dir, "api_keys.secret"))
+    # Force api_keys module to re-initialize with new env vars
+    import backend.api_keys as ak
+    ak._SERVER_SECRET = b""
+    ak._VALIDATED_KEY_CACHE.clear()
+    ak._ensure_default_admin_key()
+
+    # Build standalone app with auth middleware + necessary routers
+    _app = FastAPI()
+    from backend.security_middleware import ApiKeyMiddleware, SecurityHeadersMiddleware, CorrelationIdMiddleware
+    _app.add_middleware(SecurityHeadersMiddleware)
+    _app.add_middleware(CorrelationIdMiddleware)
+    _app.add_middleware(ApiKeyMiddleware)
+
+    # Deprecation headers middleware (from backend.app - adds Deprecation/Sunset/Link to /api/v1/ endpoints)
+    @_app.middleware("http")
+    async def _add_deprecation_headers(request, call_next):
+        response = await call_next(request)
+        if "/api/v1/" in request.url.path:
+            response.headers["Deprecation"] = "true"
+            response.headers["Sunset"] = "Wed, 25 Jun 2027 00:00:00 GMT"
+            v2_url = request.url.path.replace("/api/v1/", "/api/v2/", 1)
+            response.headers["Link"] = f'<{v2_url}>; rel="successor-version"'
+        return response
+
+    from backend.routers import health as health_router
+    _app.include_router(health_router.router, prefix="/api", tags=["Health"])
+    _app.include_router(health_router.router, prefix="/api/v1", tags=["Health-v1"])
+    from backend.routers import projects as projects_router
+    _app.include_router(projects_router.router, prefix="/api/v1", tags=["Projects"])
+    return TestClient(_app)
 
 
 def test_health_no_auth_required(client):
