@@ -375,8 +375,8 @@ class Database:
             cur.execute("CREATE INDEX IF NOT EXISTS idx_relationships_to ON relationships(to_element_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at DESC)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_projects_status_active ON projects(status) WHERE status = 'active'")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_integrations_project ON etap_integrations(project_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_project ON etap_sync_logs(project_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_integrations_project ON etap_integrations(project_id)")  # NOSONAR S1192: DDL index name is intentionally explicit
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_project ON etap_sync_logs(project_id)")  # NOSONAR S1192: DDL index name is intentionally explicit
             cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_completed ON etap_sync_logs(project_id) WHERE error_message IS NULL")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_project ON devices(project_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)")

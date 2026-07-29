@@ -41,6 +41,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/integrations/etap", tags=["ETAP Integration"])
 
+_ETAP_NOT_CONFIGURED = "ETAP integration not configured"
+_PROJECT_ID_DESCRIPTION = "Project ID"
+
 
 def get_etap_service(request: Request):
     """Dependency to get ETAP service instance."""
@@ -70,7 +73,7 @@ async def connect_to_etap(
 @router.post(
     "/disconnect",
     responses={
-        404: {"description": "ETAP integration not configured"},
+        404: {"description": _ETAP_NOT_CONFIGURED},
     },
     dependencies=[Depends(require_permission(Permission.INTEGRATION_MANAGE))],
 )
@@ -82,7 +85,7 @@ async def disconnect(
     project_id = request.query_params.get("project_id", "default")
     existing = service.get_settings(project_id)
     if not existing:
-        raise HTTPException(status_code=404, detail="ETAP integration not configured")
+        raise HTTPException(status_code=404, detail=_ETAP_NOT_CONFIGURED)
 
     service.update_settings(project_id, EtapSettingsUpdate(enabled=False))
     return {"message": "Disconnected successfully", "enabled": False}
@@ -90,7 +93,7 @@ async def disconnect(
 
 @router.get("/status", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
 async def get_status(
-    project_id: str = Query(..., description="Project ID"),
+    project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
     service = Depends(get_etap_service),
 ) -> dict:
     """Get ETAP integration status for a project."""
@@ -102,7 +105,7 @@ async def get_status(
 
 @router.get("/projects", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
 async def list_etap_projects(
-    project_id: str = Query(..., description="Project ID"),
+    project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
     service = Depends(get_etap_service),
 ) -> List[EtapProjectInfo]:
     """List available ETAP projects."""
@@ -180,7 +183,7 @@ async def import_from_etap(
 
 @router.get("/logs", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
 async def get_logs(
-    project_id: str = Query(..., description="Project ID"),
+    project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=100, description="Page size"),
     service = Depends(get_etap_service),
@@ -199,7 +202,7 @@ async def get_logs(
 )
 async def create_settings(
     settings: EtapConnectionSettings,
-    project_id: str = Query(..., description="Project ID"),
+    project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
     service = Depends(get_etap_service),
 ) -> EtapSettingsResponse:
     """
@@ -214,7 +217,7 @@ async def create_settings(
 @router.get("/settings", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
 async def get_settings(
     service = Depends(get_etap_service),
-    project_id: str = Query(..., description="Project ID"),
+    project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
 ) -> Optional[EtapSettingsResponse]:
     """Get ETAP settings for a project (no secrets returned)."""
     settings = service.get_settings(project_id)
@@ -238,13 +241,13 @@ async def get_settings(
 @router.put(
     "/settings",
     responses={
-        404: {"description": "ETAP integration not configured"},
+        404: {"description": _ETAP_NOT_CONFIGURED},
     },
     dependencies=[Depends(require_permission(Permission.INTEGRATION_MANAGE))],
 )
 async def update_settings(
     update: EtapSettingsUpdate,
-    project_id: str = Query(..., description="Project ID"),
+    project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
     service = Depends(get_etap_service),
 ) -> EtapSettingsResponse:
     """
@@ -255,7 +258,7 @@ async def update_settings(
     """
     updated = service.update_settings(project_id, update)
     if not updated:
-        raise HTTPException(status_code=404, detail="ETAP integration not configured")
+        raise HTTPException(status_code=404, detail=_ETAP_NOT_CONFIGURED)
     # Return only non-sensitive fields
     safe_settings = {
         "id": updated["id"],
@@ -274,16 +277,16 @@ async def update_settings(
 @router.delete(
     "/settings",
     responses={
-        404: {"description": "ETAP integration not configured"},
+        404: {"description": _ETAP_NOT_CONFIGURED},
     },
     dependencies=[Depends(require_permission(Permission.INTEGRATION_MANAGE))],
 )
 async def delete_settings(
     service = Depends(get_etap_service),
-    project_id: str = Query(..., description="Project ID"),
+    project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
 ) -> dict:
     """Delete ETAP integration settings."""
     deleted = service.delete_settings(project_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="ETAP integration not configured")
+        raise HTTPException(status_code=404, detail=_ETAP_NOT_CONFIGURED)
     return {"message": "Settings deleted successfully"}
