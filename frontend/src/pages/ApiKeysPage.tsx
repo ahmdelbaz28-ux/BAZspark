@@ -30,6 +30,14 @@ import {
         SelectTrigger,
         SelectValue,
 } from "@/components/ui/select";
+import {
+        Dialog,
+        DialogContent,
+        DialogDescription,
+        DialogFooter,
+        DialogHeader,
+        DialogTitle,
+} from "@/components/ui/dialog";
 import { getApiKey } from "@/services/apiKey";
 // SECURITY FIX: Import CSRF helpers to protect admin key management from CSRF attacks
 import { CSRF_HEADER_NAME, getCsrfToken, getCachedCsrfToken } from "@/services/csrf";
@@ -51,6 +59,9 @@ export function ApiKeysPage() {
         const [newKeyDesc, setNewKeyDesc] = useState("");
         const [creating, setCreating] = useState(false);
         const [newKeyValue, setNewKeyValue] = useState<string | null>(null);
+        const [editKey, setEditKey] = useState<ApiKeyInfo | null>(null);
+        const [editRole, setEditRole] = useState("");
+        const [updating, setUpdating] = useState(false);
 
         const fetchKeys = async () => {
                 setLoading(true);
@@ -152,10 +163,37 @@ export function ApiKeysPage() {
                 }
         };
 
+        const handleUpdateRole = async () => {
+                if (!editKey) return;
+                setUpdating(true);
+                try {
+                        const apiKey = getApiKey();
+                        const headers: Record<string, string> = { "Content-Type": "application/json" };
+                        if (apiKey) headers["X-API-Key"] = apiKey;
+                        // SECURITY FIX: Inject CSRF token into PUT request
+                        let csrfToken = getCachedCsrfToken();
+                        if (!csrfToken) csrfToken = await getCsrfToken();
+                        if (csrfToken) headers[CSRF_HEADER_NAME] = csrfToken;
+                        const resp = await fetch(`/api/v1/admin/keys/${editKey.key_hash}`, {
+                                method: "PUT",
+                                headers,
+                                body: JSON.stringify({ role: editRole }),
+                                credentials: "same-origin",
+                        });
+                        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                        toast.success("API key role updated");
+                        setEditKey(null);
+                        fetchKeys();
+                } catch (err) {
+                        toast.error(`Update failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                } finally {
+                        setUpdating(false);
+                }
+        };
+
         const roleColor = (role: string) => {
                 if (role === "admin") return "bg-red-600";
                 if (role === "engineer") return "bg-amber-500";
-                if (role === "reviewer") return "bg-blue-500";
                 return "bg-emerald-600";
         };
 
@@ -195,8 +233,7 @@ export function ApiKeysPage() {
                                                                                 <SelectContent>
                                                                                         <SelectItem value="admin">Admin (full access)</SelectItem>
                                                                                         <SelectItem value="engineer">Engineer (read/write)</SelectItem>
-                                                                                        <SelectItem value="reviewer">Reviewer (read-only)</SelectItem>
-                                                                                        <SelectItem value="viewer">Viewer (minimal)</SelectItem>
+                                                                                        <SelectItem value="viewer">Viewer (read-only)</SelectItem>
                                                                                 </SelectContent>
                                                                         </Select>
                                                                 </div>
@@ -248,20 +285,64 @@ export function ApiKeysPage() {
                                                                                         {key.last_used && ` · Last used ${new Date(key.last_used).toLocaleDateString()}`}
                                                                                 </p>
                                                                         </div>
-                                                                        <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                onClick={() => handleDelete(key.key_hash)}
-                                                                                className="text-red-600 hover:text-red-700"
-                                                                        >
-                                                                                <Trash2 aria-hidden="true" className="h-4 w-4" />
-                                                                        </Button>
+                                                                        <div className="flex items-center gap-1">
+                                                                                <Button
+                                                                                        variant="ghost"
+                                                                                        size="sm"
+                                                                                        onClick={() => {
+                                                                                                setEditKey(key);
+                                                                                                setEditRole(key.role);
+                                                                                        }}
+                                                                                        className="text-muted-foreground hover:text-foreground"
+                                                                                        title="Edit role"
+                                                                                >
+                                                                                        <Key aria-hidden="true" className="h-4 w-4" />
+                                                                                </Button>
+                                                                                <Button
+                                                                                        variant="ghost"
+                                                                                        size="sm"
+                                                                                        onClick={() => handleDelete(key.key_hash)}
+                                                                                        className="text-red-600 hover:text-red-700"
+                                                                                >
+                                                                                        <Trash2 aria-hidden="true" className="h-4 w-4" />
+                                                                                </Button>
+                                                                        </div>
                                                                 </div>
                                                         ))}
                                                 </div>
                                         )}
                                 </CardContent>
                         </Card>
+
+                        <Dialog open={!!editKey} onOpenChange={(open) => { if (!open) setEditKey(null); }}>
+                                <DialogContent>
+                                        <DialogHeader>
+                                                <DialogTitle>Edit API Key Role</DialogTitle>
+                                                <DialogDescription>
+                                                        Change the role for key <code className="font-mono text-xs">{editKey?.prefix}...</code>
+                                                </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-2 py-2">
+                                                <Label>Role</Label>
+                                                <Select value={editRole} onValueChange={setEditRole}>
+                                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                                        <SelectContent>
+                                                                <SelectItem value="admin">Admin (full access)</SelectItem>
+                                                                <SelectItem value="engineer">Engineer (read/write)</SelectItem>
+                                                                <SelectItem value="viewer">Viewer (read-only)</SelectItem>
+                                                        </SelectContent>
+                                                </Select>
+                                        </div>
+                                        <DialogFooter>
+                                                <Button variant="outline" onClick={() => setEditKey(null)} disabled={updating}>
+                                                        Cancel
+                                                </Button>
+                                                <Button onClick={handleUpdateRole} disabled={updating || editRole === editKey?.role}>
+                                                        {updating ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : "Update Role"}
+                                                </Button>
+                                        </DialogFooter>
+                                </DialogContent>
+                        </Dialog>
                 </div>
         );
 }

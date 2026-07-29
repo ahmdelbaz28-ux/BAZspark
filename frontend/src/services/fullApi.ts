@@ -121,6 +121,74 @@ export const qomnApi = {
                         body: JSON.stringify(data),
                 }),
 
+        /** POST /qomn/smoke-spacing — Smoke detector spacing per NFPA 72 Table 17.6.3.1 */
+        smokeSpacing: (data: {
+                ceiling_height_m: number;
+        }) =>
+                apiCall("/qomn/smoke-spacing", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /qomn/heat-spacing — Heat detector spacing per NFPA 72 §17.6.3.1 */
+        heatSpacing: (data: {
+                ceiling_height_m: number;
+                area_per_detector_m2: number;
+        }) =>
+                apiCall("/qomn/heat-spacing", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /qomn/battery — Battery capacity per NFPA 72 §10.6.7.2.1 */
+        battery: (data: {
+                standby_load_a: number;
+                alarm_load_a: number;
+                standby_hours?: number;
+                alarm_minutes?: number;
+                safety_factor?: number;
+                efficiency?: number;
+        }) =>
+                apiCall("/qomn/battery", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /qomn/place-detectors — Full room detector placement per NFPA 72-2022 */
+        placeDetectors: (data: {
+                room_id: string;
+                width_m: number;
+                length_m: number;
+                ceiling_height_m: number;
+                ceiling_type?: string;
+                occupancy_type?: string;
+                detector_type?: string;
+                is_sleeping_area?: boolean;
+                slope_degrees?: number;
+                exit_doors?: Array<{ x_m: number; y_m: number; door_width_m: number }>;
+        }) =>
+                apiCall("/qomn/place-detectors", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /qomn/place-duct — Duct smoke detector placement per NFPA 72 §17.7.4 */
+        placeDuctDetector: (data: {
+                duct_id: string;
+                width_m: number;
+                height_m: number;
+                velocity_m_s: number;
+        }) =>
+                apiCall("/qomn/place-duct", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** GET /qomn/audit — AHJ audit trail export */
+        getAudit: () => apiCall("/qomn/audit"),
+
+        /** GET /qomn/physics-guards — Physics guard limits listing */
+        getPhysicsGuards: () => apiCall("/qomn/physics-guards"),
 };
 
 
@@ -250,6 +318,22 @@ export const llmApi = {
                         body: JSON.stringify(data),
                 }),
 
+        /** POST /llm/compliance-narrative — AI compliance narrative drafting */
+        complianceNarrative: (data: {
+                project_id: string;
+                report_type?: string;
+                jurisdiction?: string;
+                code_sections?: string[];
+                include_calculations?: boolean;
+        }) =>
+                apiCall("/llm/compliance-narrative", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** GET /llm/models — List available LLM models */
+        getModels: () => apiCall("/llm/models"),
+
 };
 
 // ─── FACP API ───────────────────────────────────────────────────────────────
@@ -275,6 +359,71 @@ export const facpApi = {
 
         /** GET /facp/panels — List all FACP panels */
         getPanels: () => apiCall("/facp/panels"),
+
+        /** POST /facp/verify — Verify FACP compliance against UL/FDNY/NFPA rules */
+        verify: (data: {
+                device_count: number;
+                nac_circuit_count: number;
+                building_size_m2: number;
+                building_floors: number;
+                requires_network?: boolean;
+                requires_voice?: boolean;
+                requires_releasing?: boolean;
+                jurisdiction?: string;
+                preferred_manufacturer?: string | null;
+                min_temperature_c?: number;
+                recommended_model: string;
+                manufacturer: string;
+                capacity_utilization: number;
+                nac_utilization: number;
+                battery_size_ah: number;
+                battery_derating_method: string;
+        }) =>
+                apiCall("/facp/verify", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /facp/schedule — Generate DXF schedule table */
+        schedule: (data: {
+                recommended_model: string;
+                manufacturer: string;
+                capacity_utilization: number;
+                nac_utilization: number;
+                battery_size_ah: number;
+                battery_derating_method: string;
+                power_supply_watts: number;
+                listings?: string[];
+                signature_hash: string;
+                quantity?: number;
+        }) =>
+                apiCall("/facp/schedule", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /facp/spec — Generate CSI specification */
+        spec: (data: {
+                device_count: number;
+                nac_circuit_count: number;
+                building_size_m2: number;
+                building_floors: number;
+                requires_network?: boolean;
+                requires_voice?: boolean;
+                requires_releasing?: boolean;
+                jurisdiction?: string;
+                recommended_model: string;
+                manufacturer: string;
+                capacity_utilization: number;
+                nac_utilization: number;
+                battery_size_ah: number;
+                battery_derating_method: string;
+                power_supply_watts: number;
+        }) =>
+                apiCall("/facp/spec", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
 };
 
 // ─── Environment API ────────────────────────────────────────────────────────
@@ -308,6 +457,18 @@ export const environmentApi = {
 
         /** GET /environment/hazmat/known */
         getKnownHazmat: () => apiCall("/environment/hazmat/known"),
+
+        /** GET /environment/region — Regulatory region lookup */
+        getRegion: (lat: number, lon: number) =>
+                apiCall(`/environment/region?lat=${lat}&lon=${lon}`),
+
+        /** GET /environment/context — Environmental context summary */
+        getContext: (lat: number, lon: number) =>
+                apiCall(`/environment/context?lat=${lat}&lon=${lon}`),
+
+        /** GET /environment/full-context — Full context aggregation */
+        getFullContext: (lat: number, lon: number) =>
+                apiCall(`/environment/full-context?lat=${lat}&lon=${lon}`),
 
 };
 
@@ -722,6 +883,12 @@ export const monitorApi = {
         },
 
         /** GET /monitor/alerts */
+        getAlerts: (params?: { limit?: number }) => {
+                const qs = params?.limit ? `?limit=${params.limit}` : "";
+                return apiCall(
+                        `/monitor/alerts${qs}`,  // NOSONAR: typescript:S4624
+                );
+        },
 };
 
 // ─── Workflow API ───────────────────────────────────────────────────────────
@@ -1160,3 +1327,179 @@ export const etapApi = {
                 }),
 };
 
+
+// ─── Analyze API ─────────────────────────────────────────────────────────────
+
+export const analyzeApi = {
+        /** POST /analyze/battery — Battery capacity analysis */
+        battery: (data: {
+                standby_load_a: number;
+                alarm_load_a: number;
+                standby_hours?: number;
+                alarm_minutes?: number;
+                safety_factor?: number;
+                discharge_efficiency?: number;
+        }) =>
+                apiCall("/analyze/battery", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /analyze/voltage — Voltage drop analysis */
+        voltage: (data: {
+                current_a: number;
+                length_m: number;
+                awg_gauge?: string;
+                supply_voltage_v?: number;
+        }) =>
+                apiCall("/analyze/voltage", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /projects/{id}/analyze/room — Unified room analysis pipeline */
+        room: (projectId: string, data: {
+                room_id: string;
+                room_polygon: number[][];
+                ceiling_height_m: number;
+                detector_type?: string;
+                standby_current_a?: number;
+                alarm_current_a?: number;
+                circuit_length_m?: number;
+        }) =>
+                apiCall(`/projects/${encodeURIComponent(projectId)}/analyze/room`, {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+};
+
+// ─── CAD Gateway API ─────────────────────────────────────────────────────────
+
+export const cadGatewayApi = {
+        /** POST /cad/connect — Unified CAD gateway connect */
+        connect: (data: { engine?: string }) =>
+                apiCall("/cad/connect", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /cad/disconnect — Unified CAD gateway disconnect */
+        disconnect: () =>
+                apiCall("/cad/disconnect", { method: "POST" }),
+
+        /** GET /cad/status — Unified CAD gateway status */
+        getStatus: () => apiCall("/cad/status"),
+
+        /** POST /cad/read — CAD read drawing entities */
+        read: (data: Record<string, unknown>) =>
+                apiCall("/cad/read", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /cad/write — CAD write entities back */
+        write: (data: Record<string, unknown>) =>
+                apiCall("/cad/write", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /cad/draw_line — Draw a line in CAD */
+        drawLine: (data: Record<string, unknown>) =>
+                apiCall("/cad/draw_line", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /cad/draw_polyline — Draw a polyline in CAD */
+        drawPolyline: (data: Record<string, unknown>) =>
+                apiCall("/cad/draw_polyline", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /cad/draw_circle — Draw a circle in CAD */
+        drawCircle: (data: Record<string, unknown>) =>
+                apiCall("/cad/draw_circle", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /cad/draw_text — Draw text in CAD */
+        drawText: (data: Record<string, unknown>) =>
+                apiCall("/cad/draw_text", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+};
+
+// ─── Project Export API ──────────────────────────────────────────────────────
+
+export const projectExportApi = {
+        /** GET /projects/{id}/export/dxf — Per-project DXF export */
+        exportDxf: (projectId: string) =>
+                apiCall(`/projects/${encodeURIComponent(projectId)}/export/dxf`),
+
+        /** GET /projects/{id}/export/revit — Per-project Revit export */
+        exportRevit: (projectId: string) =>
+                apiCall(`/projects/${encodeURIComponent(projectId)}/export/revit`),
+
+        /** GET /projects/{id}/export/ifc — Per-project IFC export */
+        exportIfc: (projectId: string) =>
+                apiCall(`/projects/${encodeURIComponent(projectId)}/export/ifc`),
+};
+
+// ─── APS Cloud API ───────────────────────────────────────────────────────────
+
+export const apsApi = {
+        /** POST /api/v2/aps/process — APS cloud processing work item */
+        process: (data: Record<string, unknown>) =>
+                apiCall("/aps/process", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }, API_V2_BASE),
+
+        /** GET /api/v2/aps/status/{id} — APS work item status */
+        getStatus: (id: string) =>
+                apiCall(`/aps/status/${encodeURIComponent(id)}`, {}, API_V2_BASE),
+};
+
+// ─── Multi-DB BIM API ────────────────────────────────────────────────────────
+
+export const multiDbApi = {
+        /** POST /multi-db/bim/cache-element — BIM element caching in Redis */
+        cacheElement: (data: Record<string, unknown>) =>
+                apiCall("/multi-db/bim/cache-element", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** GET /multi-db/bim/get-cached-element/{id} — Cached BIM element retrieval */
+        getCachedElement: (id: string) =>
+                apiCall(`/multi-db/bim/get-cached-element/${encodeURIComponent(id)}`),
+
+        /** POST /multi-db/bim/store-embeddings — Qdrant embedding storage */
+        storeEmbeddings: (data: Record<string, unknown>) =>
+                apiCall("/multi-db/bim/store-embeddings", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /multi-db/bim/find-similar — Vector similarity search */
+        findSimilar: (data: Record<string, unknown>) =>
+                apiCall("/multi-db/bim/find-similar", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /multi-db/bim/create-relationships — Neo4j relationship creation */
+        createRelationships: (data: Record<string, unknown>) =>
+                apiCall("/multi-db/bim/create-relationships", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** GET /multi-db/bim/related-elements/{id} — Neo4j related elements */
+        getRelatedElements: (id: string) =>
+                apiCall(`/multi-db/bim/related-elements/${encodeURIComponent(id)}`),
+};

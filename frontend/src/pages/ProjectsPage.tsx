@@ -5,6 +5,7 @@
 
 import {
         Clock,
+        Download,
         Eye,
         Folder,
         FolderPlus,
@@ -36,6 +37,12 @@ import {
         SelectTrigger,
         SelectValue,
 } from "@/components/ui/select";
+import {
+        DropdownMenu,
+        DropdownMenuContent,
+        DropdownMenuItem,
+        DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
         useCreateProject,
@@ -43,6 +50,7 @@ import {
         useProjects,
         useSyncProject,
 } from "@/hooks/useApiQuery";
+import { projectExportApi } from "@/services/fullApi";
 import type { Project } from "@/services/digitalTwinApi";
 import { DEVICE_CATEGORIES, getDevicesByCategory } from "@/types/deviceLibrary";
 
@@ -95,6 +103,7 @@ export function ProjectsPage() {
         const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
         const [syncTarget, setSyncTarget] = useState<Project | null>(null);
         const [statusFilter, setStatusFilter] = useState("all");
+        const [exportingProjectId, setExportingProjectId] = useState<string | null>(null);
 
         const filteredProjects = useMemo(() => {
                 if (!projects) return [];
@@ -150,6 +159,37 @@ export function ProjectsPage() {
                 }
         };
 
+        const handleExport = async (projectId: string, format: "dxf" | "revit" | "ifc") => {
+                setExportingProjectId(projectId);
+                try {
+                        let blob: Blob;
+                        switch (format) {
+                                case "dxf":
+                                        blob = (await projectExportApi.exportDxf(projectId)) as unknown as Blob;
+                                        break;
+                                case "revit":
+                                        blob = (await projectExportApi.exportRevit(projectId)) as unknown as Blob;
+                                        break;
+                                case "ifc":
+                                        blob = (await projectExportApi.exportIfc(projectId)) as unknown as Blob;
+                                        break;
+                        }
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `project-${projectId}.${format}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        toast.success(t("projects.exportSuccess", { format: format.toUpperCase() }));
+                } catch {
+                        toast.error(t("projects.exportError", { format: format.toUpperCase() }));
+                } finally {
+                        setExportingProjectId(null);
+                }
+        };
+
         return (
                 <div className="flex-1 overflow-auto" aria-label={t("projects.title")}>
                         <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -163,13 +203,13 @@ export function ProjectsPage() {
                                                         {t("projects.subtitle")}
                                                 </p>
                                         </div>
-									<Button
-										className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
-										onClick={() => setShowCreateForm(true)}
-									>
-										<FolderPlus aria-hidden="true" className="h-4 w-4 mr-1" />
-										{t("projects.newProject")}
-									</Button>
+                                                                        <Button
+                                                                                className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+                                                                                onClick={() => setShowCreateForm(true)}
+                                                                        >
+                                                                                <FolderPlus aria-hidden="true" className="h-4 w-4 mr-1" />
+                                                                                {t("projects.newProject")}
+                                                                        </Button>
                                 </div>
 
                                 {/* Create Project Form */}
@@ -221,11 +261,11 @@ export function ProjectsPage() {
                                                                 >
                                                                         {t("common.cancel")}
                                                                 </Button>
-										<Button
-											className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
-											onClick={handleCreate}
-											disabled={creating || !newProject.name.trim()}
-										>
+                                                                                <Button
+                                                                                        className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+                                                                                        onClick={handleCreate}
+                                                                                        disabled={creating || !newProject.name.trim()}
+                                                                                >
                                                                         {creating ? (
                                                                                 <>
                                                                                         <Loader2 aria-hidden="true" className="h-4 w-4 mr-1 animate-spin" />
@@ -433,6 +473,42 @@ export function ProjectsPage() {
                                                                                                 >
                                                                                                         <Trash2 aria-hidden="true" className="h-4 w-4" />
                                                                                                 </Button>
+                                                                                                <DropdownMenu>
+                                                                                                        <DropdownMenuTrigger asChild>
+                                                                                                                <Button
+                                                                                                                        variant="outline"
+                                                                                                                        size="sm"
+                                                                                                                        className="border-border text-foreground/90"
+                                                                                                                        disabled={exportingProjectId === project.id}
+                                                                                                                >
+                                                                                                                        {exportingProjectId === project.id ? (
+                                                                                                                                <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                                                                                                                        ) : (
+                                                                                                                                <Download aria-hidden="true" className="h-4 w-4" />
+                                                                                                                        )}
+                                                                                                                </Button>
+                                                                                                        </DropdownMenuTrigger>
+                                                                                                        <DropdownMenuContent className="bg-card border-border text-foreground">
+                                                                                                                <DropdownMenuItem
+                                                                                                                        className="cursor-pointer focus:bg-secondary"
+                                                                                                                        onClick={() => handleExport(project.id, "dxf")}
+                                                                                                                >
+                                                                                                                        {t("projects.exportDxf")}
+                                                                                                                </DropdownMenuItem>
+                                                                                                                <DropdownMenuItem
+                                                                                                                        className="cursor-pointer focus:bg-secondary"
+                                                                                                                        onClick={() => handleExport(project.id, "revit")}
+                                                                                                                >
+                                                                                                                        {t("projects.exportRevit")}
+                                                                                                                </DropdownMenuItem>
+                                                                                                                <DropdownMenuItem
+                                                                                                                        className="cursor-pointer focus:bg-secondary"
+                                                                                                                        onClick={() => handleExport(project.id, "ifc")}
+                                                                                                                >
+                                                                                                                        {t("projects.exportIfc")}
+                                                                                                                </DropdownMenuItem>
+                                                                                                        </DropdownMenuContent>
+                                                                                                </DropdownMenu>
                                                                                         </div>
                                                                                 </div>
                                                                         </CardContent>

@@ -1,5 +1,5 @@
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
         Activity,
         AlertTriangle,
@@ -7,11 +7,13 @@ import {
         CheckCircle2,
         Clock,
         Database,
+        RefreshCw,
         Server,
         XCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
         Card,
@@ -21,7 +23,7 @@ import {
         CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDevices, useHealth, useProjects } from "@/hooks/useApiQuery";
+import { useDevices, useHealth, useProjects, useSyncProject } from "@/hooks/useApiQuery";
 
 export function DashboardPage() {
         const { t } = useTranslation();
@@ -40,6 +42,9 @@ export function DashboardPage() {
                 data: devices,
                 loading: devicesLoading,
         } = useDevices(null); // Pass null as projectId
+
+        const { mutate: syncProject, loading: syncing } = useSyncProject();
+        const [syncingProjectId, setSyncingProjectId] = useState<string | null>(null);
 
         // Calculate stats
         const totalProjects = projects?.length ?? 0;
@@ -108,6 +113,32 @@ export function DashboardPage() {
                                                 <Activity aria-hidden="true" className="h-4 w-4 mr-1" />
                                                 {t("dashboard.refresh")}
                                         </Button>
+                                        {activeProjects > 0 && (
+                                                <Button
+                                                        variant="outline"
+                                                        className="border-border text-foreground/90 hover:bg-card"
+                                                        disabled={syncing}
+                                                        onClick={async () => {
+                                                                if (!projects) return;
+                                                                const active = projects.filter((p) => p.status === "active");
+                                                                if (active.length === 0) return;
+                                                                try {
+                                                                        for (const p of active) {
+                                                                                setSyncingProjectId(p.id);
+                                                                                await syncProject(p.id);
+                                                                        }
+                                                                        toast.success(`Synced ${active.length} project(s) successfully.`);
+                                                                } catch {
+                                                                        toast.error("Failed to sync some projects.");
+                                                                } finally {
+                                                                        setSyncingProjectId(null);
+                                                                }
+                                                        }}
+                                                >
+                                                        <RefreshCw aria-hidden="true" className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`} />
+                                                        Sync Projects
+                                                </Button>
+                                        )}
                                 </div>
 
                                 {/* Stats Cards */}
