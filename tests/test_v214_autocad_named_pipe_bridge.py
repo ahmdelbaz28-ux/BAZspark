@@ -74,7 +74,7 @@ class TestV214PythonAutoCADNamedPipeClient:
 
     def test_dispatcher_class_instantiation(self):
         """AutoCADNamedPipeDispatcher can be instantiated and behaves correctly."""
-        sys.path.insert(0, str(REPO_ROOT))
+        monkeypatch.syspath_prepend(str(REPO_ROOT))
         from scripts.local_agent import AutoCADNamedPipeDispatcher
 
         dispatcher = AutoCADNamedPipeDispatcher()
