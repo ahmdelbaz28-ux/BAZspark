@@ -16,7 +16,7 @@ import {
 	ChevronRight,
 	Lightbulb,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -114,7 +114,7 @@ export function GlobalHelpDrawer({
 		? HELP_TOPICS[selectedTopicId] || null
 		: null;
 
-	const totalTopics = useMemo(() => Object.keys(HELP_TOPICS).length, []);
+	const totalTopics = Object.keys(HELP_TOPICS).length;
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>

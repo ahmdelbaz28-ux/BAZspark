@@ -270,6 +270,30 @@ export function EngineeringPage() {
                 standby_hours: batteryCalcInputs.standbyHours,
         }), [batteryResult, batteryCalcInputs.standbyHours]);
 
+        // Vercel React Best Practices: rerender-memo — memoize inline objects passed as props
+        const voltageDropResultProp = useMemo(() => ({
+                percentage: vDropResult.percentage,
+                absolute_v: vDropResult.absolute,
+                current: voltageDropInputs.current,
+                length: voltageDropInputs.length,
+                voltage: voltageDropInputs.voltage,
+        }), [vDropResult, voltageDropInputs]);
+
+        const cableResultProp = useMemo(() => ({
+                recommended_size_mm2: cableResult.recommendedSize,
+                base_ampacity_a: cableResult.baseAmpacity,
+                derating_factor: cableResult.deratingFactor,
+                final_ampacity_a: cableResult.finalAmpacity,
+        }), [cableResult]);
+
+        const batteryResultProp = useMemo(() => ({
+                total_standby_current_ma: batteryResult.totalStandbyCurrent,
+                total_alarm_current_ma: batteryResult.totalAlarmCurrent,
+                required_capacity_ah: batteryResult.requiredCapacity,
+                recommended_battery: batteryResult.recommendedBattery,
+                standby_hours: batteryCalcInputs.standbyHours,
+        }), [batteryResult, batteryCalcInputs.standbyHours]);
+
         return (
                 <div className="flex-1 overflow-auto" aria-label={t("engineering.title")}>
                         <div className="p-6 max-w-4xl mx-auto space-y-6">
