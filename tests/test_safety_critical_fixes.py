@@ -75,7 +75,7 @@ class TestHeatDetectorSpacing:
 
     def test_heat_max_spacing_is_6_1m(self):
         """NFPA 72 Table 17.6.2.1: 6.1m (20ft) for fixed-temperature heat."""
-        assert pytest.approx(6.1) == NFPA72_HEAT_MAX_SPACING_M
+        assert NFPA72_HEAT_MAX_SPACING_M == pytest.approx(6.1)
 
     def test_heat_max_spacing_not_15_24m(self):
         """Ensure the old dangerous value 15.24m is NOT present."""
@@ -83,7 +83,7 @@ class TestHeatDetectorSpacing:
 
     def test_heat_detector_spec_spacing(self):
         """HeatDetectorSpec uses 6.1m, not 9.1m (smoke) or 15.24m."""
-        assert pytest.approx(6.1) == HeatDetectorSpec.FIXED_SPACING_M
+        assert HeatDetectorSpec.FIXED_SPACING_M == pytest.approx(6.1)
 
     def test_heat_detector_radius_is_4_27m(self):
         """R = 0.7 × 6.1 = 4.27m for fixed-temperature heat."""
@@ -117,7 +117,7 @@ class TestWallDistances:
 
     def test_wall_min_distance_0_1016m(self):
         """4 inches = 0.1016m per NFPA 72 §17.6.3.1.1."""
-        assert pytest.approx(0.1016) == NFPA72_WALL_MIN_DISTANCE_M
+        assert NFPA72_WALL_MIN_DISTANCE_M == pytest.approx(0.1016)
 
     def test_wall_min_not_0_305m(self):
         """Ensure old value 0.305m is NOT present."""
@@ -125,7 +125,7 @@ class TestWallDistances:
 
     def test_wall_max_factor_0_5(self):
         """Wall max distance = S/2 per NFPA 72 §17.6.3.1.1."""
-        assert pytest.approx(0.5) == NFPA72_WALL_MAX_DISTANCE_FACTOR
+        assert NFPA72_WALL_MAX_DISTANCE_FACTOR == pytest.approx(0.5)
 
     def test_compute_smoke_spacing_has_wall_distances(self):
         """compute_smoke_detector_spacing returns both wall_min_m and wall_max_m."""
@@ -167,7 +167,7 @@ class TestCoverageRadiusVsWallDistance:
 
     def test_coverage_radius_is_0_7_times_spacing(self):
         """Coverage radius factor = 0.7 per NFPA 72 §17.7.4.2.3.1."""
-        assert pytest.approx(0.7) == NFPA72_COVERAGE_RADIUS_FACTOR
+        assert NFPA72_COVERAGE_RADIUS_FACTOR == pytest.approx(0.7)
 
     def test_smoke_coverage_radius_at_3m(self):
         """Smoke at h<=3m: R = 0.7 × 9.1 = 6.37m."""
@@ -445,12 +445,12 @@ class TestNFPA72ConstantsConsistency:
     def test_heat_spacing_matches_table(self):
         """Heat max spacing matches NFPA 72 Table 17.6.2.1."""
         # Fixed-temperature heat: 20ft = 6.1m
-        assert pytest.approx(6.1) == NFPA72_HEAT_MAX_SPACING_M
+        assert NFPA72_HEAT_MAX_SPACING_M == pytest.approx(6.1)
 
     def test_smoke_spacing_matches_table(self):
         """Smoke max spacing matches NFPA 72 §17.7.3.2.3."""
         # Smoke: flat 9.1m per V130 FIX per §17.7.3.2.3 (NO height reduction)
-        assert pytest.approx(9.1) == NFPA72_SMOKE_MAX_SPACING_M
+        assert NFPA72_SMOKE_MAX_SPACING_M == pytest.approx(9.1)
 
     def test_heat_detector_spec_matches_constant(self):
         """HeatDetectorSpec.FIXED_SPACING_M matches the constant."""
@@ -458,11 +458,11 @@ class TestNFPA72ConstantsConsistency:
 
     def test_wall_min_distance_4_inches(self):
         """Wall min distance = 4 inches = 0.1016m."""
-        assert pytest.approx(0.1016) == NFPA72_WALL_MIN_DISTANCE_M
+        assert NFPA72_WALL_MIN_DISTANCE_M == pytest.approx(0.1016)
 
     def test_wall_max_distance_factor_half(self):
         """Wall max distance factor = 0.5 (S/2)."""
-        assert pytest.approx(0.5) == NFPA72_WALL_MAX_DISTANCE_FACTOR
+        assert NFPA72_WALL_MAX_DISTANCE_FACTOR == pytest.approx(0.5)
 
 
 # ============================================================================

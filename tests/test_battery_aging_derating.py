@@ -50,19 +50,19 @@ class TestConstants:
 
     def test_aging_derating_eol_80_pct(self):
         """IEEE 1188: Replace VRLA at 80% of rated capacity."""
-        assert pytest.approx(0.80) == AGING_DERATING_EOL
+        assert AGING_DERATING_EOL == pytest.approx(0.80)
 
     def test_end_of_discharge_voltage_1_75v(self):
         """IEEE 485: End-of-discharge = 1.75V per cell."""
-        assert pytest.approx(1.75) == END_OF_DISCHARGE_VOLTAGE_PER_CELL
+        assert END_OF_DISCHARGE_VOLTAGE_PER_CELL == pytest.approx(1.75)
 
     def test_nominal_cell_voltage_2_0v(self):
         """Lead-acid nominal voltage = 2.0V per cell."""
-        assert pytest.approx(2.0) == NOMINAL_CELL_VOLTAGE
+        assert NOMINAL_CELL_VOLTAGE == pytest.approx(2.0)
 
     def test_nfpa72_minimum_safety_factor_1_20(self):
         """NFPA 72 §10.6.7.2.1: Minimum 1.20x safety factor."""
-        assert pytest.approx(1.20) == NFPA72_MINIMUM_SAFETY_FACTOR
+        assert NFPA72_MINIMUM_SAFETY_FACTOR == pytest.approx(1.20)
 
     def test_temperature_derating_reference_25c(self):
         """Battery rated capacity is at 25°C reference temperature."""
