@@ -139,10 +139,10 @@ class TestConstants:
     """NFPA 72 constant values — must be exact."""
 
     def test_min_wall_distance_m(self):
-        assert pytest.approx(0.1016, abs=0.0001) == NFPA_MIN_WALL_DISTANCE_M
+        assert NFPA_MIN_WALL_DISTANCE_M == pytest.approx(0.1016, abs=0.0001)
 
     def test_hvac_exclusion_radius_m(self):
-        assert pytest.approx(0.9144, abs=0.0001) == NFPA_HVAC_EXCLUSION_RADIUS_M
+        assert NFPA_HVAC_EXCLUSION_RADIUS_M == pytest.approx(0.9144, abs=0.0001)
 
 
 # =============================================================================

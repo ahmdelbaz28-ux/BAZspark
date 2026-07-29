@@ -333,7 +333,7 @@ class TestNFPA72Constants:
     # (NFPA 72 states 9.1m, not 30ft×0.3048=9.144)
     def test_smoke_max_spacing(self):
         """NFPA 72 §17.7.3.2.3: max 9.1m (30ft)."""
-        assert pytest.approx(9.1) == NFPA72_SMOKE_MAX_SPACING_M
+        assert NFPA72_SMOKE_MAX_SPACING_M == pytest.approx(9.1)
 
     # (6.1m = 20ft is the standard spacing at h≤3.0m per Table 17.6.3.5.1;
     # 15.24m = 50ft is the ABSOLUTE max listed spacing, now in
@@ -344,7 +344,7 @@ class TestNFPA72Constants:
         CRITICAL FIX: Was 15.240m (50ft) which was the LINEAR detection spacing,
         not fixed-temperature. 15.24m would produce R=10.67m — 2.5× overestimate.
         """
-        assert pytest.approx(6.1) == NFPA72_HEAT_MAX_SPACING_M
+        assert NFPA72_HEAT_MAX_SPACING_M == pytest.approx(6.1)
 
     # (NFPA 72 §17.6.3.1.1 specifies 0.1m dead air space minimum)
     def test_wall_min_distance(self):
@@ -352,15 +352,15 @@ class TestNFPA72Constants:
         NFPA 72 §17.6.3.1.1: 4 inches (0.1016m) dead air space minimum.
         CRITICAL FIX: Was 0.305m which conflated with wall MAX distance S/2.
         """
-        assert pytest.approx(0.1016) == NFPA72_WALL_MIN_DISTANCE_M
+        assert NFPA72_WALL_MIN_DISTANCE_M == pytest.approx(0.1016)
 
     def test_pull_station_height(self):
         """NFPA 72 §17.15.7: 48 inches = 1.219m AFF."""
-        assert pytest.approx(1.219) == NFPA72_PULL_STATION_HEIGHT_M
+        assert NFPA72_PULL_STATION_HEIGHT_M == pytest.approx(1.219)
 
     def test_pull_station_from_exit(self):
         """NFPA 72 §17.15.3: 5 ft = 1.524m from exit."""
-        assert pytest.approx(1.524) == NFPA72_PULL_STATION_FROM_EXIT_M
+        assert NFPA72_PULL_STATION_FROM_EXIT_M == pytest.approx(1.524)
 
     def test_battery_standby_hours(self):
         """NFPA 72 §10.6.7.2.1: 24 hours standby."""

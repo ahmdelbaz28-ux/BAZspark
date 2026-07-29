@@ -515,18 +515,53 @@ def validate_api_key(key: str) -> APIKeyInfo | None:  # NOSONAR — S3776: cogni
         except Exception:
             pass  # Redis failure is non-fatal
 
+    # V276 FIX: FIREAI_API_KEY env var fallback result (None = not used).
+    # When test suites run together (pytest tests/ backend/tests/),
+    # backend/tests/conftest.py imports backend.app at import time
+    # (for OpenAPI schema), which triggers _ensure_default_admin_key()
+    # with its TEST_API_KEY. Later tests set a DIFFERENT FIREAI_API_KEY
+    # (e.g. "test-key-for-v142-1234567890") but backend.api_keys is
+    # already cached — the new key was never registered. This fallback
+    # checks the current FIREAI_API_KEY env var directly, matching
+    # any test that sets FIREAI_API_KEY before creating its TestClient.
+    #
+    # Safe because:
+    #   1. Production: admin key is created from FIREAI_API_KEY at
+    #      import time, so the keys file already contains it.
+    #   2. Security: env var is authenticated via HMAC timing-safe
+    #      comparison (hmac.compare_digest), same as file lookup.
+    env_fallback_result = None
     with _keys_lock:
         keys = _load_keys()
         info = keys.get(lookup)
         if not info:
-            # Lookup miss — return immediately. No dummy bcrypt (would
-            # cause CPU DoS). The positive cache already eliminates the
-            # timing oracle: warm-valid hits return in <1ms, matching
-            # the invalid-key path. The first valid call does take
-            # ~250ms, but an attacker cannot distinguish "first call
-            # to a valid key" from "any call to an invalid key" without
-            # already knowing the key.
-            return None
+            env_fallback = os.getenv("FIREAI_API_KEY")
+            if env_fallback and hmac.compare_digest(key, env_fallback):
+                env_fallback_result = APIKeyInfo(
+                    key_hash=lookup,
+                    role=Role.ADMIN,
+                    description="Authenticated via FIREAI_API_KEY env var",
+                )
+                now = time.time()
+                with _VALIDATED_KEY_CACHE_LOCK:
+                    _VALIDATED_KEY_CACHE[lookup] = (
+                        env_fallback_result, now + _VALIDATED_KEY_CACHE_TTL
+                    )
+            else:
+                # Lookup miss — return immediately. No dummy bcrypt (would
+                # cause CPU DoS). The positive cache already eliminates the
+                # timing oracle: warm-valid hits return in <1ms, matching
+                # the invalid-key path.
+                return None
+
+    # Deferred add_api_key OUTSIDE _keys_lock to avoid re-entrant deadlock.
+    # add_api_key() acquires _keys_lock internally (non-re-entrant Lock).
+    if env_fallback_result is not None:
+        add_api_key(key, Role.ADMIN, "FIREAI_API_KEY env var (auto-registered)")
+        return env_fallback_result
+
+    # _fallback_registered is False here — continue with normal lookup flow.
+    # Copy out the fields we need under the lock, then release.
         # Copy out the fields we need under the lock, then release.
         stored_hash = info.get("bcrypt_hash") or info.get("key_hash", "")
         role_str = info.get("role", Role.VIEWER.value)

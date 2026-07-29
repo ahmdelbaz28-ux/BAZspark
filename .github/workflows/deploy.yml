@@ -76,8 +76,12 @@ jobs:
           pip install ruff bandit mypy pytest pytest-cov pytest-asyncio hypothesis
           mkdir -p reports
 
-      - name: Set FIREAI_SESSION_SECRET (required since V193/V207)
-        run: echo "FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" >> $GITHUB_ENV
+      - name: Generate ephemeral test secrets (V288 SECURITY — no hardcoded creds)
+        # These are CI-only ephemeral secrets. Never hardcode test credentials.
+        run: |
+          echo "FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" >> $GITHUB_ENV
+          echo "FIREAI_API_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> $GITHUB_ENV
+          echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> $GITHUB_ENV
 
       - name: Smoke test — import backend.app (Deploy pre-check)
         # V260 FIX (Rule 17 — Root-Cause): Smoke test BEFORE lint/type-check/test.
@@ -87,12 +91,12 @@ jobs:
         # there's nothing to deploy.
         env:
           FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
-          FIREAI_API_KEY: ci-test-admin-key
+          FIREAI_API_KEY: ${{ env.FIREAI_API_KEY }}
           CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
           DATABASE_URL: "sqlite:////tmp/fireai_deploy_smoke.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_deploy_smoke.db"
           UDM_DB_PATH: "/tmp/udm_deploy_smoke.db"
-          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
+          SECRET_KEY: ${{ env.SECRET_KEY }}
         run: |
           if [ -z "$FIREAI_SESSION_SECRET" ]; then
             export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
@@ -157,11 +161,17 @@ jobs:
           DATABASE_URL: "sqlite:////tmp/fireai_deploy_test.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_deploy_test.db"
           UDM_DB_PATH: "/tmp/udm_deploy_test.db"
-          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
+          SECRET_KEY: ${{ env.SECRET_KEY }}
         run: |
-          # Ensure ephemeral session secret is set (overrides from env if not)
+          # Ensure ephemeral test secrets are set (V288 — no hardcoded creds)
           if [ -z "$FIREAI_SESSION_SECRET" ]; then
             export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
+          fi
+          if [ -z "$FIREAI_API_KEY" ]; then
+            export FIREAI_API_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')
+          fi
+          if [ -z "$SECRET_KEY" ]; then
+            export SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')
           fi
           # Clean stale test artifacts that cause RuntimeError on re-runs
           rm -rf db/ /tmp/fireai_deploy_test.db /tmp/udm_deploy_test.db
@@ -269,7 +279,7 @@ jobs:
       - name: Set up kubeconfig
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config  # NOSONAR — S7636: GitHub Actions acceptable
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
       # H-13 FIX: Write secrets to temp YAML file instead of --set (avoids
@@ -383,7 +393,7 @@ jobs:
         if: steps.validate.outputs.deploy_skipped != 'true'
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > $HOME/.kube/config  # NOSONAR — S7636: GitHub Actions acceptable
+          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
       # H-13 FIX: Write secrets to temp YAML file instead of --set (avoids

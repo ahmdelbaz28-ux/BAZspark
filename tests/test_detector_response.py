@@ -402,7 +402,7 @@ class TestConstants:
         assert _AMBIENT_TEMP_C == 30.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_gravity_constant(self):
-        assert pytest.approx(9.81) == _G
+        assert _G == pytest.approx(9.81)
 
 
 if __name__ == "__main__":

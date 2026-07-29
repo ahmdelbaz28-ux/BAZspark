@@ -374,7 +374,8 @@ def test_l3_claim_text_reflects_resolved_state():
 # ─── L-3 part (j): RUNTIME — ws:// without opt-in raises ValueError ─────────
 
 
-def test_l3_runtime_ws_rejected_without_opt_in():
+@pytest.mark.timeout(15)
+def test_l3_runtime_ws_rejected_without_opt_in(monkeypatch):
     """REGRESSION GUARD (post-fix, RUNTIME): instantiating WebSocketTransport
     with default parameters and calling send_request with a ws://
     target_node must RAISE ValueError.
@@ -389,7 +390,7 @@ def test_l3_runtime_ws_rejected_without_opt_in():
     # by default — add the repo root).
     import importlib
     if str(REPO_ROOT) not in sys.path:
-        sys.path.insert(0, str(REPO_ROOT))
+        monkeypatch.syspath_prepend(str(REPO_ROOT))
     try:
         mod = importlib.import_module(
             "facp_distributed.transport.websocket_transport"
@@ -419,7 +420,8 @@ def test_l3_runtime_ws_rejected_without_opt_in():
 # ─── L-3 part (k): RUNTIME — wss:// default works without opt-in ────────────
 
 
-def test_l3_runtime_wss_default_does_not_raise():
+@pytest.mark.timeout(15)
+def test_l3_runtime_wss_default_does_not_raise(monkeypatch):
     """REGRESSION GUARD (post-fix, RUNTIME): instantiating WebSocketTransport
     with default parameters and calling send_request with NO target_node
     must NOT raise ValueError (the default is wss://, which is allowed).
@@ -432,7 +434,7 @@ def test_l3_runtime_wss_default_does_not_raise():
 
     import importlib
     if str(REPO_ROOT) not in sys.path:
-        sys.path.insert(0, str(REPO_ROOT))
+        monkeypatch.syspath_prepend(str(REPO_ROOT))
     try:
         mod = importlib.import_module(
             "facp_distributed.transport.websocket_transport"
@@ -464,9 +466,10 @@ def test_l3_runtime_wss_default_does_not_raise():
         # If we got a result, it should be an error dict (connection
         # failed), NOT a successful response (we didn't actually
         # connect to anything).
-        assert isinstance(result, dict), (
-            f"Expected dict result, got {type(result).__name__}: {result}"
-        )
+        if not isinstance(result, dict):
+            pytest.fail(
+                f"Expected dict result, got {type(result).__name__}: {result}"
+            )
     except ValueError as e:
         if "insecure ws://" in str(e):
             pytest.fail(
@@ -487,7 +490,8 @@ def test_l3_runtime_wss_default_does_not_raise():
 # ─── L-3 part (l): RUNTIME — ws:// WITH opt-in does not raise ValueError ────
 
 
-def test_l3_runtime_ws_allowed_with_opt_in():
+@pytest.mark.timeout(15)
+def test_l3_runtime_ws_allowed_with_opt_in(monkeypatch):
     """REGRESSION GUARD (post-fix, RUNTIME): instantiating WebSocketTransport
     with `allow_insecure_ws=True` and calling send_request with a ws://
     target_node must NOT raise ValueError (the opt-in flag is set).
@@ -501,7 +505,7 @@ def test_l3_runtime_ws_allowed_with_opt_in():
 
     import importlib
     if str(REPO_ROOT) not in sys.path:
-        sys.path.insert(0, str(REPO_ROOT))
+        monkeypatch.syspath_prepend(str(REPO_ROOT))
     try:
         mod = importlib.import_module(
             "facp_distributed.transport.websocket_transport"

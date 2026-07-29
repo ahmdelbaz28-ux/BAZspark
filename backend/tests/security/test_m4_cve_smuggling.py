@@ -208,6 +208,7 @@ def test_no_false_python_38_justification():
 # ─── pip-audit verification (the gold standard) ─────────────────────────────
 
 
+@pytest.mark.timeout(30)
 def test_pip_audit_reports_no_known_vulnerabilities():
     """Run pip-audit on requirements.txt — assert zero CVEs.
 

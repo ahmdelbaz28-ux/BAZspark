@@ -24,6 +24,8 @@ from .http_transport import TransportLayer
 
 _logger = logging.getLogger(__name__)
 
+_FACP_PROTOCOL_VERSION = "FACP/1.1"
+
 
 class WebSocketTransport(TransportLayer):
     """WebSocket transport implementation for distributed FACP"""
@@ -98,7 +100,7 @@ class WebSocketTransport(TransportLayer):
                         )
                         if request_data.get("method") != "auth" or not token_matches:
                             await websocket.send(json.dumps({
-                                "protocol": "FACP/1.1",
+                                "protocol": _FACP_PROTOCOL_VERSION,
                                 "id": request_data.get("id", "unknown"),
                                 "status": "error",
                                 "error": {"code": "UNAUTHORIZED", "message": "Authentication required. Send {\"method\":\"auth\",\"token\":\"<token>\"} as first message."},
@@ -106,7 +108,7 @@ class WebSocketTransport(TransportLayer):
                             continue
                         self._authenticated.add(websocket)
                         await websocket.send(json.dumps({
-                            "protocol": "FACP/1.1",
+                            "protocol": _FACP_PROTOCOL_VERSION,
                             "id": request_data.get("id", "unknown"),
                             "status": "ok",
                             "result": {"authenticated": True},
@@ -116,7 +118,7 @@ class WebSocketTransport(TransportLayer):
                     method = request_data.get("method", "")
                     if self.allowed_methods and method not in self.allowed_methods:
                         error_response = {
-                            "protocol": "FACP/1.1",
+                            "protocol": _FACP_PROTOCOL_VERSION,
                             "id": request_data.get("id", "unknown"),
                             "status": "error",
                             "error": {"code": "METHOD_NOT_ALLOWED", "message": f"Method '{method}' is not in the allowed methods list"},
@@ -139,7 +141,7 @@ class WebSocketTransport(TransportLayer):
                         await websocket.send(json.dumps(response))
                     else:
                         error_response = {
-                            "protocol": "FACP/1.1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                            "protocol": _FACP_PROTOCOL_VERSION,  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                             "id": request_data.get("id", "unknown"),
                             "status": "error",
                             "error": {
@@ -157,7 +159,7 @@ class WebSocketTransport(TransportLayer):
 
                 except json.JSONDecodeError:
                     error_response = {
-                        "protocol": "FACP/1.1",
+                        "protocol": _FACP_PROTOCOL_VERSION,
                         "id": "unknown",
                         "status": "error",
                         "error": {
@@ -174,7 +176,7 @@ class WebSocketTransport(TransportLayer):
                     await websocket.send(json.dumps(error_response))
                 except Exception as e:
                     error_response = {
-                        "protocol": "FACP/1.1",
+                        "protocol": _FACP_PROTOCOL_VERSION,
                         "id": request_data.get("id", "unknown") if 'request_data' in locals() else "unknown",
                         "status": "error",
                         "error": {
@@ -268,7 +270,7 @@ class WebSocketTransport(TransportLayer):
                     return json.loads(response)
             except Exception as e:
                 return {
-                    "protocol": "FACP/1.1",
+                    "protocol": _FACP_PROTOCOL_VERSION,
                     "id": request_data.get("id", "unknown"),
                     "status": "error",
                     "error": {
@@ -291,7 +293,7 @@ class WebSocketTransport(TransportLayer):
             return result
         except Exception as e:
             return {
-                "protocol": "FACP/1.1",
+                "protocol": _FACP_PROTOCOL_VERSION,
                 "id": request_data.get("id", "unknown"),
                 "status": "error",
                 "error": {

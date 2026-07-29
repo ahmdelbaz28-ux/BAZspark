@@ -209,7 +209,13 @@ def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
-@router.post("/convert", response_model=ConvertResponse)  # NOSONAR - python:S8409
+@router.post(
+    "/convert",
+    response_model=ConvertResponse,  # NOSONAR - python:S8409
+    responses={
+        400: {"description": "Invalid request: bad conversion type, source path, or target path"},
+    },
+)
 @limiter.limit("10/minute")  # V243: Rate limit expensive conversion
 async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     http_request: Request,  # V243: Required by slowapi rate limiter

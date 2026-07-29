@@ -22,11 +22,16 @@ import threading
 from contextlib import contextmanager
 from typing import Any, Optional
 
-import redis
-
 from backend.config import config
 
 # Optional imports with graceful degradation
+try:
+    import redis
+    HAS_REDIS = True
+except ImportError:
+    HAS_REDIS = False
+    redis = None  # type: ignore[assignment]
+
 try:
     from qdrant_client import QdrantClient
     from qdrant_client.http import models
@@ -69,7 +74,7 @@ class MultiDatabaseService:
         self._lock = threading.Lock()
 
         # Database connections/pools
-        self._redis_client: Optional[redis.Redis] = None
+        self._redis_client: Optional[Any] = None
         self._qdrant_client: Optional[Any] = None
         self._neo4j_driver: Optional[Any] = None
         self._postgres_pool: Optional[Any] = None
@@ -105,14 +110,17 @@ class MultiDatabaseService:
             if not config.REDIS_URL and not config.REDIS_HOST:
                 logger.info("Redis not configured (REDIS_URL/REDIS_HOST not set) — skipping")
                 return
+            if not HAS_REDIS:
+                logger.info("Redis not available (package not installed) — skipping")
+                return
             if config.REDIS_URL:
-                self._redis_client = redis.from_url(
+                self._redis_client = redis.from_url(  # type: ignore[union-attr]
                     config.REDIS_URL,
                     decode_responses=True,
                     password=config.REDIS_PASSWORD
                 )
             else:
-                self._redis_client = redis.Redis(
+                self._redis_client = redis.Redis(  # type: ignore[union-attr]
                     host=config.REDIS_HOST,
                     port=config.REDIS_PORT,
                     db=config.REDIS_DB,
@@ -201,7 +209,7 @@ class MultiDatabaseService:
             self._postgres_pool = None
 
     # Redis methods
-    def get_redis(self) -> Optional[redis.Redis]:
+    def get_redis(self) -> Optional[Any]:
         """Get Redis client if available."""
         return self._redis_client
 
