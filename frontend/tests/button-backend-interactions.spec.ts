@@ -1,5 +1,5 @@
 // NOSONAR
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { installApiMock } from "./visual/helpers/authMock";
 
 test.beforeEach(async ({ page }) => {
@@ -22,131 +22,6 @@ test.beforeEach(async ({ page }) => {
  * - Export functionality buttons
  */
 
-interface TestResult {
-	testName: string;
-	action: string;
-	timestamp: string;
-	status: number;
-	statusText: string;
-	duration: number;
-	error?: string;		details: {
-		response?: Record<string, unknown>;
-		headers?: Record<string, string>;
-		requestBody?: Record<string, unknown>;
-	};
-}
-
-// Test results array to store all test outcomes
-const testResults: TestResult[] = [];
-
-/**
- * Helper function to record test results
- */
-function logTestResult(
-	testName: string,
-	action: string,
-	status: number,
-	statusText: string,
-	duration: number,
-	error?: string,
-	details: Record<string, unknown> = {},
-) {
-	const result: TestResult = {
-		testName,
-		action,
-		timestamp: new Date().toISOString(),
-		status,
-		statusText,
-		duration,
-		error,
-		details,
-	};
-
-	testResults.push(result);
-	console.log(`[${status}] ${testName}: ${action} (${duration}ms)`);
-	if (error) {
-		console.error(`  Error: ${error}`);
-	}
-}
-
-/**
- * Helper function to make API requests and capture detailed response
- */
-async function _makeApiRequest(
-	page: Page,
-	endpoint: string,
-	options: RequestInit = {},
-) {
-	const startTime = Date.now();
-
-	// Default headers for API requests
-	const defaultHeaders = {
-		"X-API-Key": process.env.API_KEY || "test-api-key",
-		"Content-Type": "application/json",
-		...options.headers,
-	};
-
-	try {
-		// Using page.evaluate to make the request from the browser context
-		const response = await page.evaluate(
-			async ({ endpoint, options, defaultHeaders }) => {
-				const url = `${process.env.API_URL || "http://localhost:8000"}${endpoint}`;
-
-				const requestInit = {
-					...options,
-					headers: {
-						...defaultHeaders,
-						...(options.headers || {}),
-					},
-				};
-
-				if (
-					requestInit.body &&
-					typeof requestInit.body === "object" &&
-					!(requestInit.body instanceof FormData)
-				) {
-					requestInit.body = JSON.stringify(requestInit.body);
-				}
-
-				const response = await fetch(url, requestInit);
-				const data = await response.json().catch(() => ({}));
-
-				return {
-					status: response.status,
-					statusText: response.statusText,
-					data,
-					headers: Array.from(response.headers.entries()).reduce(
-						(acc, [key, value]) => {
-							acc[key] = value;
-							return acc;
-						},
-						{} as Record<string, string>,
-					),
-					ok: response.ok,
-				};
-			},
-			{
-				endpoint,
-				options: { ...options, headers: defaultHeaders },
-				defaultHeaders,
-			},
-		);
-
-		const endTime = Date.now();
-		return { ...response, duration: endTime - startTime };
-	} catch (error) {
-		const endTime = Date.now();
-		return {
-			status: 0,
-			statusText: "Network Error",
-			data: {},
-			headers: {},
-			ok: false,
-			duration: endTime - startTime,
-			error: (error as Error).message,
-		};
-	}
-}
 
 /**
  * Test Dashboard Page Buttons
@@ -169,14 +44,6 @@ test.describe("Dashboard Page Button Tests", () => {
 
 			// Wait for the API response
 			const response = await responsePromise;
-
-			logTestResult(
-				"Dashboard Refresh Button",
-				"Click refresh button",
-				response.status(),
-				response.statusText(),
-				response.request().timing().responseEnd,
-			);
 
 			await expect(refreshButton).toBeEnabled();
 		} else {
@@ -264,13 +131,6 @@ test.describe("Projects Page Button Tests", () => {
 				}
 			}
 
-			logTestResult(
-				"Create Project Button",
-				"Click create project button",
-				200,
-				"OK",
-				0,
-			);
 		} else {
 			test.skip(true, "No create project button found");  // NOSONAR — S1607: TODO kept for tracking
 		}
@@ -958,17 +818,10 @@ test.describe("Marine Page Button Tests", () => {
  const button = page.locator(`[data-testid="${testId}"]`);
  if ((await button.count()) > 0) {
  await button.click();
- logTestResult(
- `Marine ${testId}`,
- `Click ${testId}`,
- 200,
- "OK",
- 0,
- );
- }
- }
+		}
+	}
 
- // Wait for API calls to be captured
+	// Wait for API calls to be captured
  await page.waitForTimeout(500);
 
  // Verify API calls were made
