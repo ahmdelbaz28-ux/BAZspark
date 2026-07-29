@@ -61,15 +61,15 @@ class TestConstants:
 
     def test_safety_gap_11_1c(self):
         """NFPA 72 §21.4.2: 20°F = 11.1°C gap required."""
-        assert pytest.approx(11.1) == SAFETY_GAP_C
+        assert SAFETY_GAP_C == pytest.approx(11.1)
 
     def test_max_hd_sprinkler_distance_0_6m(self):
         """NFPA 72 §21.4.2: Max 2 ft = 0.6m between HD and sprinkler."""
-        assert pytest.approx(0.6, abs=0.01) == MAX_HD_SPRINKLER_DISTANCE_M
+        assert MAX_HD_SPRINKLER_DISTANCE_M == pytest.approx(0.6, abs=0.01)
 
     def test_default_sprinkler_rti_50(self):
         """Quick-response sprinkler RTI = 50 (m·s)^0.5 per NFPA 13 §8.3.3.1."""
-        assert pytest.approx(50.0) == DEFAULT_SPRINKLER_RTI
+        assert DEFAULT_SPRINKLER_RTI == pytest.approx(50.0)
 
     def test_default_hd_rti_100(self):
         """
@@ -77,11 +77,11 @@ class TestConstants:
         Previous value of 50.0 was WRONG — matched sprinkler RTI,
         making the RTI check always pass.
         """
-        assert pytest.approx(100.0) == DEFAULT_HD_RTI
+        assert DEFAULT_HD_RTI == pytest.approx(100.0)
 
     def test_rti_ratio_limit_1_0(self):
         """HD RTI must not exceed sprinkler RTI (ratio ≤ 1.0)."""
-        assert pytest.approx(1.0) == RTI_RATIO_LIMIT
+        assert RTI_RATIO_LIMIT == pytest.approx(1.0)
 
     def test_standard_sprinkler_temps(self):
         assert STANDARD_SPRINKLER_TEMPS_C["ordinary"] == pytest.approx(68.3)
