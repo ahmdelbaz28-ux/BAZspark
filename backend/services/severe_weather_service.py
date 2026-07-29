@@ -325,7 +325,7 @@ class SevereWeatherService:
                     "User-Agent": "FireAI-DigitalTwin/1.0",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                     "Accept": "application/ld+json",
                 },
-                follow_redirects=True,
+                follow_redirects=False,  # V288 SECURITY: disable redirect following to prevent SSRF
             )
         return self._client
 

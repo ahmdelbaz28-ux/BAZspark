@@ -63,9 +63,12 @@ jobs:
         run: npm ci --no-audit --no-fund
         working-directory: frontend
 
+      - name: Generate ephemeral test secrets (V288 SECURITY — no hardcoded creds)
+        run: echo "FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" >> $GITHUB_ENV
+
       - name: Run Python tests with coverage
         env:
-          FIREAI_SESSION_SECRET: ${{ secrets.FIREAI_SESSION_SECRET || 'ci-test-secret-key-32-chars-minimum!!' }}
+          FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
           DATABASE_URL: sqlite:////tmp/sonar_test.db
           DIGITAL_TWIN_DB_PATH: /tmp/sonar_test.db
           UDM_DB_PATH: /tmp/udm_sonar_test.db
