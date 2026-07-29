@@ -217,16 +217,20 @@ const RbacPage = lazy(() =>
 // V193 (R10): Skip-link for keyboard users to bypass the sidebar.
 // First focusable element on every page. WCAG 2.4.1 (Level A) requirement.
 // Wrapped in <nav> landmark so axe-core 'region' rule passes.
-const SkipLink = (
-        <nav aria-label="Skip links">
-                <a
-                        href="#main-content"
-                        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded focus:shadow-lg focus:outline-none"
-                >
-                        Skip to main content
-                </a>
-        </nav>
-);
+// A11Y-004 FIX: Skip link uses CSS class for high-contrast focus indicator
+function SkipLink() {
+        const { t } = useTranslation();
+        return (
+                <nav aria-label="Skip links">
+                        <a
+                                href="#main-content"
+                                className="skip-link"
+                        >
+                                {t('common.skipToMainContent', 'Skip to main content')}
+                        </a>
+                </nav>
+        );
+}
 
 // C-07 FIX: Typed route structure with optional requiredRole for role-based access
 interface ProtectedRoute {
@@ -382,7 +386,7 @@ const handleSearchOpen = useCallback(() => {
                                 <MagneticCursor />
                                 </Suspense>
                                 <div className="h-screen bg-background text-foreground">
-                                        {SkipLink}
+                                        <SkipLink />
                                         {/* F-08 FIX: show the demo-data banner whenever we're not
                                             on a live connection. Renders above AppShell so it is
                                             always visible regardless of which page is loaded. */}
