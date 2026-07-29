@@ -9,7 +9,6 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import List, Optional, Tuple
 
 from parsers._device_types import DeviceType
@@ -186,8 +185,7 @@ NFPA_170_SYMBOLS = {
 # ═══════════════════════════════════════════════════════
 
 class PDFInputLayer:
-    """
-    """
+    """Main input layer for processing PDF drawings and extracting fire alarm devices."""
 
     def __init__(self, scale_factor: float = 1.0):
         self.scale_factor = scale_factor
@@ -443,7 +441,7 @@ class PDFInputLayer:
                 pass
 
         area_match2 = re.search(r'(\d+(?:\.\d+)?)\s*(?:m2|m\.?²|sq\.?\s*m|square\s*m)', window)
-        if area_match2:
+        if area_match2 is not None:
             try:
                 area_val = float(area_match2.group(1))
                 return area_val * 10.764
