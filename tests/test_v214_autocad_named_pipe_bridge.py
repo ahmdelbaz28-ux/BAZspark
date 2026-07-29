@@ -6,7 +6,6 @@ add-in project files + Python AutoCAD named pipe client in local_agent.py.
 from __future__ import annotations
 
 import platform
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

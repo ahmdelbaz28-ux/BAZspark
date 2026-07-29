@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/cad", tags=["CAD"])
 
+_CAD_PROVIDER_DESCRIPTION = "Provider: autocad or revit"
+
 _ALLOWED_EXTENSIONS = frozenset({".dwg", ".dxf", ".rvt", ".rfa", ".ifc"})
 
 def _validate_cad_file_path(filepath: str) -> str:
@@ -45,7 +47,7 @@ def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException
 # ── Request / Response Models ────────────────────────────────────────────────
 
 class CADConnectRequest(BaseModel):
-    provider: str = Field(..., description="Provider: autocad or revit")
+    provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
     visible: bool = True
     force_new: bool = False
     method: str = "simulation"
@@ -57,7 +59,7 @@ class CADConnectResponse(BaseModel):
     simulation_mode: bool = False
 
 class CADDisconnectRequest(BaseModel):
-    provider: str = Field(..., description="Provider: autocad or revit")
+    provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
 
 class CADStatusResponse(BaseModel):
     success: bool
@@ -65,7 +67,7 @@ class CADStatusResponse(BaseModel):
     status: Dict[str, Any]
 
 class CADReadRequest(BaseModel):
-    provider: str = Field(..., description="Provider: autocad or revit")
+    provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
     filepath: str
 
 class CADReadResponse(BaseModel):
@@ -76,7 +78,7 @@ class CADReadResponse(BaseModel):
     elements: List[CADElement]
 
 class CADWriteRequest(BaseModel):
-    provider: str = Field(..., description="Provider: autocad or revit")
+    provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
     filepath: str
     elements: List[CADElement]
 
@@ -85,28 +87,28 @@ class CADWriteResponse(BaseModel):
     message: str
 
 class CADDrawLineRequest(BaseModel):
-    provider: str = Field(..., description="Provider: autocad or revit")
+    provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
     start_point: List[float]
     end_point: List[float]
     layer: str = "0"
     color: int = 256
 
 class CADDrawPolylineRequest(BaseModel):
-    provider: str = Field(..., description="Provider: autocad or revit")
+    provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
     vertices: List[List[float]]
     layer: str = "0"
     color: int = 256
     closed: bool = False
 
 class CADDrawCircleRequest(BaseModel):
-    provider: str = Field(..., description="Provider: autocad or revit")
+    provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
     center: List[float]
     radius: float
     layer: str = "0"
     color: int = 256
 
 class CADDrawTextRequest(BaseModel):
-    provider: str = Field(..., description="Provider: autocad or revit")
+    provider: str = Field(..., description=_CAD_PROVIDER_DESCRIPTION)
     text: str
     insertion_point: List[float]
     height: float = 0.2
@@ -121,7 +123,7 @@ class CADOperationResponse(BaseModel):
 
 # ── REST Endpoints ───────────────────────────────────────────────────────────
 
-@router.post("/connect", response_model=CADConnectResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post("/connect", dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("10/minute")
 async def connect_cad(request: Request, body: CADConnectRequest) -> CADConnectResponse:
     """Connect to Revit or AutoCAD application."""
@@ -144,7 +146,7 @@ async def connect_cad(request: Request, body: CADConnectRequest) -> CADConnectRe
         raise _safe_error(500, f"Error connecting to {body.provider}", e)
 
 
-@router.post("/disconnect", response_model=CADOperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post("/disconnect", dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def disconnect_cad(request: Request, body: CADDisconnectRequest) -> CADOperationResponse:
     """Disconnect from Revit or AutoCAD application."""
     try:
@@ -158,7 +160,7 @@ async def disconnect_cad(request: Request, body: CADDisconnectRequest) -> CADOpe
         raise _safe_error(500, f"Error disconnecting from {body.provider}", e)
 
 
-@router.get("/status", response_model=CADStatusResponse)
+@router.get("/status")
 async def get_cad_status(provider: str) -> CADStatusResponse:
     """Get the current CAD/BIM connection status."""
     try:
@@ -173,7 +175,7 @@ async def get_cad_status(provider: str) -> CADStatusResponse:
         raise _safe_error(500, f"Error getting status for {provider}", e)
 
 
-@router.post("/read", response_model=CADReadResponse, responses={
+@router.post("/read", responses={
     400: {"description": "File path is outside allowed directories."},
     404: {"description": "File not found."},
     503: {"description": "Provider not connected."}
@@ -202,7 +204,7 @@ async def read_drawing(request: Request, body: CADReadRequest) -> CADReadRespons
         raise _safe_error(500, f"Error reading drawing from {body.provider}", e)
 
 
-@router.post("/write", response_model=CADWriteResponse, responses={
+@router.post("/write", responses={
     400: {"description": "File path is outside allowed directories."},
     404: {"description": "File not found."},
     503: {"description": "Provider not connected."}
@@ -228,7 +230,7 @@ async def write_drawing(request: Request, body: CADWriteRequest) -> CADWriteResp
         raise _safe_error(500, f"Error writing drawing to {body.provider}", e)
 
 
-@router.post("/draw_line", response_model=CADOperationResponse, responses={
+@router.post("/draw_line", responses={
     503: {"description": "Provider not connected."}
 }, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
@@ -258,7 +260,7 @@ async def draw_line(request: Request, body: CADDrawLineRequest) -> CADOperationR
         raise _safe_error(500, f"Error drawing line in {body.provider}", e)
 
 
-@router.post("/draw_polyline", response_model=CADOperationResponse, responses={
+@router.post("/draw_polyline", responses={
     503: {"description": "Provider not connected."}
 }, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
@@ -288,7 +290,7 @@ async def draw_polyline(request: Request, body: CADDrawPolylineRequest) -> CADOp
         raise _safe_error(500, f"Error drawing polyline in {body.provider}", e)
 
 
-@router.post("/draw_circle", response_model=CADOperationResponse, responses={
+@router.post("/draw_circle", responses={
     503: {"description": "Provider not connected."}
 }, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
@@ -318,7 +320,7 @@ async def draw_circle(request: Request, body: CADDrawCircleRequest) -> CADOperat
         raise _safe_error(500, f"Error drawing circle in {body.provider}", e)
 
 
-@router.post("/draw_text", response_model=CADOperationResponse, responses={
+@router.post("/draw_text", responses={
     503: {"description": "Provider not connected."}
 }, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
