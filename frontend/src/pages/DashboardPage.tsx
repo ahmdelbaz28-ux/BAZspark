@@ -70,15 +70,11 @@ export function DashboardPage() {
         const dangerDevices = 0;  // No health endpoint available — honest zero
         const okDevices = totalDevices; // All devices assumed operational
 
-        // Announce when data finishes loading for screen readers
-        const loadingAnnouncement = useMemo(() => {
-                if (healthLoading || projectsLoading || devicesLoading) {
-                        return null;
-                }
-                return `Dashboard loaded: ${totalProjects} projects, ${totalDevices} devices, ${
+        const loadingAnnouncement = healthLoading || projectsLoading || devicesLoading
+                ? null
+                : `Dashboard loaded: ${totalProjects} projects, ${totalDevices} devices, ${
                         connected ? "connected" : "disconnected"
                 }.`;
-        }, [healthLoading, projectsLoading, devicesLoading, totalProjects, totalDevices, connected]);
 
         return (
                 <div className="flex-1 overflow-auto" aria-label={t("dashboard.title")}>

@@ -3,7 +3,11 @@
  * ?variant=A|B|C switches between UI prototypes (A = current production design)
  */
 
-import { AlertCircle, Anchor, Bot, Compass, Eye, EyeOff, Globe, HelpCircle, KeyRound, Layers, Loader2, Lock, ShieldCheck, Sparkles, X } from "lucide-react";
+import {
+	AlertCircle, Anchor, Bot, Compass, Eye, EyeOff,
+	Globe, HelpCircle, KeyRound, Layers, Loader2,
+	Lock, ShieldCheck, Sparkles, X,
+} from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Navigate as RouterNavigate, useSearchParams as useRouterSearchParams } from "react-router-dom";
 import { BazSparkLogo, BazSparkWordmark } from "@/components/auth/BazSparkLogo";
