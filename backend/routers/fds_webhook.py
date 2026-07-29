@@ -37,7 +37,7 @@ router = APIRouter(prefix="/fds", tags=["FDS Simulation Queue"])
 
 class FDSSubmitRequest(BaseModel):
     """Request body for submitting an FDS simulation."""
-    fds_input:  str             = Field(..., min_length=10,
+    fds_input:  str             = Field(..., min_length=10, max_length=10_000_000,
                                         description="Raw FDS input file content")
     project_id: str             = Field(default="",
                                         description="BAZspark project ID")
