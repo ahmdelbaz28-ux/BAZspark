@@ -88,7 +88,7 @@ export default defineConfig({
                 // Without this, the first page load triggers a cascade of
                 // transform requests for each icon module, adding 200-800ms to
                 // cold-start time per import.
-                include: ["lucide-react"],
+                include: ["lucide-react", "framer-motion"],
         },
         resolve: {
                 alias: {

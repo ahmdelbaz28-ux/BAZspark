@@ -24,7 +24,7 @@ const queryClient = new QueryClient({
 // Vercel React Best Practices: bundle-defer-third-party — load Sentry after hydration
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
 if (sentryDsn) {
-        import("@sentry/react").then((Sentry) => {
+        import("@sentry/react").then((Sentry: any) => {
                 Sentry.init({
                         dsn: sentryDsn,
                         environment: import.meta.env.MODE,
