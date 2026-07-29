@@ -72,7 +72,7 @@ class TestV214PythonAutoCADNamedPipeClient:
         # Verify the pipe name is configured correctly
         assert "bazspark_autocad" in agent_content, "local_agent.py must reference bazspark_autocad"
 
-    def test_dispatcher_class_instantiation(self):
+    def test_dispatcher_class_instantiation(self, monkeypatch):
         """AutoCADNamedPipeDispatcher can be instantiated and behaves correctly."""
         monkeypatch.syspath_prepend(str(REPO_ROOT))
         from scripts.local_agent import AutoCADNamedPipeDispatcher
