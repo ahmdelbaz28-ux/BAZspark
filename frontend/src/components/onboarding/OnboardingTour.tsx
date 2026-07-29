@@ -158,11 +158,115 @@ const TOUR_STEPS: TourStep[] = [
                 position: "right",
         },
         {
+                id: "nav-conflicts",
+                target: "[data-onboarding='nav-conflicts']",
+                title: "Conflicts",
+                content:
+                        "Detect and resolve BIM element conflicts including geometry mismatches, property conflicts, and deletion conflicts between AutoCAD and Revit models.",
+                position: "right",
+        },
+        {
+                id: "nav-memory",
+                target: "[data-onboarding='nav-memory']",
+                title: "Memory Store",
+                content:
+                        "Vector memory store for storing and searching engineering knowledge. Save design decisions, compliance notes, and project context for AI-powered retrieval.",
+                position: "right",
+        },
+        {
+                id: "nav-graphrag",
+                target: "[data-onboarding='nav-graphrag']",
+                title: "GraphRAG",
+                content:
+                        "Graph-based Retrieval-Augmented Generation. Query your BIM knowledge graph using natural language to find relationships between building elements.",
+                position: "right",
+        },
+        {
+                id: "nav-fds-simulation",
+                target: "[data-onboarding='nav-fds-simulation']",
+                title: "FDS Simulation",
+                content:
+                        "Submit and track Fire Dynamics Simulator (FDS) jobs. Run CFD smoke and fire spread simulations for advanced fire protection analysis.",
+                position: "right",
+        },
+        {
+                id: "nav-self-healing",
+                target: "[data-onboarding='nav-self-healing']",
+                title: "Self-Healing",
+                content:
+                        "Monitor circuit breaker health, LRU cache performance, and audit logs. Reset circuit breakers and view self-healing system diagnostics.",
+                position: "right",
+        },
+        {
+                id: "nav-bim-providers",
+                target: "[data-onboarding='nav-bim-providers']",
+                title: "BIM Providers",
+                content:
+                        "Browse and manage BIM data providers including Speckle, Autodesk Platform Services, and local file sources for building information models.",
+                position: "right",
+        },
+        {
+                id: "nav-ifc43-mapping",
+                target: "[data-onboarding='nav-ifc43-mapping']",
+                title: "IFC 4.3 Mapping",
+                content:
+                        "Map BIM elements to IFC 4.3 schema for infrastructure projects. Configure entity mappings, property sets, and classification references.",
+                position: "right",
+        },
+        {
+                id: "nav-ar-export",
+                target: "[data-onboarding='nav-ar-export']",
+                title: "AR Export",
+                content:
+                        "Export fire alarm system layouts as augmented reality models. View detector placement and zone layouts in real-world context using AR devices.",
+                position: "right",
+        },
+        {
+                id: "nav-webhook-management",
+                target: "[data-onboarding='nav-webhook-management']",
+                title: "Webhook Management",
+                content:
+                        "Configure webhooks for real-time notifications. Subscribe to project events, workflow transitions, and system alerts via HTTP callbacks.",
+                position: "right",
+        },
+        {
+                id: "nav-generative-design",
+                target: "[data-onboarding='nav-generative-design']",
+                title: "Generative Design",
+                content:
+                        "Run AI-powered generative design optimization. Explore multiple design variants for detector placement, cable routing, and panel selection.",
+                position: "right",
+        },
+        {
+                id: "nav-topology",
+                target: "[data-onboarding='nav-topology']",
+                title: "Topology Graph",
+                content:
+                        "Visualize and query the BIM topology graph. Explore spatial relationships, connectivity, and adjacency between building elements.",
+                position: "right",
+        },
+        {
+                id: "nav-rbac",
+                target: "[data-onboarding='nav-rbac']",
+                title: "RBAC Permissions",
+                content:
+                        "Manage Role-Based Access Control permissions. View and edit the permission matrix for admin, engineer, and viewer roles across all resource categories.",
+                position: "right",
+        },
+        {
                 id: "nav-settings",
                 target: "[data-onboarding='nav-settings']",
                 title: "Settings",
                 content:
                         "Configure application preferences, feature flags, LLM provider, Akamai security, Langfuse observability, and pipeline tuning.",
+                position: "right",
+        },
+        {
+                id: "nav-api-keys",
+                target: "[data-onboarding='nav-api-keys']",
+                title: "API Keys",
+                content:
+                        "Manage API keys for programmatic access. Create, edit roles, and delete keys with admin, engineer, or viewer permissions.",
                 position: "right",
         },
         {

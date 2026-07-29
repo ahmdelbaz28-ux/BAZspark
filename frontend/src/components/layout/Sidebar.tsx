@@ -238,6 +238,7 @@ const navItems: NavItem[] = [
                         defaultLabel: "FDS Simulation",
                         icon: Flame,
                         path: "/fds-simulation",
+                        dataOnboarding: "nav-fds-simulation",
                         requiredRole: "admin",
                 },
                 {
@@ -245,6 +246,7 @@ const navItems: NavItem[] = [
                         defaultLabel: "Self-Healing",
                         icon: Shield,
                         path: "/self-healing",
+                        dataOnboarding: "nav-self-healing",
                         requiredRole: "admin",
                 },
         {
@@ -252,12 +254,14 @@ const navItems: NavItem[] = [
                 defaultLabel: "Memory",
                 icon: Brain,
                 path: "/memory",
+                dataOnboarding: "nav-memory",
         },
         {
                 labelKey: "nav.graphrag",
                 defaultLabel: "GraphRAG",
                 icon: Network,
                 path: "/graphrag",
+                dataOnboarding: "nav-graphrag",
         },
         {
                 labelKey: "nav.workflow",
@@ -285,6 +289,7 @@ const navItems: NavItem[] = [
                 defaultLabel: "Conflicts",
                 icon: AlertTriangle,
                 path: "/conflicts",
+                dataOnboarding: "nav-conflicts",
         },
         {
                 labelKey: "nav.settings",
@@ -305,12 +310,14 @@ const navItems: NavItem[] = [
                         defaultLabel: "BIM Providers",
                         icon: Building2,
                         path: "/bim-providers",
+                        dataOnboarding: "nav-bim-providers",
                 },
                 {
                         labelKey: "nav.ifc43Mapping",
                         defaultLabel: "IFC 4.3 Mapping",
                         icon: Globe,
                         path: "/ifc43-mapping",
+                        dataOnboarding: "nav-ifc43-mapping",
                         requiredRole: "admin",
                 },
                 {
@@ -318,6 +325,7 @@ const navItems: NavItem[] = [
                         defaultLabel: "AR Export",
                         icon: Smartphone,
                         path: "/ar-export",
+                        dataOnboarding: "nav-ar-export",
                         requiredRole: "admin",
                 },
                 // V271: Wire orphaned V2 pages into the sidebar so admins can navigate to them.
@@ -326,6 +334,7 @@ const navItems: NavItem[] = [
                         defaultLabel: "Webhook Management",
                         icon: Globe,
                         path: "/webhook-management",
+                        dataOnboarding: "nav-webhook-management",
                         requiredRole: "admin",
                 },
                 {
@@ -333,6 +342,7 @@ const navItems: NavItem[] = [
                         defaultLabel: "Generative Design",
                         icon: WorkflowIcon,
                         path: "/generative-design",
+                        dataOnboarding: "nav-generative-design",
                         requiredRole: "admin",
                 },
                 {
@@ -340,6 +350,7 @@ const navItems: NavItem[] = [
                         defaultLabel: "Topology",
                         icon: Network,
                         path: "/topology",
+                        dataOnboarding: "nav-topology",
                         requiredRole: "admin",
                 },
                 {
@@ -347,6 +358,7 @@ const navItems: NavItem[] = [
                         defaultLabel: "RBAC Permissions",
                         icon: Shield,
                         path: "/rbac",
+                        dataOnboarding: "nav-rbac",
                         requiredRole: "admin",
                 },
 ];
