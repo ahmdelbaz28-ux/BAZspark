@@ -1,11 +1,15 @@
 import {
-	AlertCircle, Eye, EyeOff, Globe, KeyRound,
-	Loader2, ShieldCheck, Sparkles, X,
+  AlertCircle, Eye, EyeOff, Globe, HelpCircle, KeyRound,
+  Loader2, ShieldCheck, Sparkles, X,
 } from "lucide-react";
 import { type FormEvent } from "react";
 import { BazSparkLogo, BazSparkWordmark } from "@/components/auth/BazSparkLogo";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
+import { LoginModal } from "@/components/auth/LoginModal";
+import { LoginSuccess } from "@/components/auth/LoginSuccess";
 
 interface LoginVariantProps {
   lang: "en" | "ar";
@@ -29,51 +33,52 @@ interface LoginVariantProps {
 }
 
 export function VariantB(props: LoginVariantProps) {
-  const { lang, t, apiKey, setApiKey, showKey, setShowKey, submitting, error, isSuccess, showSupportModal, setShowSupportModal, showRequestModal, setShowRequestModal, handleSubmit, handleAutoFillTestKey, toggleLanguage } = props;
+  const { lang, t, apiKey, setApiKey, showKey, setShowKey, remember, setRemember, submitting, error, isSuccess, showSupportModal, setShowSupportModal, showRequestModal, setShowRequestModal, handleSubmit, handleAutoFillTestKey, toggleLanguage } = props;
 
   return (
-    <div dir={lang === "ar" ? "rtl" : "ltr"} style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#070b16", padding: "1rem", position: "relative", overflow: "hidden" }}>
-      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56,189,248,0.06), transparent)" }} />
+    <div dir={lang === "ar" ? "rtl" : "ltr"} className="min-h-screen flex items-center justify-center bg-[#070b16] p-4 relative overflow-hidden">
+      <div className="login-noise-overlay" aria-hidden="true" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(56,189,248,0.06),transparent)]" />
 
-      <div style={{ position: "absolute", top: "1.5rem", right: "2rem", zIndex: 10 }}>
-        <button onClick={toggleLanguage} style={{ display: "flex", alignItems: "center", gap: "0.4rem", background: "rgba(12,17,32,0.8)", border: "1px solid rgba(30,41,59,0.9)", borderRadius: "0.5rem", padding: "0.3rem 0.65rem", fontFamily: "monospace", fontSize: "0.7rem", fontWeight: 700, color: "#cbd5e1", cursor: "pointer" }}>
-          <Globe style={{ width: "0.8rem", height: "0.8rem", color: "#38bdf8" }} />
+      <div className="absolute top-6 right-8 z-10">
+        <button onClick={toggleLanguage} className="flex items-center gap-1.5 bg-[#0c1120]/80 border border-slate-800/90 rounded-lg px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-300 cursor-pointer transition-colors hover:border-cyan-500/30">
+          <Globe className="size-3 text-cyan-400" />
           {lang === "en" ? "AR" : "EN"}
         </button>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} style={{ width: "100%", maxWidth: "420px" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: "2rem" }}>
-          <div style={{ marginBottom: "1rem" }}>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-[420px]">
+        <div className="flex flex-col items-center text-center mb-8">
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} transition={{ delay: 0.15, type: "spring", stiffness: 200 }} className="mb-4">
             <BazSparkLogo size={48} animated />
-          </div>
+          </motion.div>
           <BazSparkWordmark size="lg" />
-          <p style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.5rem", fontFamily: "monospace", letterSpacing: "0.1em" }}>
+          <p className="text-[0.8rem] text-slate-500 mt-2 font-mono tracking-widest">
             {t.topBadge}
           </p>
         </div>
 
-        <div style={{ backgroundColor: "rgba(10,14,26,0.8)", border: "1px solid rgba(30,41,59,0.7)", borderRadius: "1rem", padding: "2rem", backdropFilter: "blur(12px)" }}>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#ffffff", marginBottom: "0.3rem" }}>{t.formTitle}</h2>
-          <p style={{ fontSize: "0.8rem", color: "#94a3b8", marginBottom: "1.5rem" }}>{t.formSubtitle}</p>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.5 }} className="login-glass-card rounded-2xl p-8">
+          <h2 className="text-xl font-bold text-white mb-1">{t.formTitle}</h2>
+          <p className="text-[0.8rem] text-slate-400 mb-6">{t.formSubtitle}</p>
 
           <AnimatePresence mode="wait">
             {!isSuccess ? (
               <motion.div key="form-view" initial={{ opacity: 1 }} exit={{ opacity: 0, y: -12 }}>
                 <form onSubmit={handleSubmit}>
                   {error && (
-                    <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-start", backgroundColor: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.2)", color: "#fb7185", padding: "0.75rem", borderRadius: "0.5rem", fontSize: "0.7rem", marginBottom: "1rem" }} role="alert">
-                      <AlertCircle style={{ width: "0.85rem", height: "0.85rem", flexShrink: 0, marginTop: "0.05rem" }} />
+                    <div className="flex gap-2.5 items-start bg-rose-500/8 border border-rose-500/20 text-rose-400 p-3 rounded-lg text-[11px] mb-4" role="alert">
+                      <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>{lang === "ar" ? "خطأ" : "Error"}</div>
-                        <div style={{ marginTop: "0.1rem" }}>{error}</div>
+                        <div className="font-bold text-[10px] uppercase tracking-wider">{lang === "ar" ? "خطأ" : "Error"}</div>
+                        <div className="mt-0.5">{error}</div>
                       </div>
                     </div>
                   )}
 
-                  <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.4rem" }}>{t.inputLabel}</label>
-                  <div style={{ position: "relative", marginBottom: "0.3rem" }}>
-                    <KeyRound style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", width: "0.9rem", height: "0.9rem", color: "#64748b", pointerEvents: "none" }} />
+                  <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">{t.inputLabel}</label>
+                  <div className="relative mb-1">
+                    <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-500 pointer-events-none" />
                     <input
                       type={showKey ? "text" : "password"}
                       value={apiKey}
@@ -81,75 +86,69 @@ export function VariantB(props: LoginVariantProps) {
                       placeholder={t.inputPlaceholder}
                       disabled={submitting}
                       autoFocus
-                      style={{ width: "100%", height: "2.75rem", paddingLeft: "2.5rem", paddingRight: "2.5rem", backgroundColor: "#050811", border: "1px solid #1e293b", borderRadius: "0.5rem", color: "#ffffff", fontFamily: "monospace", fontSize: "0.8rem", boxSizing: "border-box", transition: "border-color 0.2s" }}
-                      onFocus={(e) => { e.target.style.borderColor = "#38bdf8"; e.target.style.outline = "none"; }}
-                      onBlur={(e) => { e.target.style.borderColor = "#1e293b"; }}
+                      id="api-key"
+                      className="login-input-control w-full h-11 pl-10 pr-10 bg-[#050811] border border-slate-800 rounded-lg text-white font-mono text-[0.8rem] box-border"
                     />
-                    <button type="button" onClick={() => setShowKey(!showKey)} style={{ position: "absolute", right: "0.85rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer", padding: "0.2rem", display: "flex" }}>
-                      {showKey ? <EyeOff style={{ width: "0.9rem", height: "0.9rem" }} /> : <Eye style={{ width: "0.9rem", height: "0.9rem" }} />}
+                    <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer p-1 bg-transparent border-none flex">
+                      {showKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                     </button>
                   </div>
-                  <p style={{ fontSize: "0.65rem", color: "#475569", marginBottom: "0.25rem" }}>{t.inputHint}</p>
+                  <p className="text-[10px] text-slate-600 mb-1">{t.inputHint}</p>
 
-                  <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem", marginBottom: "1.25rem" }}>
-                    <button type="button" onClick={() => setShowSupportModal(true)} style={{ flex: 1, background: "none", border: "1px solid #1e293b", borderRadius: "0.5rem", padding: "0.4rem", fontSize: "0.65rem", fontWeight: 600, color: "#38bdf8", cursor: "pointer" }}>{t.supportLink}</button>
-                    <button type="button" onClick={() => setShowRequestModal(true)} style={{ flex: 1, background: "none", border: "1px solid #1e293b", borderRadius: "0.5rem", padding: "0.4rem", fontSize: "0.65rem", fontWeight: 600, color: "#f87171", cursor: "pointer" }}>{t.requestAccessLink}</button>
+                  <div className="remember-checkbox-row mb-4">
+                    <Checkbox id="remember-b" checked={remember} onCheckedChange={(v) => setRemember(v === true)} disabled={submitting} className="border-slate-700 h-4 w-4 data-[state=checked]:bg-rose-500 data-[state=checked]:border-rose-500" />
+                    <Label htmlFor="remember-b" className="text-[0.7rem] cursor-pointer text-slate-500 select-none">{t.rememberLabel}</Label>
                   </div>
 
-                  <button type="submit" disabled={submitting || !apiKey.trim()} style={{ width: "100%", height: "2.75rem", backgroundColor: "#2563eb", border: "none", borderRadius: "0.5rem", color: "#ffffff", fontWeight: 700, fontSize: "0.8rem", cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", transition: "background-color 0.2s", boxShadow: "0 8px 16px rgba(37,99,235,0.25)" }}>
-                    {submitting ? <><Loader2 className="animate-spin" style={{ width: "1rem", height: "1rem" }} />{t.submittingButton}</> : <><ShieldCheck style={{ width: "1rem", height: "1rem" }} />{t.submitButton}</>}
+                  <button type="submit" disabled={submitting || !apiKey.trim()} className="login-submit-btn w-full h-11 bg-blue-600 border-none rounded-lg text-white font-bold text-[0.8rem] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25">
+                    {submitting ? <><Loader2 className="size-4 animate-spin" />{t.submittingButton}</> : <><ShieldCheck className="size-4" />{t.submitButton}</>}
                   </button>
+
+                  <div className="flex gap-2 mt-3">
+                    <button type="button" onClick={() => setShowSupportModal(true)} className="flex-1 bg-transparent border border-slate-800 rounded-lg py-1.5 text-[10px] font-semibold text-cyan-400 cursor-pointer transition-colors hover:border-cyan-500/30">{t.supportLink}</button>
+                    <button type="button" onClick={() => setShowRequestModal(true)} className="flex-1 bg-transparent border border-slate-800 rounded-lg py-1.5 text-[10px] font-semibold text-red-400 cursor-pointer transition-colors hover:border-red-500/30">{t.requestAccessLink}</button>
+                  </div>
                 </form>
               </motion.div>
             ) : (
-              <motion.div key="success-view" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "2rem 1rem" }}>
-                <div style={{ width: "3.5rem", height: "3.5rem", borderRadius: "9999px", backgroundColor: "rgba(6,78,59,0.8)", border: "1px solid rgba(52,211,153,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#34d399", margin: "0 auto 1rem" }}>
-                  <ShieldCheck style={{ width: "1.75rem", height: "1.75rem" }} />
-                </div>
-                <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#ffffff" }}>{t.accessGranted}</h3>
-                <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.25rem" }}>{t.sessionInitialized}</p>
-                <span style={{ display: "block", marginTop: "0.75rem", fontSize: "0.6rem", fontFamily: "monospace", letterSpacing: "0.1em", color: "#34d399" }}>{t.redirecting}</span>
-              </motion.div>
+              <LoginSuccess
+                accessGranted={t.accessGranted}
+                sessionInitialized={t.sessionInitialized}
+                redirecting={t.redirecting}
+              />
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
 
-        <div style={{ textAlign: "center", marginTop: "1.5rem", fontSize: "0.65rem", fontFamily: "monospace", color: "#475569" }}>
-          <span style={{ color: "#34d399" }}>AES-256</span> · System v8.1
+        <div className="text-center mt-6 text-[10px] font-mono text-slate-600">
+          <span className="text-emerald-400">AES-256</span> &middot; System v8.1
         </div>
       </motion.div>
 
-      <AnimatePresence>
-        {showSupportModal && (
-          <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ width: "100%", maxWidth: "400px", backgroundColor: "#0a0f1d", border: "1px solid #1e293b", borderRadius: "0.75rem", padding: "1.5rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#ffffff" }}>{t.supportTitle}</h3>
-                <button onClick={() => setShowSupportModal(false)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}><X style={{ width: "1rem", height: "1rem" }} /></button>
-              </div>
-              <p style={{ fontSize: "0.75rem", color: "#cbd5e1", marginBottom: "1rem" }}>{t.supportDesc}</p>
-              <div style={{ fontSize: "0.7rem", fontFamily: "monospace", backgroundColor: "#050811", padding: "0.75rem", borderRadius: "0.5rem", border: "1px solid #1e293b", color: "#94a3b8", marginBottom: "1rem" }}>{t.supportEmail}</div>
-              <Button onClick={() => setShowSupportModal(false)} className="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 h-9 w-full">{t.closeBtn}</Button>
-            </motion.div>
-          </div>
-        )}
-        {showRequestModal && (
-          <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ width: "100%", maxWidth: "400px", backgroundColor: "#0a0f1d", border: "1px solid #1e293b", borderRadius: "0.75rem", padding: "1.5rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#ffffff" }}>{t.requestTitle}</h3>
-                <button onClick={() => setShowRequestModal(false)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}><X style={{ width: "1rem", height: "1rem" }} /></button>
-              </div>
-              <p style={{ fontSize: "0.75rem", color: "#cbd5e1", marginBottom: "1.25rem" }}>{t.requestDesc}</p>
-              <Button onClick={handleAutoFillTestKey} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs h-10 flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 mb-3">
-                <Sparkles style={{ width: "1rem", height: "1rem" }} />
-                {t.autoFillDemoBtn}
-              </Button>
-              <Button onClick={() => setShowRequestModal(false)} className="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 h-9 w-full">{t.closeBtn}</Button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <LoginModal
+        open={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+        title={t.supportTitle}
+        icon={<HelpCircle className="size-5 text-cyan-400" />}
+      >
+        <p className="text-xs text-slate-300 mb-4">{t.supportDesc}</p>
+        <div className="text-[11px] font-mono bg-[#050811] p-3 rounded-lg border border-slate-800 text-slate-400 mb-4">{t.supportEmail}</div>
+        <Button onClick={() => setShowSupportModal(false)} className="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 h-9 w-full">{t.closeBtn}</Button>
+      </LoginModal>
+
+      <LoginModal
+        open={showRequestModal}
+        onClose={() => setShowRequestModal(false)}
+        title={t.requestTitle}
+        icon={<Sparkles className="size-5 text-cyan-400" />}
+      >
+        <p className="text-xs text-slate-300 mb-5">{t.requestDesc}</p>
+        <Button onClick={handleAutoFillTestKey} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs h-10 flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 mb-3">
+          <Sparkles className="size-4" />
+          {t.autoFillDemoBtn}
+        </Button>
+        <Button onClick={() => setShowRequestModal(false)} className="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 h-9 w-full">{t.closeBtn}</Button>
+      </LoginModal>
     </div>
   );
 }
