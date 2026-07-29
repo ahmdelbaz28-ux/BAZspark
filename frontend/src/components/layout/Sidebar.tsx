@@ -76,6 +76,10 @@ const routePrefetchMap: Record<string, () => Promise<unknown>> = {
         "/bim-providers": () => import("@/pages/BIMProvidersPage"),
         "/ifc43-mapping": () => import("@/pages/IFC43MappingPage"),
         "/ar-export": () => import("@/pages/ARExportPage"),
+        // V271: Prefetch entries for newly wired orphaned V2 pages
+        "/webhook-management": () => import("@/pages/WebhookManagementPage"),
+        "/generative-design": () => import("@/pages/GenerativeDesignPage"),
+        "/topology": () => import("@/pages/TopologyPage"),
 };
 
 interface NavItem {
@@ -303,6 +307,28 @@ const navItems: NavItem[] = [
                         defaultLabel: "AR Export",
                         icon: Smartphone,
                         path: "/ar-export",
+                        requiredRole: "admin",
+                },
+                // V271: Wire orphaned V2 pages into the sidebar so admins can navigate to them.
+                {
+                        labelKey: "nav.webhookManagement",
+                        defaultLabel: "Webhook Management",
+                        icon: Globe,
+                        path: "/webhook-management",
+                        requiredRole: "admin",
+                },
+                {
+                        labelKey: "nav.generativeDesign",
+                        defaultLabel: "Generative Design",
+                        icon: WorkflowIcon,
+                        path: "/generative-design",
+                        requiredRole: "admin",
+                },
+                {
+                        labelKey: "nav.topology",
+                        defaultLabel: "Topology",
+                        icon: Network,
+                        path: "/topology",
                         requiredRole: "admin",
                 },
 ];

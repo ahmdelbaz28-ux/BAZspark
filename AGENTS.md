@@ -71,10 +71,30 @@ GitHub issues. See `docs/agents/issue-tracker.md`.
 
 Single-context layout. See `docs/agents/domain.md`.
 
+## CI/CD Policy (MANDATORY)
+
+All agents **MUST** adhere to the [**CI/CD Policy**](./CI-CD-POLICY.md) — 12
+mandatory rules governing every code change:
+
+| Rule | Summary | Critical For Agents |
+|------|---------|---------------------|
+| R1 | Root Cause First — never fix symptoms | ✅ Before any code change |
+| R2 | CI/CD Ownership — every failure is an incident | ✅ When diagnosing CI |
+| R3 | GitHub Actions Validation — validate ALL changes | ✅ Before workflow edits |
+| R4 | Safe Push — local validation before any push | ✅ **Every commit** |
+| R5 | Safe Merge — pipeline must be green | ✅ Before merging PRs |
+| R6 | Failure Investigation — produce full report | ✅ When CI fails |
+| R7 | Regression Prevention — evaluate all risks | ✅ After every fix |
+| R8 | Git Safety — no force push, no history rewrite | ✅ **Absolute rule** |
+| R9 | Dependency Safety — never blindly update | ✅ Before dep upgrades |
+| R10 | Secure Deployment — verify everything | ✅ Before deploying |
+| R11 | No Assumptions — always verify | ✅ **Always** |
+| R12 | Completion Criteria — ALL checks must pass | ✅ Before declaring done |
+
 ## Deployment & Branching Policy (Strict Instructions)
 
 1. **Feature Branching:** All modifications/fixes must be pushed to the remote via a separate, dedicated feature branch (do not commit directly to main).
-2. **Safe Push & Test:** Perform a safe push of the feature branch.
+2. **Safe Push & Test (per CI/CD Rule 4):** Perform a safe push of the feature branch after local validation.
 3. **Merge Conflict & Issue Check:** Test the remote branch integration to verify if merging it with `main` will cause any issues, conflicts, or compilation errors. Solve any detected issues/conflicts first in the feature branch.
-4. **Safe Merging:** Perform the merge to `main` only after full verification.
+4. **Safe Merging (per CI/CD Rule 5):** Perform the merge to `main` only after full pipeline verification.
 5. **Clean Up:** Delete the local/remote feature branch and clean up any temporary or cache files.
