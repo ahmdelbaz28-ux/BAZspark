@@ -317,6 +317,23 @@ class ApiClient extends BaseApiClient {
                 return this.get<Statistics>("/reports/statistics");
         }
 
+        // ===== Settings API =====
+
+        async getSettings(): Promise<Record<string, unknown> | null> {
+                try {
+                        return await this.get<Record<string, unknown>>("/settings");
+                } catch {
+                        // Backend settings unavailable — return null to trigger localStorage fallback
+                        return null;
+                }
+        }
+
+        async saveSettings(
+                settings: Record<string, unknown>,
+        ): Promise<void> {
+                await this.put<void>("/settings", settings);
+        }
+
         // ===== Health API =====
 
         async healthCheck(): Promise<HealthStatus> {

@@ -50,6 +50,7 @@ __all__ = [
     "qomn",
     "reports",
     "revit",
+    "settings",
     "sync",
     "workflow",
 ]
@@ -75,6 +76,7 @@ if TYPE_CHECKING:
         qomn,
         reports,
         revit,
+        settings,
         sync,
         workflow,
     )
