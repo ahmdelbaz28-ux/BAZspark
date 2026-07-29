@@ -1,0 +1,14 @@
+# GUI Automation & Computer Vision
+pyautogui>=0.9.54
+pywinauto>=0.6.8
+Pillow>=10.0.0
+opencv-python>=4.8.0
+mss>=9.0.1
+numpy>=1.24.0
+easyocr>=1.7.0
+
+# For AutoCAD COM API
+pywin32>=306
+
+# For Revit .NET API
+pythonnet>=3.0.1

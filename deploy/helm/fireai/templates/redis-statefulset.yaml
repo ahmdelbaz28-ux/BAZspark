@@ -1,0 +1,153 @@
+{{- if .Values.redis.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "fireai.redis.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  serviceName: {{ include "fireai.redis.fullname" . }}-headless
+  replicas: {{ .Values.redis.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "fireai.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        {{- include "fireai.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "fireai.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.redis.podSecurityContext | nindent 8 }}
+      initContainers:
+      # Init container to configure Redis for clustering
+      - name: redis-config
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          echo "Configuring Redis for clustering..."
+          mkdir -p /shared-data/conf
+          cat > /shared-data/conf/redis.conf <<EOF
+          # Basic Redis Configuration
+          port 6379
+          bind 0.0.0.0
+          timeout 300
+          tcp-keepalive 300
+          
+          # Persistence
+          save 900 1
+          save 300 10
+          save 60 10000
+          stop-writes-on-bgsave-error yes
+          rdbcompression yes
+          rdbchecksum yes
+          dbfilename dump.rdb
+          dir /data
+          
+          # Clustering
+          cluster-enabled yes
+          cluster-config-file nodes.conf
+          cluster-node-timeout 15000
+          cluster-require-full-coverage yes
+          
+          # Authentication
+          requirepass {{ .Values.external.redis.password | default "" }}
+          masterauth {{ .Values.external.redis.password | default "" }}
+          
+          # Memory
+          maxmemory 512mb
+          maxmemory-policy allkeys-lru
+          
+          # Append Only File
+          appendonly yes
+          appendfilename "appendonly.aof"
+          appendfsync everysec
+          EOF
+          chown -R 1000:1000 /shared-data
+        volumeMounts:
+        - name: shared-data
+          mountPath: /shared-data
+      containers:
+      - name: redis
+        securityContext:
+          {{- toYaml .Values.redis.securityContext | nindent 10 }}
+        image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+        imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+        ports:
+        - name: redis
+          containerPort: 6379
+          protocol: TCP
+        - name: cluster
+          containerPort: 16379
+          protocol: TCP
+        command:
+        - redis-server
+        args:
+        - /shared-conf/redis.conf
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: shared-conf
+          mountPath: /shared-conf
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - redis-cli -h $(POD_IP) -p 6379 -a {{ .Values.external.redis.password | default "" }} ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - redis-cli -h $(POD_IP) -p 6379 -a {{ .Values.external.redis.password | default "" }} ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.redis.resources | nindent 10 }}
+      volumes:
+      - name: shared-conf
+        emptyDir: {}
+      - name: shared-data
+        emptyDir: {}
+      {{- with .Values.redis.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.redis.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.redis.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.redis.persistence.size }}
+      {{- if .Values.redis.persistence.storageClassName }}
+      storageClassName: {{ .Values.redis.persistence.storageClassName }}
+      {{- end }}
+{{- end }}

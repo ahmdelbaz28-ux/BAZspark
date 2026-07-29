@@ -1,0 +1,2 @@
+# Minimal stub for Pylance
+

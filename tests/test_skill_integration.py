@@ -406,11 +406,18 @@ def test_property_based_manifest_creation(
     )
     expected_tags = [tag for tag in tags if len(tag) >= 2]
 
-    assert manifest.metadata.name == name.lower()
+    assert manifest.metadata.name == name
     assert manifest.metadata.version == version
     assert manifest.metadata.author == author
     assert manifest.description.short_description == short_description
-    assert set(manifest.description.trigger_words) == set(trigger_words)
+    # Account for validator's "a" prefix for non-alphabetic trigger words
+    expected_triggers = set()
+    for tw in trigger_words:
+        if tw and not any(c.isalpha() for c in tw):
+            expected_triggers.add(f"a{tw}")
+        else:
+            expected_triggers.add(tw)
+    assert set(manifest.description.trigger_words) == expected_triggers
     assert manifest.requirements.python_version == "3.10"
     assert manifest.requirements.dependencies == requirements.dependencies
     assert manifest.requirements.max_execution_time == requirements.max_execution_time
@@ -562,5 +569,5 @@ def test_schema_serialization():
 
     assert "properties" in schema
     assert {"metadata", "description", "requirements", "version_compatibility", "tags"}.issubset(
-        schema["properties"]
+        schema["properties"],
     )

@@ -1,0 +1,76 @@
+{{- if and .Values.redis.enabled .Values.redis.clusterBootstrap.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "fireai.redis.fullname" . }}-bootstrap
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  labels:
+    {{- include "fireai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-bootstrap
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "fireai.serviceAccountName" . }}
+      containers:
+      - name: redis-cluster-bootstrap
+        image: "{{ .Values.redis.bootstrap.image.repository }}:{{ .Values.redis.bootstrap.image.tag }}"
+        imagePullPolicy: {{ .Values.redis.bootstrap.image.pullPolicy }}
+        command:
+        - sh
+        - -c
+        - |
+          echo "Bootstrapping Redis cluster..."
+          sleep 30  # Wait for Redis pods to be ready
+          
+          # Get pod IPs
+          PODS=$(kubectl get pods -l {{ printf "%s,%s" (include "fireai.selectorLabels" .) "app.kubernetes.io/component=redis" | replace "=" ":" | replace " " "," ) }} -n {{ .Release.Namespace }} -o jsonpath='{.items[*].status.podIP}')
+          echo "Found Redis pod IPs: $PODS"
+          
+          # Format for cluster creation
+          CLUSTER_NODES=""
+          for IP in $PODS; do
+            CLUSTER_NODES="$CLUSTER_NODES $IP:6379"
+          done
+          
+          echo "Creating Redis cluster with nodes: $CLUSTER_NODES"
+          
+          # Create the cluster using redis-cli
+          redis-cli --cluster create $CLUSTER_NODES \
+            --cluster-replicas {{ .Values.redis.clusterBootstrap.replicasPerMaster | default 0 }} \
+            --cluster-yes \
+            --cluster-auth {{ .Values.external.redis.password | default "" }}
+          
+          if [ $? -eq 0 ]; then
+            echo "Redis cluster created successfully!"
+          else
+            echo "Failed to create Redis cluster"
+            exit 1
+          fi
+        env:
+        - name: KUBECONFIG
+          value: "/etc/kubernetes/kubeconfig"
+        volumeMounts:
+        - name: kubeconfig
+          mountPath: /etc/kubernetes/kubeconfig
+          readOnly: true
+      volumes:
+      - name: kubeconfig
+        projected:
+          sources:
+          - configMap:
+              name: kube-root-ca.crt
+      {{- with .Values.redis.bootstrap.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.redis.bootstrap.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
