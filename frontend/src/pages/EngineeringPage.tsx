@@ -243,8 +243,8 @@ export function EngineeringPage() {
                         absolute: localVDrop.absolute,
                         source: "Local fallback (unaudited)" as const,
                   };
-        const cableResult = useMemo(() => calculateCableSizing(), [calculateCableSizing]);
-        const batteryResult = useMemo(() => calculateBatteryRequirements(), [calculateBatteryRequirements]);
+        const cableResult = calculateCableSizing();
+        const batteryResult = calculateBatteryRequirements();
 
         // Vercel React Best Practices: rerender-memo — memoize inline objects passed as props
         const voltageDropResultProp = useMemo(() => ({

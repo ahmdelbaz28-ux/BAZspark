@@ -25,22 +25,11 @@
  */
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Anchor } from "lucide-react";
-import { Cpu } from "lucide-react";
-import { Download } from "lucide-react";
-import { FileCode2 } from "lucide-react";
-import { FileSpreadsheet } from "lucide-react";
-import { Flame } from "lucide-react";
-import { Layers } from "lucide-react";
-import { Loader2 } from "lucide-react";
-import { Server } from "lucide-react";
-import { Shield } from "lucide-react";
-import { ShieldCheck } from "lucide-react";
-import { Ship } from "lucide-react";
-import { Siren } from "lucide-react";
-import { Sliders } from "lucide-react";
-import { Sparkles } from "lucide-react";
-import { Zap } from "lucide-react";
+import {
+	Anchor, Cpu, Download, FileCode2, FileSpreadsheet,
+	Flame, Layers, Loader2, Server, Shield,
+	ShieldCheck, Ship, Siren, Sliders, Sparkles, Zap,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
