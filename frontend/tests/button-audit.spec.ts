@@ -1,5 +1,6 @@
 // NOSONAR
 import { expect, test } from "@playwright/test";
+import { installApiMock } from "./visual/helpers/authMock";
 
 test.describe("Complete Button Audit for BazSpark UI", () => {
 	const pages = [
@@ -24,6 +25,7 @@ test.describe("Complete Button Audit for BazSpark UI", () => {
 		test(`should capture screenshot and detect buttons on ${pageInfo.name}`, async ({
 			page,
 		}) => {
+			await installApiMock(page, { preAuthenticated: true });
 			await page.goto(pageInfo.path);
 			await page.waitForLoadState("networkidle");
 			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait

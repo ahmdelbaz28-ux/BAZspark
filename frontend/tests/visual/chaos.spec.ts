@@ -417,7 +417,8 @@ test.describe("Chaos Engineering — Failure Injection", () => {
                 });
 
                 await page.goto("/projects");
-                await page.waitForLoadState("networkidle");
+                await page.waitForLoadState("domcontentloaded");
+                await page.waitForTimeout(3000);
 
                 await expectNotCrashed(page);
                 await expectNotInfiniteLoading(page);
