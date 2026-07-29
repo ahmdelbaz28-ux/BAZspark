@@ -1,46 +1,52 @@
 import type React from "react";
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 
 interface StatusBarProps {
-        backendUrl: string;
-        isConnected: boolean;
-        environment: string;
+	backendUrl: string;
+	isConnected: boolean;
+	environment: string;
 }
 
 const APP_VERSION = "v1.55.0";
 
 const StatusBar: React.FC<StatusBarProps> = memo(({
-        backendUrl,
-        isConnected,
-        environment,
+	backendUrl,
+	isConnected,
+	environment,
 }) => {
-        return (
-                <footer
-                        className="h-7 bg-[#0a0e17] flex items-center px-4 gap-3 text-[11px] shrink-0 text-muted-foreground border-t border-white/10"
-                        data-onboarding="status-bar"
-                >
-                        <span className="font-medium text-cyan-400">BAZSPARK {APP_VERSION}</span>
+	const { t } = useTranslation();
 
-                        <div className="h-3 w-px bg-white/10" />
+	return (
+		<footer
+			className="h-7 bg-[#0a0e17] flex items-center px-4 gap-3 text-[11px] shrink-0 text-muted-foreground border-t border-white/10"
+			data-onboarding="status-bar"
+			role="contentinfo"
+			aria-label="Application status"
+		>
+			<span className="font-medium text-cyan-400">BAZSPARK {APP_VERSION}</span>
 
-                        <span className="truncate max-w-[40vw] font-mono tabular-nums" title={backendUrl}>
-                                {backendUrl}
-                        </span>
+			<div className="h-3 w-px bg-white/10" aria-hidden="true" />
 
-                        <div className="h-3 w-px bg-white/10" />
+			<span className="truncate max-w-[40vw] font-mono tabular-nums" title={backendUrl}>
+				{backendUrl}
+			</span>
 
-                        <span className="capitalize">{environment}</span>
+			<div className="h-3 w-px bg-white/10" aria-hidden="true" />
 
-                        <div className="flex-1" />
+			<span className="capitalize">{environment}</span>
 
-                        <div className="flex items-center gap-1.5">
-                                <span
-                                        className={`h-1.5 w-1.5 rounded-full ${isConnected ? "bg-success" : "bg-slate-500"}`}
-                                />
-                                <span className="tabular-nums">{isConnected ? "Connected" : "Disconnected"}</span>
-                        </div>
-                </footer>
-        );
+			<div className="flex-1" />
+
+			<div className="flex items-center gap-1.5" role="status" aria-label={isConnected ? t('common.connected', 'Connected') : t('common.disconnected', 'Disconnected')}>
+				<span
+					className={`h-1.5 w-1.5 rounded-full ${isConnected ? "bg-success" : "bg-slate-500"}`}
+					aria-hidden="true"
+				/>
+				<span className="tabular-nums">{isConnected ? t('common.connected', 'Connected') : t('common.disconnected', 'Disconnected')}</span>
+			</div>
+		</footer>
+	);
 });
 
 StatusBar.displayName = "StatusBar";
