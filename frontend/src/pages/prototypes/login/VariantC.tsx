@@ -1,11 +1,15 @@
 import {
-	AlertCircle, Eye, EyeOff, Globe, KeyRound,
-	Loader2, ShieldCheck, Sparkles, X,
+  AlertCircle, Eye, EyeOff, Globe, HelpCircle, KeyRound,
+  Loader2, ShieldCheck, Sparkles, X,
 } from "lucide-react";
 import { type FormEvent, useEffect, useRef } from "react";
 import { BazSparkLogo } from "@/components/auth/BazSparkLogo";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
+import { LoginModal } from "@/components/auth/LoginModal";
+import { LoginSuccess } from "@/components/auth/LoginSuccess";
 
 interface LoginVariantProps {
   lang: "en" | "ar";
@@ -14,6 +18,8 @@ interface LoginVariantProps {
   setApiKey: (v: string) => void;
   showKey: boolean;
   setShowKey: (v: boolean) => void;
+  remember: boolean;
+  setRemember: (v: boolean) => void;
   submitting: boolean;
   error: string | null;
   isSuccess: boolean;
@@ -30,19 +36,24 @@ function ParticleCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const isBatterySafe = !("getBattery" in navigator);
+    if (mq.matches || !isBatterySafe) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     let animId: number;
+    let active = true;
     const particles: { x: number; y: number; vx: number; vy: number; r: number; a: number }[] = [];
 
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     resize();
     window.addEventListener("resize", resize);
 
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 50; i++) {
       particles.push({
         // NOSONAR — S2245: Math.random() here is for particle animation
         // (visual effect only), not cryptographic purposes.
@@ -56,6 +67,7 @@ function ParticleCanvas() {
     }
 
     const draw = () => {
+      if (!active) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const p of particles) {
         p.x += p.vx;
@@ -73,8 +85,9 @@ function ParticleCanvas() {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 120) {
+          const distSq = dx * dx + dy * dy;
+          if (distSq < 14400) {
+            const dist = Math.sqrt(distSq);
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
@@ -88,66 +101,71 @@ function ParticleCanvas() {
     };
     draw();
 
-    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
+    const onMotionChange = (e: MediaQueryListEvent) => {
+      if (e.matches) { active = false; cancelAnimationFrame(animId); }
+    };
+    mq.addEventListener("change", onMotionChange);
+    return () => { active = false; cancelAnimationFrame(animId); window.removeEventListener("resize", resize); mq.removeEventListener("change", onMotionChange); };
   }, []);
 
-  return <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} />;
+  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />;
 }
 
 export function VariantC(props: LoginVariantProps) {
-  const { lang, t, apiKey, setApiKey, showKey, setShowKey, submitting, error, isSuccess, showSupportModal, setShowSupportModal, showRequestModal, setShowRequestModal, handleSubmit, handleAutoFillTestKey, toggleLanguage } = props;
+  const { lang, t, apiKey, setApiKey, showKey, setShowKey, remember, setRemember, submitting, error, isSuccess, showSupportModal, setShowSupportModal, showRequestModal, setShowRequestModal, handleSubmit, handleAutoFillTestKey, toggleLanguage } = props;
 
   return (
-    <div dir={lang === "ar" ? "rtl" : "ltr"} style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#020409", position: "relative", overflow: "hidden" }}>
-      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 100% 60% at 50% 0%, rgba(6,78,112,0.15), transparent), radial-gradient(ellipse 80% 50% at 50% 100%, rgba(124,58,237,0.08), transparent)" }} />
+    <div dir={lang === "ar" ? "rtl" : "ltr"} className="min-h-screen flex items-center justify-center bg-[#020409] relative overflow-hidden">
+      <div className="login-noise-overlay" aria-hidden="true" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_60%_at_50%_0%,rgba(6,78,112,0.15),transparent),radial-gradient(ellipse_80%_50%_at_50%_100%,rgba(124,58,237,0.08),transparent)]" />
       <ParticleCanvas />
 
-      <div style={{ position: "absolute", top: "1.5rem", right: "2rem", zIndex: 10 }}>
-        <button onClick={toggleLanguage} style={{ display: "flex", alignItems: "center", gap: "0.4rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "9999px", padding: "0.3rem 0.75rem", fontFamily: "monospace", fontSize: "0.65rem", fontWeight: 600, color: "#94a3b8", cursor: "pointer", backdropFilter: "blur(8px)" }}>
-          <Globe style={{ width: "0.75rem", height: "0.75rem", color: "#38bdf8" }} />
+      <div className="absolute top-6 right-8 z-10">
+        <button onClick={toggleLanguage} className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 font-mono text-[10px] font-semibold text-slate-400 cursor-pointer backdrop-blur-md transition-colors hover:bg-white/10">
+          <Globe className="size-3 text-cyan-400" />
           {lang === "en" ? "العربية" : "EN"}
         </button>
       </div>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }} style={{ width: "100%", maxWidth: "440px", padding: "1rem", position: "relative", zIndex: 1 }}>
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} style={{ textAlign: "center", marginBottom: "2rem" }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }} className="w-full max-w-[440px] p-4 relative z-10">
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="text-center mb-8">
           <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.4, type: "spring", stiffness: 200 }}>
             <BazSparkLogo size={56} animated />
           </motion.div>
-          <h1 style={{ fontSize: "1.75rem", fontWeight: 900, color: "#ffffff", marginTop: "1rem", letterSpacing: "-0.02em" }}>
+          <h1 className="text-[1.75rem] font-black text-white mt-4 tracking-tight">
             BAZSPARK
           </h1>
-          <p style={{ fontSize: "0.7rem", color: "#64748b", fontFamily: "monospace", letterSpacing: "0.15em", marginTop: "0.25rem", textTransform: "uppercase" }}>
+          <p className="text-[11px] text-slate-500 font-mono tracking-[0.15em] mt-1 uppercase">
             {t.topBadge}
           </p>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.6 }}>
-          <div style={{ backgroundColor: "rgba(10,14,26,0.6)", border: "1px solid rgba(56,189,248,0.1)", borderRadius: "1rem", padding: "2rem", backdropFilter: "blur(16px)", boxShadow: "0 32px 64px rgba(0,0,0,0.5)" }}>
+          <div className="login-glass-card rounded-2xl p-8 shadow-[0_32px_64px_rgba(0,0,0,0.5)] border-cyan-500/10">
             <AnimatePresence mode="wait">
               {!isSuccess ? (
                 <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }}>
                   <form onSubmit={handleSubmit}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
-                      <div style={{ width: "0.25rem", height: "1.5rem", borderRadius: "9999px", background: "linear-gradient(180deg, #38bdf8, #7c3aed)" }} />
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-1 h-6 rounded-full bg-gradient-to-b from-cyan-400 to-purple-600" />
                       <div>
-                        <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>{t.formTitle}</div>
-                        <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginTop: "0.1rem" }}>{t.formSubtitle}</div>
+                        <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">{t.formTitle}</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">{t.formSubtitle}</div>
                       </div>
                     </div>
 
                     {error && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} style={{ display: "flex", gap: "0.6rem", alignItems: "flex-start", backgroundColor: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.2)", color: "#fb7185", padding: "0.75rem", borderRadius: "0.5rem", fontSize: "0.7rem", marginBottom: "1rem" }} role="alert">
-                        <AlertCircle style={{ width: "0.85rem", height: "0.85rem", flexShrink: 0, marginTop: "0.05rem" }} />
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex gap-2.5 items-start bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3 rounded-lg text-[11px] mb-4" role="alert">
+                        <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Authentication Error</div>
-                          <div style={{ marginTop: "0.1rem" }}>{error}</div>
+                          <div className="font-bold text-[10px] uppercase tracking-wider">Authentication Error</div>
+                          <div className="mt-0.5">{error}</div>
                         </div>
                       </motion.div>
                     )}
 
-                    <div style={{ position: "relative", marginBottom: "0.75rem" }}>
-                      <KeyRound style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", width: "0.85rem", height: "0.85rem", color: "#475569", pointerEvents: "none" }} />
+                    <div className="relative mb-3">
+                      <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-600 pointer-events-none" />
                       <input
                         type={showKey ? "text" : "password"}
                         value={apiKey}
@@ -155,83 +173,75 @@ export function VariantC(props: LoginVariantProps) {
                         placeholder={t.inputPlaceholder}
                         disabled={submitting}
                         autoFocus
-                        style={{ width: "100%", height: "2.75rem", paddingLeft: "2.5rem", paddingRight: "2.5rem", backgroundColor: "rgba(0,0,0,0.4)", border: "1px solid rgba(56,189,248,0.15)", borderRadius: "0.5rem", color: "#ffffff", fontFamily: "monospace", fontSize: "0.8rem", boxSizing: "border-box", transition: "border-color 0.3s, box-shadow 0.3s" }}
-                        onFocus={(e) => { e.target.style.borderColor = "#38bdf8"; e.target.style.boxShadow = "0 0 0 3px rgba(56,189,248,0.1)"; e.target.style.outline = "none"; }}
-                        onBlur={(e) => { e.target.style.borderColor = "rgba(56,189,248,0.15)"; e.target.style.boxShadow = "none"; }}
+                        id="api-key"
+                        className="login-input-control w-full h-11 pl-10 pr-10 bg-black/40 border border-cyan-500/15 rounded-lg text-white font-mono text-[0.8rem] box-border"
                       />
-                      <button type="button" onClick={() => setShowKey(!showKey)} style={{ position: "absolute", right: "0.85rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#475569", cursor: "pointer", padding: "0.2rem", display: "flex" }}>
-                        {showKey ? <EyeOff style={{ width: "0.85rem", height: "0.85rem" }} /> : <Eye style={{ width: "0.85rem", height: "0.85rem" }} />}
+                      <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 cursor-pointer p-1 bg-transparent border-none flex">
+                        {showKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                       </button>
                     </div>
 
-                    <p style={{ fontSize: "0.6rem", color: "#475569", marginBottom: "1.25rem" }}>{t.inputHint}</p>
+                    <p className="text-[10px] text-slate-600 mb-4">{t.inputHint}</p>
 
-                    <button type="submit" disabled={submitting || !apiKey.trim()} style={{ width: "100%", height: "2.75rem", background: "linear-gradient(135deg, #2563eb, #7c3aed)", border: "none", borderRadius: "0.5rem", color: "#ffffff", fontWeight: 700, fontSize: "0.8rem", cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", transition: "opacity 0.2s", boxShadow: "0 8px 24px rgba(37,99,235,0.3)" }}>
-                      {submitting ? <><Loader2 className="animate-spin" style={{ width: "1rem", height: "1rem" }} />{t.submittingButton}</> : <><ShieldCheck style={{ width: "1rem", height: "1rem" }} />{t.submitButton}</>}
+                    <div className="remember-checkbox-row mb-4">
+                      <Checkbox id="remember-c" checked={remember} onCheckedChange={(v) => setRemember(v === true)} disabled={submitting} className="border-slate-700 h-4 w-4 data-[state=checked]:bg-rose-500 data-[state=checked]:border-rose-500" />
+                      <Label htmlFor="remember-c" className="text-[0.7rem] cursor-pointer text-slate-500 select-none">{t.rememberLabel}</Label>
+                    </div>
+
+                    <button type="submit" disabled={submitting || !apiKey.trim()} className="login-submit-btn w-full h-11 bg-gradient-to-r from-blue-600 to-purple-600 border-none rounded-lg text-white font-bold text-[0.8rem] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30">
+                      {submitting ? <><Loader2 className="size-4 animate-spin" />{t.submittingButton}</> : <><ShieldCheck className="size-4" />{t.submitButton}</>}
                     </button>
 
-                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
-                      <button type="button" onClick={() => setShowSupportModal(true)} style={{ flex: 1, background: "none", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "0.4rem", fontSize: "0.6rem", fontWeight: 600, color: "#38bdf8", cursor: "pointer", transition: "background 0.2s" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(56,189,248,0.08)"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}>
+                    <div className="flex gap-2 mt-4">
+                      <button type="button" onClick={() => setShowSupportModal(true)} className="flex-1 bg-transparent border border-white/8 rounded-lg py-1.5 text-[10px] font-semibold text-cyan-400 cursor-pointer transition-colors hover:bg-cyan-500/8">
                         {t.supportLink}
                       </button>
-                      <button type="button" onClick={() => setShowRequestModal(true)} style={{ flex: 1, background: "none", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.5rem", padding: "0.4rem", fontSize: "0.6rem", fontWeight: 600, color: "#f87171", cursor: "pointer", transition: "background 0.2s" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(248,113,113,0.08)"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}>
+                      <button type="button" onClick={() => setShowRequestModal(true)} className="flex-1 bg-transparent border border-white/8 rounded-lg py-1.5 text-[10px] font-semibold text-red-400 cursor-pointer transition-colors hover:bg-red-500/8">
                         {t.requestAccessLink}
                       </button>
                     </div>
                   </form>
                 </motion.div>
               ) : (
-                <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 200 }} style={{ textAlign: "center", padding: "2rem 1rem" }}>
-                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring", stiffness: 300 }} style={{ width: "4rem", height: "4rem", borderRadius: "9999px", background: "linear-gradient(135deg, rgba(6,78,59,0.9), rgba(5,150,105,0.4))", border: "1px solid rgba(52,211,153,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#34d399", margin: "0 auto 1rem", boxShadow: "0 0 30px rgba(52,211,153,0.15)" }}>
-                    <ShieldCheck style={{ width: "2rem", height: "2rem" }} />
-                  </motion.div>
-                  <motion.h3 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} style={{ fontSize: "1.125rem", fontWeight: 700, color: "#ffffff" }}>{t.accessGranted}</motion.h3>
-                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.25rem" }}>{t.sessionInitialized}</motion.p>
-                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} style={{ display: "block", marginTop: "0.75rem", fontSize: "0.6rem", fontFamily: "monospace", letterSpacing: "0.1em", color: "#34d399" }}>{t.redirecting}</motion.span>
-                </motion.div>
+                <LoginSuccess
+                  accessGranted={t.accessGranted}
+                  sessionInitialized={t.sessionInitialized}
+                  redirecting={t.redirecting}
+                />
               )}
             </AnimatePresence>
           </div>
         </motion.div>
 
-        <div style={{ textAlign: "center", marginTop: "1.5rem", fontSize: "0.6rem", fontFamily: "monospace", color: "#475569" }}>
-          AES-256 Encryption · System v8.1 · All connections secure
+        <div className="text-center mt-6 text-[10px] font-mono text-slate-600">
+          AES-256 Encryption &middot; System v8.1 &middot; All connections secure
         </div>
       </motion.div>
 
-      <AnimatePresence>
-        {showSupportModal && (
-          <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", backgroundColor: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} style={{ width: "100%", maxWidth: "400px", backgroundColor: "rgba(10,14,26,0.95)", border: "1px solid rgba(56,189,248,0.15)", borderRadius: "1rem", padding: "1.5rem", boxShadow: "0 32px 64px rgba(0,0,0,0.5)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                <h3 style={{ fontSize: "0.9rem", fontWeight: 700, color: "#ffffff" }}>{t.supportTitle}</h3>
-                <button onClick={() => setShowSupportModal(false)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }}><X style={{ width: "1rem", height: "1rem" }} /></button>
-              </div>
-              <p style={{ fontSize: "0.75rem", color: "#cbd5e1", lineHeight: 1.5, marginBottom: "1rem" }}>{t.supportDesc}</p>
-              <div style={{ fontSize: "0.7rem", fontFamily: "monospace", backgroundColor: "rgba(0,0,0,0.3)", padding: "0.75rem", borderRadius: "0.5rem", border: "1px solid rgba(56,189,248,0.1)", color: "#94a3b8", marginBottom: "1rem" }}>{t.supportEmail}</div>
-              <Button onClick={() => setShowSupportModal(false)} className="w-full bg-white/5 hover:bg-white/10 text-white text-xs h-9 border border-white/10">{t.closeBtn}</Button>
-            </motion.div>
-          </div>
-        )}
-        {showRequestModal && (
-          <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", backgroundColor: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} style={{ width: "100%", maxWidth: "400px", backgroundColor: "rgba(10,14,26,0.95)", border: "1px solid rgba(248,113,113,0.15)", borderRadius: "1rem", padding: "1.5rem", boxShadow: "0 32px 64px rgba(0,0,0,0.5)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                <h3 style={{ fontSize: "0.9rem", fontWeight: 700, color: "#ffffff" }}>{t.requestTitle}</h3>
-                <button onClick={() => setShowRequestModal(false)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }}><X style={{ width: "1rem", height: "1rem" }} /></button>
-              </div>
-              <p style={{ fontSize: "0.75rem", color: "#cbd5e1", lineHeight: 1.5, marginBottom: "1.25rem" }}>{t.requestDesc}</p>
-              <Button onClick={handleAutoFillTestKey} className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs h-10 flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 mb-3">
-                <Sparkles style={{ width: "1rem", height: "1rem" }} />
-                {t.autoFillDemoBtn}
-              </Button>
-              <Button onClick={() => setShowRequestModal(false)} className="w-full bg-white/5 hover:bg-white/10 text-white text-xs h-9 border border-white/10">{t.closeBtn}</Button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <LoginModal
+        open={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+        title={t.supportTitle}
+        icon={<HelpCircle className="size-5 text-cyan-400" />}
+      >
+        <p className="text-xs text-slate-300 leading-relaxed mb-4">{t.supportDesc}</p>
+        <div className="text-[11px] font-mono bg-black/30 p-3 rounded-lg border border-cyan-500/10 text-slate-400 mb-4">{t.supportEmail}</div>
+        <Button onClick={() => setShowSupportModal(false)} className="w-full bg-white/5 hover:bg-white/10 text-white text-xs h-9 border border-white/10">{t.closeBtn}</Button>
+      </LoginModal>
+
+      <LoginModal
+        open={showRequestModal}
+        onClose={() => setShowRequestModal(false)}
+        title={t.requestTitle}
+        icon={<Sparkles className="size-5 text-red-400" />}
+      >
+        <p className="text-xs text-slate-300 leading-relaxed mb-5">{t.requestDesc}</p>
+        <Button onClick={handleAutoFillTestKey} className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs h-10 flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 mb-3">
+          <Sparkles className="size-4" />
+          {t.autoFillDemoBtn}
+        </Button>
+        <Button onClick={() => setShowRequestModal(false)} className="w-full bg-white/5 hover:bg-white/10 text-white text-xs h-9 border border-white/10">{t.closeBtn}</Button>
+      </LoginModal>
     </div>
   );
 }

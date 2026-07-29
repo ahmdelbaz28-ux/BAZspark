@@ -1,70 +1,269 @@
-/* LoginPage.tsx — extracted inline <style> for grid, scanline, and feature interactions */
+/* LoginPage.tsx — Premium immersive login styles
+ * Cyber / Technical aesthetic with glassmorphism depth
+ * All animations use transform + opacity only (no layout recalc)
+ */
 
+/* ── Fluid Typography Scale ───────────────────────────────────────── */
+.login-hero-title {
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.login-hero-subtitle {
+  font-size: clamp(0.75rem, 1.2vw, 0.875rem);
+}
+
+.login-form-title {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+}
+
+.login-form-subtitle {
+  font-size: clamp(0.7rem, 1vw, 0.8rem);
+}
+
+/* ── CSS-Only Preloader ───────────────────────────────────────────── */
+.login-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #05070f;
+  animation: login-preloader-out 0.6s cubic-bezier(0.16, 1, 0.3, 1) 1.2s forwards;
+  pointer-events: none;
+}
+
+.login-preloader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  opacity: 0;
+  animation: login-preloader-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+}
+
+.login-preloader-ring {
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(34, 211, 238, 0.1);
+  border-top-color: #22d3ee;
+  border-radius: 50%;
+  animation: login-preloader-spin 0.8s linear infinite;
+}
+
+@keyframes login-preloader-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes login-preloader-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes login-preloader-out {
+  from { opacity: 1; }
+  to { opacity: 0; visibility: hidden; }
+}
+
+/* ── 3D Grid Background ────────────────────────────────────────────── */
 @keyframes scanline {
-        0% { top: -25%; }
-        100% { top: 100%; }
+  0% { top: -25%; }
+  100% { top: 100%; }
 }
 
 .grid-3d-bg {
-        position: absolute;
-        inset: 0;
-        z-index: 0;
-        overflow: hidden;
-        background-color: #05070f;
-        perspective: 280px;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background-color: #05070f;
+  perspective: 280px;
 }
+
 .grid-3d-grid {
-        position: absolute;
-        top: -60%;
-        left: -50%;
-        right: -50%;
-        bottom: -50%;
-        width: 200%;
-        height: 220%;
-        background-image:
-                linear-gradient(rgba(34, 211, 238, 0.032) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(34, 211, 238, 0.032) 1px, transparent 1px);
-        background-size: 50px 50px;
-        transform: rotateX(60deg) translateY(0);
-        transform-origin: center center;
-        animation: gridScroll 18s linear infinite;
+  position: absolute;
+  top: -60%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  width: 200%;
+  height: 220%;
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.032) 1px, transparent 1px);
+  background-size: 50px 50px;
+  transform: rotateX(60deg) translateY(0);
+  transform-origin: center center;
+  animation: gridScroll 18s linear infinite;
+  will-change: transform;
 }
+
 @keyframes gridScroll {
-        0% { transform: rotateX(60deg) translateY(0); }
-        100% { transform: rotateX(60deg) translateY(50px); }
+  0% { transform: rotateX(60deg) translateY(0); }
+  100% { transform: rotateX(60deg) translateY(50px); }
 }
+
 .grid-3d-overlay {
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at 50% 40%, transparent 10%, #05070f 85%);
-        pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 40%, transparent 10%, #05070f 85%);
+  pointer-events: none;
 }
+
+/* ── Feature Items ─────────────────────────────────────────────────── */
 .feature-icon-box {
-        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  will-change: transform;
 }
+
 .feature-row:hover .feature-icon-box {
-        transform: scale(1.08) rotate(3deg);
+  transform: scale(1.08) rotate(3deg);
 }
 
 .login-feature-item {
-        transition: border-color 0.2s, transform 0.2s;
-}
-.login-submit-btn {
-        transition: background-color 0.2s, transform 0.1s;
-}
-.login-input-control {
-        transition: border-color 0.2s, box-shadow 0.2s;
-}
-.lang-toggle-btn {
-        transition: border-color 0.2s, color 0.2s;
+  transition: border-color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .login-feature-item:hover {
+    transform: translateX(4px);
+    border-color: rgba(34, 211, 238, 0.3);
+  }
+}
+
+/* ── Submit Button — Magnetic Hover ──────────────────────────────────── */
+.login-submit-btn {
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease;
+  will-change: transform;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-submit-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.08), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .login-submit-btn:not(:disabled):hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 24px rgba(34, 211, 238, 0.15);
+  }
+
+  .login-submit-btn:not(:disabled):hover::after {
+    opacity: 1;
+  }
+}
+
+.login-submit-btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* ── Form Input ────────────────────────────────────────────────────── */
+.login-input-control {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-input-control:focus {
+  border-color: #22d3ee !important;
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12) !important;
+  outline: none;
+}
+
+/* ── Language Toggle ────────────────────────────────────────────────── */
+.lang-toggle-btn {
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lang-toggle-btn:hover {
+    border-color: rgba(34, 211, 238, 0.4);
+  }
+}
+
+/* ── Noise Overlay (digital grain) ─────────────────────────────────── */
+.login-noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ── Entrance Animations — CSS for static elements, framer-motion for dynamic ones ──── */
+@keyframes login-fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.login-entrance-1 { animation: login-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
+.login-entrance-2 { animation: login-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
+.login-entrance-3 { animation: login-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both; }
+.login-entrance-4 { animation: login-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both; }
+.login-entrance-5 { animation: login-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both; }
+.login-entrance-6 { animation: login-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both; }
+.login-entrance-7 { animation: login-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both; }
+
+/* ── Glassmorphism Card ────────────────────────────────────────────── */
+.login-glass-card {
+  background: rgba(10, 14, 26, 0.65);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(34, 211, 238, 0.08);
+}
+
+.login-glass-card-strong {
+  background: rgba(10, 14, 26, 0.85);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(34, 211, 238, 0.12);
+}
+
+/* ── Responsive: disable hover transforms on touch ─────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  .login-feature-item:hover { transform: none; }
+  .login-submit-btn:not(:disabled):hover { transform: none; }
+  .lang-toggle-btn:hover { border-color: inherit; }
+}
+
+/* ── Reduced Motion ────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-        .login-feature-item,
-        .login-submit-btn,
-        .login-input-control,
-        .lang-toggle-btn {
-                transition-duration: 0.01ms !important;
-                transition-delay: 0s !important;
-        }
+  .login-preloader { display: none; }
+
+  .login-feature-item,
+  .login-submit-btn,
+  .login-input-control,
+  .lang-toggle-btn {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+
+  .login-entrance-1,
+  .login-entrance-2,
+  .login-entrance-3,
+  .login-entrance-4,
+  .login-entrance-5,
+  .login-entrance-6,
+  .login-entrance-7 {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .grid-3d-grid { animation: none; }
 }
