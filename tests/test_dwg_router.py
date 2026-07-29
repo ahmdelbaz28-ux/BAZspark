@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import patch
 
 _PROJECT_ROOT = Path(__file__).parent.resolve()
 if str(_PROJECT_ROOT) not in sys.path:

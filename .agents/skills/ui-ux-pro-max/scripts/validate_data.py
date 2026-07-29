@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Data integrity guardrail for ui-ux-pro-max. Stdlib-only, no pytest dependency,
 so it can run as a standalone pre-publish/CI check:
@@ -20,9 +19,8 @@ several files at once, so we want the full list in one run).
 import csv
 import json
 import sys
-from pathlib import Path
 
-from core import CSV_CONFIG, STACK_CONFIG, _STACK_COLS, DATA_DIR
+from core import _STACK_COLS, CSV_CONFIG, DATA_DIR, STACK_CONFIG
 
 # REASONING_FILE lives in design_system.py, not core.py -- redeclared here to
 # avoid a circular import (design_system.py imports core.py).
@@ -74,7 +72,7 @@ def _check_file(label, filepath, search_cols, output_cols, problems):
 
     for row_idx, row in enumerate(rows, start=2):
         for col in JSON_COLUMNS:
-            if col in row and row[col]:
+            if row.get(col):
                 try:
                     json.loads(row[col])
                 except json.JSONDecodeError as e:

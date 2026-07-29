@@ -14,7 +14,9 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
 from parsers._base import ParserBase
-from parsers._path_security import UnsafePathError, validate_file_size, validate_input_path  # V125/Rule #23
+from parsers._path_security import (  # V125/Rule #23
+    UnsafePathError,
+)
 
 cv2 = None
 np = None

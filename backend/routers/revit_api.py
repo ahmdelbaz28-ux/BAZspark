@@ -9,19 +9,27 @@ Principal Software Architect: Eng. Ahmed Elbaz
 import logging
 import os
 import tempfile
-from typing import Any, Dict, List, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    File,
+    HTTPException,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from pydantic import BaseModel
 
+from revit_integration.aps.auth_service import APSAuthService
+from revit_integration.aps.data_exchange import APSDataExchange
 from revit_integration.dto.revit_dto import (
-    RevitElementDTO, ElectricalAssetDTO, SyncStatusDTO, 
-    ModelMetadataDTO, RevitProjectDTO, RevitSyncLogDTO
+    ModelMetadataDTO,
+    RevitElementDTO,
+    RevitProjectDTO,
 )
 from revit_integration.services.revit_sync_service import RevitSyncService
-from revit_integration.aps.data_exchange import APSDataExchange
-from revit_integration.aps.auth_service import APSAuthService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/revit", tags=["Revit Integration"])
@@ -105,11 +113,11 @@ async def upload_revit_model(
 ) -> RevitSyncResponse:
     """
     Upload a Revit model file for processing.
-    
+
     Args:
         project_id: ID of the target project
         file: Revit file to upload (.rvt, .rfa, .rte)
-        
+
     Returns:
         RevitSyncResponse: Upload and sync status
     """
@@ -119,13 +127,13 @@ async def upload_revit_model(
             content = await file.read()
             tmp_file.write(content)
             temp_path = tmp_file.name
-        
+
         try:
             # In a real implementation, this would:
             # 1. Validate the Revit file
             # 2. Store it securely
             # 3. Initiate processing
-            
+
             # For now, we'll simulate the process
             project_dto = RevitProjectDTO(
                 project_id=project_id,
@@ -133,10 +141,10 @@ async def upload_revit_model(
                 revit_file_path=temp_path,
                 status="active"
             )
-            
+
             # Start sync process
             sync_status = await revit_sync_service.sync_project(project_dto)
-            
+
             response = RevitSyncResponse(
                 success=True,
                 sync_id=sync_status.sync_id,
@@ -145,13 +153,13 @@ async def upload_revit_model(
                 elements_successful=sync_status.successful_elements,
                 elements_failed=sync_status.failed_elements
             )
-            
+
             return response
-            
+
         finally:
             # Clean up temporary file
             os.unlink(temp_path)
-            
+
     except Exception as e:
         logger.error(f"Error uploading Revit model: {e}")
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
@@ -161,10 +169,10 @@ async def upload_revit_model(
 async def sync_revit_model(request: RevitSyncRequest) -> RevitSyncResponse:
     """
     Initiate synchronization of a Revit model.
-    
+
     Args:
         request: Sync parameters
-        
+
     Returns:
         RevitSyncResponse: Sync status
     """
@@ -175,10 +183,10 @@ async def sync_revit_model(request: RevitSyncRequest) -> RevitSyncResponse:
             project_name=f"Project_{request.project_id}",
             status="active"
         )
-        
+
         # Perform sync
         sync_status = await revit_sync_service.sync_project(project_dto)
-        
+
         response = RevitSyncResponse(
             success=True,
             sync_id=sync_status.sync_id,
@@ -187,9 +195,9 @@ async def sync_revit_model(request: RevitSyncRequest) -> RevitSyncResponse:
             elements_successful=sync_status.successful_elements,
             elements_failed=sync_status.failed_elements
         )
-        
+
         return response
-        
+
     except Exception as e:
         logger.error(f"Error syncing Revit model: {e}")
         raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
@@ -199,17 +207,17 @@ async def sync_revit_model(request: RevitSyncRequest) -> RevitSyncResponse:
 async def get_revit_model(model_id: str) -> RevitModelResponse:
     """
     Retrieve a specific Revit model.
-    
+
     Args:
         model_id: ID of the model to retrieve
-        
+
     Returns:
         RevitModelResponse: Model data and metadata
     """
     try:
         # In a real implementation, this would fetch model data from storage
         # For now, we'll simulate the response
-        
+
         # Create mock model data
         mock_elements = [
             RevitElementDTO(
@@ -223,7 +231,7 @@ async def get_revit_model(model_id: str) -> RevitModelResponse:
             )
             for i in range(10)  # Simulate 10 elements
         ]
-        
+
         metadata = ModelMetadataDTO(
             model_id=model_id,
             project_name=f"Project_{model_id}",
@@ -239,16 +247,16 @@ async def get_revit_model(model_id: str) -> RevitModelResponse:
             organization="Mock Organization",
             description="Mock Revit Model"
         )
-        
+
         response = RevitModelResponse(
             model_id=model_id,
             project_name=f"Project_{model_id}",
             elements=mock_elements,
             metadata=metadata
         )
-        
+
         return response
-        
+
     except Exception as e:
         logger.error(f"Error retrieving Revit model {model_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Model retrieval failed: {str(e)}")
@@ -258,10 +266,10 @@ async def get_revit_model(model_id: str) -> RevitModelResponse:
 async def export_revit_data(request: RevitExportRequest) -> Dict[str, Any]:
     """
     Export Revit data in various formats.
-    
+
     Args:
         request: Export parameters
-        
+
     Returns:
         Dict: Export status and file information
     """
@@ -270,10 +278,10 @@ async def export_revit_data(request: RevitExportRequest) -> Dict[str, Any]:
         # 1. Gather elements based on request parameters
         # 2. Convert to requested format
         # 3. Generate file
-        
+
         # For now, we'll simulate the export
         export_filename = f"export_{request.project_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{request.format}"
-        
+
         response = {
             "success": True,
             "filename": export_filename,
@@ -282,9 +290,9 @@ async def export_revit_data(request: RevitExportRequest) -> Dict[str, Any]:
             "message": f"Export job started for project {request.project_id}",
             "estimated_completion": (datetime.now().timestamp() + 30)  # 30 seconds
         }
-        
+
         return response
-        
+
     except Exception as e:
         logger.error(f"Error exporting Revit data: {e}")
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
@@ -294,17 +302,17 @@ async def export_revit_data(request: RevitExportRequest) -> Dict[str, Any]:
 async def get_revit_status(project_id: str) -> RevitStatusResponse:
     """
     Get the synchronization status of a Revit project.
-    
+
     Args:
         project_id: ID of the project
-        
+
     Returns:
         RevitStatusResponse: Status information
     """
     try:
         # In a real implementation, this would query the database for project status
         # For now, we'll simulate the status
-        
+
         response = RevitStatusResponse(
             project_id=project_id,
             sync_status="up_to_date",
@@ -314,9 +322,9 @@ async def get_revit_status(project_id: str) -> RevitStatusResponse:
             next_sync=datetime.now().replace(hour=datetime.now().hour + 1),
             connection_status="connected"
         )
-        
+
         return response
-        
+
     except Exception as e:
         logger.error(f"Error getting Revit status: {e}")
         raise HTTPException(status_code=500, detail=f"Status retrieval failed: {str(e)}")
@@ -326,17 +334,17 @@ async def get_revit_status(project_id: str) -> RevitStatusResponse:
 async def websocket_endpoint(websocket: WebSocket, project_id: str):
     """
     WebSocket endpoint for real-time Revit synchronization updates.
-    
+
     Args:
         websocket: WebSocket connection
         project_id: Project ID for the connection
     """
     await websocket.accept()
-    
+
     # Add to active connections
     connection_key = f"{project_id}_{websocket.client.host}:{websocket.client.port}"
     active_connections[connection_key] = websocket
-    
+
     try:
         # Send initial connection message
         await websocket.send_text(WebSocketMessage(
@@ -347,18 +355,18 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                 "message": f"Connected to project {project_id}"
             }
         ).model_dump_json())
-        
+
         # Listen for messages and handle sync updates
         while True:
             try:
                 # In a real implementation, this would listen for sync updates
                 # For now, we'll just keep the connection alive
                 data = await websocket.receive_text()
-                
+
                 # Parse incoming message
                 try:
                     message = WebSocketMessage.model_validate_json(data)
-                    
+
                     # Handle different message types
                     if message.type == "sync_request":
                         # Simulate starting a sync
@@ -370,7 +378,7 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                                 "timestamp": datetime.utcnow().isoformat()
                             }
                         ).model_dump_json())
-                        
+
                         # Simulate sync progress
                         for progress in [25, 50, 75, 100]:
                             await websocket.send_text(WebSocketMessage(
@@ -381,9 +389,9 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                                     "timestamp": datetime.utcnow().isoformat()
                                 }
                             ).model_dump_json())
-                            
+
                             await asyncio.sleep(1)  # Simulate processing
-                        
+
                         # Send completion
                         await websocket.send_text(WebSocketMessage(
                             type="sync_completed",
@@ -396,13 +404,13 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                                 "timestamp": datetime.utcnow().isoformat()
                             }
                         ).model_dump_json())
-                    
+
                     elif message.type == "ping":
                         await websocket.send_text(WebSocketMessage(
                             type="pong",
                             data={"timestamp": datetime.utcnow().isoformat()}
                         ).model_dump_json())
-                    
+
                 except Exception as e:
                     logger.error(f"Error processing WebSocket message: {e}")
                     await websocket.send_text(WebSocketMessage(
@@ -412,23 +420,22 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                             "timestamp": datetime.utcnow().isoformat()
                         }
                     ).model_dump_json())
-                
+
             except WebSocketDisconnect:
                 break
-    
+
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
     finally:
         # Remove from active connections
-        if connection_key in active_connections:
-            del active_connections[connection_key]
+        active_connections.pop(connection_key, None)
 
 
 # Utility functions
 async def broadcast_to_project(project_id: str, message: WebSocketMessage):
     """
     Broadcast a message to all WebSocket connections for a project.
-    
+
     Args:
         project_id: Project ID
         message: Message to broadcast
@@ -440,8 +447,7 @@ async def broadcast_to_project(project_id: str, message: WebSocketMessage):
             except Exception as e:
                 logger.error(f"Error broadcasting to {conn_key}: {e}")
                 # Remove broken connection
-                if conn_key in active_connections:
-                    del active_connections[conn_key]
+                active_connections.pop(conn_key, None)
 
 
 # Import asyncio for WebSocket operations

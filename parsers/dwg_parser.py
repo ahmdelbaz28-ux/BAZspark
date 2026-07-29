@@ -16,7 +16,6 @@ from typing import List, Optional
 from parsers._base import ParserBase
 from parsers._path_security import (
     UnsafePathError,
-    validate_file_size,
     validate_input_path,
 )
 

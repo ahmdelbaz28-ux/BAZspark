@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import os
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -89,7 +88,7 @@ class TestEncryption:
     """Test AES-256-GCM encrypt/decrypt primitives."""
 
     def test_roundtrip(self):
-        from backend.vision_key_store import encrypt_key, decrypt_key
+        from backend.vision_key_store import decrypt_key, encrypt_key
 
         plaintext = "sk-proj-abcdef1234567890ABCD"
         encrypted = encrypt_key(plaintext)
@@ -131,8 +130,9 @@ class TestEncryption:
 
     def test_tamper_detection(self):
         """Modifying the ciphertext must cause decryption to fail (auth tag)."""
-        from backend.vision_key_store import encrypt_key, decrypt_key
         import base64
+
+        from backend.vision_key_store import decrypt_key, encrypt_key
 
         plaintext = "sk-proj-tamper-test-1234567890"
         encrypted = encrypt_key(plaintext)
@@ -146,8 +146,9 @@ class TestEncryption:
 
     def test_tamper_detection_nonce(self):
         """Modifying the nonce must cause decryption to fail."""
-        from backend.vision_key_store import encrypt_key, decrypt_key
         import base64
+
+        from backend.vision_key_store import decrypt_key, encrypt_key
 
         plaintext = "sk-proj-nonce-tamper-test-1234567890"
         encrypted = encrypt_key(plaintext)
@@ -160,7 +161,7 @@ class TestEncryption:
 
     def test_wrong_master_key_fails(self, monkeypatch):
         """Decrypting with a different master key must fail (auth tag)."""
-        from backend.vision_key_store import encrypt_key, decrypt_key
+        from backend.vision_key_store import decrypt_key, encrypt_key
 
         plaintext = "sk-proj-master-key-test-1234567890"
         encrypted = encrypt_key(plaintext)
@@ -344,9 +345,10 @@ class TestCuaLoopFallback:
         checking that the DB loader returns a key when one is stored.
         """
         # Store a key in DB
-        from backend.vision_key_store import encrypt_key, mask_key, utc_now_iso
-        from backend.database import get_db
         import uuid
+
+        from backend.database import get_db
+        from backend.vision_key_store import encrypt_key, mask_key, utc_now_iso
 
         db = get_db()
         now = utc_now_iso()
@@ -379,8 +381,9 @@ class TestCuaLoopFallback:
     def test_corrupted_db_key_falls_through(self, temp_db, monkeypatch):
         """If the DB key's ciphertext is corrupted, the loader returns None
         (and the CUA loop falls through to env / OpenCV)."""
-        from backend.database import get_db
         import uuid
+
+        from backend.database import get_db
 
         db = get_db()
         from backend.vision_key_store import mask_key, utc_now_iso
@@ -441,6 +444,7 @@ class TestSettingsRouter:
         X-API-Key header to FIREAI_API_KEY and grants ADMIN role on match.
         """
         from fastapi.testclient import TestClient
+
         from backend.app import app
 
         # The env var is set globally by backend/tests/conftest.py to
@@ -464,10 +468,11 @@ class TestSettingsRouter:
         check should then reject with 403.
         """
         from fastapi.testclient import TestClient
-        from backend.app import app
-        from backend.api_keys import add_api_key
-        from backend.rbac import Role
+
         import backend.api_keys as api_keys_mod
+        from backend.api_keys import add_api_key
+        from backend.app import app
+        from backend.rbac import Role
 
         # Use a fresh keys file in temp_db's directory
         keys_file = os.path.join(os.path.dirname(temp_db), "test_api_keys_viewer.json")

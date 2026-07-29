@@ -42,10 +42,9 @@ from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
-from fireai.integration.external_api_base import ApiResult, ExternalApiAdapter
+from fireai.integration.external_api_base import ExternalApiAdapter
 
 logger = logging.getLogger(__name__)
 

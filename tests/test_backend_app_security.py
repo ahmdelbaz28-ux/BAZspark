@@ -15,13 +15,11 @@ Tests:
 
 from __future__ import annotations
 
-import importlib
 import os
 import sys
 from pathlib import Path
 from typing import Any
 
-import pytest
 from starlette.middleware.cors import CORSMiddleware
 
 _PROJECT_ROOT = Path(__file__).parent.parent.resolve()

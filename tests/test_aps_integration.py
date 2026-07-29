@@ -9,6 +9,7 @@ import warnings
 from pathlib import Path
 
 import pytest
+
 # Suppress upstream library noise: multipart v0.0.20 emits a
 # PendingDeprecationWarning on import. Pytest converts this to an
 # error (filterwarnings=["error", ...]), crashing collection.

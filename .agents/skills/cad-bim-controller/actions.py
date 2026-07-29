@@ -4,8 +4,8 @@ JSON Actions Schema for CAD/BIM Controller
 Each action is represented as a JSON object the AI can send
 """
 
-from typing import TypedDict, Optional, List, Union
 from enum import Enum
+from typing import List
 
 
 class ActionType(Enum):
@@ -13,7 +13,7 @@ class ActionType(Enum):
     LAUNCH = "launch"
     CONNECT = "connect"
     CLOSE = "close"
-    
+
     # Navigation
     SCREENSHOT = "screenshot"
     CLICK = "click"
@@ -21,27 +21,27 @@ class ActionType(Enum):
     CLICK_BY_IMAGE = "click_by_image"
     DOUBLE_CLICK = "double_click"
     RIGHT_CLICK = "right_click"
-    
+
     # Input
     TYPE = "type"
     PRESS = "press"
     HOTKEY = "hotkey"
-    
+
     # Mouse
     SCROLL = "scroll"
     DRAG = "drag"
     MOVE_TO = "move_to"
-    
+
     # Wait
     WAIT = "wait"
     WAIT_FOR_ELEMENT = "wait_for_element"
     SLEEP = "sleep"
-    
+
     # API
     AUTOCAD_API = "autocad_api"
     REVIT_API = "revit_api"
     ETABS_API = "etabs_api"
-    
+
     # Analysis
     ANALYZE_SCREEN = "analyze_screen"
     FIND_TEXT = "find_text"

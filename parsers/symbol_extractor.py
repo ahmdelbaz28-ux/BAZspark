@@ -12,7 +12,6 @@ from enum import Enum
 from typing import Dict, List, Tuple
 
 import _fitz_compat as fitz
-
 from parsers._device_types import DeviceType
 
 

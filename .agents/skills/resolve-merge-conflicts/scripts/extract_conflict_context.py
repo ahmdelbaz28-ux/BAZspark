@@ -11,7 +11,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 START_RE = re.compile(r"^<<<<<<<(?: (.*))?$")
 BASE_RE = re.compile(r"^\|\|\|\|\|\|\|(?: (.*))?$")
 END_RE = re.compile(r"^>>>>>>>(?: (.*))?$")

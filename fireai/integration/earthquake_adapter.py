@@ -44,9 +44,8 @@ from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 from fireai.integration.external_api_base import ExternalApiAdapter
 
@@ -151,8 +150,8 @@ def _classify_priority(max_mag: float) -> tuple[str, str]:
         )
     return (
         "LOW",
-        f"No M4.0+ earthquakes in lookback window. No post-quake "
-        f"inspection advised.",
+        "No M4.0+ earthquakes in lookback window. No post-quake "
+        "inspection advised.",
     )
 
 

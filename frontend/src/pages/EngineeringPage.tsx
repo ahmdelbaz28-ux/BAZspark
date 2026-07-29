@@ -120,13 +120,13 @@ export function EngineeringPage() {
                                 length_m: length,
                                 awg_gauge: voltageDropInputs.cableSize || "12",
                                 supply_voltage_v: Number.parseFloat(voltageDropInputs.voltage) || 24.0,
-                        });			setApiResult(result as unknown as {
-								voltage_drop_v: number;
-								drop_pct: number;
-								is_compliant: boolean;
-								nec_section: string;
-								computation_hash: string;
-						});
+                        });                     setApiResult(result as unknown as {
+                                                                voltage_drop_v: number;
+                                                                drop_pct: number;
+                                                                is_compliant: boolean;
+                                                                nec_section: string;
+                                                                computation_hash: string;
+                                                });
                 } catch (err) {
                         const msg = err instanceof Error ? err.message : "QOMN API calculation failed";
                         setApiError(msg);
@@ -245,30 +245,6 @@ export function EngineeringPage() {
                   };
         const cableResult = useMemo(() => calculateCableSizing(), [calculateCableSizing]);
         const batteryResult = useMemo(() => calculateBatteryRequirements(), [calculateBatteryRequirements]);
-
-        // Vercel React Best Practices: rerender-memo — memoize inline objects passed as props
-        const voltageDropResultProp = useMemo(() => ({
-                percentage: vDropResult.percentage,
-                absolute_v: vDropResult.absolute,
-                current: voltageDropInputs.current,
-                length: voltageDropInputs.length,
-                voltage: voltageDropInputs.voltage,
-        }), [vDropResult, voltageDropInputs]);
-
-        const cableResultProp = useMemo(() => ({
-                recommended_size_mm2: cableResult.recommendedSize,
-                base_ampacity_a: cableResult.baseAmpacity,
-                derating_factor: cableResult.deratingFactor,
-                final_ampacity_a: cableResult.finalAmpacity,
-        }), [cableResult]);
-
-        const batteryResultProp = useMemo(() => ({
-                total_standby_current_ma: batteryResult.totalStandbyCurrent,
-                total_alarm_current_ma: batteryResult.totalAlarmCurrent,
-                required_capacity_ah: batteryResult.requiredCapacity,
-                recommended_battery: batteryResult.recommendedBattery,
-                standby_hours: batteryCalcInputs.standbyHours,
-        }), [batteryResult, batteryCalcInputs.standbyHours]);
 
         // Vercel React Best Practices: rerender-memo — memoize inline objects passed as props
         const voltageDropResultProp = useMemo(() => ({

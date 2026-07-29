@@ -314,8 +314,8 @@ def utc_now_iso() -> str:
 
 __all__ = [
     "VisionApiKeyRecord",
-    "encrypt_key",
     "decrypt_key",
+    "encrypt_key",
     "mask_key",
     "utc_now_iso",
 ]

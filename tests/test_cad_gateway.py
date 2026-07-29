@@ -1,11 +1,13 @@
 import os
 import tempfile
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 
 from backend.app import app
-from backend.services.cad_gateway import CADGateway, CADElement
+from backend.services.cad_gateway import CADGateway
+
 
 @pytest.fixture(scope="module")
 def client():

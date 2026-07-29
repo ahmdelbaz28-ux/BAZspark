@@ -24,9 +24,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import pytest
-
-
 # The value root tests/ tests expect (matches tests/conftest.py and tests/test_v2_api.py).
 ROOT_EXPECTED_KEY = "test-key-for-v2-api-testing-1234567890"
 # The value backend/tests/ uses (matches backend/tests/conftest.py TEST_API_KEY).

@@ -17,6 +17,7 @@ Any new domain types must be defined in core/models.py and re-exported here.
 # Patch builtins.zip to accept a ``strict`` keyword for compatibility with
 # Python 3.10+ test expectations while running on Python 3.8.
 import builtins
+
 _original_zip = builtins.zip
 
 def _patched_zip(*args, strict=False, **kwargs):  # type: ignore[misc]

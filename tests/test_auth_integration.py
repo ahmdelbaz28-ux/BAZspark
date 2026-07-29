@@ -30,7 +30,11 @@ def client(monkeypatch):
 
     # Build standalone app with auth middleware + necessary routers
     _app = FastAPI()
-    from backend.security_middleware import ApiKeyMiddleware, SecurityHeadersMiddleware, CorrelationIdMiddleware
+    from backend.security_middleware import (
+        ApiKeyMiddleware,
+        CorrelationIdMiddleware,
+        SecurityHeadersMiddleware,
+    )
     _app.add_middleware(SecurityHeadersMiddleware)
     _app.add_middleware(CorrelationIdMiddleware)
     _app.add_middleware(ApiKeyMiddleware)

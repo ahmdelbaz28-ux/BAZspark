@@ -37,7 +37,7 @@ if original_all is not None:
     __all__ = list(original_all)
 else:
     # Fallback: generate from public attributes (non-private)
-    __all__ = [k for k in _core_models.__dict__.keys() if not k.startswith("_")]
+    __all__ = [k for k in _core_models.__dict__ if not k.startswith("_")]
 
 # Ensure _ELEMENT_UPDATABLE_KEYS is included if it exists
 if "_ELEMENT_UPDATABLE_KEYS" not in __all__ and _ELEMENT_UPDATABLE_KEYS is not None:

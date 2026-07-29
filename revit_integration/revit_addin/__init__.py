@@ -12,7 +12,7 @@ from .sync_engine import ModelSyncEngine
 
 __all__ = [
     'IExternalCommand',
+    'ModelSyncEngine',
     'RevitAddinManager',
-    'RibbonUIManager',
-    'ModelSyncEngine'
+    'RibbonUIManager'
 ]

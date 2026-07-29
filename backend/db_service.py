@@ -20,6 +20,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from backend.core.database import UniversalDataModel
 from backend.schemas import (
     ConflictResponse,
     ConnectionCreate,
@@ -35,7 +36,6 @@ from backend.schemas import (
     SemanticPropertiesResponse,
     StatisticsResponse,
 )
-from backend.core.database import UniversalDataModel
 from core.models import (
     ChangeSource,
     Geometry,

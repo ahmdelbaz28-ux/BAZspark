@@ -41,7 +41,6 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any
 
 from fireai.integration.external_api_base import ExternalApiAdapter
 

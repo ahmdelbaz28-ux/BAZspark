@@ -6,19 +6,13 @@ Extended with building model types for IFC/DXF parsing pipeline.
 
 import hashlib
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Tuple
 
 from fireai.core.base_types import (
     ConduitType,
     DeviceType,
     FittingType,
     Point3D,
-    Result,
-)
-from fireai.core.panel_selection import (
-    FireAlarmPanel,
-    PanelRecommendation,
-    ProjectRequirements,
 )
 
 

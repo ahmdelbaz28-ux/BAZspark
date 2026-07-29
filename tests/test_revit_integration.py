@@ -6,18 +6,20 @@ Tests for the Revit integration functionality.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
-import pytest
-import asyncio
 from datetime import datetime
-from typing import Dict, Any
 
-from revit_integration.dto.revit_dto import (
-    RevitElementDTO, ElectricalAssetDTO, SyncStatusDTO, 
-    ModelMetadataDTO, RevitProjectDTO
-)
-from revit_integration.services.revit_sync_service import RevitSyncService
-from revit_integration.mappings.category_mapper import CategoryMapper
+import pytest
+
 from revit_integration.ai_agents.revit_agent import RevitAgent, create_revit_agent
+from revit_integration.dto.revit_dto import (
+    ElectricalAssetDTO,
+    ModelMetadataDTO,
+    RevitElementDTO,
+    RevitProjectDTO,
+    SyncStatusDTO,
+)
+from revit_integration.mappings.category_mapper import CategoryMapper
+from revit_integration.services.revit_sync_service import RevitSyncService
 
 
 @pytest.fixture
@@ -104,7 +106,7 @@ async def test_revit_element_dto_creation():
         category="Electrical Equipment",
         parameters={"Voltage": 480, "Power": 100}
     )
-    
+
     assert element.id == "test_1"
     assert element.name == "Test Element"
     assert element.category == "Electrical Equipment"
@@ -124,7 +126,7 @@ async def test_electrical_asset_dto_creation():
         power_rating=1000.0,
         manufacturer="Test Manufacturer"
     )
-    
+
     assert asset.element_id == "test_1"
     assert asset.asset_type == "Transformer"
     assert asset.name == "Test Transformer"
@@ -137,21 +139,21 @@ async def test_electrical_asset_dto_creation():
 async def test_category_mapper_functionality():
     """Test the category mapper functionality."""
     mapper = CategoryMapper()
-    
+
     # Test category to model mapping
     model_type = mapper.get_target_model("Electrical Equipment")
     assert model_type is not None
     assert model_type.name == "ELECTRICAL"
-    
+
     # Test attribute mapping
     attributes = mapper.map_category_to_attributes("Electrical Equipment")
     assert attributes["etap_model_type"].name == "ELECTRICAL"
     assert attributes["is_electrical"] is True
-    
+
     # Test equipment classification
     equipment_type = mapper.classify_equipment_type("Transformer XYZ", "Electrical Equipment")
     assert equipment_type in ["Transformer", "ElectricalEquipment"]
-    
+
     # Test parameter transformation
     params = {"Voltage": 480, "Power": 1000, "Manufacturer": "TestCo"}
     transformed = mapper._transform_parameters(params, "Transformer")
@@ -163,14 +165,14 @@ async def test_category_mapper_functionality():
 @pytest.mark.asyncio
 async def test_revit_sync_service_initialization():
     """Test initializing the Revit sync service."""
-    from revit_integration.aps.data_exchange import APSDataExchange
     from revit_integration.aps.auth_service import APSAuthService
-    
+    from revit_integration.aps.data_exchange import APSDataExchange
+
     # Create mock APS services
     auth_service = APSAuthService("dummy", "dummy")
     data_exchange = APSDataExchange(auth_service)
     sync_service = RevitSyncService(data_exchange)
-    
+
     assert sync_service is not None
     assert sync_service.element_adapter is not None
     assert sync_service.category_mapper is not None
@@ -179,36 +181,36 @@ async def test_revit_sync_service_initialization():
 @pytest.mark.asyncio
 async def test_revit_sync_service_sync_project(sample_revit_elements):
     """Test the Revit sync service project sync functionality."""
-    from revit_integration.aps.data_exchange import APSDataExchange
     from revit_integration.aps.auth_service import APSAuthService
-    
+    from revit_integration.aps.data_exchange import APSDataExchange
+
     # Create mock APS services
     auth_service = APSAuthService("dummy", "dummy")
     data_exchange = APSDataExchange(auth_service)
     sync_service = RevitSyncService(data_exchange)
-    
+
     # Create a test project
     project = RevitProjectDTO(
         project_id="test_project_1",
         project_name="Test Project",
         status="active"
     )
-    
+
     # Mock the element extraction to return our sample elements
     original_extract = sync_service._extract_elements_from_revit
     async def mock_extract(proj_dto):
         return sample_revit_elements
     sync_service._extract_elements_from_revit = mock_extract
-    
+
     try:
         # Perform sync
         sync_status = await sync_service.sync_project(project)
-        
+
         assert sync_status is not None
         assert sync_status.project_id == "test_project_1"
         assert sync_status.status in ["completed", "completed_with_errors"]
         assert sync_status.total_elements >= 0  # We mocked the extraction
-        
+
     finally:
         # Restore original method
         sync_service._extract_elements_from_revit = original_extract
@@ -218,7 +220,7 @@ async def test_revit_sync_service_sync_project(sample_revit_elements):
 async def test_revit_agent_initialization():
     """Test initializing the Revit AI agent."""
     agent = create_revit_agent()
-    
+
     assert agent is not None
     assert isinstance(agent, RevitAgent)
     assert "bim_model_inspection" in agent.capabilities
@@ -230,9 +232,9 @@ async def test_revit_agent_initialization():
 async def test_revit_agent_inspect_bim_model(sample_revit_elements):
     """Test the Revit agent's BIM inspection capability."""
     agent = create_revit_agent()
-    
+
     results = await agent.inspect_bim_model("test_project", sample_revit_elements)
-    
+
     assert results is not None
     assert "project_id" in results
     assert "total_elements" in results
@@ -244,9 +246,9 @@ async def test_revit_agent_inspect_bim_model(sample_revit_elements):
 async def test_revit_agent_extract_electrical_assets(sample_revit_elements):
     """Test the Revit agent's electrical asset extraction capability."""
     agent = create_revit_agent()
-    
+
     assets = await agent.extract_electrical_assets(sample_revit_elements)
-    
+
     # Should extract at least the electrical equipment from our sample
     electrical_elements = [e for e in sample_revit_elements if "Electrical" in e.category]
     assert len(assets) <= len(electrical_elements)  # May be fewer due to filtering
@@ -258,14 +260,14 @@ async def test_revit_agent_extract_electrical_assets(sample_revit_elements):
 async def test_revit_agent_prepare_clash_detection(sample_revit_elements):
     """Test the Revit agent's clash detection preparation capability."""
     agent = create_revit_agent()
-    
+
     clash_data = await agent.prepare_clash_detection_data(sample_revit_elements)
-    
+
     assert clash_data is not None
     assert "systems" in clash_data
     assert "element_count_by_system" in clash_data
     assert "potential_conflict_zones" in clash_data
-    
+
     # Check that elements are grouped by system
     total_grouped = sum(clash_data["element_count_by_system"].values())
     assert total_grouped == len(sample_revit_elements)
@@ -275,9 +277,9 @@ async def test_revit_agent_prepare_clash_detection(sample_revit_elements):
 async def test_revit_agent_validate_model(sample_revit_elements):
     """Test the Revit agent's model validation capability."""
     agent = create_revit_agent()
-    
+
     validation_results = await agent.validate_model(sample_revit_elements)
-    
+
     assert validation_results is not None
     assert "total_elements" in validation_results
     assert "valid_elements" in validation_results
@@ -289,14 +291,14 @@ async def test_revit_agent_validate_model(sample_revit_elements):
 async def test_revit_agent_analyze_electrical_system(sample_electrical_assets):
     """Test the Revit agent's electrical system analysis capability."""
     agent = create_revit_agent()
-    
+
     analysis = await agent.analyze_electrical_system(sample_electrical_assets)
-    
+
     assert analysis is not None
     assert "total_assets" in analysis
     assert "by_type" in analysis
     assert analysis["total_assets"] == len(sample_electrical_assets)
-    
+
     # Check that we have asset types counted
     assert len(analysis["by_type"]) > 0
 
@@ -305,22 +307,22 @@ async def test_revit_agent_analyze_electrical_system(sample_electrical_assets):
 async def test_revit_agent_full_workflow(sample_revit_elements, sample_electrical_assets):
     """Test the full Revit agent workflow."""
     agent = create_revit_agent()
-    
+
     # Step 1: Inspect BIM model
     inspection_results = await agent.inspect_bim_model("workflow_test", sample_revit_elements)
-    
+
     # Step 2: Validate model
     validation_results = await agent.validate_model(sample_revit_elements)
-    
+
     # Step 3: Extract electrical assets
     electrical_assets = await agent.extract_electrical_assets(sample_revit_elements)
-    
+
     # Step 4: Analyze electrical system
     analysis_results = await agent.analyze_electrical_system(electrical_assets)
-    
+
     # Step 5: Generate report
     report = await agent.generate_report(inspection_results, validation_results, analysis_results)
-    
+
     assert report is not None
     assert "executive_summary" in report
     assert "bim_inspection" in report
@@ -344,7 +346,7 @@ async def test_sync_status_dto():
         progress=100.0,
         start_time=datetime.utcnow()
     )
-    
+
     assert sync_status.sync_id == "test_sync_1"
     assert sync_status.project_id == "test_project_1"
     assert sync_status.status == "completed"
@@ -367,7 +369,7 @@ async def test_model_metadata_dto():
         geometry_elements=400,
         file_size=1024000
     )
-    
+
     assert metadata.model_id == "test_model_1"
     assert metadata.project_name == "Test Project"
     assert metadata.revit_version == "2024"
@@ -384,7 +386,7 @@ async def test_revit_project_dto():
         sync_enabled=True,
         status="active"
     )
-    
+
     assert project.project_id == "test_proj_1"
     assert project.project_name == "Test Project"
     assert project.sync_enabled is True

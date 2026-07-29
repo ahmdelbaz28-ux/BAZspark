@@ -20,9 +20,9 @@ To update the baseline after fixing a batch of type errors:
 """
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
-import re
 
 
 def main() -> int:
@@ -84,10 +84,10 @@ def main() -> int:
     print(f"MYPY_DELTA={error_count - baseline:+d}")
 
     if error_count > baseline:
-        print(f"")
+        print("")
         print(f"FAIL: mypy error count ({error_count}) exceeds baseline ({baseline})")
         print(f"  New errors introduced: {error_count - baseline}")
-        print(f"  Fix the new errors or update the baseline in ci.yml")
+        print("  Fix the new errors or update the baseline in ci.yml")
         # Print the last 20 errors for visibility
         error_lines = [
             line for line in result.stdout.splitlines() if error_pattern.search(line)
@@ -98,13 +98,13 @@ def main() -> int:
                 print(f"  {line}")
         return 1
     elif error_count < baseline:
-        print(f"")
+        print("")
         print(f"INFO: mypy error count ({error_count}) is BELOW baseline ({baseline})")
         print(f"  Consider updating --baseline to {error_count} in ci.yml")
-        print(f"  This is not a failure — just a suggestion to tighten the gate")
+        print("  This is not a failure — just a suggestion to tighten the gate")
         return 0
     else:
-        print(f"")
+        print("")
         print(f"PASS: mypy error count matches baseline ({baseline})")
         return 0
 

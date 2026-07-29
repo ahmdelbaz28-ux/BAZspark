@@ -18,44 +18,34 @@ TEST PHILOSOPHY (agent.md Rule 12 — Safety-First):
 
 from __future__ import annotations
 
-import asyncio
 import math
-import os
 import time
-from datetime import datetime, timezone
 
 import httpx
 import pytest
 import respx
 
+from fireai.integration.ais_vessel_adapter import (
+    AISVesselAdapter,
+    haversine_nm,
+)
+from fireai.integration.earthquake_adapter import (
+    EarthquakeAdapter,
+)
+from fireai.integration.elevation_adapter import (
+    ElevationAdapter,
+)
 from fireai.integration.external_api_base import (
     ApiResult,
     CircuitState,
-    ExternalApiAdapter,
+)
+from fireai.integration.openaq_adapter import (
+    OpenAQAdapter,
 )
 from fireai.integration.wildfire_smoke_adapter import (
     WildfireSmokeAdapter,
     WildfireSmokeAssessment,
 )
-from fireai.integration.earthquake_adapter import (
-    EarthquakeAdapter,
-    EarthquakeAssessment,
-    EarthquakeEvent,
-)
-from fireai.integration.openaq_adapter import (
-    OpenAQAdapter,
-    AirQualityAssessment,
-)
-from fireai.integration.ais_vessel_adapter import (
-    AISVesselAdapter,
-    VesselProximityAssessment,
-    haversine_nm,
-)
-from fireai.integration.elevation_adapter import (
-    ElevationAdapter,
-    ElevationReading,
-)
-
 
 # ===========================================================================
 # ApiResult invariant tests

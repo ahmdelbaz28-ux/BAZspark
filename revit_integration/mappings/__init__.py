@@ -8,7 +8,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 """
 from .category_mapper import CategoryMapper
 
-# Note: Other mappers (ElectricalEquipmentMapper, SpatialMapper, GeometryMapper) 
+# Note: Other mappers (ElectricalEquipmentMapper, SpatialMapper, GeometryMapper)
 # are planned but not yet implemented
 # from .electrical_mapper import ElectricalEquipmentMapper
 # from .spatial_mapper import SpatialMapper
@@ -17,6 +17,6 @@ from .category_mapper import CategoryMapper
 __all__ = [
     'CategoryMapper',
     # 'ElectricalEquipmentMapper',
-    # 'SpatialMapper', 
+    # 'SpatialMapper',
     # 'GeometryMapper'
 ]

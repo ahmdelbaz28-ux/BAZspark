@@ -15,9 +15,7 @@ the production code is wrong.
 
 from __future__ import annotations
 
-import os
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -55,6 +53,7 @@ def temp_db(monkeypatch, tmp_path):
 @pytest.fixture
 def admin_client(temp_db, monkeypatch):
     from fastapi.testclient import TestClient
+
     from backend.app import app
     monkeypatch.setenv("FIREAI_API_KEY", "test-api-key-for-testing-only")
     # Disable CSRF in tests (no browser to set the cookie)
@@ -265,7 +264,7 @@ class TestBulkDelete:
             "/api/v1/settings/keys/openai",
             json={"api_key": "sk-bulk-specific-1-1234567890ab", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
         )
-        r2 = admin_client.post(
+        admin_client.post(
             "/api/v1/settings/keys/openai",
             json={"api_key": "sk-bulk-specific-2-1234567890cd", "base_url": "https://api.openai.com/v1", "model_name": "gpt-4o"},
         )

@@ -39,7 +39,11 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import pytest
 
-from fireai.constants import SMOKE_MAX_SPACING_M, NFPA72_SMOKE_SPACING_TABLE, NFPA72_HEIGHT_SPACING_TABLE
+from fireai.constants import (
+    NFPA72_HEIGHT_SPACING_TABLE,
+    NFPA72_SMOKE_SPACING_TABLE,
+    SMOKE_MAX_SPACING_M,
+)
 from fireai.core.qomn_kernel import (
     NFPA72_SMOKE_MAX_SPACING_M,
     compute_smoke_detector_spacing,

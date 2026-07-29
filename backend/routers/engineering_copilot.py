@@ -6,15 +6,16 @@ FastAPI router for Engineering Copilot operations.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from pydantic import BaseModel
-from typing import Dict, List, Any, Optional
 import logging
 from datetime import datetime
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from engineering_copilot.ai_agent.ai_agent import AICopilot
-from engineering_copilot.translation_engine.translation_engine import TranslationEngine
 from engineering_copilot.models.unified_model import UnifiedEngineeringModel
+from engineering_copilot.translation_engine.translation_engine import TranslationEngine
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/engineering-copilot", tags=["Engineering Copilot"])
@@ -52,36 +53,36 @@ class SyncRequest(BaseModel):
 async def process_engineering_request(request: EngineeringRequest) -> Dict[str, Any]:
     """
     Process a natural language engineering request.
-    
+
     Args:
         request: Engineering request with natural language description
-        
+
     Returns:
         Dict: Processing results with models for each requested system
     """
     try:
         logger.info(f"Processing engineering request: {request.request}")
-        
+
         # Process the request using the AI Copilot
         result = ai_copilot.process_request(
             request.request,
             request.target_systems
         )
-        
+
         # Generate reports if requested
         if request.generate_reports:
             reports = ai_copilot.generate_reports(result['unified_model'])
             result['reports'] = reports
-        
+
         # Perform validation if requested
         if request.validate_model:
             result['validation'] = result['validation_report']
-        
+
         result['processed_at'] = datetime.now().isoformat()
-        
+
         logger.info(f"Engineering request processed successfully for {len(request.target_systems)} systems")
         return result
-        
+
     except Exception as e:
         logger.error(f"Error processing engineering request: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
@@ -91,28 +92,36 @@ async def process_engineering_request(request: EngineeringRequest) -> Dict[str, 
 async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
     """
     Create a specific engineering entity.
-    
+
     Args:
         request: Entity creation request
-        
+
     Returns:
         Dict: Creation results
     """
     try:
         logger.info(f"Creating {request.entity_type} entity: {request.name}")
-        
+
         # Create a unified model with just this entity
         from engineering_copilot.models.unified_model import (
-            Panel, Transformer, Bus, Cable, Breaker, Load, Generator, Equipment,
-            Coordinates, SourceSystem
+            Breaker,
+            Bus,
+            Cable,
+            Coordinates,
+            Equipment,
+            Generator,
+            Load,
+            Panel,
+            SourceSystem,
+            Transformer,
         )
-        
+
         coordinates = Coordinates(
             request.coordinates.get("x", 0.0),
             request.coordinates.get("y", 0.0),
             request.coordinates.get("z", 0.0)
         )
-        
+
         # Create entity based on type
         entity = None
         if request.entity_type.lower() == "panel":
@@ -192,11 +201,11 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
             )
         else:
             raise HTTPException(status_code=400, detail=f"Unknown entity type: {request.entity_type}")
-        
+
         # Create a unified model and add the entity
         model = UnifiedEngineeringModel()
         model.add_entity(entity)
-        
+
         # Convert to target systems
         results = {}
         for system in ["AutoCAD", "ETAP", "Revit"]:
@@ -206,7 +215,7 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
                 results["ETAP"] = translation_engine.unified_to_etap(model)
             elif system == "Revit":
                 results["Revit"] = translation_engine.unified_to_revit(model)
-        
+
         creation_result = {
             "success": True,
             "entity_id": entity.id,
@@ -216,10 +225,10 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
             "system_outputs": results,
             "message": f"{request.entity_type} '{request.name}' created successfully"
         }
-        
+
         logger.info(f"Created {request.entity_type} entity: {request.name}")
         return creation_result
-        
+
     except Exception as e:
         logger.error(f"Error creating entity {request.name}: {e}")
         raise HTTPException(status_code=500, detail=f"Error creating entity: {str(e)}")
@@ -229,35 +238,35 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
 async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
     """
     Translate engineering model between systems.
-    
+
     Args:
         request: Translation request with source and target systems
-        
+
     Returns:
         Dict: Translation results
     """
     try:
         logger.info(f"Translating from {request.source_system} to {request.target_system}")
-        
+
         # Create a unified model from the input data
         # In a real implementation, we'd convert from the source format to unified
         # For now, we'll create a simple model
         unified_model = UnifiedEngineeringModel()
-        
+
         # Add some sample entities based on the input data
         # In a real implementation, this would parse the actual model data
         if request.model_data:
             # Process the input model data to create unified entities
             # This is a simplified approach
             pass
-        
+
         # Perform the translation
         translated_data = translation_engine.translate(
             unified_model,
             request.source_system,
             request.target_system
         )
-        
+
         translation_result = {
             "success": True,
             "source_system": request.source_system,
@@ -266,10 +275,10 @@ async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
             "translated_at": datetime.now().isoformat(),
             "message": f"Model translated from {request.source_system} to {request.target_system}"
         }
-        
+
         logger.info(f"Translated model from {request.source_system} to {request.target_system}")
         return translation_result
-        
+
     except Exception as e:
         logger.error(f"Error translating model: {e}")
         raise HTTPException(status_code=500, detail=f"Error translating model: {str(e)}")
@@ -279,28 +288,28 @@ async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
 async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Validate an engineering model for common issues.
-    
+
     Args:
         model_data: Engineering model data to validate
-        
+
     Returns:
         Dict: Validation results
     """
     try:
         logger.info("Validating engineering model")
-        
+
         # In a real implementation, we'd reconstruct the unified model from the input
         # For now, we'll create a simple model for validation
         model = UnifiedEngineeringModel()
-        
+
         # Perform validation using the AI Copilot
         validation_result = ai_copilot._validate_engineering_model(model)
-        
+
         validation_result["validated_at"] = datetime.now().isoformat()
-        
+
         logger.info(f"Model validation completed: {validation_result['summary']}")
         return validation_result
-        
+
     except Exception as e:
         logger.error(f"Error validating model: {e}")
         raise HTTPException(status_code=500, detail=f"Error validating model: {str(e)}")
@@ -310,28 +319,28 @@ async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, An
 async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Generate engineering reports from a model.
-    
+
     Args:
         model_data: Engineering model data
-        
+
     Returns:
         Dict: Generated reports
     """
     try:
         logger.info("Generating engineering reports")
-        
+
         # In a real implementation, we'd reconstruct the unified model from the input
         # For now, we'll create a simple model
         model = UnifiedEngineeringModel()
-        
+
         # Generate reports using the AI Copilot
         reports = ai_copilot.generate_reports(model)
-        
+
         reports["generated_at"] = datetime.now().isoformat()
-        
+
         logger.info("Engineering reports generated successfully")
         return reports
-        
+
     except Exception as e:
         logger.error(f"Error generating reports: {e}")
         raise HTTPException(status_code=500, detail=f"Error generating reports: {str(e)}")
@@ -341,7 +350,7 @@ async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, 
 async def health_check() -> Dict[str, Any]:
     """
     Health check endpoint for the Engineering Copilot.
-    
+
     Returns:
         Dict: Health status
     """
@@ -358,10 +367,10 @@ async def health_check() -> Dict[str, Any]:
                 "etap": "not_connected"       # Would check actual connection
             }
         }
-        
+
         logger.info("Health check completed")
         return health_status
-        
+
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
@@ -371,7 +380,7 @@ async def health_check() -> Dict[str, Any]:
 async def get_capabilities() -> Dict[str, Any]:
     """
     Get the capabilities of the Engineering Copilot.
-    
+
     Returns:
         Dict: Available capabilities
     """
@@ -406,14 +415,14 @@ async def get_capabilities() -> Dict[str, Any]:
             "report_generation": True
         },
         "supported_entities": [
-            "Panel", "Transformer", "Bus", "Cable", "Breaker", 
+            "Panel", "Transformer", "Bus", "Cable", "Breaker",
             "Load", "Generator", "Equipment", "Conduit", "Tray"
         ],
         "available_reports": [
-            "Bill of Materials", "Panel Schedule", "Electrical Schedule", 
+            "Bill of Materials", "Panel Schedule", "Electrical Schedule",
             "Design Documentation", "Validation Report"
         ]
     }
-    
+
     logger.info("Capabilities retrieved")
     return capabilities

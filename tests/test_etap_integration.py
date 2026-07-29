@@ -6,7 +6,6 @@ tests/test_etap_integration.py — ETAP Integration tests.
 from __future__ import annotations
 
 import os
-import tempfile
 
 import pytest
 
@@ -15,7 +14,6 @@ os.environ.setdefault("ETAP_ENCRYPTION_KEY", __import__("cryptography.fernet", f
 
 from backend.integrations.etap_crypto import encrypt_password, mask_password
 from backend.rbac import Permission
-
 
 # ─── Crypto Tests ────────────────────────────────────────────────────────────
 

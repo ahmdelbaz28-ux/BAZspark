@@ -1,9 +1,11 @@
 """
 Release readiness tests to verify core functionality
 """
-import pytest
-import sys
 import os
+import sys
+
+import pytest
+
 # Add the backend directory to the path so we can import the app
 # Add the backend directory to the path so we can import the app
 _backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -15,8 +17,8 @@ if _project_root not in sys.path:
     # Insert after backend path to keep backend first but root second
     sys.path.insert(1, _project_root)
 
-from fastapi.testclient import TestClient
 from app import app
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -45,7 +47,7 @@ def test_documentation_available(client):
     """Test that documentation endpoints are available"""
     response = client.get("/docs")
     assert response.status_code == 200
-    
+
     response = client.get("/redoc")
     assert response.status_code == 200
 
@@ -55,7 +57,7 @@ def test_version_consistency():
     # Check that VERSION file exists and has proper format
     version_file = os.path.join(os.path.dirname(__file__), "..", "..", "VERSION")
     assert os.path.exists(version_file)
-    
+
     with open(version_file, 'r') as f:
         version = f.read().strip()
         # Version should be in format x.y.z
@@ -66,10 +68,10 @@ def test_environment_variables():
     """Test that required environment variables are available"""
     # These are required for basic functionality
     required_vars = [
-        "FIREAI_API_KEY", 
+        "FIREAI_API_KEY",
         "FIREAI_EVIDENCE_HMAC_KEY"
     ]
-    
+
     for var in required_vars:
         # Skip actual check since we're in test environment
         # but verify the requirement exists in documentation
@@ -81,11 +83,11 @@ def test_basic_routes_exist(client):
     # Test that main API routes respond (even if with auth error)
     routes_to_check = [
         "/api/v1/projects",
-        "/api/v1/devices", 
+        "/api/v1/devices",
         "/api/v1/connections",
         "/api/v1/health"
     ]
-    
+
     for route in routes_to_check:
         try:
             response = client.get(route)

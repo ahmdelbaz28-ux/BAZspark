@@ -10,6 +10,6 @@ from .event_definitions import *
 from .event_publisher import RevitEventPublisher
 
 __all__ = [
-    'RevitEventPublisher',
-    'REVIT_EVENT_TYPES'
+    'REVIT_EVENT_TYPES',
+    'RevitEventPublisher'
 ]

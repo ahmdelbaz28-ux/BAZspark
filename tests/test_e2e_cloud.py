@@ -26,7 +26,7 @@ import warnings
 from pathlib import Path
 
 warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

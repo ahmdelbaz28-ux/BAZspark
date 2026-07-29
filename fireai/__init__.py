@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Compatibility shim for Python <3.10: support zip(..., strict=False)
 import builtins
+
 _original_zip = builtins.zip
 
 def _zip_compatible(*args, **kwargs):

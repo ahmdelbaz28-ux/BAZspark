@@ -84,13 +84,15 @@ from fireai.constants.nfpa72 import (
 )
 from fireai.constants.nfpa72 import (
     COMBINED_HEIGHT_SPACING_TABLE as NFPA72_HEIGHT_SPACING_TABLE,
-    SMOKE_HEIGHT_SPACING_TABLE as NFPA72_SMOKE_SPACING_TABLE,
 )
 from fireai.constants.nfpa72 import (
     COVERAGE_RADIUS_FACTOR as COVERAGE_FACTOR_FLAT_CEILING,
 )
 from fireai.constants.nfpa72 import (
     HEAT_SPACING_FALLBACK_M as NFPA72_HEAT_SPACING_FALLBACK_M,
+)
+from fireai.constants.nfpa72 import (
+    SMOKE_HEIGHT_SPACING_TABLE as NFPA72_SMOKE_SPACING_TABLE,
 )
 from fireai.constants.nfpa72 import (
     SMOKE_SPACING_FALLBACK_M as NFPA72_SMOKE_SPACING_FALLBACK_M,

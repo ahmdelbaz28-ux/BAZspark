@@ -7,14 +7,12 @@ Authentication service for Autodesk Platform Services.
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 import asyncio
-import aiohttp
 import logging
-from typing import Dict, Optional, Any
-from datetime import datetime, timedelta
 from dataclasses import dataclass
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-import jwt
+from datetime import datetime, timedelta
+from typing import Dict, Optional
+
+import aiohttp
 
 
 @dataclass
@@ -33,7 +31,7 @@ class APSAuthService:
     Authentication service for Autodesk Platform Services.
     Handles 3-legged OAuth and 2-legged authentication.
     """
-    
+
     def __init__(self, client_id: str, client_secret: str, redirect_uri: str = None):
         self.client_id = client_id
         self.client_secret = client_secret
@@ -43,31 +41,31 @@ class APSAuthService:
         self.refresh_url = f"{self.base_url}/authentication/v2/refresh"
         self.logger = logging.getLogger(__name__)
         self._access_token: Optional[APSToken] = None
-    
+
     async def authenticate_two_legged(self, scopes: list = None) -> Optional[APSToken]:
         """
         Authenticate using 2-legged OAuth (app-to-app).
-        
+
         Args:
             scopes: List of required scopes
-            
+
         Returns:
             APSToken: Authentication token or None if failed
         """
         if scopes is None:
             scopes = ['data:read', 'data:write', 'data:create', 'bucket:read', 'bucket:create']
-        
+
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-        
+
         data = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
             'grant_type': 'client_credentials',
             'scope': ' '.join(scopes)
         }
-        
+
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(self.token_url, headers=headers, data=data) as response:
@@ -89,11 +87,11 @@ class APSAuthService:
         except Exception as e:
             self.logger.error(f"Error during 2-legged authentication: {e}")
             return None
-    
+
     async def get_access_token(self) -> Optional[str]:
         """
         Get a valid access token, refreshing if necessary.
-        
+
         Returns:
             str: Valid access token or None if authentication failed
         """
@@ -101,7 +99,7 @@ class APSAuthService:
             # Try to authenticate
             token = await self.authenticate_two_legged()
             return token.access_token if token else None
-        
+
         # Check if token is expired
         expiry_time = self._access_token.issued_at + timedelta(seconds=self._access_token.expires_in)
         if datetime.utcnow() >= expiry_time:
@@ -114,30 +112,30 @@ class APSAuthService:
                 # Re-authenticate (for 2-legged auth)
                 token = await self.authenticate_two_legged()
                 return token.access_token if token else None
-        
+
         return self._access_token.access_token
-    
+
     async def _refresh_token(self, refresh_token: str) -> Optional[APSToken]:
         """
         Refresh access token using refresh token.
-        
+
         Args:
             refresh_token: Refresh token to use
-            
+
         Returns:
             APSToken: New access token or None if failed
         """
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-        
+
         data = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
             'grant_type': 'refresh_token',
             'refresh_token': refresh_token
         }
-        
+
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(self.refresh_url, headers=headers, data=data) as response:
@@ -159,11 +157,11 @@ class APSAuthService:
         except Exception as e:
             self.logger.error(f"Error during token refresh: {e}")
             return None
-    
+
     def get_auth_headers(self) -> Dict[str, str]:
         """
         Get authentication headers for API requests.
-        
+
         Returns:
             Dict[str, str]: Authentication headers
         """
@@ -184,7 +182,7 @@ class APSConfig:
     Configuration class for APS integration.
     Stores credentials and configuration parameters.
     """
-    
+
     def __init__(self):
         self.client_id = ""
         self.client_secret = ""
@@ -192,7 +190,7 @@ class APSConfig:
         self.region = "US"
         self.scopes = ['data:read', 'data:write', 'data:create', 'bucket:read', 'bucket:create']
         self.logger = logging.getLogger(__name__)
-    
+
     def load_from_env(self):
         """Load configuration from environment variables."""
         import os
@@ -200,10 +198,10 @@ class APSConfig:
         self.client_secret = os.getenv('APS_CLIENT_SECRET', '')
         self.bucket_key = os.getenv('APS_BUCKET_KEY', '')
         self.region = os.getenv('APS_REGION', 'US')
-        
+
         if not all([self.client_id, self.client_secret]):
             self.logger.warning("APS credentials not found in environment variables")
-    
+
     def is_configured(self) -> bool:
         """Check if APS is properly configured."""
         return all([self.client_id, self.client_secret])

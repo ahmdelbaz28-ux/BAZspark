@@ -8,17 +8,20 @@ Reference Standard: NFPA 72 (2022) §10.6.7, UL 864 10th Edition.
 Wraps the shared SelectionEngine to return Result[PanelRecommendation, FACPSelectionError].
 """
 
-import hashlib
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 from fireai.core.panel_selection import (
     FireAlarmPanel,
-    MASTER_PANEL_DATABASE,
+)
+from fireai.core.panel_selection import (
     PanelRecommendation as _PanelRec,
+)
+from fireai.core.panel_selection import (
     ProjectRequirements as _ProjReq,
+)
+from fireai.core.panel_selection import (
     SelectionEngine as _SelectionEngine,
 )
-
 from qomn_fire.core.errors import FACPSelectionError, Result
 
 

@@ -105,11 +105,6 @@ class PDFParser(ParserBase):
         self._device_cache: Dict[str, str] = {}
 
     def parse(self, pdf_path: str) -> PDFParseResult:
-        from parsers._path_security import (
-            UnsafePathError,
-            validate_file_size,
-            validate_input_path,
-        )
 
         try:
             safe_path = self.validate_input(pdf_path)

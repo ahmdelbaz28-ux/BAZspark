@@ -15,16 +15,14 @@ The middleware:
 - Provides endpoints for token acquisition
 """
 
-import secrets
 import logging
-from typing import Optional
+import secrets
 
-from fastapi import Request, Response, HTTPException
+from fastapi import HTTPException, Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.types import ASGIApp
 
 from backend.core.redis_client import get_redis_client
-from backend.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +32,7 @@ MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 # Endpoints that don't require CSRF protection (API prefixes)
 EXEMPT_PATHS = {
     "/api/health",
-    "/api/v1/health", 
+    "/api/v1/health",
     "/docs",
     "/redoc",
     "/openapi.json",
@@ -57,12 +55,12 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             await self._validate_csrf_token(request)
 
         response = await call_next(request)
-        
+
         # Add CSRF token to response headers for client retrieval
         if request.method in {"GET", "HEAD"} and not self._is_exempt(request):
             csrf_token = await self.generate_csrf_token()
             response.headers["X-CSRF-Token"] = csrf_token
-            
+
         return response
 
     def _is_exempt(self, request: Request) -> bool:
@@ -74,7 +72,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         """Validate the CSRF token from the request."""
         # Get token from header or form data
         csrf_token = (
-            request.headers.get("x-csrf-token") or 
+            request.headers.get("x-csrf-token") or
             request.headers.get("x-xsrf-token")
         )
 
@@ -83,7 +81,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             if request.method == "POST":
                 form_data = await request.form()
                 csrf_token = form_data.get("csrf_token")
-        
+
         if not csrf_token:
             logger.warning(f"CSRF validation failed: No token provided for {request.method} {request.url.path}")
             raise HTTPException(status_code=403, detail="CSRF token missing")
@@ -102,16 +100,16 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         """Generate a new CSRF token and store it in Redis."""
         # Get Redis client
         redis_client = await get_redis_client()
-        
+
         # Generate cryptographically secure token
         token = secrets.token_urlsafe(32)
-        
+
         # Store in Redis with expiration (1 hour by default)
         token_key = f"csrf:{token}"
-        
+
         # Set with expiration to prevent token buildup (1 hour)
         await redis_client.setex(token_key, 3600, "valid")
-        
+
         return token
 
 
@@ -119,14 +117,14 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 async def generate_csrf_token() -> str:
     """Generate a new CSRF token and store it in Redis."""
     redis_client = await get_redis_client()
-    
+
     # Generate cryptographically secure token
     token = secrets.token_urlsafe(32)
-    
+
     # Store in Redis with expiration (1 hour by default)
     token_key = f"csrf:{token}"
-    
+
     # Set with expiration to prevent token buildup (1 hour)
     await redis_client.setex(token_key, 3600, "valid")
-    
+
     return token

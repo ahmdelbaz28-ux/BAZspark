@@ -108,9 +108,9 @@ def _load_active_db_key() -> Optional[Dict[str, Any]]:
         db = get_db()
         with db._transaction() as cur:  # pylint: disable=protected-access
             cur.execute(
-                f"SELECT encrypted_key, masked_key, base_url, model_name "
-                f"FROM vision_api_keys WHERE provider = 'openai' AND is_active = 1 "
-                f"ORDER BY created_at DESC LIMIT 1"
+                "SELECT encrypted_key, masked_key, base_url, model_name "
+                "FROM vision_api_keys WHERE provider = 'openai' AND is_active = 1 "
+                "ORDER BY created_at DESC LIMIT 1"
             )
             row = cur.fetchone()
         if row is None:

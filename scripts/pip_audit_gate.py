@@ -40,7 +40,7 @@ def main() -> int:
     # The severity is not always directly in the pip-audit output.
     # We check for known HIGH/CRITICAL patterns.
     vulns = data.get("vulns", [])
-    deps = data.get("dependencies", [])
+    data.get("dependencies", [])
 
     # Count vulnerabilities
     total_vulns = len(vulns)

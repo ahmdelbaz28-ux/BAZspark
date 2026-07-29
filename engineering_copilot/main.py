@@ -5,19 +5,21 @@ ETAP-AI-WORK Engineering Copilot - Main Entry Point
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 from fastapi import FastAPI
+
+from engineering_copilot import __author__, __version__
 from engineering_copilot.mcp_server.mcp_server import get_mcp_app
-from engineering_copilot import __version__, __author__
+
 
 def create_app() -> FastAPI:
     """
     Create and configure the Engineering Copilot application.
-    
+
     Returns:
         FastAPI: Configured application instance
     """
     # Use the MCP server app as the main app
     app = get_mcp_app()
-    
+
     # Add additional routes specific to the Engineering Copilot
     @app.get("/engineering-copilot/info")
     async def get_info():
@@ -37,7 +39,7 @@ def create_app() -> FastAPI:
                 "Multi-Platform Translation"
             ]
         }
-    
+
     return app
 
 

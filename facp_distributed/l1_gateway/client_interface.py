@@ -3,7 +3,7 @@
 import threading
 import time
 import uuid
-from typing import Any, Callable, Dict, Tuple, List
+from typing import Any, Callable, Dict, List, Tuple
 
 import uvicorn
 from fastapi import FastAPI, Request

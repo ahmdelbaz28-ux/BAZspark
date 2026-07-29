@@ -6,10 +6,10 @@ Python classes for the unified engineering data model across ETAP, AutoCAD, and 
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
-from datetime import datetime
-from typing import List, Dict, Optional, Any, Union
-from enum import Enum
 from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
 
@@ -74,7 +74,7 @@ class BaseEntity:
     source_system: SourceSystem = SourceSystem.UNIFIED
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
-    
+
     def __post_init__(self):
         if not self.id:
             self.id = str(uuid4())
@@ -329,23 +329,23 @@ class UnifiedEngineeringModel:
     schema_version: str = "1.0.0"
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
-    
+
     def add_entity(self, entity: BaseEntity) -> None:
         """Add an entity to the model."""
         self.entities.append(entity)
         self.updated_at = datetime.utcnow()
-    
+
     def get_entities_by_type(self, entity_type: EntityType) -> List[BaseEntity]:
         """Get all entities of a specific type."""
         return [entity for entity in self.entities if entity.type == entity_type]
-    
+
     def get_entity_by_id(self, entity_id: str) -> Optional[BaseEntity]:
         """Get an entity by its ID."""
         for entity in self.entities:
             if entity.id == entity_id:
                 return entity
         return None
-    
+
     def update_entity(self, entity: BaseEntity) -> bool:
         """Update an existing entity in the model."""
         for i, existing_entity in enumerate(self.entities):
@@ -354,7 +354,7 @@ class UnifiedEngineeringModel:
                 self.updated_at = datetime.utcnow()
                 return True
         return False
-    
+
     def remove_entity(self, entity_id: str) -> bool:
         """Remove an entity from the model."""
         for i, entity in enumerate(self.entities):
@@ -363,7 +363,7 @@ class UnifiedEngineeringModel:
                 self.updated_at = datetime.utcnow()
                 return True
         return False
-    
+
     def get_related_entities(self, entity_id: str) -> List[BaseEntity]:
         """Get all entities related to a specific entity."""
         related = []

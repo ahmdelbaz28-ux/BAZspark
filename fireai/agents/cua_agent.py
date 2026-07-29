@@ -95,10 +95,11 @@ def _capture_screenshot() -> Optional[bytes]:
     """
     # Try mss first (faster, multi-monitor aware)
     try:
+        import io
+
         import mss
         import mss.tools
         from PIL import Image
-        import io
 
         with mss.mss() as sct:
             # Primary monitor (index 0 is "all monitors combined"; 1 is primary)
@@ -115,8 +116,9 @@ def _capture_screenshot() -> Optional[bytes]:
 
     # Fallback: PIL ImageGrab (works on Windows + macOS, limited on Linux without X)
     try:
-        from PIL import ImageGrab
         import io
+
+        from PIL import ImageGrab
 
         img = ImageGrab.grab()
         buf = io.BytesIO()

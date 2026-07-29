@@ -7,12 +7,12 @@ Event types and definitions for Revit integration.
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 from enum import Enum
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 
 class RevitEventType(Enum):
     """Enumeration of all Revit integration event types."""
-    
+
     # Model events
     REVIT_MODEL_IMPORTED = "RevitModelImported"
     REVIT_MODEL_SYNC_STARTED = "RevitSyncStarted"
@@ -20,24 +20,24 @@ class RevitEventType(Enum):
     REVIT_INCREMENTAL_SYNC_COMPLETED = "RevitIncrementalSyncCompleted"
     REVIT_SYNC_FAILED = "RevitSyncFailed"
     REVIT_SYNC_CANCELLED = "RevitSyncCancelled"
-    
+
     # Element events
     REVIT_ELEMENT_IMPORTED = "RevitElementImported"
     REVIT_ELEMENT_UPDATED = "RevitElementUpdated"
     REVIT_ELEMENT_PROCESSED = "RevitElementProcessed"
-    
+
     # Topology events
     REVIT_TOPOLOGY_CHANGED = "RevitTopologyChanged"
-    
+
     # Asset events
     ELECTRICAL_ASSET_SYNCED = "ElectricalAssetSynced"
-    
+
     # System events
     REVIT_CONNECTION_ESTABLISHED = "RevitConnectionEstablished"
     REVIT_CONNECTION_LOST = "RevitConnectionLost"
     REVIT_ADDIN_LOADED = "RevitAddinLoaded"
     REVIT_ADDIN_UNLOADED = "RevitAddinUnloaded"
-    
+
     # APS events
     APS_UPLOAD_STARTED = "APSUploadStarted"
     APS_UPLOAD_COMPLETED = "APSUploadCompleted"
@@ -203,25 +203,25 @@ EVENT_CATEGORIES = {
 def validate_event_payload(event_type: RevitEventType, payload: Dict[str, Any]) -> List[str]:
     """
     Validate that an event payload contains required fields.
-    
+
     Args:
         event_type: Type of event
         payload: Event payload to validate
-        
+
     Returns:
         List[str]: List of validation errors
     """
     errors = []
-    
+
     if event_type not in EVENT_SCHEMAS:
         errors.append(f"Unknown event type: {event_type}")
         return errors
-    
+
     schema = EVENT_SCHEMAS[event_type]
-    
+
     # Check required fields
     for field in schema["required"]:
         if field not in payload:
             errors.append(f"Missing required field: {field}")
-    
+
     return errors
