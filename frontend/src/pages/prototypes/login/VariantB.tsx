@@ -1,8 +1,7 @@
 import {
   AlertCircle, Eye, EyeOff, Globe, HelpCircle, KeyRound,
-  Loader2, ShieldCheck, Sparkles, X,
+  Loader2, ShieldCheck, Sparkles,
 } from "lucide-react";
-import { type FormEvent } from "react";
 import { BazSparkLogo, BazSparkWordmark } from "@/components/auth/BazSparkLogo";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,27 +9,7 @@ import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { LoginSuccess } from "@/components/auth/LoginSuccess";
-
-interface LoginVariantProps {
-  lang: "en" | "ar";
-  t: Record<string, string>;
-  apiKey: string;
-  setApiKey: (v: string) => void;
-  showKey: boolean;
-  setShowKey: (v: boolean) => void;
-  remember: boolean;
-  setRemember: (v: boolean) => void;
-  submitting: boolean;
-  error: string | null;
-  isSuccess: boolean;
-  showSupportModal: boolean;
-  setShowSupportModal: (v: boolean) => void;
-  showRequestModal: boolean;
-  setShowRequestModal: (v: boolean) => void;
-  handleSubmit: (e: FormEvent) => Promise<void>;
-  handleAutoFillTestKey: () => void;
-  toggleLanguage: () => void;
-}
+import type { LoginVariantProps } from "./types";
 
 export function VariantB(props: LoginVariantProps) {
   const { lang, t, apiKey, setApiKey, showKey, setShowKey, remember, setRemember, submitting, error, isSuccess, showSupportModal, setShowSupportModal, showRequestModal, setShowRequestModal, handleSubmit, handleAutoFillTestKey, toggleLanguage } = props;

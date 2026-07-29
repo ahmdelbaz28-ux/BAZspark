@@ -152,6 +152,9 @@ export function SettingsPage() {
         );
 
         const [saveStatus, setSaveStatus] = useState<string | null>(null);
+        const [settingsUpdateStatus, setSettingsUpdateStatus] = useState<Record<string, "saving" | "saved" | "error">>({});
+
+        const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
         const persistSettings = (key: string, value: Record<string, unknown>) => {
                 try {
@@ -190,16 +193,62 @@ export function SettingsPage() {
                 setTimeout(() => setSaveStatus(null), 2000);
         };
 
-        const handleSaveApi = () => {
+        const handleSaveApi = async () => {
                 persistSettings("api", { apiTimeout, retryAttempts });
+                setSettingsUpdateStatus((prev) => ({ ...prev, api: "saving" }));
+                try {
+                        const res = await fetch(`${API_BASE}/settings`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                credentials: "same-origin",
+                                body: JSON.stringify({ api_timeout: apiTimeout, retry_attempts: retryAttempts }),
+                        });
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        setSettingsUpdateStatus((prev) => ({ ...prev, api: "saved" }));
+                } catch {
+                        setSettingsUpdateStatus((prev) => ({ ...prev, api: "error" }));
+                } finally {
+                        setTimeout(() => {
+                                setSettingsUpdateStatus((prev) => {
+                                        const next = { ...prev };
+                                        delete next.api;
+                                        return next;
+                                });
+                        }, 3000);
+                }
         };
 
-        const handleSaveReports = () => {
+        const handleSaveReports = async () => {
                 persistSettings("reports", {
                         autoSaveReports,
                         reportFormat,
                         reportQuality,
                 });
+                setSettingsUpdateStatus((prev) => ({ ...prev, reports: "saving" }));
+                try {
+                        const res = await fetch(`${API_BASE}/settings`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                credentials: "same-origin",
+                                body: JSON.stringify({
+                                        auto_save_reports: autoSaveReports,
+                                        report_format: reportFormat,
+                                        report_quality: reportQuality,
+                                }),
+                        });
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        setSettingsUpdateStatus((prev) => ({ ...prev, reports: "saved" }));
+                } catch {
+                        setSettingsUpdateStatus((prev) => ({ ...prev, reports: "error" }));
+                } finally {
+                        setTimeout(() => {
+                                setSettingsUpdateStatus((prev) => {
+                                        const next = { ...prev };
+                                        delete next.reports;
+                                        return next;
+                                });
+                        }, 3000);
+                }
         };
 
         return (
@@ -440,9 +489,6 @@ export function SettingsPage() {
                                                                                 <p className="text-xs text-muted-foreground mt-1">
                                                                                         {t("settings.notificationsDescription")}
                                                                                 </p>
-                                                                                <p className="text-xs text-muted-foreground mt-1">
-                                                                                        Client-side only — does not affect server behavior
-                                                                                </p>
                                                                         </div>
                                                                         <Switch
                                                                                 checked={notifications}
@@ -525,9 +571,15 @@ export function SettingsPage() {
                                                                                 <p className="text-xs text-muted-foreground">
                                                                                         {t("settings.apiTimeoutDescription")}
                                                                                 </p>
-                                                                                <p className="text-xs text-muted-foreground mt-1">
-                                                                                        Client-side only — does not affect server behavior
-                                                                                </p>
+                                                                                {settingsUpdateStatus.api === "saving" && (
+                                                                                        <p className="text-xs text-info mt-1">{t("settings.saving")}</p>
+                                                                                )}
+                                                                                {settingsUpdateStatus.api === "saved" && (
+                                                                                        <p className="text-xs text-success mt-1">{t("settings.saved")}</p>
+                                                                                )}
+                                                                                {settingsUpdateStatus.api === "error" && (
+                                                                                        <p className="text-xs text-danger mt-1">{t("settings.saveError")}</p>
+                                                                                )}
                                                                         </div>
                                                                         <div className="space-y-2">
                                                                                 <Label className="text-foreground/90">
@@ -543,9 +595,6 @@ export function SettingsPage() {
                                                                                 />
                                                                                 <p className="text-xs text-muted-foreground">
                                                                                         {t("settings.retryAttemptsDescription")}
-                                                                                </p>
-                                                                                <p className="text-xs text-muted-foreground mt-1">
-                                                                                        Client-side only — does not affect server behavior
                                                                                 </p>
                                                                         </div>
                                                                 </div>
@@ -587,9 +636,6 @@ export function SettingsPage() {
                                                                                 onCheckedChange={setAutoSaveReports}
                                                                                 className="data-[state=checked]:bg-danger"
                                                                         />
-                                                                        <p className="text-xs text-muted-foreground mt-1">
-                                                                                Client-side only — does not affect server behavior
-                                                                        </p>
                                                                 </div>
                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                         <div className="space-y-2">
@@ -609,9 +655,15 @@ export function SettingsPage() {
                                                                                 <p className="text-xs text-muted-foreground">
                                                                                         {t("settings.reportFormatDesc")}
                                                                                 </p>
-                                                                                <p className="text-xs text-muted-foreground mt-1">
-                                                                                        Client-side only — does not affect server behavior
-                                                                                </p>
+                                                                                {settingsUpdateStatus.reports === "saving" && (
+                                                                                        <p className="text-xs text-info mt-1">{t("settings.saving")}</p>
+                                                                                )}
+                                                                                {settingsUpdateStatus.reports === "saved" && (
+                                                                                        <p className="text-xs text-success mt-1">{t("settings.saved")}</p>
+                                                                                )}
+                                                                                {settingsUpdateStatus.reports === "error" && (
+                                                                                        <p className="text-xs text-danger mt-1">{t("settings.saveError")}</p>
+                                                                                )}
                                                                         </div>
                                                                         <div className="space-y-2">
                                                                                 <Label className="text-foreground/90">
@@ -628,9 +680,6 @@ export function SettingsPage() {
                                                                                 </select>
                                                                                 <p className="text-xs text-muted-foreground">
                                                                                         {t("settings.reportQualityDesc")}
-                                                                                </p>
-                                                                                <p className="text-xs text-muted-foreground mt-1">
-                                                                                        Client-side only — does not affect server behavior
                                                                                 </p>
                                                                         </div>
                                                                 </div>
