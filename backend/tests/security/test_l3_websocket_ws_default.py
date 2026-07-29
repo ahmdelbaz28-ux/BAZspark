@@ -374,6 +374,7 @@ def test_l3_claim_text_reflects_resolved_state():
 # ─── L-3 part (j): RUNTIME — ws:// without opt-in raises ValueError ─────────
 
 
+@pytest.mark.timeout(15)
 def test_l3_runtime_ws_rejected_without_opt_in():
     """REGRESSION GUARD (post-fix, RUNTIME): instantiating WebSocketTransport
     with default parameters and calling send_request with a ws://
@@ -419,6 +420,7 @@ def test_l3_runtime_ws_rejected_without_opt_in():
 # ─── L-3 part (k): RUNTIME — wss:// default works without opt-in ────────────
 
 
+@pytest.mark.timeout(15)
 def test_l3_runtime_wss_default_does_not_raise():
     """REGRESSION GUARD (post-fix, RUNTIME): instantiating WebSocketTransport
     with default parameters and calling send_request with NO target_node
@@ -488,6 +490,7 @@ def test_l3_runtime_wss_default_does_not_raise():
 # ─── L-3 part (l): RUNTIME — ws:// WITH opt-in does not raise ValueError ────
 
 
+@pytest.mark.timeout(15)
 def test_l3_runtime_ws_allowed_with_opt_in():
     """REGRESSION GUARD (post-fix, RUNTIME): instantiating WebSocketTransport
     with `allow_insecure_ws=True` and calling send_request with a ws://
