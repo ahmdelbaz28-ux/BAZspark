@@ -16,8 +16,6 @@ from typing import Dict, List
 from parsers._base import ParserBase
 from parsers._path_security import (
     UnsafePathError,
-    validate_file_size,
-    validate_input_path,
 )
 
 _JSON_EXT = ".json"
@@ -56,14 +54,16 @@ class IFCParser(ParserBase):
         if not IFC_AVAILABLE:
             raise ImportError("ifcopenshell library is required to parse IFC files")
 
+        safe_path = self.validate_input(self.ifc_path)
         try:
-            return ifcopenshell.open(self.ifc_path)
+            return ifcopenshell.open(safe_path)
         except Exception as e:
-            logging.error(f"Could not open IFC file: {e}")
+            logging.error("Could not open IFC file: %s", e)
             raise
 
     def _load_json(self) -> Dict:
-        with open(self.ifc_path) as f:
+        safe_path = self.validate_input(self.ifc_path)
+        with open(safe_path) as f:
             return json.load(f)
 
     def _parse_instances(self, data: Dict) -> List[Dict]:

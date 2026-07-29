@@ -44,6 +44,8 @@ function ParticleCanvas() {
 
     for (let i = 0; i < 60; i++) {
       particles.push({
+        // NOSONAR — S2245: Math.random() here is for particle animation
+        // (visual effect only), not cryptographic purposes.
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
         vx: (Math.random() - 0.5) * 0.3,

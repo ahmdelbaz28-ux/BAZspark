@@ -68,7 +68,8 @@ class TestHashPrimitives:
         assert len(result) == 64
 
     def test_sha256_deterministic(self):
-        assert _sha256("test") == _sha256("test")
+        result = _sha256("test")
+        assert result == _sha256("test")
 
     def test_sha256_different_inputs(self):
         assert _sha256("a") != _sha256("b")
