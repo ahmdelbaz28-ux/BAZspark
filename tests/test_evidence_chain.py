@@ -100,6 +100,7 @@ class TestFloatRoundDefault:
 
     def test_zero_stays_zero(self):
         result = _float_round_default(0.0)
+        assert isinstance(result, float)
         assert result == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_non_float_raises(self):
