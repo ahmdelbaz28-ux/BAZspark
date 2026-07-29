@@ -48,7 +48,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { cadGatewayApi } from "@/services/fullApi";
+import { Separator } from "@/components/ui/separator";
+import { cadGatewayApi, apsApi } from "@/services/fullApi";
 
 // Module-level cache for cad_settings to avoid repeated synchronous localStorage I/O
 let _cachedCadSettings: Record<string, unknown> | null = null;
@@ -550,6 +551,13 @@ export function CADSettingsPage() {
                                                 >
                                                         <Cable aria-hidden="true" className="h-4 w-4 mr-2" />
                                                         Gateway
+                                                </TabsTrigger>
+                                                <TabsTrigger
+                                                        value="aps"
+                                                        className="data-[state=active]:bg-secondary"
+                                                >
+                                                        <Settings aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                        APS Cloud
                                                 </TabsTrigger>
                                         </TabsList>
 
@@ -1437,6 +1445,129 @@ export function CADSettingsPage() {
                                                                 </CollapsibleContent>
                                                         </Card>
                                                 </Collapsible>
+                                        </TabsContent>
+
+                                        {/* APS Cloud Processing Tab */}
+                                        <TabsContent value="aps" className="space-y-6">
+                                                <Card className="border-border bg-card">
+                                                        <CardHeader>
+                                                                <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                        <Settings aria-hidden="true" className="h-5 w-5" />
+                                                                        Autodesk Platform Services (APS)
+                                                                </CardTitle>
+                                                                <CardDescription className="text-muted-foreground">
+                                                                        Submit and track APS cloud processing work items for BIM file conversion and analysis.
+                                                                </CardDescription>
+                                                        </CardHeader>
+                                                        <CardContent className="space-y-4">
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                        <div className="space-y-2">
+                                                                                <Label className="text-foreground/90">APS Client ID</Label>
+                                                                                <Input
+                                                                                        value={apsClientId}
+                                                                                        onChange={(e) => setApsClientId(e.target.value)}
+                                                                                        className="bg-card border-border text-foreground"
+                                                                                        placeholder="Your APS Client ID"
+                                                                                />
+                                                                                <p className="text-xs text-muted-foreground">Autodesk Platform Services client identifier</p>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                                <Label className="text-foreground/90">APS Activity ID</Label>
+                                                                                <Input
+                                                                                        value={apsActivityId}
+                                                                                        onChange={(e) => setApsActivityId(e.target.value)}
+                                                                                        className="bg-card border-border text-foreground"
+                                                                                        placeholder="BazSparkAutoCADBridge.DrawLayout"
+                                                                                />
+                                                                                <p className="text-xs text-muted-foreground">Design automation activity to execute</p>
+                                                                        </div>
+                                                                </div>
+
+                                                                <Separator />
+
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90 font-medium">Process Work Item</Label>
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                                Submit a work item to the APS cloud processing engine. The activity will process the specified file using the configured APS activity.
+                                                                        </p>
+                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                                                                                <div className="space-y-2">
+                                                                                        <Label className="text-xs text-muted-foreground">Input File URL</Label>
+                                                                                        <Input
+                                                                                                id="aps-input-url"
+                                                                                                className="bg-card border-border text-foreground"
+                                                                                                placeholder="https://storage.example.com/input.dwg"
+                                                                                        />
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                        <Label className="text-xs text-muted-foreground">Output Filename</Label>
+                                                                                        <Input
+                                                                                                id="aps-output-filename"
+                                                                                                className="bg-card border-border text-foreground"
+                                                                                                placeholder="output.rvt"
+                                                                                        />
+                                                                                </div>
+                                                                        </div>
+                                                                        <Button
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                className="border-border text-foreground/90 hover:bg-card mt-2"
+                                                                                onClick={async () => {
+                                                                                        try {
+                                                                                                const result = await apsApi.process({
+                                                                                                        activityId: apsActivityId,
+                                                                                                        inputUrl: (document.getElementById("aps-input-url") as HTMLInputElement)?.value || "",
+                                                                                                        outputFilename: (document.getElementById("aps-output-filename") as HTMLInputElement)?.value || "output.rvt",
+                                                                                                });
+                                                                                                toast.success("APS work item submitted successfully");
+                                                                                        } catch (err) {
+                                                                                                toast.error(`APS process failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                                        }
+                                                                                }}
+                                                                        >
+                                                                                <Settings aria-hidden="true" className="h-4 w-4 mr-1" />
+                                                                                Submit Work Item
+                                                                        </Button>
+                                                                </div>
+
+                                                                <Separator />
+
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90 font-medium">Check Work Item Status</Label>
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                                Check the status of a previously submitted APS work item by its ID.
+                                                                        </p>
+                                                                        <div className="flex gap-2 mt-2">
+                                                                                <Input
+                                                                                        id="aps-work-item-id"
+                                                                                        className="bg-card border-border text-foreground flex-1"
+                                                                                        placeholder="Work item ID"
+                                                                                />
+                                                                                <Button
+                                                                                        variant="outline"
+                                                                                        size="sm"
+                                                                                        className="border-border text-foreground/90 hover:bg-card"
+                                                                                        onClick={async () => {
+                                                                                                try {
+                                                                                                        const workItemId = (document.getElementById("aps-work-item-id") as HTMLInputElement)?.value;
+                                                                                                        if (!workItemId) {
+                                                                                                                toast.error("Please enter a work item ID");
+                                                                                                                return;
+                                                                                                        }
+                                                                                                        const result = await apsApi.getStatus(workItemId);
+                                                                                                        toast.info(`Work item status: ${JSON.stringify(result)}`);
+                                                                                                } catch (err) {
+                                                                                                        toast.error(`Status check failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                                                }
+                                                                                        }}
+                                                                                >
+                                                                                        <RefreshCw aria-hidden="true" className="h-4 w-4 mr-1" />
+                                                                                        Check Status
+                                                                                </Button>
+                                                                        </div>
+                                                                </div>
+                                                        </CardContent>
+                                                </Card>
                                         </TabsContent>
                                 </Tabs>
                         </div>
