@@ -1,3 +1,8 @@
+# ── CI/CD Policy ───────────────────────────────────────────────
+# See ../CI-CD-POLICY.md for the mandatory 12-rule CI/CD governance policy.
+# All code changes must follow: Root Cause First (R1), Safe Push (R4),
+# Safe Merge (R5), Dependency Safety (R9), and all other rules.
+
 # Dependencies
 node_modules/
 

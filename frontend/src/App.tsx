@@ -192,6 +192,22 @@ const ARExportPage = lazy(() =>
 const WorkflowPage = lazy(() =>
         import("./pages/WorkflowPage").then((m) => ({ default: m.WorkflowPage })),
 );
+// V271: Wire orphaned V2 pages — Webhook Management, Generative Design, Topology
+const WebhookManagementPage = lazy(() =>
+        import("./pages/WebhookManagementPage").then((m) => ({
+                default: m.WebhookManagementPage,
+        })),
+);
+const GenerativeDesignPage = lazy(() =>
+        import("./pages/GenerativeDesignPage").then((m) => ({
+                default: m.GenerativeDesignPage,
+        })),
+);
+const TopologyPage = lazy(() =>
+        import("./pages/TopologyPage").then((m) => ({
+                default: m.TopologyPage,
+        })),
+);
 
 // V193 (R10): Skip-link for keyboard users to bypass the sidebar.
 // First focusable element on every page. WCAG 2.4.1 (Level A) requirement.
@@ -343,6 +359,11 @@ const handleSearchOpen = useCallback(() => {
                 { path: "/bim-providers", element: <BIMProvidersPage /> },
                 { path: "/ifc43-mapping", element: <IFC43MappingPage />, requiredRole: "admin" },
                 { path: "/ar-export", element: <ARExportPage />, requiredRole: "admin" },
+                // V271: Wire orphaned V2 pages — admin-only because they expose
+                // webhook secrets, generative design controls, and topology graph mutations.
+                { path: "/webhook-management", element: <WebhookManagementPage />, requiredRole: "admin" },
+                { path: "/generative-design", element: <GenerativeDesignPage />, requiredRole: "admin" },
+                { path: "/topology", element: <TopologyPage />, requiredRole: "admin" },
         ], []);
 
         // Determine if we're on a public route (no AppShell)

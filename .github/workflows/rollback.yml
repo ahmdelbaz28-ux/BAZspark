@@ -1,16 +1,217 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# BAZSPARK FireAI — Rollback Workflow
+# ═══════════════════════════════════════════════════════════════════════════
+# Performs a controlled rollback of the Helm-deployed application to a
+# previous revision or image tag. Supports both staging and production
+# environments with full secret validation, rollout verification, and
+# smoke test confirmation.
+#
+# CI/CD Policy Compliance:
+#   Rule 8  — Git Safety: no force push or history rewrite
+#   Rule 10 — Secure Deployment: verifies secrets, tokens, and rollout
+#   Rule 11 — No Assumptions: validates every input and secret
+#   Rule 12 — Completion Criteria: all checks must pass
+# ═══════════════════════════════════════════════════════════════════════════
+
 name: Rollback
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version to rollback to'
+      strategy:
+        description: 'Rollback strategy'
         required: true
+        default: 'helm-revision'
+        type: choice
+        options:
+          - 'helm-revision'
+          - 'image-tag'
+      revision:
+        description: 'Helm revision to rollback to'
+        required: false
+        default: ''
+        type: string
+      version:
+        description: 'Image tag / Git SHA to rollback to (e.g., abc1234 or v1.54.0)'
+        required: false
+        default: ''
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - 'staging'
+          - 'production'
+      skip_smoke_test:
+        description: 'Skip smoke test after rollback (NOT recommended)'
+        required: false
+        default: false
+        type: boolean
+      confirm_rollback:
+        description: 'Type "ROLLBACK" to confirm this destructive action'
+        required: true
+        default: ''
+        type: string
+
+concurrency:
+  group: rollback-${{ github.event.inputs.environment || 'unknown' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+
+# Environment config resolved at workflow level so ALL jobs can use it
+env:
+  HELM_RELEASE_NAME: fireai
+  HELM_NAMESPACE: fireai
+  HELM_CHART_PATH: deploy/helm/fireai
+  ENV_DOMAIN: ${{ github.event.inputs.environment == 'production' && 'fireai.example.com' || 'staging.fireai.example.com' }}
 
 jobs:
-  rollback:
+  validate:
+    name: "Validate Input & Confirmation"
     runs-on: ubuntu-latest
+    outputs:
+      valid: ${{ steps.check.outputs.valid }}
+      environment: ${{ steps.resolve.outputs.environment }}
+      image_tags: ${{ steps.resolve.outputs.image_tags }}
     steps:
-      - name: Rollback deployment
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+
+      - name: Validate confirmation
         run: |
-          echo "Rolling back to version ${{ github.event.inputs.version }}"
+          CONFIRM="${{ github.event.inputs.confirm_rollback }}"
+          if [ "$CONFIRM" != "ROLLBACK" ]; then
+            echo "::error::Confirmation failed: type 'ROLLBACK' (case-sensitive) to proceed"
+            exit 1
+          fi
+          echo "✓ Confirmation received"
+
+      - name: Validate inputs
+        id: check
+        run: |
+          STRATEGY="${{ github.event.inputs.strategy }}"
+          REVISION="${{ github.event.inputs.revision }}"
+          VERSION="${{ github.event.inputs.version }}"
+          ERRORS=0
+          if [ "$STRATEGY" = "helm-revision" ]; then
+            if [ -z "$REVISION" ]; then
+              echo "::error::Helm revision number required for helm-revision strategy"
+              ERRORS=$((ERRORS + 1))
+            fi
+            if ! echo "$REVISION" | grep -qE '^[1-9][0-9]*$'; then
+              echo "::error::Helm revision must be a positive integer"
+              ERRORS=$((ERRORS + 1))
+            fi
+          elif [ "$STRATEGY" = "image-tag" ]; then
+            if [ -z "$VERSION" ]; then
+              echo "::error::Image tag required for image-tag strategy"
+              ERRORS=$((ERRORS + 1))
+            fi
+            if ! echo "$VERSION" | grep -qE '^[a-zA-Z0-9._-]+$'; then
+              echo "::error::Image tag contains invalid characters"
+              ERRORS=$((ERRORS + 1))
+            fi
+          else
+            echo "::error::Unknown strategy: $STRATEGY"
+            ERRORS=$((ERRORS + 1))
+          fi
+          if [ "$ERRORS" -gt 0 ]; then
+            exit 1
+          fi
+          echo "✓ Input validation passed"
+          echo "valid=true" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve environment
+        id: resolve
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+          echo "environment=$ENV" >> "$GITHUB_OUTPUT"
+          if [ "$STRATEGY" = "image-tag" ]; then
+            echo "image_tags=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "image_tags=helm-revision-mode" >> "$GITHUB_OUTPUT"
+          fi
+
+  rollback:
+    name: "Execute Rollback (${{ github.event.inputs.strategy }})"
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.valid == 'true'
+    environment:
+      name: ${{ needs.validate.outputs.environment }}
+      url: https://${{ env.ENV_DOMAIN }}
+    outputs:
+      rollback_revision: ${{ steps.perform.outputs.revision }}
+      status: ${{ steps.smoke.outputs.status || steps.perform.outputs.status }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+
+      - name: Validate required secrets (Rule 11)
+        id: validate-secrets
+        env:
+          # Reference the correct kubeconfig secret based on environment input
+          KUBE_CONFIG: ${{ github.event.inputs.environment == 'production' && secrets.KUBE_CONFIG_PRODUCTION || secrets.KUBE_CONFIG_STAGING }}
+        run: |
+          ENV_NAME="${{ github.event.inputs.environment }}"
+          if [ -z "$KUBE_CONFIG" ]; then
+            echo "::error::Kubeconfig secret not set for $ENV_NAME environment"
+            exit 1
+          fi
+          echo "✓ Secrets validated for $ENV_NAME"
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d
+        with:
+          version: latest
+
+      - name: Setup kubeconfig
+        env:
+          KUBE_CONFIG: ${{ github.event.inputs.environment == 'production' && secrets.KUBE_CONFIG_PRODUCTION || secrets.KUBE_CONFIG_STAGING }}
+        run: |
+          mkdir -p $HOME/.kube
+          echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Pre-rollback audit
+        run: |
+          echo "=== Current Helm Release Status ==="
+          helm status ${{ env.HELM_RELEASE_NAME }} -n ${{ env.HELM_NAMESPACE }} 2>&1 || true
+          echo "=== Helm Release History (last 10) ==="
+          helm history ${{ env.HELM_RELEASE_NAME }} -n ${{ env.HELM_NAMESPACE }} --max=10 2>&1 || true
+
+      - name: Perform rollback (Helm revision)
+        if: github.event.inputs.strategy == 'helm-revision'
+        env:
+          REVISION: ${{ github.event.inputs.revision }}
+        run: |
+          echo "🔄 Rolling back Helm release to revision $REVISION..."
+          helm rollback ${{ env.HELM_RELEASE_NAME }} $REVISION \
+            -n ${{ env.HELM_NAMESPACE }} \
+            --wait --timeout 300s --cleanup-on-fail --debug 2>&1
+          RC=$?
+          if [ $RC -ne 0 ]; then
+            echo "::error::Helm rollback to revision $REVISION FAILED (exit: $RC)"
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "✓ Rollback to revision $REVISION completed"
+          echo "status=success" >> "$GITHUB_OUTPUT"
+
+      - name: Perform rollback (Image tag)
+        if: github.event.inputs.strategy == 'image-tag'
+        env:
+          TAG: ${{ github.event.inputs.version }}
+        run: |
+          echo "🔄 Rolling back to image tag: $TAG..."
+          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
+            --namespace ${{ env.HELM_NAMESPACE }} --create-namespace \
+            --set images.api.tag="$TAG" --set images.worker.tag="$TAG" --set images.nginx.tag="$TAG" \
+            --set api.image.tag="$TAG" --set worker.image.tag="$T

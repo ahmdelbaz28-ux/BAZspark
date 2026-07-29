@@ -855,9 +855,10 @@ export const v2Api = {
         publishWebhook: (data: Record<string, unknown>) =>
                 apiCall("/webhooks/publish", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
 
-        /** POST /smoke-simulation/state — Run smoke simulation state */
-        runSmokeSimulation: (data: Record<string, unknown>) =>
-                apiCall("/smoke-simulation/state", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+        // V271: Removed duplicate `runSmokeSimulation` — it was an alias for
+        // `setSmokeSimulationState` (both POST /smoke-simulation/state). The
+        // typed `setSmokeSimulationState` below is the single source of truth
+        // and is the only one used by FDSSimulationPage.
 
         /** POST /topology/element — Add element to topology graph */
         addTopologyElement: (data: Record<string, unknown>) =>
