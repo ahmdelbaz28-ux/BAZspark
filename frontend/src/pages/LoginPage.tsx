@@ -3,24 +3,15 @@
  * ?variant=A|B|C switches between UI prototypes (A = current production design)
  */
 
-import {
-	AlertCircle, Anchor, Bot, Compass, Eye, EyeOff,
-	Globe, HelpCircle, KeyRound, Layers, Loader2,
-	Lock, ShieldCheck, Sparkles, X,
-} from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { lazy, Suspense, useState, useEffect, type FormEvent } from "react";
 import { Navigate as RouterNavigate, useSearchParams as useRouterSearchParams } from "react-router-dom";
-import { BazSparkLogo, BazSparkWordmark } from "@/components/auth/BazSparkLogo";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { motion, AnimatePresence } from "framer-motion";
 import { PrototypeSwitcher } from "@/components/ui/PrototypeSwitcher";
-import { VariantA } from "@/pages/prototypes/login/VariantA";
-import { VariantB } from "@/pages/prototypes/login/VariantB";
-import { VariantC } from "@/pages/prototypes/login/VariantC";
 import "@/styles/login.css";
+
+const VariantA = lazy(() => import("@/pages/prototypes/login/VariantA").then(m => ({ default: m.VariantA })));
+const VariantB = lazy(() => import("@/pages/prototypes/login/VariantB").then(m => ({ default: m.VariantB })));
+const VariantC = lazy(() => import("@/pages/prototypes/login/VariantC").then(m => ({ default: m.VariantC })));
 
 // Multilingual Translation Dictionary for SCREEN_6
 const translations = {
@@ -112,6 +103,13 @@ export function LoginPage() {
 	const [searchParams] = useRouterSearchParams();
 	const { isAuthenticated, loading: ctxLoading, login } = useAuth();
 
+	// Preloader
+	const [preloaderDone, setPreloaderDone] = useState(false);
+	useEffect(() => {
+		const t = setTimeout(() => setPreloaderDone(true), 1400);
+		return () => clearTimeout(t);
+	}, []);
+
 	// Language state (en | ar)
 	const [lang, setLang] = useState<"en" | "ar">("en");
 	const t = translations[lang];
@@ -200,9 +198,19 @@ export function LoginPage() {
 
 	return (
 		<>
-			{variant === "A" && <VariantA {...variantProps} />}
-			{variant === "B" && <VariantB {...variantProps} />}
-			{variant === "C" && <VariantC {...variantProps} />}
+			{!preloaderDone && (
+				<div className="login-preloader" aria-hidden="true">
+					<div className="login-preloader-inner">
+						<div className="login-preloader-ring" />
+						<span className="text-[0.6rem] font-mono font-bold tracking-[0.2em] text-cyan-400/60 uppercase">Initializing</span>
+					</div>
+				</div>
+			)}
+			<Suspense fallback={null}>
+				{variant === "A" && <VariantA {...variantProps} />}
+				{variant === "B" && <VariantB {...variantProps} />}
+				{variant === "C" && <VariantC {...variantProps} />}
+			</Suspense>
 			<PrototypeSwitcher variants={[
 				{ key: "A", label: "Engineering Terminal" },
 				{ key: "B", label: "Minimal SaaS" },
