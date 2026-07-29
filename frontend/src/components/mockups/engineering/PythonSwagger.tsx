@@ -460,7 +460,7 @@ export function PythonSwagger() {
 								<span className="text-foreground">
 									resp = requests.get(
 									<span className="text-yellow-300">
-										f'https://api.example.com/data/2.5/weather?q=AbuDhabi&appid=
+										f'https://api.openweathermap.org/data/2.5/weather?q=AbuDhabi&appid=
 										<span className="text-blue-200">{"{"}</span>
 										<span className="text-foreground">api_key</span>
 										<span className="text-blue-200">{"}"}</span>'
@@ -508,7 +508,7 @@ export function PythonSwagger() {
 								<span className="text-foreground">
 									api = nc.api_client(base_url=
 									<span className="text-yellow-300">
-										'https://api.example.com/v4'
+										'https://api.nexuscad.io/v4'
 									</span>
 									)
 								</span>
@@ -581,7 +581,7 @@ export function PythonSwagger() {
 					<div className="p-3 border-b border-slate-800 bg-muted/50 space-y-2">
 						<div className="flex items-center justify-between text-xs">
 							<span className="text-muted-foreground font-mono text-[10px]">
-								https://api.example.com/v4
+								https://api.nexuscad.io/v4
 							</span>
 							<Badge
 								variant="outline"

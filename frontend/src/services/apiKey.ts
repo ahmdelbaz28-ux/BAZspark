@@ -3,27 +3,30 @@
  * @description Single source of truth for API key retrieval.
  *
  * V256 SECURITY FIX: The sessionStorage fallback has been REMOVED.
- * V288 SECURITY FIX: The VITE_FIREAI_API_KEY fallback has been REMOVED.
- * Vite inlines VITE_ env vars at build time into the JS bundle, making
- * them visible in DevTools. This is a client-only SPA (no SSR), so the
- * env var path was never reachable in production anyway.
+ * Storing API keys in sessionStorage is XSS-readable — a single XSS
+ * vulnerability gives full account takeover. The canonical auth flow
+ * uses an HttpOnly session cookie set by POST /auth/login, which
+ * JavaScript cannot read.
  *
- * The canonical auth flow uses an HttpOnly session cookie set by
- * POST /auth/login, which JavaScript cannot read. All fetch calls use
- * credentials: "same-origin" so the cookie is sent automatically.
- *
- * Storing API keys in XSS-accessible storage (env vars, sessionStorage,
- * localStorage) gave full account takeover on a single XSS.
+ * VITE_FIREAI_API_KEY is still supported for SSR/headless builds that
+ * can't use cookies. In browser contexts, the HttpOnly cookie is used
+ * automatically (credentials: "same-origin" on all fetch calls).
  */
 
 /**
  * Get the API key for backend authentication.
  *
- * This is a client-only SPA with no SSR. API keys must NOT be embedded
- * in the bundle. The HttpOnly session cookie is used instead.
+ * Resolution order:
+ * 1. VITE_FIREAI_API_KEY env var (baked into bundle at build time)
+ * 2. null (no key available — requests use the HttpOnly cookie instead)
  *
- * @returns Always null — use the HttpOnly session cookie for auth.
+ * @returns The API key string, or null if none is configured.
  */
 export function getApiKey(): string | null {
+	// Build-time env var (only for SSR/headless builds that can't use cookies)
+	const envKey = import.meta.env.VITE_FIREAI_API_KEY;
+	if (envKey) return envKey;
+
+	// No key available — the HttpOnly cookie will be used instead
 	return null;
 }

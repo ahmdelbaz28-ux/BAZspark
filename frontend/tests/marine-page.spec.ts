@@ -8,16 +8,16 @@ test.describe('Marine Page End-to-End Tests', () => {
  });
 
  test('should load Marine page successfully', async ({ page }) => {
- await expect(page).toHaveTitle(/BAZSPARK|Digital Twin/i);
+ await expect(page).toHaveTitle(/Marine Fire Protection & Safety Studio/);
  });
 
  test('should trigger all 14 backend API calls when buttons are clicked', async ({ page }) => {
  // Intercept all marine API calls
  const apiCalls: string[] = [];
- page.route('**/api/v1/marine/*', async (route) => {
+ page.route('**/api/v1/marine/*', (route) => {
  const url = route.request().url();
  apiCalls.push(url);
- await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: {} }) });
+ route.continue();
  });
 
  // Test all 14 buttons
