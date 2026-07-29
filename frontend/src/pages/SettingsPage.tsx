@@ -12,7 +12,7 @@ import {
         Shield,
         XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,63 @@ export function SettingsPage() {
         const [autoSaveReports, setAutoSaveReports] = useState(true);
         const [reportFormat, setReportFormat] = useState("pdf");
         const [reportQuality, setReportQuality] = useState("high");
+
+        // Feature flags
+        const FEATURE_FLAG_DEFINITIONS = [
+                { key: "SMOKE_SIMULATION", default: false, name: "CFD Smoke Simulation", description: "Enable CFD smoke simulation capabilities" },
+                { key: "DIGITAL_TWIN_SYNC", default: true, name: "Digital Twin Sync", description: "Enable Digital Twin synchronization" },
+                { key: "SELF_LEARNING", default: false, name: "Self-Learning", description: "Enable ML pattern learning" },
+                { key: "RESILIENCE_CHECK", default: true, name: "Resilience Check", description: "Enable resilience checking" },
+                { key: "PROOF_CERTIFICATE", default: true, name: "Proof Certificate", description: "Enable cryptographic proof certificates" },
+                { key: "VORONOI_VERIFICATION", default: true, name: "Voronoi Verification", description: "Enable Voronoi-based verification" },
+                { key: "AUTOCAD_BRIDGE", default: true, name: "AutoCAD Bridge", description: "Enable AutoCAD integration" },
+                { key: "REVIT_BRIDGE", default: true, name: "Revit Bridge", description: "Enable Revit integration" },
+                { key: "DIALUX_BRIDGE", default: true, name: "DIALux Bridge", description: "Enable DIALux integration" },
+        ] as const;
+
+        const backendFlags = health?.feature_flags ?? null;
+        const isReadOnly = !backendFlags;
+
+        const [localFlags, setLocalFlags] = useState<Record<string, boolean>>(
+                () => Object.fromEntries(FEATURE_FLAG_DEFINITIONS.map((f) => [f.key, f.default])),
+        );
+        const [flagUpdateStatus, setFlagUpdateStatus] = useState<Record<string, "saving" | "saved" | "error">>({});
+
+        const featureFlags: Record<string, boolean> = backendFlags
+                ? { ...localFlags, ...backendFlags }
+                : localFlags;
+
+        const handleFlagToggle = useCallback(
+                async (flagKey: string, newValue: boolean) => {
+                        if (isReadOnly) return;
+
+                        setLocalFlags((prev) => ({ ...prev, [flagKey]: newValue }));
+                        setFlagUpdateStatus((prev) => ({ ...prev, [flagKey]: "saving" }));
+
+                        try {
+                                const res = await fetch("/api/v1/feature-flags", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ flag: flagKey, enabled: newValue }),
+                                });
+                                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                                setFlagUpdateStatus((prev) => ({ ...prev, [flagKey]: "saved" }));
+                                refetchHealth();
+                        } catch {
+                                setLocalFlags((prev) => ({ ...prev, [flagKey]: !newValue }));
+                                setFlagUpdateStatus((prev) => ({ ...prev, [flagKey]: "error" }));
+                        } finally {
+                                setTimeout(() => {
+                                        setFlagUpdateStatus((prev) => {
+                                                const next = { ...prev };
+                                                delete next[flagKey];
+                                                return next;
+                                        });
+                                }, 3000);
+                        }
+                },
+                [isReadOnly, refetchHealth],
+        );
 
         const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
@@ -223,14 +280,14 @@ export function SettingsPage() {
                                                                         {t("settings.comprehensiveReportDesc")}
                                                                 </p>
                                                         </div>
-								<Button
-									onClick={() => navigate("/reports")}
-									className="bg-primary hover:bg-primary/90 text-primary-foreground border-none flex items-center gap-2"
-									aria-label={t("settings.openReportGenerator")}
-								>
-									<Calculator aria-hidden="true" className="h-4 w-4" />
-									{t("settings.openReportGenerator")}
-								</Button>
+                                                                <Button
+                                                                        onClick={() => navigate("/reports")}
+                                                                        className="bg-primary hover:bg-primary/90 text-primary-foreground border-none flex items-center gap-2"
+                                                                        aria-label={t("settings.openReportGenerator")}
+                                                                >
+                                                                        <Calculator aria-hidden="true" className="h-4 w-4" />
+                                                                        {t("settings.openReportGenerator")}
+                                                                </Button>
                                                 </div>
                                         </CardContent>
                                 </Card>
@@ -261,6 +318,12 @@ export function SettingsPage() {
                                                         className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
                                                 >
                                                         <Calculator aria-hidden="true" className="h-4 w-4 mr-1" /> {t("settings.reports")}
+                                                </TabsTrigger>
+                                                <TabsTrigger
+                                                        value="feature-flags"
+                                                        className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
+                                                >
+                                                        <Settings aria-hidden="true" className="h-4 w-4 mr-1" /> {t("settings.featureFlags")}
                                                 </TabsTrigger>
                                         </TabsList>
 
@@ -315,6 +378,9 @@ export function SettingsPage() {
                                                                                 <p className="text-xs text-muted-foreground mt-1">
                                                                                         {t("settings.notificationsDescription")}
                                                                                 </p>
+                                                                                <p className="text-xs text-muted-foreground mt-1">
+                                                                                        Client-side only — does not affect server behavior
+                                                                                </p>
                                                                         </div>
                                                                         <Switch
                                                                                 checked={notifications}
@@ -322,14 +388,14 @@ export function SettingsPage() {
                                                                                 className="data-[state=checked]:bg-danger"
                                                                         />
                                                                 </div>
-										<div className="pt-4">
-											<Button
-												className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
-												onClick={handleSaveGeneral}
-											>
-												{t("settings.save")}
-											</Button>
-										</div>
+                                                                                <div className="pt-4">
+                                                                                        <Button
+                                                                                                className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+                                                                                                onClick={handleSaveGeneral}
+                                                                                        >
+                                                                                                {t("settings.save")}
+                                                                                        </Button>
+                                                                                </div>
                                                         </CardContent>
                                                 </Card>
                                         </TabsContent>
@@ -354,6 +420,9 @@ export function SettingsPage() {
                                                                                 </Label>
                                                                                 <p className="text-xs text-muted-foreground mt-1">
                                                                                         {t("settings.twoFactorAuthDescription")}
+                                                                                </p>
+                                                                                <p className="text-xs text-amber-500 mt-1">
+                                                                                        This feature is not yet functional — enabling it has no effect until backend support is implemented.
                                                                                 </p>
                                                                         </div>
                                                                         {/* V253: 2FA toggle is disabled until backend enforcement
@@ -381,15 +450,18 @@ export function SettingsPage() {
                                                                         <p className="text-xs text-muted-foreground">
                                                                                 {t("settings.passwordExpiryDescription")}
                                                                         </p>
+                                                                        <p className="text-xs text-muted-foreground mt-1">
+                                                                                Client-side only — does not affect server behavior
+                                                                        </p>
                                                                 </div>
-										<div className="pt-4">
-											<Button
-												className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
-												onClick={handleSaveSecurity}
-											>
-												{t("settings.save")}
-											</Button>
-										</div>
+                                                                                <div className="pt-4">
+                                                                                        <Button
+                                                                                                className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+                                                                                                onClick={handleSaveSecurity}
+                                                                                        >
+                                                                                                {t("settings.save")}
+                                                                                        </Button>
+                                                                                </div>
                                                         </CardContent>
                                                 </Card>
                                         </TabsContent>
@@ -422,6 +494,9 @@ export function SettingsPage() {
                                                                                 <p className="text-xs text-muted-foreground">
                                                                                         {t("settings.apiTimeoutDescription")}
                                                                                 </p>
+                                                                                <p className="text-xs text-muted-foreground mt-1">
+                                                                                        Client-side only — does not affect server behavior
+                                                                                </p>
                                                                         </div>
                                                                         <div className="space-y-2">
                                                                                 <Label className="text-foreground/90">
@@ -438,16 +513,19 @@ export function SettingsPage() {
                                                                                 <p className="text-xs text-muted-foreground">
                                                                                         {t("settings.retryAttemptsDescription")}
                                                                                 </p>
+                                                                                <p className="text-xs text-muted-foreground mt-1">
+                                                                                        Client-side only — does not affect server behavior
+                                                                                </p>
                                                                         </div>
                                                                 </div>
-										<div className="pt-4">
-											<Button
-												className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
-												onClick={handleSaveApi}
-											>
-												{t("settings.save")}
-											</Button>
-										</div>
+                                                                                <div className="pt-4">
+                                                                                        <Button
+                                                                                                className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+                                                                                                onClick={handleSaveApi}
+                                                                                        >
+                                                                                                {t("settings.save")}
+                                                                                        </Button>
+                                                                                </div>
                                                         </CardContent>
                                                 </Card>
                                         </TabsContent>
@@ -497,6 +575,9 @@ export function SettingsPage() {
                                                                                 <p className="text-xs text-muted-foreground">
                                                                                         {t("settings.reportFormatDesc")}
                                                                                 </p>
+                                                                                <p className="text-xs text-muted-foreground mt-1">
+                                                                                        Client-side only — does not affect server behavior
+                                                                                </p>
                                                                         </div>
                                                                         <div className="space-y-2">
                                                                                 <Label className="text-foreground/90">
@@ -514,16 +595,81 @@ export function SettingsPage() {
                                                                                 <p className="text-xs text-muted-foreground">
                                                                                         {t("settings.reportQualityDesc")}
                                                                                 </p>
+                                                                                <p className="text-xs text-muted-foreground mt-1">
+                                                                                        Client-side only — does not affect server behavior
+                                                                                </p>
                                                                         </div>
                                                                 </div>
-										<div className="pt-4">
-											<Button
-												className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
-												onClick={handleSaveReports}
-											>
-												{t("settings.saveReportSettings")}
-											</Button>
-										</div>
+                                                                                <div className="pt-4">
+                                                                                        <Button
+                                                                                                className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+                                                                                                onClick={handleSaveReports}
+                                                                                        >
+                                                                                                {t("settings.saveReportSettings")}
+                                                                                        </Button>
+                                                                                </div>
+                                                        </CardContent>
+                                                </Card>
+                                        </TabsContent>
+
+                                        {/* Feature Flags */}
+                                        <TabsContent value="feature-flags">
+                                                <Card className="border-border bg-card">
+                                                        <CardHeader className="pb-3">
+                                                                <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                        <Activity aria-hidden="true" className="h-5 w-5 text-info" />
+                                                                        {t("settings.featureFlags")}
+                                                                </CardTitle>
+                                                                <CardDescription className="text-muted-foreground">
+                                                                        {t("settings.featureFlagsDescription")}
+                                                                </CardDescription>
+                                                        </CardHeader>
+                                                        <CardContent className="space-y-4">
+                                                                {isReadOnly && (
+                                                                        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-400">
+                                                                                {t("settings.featureFlagsReadOnly")}
+                                                                        </div>
+                                                                )}
+                                                                {FEATURE_FLAG_DEFINITIONS.map((flagDef) => {
+                                                                        const value = featureFlags[flagDef.key] ?? flagDef.default;
+                                                                        const status = flagUpdateStatus[flagDef.key];
+                                                                        return (
+                                                                                <div
+                                                                                        key={flagDef.key}
+                                                                                        className="flex items-center justify-between py-3"
+                                                                                >
+                                                                                        <div className="flex-1 min-w-0">
+                                                                                                <Label className="text-foreground/90">
+                                                                                                        {flagDef.name}
+                                                                                                        <code className="ml-2 text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
+                                                                                                                {flagDef.key}
+                                                                                                        </code>
+                                                                                                </Label>
+                                                                                                <p className="text-xs text-muted-foreground mt-1">
+                                                                                                        {flagDef.description}
+                                                                                                </p>
+                                                                                                {status === "saving" && (
+                                                                                                        <p className="text-xs text-info mt-1">{t("settings.saving")}</p>
+                                                                                                )}
+                                                                                                {status === "saved" && (
+                                                                                                        <p className="text-xs text-success mt-1">{t("settings.saved")}</p>
+                                                                                                )}
+                                                                                                {status === "error" && (
+                                                                                                        <p className="text-xs text-danger mt-1">{t("settings.saveError")}</p>
+                                                                                                )}
+                                                                                        </div>
+                                                                                        <Switch
+                                                                                                checked={value}
+                                                                                                onCheckedChange={(checked: boolean) =>
+                                                                                                        handleFlagToggle(flagDef.key, checked)
+                                                                                                }
+                                                                                                disabled={isReadOnly || status === "saving"}
+                                                                                                className="data-[state=checked]:bg-primary"
+                                                                                                aria-label={flagDef.name}
+                                                                                        />
+                                                                                </div>
+                                                                        );
+                                                                })}
                                                         </CardContent>
                                                 </Card>
                                         </TabsContent>

@@ -3,7 +3,7 @@
  * ReportsPage.tsx - Report generation with deterministic analysis
  */
 
-import { Calendar, Clock, Download, FileText, Loader2, AlertTriangle } from "lucide-react";
+import { Calendar, Clock, Download, FileText, Loader2, AlertTriangle, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -12,21 +12,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getApiKey } from "@/services/apiKey";
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
+        Card,
+        CardContent,
+        CardDescription,
+        CardHeader,
+        CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
+        Select,
+        SelectContent,
+        SelectItem,
+        SelectTrigger,
+        SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { calculateBatteryRequirements } from "@/engine/BatteryCalculator";
@@ -34,6 +34,16 @@ import type { BatteryCalcInput } from "@/engine/BatteryCalculator";
 import { calculateCoverage } from "@/engine/CoverageEngine";
 import { useGenerateReport, useProjects, useReports } from "@/hooks/useApiQuery";
 import { api as apiClient } from "@/services/api";
+import { llmApi } from "@/services/fullApi";
+import {
+        Dialog,
+        DialogContent,
+        DialogDescription,
+        DialogHeader,
+        DialogTitle,
+        DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 // ============================================================================
 // ReportsPage Component
@@ -116,6 +126,15 @@ export function ReportsPage() {
         const [ahjDesigner, setAhjDesigner] = useState("");
         const [ahjJurisdiction, setAhjJurisdiction] = useState("");
         const [ahjNfpaEdition, setAhjNfpaEdition] = useState("2022");
+
+        // ─── Compliance Narrative State ─────────────────────────────────────────
+        const [complianceDialogOpen, setComplianceDialogOpen] = useState(false);
+        const [complianceNarrativeProjectId, setComplianceNarrativeProjectId] = useState("");
+        const [complianceNarrativeReportType, setComplianceNarrativeReportType] = useState("compliance");
+        const [complianceNarrativeJurisdiction, setComplianceNarrativeJurisdiction] = useState("US");
+        const [complianceNarrativeIncludeCalcs, setComplianceNarrativeIncludeCalcs] = useState(true);
+        const [complianceNarrativeLoading, setComplianceNarrativeLoading] = useState(false);
+        const [complianceNarrativeResult, setComplianceNarrativeResult] = useState<string | null>(null);
 
         const handleGenerate = async () => {
                 // V214 self-critique fix: use real project ID, not hardcoded "default-project-id"
@@ -200,6 +219,38 @@ export function ReportsPage() {
                         toast.error(msg);
                 } finally {
                         setAhjGenerating(false);
+                }
+        };
+
+        // ─── Compliance Narrative Handler ───────────────────────────────────────
+        const handleGenerateComplianceNarrative = async () => {
+                const projectId = complianceNarrativeProjectId || firstProjectId;
+                if (!projectId) {
+                        toast.error(t("reports.complianceNarrativeNoProject") || "No project selected. Create a project first.");
+                        return;
+                }
+                setComplianceNarrativeLoading(true);
+                setComplianceNarrativeResult(null);
+                try {
+                        const result = await llmApi.complianceNarrative({
+                                project_id: projectId,
+                                report_type: complianceNarrativeReportType || "compliance",
+                                jurisdiction: complianceNarrativeJurisdiction || "US",
+                                include_calculations: complianceNarrativeIncludeCalcs,
+                        });
+                        // The API may return { narrative: string } or a plain string
+                        const narrativeText =
+                                typeof result === "string"
+                                        ? result
+                                        : (result as Record<string, unknown>)?.narrative
+                                                ? String((result as Record<string, unknown>).narrative)
+                                                : JSON.stringify(result, null, 2);
+                        setComplianceNarrativeResult(narrativeText);
+                } catch (err) {
+                        const msg = err instanceof Error ? err.message : "Failed to generate compliance narrative";
+                        toast.error(msg);
+                } finally {
+                        setComplianceNarrativeLoading(false);
                 }
         };
 
@@ -547,14 +598,128 @@ export function ReportsPage() {
                                                         {t("reports.subtitle")}
                                                 </p>
                                         </div>
-                                        <Button
-                                                variant="outline"
-                                                className="border-border text-foreground/90 hover:bg-card"
-                                                onClick={() => refetchReports()}
-                                        >
-                                                <Clock aria-hidden="true" className="h-4 w-4 mr-1" />
-                                                {t("reports.refresh")}
-                                        </Button>
+                                        <div className="flex items-center gap-2">
+                                                <Dialog open={complianceDialogOpen} onOpenChange={setComplianceDialogOpen}>
+                                                        <DialogTrigger asChild>
+                                                                <Button
+                                                                        className="bg-primary hover:bg-primary/90 text-white border-none"
+                                                                        onClick={() => {
+                                                                                setComplianceNarrativeResult(null);
+                                                                                setComplianceDialogOpen(true);
+                                                                        }}
+                                                                >
+                                                                        <Sparkles aria-hidden="true" className="h-4 w-4 mr-1" />
+                                                                        {t("reports.generateNarrative") || "Generate Compliance Narrative"}
+                                                                </Button>
+                                                        </DialogTrigger>
+                                                        <DialogContent className="bg-card border-border sm:max-w-lg">
+                                                                <DialogHeader>
+                                                                        <DialogTitle className="text-foreground">
+                                                                                {t("reports.complianceNarrative") || "Compliance Narrative"}
+                                                                        </DialogTitle>
+                                                                        <DialogDescription className="text-muted-foreground">
+                                                                                {t("reports.complianceNarrativeDesc") || "Generate an AI-powered compliance narrative for your project."}
+                                                                        </DialogDescription>
+                                                                </DialogHeader>
+                                                                <div className="space-y-4">
+                                                                        <div className="space-y-2">
+                                                                                <Label className="text-foreground/90">
+                                                                                        {t("reports.project") || "Project"}
+                                                                                </Label>
+                                                                                <Select
+                                                                                        value={complianceNarrativeProjectId || firstProjectId || ""}
+                                                                                        onValueChange={setComplianceNarrativeProjectId}
+                                                                                >
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
+                                                                                                <SelectValue placeholder={t("reports.selectProject") || "Select project"} />
+                                                                                        </SelectTrigger>
+                                                                                        <SelectContent className="bg-card border-border">
+                                                                                                {projects && projects.map((p) => (
+                                                                                                        <SelectItem key={p.id} value={p.id}>
+                                                                                                                {p.name}
+                                                                                                        </SelectItem>
+                                                                                                ))}
+                                                                                        </SelectContent>
+                                                                                </Select>
+                                                                        </div>
+                                                                        <div className="grid grid-cols-2 gap-3">
+                                                                                <div className="space-y-2">
+                                                                                        <Label className="text-foreground/90">
+                                                                                                {t("reports.reportType") || "Report Type"}
+                                                                                        </Label>
+                                                                                        <Input
+                                                                                                type="text"
+                                                                                                value={complianceNarrativeReportType}
+                                                                                                onChange={(e) => setComplianceNarrativeReportType(e.target.value)}
+                                                                                                placeholder="compliance"
+                                                                                                className="bg-card border-border text-foreground"
+                                                                                        />
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                        <Label className="text-foreground/90">
+                                                                                                {t("reports.jurisdiction") || "Jurisdiction"}
+                                                                                        </Label>
+                                                                                        <Input
+                                                                                                type="text"
+                                                                                                value={complianceNarrativeJurisdiction}
+                                                                                                onChange={(e) => setComplianceNarrativeJurisdiction(e.target.value)}
+                                                                                                placeholder="US"
+                                                                                                className="bg-card border-border text-foreground"
+                                                                                        />
+                                                                                </div>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                                <Label className="flex items-center gap-2 text-foreground/90 cursor-pointer">
+                                                                                        <input
+                                                                                                type="checkbox"
+                                                                                                checked={complianceNarrativeIncludeCalcs}
+                                                                                                onChange={(e) => setComplianceNarrativeIncludeCalcs(e.target.checked)}
+                                                                                                className="rounded border-border bg-card text-primary focus:ring-primary/30 h-4 w-4"
+                                                                                        />
+                                                                                        {t("reports.includeCalculations") || "Include Calculations"}
+                                                                                </Label>
+                                                                        </div>
+                                                                        <Button
+                                                                                className="bg-primary hover:bg-primary/90 text-white border-none w-full"
+                                                                                onClick={handleGenerateComplianceNarrative}
+                                                                                disabled={complianceNarrativeLoading}
+                                                                        >
+                                                                                {complianceNarrativeLoading ? (
+                                                                                        <>
+                                                                                                <Loader2 aria-hidden="true" className="h-4 w-4 mr-1 animate-spin" />
+                                                                                                {t("reports.generating") || "Generating…"}
+                                                                                        </>
+                                                                                ) : (
+                                                                                        <>
+                                                                                                <Sparkles aria-hidden="true" className="h-4 w-4 mr-1" />
+                                                                                                {t("reports.generateNarrative") || "Generate Compliance Narrative"}
+                                                                                        </>
+                                                                                )}
+                                                                        </Button>
+                                                                        {complianceNarrativeResult && (
+                                                                                <div className="mt-4">
+                                                                                        <Label className="text-foreground/90 mb-2 block">
+                                                                                                {t("reports.narrativeResult") || "Narrative Result"}
+                                                                                        </Label>
+                                                                                        <Textarea
+                                                                                                readOnly
+                                                                                                value={complianceNarrativeResult}
+                                                                                                className="min-h-[200px] bg-muted/50 border-border text-foreground text-sm"
+                                                                                        />
+                                                                                </div>
+                                                                        )}
+                                                                </div>
+                                                        </DialogContent>
+                                                </Dialog>
+                                                <Button
+                                                        variant="outline"
+                                                        className="border-border text-foreground/90 hover:bg-card"
+                                                        onClick={() => refetchReports()}
+                                                >
+                                                        <Clock aria-hidden="true" className="h-4 w-4 mr-1" />
+                                                        {t("reports.refresh")}
+                                                </Button>
+                                        </div>
                                 </div>
 
                                 {/* Error banner */}
@@ -637,40 +802,40 @@ export function ReportsPage() {
                                                         </div>
                                                 </div>
 
-												<div className="flex items-center gap-4 pt-2">
-													<div className="flex items-center gap-2">
-														<Label className="flex items-center gap-2 text-foreground/90 cursor-pointer">
-															<input
-																type="checkbox"
-																checked={execParams.deterministic_analysis}
-																onChange={(e) =>
-																	setExecParams((p) => ({
-																		...p,
-																		deterministic_analysis: e.target.checked,
-																	}))
-																}
-																className="rounded border-border bg-card text-primary focus:ring-primary/30 h-4 w-4"
-															/>
-															Deterministic Analysis
-														</Label>
-													</div>
-													<div className="flex items-center gap-2">
-														<Label className="flex items-center gap-2 text-foreground/90 cursor-pointer">
-															<input
-																type="checkbox"
-																checked={execParams.nfpa_compliance}
-																onChange={(e) =>
-																	setExecParams((p) => ({
-																		...p,
-																		nfpa_compliance: e.target.checked,
-																	}))
-																}
-																className="rounded border-border bg-card text-primary focus:ring-primary/30 h-4 w-4"
-															/>
-															NFPA Compliance
-														</Label>
-													</div>
-												</div>
+                                                                                                <div className="flex items-center gap-4 pt-2">
+                                                                                                        <div className="flex items-center gap-2">
+                                                                                                                <Label className="flex items-center gap-2 text-foreground/90 cursor-pointer">
+                                                                                                                        <input
+                                                                                                                                type="checkbox"
+                                                                                                                                checked={execParams.deterministic_analysis}
+                                                                                                                                onChange={(e) =>
+                                                                                                                                        setExecParams((p) => ({
+                                                                                                                                                ...p,
+                                                                                                                                                deterministic_analysis: e.target.checked,
+                                                                                                                                        }))
+                                                                                                                                }
+                                                                                                                                className="rounded border-border bg-card text-primary focus:ring-primary/30 h-4 w-4"
+                                                                                                                        />
+                                                                                                                        Deterministic Analysis
+                                                                                                                </Label>
+                                                                                                        </div>
+                                                                                                        <div className="flex items-center gap-2">
+                                                                                                                <Label className="flex items-center gap-2 text-foreground/90 cursor-pointer">
+                                                                                                                        <input
+                                                                                                                                type="checkbox"
+                                                                                                                                checked={execParams.nfpa_compliance}
+                                                                                                                                onChange={(e) =>
+                                                                                                                                        setExecParams((p) => ({
+                                                                                                                                                ...p,
+                                                                                                                                                nfpa_compliance: e.target.checked,
+                                                                                                                                        }))
+                                                                                                                                }
+                                                                                                                                className="rounded border-border bg-card text-primary focus:ring-primary/30 h-4 w-4"
+                                                                                                                        />
+                                                                                                                        NFPA Compliance
+                                                                                                                </Label>
+                                                                                                        </div>
+                                                                                                </div>
 
                                                 <Button
                                                         className="bg-danger hover:bg-danger/90 text-white border-none"
@@ -693,49 +858,49 @@ export function ReportsPage() {
                                                 {/* V214 FIX: AHJ Submittal button — generates real NFPA 72
                                                      compliance proof document via POST /reports/ahj-submittal */}
                                                 {/* V246 FIX: AHJ fields are now editable (was hardcoded) */}
-												<div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2 w-full">
-													<div>
-														<Label htmlFor="ahj-designer" className="text-xs text-muted-foreground">
-															Designer Name (required)
-														</Label>
-														<Input
-															id="ahj-designer"
-															type="text"
-															value={ahjDesigner}
-															onChange={(e) => setAhjDesigner(e.target.value)}
-															placeholder="Eng. John Doe, PE"
-															className="mt-1"
-														/>
-													</div>
-													<div>
-														<Label htmlFor="ahj-jurisdiction" className="text-xs text-muted-foreground">
-															Jurisdiction
-														</Label>
-														<Input
-															id="ahj-jurisdiction"
-															type="text"
-															value={ahjJurisdiction}
-															onChange={(e) => setAhjJurisdiction(e.target.value)}
-															placeholder="City of Cairo Fire Marshal"
-															className="mt-1"
-														/>
-													</div>
-													<div>
-														<Label htmlFor="ahj-nfpa-edition" className="text-xs text-muted-foreground">
-															NFPA Edition
-														</Label>
-														<Select value={ahjNfpaEdition} onValueChange={setAhjNfpaEdition}>
-															<SelectTrigger className="mt-1 bg-card border-border text-foreground">
-																<SelectValue />
-															</SelectTrigger>
-															<SelectContent className="bg-card border-border">
-																<SelectItem value="2022">NFPA 72 (2022)</SelectItem>
-																<SelectItem value="2019">NFPA 72 (2019)</SelectItem>
-																<SelectItem value="2016">NFPA 72 (2016)</SelectItem>
-															</SelectContent>
-														</Select>
-													</div>
-												</div>
+                                                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2 w-full">
+                                                                                                        <div>
+                                                                                                                <Label htmlFor="ahj-designer" className="text-xs text-muted-foreground">
+                                                                                                                        Designer Name (required)
+                                                                                                                </Label>
+                                                                                                                <Input
+                                                                                                                        id="ahj-designer"
+                                                                                                                        type="text"
+                                                                                                                        value={ahjDesigner}
+                                                                                                                        onChange={(e) => setAhjDesigner(e.target.value)}
+                                                                                                                        placeholder="Eng. John Doe, PE"
+                                                                                                                        className="mt-1"
+                                                                                                                />
+                                                                                                        </div>
+                                                                                                        <div>
+                                                                                                                <Label htmlFor="ahj-jurisdiction" className="text-xs text-muted-foreground">
+                                                                                                                        Jurisdiction
+                                                                                                                </Label>
+                                                                                                                <Input
+                                                                                                                        id="ahj-jurisdiction"
+                                                                                                                        type="text"
+                                                                                                                        value={ahjJurisdiction}
+                                                                                                                        onChange={(e) => setAhjJurisdiction(e.target.value)}
+                                                                                                                        placeholder="City of Cairo Fire Marshal"
+                                                                                                                        className="mt-1"
+                                                                                                                />
+                                                                                                        </div>
+                                                                                                        <div>
+                                                                                                                <Label htmlFor="ahj-nfpa-edition" className="text-xs text-muted-foreground">
+                                                                                                                        NFPA Edition
+                                                                                                                </Label>
+                                                                                                                <Select value={ahjNfpaEdition} onValueChange={setAhjNfpaEdition}>
+                                                                                                                        <SelectTrigger className="mt-1 bg-card border-border text-foreground">
+                                                                                                                                <SelectValue />
+                                                                                                                        </SelectTrigger>
+                                                                                                                        <SelectContent className="bg-card border-border">
+                                                                                                                                <SelectItem value="2022">NFPA 72 (2022)</SelectItem>
+                                                                                                                                <SelectItem value="2019">NFPA 72 (2019)</SelectItem>
+                                                                                                                                <SelectItem value="2016">NFPA 72 (2016)</SelectItem>
+                                                                                                                        </SelectContent>
+                                                                                                                </Select>
+                                                                                                        </div>
+                                                                                                </div>
                                                 <Button
                                                         className="bg-primary hover:bg-primary/90 text-white border-none ml-2 mt-2"
                                                         onClick={handleGenerateAhj}
@@ -744,7 +909,7 @@ export function ReportsPage() {
                                                         {ahjGenerating ? (
                                                                 <>
                                                                         <Loader2 aria-hidden="true" className="h-4 w-4 mr-1 animate-spin" />Generating AHJ…
-																						</>
+                                                                                                                                                                                </>
                                                         ) : (
                                                                 <>
                                                                         <FileText aria-hidden="true" className="h-4 w-4 mr-1" />
@@ -763,6 +928,30 @@ export function ReportsPage() {
                                                 )}
                                         </CardContent>
                                 </Card>
+
+                                {/* Compliance Narrative Result Card */}
+                                {complianceNarrativeResult && (
+                                        <Card className="border-border bg-card">
+                                                <CardHeader className="pb-3">
+                                                        <div className="flex items-center justify-between">
+                                                                <CardTitle className="text-lg text-foreground">
+                                                                        {t("reports.complianceNarrative") || "Compliance Narrative"}
+                                                                </CardTitle>
+                                                                <Sparkles aria-hidden="true" className="h-5 w-5 text-primary" />
+                                                        </div>
+                                                        <CardDescription className="text-muted-foreground">
+                                                                {t("reports.complianceNarrativeResultDesc") || "AI-generated compliance narrative for your project."}
+                                                        </CardDescription>
+                                                </CardHeader>
+                                                <CardContent>
+                                                        <Textarea
+                                                                readOnly
+                                                                value={complianceNarrativeResult}
+                                                                className="min-h-[200px] bg-muted/50 border-border text-foreground text-sm"
+                                                        />
+                                                </CardContent>
+                                        </Card>
+                                )}
 
                                 {/* V246 SAFETY: Sample Data Warning Banner */}
                                 {isSampleData && (
