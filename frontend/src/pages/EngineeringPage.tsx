@@ -141,11 +141,16 @@ export function EngineeringPage() {
         // V214 FIX: Call the API whenever inputs change — with 500ms debounce
         // to avoid hammering the backend on every keystroke.
         useEffect(() => {
+                const current = Number.parseFloat(voltageDropInputs.current);
+                const length = Number.parseFloat(voltageDropInputs.length);
+                if (Number.isNaN(current) || Number.isNaN(length) || current <= 0 || length <= 0) {
+                        return;
+                }
                 const timer = setTimeout(() => {
                         calculateVoltageDropViaApi();
                 }, 500);
                 return () => clearTimeout(timer);
-        }, [calculateVoltageDropViaApi]);
+        }, [calculateVoltageDropViaApi, voltageDropInputs.current, voltageDropInputs.length]);
 
         // Vercel React Best Practices: rerender-memo — extract expensive work into memoized functions
         const calculateCableSizing = useCallback(() => {

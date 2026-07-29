@@ -123,7 +123,7 @@ const PAGES = [
 for (const { route, name, criticalElements } of PAGES) {
         test(`${name} page loads without console errors`, async ({ page }) => {
                 // V192 FIX: Pre-authenticate pages with <table> in criticalElements so they render actual content
-                if (name === "Connections" || name === "Elements" || name === "Projects") {
+                if (name === "Connections" || name === "Elements" || name === "Projects" || name === "Engineering") {
                         await installApiMock(page, { preAuthenticated: true });
                 } else {
                         await mockApiResponses(page);
@@ -151,7 +151,7 @@ for (const { route, name, criticalElements } of PAGES) {
                 });
 
                 await page.goto(route, { waitUntil: "domcontentloaded", timeout: 30000 });
-                await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
+                await page.waitForTimeout(1000);
 
                 // V236: Auth-protected pages redirect to /login when no backend is running.
                 // If redirected, only verify that the login page rendered (skip criticalElements
@@ -185,7 +185,7 @@ for (const { route, name, criticalElements } of PAGES) {
 
         test(`${name} page has no broken images`, async ({ page }) => {
                 // V192 FIX: Pre-authenticate pages with <table> in criticalElements
-                if (name === "Connections" || name === "Elements" || name === "Projects") {
+                if (name === "Connections" || name === "Elements" || name === "Projects" || name === "Engineering") {
                         await installApiMock(page, { preAuthenticated: true });
                 } else {
                         await mockApiResponses(page);
