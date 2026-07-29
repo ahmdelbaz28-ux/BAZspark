@@ -50,14 +50,14 @@ class TestConstants:
 
     def test_slope_ridge_zone_threshold(self):
         """1 in 8 pitch ≈ 7.125°."""
-        assert pytest.approx(7.125, abs=0.001) == _SLOPE_RIDGE_ZONE_THRESHOLD_DEG
+        assert _SLOPE_RIDGE_ZONE_THRESHOLD_DEG == pytest.approx(7.125, abs=0.001)
 
     def test_steep_slope_threshold(self):
         assert _STEEP_SLOPE_THRESHOLD_DEG == 30.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_beam_spacing(self):
         """Standard beam spacing ≈ 60ft = 18.3m."""
-        assert pytest.approx(18.3, abs=0.1) == _BEAM_SPACING_M
+        assert _BEAM_SPACING_M == pytest.approx(18.3, abs=0.1)
 
     def test_smoke_spacing_table_entries(self):
         """NFPA 72 Table 17.6.3.1.1 has 9 height/spacing pairs."""

@@ -76,7 +76,7 @@ class TestConstants:
 
     def test_min_wall_distance(self):
         """NFPA 72 §17.6.3.1.1: 4 inches = 0.10m."""
-        assert pytest.approx(0.10, abs=0.01) == MIN_WALL_DISTANCE_M
+        assert MIN_WALL_DISTANCE_M == pytest.approx(0.10, abs=0.01)
 
     def test_max_dimension_m(self):
         assert MAX_DIMENSION_M == 1000.0  # NOSONAR — S1244: import retained for re-export / API surface
