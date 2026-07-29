@@ -1209,7 +1209,19 @@
     "featureFlagsReadOnly": "علامات الميزات حاليًا للقراءة فقط. اتصل بالمسؤول لتغييرها.",
     "saving": "جاري الحفظ…",
     "saved": "تم الحفظ",
-    "saveError": "فشل التحديث"
+    "saveError": "فشل التحديث",
+    "advancedReportGenerator": "مولد التقارير المتقدم",
+    "autoSaveReports": "حفظ التقارير تلقائيًا",
+    "autoSaveReportsDesc": "حفظ التقارير تلقائيًا عند إنشائها",
+    "comprehensiveReportDesc": "إنشاء تقارير شاملة مع حسابات مفصلة",
+    "comprehensiveReportGeneration": "إنشاء تقارير شاملة",
+    "openReportGenerator": "فتح مولد التقارير",
+    "reportFormat": "تنسيق التقرير",
+    "reportFormatDesc": "تنسيق ملف التقرير الناتج",
+    "reportGeneratorDesc": "تكوين خيارات إنشاء التقرير",
+    "reportQuality": "جودة التقرير",
+    "reportQualityDesc": "مستوى التفاصيل في التقرير الناتج",
+    "saveReportSettings": "حفظ إعدادات التقرير"
   },
   "elements": {
     "title": "العناصر",
