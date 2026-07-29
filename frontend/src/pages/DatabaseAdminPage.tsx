@@ -17,6 +17,7 @@ import {
   Layers,
   Loader2,
   RefreshCw,
+  Search,
   Server,
   Share2,
   XCircle,
@@ -384,6 +385,13 @@ export function DatabaseAdminPage() {
               <Layers aria-hidden="true" className="h-4 w-4 mr-1" />
               Qdrant
             </TabsTrigger>
+            <TabsTrigger
+              value="bim-ops"
+              className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
+            >
+              <Database aria-hidden="true" className="h-4 w-4 mr-1" />
+              BIM Operations
+            </TabsTrigger>
           </TabsList>
 
           {/* Redis Tab */}
@@ -577,6 +585,68 @@ export function DatabaseAdminPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* BIM Operations Tab */}
+          <TabsContent value="bim-ops">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Database aria-hidden="true" className="h-4 w-4 text-primary" />
+                    Cache BIM Element
+                  </CardTitle>
+                  <CardDescription>Cache a BIM element in Redis for fast retrieval</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    POST /multi-db/bim/cache-element — Stores a BIM element in Redis with optional TTL for caching.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Layers aria-hidden="true" className="h-4 w-4 text-primary" />
+                    Store Embeddings
+                  </CardTitle>
+                  <CardDescription>Store BIM element embeddings in Qdrant for vector search</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    POST /multi-db/bim/store-embeddings — Stores vector embeddings for BIM elements in Qdrant for similarity search.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Search aria-hidden="true" className="h-4 w-4 text-primary" />
+                    Find Similar Elements
+                  </CardTitle>
+                  <CardDescription>Find similar BIM elements using vector similarity search</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    POST /multi-db/bim/find-similar — Searches for similar BIM elements using Qdrant vector similarity.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Share2 aria-hidden="true" className="h-4 w-4 text-primary" />
+                    Create Relationships
+                  </CardTitle>
+                  <CardDescription>Create relationships between BIM elements in Neo4j</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    POST /multi-db/bim/create-relationships — Creates graph relationships between BIM elements in Neo4j.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 

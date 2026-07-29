@@ -16,6 +16,7 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
         Card,
         CardContent,
@@ -325,6 +326,30 @@ export function SettingsPage() {
                                                 >
                                                         <Settings aria-hidden="true" className="h-4 w-4 mr-1" /> {t("settings.featureFlags")}
                                                 </TabsTrigger>
+                                                <TabsTrigger
+                                                        value="llm"
+                                                        className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
+                                                >
+                                                        <Activity aria-hidden="true" className="h-4 w-4 mr-1" /> LLM
+                                                </TabsTrigger>
+                                                <TabsTrigger
+                                                        value="security-config"
+                                                        className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
+                                                >
+                                                        <Shield aria-hidden="true" className="h-4 w-4 mr-1" /> Security
+                                                </TabsTrigger>
+                                                <TabsTrigger
+                                                        value="observability"
+                                                        className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
+                                                >
+                                                        <Activity aria-hidden="true" className="h-4 w-4 mr-1" /> Observability
+                                                </TabsTrigger>
+                                                <TabsTrigger
+                                                        value="pipeline"
+                                                        className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
+                                                >
+                                                        <Settings aria-hidden="true" className="h-4 w-4 mr-1" /> Pipeline
+                                                </TabsTrigger>
                                         </TabsList>
 
                                         {/* General Settings */}
@@ -364,6 +389,7 @@ export function SettingsPage() {
                                                                                         className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
                                                                                 >
                                                                                         <option value="en">English</option>
+                                                                                        <option value="ar">العربية</option>
                                                                                         <option value="es">Español</option>
                                                                                         <option value="fr">Français</option>
                                                                                         <option value="de">Deutsch</option>
@@ -445,13 +471,14 @@ export function SettingsPage() {
                                                                                 onChange={(e) =>
                                                                                         setPasswordExpiry(Number.parseInt(e.target.value, 10))
                                                                                 }
-                                                                                className="bg-card border-border text-foreground"
+                                                                                className="bg-card border-border text-foreground opacity-50 cursor-not-allowed"
+                                                                                disabled
                                                                         />
                                                                         <p className="text-xs text-muted-foreground">
                                                                                 {t("settings.passwordExpiryDescription")}
                                                                         </p>
-                                                                        <p className="text-xs text-muted-foreground mt-1">
-                                                                                Client-side only — does not affect server behavior
+                                                                        <p className="text-xs text-amber-500 mt-1">
+                                                                                This feature is not yet functional — no backend enforcement exists. Setting saved to localStorage only.
                                                                         </p>
                                                                 </div>
                                                                                 <div className="pt-4">
@@ -556,6 +583,9 @@ export function SettingsPage() {
                                                                                 onCheckedChange={setAutoSaveReports}
                                                                                 className="data-[state=checked]:bg-danger"
                                                                         />
+                                                                        <p className="text-xs text-muted-foreground mt-1">
+                                                                                Client-side only — does not affect server behavior
+                                                                        </p>
                                                                 </div>
                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                         <div className="space-y-2">
@@ -670,6 +700,195 @@ export function SettingsPage() {
                                                                                 </div>
                                                                         );
                                                                 })}
+                                                        </CardContent>
+                                                </Card>
+                                        </TabsContent>
+
+                                        {/* LLM Configuration */}
+                                        <TabsContent value="llm">
+                                                <Card className="border-border bg-card">
+                                                        <CardHeader className="pb-3">
+                                                                <CardTitle className="text-lg text-foreground">
+                                                                        LLM Provider Configuration
+                                                                </CardTitle>
+                                                                <CardDescription className="text-muted-foreground">
+                                                                        Configure the AI/LLM provider settings for the application. These settings are read from environment variables and require a server restart to take effect.
+                                                                </CardDescription>
+                                                        </CardHeader>
+                                                        <CardContent className="space-y-4">
+                                                                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-400">
+                                                                        LLM provider settings are configured via environment variables. Contact your administrator to change these settings.
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">NVIDIA API Key</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">NVIDIA_API_KEY — API key for the LLM provider</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">LLM Base URL</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">NVIDIA_BASE_URL — OpenAI-compatible endpoint URL</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">LLM Model</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">NVIDIA_MODEL — Model name for chat completions</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                </div>
+                                                        </CardContent>
+                                                </Card>
+                                        </TabsContent>
+
+                                        {/* Security / Akamai Configuration */}
+                                        <TabsContent value="security-config">
+                                                <Card className="border-border bg-card">
+                                                        <CardHeader className="pb-3">
+                                                                <CardTitle className="text-lg text-foreground">
+                                                                        Security & CDN Configuration
+                                                                </CardTitle>
+                                                                <CardDescription className="text-muted-foreground">
+                                                                        Akamai CDN, CORS, and session security settings. These settings are configured via environment variables.
+                                                                </CardDescription>
+                                                        </CardHeader>
+                                                        <CardContent className="space-y-4">
+                                                                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-400">
+                                                                        Security settings are configured via environment variables. Contact your administrator to change these settings.
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">Akamai CDN Enabled</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">AKAMAI_ENABLED — Enable Akamai CDN integration</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">Blocked Countries</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">AKAMAI_BLOCKED_COUNTRIES — Comma-separated country codes</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">CORS Allowed Origins</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">CORS_ALLOWED_ORIGINS — Comma-separated origin URLs</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">Session Secret</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">FIREAI_SESSION_SECRET — Secret key for session cookies</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-red-500 border-red-500/30">Secret</Badge>
+                                                                        </div>
+                                                                </div>
+                                                        </CardContent>
+                                                </Card>
+                                        </TabsContent>
+
+                                        {/* Observability / Langfuse Configuration */}
+                                        <TabsContent value="observability">
+                                                <Card className="border-border bg-card">
+                                                        <CardHeader className="pb-3">
+                                                                <CardTitle className="text-lg text-foreground">
+                                                                        Observability Configuration
+                                                                </CardTitle>
+                                                                <CardDescription className="text-muted-foreground">
+                                                                        Langfuse tracing and observability settings. These settings are configured via environment variables.
+                                                                </CardDescription>
+                                                        </CardHeader>
+                                                        <CardContent className="space-y-4">
+                                                                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-400">
+                                                                        Observability settings are configured via environment variables. Contact your administrator to change these settings.
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">Langfuse Enabled</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">LANGFUSE_ENABLED — Enable/disable tracing</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">Langfuse Host</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">LANGFUSE_HOST — Langfuse server URL</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">Langfuse Public Key</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">LANGFUSE_PUBLIC_KEY — Public key for tracing</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">Langfuse Secret Key</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">LANGFUSE_SECRET_KEY — Secret key for tracing</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-red-500 border-red-500/30">Secret</Badge>
+                                                                        </div>
+                                                                </div>
+                                                        </CardContent>
+                                                </Card>
+                                        </TabsContent>
+
+                                        {/* Pipeline Configuration */}
+                                        <TabsContent value="pipeline">
+                                                <Card className="border-border bg-card">
+                                                        <CardHeader className="pb-3">
+                                                                <CardTitle className="text-lg text-foreground">
+                                                                        Pipeline Tuning
+                                                                </CardTitle>
+                                                                <CardDescription className="text-muted-foreground">
+                                                                        Backend pipeline performance and data processing settings. These settings are configured via environment variables.
+                                                                </CardDescription>
+                                                        </CardHeader>
+                                                        <CardContent className="space-y-4">
+                                                                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-400">
+                                                                        Pipeline settings are configured via environment variables. Contact your administrator to change these settings.
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">Max Batch Size</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">FIREAI_MAX_BATCH_SIZE — Maximum batch size for processing</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">WAL Mode</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">FIREAI_ENABLE_WAL — Enable write-ahead logging for SQLite</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">Coverage Threshold</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">FIREAI_COVERAGE_THRESHOLD_PCT — Minimum coverage percentage</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between py-2 border-b border-border">
+                                                                                <div>
+                                                                                        <Label className="text-foreground/90">Log Level</Label>
+                                                                                        <p className="text-xs text-muted-foreground mt-1">FIREAI_LOG_LEVEL — Logging verbosity (DEBUG, INFO, WARNING, ERROR)</p>
+                                                                                </div>
+                                                                                <Badge variant="outline" className="text-amber-500 border-amber-500/30">Env Var</Badge>
+                                                                        </div>
+                                                                </div>
                                                         </CardContent>
                                                 </Card>
                                         </TabsContent>

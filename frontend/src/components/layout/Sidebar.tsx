@@ -119,6 +119,7 @@ const navItems: NavItem[] = [
                 defaultLabel: "FACP Selector",
                 icon: Cpu,
                 path: "/facp",
+                dataOnboarding: "nav-facp",
         },
         {
                 labelKey: "nav.marine",
@@ -175,6 +176,7 @@ const navItems: NavItem[] = [
                 defaultLabel: "Digital Twin",
                 icon: Box,
                 path: "/digital-twin",
+                dataOnboarding: "nav-digital-twin",
         },
         {
                 labelKey: "nav.dtConvert",
@@ -219,12 +221,14 @@ const navItems: NavItem[] = [
                 defaultLabel: "Environment",
                 icon: CloudSun,
                 path: "/environment",
+                dataOnboarding: "nav-environment",
         },
         {
                 labelKey: "nav.monitor",
                 defaultLabel: "Monitor",
                 icon: Activity,
                 path: "/monitor",
+                dataOnboarding: "nav-monitor",
         },                {
                         labelKey: "nav.fdsSimulation",
                         defaultLabel: "FDS Simulation",
@@ -329,6 +333,13 @@ const navItems: NavItem[] = [
                         defaultLabel: "Topology",
                         icon: Network,
                         path: "/topology",
+                        requiredRole: "admin",
+                },
+                {
+                        labelKey: "nav.rbac",
+                        defaultLabel: "RBAC Permissions",
+                        icon: Shield,
+                        path: "/rbac",
                         requiredRole: "admin",
                 },
 ];

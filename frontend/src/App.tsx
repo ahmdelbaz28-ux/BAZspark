@@ -208,6 +208,11 @@ const TopologyPage = lazy(() =>
                 default: m.TopologyPage,
         })),
 );
+const RbacPage = lazy(() =>
+        import("./pages/RbacPage").then((m) => ({
+                default: m.RbacPage,
+        })),
+);
 
 // V193 (R10): Skip-link for keyboard users to bypass the sidebar.
 // First focusable element on every page. WCAG 2.4.1 (Level A) requirement.
@@ -364,6 +369,7 @@ const handleSearchOpen = useCallback(() => {
                 { path: "/webhook-management", element: <WebhookManagementPage />, requiredRole: "admin" },
                 { path: "/generative-design", element: <GenerativeDesignPage />, requiredRole: "admin" },
                 { path: "/topology", element: <TopologyPage />, requiredRole: "admin" },
+                { path: "/rbac", element: <RbacPage />, requiredRole: "admin" },
         ], []);
 
         // Determine if we're on a public route (no AppShell)
