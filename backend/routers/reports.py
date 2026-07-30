@@ -824,19 +824,21 @@ def _escape_xml(value):
 
 def _add_pdf_value(story, styles, value, label, safe_label, depth):
     """Append a single key/value pair to the PDF story."""
+    from reportlab.platypus import Paragraph as _Paragraph  # noqa: F811
+
     if isinstance(value, (str, int, float, bool)):
         safe_value = _escape_xml(value)
-        story.append(Paragraph(
+        story.append(_Paragraph(
             f"<b>{safe_label}:</b> {safe_value}", styles['Normal']
         ))
     elif isinstance(value, list):
-        story.append(Paragraph(
+        story.append(_Paragraph(
             f"<b>{safe_label}:</b> {len(value)} items", styles['Normal']
         ))
         for i, item in enumerate(value[:20]):
             _add_data_to_pdf(story, styles, item, f"{label}[{i}].", depth + 1)
     elif isinstance(value, dict):
-        story.append(Paragraph(f"<b>{label}:</b>", styles['Normal']))
+        story.append(_Paragraph(f"<b>{label}:</b>", styles['Normal']))
         _add_data_to_pdf(story, styles, value, f"  {label}.", depth + 1)
 
 

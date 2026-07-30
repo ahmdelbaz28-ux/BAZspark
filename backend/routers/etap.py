@@ -41,10 +41,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/integrations/etap", tags=["ETAP Integration"])
 
-# ── Annotated dependency aliases (S8410) ────────────────────────────────────
-EtapServiceDep = Annotated[EtapService, Depends(get_etap_service)]
-# ────────────────────────────────────────────────────────────────────────────
-
 _ETAP_NOT_CONFIGURED = "ETAP integration not configured"
 _PROJECT_ID_DESCRIPTION = "Project ID"
 
@@ -53,6 +49,11 @@ def get_etap_service(request: Request):
     """Dependency to get ETAP service instance."""
     db = request.app.state.db
     return EtapService(db)
+
+
+# ── Annotated dependency aliases (S8410) ────────────────────────────────────
+EtapServiceDep = Annotated[EtapService, Depends(get_etap_service)]
+# ────────────────────────────────────────────────────────────────────────────
 
 
 # ─── Connection Endpoints ────────────────────────────────────────────────────

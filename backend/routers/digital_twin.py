@@ -45,16 +45,6 @@ from parsers._path_security import UnsafePathError, validate_input_path, validat
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/digital-twin", tags=["digital-twin"])
 
-# ── Annotated dependency aliases (S8410) ────────────────────────────────────
-DigitalTwinServiceDep = Annotated[DigitalTwinService, Depends(get_digital_twin_service)]
-ConfigManagerDep = Annotated[ConversionConfigManager, Depends(get_config_manager)]
-ExportExecuteRole = Annotated[None, Depends(require_permission(Permission.EXPORT_EXECUTE))]
-SystemConfigRole = Annotated[None, Depends(require_permission(Permission.SYSTEM_CONFIG))]
-# ────────────────────────────────────────────────────────────────────────────
-
-
-
-
 # ── Dependency injection (FIX #24) ─────────────────────────────────────────
 # Previously, service and config_manager were created at module level,
 # making testing difficult and causing import-order issues.
@@ -67,6 +57,14 @@ def get_digital_twin_service() -> DigitalTwinService:
 def get_config_manager() -> ConversionConfigManager:
     """Provide ConversionConfigManager instance via dependency injection."""
     return ConversionConfigManager()
+
+
+# ── Annotated dependency aliases (S8410) ────────────────────────────────────
+DigitalTwinServiceDep = Annotated[DigitalTwinService, Depends(get_digital_twin_service)]
+ConfigManagerDep = Annotated[ConversionConfigManager, Depends(get_config_manager)]
+ExportExecuteRole = Annotated[None, Depends(require_permission(Permission.EXPORT_EXECUTE))]
+SystemConfigRole = Annotated[None, Depends(require_permission(Permission.SYSTEM_CONFIG))]
+# ────────────────────────────────────────────────────────────────────────────
 
 
 def _safe_resolve_upload_path(filename: str) -> str:

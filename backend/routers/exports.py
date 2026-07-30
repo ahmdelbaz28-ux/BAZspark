@@ -1,7 +1,7 @@
 import io
 import json
 from datetime import datetime, timezone
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -20,8 +20,6 @@ def _generate_excel_export(project, devices, connections):
     """Generate Excel export content with multiple sheets."""
     try:
         from openpyxl import Workbook
-        from openpyxl.styles import Alignment, Font, PatternFill
-        from openpyxl.utils import get_column_letter
     except ImportError:
         raise HTTPException(  # NOSONAR — S8415
             status_code=503,
@@ -50,6 +48,8 @@ def _generate_excel_export(project, devices, connections):
 
 
 def _write_project_sheet(wb, project, device_count, connection_count):
+    from openpyxl.styles import Font, PatternFill  # noqa: F811
+
     ws_proj = wb.active
     ws_proj.title = "Project"
     header_font = Font(bold=True, color="FFFFFF")
@@ -76,6 +76,7 @@ def _write_project_sheet(wb, project, device_count, connection_count):
 
 
 def _write_devices_sheet(wb, devices):
+    from openpyxl.styles import Alignment, Font, PatternFill  # noqa: F811
     from openpyxl.utils import get_column_letter
 
     ws_dev = wb.create_sheet("Devices")
@@ -112,6 +113,7 @@ def _write_devices_sheet(wb, devices):
 
 
 def _write_connections_sheet(wb, connections):
+    from openpyxl.styles import Alignment, Font, PatternFill  # noqa: F811
     from openpyxl.utils import get_column_letter
 
     ws_conn = wb.create_sheet("Connections")
@@ -136,6 +138,7 @@ def _write_connections_sheet(wb, connections):
 
 
 def _write_boq_sheet(wb, devices, connections):
+    from openpyxl.styles import Alignment, Font, PatternFill  # noqa: F811
     from openpyxl.utils import get_column_letter
 
     ws_boq = wb.create_sheet("Bill of Quantities")
