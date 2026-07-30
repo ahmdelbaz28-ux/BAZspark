@@ -531,6 +531,9 @@ def validate_api_key(key: str) -> APIKeyInfo | None:  # NOSONAR — S3776: cogni
     #   2. Security: env var is authenticated via HMAC timing-safe
     #      comparison (hmac.compare_digest), same as file lookup.
     env_fallback_result = None
+    stored_hash: str = ""
+    role_str: str = Role.VIEWER.value
+    description: str = ""
     with _keys_lock:
         keys = _load_keys()
         info = keys.get(lookup)
@@ -553,6 +556,11 @@ def validate_api_key(key: str) -> APIKeyInfo | None:  # NOSONAR — S3776: cogni
                 # timing oracle: warm-valid hits return in <1ms, matching
                 # the invalid-key path.
                 return None
+        else:
+            # Copy out the fields we need under the lock, then release.
+            stored_hash = info.get("bcrypt_hash") or info.get("key_hash", "")
+            role_str = info.get("role", Role.VIEWER.value)
+            description = info.get("description", "")
 
     # Deferred add_api_key OUTSIDE _keys_lock to avoid re-entrant deadlock.
     # add_api_key() acquires _keys_lock internally (non-re-entrant Lock).
@@ -562,10 +570,14 @@ def validate_api_key(key: str) -> APIKeyInfo | None:  # NOSONAR — S3776: cogni
 
     # _fallback_registered is False here — continue with normal lookup flow.
     # Copy out the fields we need under the lock, then release.
-        # Copy out the fields we need under the lock, then release.
-        stored_hash = info.get("bcrypt_hash") or info.get("key_hash", "")
-        role_str = info.get("role", Role.VIEWER.value)
-        description = info.get("description", "")
+    # NOTE: stored_hash/role_str/description are populated inside the
+    # `with _keys_lock` block above when `info` is truthy. They are read
+    # here OUTSIDE the lock so bcrypt verification (slow) doesn't hold it.
+    if not info:
+        # Should be unreachable: the `with _keys_lock` block above returns
+        # None when info is falsy and env_fallback_result is None. But be
+        # defensive — if we ever reach here, treat as auth failure.
+        return None
 
     # Verify the key against the stored bcrypt hash OUTSIDE the lock
     # (bcrypt.checkpw is slow — don't hold the lock during it).

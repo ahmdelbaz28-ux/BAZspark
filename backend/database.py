@@ -668,6 +668,28 @@ class Database:
             cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_project ON etap_sync_logs(project_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_created ON etap_sync_logs(created_at)")
 
+            # V151: Vision API Keys — AES-256-GCM encrypted storage for
+            # customer-supplied OpenAI/Anthropic/Gemini keys. Used by the
+            # CUA (Computer Use Agent) screenshot analysis loop.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS vision_api_keys (
+                    id TEXT PRIMARY KEY,
+                    provider TEXT NOT NULL DEFAULT 'openai',
+                    encrypted_key TEXT NOT NULL,
+                    masked_key TEXT NOT NULL,
+                    base_url TEXT NOT NULL DEFAULT '',
+                    model_name TEXT NOT NULL DEFAULT '',
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    last_used_at TEXT,
+                    description TEXT NOT NULL DEFAULT '',
+                    expires_at TEXT
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_vision_keys_provider ON vision_api_keys(provider)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_vision_keys_active ON vision_api_keys(is_active)")
+
     # ========================================================================
     # Projects CRUD
     # ========================================================================

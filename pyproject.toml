@@ -370,6 +370,13 @@ omit = [
     "*/.env/*"
 ]
 branch = true
+# V214 MERGE FIX: Required when running pytest-xdist (-n auto) with --cov.
+# Without this, coverage workers emit inconsistent data (some with branch,
+# some without) and `coverage combine` raises:
+#   coverage.exceptions.DataError: Can't combine statement coverage data with branch data
+# See https://coverage.readthedocs.io/en/latest/config.html#config-run-concurrency
+concurrency = ["multiprocessing", "thread"]
+sigterm = true
 
 [tool.coverage.report]
 show_missing = true
@@ -647,4 +654,12 @@ known-third-party = ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "alembic", 
 ".agents/skills/cad-bim-controller/*.py" = [
     "N999",  # Invalid module name (skill dir has dashes by convention)
     "F401",  # Unused import (skill test imports for namespace side-effect)
+]
+# V214 MERGE FIX: Vision API Keys router uses `_role=Depends(...)` pattern for
+# permission checks where the dependency result is intentionally unused (the
+# dependency itself raises 403 if permission is denied). This is the canonical
+# FastAPI pattern for authorization gates, but ruff's PT019/PT028 rules flag it.
+"backend/routers/settings.py" = [
+    "PT019",  # Fixture without value injected as parameter (FastAPI Depends pattern)
+    "PT028",  # Test function parameter with default argument (FastAPI Depends pattern)
 ]

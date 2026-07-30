@@ -58,7 +58,7 @@ import os
 import sqlite3
 import threading
 from datetime import datetime, timezone
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, NamedTuple, Protocol, runtime_checkable
 
 from core.models import (
     _ELEMENT_UPDATABLE_KEYS,
@@ -114,6 +114,38 @@ class _ClosedConnectionGuard:
         raise RuntimeError(
             "Cannot operate on a closed UniversalDataModel connection."
         )
+
+
+# V214 MERGE FIX: Module-level NamedTuples for get_statistics().
+# Previously these were defined INSIDE the method body as @dataclass, which
+# fails on Python 3.12+ with:
+#   AttributeError: 'NoneType' object has no attribute '__dict__'
+# because sys.modules.get(cls.__module__) returns None for classes defined
+# inside function bodies. NamedTuple is more lightweight and doesn't trigger
+# that codepath.
+class _UDMStats(NamedTuple):
+    """Statistics returned by UniversalDataModel.get_statistics()."""
+
+    total_elements: int = 0
+    active_elements: int = 0
+    deleted_elements: int = 0
+    total_connections: int = 0
+    total_conflicts: int = 0
+    unresolved_conflicts: int = 0
+
+
+class _UDMStatsFallback(NamedTuple):
+    """Fallback statistics returned when get_statistics() fails.
+
+    V131 FIX: Renamed from _StatsFallback to avoid no-redef lint warnings.
+    """
+
+    total_elements: int = 0
+    active_elements: int = 0
+    deleted_elements: int = 0
+    total_connections: int = 0
+    total_conflicts: int = 0
+    unresolved_conflicts: int = 0
 
 
 class UniversalDataModel:
@@ -756,16 +788,7 @@ class UniversalDataModel:
                 cursor.execute("SELECT COUNT(*) FROM conflicts WHERE resolved = 0")
                 unresolved_conflicts = cursor.fetchone()[0]
 
-                from dataclasses import dataclass
-                @dataclass
-                class _Stats:
-                    total_elements: int = 0
-                    active_elements: int = 0
-                    deleted_elements: int = 0
-                    total_connections: int = 0
-                    total_conflicts: int = 0
-                    unresolved_conflicts: int = 0
-                return _Stats(
+                return _UDMStats(
                     total_elements=total_elements,
                     active_elements=active_elements,
                     deleted_elements=deleted_elements,
@@ -777,16 +800,7 @@ class UniversalDataModel:
                 raise
             except Exception as e:
                 logger.exception("HIGH: Error getting statistics: %s", e)
-                from dataclasses import dataclass
-                @dataclass
-                class _StatsFallback:  # V131 FIX: Renamed to avoid no-redef
-                    total_elements: int = 0
-                    active_elements: int = 0
-                    deleted_elements: int = 0
-                    total_connections: int = 0
-                    total_conflicts: int = 0
-                    unresolved_conflicts: int = 0
-                return _StatsFallback()
+                return _UDMStatsFallback()
 
     # ── Deserialization ───────────────────────────────────────────────────
 

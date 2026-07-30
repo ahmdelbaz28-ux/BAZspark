@@ -536,7 +536,16 @@ def _make_sentinel(raw_log: list, filtered_log: list,
             if (not fn.startswith(test_file_prefixes)
                     and "/_pytest/" not in fn
                     and "/site-packages/pytest" not in fn
-                    and "conftest" not in os.path.basename(fn)):
+                    and "conftest" not in os.path.basename(fn)
+                    # V214 MERGE FIX: Exclude APM/tracing libraries (ddtrace, opentelemetry,
+                    # sentry) that legitimately use marshal internally for bytecode
+                    # instrumentation. These are NOT reachable from HTTP request
+                    # handlers — they wrap Python import machinery. Excluding them
+                    # avoids false positives in local dev environments where these
+                    # libraries are installed (CI does not install them).
+                    and "/ddtrace/" not in fn
+                    and "/opentelemetry/" not in fn
+                    and "/sentry_sdk/" not in fn):
                 filtered_log.append(entry)
         return b""
     return _sentinel

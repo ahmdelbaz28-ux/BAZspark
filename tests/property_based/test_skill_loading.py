@@ -203,7 +203,17 @@ def test_skill_description_properties(
         use_cases=use_cases,
     )
     dumped = description.model_dump(mode="json")
-    expected_triggers = {word.lower() for word in trigger_words if word.strip()}
+    # Mirror the validator's behavior: trigger words that contain no alphabetic
+    # character are prefixed with 'a' so .islower() returns True (see
+    # SkillDescription.validate_triggers). Numeric-only inputs like '00' become 'a00'.
+    expected_triggers = set()
+    for word in trigger_words:
+        if not word.strip():
+            continue
+        lowered = word.strip().lower()
+        if not any(ch.isalpha() for ch in lowered):
+            lowered = f"a{lowered}"
+        expected_triggers.add(lowered)
 
     assert description.short_description == short_description
     assert description.long_description == long_description
