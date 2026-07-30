@@ -428,7 +428,7 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
             except WebSocketDisconnect:
                 break
 
-    except Exception as e:
+    except Exception:
         logger.exception("WebSocket error")
     finally:
         # Remove from active connections
@@ -448,7 +448,7 @@ async def broadcast_to_project(project_id: str, message: WebSocketMessage):
         if conn_key.startswith(project_id):
             try:
                 await ws.send_text(message.model_dump_json())
-            except Exception as e:
+            except Exception:
                 logger.exception("Error broadcasting to connection")
                 # Remove broken connection
                 active_connections.pop(conn_key, None)

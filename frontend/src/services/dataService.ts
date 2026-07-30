@@ -41,7 +41,7 @@ const WS_MAX_RECONNECT_ATTEMPTS = 10;
 const WS_HEALTH_CHECK_INTERVAL = 30000;
 
 export class DataService {
-        private static readonly instance: DataService;
+        private static instance: DataService | null = null;
         private buffer: Record<string, unknown>[] = [];
         private readonly maxBufferSize = 50;
         private isConnected = false;

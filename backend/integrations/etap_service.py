@@ -181,7 +181,7 @@ class EtapService:
                 "success": False,
                 "message": "Connection refused: host is not allowed.",
             }
-        except Exception as exc:
+        except Exception:
             logger.exception("ETAP connection test failed")
             return {"success": False, "message": "Connection failed: unable to reach the specified host and port"}
 

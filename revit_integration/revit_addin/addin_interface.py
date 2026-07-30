@@ -10,7 +10,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-
 _NOT_AUTHENTICATED_MSG = "Not authenticated"
 
 

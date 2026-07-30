@@ -42,7 +42,7 @@ export function useVoiceControl() {
                         (window as unknown as { SpeechRecognition?: SpeechRecognitionConstructor }).SpeechRecognition ||
                         (window as unknown as { webkitSpeechRecognition?: SpeechRecognitionConstructor }).webkitSpeechRecognition;
                 if (SpeechRecognitionCtor) {
-                        const rec = new SpeechRecognitionCtor();
+                        const rec = new (SpeechRecognitionCtor as unknown as new () => SpeechRecognition)();
                         rec.continuous = false;
                         rec.interimResults = false;
                         rec.lang = "en-US"; // English supported mostly

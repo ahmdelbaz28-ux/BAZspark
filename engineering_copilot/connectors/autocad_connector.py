@@ -58,7 +58,6 @@ from engineering_copilot.models.unified_model import (
     UnifiedEngineeringModel,
 )
 
-
 _NOT_CONNECTED_MSG = "Not connected to AutoCAD"
 
 
