@@ -229,12 +229,12 @@ from fireai.constants.nfpa72 import (  # noqa: I001
     COVERAGE_RADIUS_FACTOR as NFPA72_COVERAGE_RADIUS_FACTOR,
     HEAT_ABSOLUTE_MAX_SPACING_M as _HEAT_ABSOLUTE_MAX_SPACING_M,
     HEAT_MAX_SPACING_M as NFPA72_HEAT_MAX_SPACING_M,  # noqa: F401
-    NAC_MIN_CD as NFPA72_NAC_MIN_CD,
-    NAC_SLEEPING_MIN_CD as NFPA72_NAC_SLEEPING_MIN_CD,
-    NAC_WALL_HEIGHT_M as NFPA72_NAC_WALL_HEIGHT_M,
+    NAC_MIN_CD as NFPA72_NAC_MIN_CD,  # noqa: F401 — re-exported for backend/routers/qomn.py
+    NAC_SLEEPING_MIN_CD as NFPA72_NAC_SLEEPING_MIN_CD,  # noqa: F401 — re-exported for backend/routers/qomn.py
+    NAC_WALL_HEIGHT_M as NFPA72_NAC_WALL_HEIGHT_M,  # noqa: F401 — re-exported for backend routers
     PULL_STATION_FROM_EXIT_M as NFPA72_PULL_STATION_FROM_EXIT_M,  # noqa: F401
     PULL_STATION_HEIGHT_M as NFPA72_PULL_STATION_HEIGHT_M,  # noqa: F401
-    PULL_STATION_MAX_CORRIDOR_SPACING_M as NFPA72_PULL_STATION_MAX_CORRIDOR_SPACING_M,
+    PULL_STATION_MAX_CORRIDOR_SPACING_M as NFPA72_PULL_STATION_MAX_CORRIDOR_SPACING_M,  # noqa: F401 — re-exported for backend routers
     SMOKE_HEIGHT_SPACING_TABLE as NFPA72_SMOKE_SPACING_TABLE,  # noqa: F401
     SMOKE_MAX_SPACING_M as NFPA72_SMOKE_MAX_SPACING_M,
     SMOKE_PRACTICAL_CEILING_HEIGHT_M as _SMOKE_PRACTICAL_CEILING_HEIGHT_M,
@@ -295,8 +295,19 @@ NFPA72_WALL_MAX_DISTANCE_FACTOR = 0.5  # S/2 per NFPA 72 §17.6.3.1.1
 # underestimation of voltage drop — a life-safety hazard.
 # Now we store the 20°C reference values and apply temperature correction
 # in compute_voltage_drop() using R_T = R_20 * [1 + alpha*(T-20)].
+
+# TIA-568, CCTV, and access control constants now imported from canonical source
+from fireai.constants import (
+    ACCESS_CONTROL_READER_HEIGHT_M,  # noqa: F401 — re-exported for backend routers
+    CCTV_LENS_FOV_DEG,  # noqa: F401 — re-exported for backend routers
+    TIA568_HORIZONTAL_MAX_M,  # noqa: F401 — re-exported for backend routers
+    TIA568_TOTAL_CHANNEL_MAX_M,  # noqa: F401 — re-exported for backend routers
+)
+
+# NEC ampacity at 60°C now imported from canonical source (fireai/constants/nec.py)
 from fireai.constants.nec import (
     COPPER_TEMP_COEFFICIENT,
+    NEC_AMPACITY_60C,  # noqa: F401 — re-exported for backend/routers/qomn.py
 )
 from fireai.constants.nec import (
     DEFAULT_OPERATING_TEMP_C as _NEC_DEFAULT_OPERATING_TEMP_C,
@@ -307,18 +318,6 @@ from fireai.constants.nec import (
 from fireai.constants.nec import (
     TABLE8_REFERENCE_TEMP_C as _NEC_TABLE8_REFERENCE_TEMP_C,
 )
-
-# NEC ampacity at 60°C now imported from canonical source (fireai/constants/nec.py)
-from fireai.constants.nec import NEC_AMPACITY_60C as NEC_AMPACITY_60C
-
-# TIA-568, CCTV, and access control constants now imported from canonical source
-from fireai.constants import (
-    TIA568_HORIZONTAL_MAX_M as TIA568_HORIZONTAL_MAX_M,
-    TIA568_TOTAL_CHANNEL_MAX_M as TIA568_TOTAL_CHANNEL_MAX_M,
-    CCTV_LENS_FOV_DEG as CCTV_LENS_FOV_DEG,
-    ACCESS_CONTROL_READER_HEIGHT_M as ACCESS_CONTROL_READER_HEIGHT_M,
-)
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LAYER 2 — COMPUTATION ENGINE (IEEE-754 Bit-Exact Arithmetic)

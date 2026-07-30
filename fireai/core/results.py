@@ -9,8 +9,8 @@ enabling incremental migration from raw dicts to typed results.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
-from typing import Any, Iterator, List, Optional, Tuple
+from dataclasses import asdict, dataclass, field
+from typing import Any, Iterator, Optional
 
 
 class _DictCompatMixin:
