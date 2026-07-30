@@ -34,7 +34,7 @@ import {
         Smartphone,
 } from "lucide-react";
 import type React from "react";
-import { memo, useCallback, useState } from "react";
+import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
