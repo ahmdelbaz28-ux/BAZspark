@@ -1,10 +1,36 @@
 """Shared parser base class with security validation."""
 
+from __future__ import annotations
+
 import os
 from abc import ABC, abstractmethod
-from typing import ClassVar, Set
+from dataclasses import dataclass, field
+from typing import Any, ClassVar, Generic, List, Set, TypeVar
 
 from parsers._path_security import UnsafePathError, validate_file_size, validate_input_path
+
+T = TypeVar('T')
+
+
+@dataclass
+class ParseResult(Generic[T]):
+    """Generic parse result with typed data payload.
+
+    T is the parser-specific data type (e.g., List[ParsedRoom], BuildingModel).
+    Common metadata (source_file, success, errors, warnings) is lifted out
+    of individual result types.
+
+    Usage:
+        def parse(self, path: str) -> ParseResult[List[ParsedRoom]]:
+            data = parse_internal(path)
+            return ParseResult(source_file=path, success=True, data=data)
+    """
+
+    source_file: str
+    success: bool
+    data: T
+    errors: List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
 
 
 class ParserBase(ABC):
@@ -31,5 +57,5 @@ class ParserBase(ABC):
         return filepath
 
     @abstractmethod
-    def parse(self, filepath: str, **kwargs):
+    def parse(self, filepath: str, **kwargs) -> ParseResult[Any]:
         ...

@@ -32,7 +32,19 @@ class _DictCompatMixin:
             self._extra[key] = value
 
     def __contains__(self, key: str) -> bool:
-        return key in self.__dataclass_fields__ or key in self._extra
+        if key in self._extra:
+            return True
+        if key in self.__dataclass_fields__:
+            # Match old dict behaviour: optional fields only "contained" when set
+            val = getattr(self, key)
+            if val is not None:
+                return True
+            # Check if the default is None (optional field)
+            default = self.__dataclass_fields__[key].default
+            if default is not None:
+                return True
+            return False
+        return False
 
     def get(self, key: str, default: Any = None) -> Any:
         try:

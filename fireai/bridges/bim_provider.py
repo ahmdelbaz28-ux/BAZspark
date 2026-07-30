@@ -71,6 +71,7 @@ from typing import Any, Protocol, runtime_checkable
 # Per agent.md Rule 2 (NO UNAUTHORIZED CHANGES): we do NOT move BIMRoom
 # out of revit_bim_sync.py — existing code imports it from there.
 # Future refactoring can relocate it; for now, alias prevents duplication.
+from fireai.bridges.building_model_provider import BuildingModelProvider
 from fireai.bridges.revit_bim_sync import BIMRoom
 
 logger = logging.getLogger(__name__)
@@ -367,7 +368,7 @@ def get_provider(name: str | None = None, **kwargs: Any) -> BIMProvider | None:
 # ---------------------------------------------------------------------------
 
 
-class LocalRevitProvider:
+class LocalRevitProvider(BuildingModelProvider):  # type: ignore[no-any-import]
     """
     BIMProvider implementation backed by local Revit/AutoCAD/IFC/JSON.
 
@@ -495,7 +496,7 @@ class LocalRevitProvider:
 # ---------------------------------------------------------------------------
 
 
-class IfcFileProvider:
+class IfcFileProvider(BuildingModelProvider):
     """
     BIMProvider implementation backed by IFC files via ifcopenshell.
 
@@ -669,7 +670,7 @@ class IfcFileProvider:
 # ---------------------------------------------------------------------------
 
 
-class AutodeskForgeProvider:
+class AutodeskForgeProvider(BuildingModelProvider):
     """
     BIMProvider implementation backed by Autodesk Platform Services (APS,
     formerly Forge). This is a STUB — full implementation requires APS
@@ -1150,6 +1151,7 @@ __all__ = [
     "BIMProviderCapability",
     "BIMProviderRegistry",
     "BIMRoom",  # re-exported from revit_bim_sync
+    "BuildingModelProvider",  # from building_model_provider.py
     "IfcFileProvider",
     "LocalRevitProvider",
     "get_provider",

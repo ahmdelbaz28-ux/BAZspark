@@ -34,35 +34,25 @@ from fireai.version import build_version_header as build_version_header
 
 # Public API names that can be imported from this package
 _PUBLIC_NAMES = [
+    # === Facade entry points (recommended) ===
+    "Engine",
+    "Placement",
+    "Safety",
+    # === Core domain types ===
     "FloorAnalyser",
     "BuildingEngine",
     "DensityOptimizer",
-    "SensitivityAnalyzer",
-    "ParameterOptimizer",
-    "ProjectLearner",
-    "ScenarioRunner",
-    "ScenarioLibrary",
-    "ScenarioReporter",
-    "PolygonDensityOptimizer",
     "AuditTrail",
     "AuditStore",
-    "generate_pdf",
     "EventBus",
     "Event",
     "Events",
     "EventRecorder",
-    "RoomState",
-    "RoomTransition",
-    "RoomLifecycle",
-    "RoomLifecycleManager",
     "DigitalTwinInterface",
     "DigitalTwinState",
     "TwinModelVersion",
     "ChangeRecord",
     "DigitalTwin",
-    "AnalysisPipeline",
-    "PipelineStage",
-    "PipelineResult",
     "ConsensusEngine",
     "ConsensusResult",
     "ConfidenceLevel",
@@ -92,6 +82,22 @@ _PUBLIC_NAMES = [
     "SLCCapacitanceAuditor",
     "StairwellSmokeControlIntegrator",
     "NetworkTopologyAuditor",
+    # === Legacy (still importable, moved from __all__ in fireai.core) ===
+    "SensitivityAnalyzer",
+    "ParameterOptimizer",
+    "ProjectLearner",
+    "ScenarioRunner",
+    "ScenarioLibrary",
+    "ScenarioReporter",
+    "PolygonDensityOptimizer",
+    "RoomState",
+    "RoomTransition",
+    "RoomLifecycle",
+    "RoomLifecycleManager",
+    "AnalysisPipeline",
+    "PipelineStage",
+    "PipelineResult",
+    "generate_pdf",
 ]
 
 
@@ -124,6 +130,17 @@ def __getattr__(name):
                 raise ImportError(
                     f"Cannot import '{name}' from fireai.v17_core. "
                     f"This may indicate a missing optional dependency. "
+                    f"Original error: {e}"
+                ) from e
+
+        if name in {"Engine", "Placement", "Safety"}:
+            try:
+                from fireai.facade import Engine, Placement, Safety
+
+                return {"Engine": Engine, "Placement": Placement, "Safety": Safety}[name]
+            except ImportError as e:
+                raise ImportError(
+                    f"Cannot import '{name}' from fireai.facade. "
                     f"Original error: {e}"
                 ) from e
 

@@ -818,6 +818,130 @@ async def get_report(project_id: str, report_id: str):
     return {"data": report, "success": True}
 
 
+def _escape_xml(value):
+    return str(value).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+
+def _add_pdf_value(story, styles, value, label, safe_label, depth):
+    """Append a single key/value pair to the PDF story."""
+    if isinstance(value, (str, int, float, bool)):
+        safe_value = _escape_xml(value)
+        story.append(Paragraph(
+            f"<b>{safe_label}:</b> {safe_value}", styles['Normal']
+        ))
+    elif isinstance(value, list):
+        story.append(Paragraph(
+            f"<b>{safe_label}:</b> {len(value)} items", styles['Normal']
+        ))
+        for i, item in enumerate(value[:20]):
+            _add_data_to_pdf(story, styles, item, f"{label}[{i}].", depth + 1)
+    elif isinstance(value, dict):
+        story.append(Paragraph(f"<b>{label}:</b>", styles['Normal']))
+        _add_data_to_pdf(story, styles, value, f"  {label}.", depth + 1)
+
+
+def _add_data_to_pdf(story, styles, data, prefix="", depth=0) -> None:
+    """Recursively add data to PDF story, limiting depth.
+
+    BUG-M1 FIX: Escape XML entities in values to prevent
+    ReportLab Paragraph markup injection. User-controlled data
+    (device names, types) could contain <, >, & that would be
+    interpreted as markup tags, causing rendering errors or
+    content injection in PDFs.
+    """
+    if depth > 3:
+        return
+    if not isinstance(data, dict):
+        return
+    for key, value in data.items():
+        label = f"{prefix}{key}" if prefix else str(key)
+        safe_label = _escape_xml(label)
+        _add_pdf_value(story, styles, value, label, safe_label, depth)
+
+
+def _build_pdf_report(report, report_id):
+    """Build a PDF StreamingResponse for the given report."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import mm
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+
+    pdf_buffer = io.BytesIO()
+    doc = SimpleDocTemplate(pdf_buffer, pagesize=A4,
+                            topMargin=20*mm, bottomMargin=20*mm,
+                            leftMargin=15*mm, rightMargin=15*mm)
+    styles = getSampleStyleSheet()
+    story = []
+
+    story.append(Paragraph(f"FireAI Report: {report['name']}", styles['Title']))
+    story.append(Paragraph(f"Type: {report['type']} | Status: {report['status']}", styles['Normal']))
+    story.append(Paragraph(f"Generated: {report.get('createdAt', 'N/A')}", styles['Normal']))
+    story.append(Spacer(1, 10*mm))
+
+    params = report.get("parameters", {})
+    content_data = params.get("content", {})
+    if isinstance(content_data, dict):
+        _add_data_to_pdf(story, styles, content_data)
+
+    story.append(Spacer(1, 15*mm))
+    story.append(Paragraph(
+        "FireAI Digital Twin — NFPA 72-2022 Compliant Engineering Report",
+        styles['Normal']
+    ))
+
+    doc.build(story)
+    pdf_buffer.seek(0)
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=\"report_{_safe_filename(report_id)}.pdf\""
+        },
+    )
+
+
+def _build_dxf_report(report, report_id):
+    """Build a DXF StreamingResponse for the given report."""
+    import ezdxf
+
+    doc = ezdxf.new("R2010")
+    msp = doc.modelspace()
+    msp.add_text(
+        f"Report: {report['name']}",
+        dxfattribs={"height": 0.5, "insert": (0, 10)},
+    )
+    msp.add_text(
+        f"Type: {report['type']}",
+        dxfattribs={"height": 0.3, "insert": (0, 9)},
+    )
+    msp.add_text(
+        f"Status: {report['status']}",
+        dxfattribs={"height": 0.3, "insert": (0, 8.5)},
+    )
+    params = report.get("parameters", {})
+    content_data = params.get("content", {})
+    y_offset = 7.5
+    for key, value in content_data.items():
+        if isinstance(value, (str, int, float)):
+            msp.add_text(
+                f"{key}: {value}",
+                dxfattribs={"height": 0.25, "insert": (0, y_offset)},
+            )
+            y_offset -= 0.5
+
+    text_output = io.StringIO()
+    doc.write(text_output)
+    text_output.seek(0)
+    dxf_bytes = text_output.getvalue().encode("utf-8")
+    return StreamingResponse(
+        io.BytesIO(dxf_bytes),
+        media_type="application/dxf",
+        headers={
+            "Content-Disposition": f"attachment; filename=\"report_{_safe_filename(report_id)}.dxf\""
+        },
+    )
+
+
 @router.get("/{report_id}/export", dependencies=[Depends(require_permission(Permission.REPORT_READ))])
 async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     project_id: str,
@@ -847,135 +971,22 @@ async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent 
             },
         )
     if format == "pdf":
-        # PDF generation using reportlab
         try:
-            from reportlab.lib.pagesizes import A4
-            from reportlab.lib.styles import getSampleStyleSheet
-            from reportlab.lib.units import mm
-            from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
-
-            pdf_buffer = io.BytesIO()
-            doc = SimpleDocTemplate(pdf_buffer, pagesize=A4,
-                                    topMargin=20*mm, bottomMargin=20*mm,
-                                    leftMargin=15*mm, rightMargin=15*mm)
-            styles = getSampleStyleSheet()
-            story = []
-
-            # Header
-            story.append(Paragraph(f"FireAI Report: {report['name']}", styles['Title']))
-            story.append(Paragraph(f"Type: {report['type']} | Status: {report['status']}", styles['Normal']))
-            story.append(Paragraph(f"Generated: {report.get('createdAt', 'N/A')}", styles['Normal']))
-            story.append(Spacer(1, 10*mm))
-
-            # Report content
-            params = report.get("parameters", {})
-            content_data = params.get("content", {})
-
-            def _add_data(data, prefix="", depth=0) -> None:
-                """
-                Recursively add data to PDF, limiting depth.
-
-                BUG-M1 FIX: Escape XML entities in values to prevent
-                ReportLab Paragraph markup injection. User-controlled data
-                (device names, types) could contain <, >, & that would be
-                interpreted as markup tags, causing rendering errors or
-                content injection in PDFs.
-                """
-                if depth > 3:
-                    return
-                if isinstance(data, dict):
-                    for key, value in data.items():
-                        label = f"{prefix}{key}" if prefix else str(key)
-                        # Escape XML entities in labels and values
-                        safe_label = str(label).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                        if isinstance(value, (str, int, float, bool)):
-                            safe_value = str(value).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                            story.append(Paragraph(
-                                f"<b>{safe_label}:</b> {safe_value}", styles['Normal']
-                            ))
-                        elif isinstance(value, list):
-                            story.append(Paragraph(
-                                f"<b>{safe_label}:</b> {len(value)} items", styles['Normal']
-                            ))
-                            for i, item in enumerate(value[:20]):
-                                _add_data(item, f"{label}[{i}].", depth + 1)
-                        elif isinstance(value, dict):
-                            story.append(Paragraph(f"<b>{label}:</b>", styles['Normal']))
-                            _add_data(value, f"  {label}.", depth + 1)
-
-            if isinstance(content_data, dict):
-                _add_data(content_data)
-
-            # Footer
-            story.append(Spacer(1, 15*mm))
-            story.append(Paragraph(
-                "FireAI Digital Twin — NFPA 72-2022 Compliant Engineering Report",
-                styles['Normal']
-            ))
-
-            doc.build(story)
-            pdf_buffer.seek(0)
-
-            return StreamingResponse(
-                pdf_buffer,
-                media_type="application/pdf",
-                headers={
-                    "Content-Disposition": f"attachment; filename=\"report_{_safe_filename(report_id)}.pdf\""
-                },
-            )
+            return _build_pdf_report(report, report_id)
         except ImportError:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=501,
                 detail="PDF export requires the reportlab package",
             )
         except Exception:
-            logger.exception("PDF generation failed", exc_info=True)  # Use exception instead of error
+            logger.exception("PDF generation failed", exc_info=True)
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=500,
                 detail="PDF generation failed — an internal error occurred. Contact administrator.",
             )
-    elif format == "dxf":
-        # DXF export of report data
+    if format == "dxf":
         try:
-            import ezdxf
-
-            doc = ezdxf.new("R2010")
-            msp = doc.modelspace()
-            msp.add_text(
-                f"Report: {report['name']}",
-                dxfattribs={"height": 0.5, "insert": (0, 10)},
-            )
-            msp.add_text(
-                f"Type: {report['type']}",
-                dxfattribs={"height": 0.3, "insert": (0, 9)},
-            )
-            msp.add_text(
-                f"Status: {report['status']}",
-                dxfattribs={"height": 0.3, "insert": (0, 8.5)},
-            )
-            # Add report content
-            params = report.get("parameters", {})
-            content_data = params.get("content", {})
-            y_offset = 7.5
-            for key, value in content_data.items():
-                if isinstance(value, (str, int, float)):
-                    msp.add_text(
-                        f"{key}: {value}",
-                        dxfattribs={"height": 0.25, "insert": (0, y_offset)},
-                    )
-                    y_offset -= 0.5
-
-            text_output = io.StringIO()
-            doc.write(text_output)
-            text_output.seek(0)
-            dxf_bytes = text_output.getvalue().encode("utf-8")
-            return StreamingResponse(
-                io.BytesIO(dxf_bytes),
-                media_type="application/dxf",
-                headers={
-                    "Content-Disposition": f"attachment; filename=\"report_{_safe_filename(report_id)}.dxf\""
-                },
-            )
+            return _build_dxf_report(report, report_id)
         except ImportError:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=501,
@@ -1015,9 +1026,9 @@ class AhjSubmittalRequest(BaseModel):
     )
 
 
-@router.post("/ahj-submittal", dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])  # NOSONAR: python:S3776
+@router.post("/ahj-submittal", dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
 @limiter.limit("10/minute")
-async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSubmittalRequest):
+async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSubmittalRequest):  # NOSONAR: python:S3776
     """
     Generate an AHJ-ready NFPA 72 compliance proof document.
 

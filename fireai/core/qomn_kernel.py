@@ -42,6 +42,13 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from fireai.core.results import (
+    BatteryCapacityResult,
+    HeatSpacingResult,
+    SmokeSpacingResult,
+    VoltageDropResult,
+)
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # LAYER 0 — INPUT SANITIZATION (Physics Guards)
 # Source: QOMN Specification Section 3, Layer 0
@@ -922,24 +929,20 @@ class QOMNKernel:
     def __init__(self) -> None:
         self.audit = QOMNAuditLog()
 
-    def smoke_detector_spacing(self, ceiling_height_m: float) -> dict[str, Any]:
+    def smoke_detector_spacing(self, ceiling_height_m: float) -> SmokeSpacingResult:
         """Compute smoke detector spacing. Full L0→L1→L2→L3→L4 pipeline."""
-        # L2 computation
         result = compute_smoke_detector_spacing(ceiling_height_m)
-        # L3 validation
         result = validate_smoke_spacing_result(result)
-        # L4 audit
-        # performed but the audit log recorded layer3_passed=False (default)
         self.audit.record(
             "smoke_detector_spacing",
             {"ceiling_height_m": ceiling_height_m},
-            result["nfpa_section"],
-            result,
+            result.nfpa_section,
+            result.to_dict(),
             layer3_passed=True,
         )
         return result
 
-    def heat_detector_spacing(self, ceiling_height_m: float, area_per_detector_m2: float) -> dict[str, Any]:
+    def heat_detector_spacing(self, ceiling_height_m: float, area_per_detector_m2: float) -> HeatSpacingResult:
         """
         Compute heat detector spacing. Full L0→L4 pipeline.
 
@@ -947,16 +950,13 @@ class QOMNKernel:
         Previously skipped validation entirely — no validate_heat_spacing_result()
         function even existed.
         """
-        # L2 computation
         result = compute_heat_detector_spacing(ceiling_height_m, area_per_detector_m2)
-        # L3 validation
         result = validate_heat_spacing_result(result)
-        # L4 audit
         self.audit.record(
             "heat_detector_spacing",
             {"ceiling_height_m": ceiling_height_m, "area_m2": area_per_detector_m2},
-            result["nfpa_section"],
-            result,
+            result.nfpa_section,
+            result.to_dict(),
             layer3_passed=True,
         )
         return result
@@ -966,15 +966,15 @@ class QOMNKernel:
         standby_load_a: float,
         alarm_load_a: float,
         **kwargs,
-    ) -> dict[str, Any]:
+    ) -> BatteryCapacityResult:
         """Compute battery capacity. Full L0→L4 pipeline."""
         result = compute_battery_capacity_ah(standby_load_a, alarm_load_a, **kwargs)
         result = validate_battery_result(result)
         self.audit.record(
             "battery_capacity",
             {"standby_a": standby_load_a, "alarm_a": alarm_load_a},
-            result["nfpa_section"],
-            result,
+            result.nfpa_section,
+            result.to_dict(),
             layer3_passed=True,
         )
         return result
@@ -986,15 +986,15 @@ class QOMNKernel:
         awg_gauge: str,
         supply_voltage_v: float = 24.0,
         max_drop_pct: float = 10.0,
-    ) -> dict[str, Any]:
+    ) -> VoltageDropResult:
         """Compute voltage drop. Full L0→L4 pipeline."""
         result = compute_voltage_drop(current_a, length_m, awg_gauge, supply_voltage_v, max_drop_pct)
         result = validate_voltage_drop_result(result)
         self.audit.record(
             "voltage_drop",
             {"current_a": current_a, "length_m": length_m, "awg": awg_gauge},
-            result["nec_section"],
-            result,
+            result.nec_section,
+            result.to_dict(),
             layer3_passed=True,
         )
         return result
@@ -1027,13 +1027,6 @@ class QOMNKernel:
 import functools
 import logging as _logging
 import os as _os
-
-from fireai.core.results import (
-    BatteryCapacityResult,
-    HeatSpacingResult,
-    SmokeSpacingResult,
-    VoltageDropResult,
-)
 
 _healing_logger = _logging.getLogger("fireai.core.qomn_kernel.self_healing")
 

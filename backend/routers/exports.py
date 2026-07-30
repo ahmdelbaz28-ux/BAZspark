@@ -33,15 +33,28 @@ def _generate_excel_export(project, devices, connections):
         )
 
     wb = Workbook()
+    device_count = len(devices)
+    connection_count = len(connections)
+    _write_project_sheet(wb, project, device_count, connection_count)
+    _write_devices_sheet(wb, devices)
+    _write_connections_sheet(wb, connections)
+    _write_boq_sheet(wb, devices, connections)
 
-    # ── Sheet 1: Project metadata ──────────────────────────────────
+    buf = io.BytesIO()
+    wb.save(buf)
+    content = buf.getvalue()
+    media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    filename = f"{_safe_filename(project.get('name', 'project'))}_export.xlsx"
+
+    return content, media_type, filename
+
+
+def _write_project_sheet(wb, project, device_count, connection_count):
     ws_proj = wb.active
     ws_proj.title = "Project"
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
-    for col, val in enumerate(
-        ["Field", "Value"], start=1
-    ):
+    for col, val in enumerate(["Field", "Value"], start=1):
         cell = ws_proj.cell(row=1, column=col, value=val)
         cell.font = header_font
         cell.fill = header_fill
@@ -51,8 +64,8 @@ def _generate_excel_export(project, devices, connections):
         ("Author", project.get("author", "")),
         ("Exported At (UTC)", datetime.now(timezone.utc).isoformat()),
         ("Software", "FireAI / BAZSPARK v1.55.0 (V213)"),
-        ("Device Count", len(devices)),
-        ("Connection Count", len(connections)),
+        ("Device Count", device_count),
+        ("Connection Count", connection_count),
         ("Standard", "NFPA 72-2022"),
     ]
     for i, (k, v) in enumerate(proj_rows, start=2):
@@ -61,8 +74,13 @@ def _generate_excel_export(project, devices, connections):
     ws_proj.column_dimensions["A"].width = 24
     ws_proj.column_dimensions["B"].width = 48
 
-    # ── Sheet 2: Devices ───────────────────────────────────────────
+
+def _write_devices_sheet(wb, devices):
+    from openpyxl.utils import get_column_letter
+
     ws_dev = wb.create_sheet("Devices")
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
     dev_cols = [
         "ID", "Name", "Type", "Category",
         "X", "Y", "Z", "Rotation",
@@ -88,13 +106,17 @@ def _generate_excel_export(project, devices, connections):
         ]
         for col, val in enumerate(row_vals, start=1):
             ws_dev.cell(row=i, column=col, value=val)
-    # Auto-size
     for col_idx in range(1, len(dev_cols) + 1):
         ws_dev.column_dimensions[get_column_letter(col_idx)].width = 16
-    ws_dev.column_dimensions["N"].width = 40  # Properties
+    ws_dev.column_dimensions["N"].width = 40
 
-    # ── Sheet 3: Connections ───────────────────────────────────────
+
+def _write_connections_sheet(wb, connections):
+    from openpyxl.utils import get_column_letter
+
     ws_conn = wb.create_sheet("Connections")
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
     conn_cols = ["ID", "From ID", "To ID", "Cable Size", "Length (m)", "Type", "Created At"]
     for col, name in enumerate(conn_cols, start=1):
         cell = ws_conn.cell(row=1, column=col, value=name)
@@ -112,21 +134,24 @@ def _generate_excel_export(project, devices, connections):
     for col_idx in range(1, len(conn_cols) + 1):
         ws_conn.column_dimensions[get_column_letter(col_idx)].width = 18
 
-    # ── Sheet 4: Bill of Quantities (deterministic, no Math.random) ─
+
+def _write_boq_sheet(wb, devices, connections):
+    from openpyxl.utils import get_column_letter
+
     ws_boq = wb.create_sheet("Bill of Quantities")
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
     boq_cols = ["Category", "Type", "Count", "Unit", "Notes"]
     for col, name in enumerate(boq_cols, start=1):
         cell = ws_boq.cell(row=1, column=col, value=name)
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal="center")
-    # Aggregate devices by (category, type)
-    agg: Dict[Tuple[str, str], int] = {}
+    agg = {}
     for d in devices:
         key = (str(d.get("category", "unknown")), str(d.get("type", "unknown")))
         agg[key] = agg.get(key, 0) + 1
-    # Cable aggregation by size
-    cable_agg: Dict[str, float] = {}
+    cable_agg = {}
     for c in connections:
         size = str(c.get("cableSize", "unknown"))
         cable_agg[size] = cable_agg.get(size, 0.0) + float(c.get("length", 0.0))
@@ -138,7 +163,6 @@ def _generate_excel_export(project, devices, connections):
         ws_boq.cell(row=row_idx, column=4, value="unit")
         ws_boq.cell(row=row_idx, column=5, value="Fire alarm device per NFPA 72")
         row_idx += 1
-    # Cable rows
     for size, total_len in sorted(cable_agg.items()):
         ws_boq.cell(row=row_idx, column=1, value="Cable")
         ws_boq.cell(row=row_idx, column=2, value=size)
@@ -149,15 +173,6 @@ def _generate_excel_export(project, devices, connections):
     for col_idx in range(1, len(boq_cols) + 1):
         ws_boq.column_dimensions[get_column_letter(col_idx)].width = 20
     ws_boq.column_dimensions["E"].width = 40
-
-    # ── Serialize to .xlsx bytes ───────────────────────────────────
-    buf = io.BytesIO()
-    wb.save(buf)
-    content = buf.getvalue()
-    media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    filename = f"{_safe_filename(project.get('name', 'project'))}_export.xlsx"
-
-    return content, media_type, filename
 
 
 def _generate_manifest_export(project, devices, connections, export_type, project_id):

@@ -6,6 +6,8 @@ CRITICAL SAFETY: Reads real DXF and produces valid Polygons only.
 Any invalid geometry is rejected, never guessed.
 """
 
+from __future__ import annotations
+
 import logging
 import math
 from dataclasses import dataclass, field

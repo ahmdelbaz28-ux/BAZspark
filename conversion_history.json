@@ -196,5 +196,59 @@
     "conversion_type": "revit_to_autocad",
     "elements_count": 1,
     "status": "success"
+  },
+  {
+    "version_id": "01af02c9-9296-43dc-9967-4b3c01117ae8",
+    "timestamp": "2026-07-30T11:03:57.941750",
+    "source_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmp0unhfpef.dwg",
+    "target_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpzu0pictm.rvt",
+    "conversion_type": "autocad_to_revit",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "8831c681-259b-466b-a709-2a322dc46f82",
+    "timestamp": "2026-07-30T11:03:57.954304",
+    "source_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmp4yimnzzt.rvt",
+    "target_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpi10xp4ot.dwg",
+    "conversion_type": "revit_to_autocad",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "957cd5d0-902a-4c31-a8d5-3a0ffce48854",
+    "timestamp": "2026-07-30T11:19:21.711517",
+    "source_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpwau9j9ib.dwg",
+    "target_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpcrjfd128.rvt",
+    "conversion_type": "autocad_to_revit",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "57ceb26c-5ba8-4dea-9e59-d05050cb436d",
+    "timestamp": "2026-07-30T11:19:21.718029",
+    "source_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpcej901jt.rvt",
+    "target_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpieqj98p1.dwg",
+    "conversion_type": "revit_to_autocad",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "b7a92d37-f3e4-44f5-b173-98dc97a55e8a",
+    "timestamp": "2026-07-30T11:24:31.230316",
+    "source_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpfm5njh2n.dwg",
+    "target_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpntr9ejm8.rvt",
+    "conversion_type": "autocad_to_revit",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "d985e59b-86a7-4ef9-a56d-7cbe0531fbe6",
+    "timestamp": "2026-07-30T11:24:31.261867",
+    "source_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpqsujh8zh.rvt",
+    "target_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmp9o_b1yln.dwg",
+    "conversion_type": "revit_to_autocad",
+    "elements_count": 1,
+    "status": "success"
   }
 ]
