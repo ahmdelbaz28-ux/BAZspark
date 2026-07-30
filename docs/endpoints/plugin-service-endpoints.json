@@ -1,0 +1,1011 @@
+{
+  "service_name": "plugin-service",
+  "display_name": "Plugin Service",
+  "description": "Manages AI-powered engineering copilot, LLM integration, self-healing diagnostics, and cloud-native v2 API features. Provides generative design, IFC 4.3 mapping, AR export, webhooks, and GraphRAG capabilities.",
+  "version": "1.0.0",
+  "base_url": "/api/v1",
+  "generated_at": "2026-07-29T23:40:39.185688+00:00",
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "path": "/api/v1/engineering-copilot/process-request",
+      "method": "POST",
+      "summary": "Process AI engineering copilot request",
+      "description": "Processes an engineering request through the AI copilot. The copilot can analyze designs, suggest improvements, and verify compliance with NFPA standards. Supports natural language queries about engineering calculations.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "context": {
+            "type": "object",
+            "properties": {
+              "project_id": {
+                "type": "string"
+              }
+            }
+          },
+          "model": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "response": {
+                    "type": "string"
+                  },
+                  "sources": {
+                    "type": "array",
+                    "items": {
+                      "type": "str"
+                    }
+                  },
+                  "confidence": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Process AI engineering copilot request"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid query"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "LLM service not configured"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid query",
+        "401": "Authentication required",
+        "503": "LLM service not configured",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:execute",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of plugin-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "query": "What is the required smoke detector spacing for a 100m² office with 3m ceiling?",
+          "context": {
+            "project_id": "prj_k1l2m3"
+          },
+          "model": "gpt-4o"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "response": "Based on NFPA 72-2022 §17.7.3, for a 100m² office with 3m ceiling, you need 12 smoke detectors at 9.1m spacing.",
+            "sources": [
+              "NFPA 72-2022 §17.7.3",
+              "NFPA 72-2022 §27.6.2"
+            ],
+            "confidence": 0.95
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "copilot",
+        "ai",
+        "engineering"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/engineering-copilot/validate-model",
+      "method": "POST",
+      "summary": "Validate an engineering model with AI",
+      "description": "Validates an engineering model using AI analysis. Checks for compliance violations, design errors, and optimization opportunities. Returns a detailed validation report with specific issues and recommendations.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "model_data": {
+            "type": "object",
+            "properties": {
+              "project_id": {
+                "type": "string"
+              }
+            }
+          },
+          "validation_rules": {
+            "type": "array",
+            "items": {
+              "type": "str"
+            }
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "valid": {
+                    "type": "boolean"
+                  },
+                  "issues": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "warnings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "rule": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "severity": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "recommendations": {
+                    "type": "array",
+                    "items": {
+                      "type": "str"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Validate an engineering model with AI"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid model data"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "LLM service not configured"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid model data",
+        "401": "Authentication required",
+        "503": "LLM service not configured",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:execute",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of plugin-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "model_data": {
+            "project_id": "prj_k1l2m3"
+          },
+          "validation_rules": [
+            "nfpa72_compliance",
+            "detector_spacing"
+          ]
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "valid": true,
+            "issues": [],
+            "warnings": [
+              {
+                "rule": "detector_spacing",
+                "message": "Spacing exceeds 9.1m in corridor 3B",
+                "severity": "warning"
+              }
+            ],
+            "recommendations": [
+              "Consider adding redundant detectors in Zone 5"
+            ]
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "copilot",
+        "ai",
+        "validation"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/llm/chat",
+      "method": "POST",
+      "summary": "Send a chat message to the LLM service",
+      "description": "Sends a chat message to the LLM service and returns the AI response. Supports multi-turn conversations with context. The LLM is configured with a system prompt for fire protection engineering domain expertise.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "model": {
+            "type": "string"
+          },
+          "temperature": {
+            "type": "number"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "object",
+                    "properties": {
+                      "role": {
+                        "type": "string"
+                      },
+                      "content": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "usage": {
+                    "type": "object",
+                    "properties": {
+                      "prompt_tokens": {
+                        "type": "integer"
+                      },
+                      "completion_tokens": {
+                        "type": "integer"
+                      },
+                      "total_tokens": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Send a chat message to the LLM service"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid messages format"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 429,
+            "description": "LLM rate limit exceeded"
+          },
+          {
+            "status_code": 503,
+            "description": "LLM service not configured"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid messages format",
+        "401": "Authentication required",
+        "429": "LLM rate limit exceeded",
+        "503": "LLM service not configured",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:execute",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of plugin-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a fire protection engineering expert."
+            },
+            {
+              "role": "user",
+              "content": "What is the minimum battery backup for NFPA 72?"
+            }
+          ],
+          "model": "gpt-4o",
+          "temperature": 0.7
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "message": {
+              "role": "assistant",
+              "content": "Per NFPA 72-2022 §27.6.2, the minimum battery backup is 24 hours for alarm and 5 minutes for evacuation..."
+            },
+            "model": "gpt-4o",
+            "usage": {
+              "prompt_tokens": 245,
+              "completion_tokens": 512,
+              "total_tokens": 757
+            }
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "llm",
+        "ai",
+        "chat"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/self-healing/health",
+      "method": "GET",
+      "summary": "Get self-healing system health",
+      "description": "Returns the health status of the self-healing diagnostic system. Includes the number of active issues, healing actions taken, and system resilience metrics.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "active_issues": {
+                    "type": "integer"
+                  },
+                  "healing_actions_today": {
+                    "type": "integer"
+                  },
+                  "resilience_score": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get self-healing system health"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of plugin-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "status": "healthy",
+            "active_issues": 0,
+            "healing_actions_today": 3,
+            "resilience_score": 0.98
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "self-healing",
+        "diagnostics"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/generative/design",
+      "method": "POST",
+      "summary": "Generate design alternatives using AI",
+      "description": "Generates fire alarm design alternatives using AI-powered generative design. Takes project constraints and requirements as input and returns multiple design options with compliance scores. Part of the v2 API.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string"
+          },
+          "requirements": {
+            "type": "object",
+            "properties": {
+              "building_type": {
+                "type": "string"
+              },
+              "area": {
+                "type": "integer"
+              },
+              "compliance_standard": {
+                "type": "string"
+              }
+            }
+          },
+          "num_alternatives": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "project_id"
+        ]
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "alternatives": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "detector_count": {
+                          "type": "integer"
+                        },
+                        "compliance_score": {
+                          "type": "number"
+                        },
+                        "cost_estimate": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "generation_time_ms": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Generate design alternatives using AI"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid requirements"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "Generative design service unavailable"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid requirements",
+        "401": "Authentication required",
+        "503": "Generative design service unavailable",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:execute",
+      "rate_limit": "5/minute",
+      "notes": [
+        "Part of plugin-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "project_id": "prj_k1l2m3",
+          "requirements": {
+            "building_type": "office",
+            "area": 5000,
+            "compliance_standard": "nfpa72"
+          },
+          "num_alternatives": 3
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "alternatives": [
+              {
+                "id": "alt_1",
+                "name": "Optimal Coverage",
+                "detector_count": 42,
+                "compliance_score": 0.98,
+                "cost_estimate": "$125,000"
+              },
+              {
+                "id": "alt_2",
+                "name": "Budget Friendly",
+                "detector_count": 35,
+                "compliance_score": 0.92,
+                "cost_estimate": "$98,000"
+              }
+            ],
+            "generation_time_ms": 3450
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "generative",
+        "ai",
+        "v2"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/webhooks/subscribe",
+      "method": "POST",
+      "summary": "Subscribe to webhook events",
+      "description": "Registers a webhook subscription for specified event types. When events occur, the system sends HTTP POST requests to the specified URL. Supports events like device.created, report.completed, and workflow.status_changed.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "str"
+            }
+          },
+          "secret": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "subscription_id": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  },
+                  "events": {
+                    "type": "array",
+                    "items": {
+                      "type": "str"
+                    }
+                  },
+                  "created_at": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Subscribe to webhook events"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid URL or events"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid URL or events",
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of plugin-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "url": "https://example.com/webhooks",
+          "events": [
+            "device.created",
+            "report.completed",
+            "workflow.status_changed"
+          ],
+          "secret": "whsec_abc123"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "subscription_id": "sub_u1v2w3",
+            "url": "https://example.com/webhooks",
+            "events": [
+              "device.created",
+              "report.completed"
+            ],
+            "created_at": "2026-07-30T12:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "webhooks",
+        "v2",
+        "notifications"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/graphrag/ask",
+      "method": "POST",
+      "summary": "Ask a question using GraphRAG knowledge base",
+      "description": "Asks a question against the project's knowledge graph using GraphRAG (Graph Retrieval-Augmented Generation). Combines structured knowledge (elements, connections) with LLM reasoning for accurate engineering answers.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "project_id": {
+            "type": "string"
+          },
+          "include_sources": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "project_id"
+        ]
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "answer": {
+                    "type": "string"
+                  },
+                  "sources": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "element_id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "confidence": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Ask a question using GraphRAG knowledge base"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid question"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "GraphRAG service not configured"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid question",
+        "401": "Authentication required",
+        "503": "GraphRAG service not configured",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:execute",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of plugin-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "question": "How many smoke detectors are in Zone 5 and what is the coverage compliance?",
+          "project_id": "prj_k1l2m3",
+          "include_sources": true
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "answer": "The project has 342 smoke detectors across 5 zones, with 98.5% coverage compliance per NFPA 72-2022.",
+            "sources": [
+              {
+                "element_id": "elm_f1g2h3",
+                "type": "device"
+              },
+              {
+                "report_id": "rpt_a1b2c3",
+                "type": "compliance_report"
+              }
+            ],
+            "confidence": 0.97
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "graphrag",
+        "ai",
+        "v2",
+        "knowledge"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/multi-db/health",
+      "method": "GET",
+      "summary": "Get multi-database system health",
+      "description": "Returns the health status of all connected databases (PostgreSQL, Redis, Neo4j, Qdrant). Used for monitoring the multi-database architecture that supports BIM caching, vector search, and graph queries.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "postgresql": {
+                    "type": "string"
+                  },
+                  "redis": {
+                    "type": "string"
+                  },
+                  "neo4j": {
+                    "type": "string"
+                  },
+                  "qdrant": {
+                    "type": "string"
+                  },
+                  "vector_collections": {
+                    "type": "integer"
+                  },
+                  "graph_nodes": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get multi-database system health"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of plugin-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "postgresql": "connected",
+            "redis": "connected",
+            "neo4j": "connected",
+            "qdrant": "connected",
+            "vector_collections": 3,
+            "graph_nodes": 12450
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "multi-db",
+        "diagnostics",
+        "v2"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

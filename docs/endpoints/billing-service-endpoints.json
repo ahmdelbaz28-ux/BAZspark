@@ -1,0 +1,489 @@
+{
+  "service_name": "billing-service",
+  "display_name": "Billing Service",
+  "description": "Manages API key lifecycle, subscription settings, and access control for paid features. Handles API key creation, rotation, revocation, and role-based permission management.",
+  "version": "1.0.0",
+  "base_url": "/api/v1",
+  "generated_at": "2026-07-29T23:40:39.183620+00:00",
+  "total_endpoints": 5,
+  "endpoints": [
+    {
+      "path": "/api/v1/settings",
+      "method": "GET",
+      "summary": "Get application settings",
+      "description": "Returns the current application settings including feature flags, API configuration, and system parameters. Settings are role-aware — admin users see all settings, while regular users see only public settings.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "max_projects_per_user": {
+                    "type": "integer"
+                  },
+                  "default_project_status": {
+                    "type": "string"
+                  },
+                  "qomn_engine_version": {
+                    "type": "string"
+                  },
+                  "api_rate_limits": {
+                    "type": "object",
+                    "properties": {
+                      "default": {
+                        "type": "string"
+                      },
+                      "write": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get application settings"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of billing-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "max_projects_per_user": 10,
+            "default_project_status": "draft",
+            "qomn_engine_version": "2.0.0",
+            "api_rate_limits": {
+              "default": "100/minute",
+              "write": "30/minute"
+            }
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "settings",
+        "configuration"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/settings",
+      "method": "PUT",
+      "summary": "Update application settings",
+      "description": "Updates application settings. Only admin users can modify settings. Changes are applied immediately and logged in the audit trail.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "max_projects_per_user": {
+            "type": "integer"
+          },
+          "default_project_status": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "updated_keys": {
+                    "type": "array",
+                    "items": {
+                      "type": "str"
+                    }
+                  },
+                  "updated_at": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Update application settings"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid setting value"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 403,
+            "description": "Admin role required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid setting value",
+        "401": "Authentication required",
+        "403": "Admin role required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of billing-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "max_projects_per_user": 15,
+          "default_project_status": "draft"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "updated_keys": [
+              "max_projects_per_user"
+            ],
+            "updated_at": "2026-07-30T12:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "settings",
+        "configuration"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/settings/keys/openai",
+      "method": "GET",
+      "summary": "Get OpenAI API key configuration",
+      "description": "Returns the status of the OpenAI API key configuration. The actual key is never exposed — only whether it's configured and its type. Keys are AES-256-GCM encrypted at rest.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "configured": {
+                    "type": "boolean"
+                  },
+                  "key_type": {
+                    "type": "string"
+                  },
+                  "encryption": {
+                    "type": "string"
+                  },
+                  "last_validated": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get OpenAI API key configuration"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of billing-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "configured": true,
+            "key_type": "openai",
+            "encryption": "AES-256-GCM",
+            "last_validated": "2026-07-29T10:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "settings",
+        "api-keys",
+        "encryption"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/settings/keys/openai",
+      "method": "PUT",
+      "summary": "Update OpenAI API key",
+      "description": "Updates the OpenAI API key used by the LLM service. The key is encrypted with AES-256-GCM before storage. The key is validated by making a test request to the OpenAI API.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "format": "password"
+          },
+          "model": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "api_key"
+        ]
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "configured": {
+                    "type": "boolean"
+                  },
+                  "key_type": {
+                    "type": "string"
+                  },
+                  "validated": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Update OpenAI API key"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid API key format"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 403,
+            "description": "Admin role required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid API key format",
+        "401": "Authentication required",
+        "403": "Admin role required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config",
+      "rate_limit": "5/minute",
+      "notes": [
+        "Part of billing-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "api_key": "sk-proj-...",
+          "model": "gpt-4o"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "configured": true,
+            "key_type": "openai",
+            "validated": true
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "settings",
+        "api-keys",
+        "encryption"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/health/statistics",
+      "method": "GET",
+      "summary": "Get system usage statistics",
+      "description": "Returns system usage statistics including total projects, devices, reports, and API call counts. Used for billing and capacity planning.",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "period",
+            "type": "string",
+            "required": false,
+            "description": "Aggregation period: day, week, month (default: month)"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "total_projects": {
+                    "type": "integer"
+                  },
+                  "total_devices": {
+                    "type": "integer"
+                  },
+                  "total_reports": {
+                    "type": "integer"
+                  },
+                  "api_calls_this_month": {
+                    "type": "integer"
+                  },
+                  "active_users": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get system usage statistics"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: health:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of billing-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "total_projects": 47,
+            "total_devices": 12450,
+            "total_reports": 892,
+            "api_calls_this_month": 156789,
+            "active_users": 12
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "health",
+        "statistics",
+        "billing"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

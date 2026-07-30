@@ -1,0 +1,897 @@
+{
+  "service_name": "reporting-service",
+  "display_name": "Reporting Service",
+  "description": "Generates engineering reports, exports data in multiple formats (DXF, Revit, IFC), and handles AHJ submittal documentation. Supports voltage drop, short circuit, cable sizing, and NFPA 72 compliance reports.",
+  "version": "1.0.0",
+  "base_url": "/api/v1",
+  "generated_at": "2026-07-29T23:40:39.178760+00:00",
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "path": "/api/v1/projects/{project_id}/reports",
+      "method": "GET",
+      "summary": "List all reports for a project",
+      "description": "Returns a paginated list of all engineering reports for the specified project. Supports filtering by report type and status. Report types include voltage_drop, short_circuit, cable_sizing, nfpa72_coverage, and nfpa72_battery.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          }
+        ],
+        "query": [
+          {
+            "name": "page",
+            "type": "integer",
+            "required": false,
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "type": "integer",
+            "required": false,
+            "description": "Items per page"
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": false,
+            "description": "Filter by report type"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "page": {
+                    "type": "integer"
+                  },
+                  "limit": {
+                    "type": "integer"
+                  },
+                  "totalPages": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "List all reports for a project"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: report:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of reporting-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "items": [
+              {
+                "id": "rpt_a1b2c3",
+                "type": "nfpa72_battery",
+                "name": "Battery Calculation Report",
+                "status": "completed",
+                "createdAt": "2026-07-28T10:00:00Z"
+              }
+            ],
+            "total": 1,
+            "page": 1,
+            "limit": 20,
+            "totalPages": 1
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "reports",
+        "projects"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/reports",
+      "method": "POST",
+      "summary": "Create a new report",
+      "description": "Creates a new engineering report for the project. The report is created in 'pending' status and can be generated later. Supports all report types including voltage_drop, short_circuit, cable_sizing, and nfpa72 compliance reports.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "nfpa72_battery",
+        "name": "Battery Calculation - Tower A"
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 201,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Create a new report"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid report type or parameters"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid report type or parameters",
+        "401": "Authentication required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: report:generate",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of reporting-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "type": "nfpa72_battery",
+          "name": "Battery Calculation - Tower A"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "id": "rpt_d4e5f6",
+            "type": "nfpa72_battery",
+            "name": "Battery Calculation - Tower A",
+            "status": "pending",
+            "createdAt": "2026-07-30T12:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "reports",
+        "projects"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/reports/generate",
+      "method": "POST",
+      "summary": "Generate an engineering report",
+      "description": "Generates an engineering report with the specified parameters. The report is generated asynchronously and may take time for complex calculations. Returns the report with status 'completed' or 'failed'.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "nfpa72_coverage",
+        "parameters": {
+          "include_compliance": true
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "results": {
+                    "type": "object",
+                    "properties": {
+                      "compliant": {
+                        "type": "boolean"
+                      },
+                      "detector_count": {
+                        "type": "integer"
+                      },
+                      "coverage_percentage": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "completedAt": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Generate an engineering report"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid report type or parameters"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid report type or parameters",
+        "401": "Authentication required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: report:generate",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of reporting-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "type": "nfpa72_coverage",
+          "parameters": {
+            "include_compliance": true
+          }
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "id": "rpt_g7h8i9",
+            "type": "nfpa72_coverage",
+            "status": "completed",
+            "results": {
+              "compliant": true,
+              "detector_count": 42,
+              "coverage_percentage": 98.5
+            },
+            "completedAt": "2026-07-30T12:01:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "reports",
+        "projects",
+        "engineering"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/reports/{report_id}",
+      "method": "GET",
+      "summary": "Get a specific report by ID",
+      "description": "Returns the full details of a specific report including type, parameters, status, and results (if completed).",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          },
+          {
+            "name": "report_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the report"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "properties": {
+                      "battery_type": {
+                        "type": "string"
+                      },
+                      "derating_factor": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "results": {
+                    "type": "object",
+                    "properties": {
+                      "required_ah": {
+                        "type": "number"
+                      },
+                      "recommended_battery": {
+                        "type": "string"
+                      },
+                      "compliant": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get a specific report by ID"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Report not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Report not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: report:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of reporting-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "id": "rpt_a1b2c3",
+            "type": "nfpa72_battery",
+            "name": "Battery Calculation Report",
+            "status": "completed",
+            "parameters": {
+              "battery_type": "lead_acid",
+              "derating_factor": 1.2
+            },
+            "results": {
+              "required_ah": 26.5,
+              "recommended_battery": "PS-120",
+              "compliant": true
+            }
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "reports",
+        "projects"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/reports/{report_id}/export",
+      "method": "GET",
+      "summary": "Export a report as downloadable file",
+      "description": "Exports a completed report in the specified format (PDF, CSV, JSON). Returns a streaming response with the appropriate Content-Type header. The filename is sanitized to prevent path traversal attacks.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          },
+          {
+            "name": "report_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the report"
+          }
+        ],
+        "query": [
+          {
+            "name": "format",
+            "type": "string",
+            "required": false,
+            "description": "Export format: pdf, csv, json (default: pdf)"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "content_type": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Export a report as downloadable file"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Report not yet completed"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Report not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Report not yet completed",
+        "401": "Authentication required",
+        "404": "Report not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: report:read",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of reporting-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "type": "StreamingResponse",
+          "content_type": "application/pdf",
+          "filename": "Battery_Calculation_Report_2026-07-30.pdf"
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "reports",
+        "export"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/reports/ahj-submittal",
+      "method": "POST",
+      "summary": "Generate AHJ submittal package",
+      "description": "Generates a complete Authority Having Jurisdiction (AHJ) submittal package for the project. Includes all required engineering reports, compliance certificates, and supporting documentation.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "include_certificates": {
+            "type": "boolean"
+          },
+          "jurisdiction": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "package_id": {
+                    "type": "string"
+                  },
+                  "reports_included": {
+                    "type": "integer"
+                  },
+                  "certificates_included": {
+                    "type": "integer"
+                  },
+                  "generated_at": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Generate AHJ submittal package"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "No completed reports available for submittal"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "No completed reports available for submittal",
+        "401": "Authentication required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: report:generate",
+      "rate_limit": "5/minute",
+      "notes": [
+        "Part of reporting-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "include_certificates": true,
+          "jurisdiction": "KSA"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "package_id": "ahj_j1k2l3",
+            "reports_included": 5,
+            "certificates_included": 3,
+            "generated_at": "2026-07-30T12:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "reports",
+        "ahj",
+        "submittal"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/export/dxf",
+      "method": "GET",
+      "summary": "Export project data as DXF",
+      "description": "Exports the project's fire alarm design data in DXF format for AutoCAD compatibility. Includes all device positions, connections, and annotations on the appropriate layers.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "content_type": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Export project data as DXF"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: export:read",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of reporting-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "type": "StreamingResponse",
+          "content_type": "application/dxf",
+          "filename": "FireAlarm_Design.dxf"
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "export",
+        "dxf"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/export/ifc",
+      "method": "GET",
+      "summary": "Export project data as IFC",
+      "description": "Exports the project's fire alarm design data in IFC (Industry Foundation Classes) format for BIM interoperability. Supports IFC 4.0 with fire protection extensions.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "content_type": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Export project data as IFC"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: export:read",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of reporting-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "type": "StreamingResponse",
+          "content_type": "application/ifc",
+          "filename": "FireAlarm_BIM.ifc"
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "export",
+        "ifc",
+        "bim"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

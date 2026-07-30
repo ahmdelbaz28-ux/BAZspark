@@ -1,0 +1,905 @@
+{
+  "service_name": "notification-service",
+  "display_name": "Notification Service",
+  "description": "Manages environmental data, real-time synchronization, health checks, and notification delivery. Provides weather, geocoding, elevation, air quality, and hazardous material data for engineering context.",
+  "version": "1.0.0",
+  "base_url": "/api/v1",
+  "generated_at": "2026-07-29T23:40:39.179996+00:00",
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "path": "/api/v1/environment/weather",
+      "method": "GET",
+      "summary": "Get weather data for a location",
+      "description": "Returns current weather conditions for the specified location. Used for construction site safety planning and fire risk assessment. Data includes temperature, humidity, wind speed, and precipitation.",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "lat",
+            "type": "number",
+            "required": true,
+            "description": "Latitude (-90 to 90)"
+          },
+          {
+            "name": "lon",
+            "type": "number",
+            "required": true,
+            "description": "Longitude (-180 to 180)"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "temperature": {
+                    "type": "number"
+                  },
+                  "humidity": {
+                    "type": "integer"
+                  },
+                  "wind_speed": {
+                    "type": "number"
+                  },
+                  "wind_direction": {
+                    "type": "string"
+                  },
+                  "precipitation": {
+                    "type": "number"
+                  },
+                  "conditions": {
+                    "type": "string"
+                  },
+                  "fire_risk": {
+                    "type": "string"
+                  },
+                  "location": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get weather data for a location"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid coordinates"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "Weather service unavailable"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid coordinates",
+        "401": "Authentication required",
+        "503": "Weather service unavailable"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of notification-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "temperature": 42.5,
+            "humidity": 25,
+            "wind_speed": 15.3,
+            "wind_direction": "NW",
+            "precipitation": 0.0,
+            "conditions": "Clear",
+            "fire_risk": "high",
+            "location": "Riyadh, KSA"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "environment",
+        "weather"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/environment/geocode",
+      "method": "GET",
+      "summary": "Geocode an address to coordinates",
+      "description": "Converts a street address to geographic coordinates (latitude/longitude). Used for site location mapping and environmental data retrieval. Returns multiple candidates with confidence scores.",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "address",
+            "type": "string",
+            "required": true,
+            "description": "Street address to geocode"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "lat": {
+                    "type": "number"
+                  },
+                  "lon": {
+                    "type": "number"
+                  },
+                  "formatted_address": {
+                    "type": "string"
+                  },
+                  "confidence": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Geocode an address to coordinates"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Address parameter required"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "Geocoding service unavailable"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Address parameter required",
+        "401": "Authentication required",
+        "503": "Geocoding service unavailable"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of notification-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "lat": 24.7136,
+            "lon": 46.6753,
+            "formatted_address": "King Fahd Rd, Riyadh, Saudi Arabia",
+            "confidence": 0.95
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "environment",
+        "geocoding"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/environment/hazmat",
+      "method": "GET",
+      "summary": "Check hazardous materials for a location",
+      "description": "Returns hazardous material information for the specified location. Includes chemical inventory, risk levels, and recommended safety measures. Used for fire protection engineering site assessment.",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "lat",
+            "type": "number",
+            "required": true,
+            "description": "Latitude"
+          },
+          {
+            "name": "lon",
+            "type": "number",
+            "required": true,
+            "description": "Longitude"
+          },
+          {
+            "name": "radius_km",
+            "type": "number",
+            "required": false,
+            "description": "Search radius in km (default: 1.0)"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "hazmat_sites": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "distance_km": {
+                          "type": "number"
+                        },
+                        "risk_level": {
+                          "type": "string"
+                        },
+                        "chemicals": {
+                          "type": "array",
+                          "items": {
+                            "type": "str"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "total_sites": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Check hazardous materials for a location"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid coordinates"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "Hazmat service unavailable"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid coordinates",
+        "401": "Authentication required",
+        "503": "Hazmat service unavailable"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of notification-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "hazmat_sites": [
+              {
+                "name": "Chemical Storage Facility",
+                "distance_km": 0.5,
+                "risk_level": "high",
+                "chemicals": [
+                  "Class B Flammable Liquids"
+                ]
+              }
+            ],
+            "total_sites": 1
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "environment",
+        "hazmat",
+        "safety"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/environment/air-quality",
+      "method": "GET",
+      "summary": "Get air quality index for a location",
+      "description": "Returns the Air Quality Index (AQI) and pollutant concentrations for the specified location. Used for HVAC design and occupational health assessment.",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "lat",
+            "type": "number",
+            "required": true,
+            "description": "Latitude"
+          },
+          {
+            "name": "lon",
+            "type": "number",
+            "required": true,
+            "description": "Longitude"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "aqi": {
+                    "type": "integer"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "pm25": {
+                    "type": "number"
+                  },
+                  "pm10": {
+                    "type": "number"
+                  },
+                  "o3": {
+                    "type": "number"
+                  },
+                  "location": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get air quality index for a location"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid coordinates"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "Air quality service unavailable"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid coordinates",
+        "401": "Authentication required",
+        "503": "Air quality service unavailable"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of notification-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "aqi": 85,
+            "category": "Moderate",
+            "pm25": 25.3,
+            "pm10": 45.7,
+            "o3": 38.2,
+            "location": "Industrial District, Riyadh"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "environment",
+        "air-quality"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/environment/severe-weather",
+      "method": "GET",
+      "summary": "Check severe weather alerts for a location",
+      "description": "Returns active severe weather alerts for the specified location. Includes alert type, severity, and recommended actions.",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "lat",
+            "type": "number",
+            "required": true,
+            "description": "Latitude"
+          },
+          {
+            "name": "lon",
+            "type": "number",
+            "required": true,
+            "description": "Longitude"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "alerts": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "severity": {
+                          "type": "string"
+                        },
+                        "expires": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "total_alerts": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Check severe weather alerts for a location"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid coordinates"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "Weather service unavailable"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid coordinates",
+        "401": "Authentication required",
+        "503": "Weather service unavailable"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of notification-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "alerts": [
+              {
+                "type": "Dust Storm Warning",
+                "severity": "moderate",
+                "expires": "2026-07-30T18:00:00Z"
+              }
+            ],
+            "total_alerts": 1
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "environment",
+        "weather",
+        "alerts"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/environment/full-context",
+      "method": "GET",
+      "summary": "Get complete environmental context for a location",
+      "description": "Returns all environmental data for a location in a single response: weather, geocoding, elevation, air quality, hazmat, and severe weather. Used for comprehensive site assessment reports.",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "lat",
+            "type": "number",
+            "required": true,
+            "description": "Latitude"
+          },
+          {
+            "name": "lon",
+            "type": "number",
+            "required": true,
+            "description": "Longitude"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "location": {
+                    "type": "object",
+                    "properties": {
+                      "lat": {
+                        "type": "number"
+                      },
+                      "lon": {
+                        "type": "number"
+                      },
+                      "address": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "weather": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "air_quality": {
+                    "type": "object",
+                    "properties": {
+                      "aqi": {
+                        "type": "integer"
+                      }
+                    }
+                  },
+                  "hazmat": {
+                    "type": "object",
+                    "properties": {
+                      "total_sites": {
+                        "type": "integer"
+                      }
+                    }
+                  },
+                  "elevation": {
+                    "type": "object",
+                    "properties": {
+                      "meters": {
+                        "type": "integer"
+                      }
+                    }
+                  },
+                  "severe_weather": {
+                    "type": "object",
+                    "properties": {
+                      "total_alerts": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get complete environmental context for a location"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid coordinates"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "One or more services unavailable"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid coordinates",
+        "401": "Authentication required",
+        "503": "One or more services unavailable"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:read",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of notification-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "location": {
+              "lat": 24.7136,
+              "lon": 46.6753,
+              "address": "Riyadh, KSA"
+            },
+            "weather": {
+              "temperature": 42.5
+            },
+            "air_quality": {
+              "aqi": 85
+            },
+            "hazmat": {
+              "total_sites": 1
+            },
+            "elevation": {
+              "meters": 612
+            },
+            "severe_weather": {
+              "total_alerts": 0
+            }
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "environment",
+        "context"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/sync",
+      "method": "POST",
+      "summary": "Synchronize project data",
+      "description": "Triggers a synchronization of the project data across all connected systems (AutoCAD, Revit, Digital Twin). The sync status is tracked and can be monitored via GET sync endpoint.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "force": {
+            "type": "boolean"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "projectId": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "lastSync": {
+                    "type": "string"
+                  },
+                  "pendingChanges": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Synchronize project data"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: project:update",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of notification-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "source": "autocad",
+          "force": false
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "projectId": "prj_k1l2m3",
+            "status": "syncing",
+            "lastSync": "2026-07-30T12:00:00Z",
+            "pendingChanges": 0
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "sync",
+        "projects"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/health",
+      "method": "GET",
+      "summary": "Health check with database connectivity",
+      "description": "Returns the health status of the API including database connectivity, version, and uptime. Used by load balancers and monitoring systems. Returns 'ok' when all systems are operational, 'degraded' when database is slow, and 'error' when database is disconnected.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "uptime": {
+                "type": "number"
+              },
+              "database": {
+                "type": "string"
+              },
+              "timestamp": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Health check with database connectivity"
+        },
+        "error": [
+          {
+            "status_code": 503,
+            "description": "Service unavailable — database disconnected"
+          }
+        ]
+      },
+      "error_responses": {
+        "503": "Service unavailable — database disconnected"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: health:read",
+      "rate_limit": "1000/minute",
+      "notes": [
+        "Part of notification-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "status": "ok",
+          "version": "1.0.0",
+          "uptime": 86400.5,
+          "database": "connected",
+          "timestamp": "2026-07-30T12:00:00Z"
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "health",
+        "monitoring"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}
