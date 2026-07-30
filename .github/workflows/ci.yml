@@ -423,7 +423,7 @@ jobs:
           pip install --only-binary :all: -e .
 
       - name: Install pip-audit
-        run: pip install --only-binary :all: pip-audit==0.3.1
+        run: "pip install --only-binary :all: pip-audit==0.3.1"
 
       - name: Audit Python dependencies
         # V300 / C-XX FIX: Combined approach — pip-audit runs with severity
