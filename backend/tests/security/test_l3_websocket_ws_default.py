@@ -404,17 +404,11 @@ def test_l3_runtime_ws_rejected_without_opt_in(monkeypatch):
 
     # Call send_request with a ws:// target_node. This should raise
     # ValueError because allow_insecure_ws is False.
-    async def _call():
-        # send_request is async — we need to run it in an event loop.
-        # The method signature in the source is `async def send_request(
-        # self, target_node, request_data)`. We pass minimal args.
-        await transport.send_request(
+    with pytest.raises(ValueError, match="insecure ws://"):
+        asyncio.run(transport.send_request(
             target_node="ws://insecure.example.com:8002",
             request_data={"id": "test", "method": "ping"},
-        )
-
-    with pytest.raises(ValueError, match="insecure ws://"):
-        asyncio.run(_call())
+        ))
 
 
 # ─── L-3 part (k): RUNTIME — wss:// default works without opt-in ────────────

@@ -676,7 +676,8 @@ async def get_qomn_constants():
     }
 
 
-@router.post("/qomn/golden-tests", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
+@router.post("/qomn/golden-tests", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
+             responses={503: {"description": "QOMN kernel unavailable"}, 500: {"description": "Computation or validation error"}, 422: {"description": "Invalid input"}})
 @limiter.limit("10/minute")
 async def run_golden_tests(request: Request):
     """

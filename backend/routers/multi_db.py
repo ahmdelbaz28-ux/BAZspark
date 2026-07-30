@@ -15,7 +15,7 @@ multiple database technologies.
 """
 
 import logging
-from typing import Dict, List, Optional
+from typing import Annotated, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -67,7 +67,7 @@ async def get_from_redis(key: str):
 
 @router.post("/redis/set", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 @limiter.limit("30/minute")
-async def set_in_redis(request: Request, key: str, value: str, ttl: Optional[int] = Query(None, description="Time to live in seconds")):  # NOSONAR - python:S8410
+async def set_in_redis(request: Request, key: str, value: str, ttl: Annotated[Optional[int], Query(None, description="Time to live in seconds")]):
     """Set a value in Redis cache."""
     try:
         db_service = get_multi_db_service()
@@ -146,7 +146,7 @@ async def store_element_embeddings(request: Request, element_id: str, embeddings
 
 @router.post("/bim/find-similar", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 @limiter.limit("30/minute")
-async def find_similar_elements(request: Request, query_embedding: List[float], limit: int = Query(5, ge=1, le=20)):  # NOSONAR - python:S8410
+async def find_similar_elements(request: Request, query_embedding: List[float], limit: Annotated[int, Query(5, ge=1, le=20)]):
     """Find similar BIM elements using vector search."""
     try:
         db_service = get_multi_db_service()
@@ -167,7 +167,7 @@ async def create_element_relationships(
     request: Request,
     element_id: str,
     related_elements: List[str],
-    relationship_type: str = Query("CONNECTED_TO", description="Type of relationship")  # NOSONAR - python:S8410
+    relationship_type: Annotated[str, Query("CONNECTED_TO", description="Type of relationship")]
 ):
     """Create relationships between elements in Neo4j."""
     try:
@@ -193,7 +193,7 @@ async def create_element_relationships(
 @router.get("/bim/related-elements/{element_id}", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def find_related_elements(
     element_id: str,
-    relationship_type: str = Query("CONNECTED_TO", description="Type of relationship")  # NOSONAR - python:S8410
+    relationship_type: Annotated[str, Query("CONNECTED_TO", description="Type of relationship")]
 ):
     """Find elements related to a specific element in Neo4j."""
     try:
@@ -209,7 +209,8 @@ async def find_related_elements(
         raise HTTPException(status_code=500, detail="Find related elements failed")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@router.get("/neo4j/query", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
+@router.get("/neo4j/query", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))],
+             responses={400: {"description": "Invalid query type"}, 500: {"description": "Query execution failed"}})
 async def execute_neo4j_query(
     query_type: str = Query(..., description="Predefined safe query template to execute"),
     parameters: Optional[str] = Query(None, description="JSON string of query parameters")

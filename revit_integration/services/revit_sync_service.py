@@ -286,7 +286,7 @@ class RevitSyncService:
 
         return elements
 
-    async def _process_element(self, element_dto: RevitElementDTO, project_dto: Optional[RevitProjectDTO]) -> bool:
+    async def _process_element(self, element_dto: RevitElementDTO, _project_dto: Optional[RevitProjectDTO]) -> bool:
         """
         Process a single Revit element for synchronization.
 

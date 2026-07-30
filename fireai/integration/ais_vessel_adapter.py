@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
 # Constants
 # ===========================================================================
 
-DEFAULT_BASE_URL = "http://data.aishub.net/ws.php"
+DEFAULT_BASE_URL = "http://data.aishub.net/ws.php"  # nosec: S5332 — AISHub public API does not offer HTTPS; data is public vessel positions (no credentials transmitted)
 DEFAULT_RADIUS_NM = 50  # nautical miles
 
 # IMO ship-type codes — tankers and hazardous-cargo vessels.

@@ -88,7 +88,7 @@ test.describe("Settings Page — API Tab", () => {
                 const apiTab = page.getByRole("tab", { name: /api|API/i }).first();
                 await expect(apiTab).toBeVisible({ timeout: 10000 });
                 await apiTab.click();
-                await page.waitForTimeout(300);
+                await page.waitForLoadState('networkidle');
 
                 // Check API timeout input
                 const timeoutInput = page.locator("input[type='number']").first();
@@ -108,7 +108,7 @@ test.describe("Settings Page — Reports Tab", () => {
                 const reportsTab = page.getByRole("tab", { name: /التقارير|reports/i }).first();
                 await expect(reportsTab).toBeVisible({ timeout: 10000 });
                 await reportsTab.click();
-                await page.waitForTimeout(300);
+                await page.waitForLoadState('networkidle');
 
                 // Check that the report generator section is present
                 const reportGen = page.locator("text=مولد التقارير المتقدم");
@@ -125,11 +125,13 @@ test.describe("Settings Page — Save", () => {
 
                 // Look for save button
                 const saveBtn = page.getByRole("button", { name: /حفظ|save/i }).first();
-                if (await saveBtn.isVisible()) {
-                        // Set up route to intercept save
-                        const savePromise = page.waitForRequest("**/api/v1/settings", { timeout: 5000 }).catch(() => null);
-                        await saveBtn.click();
-                        // If backend save is triggered, the request will be caught
-                }
+                await expect(saveBtn).toBeVisible({ timeout: 5000 });
+
+                // Set up route to intercept save
+                const savePromise = page.waitForRequest("**/api/v1/settings", { timeout: 5000 }).catch(() => null);
+                await saveBtn.click();
+                // Assert that the save API request was actually triggered
+                const saveRequest = await savePromise;
+                expect(saveRequest).not.toBeNull();
         });
 });

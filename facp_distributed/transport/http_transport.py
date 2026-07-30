@@ -23,6 +23,10 @@ class CircuitBreakerState:
     HALF_OPEN = "half_open"
 
 
+class CircuitBreakerError(Exception):
+    """Raised when the circuit breaker is in the OPEN state."""
+
+
 class CircuitBreaker:
     """Circuit breaker pattern to prevent cascade failures"""
 
@@ -44,7 +48,7 @@ class CircuitBreaker:
                     self.state = CircuitBreakerState.HALF_OPEN
                     logger.info("Circuit breaker transitioning to HALF_OPEN state")
                 else:
-                    raise Exception("Circuit breaker is OPEN")
+                    raise CircuitBreakerError("Circuit breaker is OPEN")
 
             try:
                 result = func(*args, **kwargs)

@@ -182,7 +182,7 @@ class EtapService:
                 "message": "Connection refused: host is not allowed.",
             }
         except Exception as exc:
-            logger.error("ETAP connection test failed: %s", exc)
+            logger.exception("ETAP connection test failed")
             return {"success": False, "message": "Connection failed: unable to reach the specified host and port"}
 
     def get_status(self, project_id: str) -> dict:
@@ -270,7 +270,10 @@ class EtapService:
         if not ship_spec:
             raise ValueError("Project not found or no ship specification available")
 
-        loads_csv = export_etap_loads_csv(None, ship_spec) if request.include_loads else ""
+        from marine.core.types import ShipProject
+
+        ship = ShipProject(project_id=project_id, ship_name=f"Ship_{project_id}")
+        loads_csv = export_etap_loads_csv(ship, ship_spec) if request.include_loads else ""
         sources_csv = export_etap_sources_csv(ship_spec) if request.include_sources else ""
 
         # Log sync

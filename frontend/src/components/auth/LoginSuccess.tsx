@@ -3,10 +3,10 @@ import { motion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
 
 interface LoginSuccessProps {
-  accessGranted: string;
-  sessionInitialized: string;
-  redirecting: string;
-  variant?: "default" | "dark";
+  readonly accessGranted: string;
+  readonly sessionInitialized: string;
+  readonly redirecting: string;
+  readonly variant?: "default" | "dark";
 }
 
 export function LoginSuccess({ accessGranted, sessionInitialized, redirecting, variant = "default" }: LoginSuccessProps) {

@@ -178,7 +178,7 @@ async def send_agent_command(agent_type: str, action: str, args: Dict[str, Any],
                 raise HTTPException(status_code=400, detail=response["error"])
             return response
         except asyncio.TimeoutError as exc:
-            logger.error("Agent command %s timed out after %s seconds", action, timeout)
+            logger.warning("Agent command %s timed out after %s seconds", action, timeout)
             raise HTTPException(status_code=504, detail="Local Agent command execution timed out.") from exc
         except Exception as e:
             if isinstance(e, HTTPException):

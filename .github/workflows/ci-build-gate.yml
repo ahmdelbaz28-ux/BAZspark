@@ -43,7 +43,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund --ignore-scripts
 
       - name: TypeScript type-check
         run: npm run typecheck
@@ -76,7 +76,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund --ignore-scripts
 
       - name: Run Vitest
         run: npm run test
@@ -100,18 +100,18 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip --only-binary :all:
           # Install core test deps first so they're always available
           # V266 FIX: Added pytest-timeout — required by the pytest step below
           # which uses --timeout=300. Without it, pytest fails with:
           # "unrecognized arguments: --timeout=300" (exit code 4).
-          pip install pytest pytest-asyncio pytest-timeout httpx slowapi tenacity openpyxl
+          pip install --only-binary :all: pytest==8.3.4 pytest-asyncio==0.25.2 pytest-timeout==2.3.1 httpx==0.28.1 slowapi==0.5.1 tenacity==9.0.0 openpyxl==3.1.5
           # Install project requirements (may fail on optional deps — that's OK)
-          pip install -r requirements.txt || echo "::warning::Some requirements.txt packages failed to install (non-blocking)"
+          pip install --only-binary :all: -r requirements.txt || echo "::warning::Some requirements.txt packages failed to install (non-blocking)"
           # V260.1 FIX: Install the package itself in editable mode so that
           # `import backend.app` works correctly. Without this, the package
           # metadata isn't registered and some imports may fail silently.
-          pip install -e . || echo "::warning::Editable install failed (non-blocking)"
+          pip install --only-binary :all: -e . || echo "::warning::Editable install failed (non-blocking)"
 
       - name: Generate ephemeral test secrets (V288 SECURITY — no hardcoded creds)
         run: |

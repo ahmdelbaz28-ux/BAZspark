@@ -39,6 +39,7 @@ NFPA REFERENCES:
 from __future__ import annotations
 
 import logging
+import math
 import os
 from dataclasses import dataclass
 
@@ -223,7 +224,7 @@ class OpenAQAdapter(ExternalApiAdapter):
         pm10 = latest("pm10")
         co = latest("co")
 
-        if pm25 != pm25:  # NaN check
+        if math.isnan(pm25):  # NaN check
             risk = "UNKNOWN"
         elif pm25 >= PM25_HIGH_THRESHOLD:
             risk = "HIGH"
@@ -237,9 +238,9 @@ class OpenAQAdapter(ExternalApiAdapter):
 
         return AirQualityAssessment(
             readings=readings,
-            current_pm25=round(pm25, 2) if pm25 == pm25 else float("nan"),
-            current_pm10=round(pm10, 2) if pm10 == pm10 else float("nan"),
-            current_co=round(co, 2) if co == co else float("nan"),
+            current_pm25=round(pm25, 2) if not math.isnan(pm25) else float("nan"),
+            current_pm10=round(pm10, 2) if not math.isnan(pm10) else float("nan"),
+            current_co=round(co, 2) if not math.isnan(co) else float("nan"),
             false_alarm_risk=risk,
             data_source=self._base_url,
             nfpa_reference="NFPA 72-2022 §17.7 / §17.7.4.2",

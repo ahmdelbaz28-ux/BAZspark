@@ -141,25 +141,25 @@ _BLOCKED_HOSTNAMES = frozenset({
 _BLOCKED_NETWORKS = tuple(
     ipaddress.ip_network(net)
     for net in [
-        "0.0.0.0/8",          # "This host" network
-        "10.0.0.0/8",         # RFC1918 private
-        "100.64.0.0/10",      # CGNAT (RFC6598) — not flagged by is_private
-        "127.0.0.0/8",        # Loopback
-        "169.254.0.0/16",     # Link-local (includes AWS/GCP/Azure metadata)
-        "172.16.0.0/12",      # RFC1918 private
-        "192.0.0.0/24",       # IETF protocol assignments
-        "192.0.2.0/24",       # TEST-NET-1
-        "192.168.0.0/16",     # RFC1918 private
-        "198.18.0.0/15",      # Benchmarking
-        "198.51.100.0/24",    # TEST-NET-2
-        "203.0.113.0/24",     # TEST-NET-3
-        "224.0.0.0/4",        # Multicast
-        "240.0.0.0/4",        # Reserved
-        "::1/128",            # IPv6 loopback
-        "::/128",             # IPv6 unspecified
-        "fc00::/7",           # IPv6 Unique Local Addresses
-        "fe80::/10",          # IPv6 link-local
-        "ff00::/8",           # IPv6 multicast
+        "0.0.0.0/8",          # nosec: S1313 — "This host" network, SSRF blocklist
+        "10.0.0.0/8",         # nosec: S1313 — RFC1918 private, SSRF blocklist
+        "100.64.0.0/10",      # nosec: S1313 — CGNAT (RFC6598), SSRF blocklist
+        "127.0.0.0/8",        # nosec: S1313 — Loopback, SSRF blocklist
+        "169.254.0.0/16",     # nosec: S1313 — Link-local (AWS/GCP/Azure metadata), SSRF blocklist
+        "172.16.0.0/12",      # nosec: S1313 — RFC1918 private, SSRF blocklist
+        "192.0.0.0/24",       # nosec: S1313 — IETF protocol assignments, SSRF blocklist
+        "192.0.2.0/24",       # nosec: S1313 — TEST-NET-1, SSRF blocklist
+        "192.168.0.0/16",     # nosec: S1313 — RFC1918 private, SSRF blocklist
+        "198.18.0.0/15",      # nosec: S1313 — Benchmarking, SSRF blocklist
+        "198.51.100.0/24",    # nosec: S1313 — TEST-NET-2, SSRF blocklist
+        "203.0.113.0/24",     # nosec: S1313 — TEST-NET-3, SSRF blocklist
+        "224.0.0.0/4",        # nosec: S1313 — Multicast, SSRF blocklist
+        "240.0.0.0/4",        # nosec: S1313 — Reserved, SSRF blocklist
+        "::1/128",            # nosec: S1313 — IPv6 loopback, SSRF blocklist
+        "::/128",             # nosec: S1313 — IPv6 unspecified, SSRF blocklist
+        "fc00::/7",           # nosec: S1313 — IPv6 Unique Local Addresses, SSRF blocklist
+        "fe80::/10",          # nosec: S1313 — IPv6 link-local, SSRF blocklist
+        "ff00::/8",           # nosec: S1313 — IPv6 multicast, SSRF blocklist
     ]
 )
 
@@ -378,7 +378,6 @@ def validate_host_for_user_input(host: str) -> str:
         if isinstance(e, SSRFError):
             raise  # already an SSRF rejection (shouldn't happen here, defensive)
         # Not a literal IP — fall through to hostname path
-        pass
     else:
         # We have a valid IP literal — check if it's unsafe
         if _is_unsafe_ip(ip):

@@ -19,7 +19,7 @@ Endpoints:
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -41,6 +41,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/integrations/etap", tags=["ETAP Integration"])
 
+# ── Annotated dependency aliases (S8410) ────────────────────────────────────
+EtapServiceDep = Annotated[EtapService, Depends(get_etap_service)]
+# ────────────────────────────────────────────────────────────────────────────
+
 _ETAP_NOT_CONFIGURED = "ETAP integration not configured"
 _PROJECT_ID_DESCRIPTION = "Project ID"
 
@@ -58,7 +62,7 @@ def get_etap_service(request: Request):
 async def connect_to_etap(
     request: Request,
     settings: EtapConnectionSettings,
-    service: EtapService = Depends(get_etap_service),
+    service: EtapServiceDep,
 ) -> EtapConnectionTestResponse:
     """
     Test connection to ETAP server.
@@ -79,7 +83,7 @@ async def connect_to_etap(
 )
 async def disconnect(
     request: Request,
-    service: EtapService = Depends(get_etap_service),
+    service: EtapServiceDep,
 ) -> dict:
     """Disconnect from ETAP (disable integration)."""
     project_id = request.query_params.get("project_id", "default")
@@ -93,8 +97,8 @@ async def disconnect(
 
 @router.get("/status", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
 async def get_status(
+    service: EtapServiceDep,
     project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
-    service = Depends(get_etap_service),
 ) -> dict:
     """Get ETAP integration status for a project."""
     return service.get_status(project_id)
@@ -105,8 +109,8 @@ async def get_status(
 
 @router.get("/projects", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
 async def list_etap_projects(
+    service: EtapServiceDep,
     project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
-    service = Depends(get_etap_service),
 ) -> List[EtapProjectInfo]:
     """List available ETAP projects."""
     projects = service.list_etap_projects(project_id)
@@ -115,7 +119,7 @@ async def list_etap_projects(
 
 @router.get("/projects/local", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
 async def list_local_projects(
-    service = Depends(get_etap_service),
+    service: EtapServiceDep,
 ) -> List[dict]:
     """List local BAZSPARK projects."""
     return service.list_local_projects()
@@ -134,7 +138,7 @@ async def list_local_projects(
 )
 async def export_to_etap(
     export_request: EtapExportRequest,
-    service = Depends(get_etap_service),
+    service: EtapServiceDep,
 ) -> dict:
     """
     Export local project data to ETAP.
@@ -161,7 +165,7 @@ async def export_to_etap(
 )
 async def import_from_etap(
     import_request: EtapImportRequest,
-    service = Depends(get_etap_service),
+    service: EtapServiceDep,
 ) -> dict:
     """
     Import data from ETAP to local project.
@@ -183,10 +187,10 @@ async def import_from_etap(
 
 @router.get("/logs", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
 async def get_logs(
+    service: EtapServiceDep,
     project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=100, description="Page size"),
-    service = Depends(get_etap_service),
 ) -> EtapSyncLogResponse:
     """Get sync logs for a project."""
     result = service.get_logs(project_id, page, page_size)
@@ -201,9 +205,9 @@ async def get_logs(
     dependencies=[Depends(require_permission(Permission.INTEGRATION_MANAGE))],
 )
 async def create_settings(
+    service: EtapServiceDep,
     settings: EtapConnectionSettings,
     project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
-    service = Depends(get_etap_service),
 ) -> EtapSettingsResponse:
     """
     Create ETAP integration settings for a project.
@@ -216,7 +220,7 @@ async def create_settings(
 
 @router.get("/settings", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
 async def get_settings(
-    service = Depends(get_etap_service),
+    service: EtapServiceDep,
     project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
 ) -> Optional[EtapSettingsResponse]:
     """Get ETAP settings for a project (no secrets returned)."""
@@ -246,9 +250,9 @@ async def get_settings(
     dependencies=[Depends(require_permission(Permission.INTEGRATION_MANAGE))],
 )
 async def update_settings(
+    service: EtapServiceDep,
     update: EtapSettingsUpdate,
     project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
-    service = Depends(get_etap_service),
 ) -> EtapSettingsResponse:
     """
     Update ETAP integration settings.
@@ -282,7 +286,7 @@ async def update_settings(
     dependencies=[Depends(require_permission(Permission.INTEGRATION_MANAGE))],
 )
 async def delete_settings(
-    service = Depends(get_etap_service),
+    service: EtapServiceDep,
     project_id: str = Query(..., description=_PROJECT_ID_DESCRIPTION),
 ) -> dict:
     """Delete ETAP integration settings."""

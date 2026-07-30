@@ -124,8 +124,8 @@ def submit_fds_job(
         _run_local_simulation(job_id, fds_input)
 
     logger.info(
-        "FDS Job %s submitted (modal=%s, project=%s)",
-        job_id, _MODAL_AVAILABLE, project_id
+        "FDS Job %s submitted (modal=%s)",  # nosec: S5145 — job_id is server-generated UUID
+        job_id, _MODAL_AVAILABLE,
     )
     return {
         "job_id":               job_id,
@@ -248,7 +248,7 @@ def _submit_to_modal(job_id: str, fds_input: str, webhook_url: str) -> None:
         logger.info("FDS Job %s dispatched to Modal, call_id=%s", job_id, call.object_id)
 
     except Exception as exc:
-        logger.error("Failed to submit FDS job %s to Modal: %s", job_id, exc)
+        logger.exception("Failed to submit FDS job %s to Modal", job_id)
         _get_job_store()[job_id]["status"] = FDSJobStatus.FAILED
         _get_job_store()[job_id]["error"] = str(exc)
 

@@ -20,7 +20,7 @@ class ModelValidationService:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    async def validate_model_completeness(self, model_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def validate_model_completeness(self, _model_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate the completeness of a Revit model.
 
@@ -79,7 +79,7 @@ class ModelValidationService:
 
         return validation_results
 
-    async def validate_geometric_accuracy(self, model_geometry: Dict[str, Any]) -> Dict[str, Any]:
+    async def validate_geometric_accuracy(self, _model_geometry: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate geometric accuracy of model elements.
 
@@ -101,7 +101,7 @@ class ModelValidationService:
 
         return validation_results
 
-    async def validate_standards_compliance(self, model_data: Dict[str, Any], standards: List[str]) -> Dict[str, Any]:
+    async def validate_standards_compliance(self, _model_data: Dict[str, Any], standards: List[str]) -> Dict[str, Any]:
         """
         Validate model compliance with specified standards.
 

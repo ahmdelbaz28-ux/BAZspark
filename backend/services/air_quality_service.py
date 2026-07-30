@@ -51,14 +51,14 @@ except ImportError:
     # module can be imported without tenacity installed (e.g. in CI where
     # only core deps are installed). Without this, the entire
     # backend.services package fails to import when tenacity is missing.
-    def retry(*dargs, **dkwargs):  # type: ignore[no-redef]
+    def retry(*dargs, **_dkwargs):  # type: ignore[no-redef]
         """No-op fallback when tenacity is not installed."""
         def decorator(fn):
             return fn
         if dargs and callable(dargs[0]):
             return dargs[0]
         return decorator
-    def stop_after_attempt(n):  # type: ignore[no-redef]
+    def stop_after_attempt(_n):  # type: ignore[no-redef]
         return None
     def wait_exponential(**kwargs):  # type: ignore[no-redef]
         return None

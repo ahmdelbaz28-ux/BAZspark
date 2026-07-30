@@ -197,7 +197,7 @@ class RevitElementAdapter(IRevitAdapter):
             pass
         return None
 
-    def _extract_geometry(self, revit_element: Any) -> Optional[Dict[str, Any]]:
+    def _extract_geometry(self, _revit_element: Any) -> Optional[Dict[str, Any]]:
         """Extract geometry information from Revit element."""
         try:
             # This is a simplified geometry extraction
@@ -306,7 +306,7 @@ class IFCAdapter:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def import_from_ifc(self, ifc_file_path: str) -> List[RevitElementDTO]:
+    def import_from_ifc(self, _ifc_file_path: str) -> List[RevitElementDTO]:
         """
         Import elements from IFC file to DTOs.
 
@@ -322,7 +322,7 @@ class IFCAdapter:
         self.logger.warning("IFC import is not yet implemented")
         return []
 
-    def export_to_ifc(self, elements: List[RevitElementDTO], ifc_file_path: str) -> bool:
+    def export_to_ifc(self, _elements: List[RevitElementDTO], _ifc_file_path: str) -> bool:
         """
         Export DTOs to IFC file.
 

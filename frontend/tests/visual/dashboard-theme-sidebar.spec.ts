@@ -60,7 +60,7 @@ test.describe("Theme Toggle — Persistence", () => {
 
     if (themeBtnVisible) {
       await themeBtn.click();
-      await page.waitForTimeout(500);
+      await page.waitForLoadState('networkidle');
 
       // Verify localStorage has the theme value
       const storedTheme = await page.evaluate(() => localStorage.getItem("dark"));

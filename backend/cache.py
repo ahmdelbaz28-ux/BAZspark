@@ -168,7 +168,7 @@ async def cache_delete(key: str) -> None:  # NOSONAR - python:S7503
         _cache.pop(key, None)
 
 
-async def cache_stats() -> dict[str, Any]:
+async def cache_stats() -> dict[str, Any]:  # noqa: S7503 — async for API consistency with cache_delete
     """
     Return cache statistics (entry count, memory estimate, top keys).
 
@@ -198,7 +198,7 @@ async def cache_stats() -> dict[str, Any]:
     }
 
 
-async def cache_invalidate(pattern: str = "") -> int:
+async def cache_invalidate(pattern: str = "") -> int:  # noqa: S7503 — async for API consistency with cache_delete
     """
     Invalidate cache entries matching a pattern prefix.
 

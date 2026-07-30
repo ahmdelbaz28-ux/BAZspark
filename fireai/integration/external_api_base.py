@@ -218,7 +218,7 @@ class ExternalApiAdapter:
         # One reusable client per adapter (connection pooling)
         self._client: httpx.AsyncClient | None = None
 
-    async def _get_client(self) -> httpx.AsyncClient:
+    async def _get_client(self) -> httpx.AsyncClient:  # noqa: S7503 — returns async client for use with await
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
                 timeout=httpx.Timeout(self.timeout_seconds),

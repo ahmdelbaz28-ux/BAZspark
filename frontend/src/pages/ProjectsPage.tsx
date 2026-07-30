@@ -163,13 +163,13 @@ export function ProjectsPage() {
                                                         {t("projects.subtitle")}
                                                 </p>
                                         </div>
-									<Button
-										className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
-										onClick={() => setShowCreateForm(true)}
-									>
-										<FolderPlus aria-hidden="true" className="h-4 w-4 mr-1" />
-										{t("projects.newProject")}
-									</Button>
+                                                                        <Button
+                                                                                className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+                                                                                onClick={() => setShowCreateForm(true)}
+                                                                        >
+                                                                                <FolderPlus aria-hidden="true" className="h-4 w-4 mr-1" />
+                                                                                {t("projects.newProject")}
+                                                                        </Button>
                                 </div>
 
                                 {/* Create Project Form */}
@@ -221,11 +221,11 @@ export function ProjectsPage() {
                                                                 >
                                                                         {t("common.cancel")}
                                                                 </Button>
-										<Button
-											className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
-											onClick={handleCreate}
-											disabled={creating || !newProject.name.trim()}
-										>
+                                                                                <Button
+                                                                                        className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+                                                                                        onClick={handleCreate}
+                                                                                        disabled={creating || !newProject.name.trim()}
+                                                                                >
                                                                         {creating ? (
                                                                                 <>
                                                                                         <Loader2 aria-hidden="true" className="h-4 w-4 mr-1 animate-spin" />
@@ -443,7 +443,7 @@ export function ProjectsPage() {
 
                                 {/* Sync Confirmation Modal */}
                                 {syncTarget && (
-                                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={t("projects.sync")}>
+                                        <dialog className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" open aria-modal="true" aria-label={t("projects.sync")}>
                                                 <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-2xl">
                                                         <h3 className="text-lg font-semibold text-foreground">
                                                                 {t("projects.sync")}
@@ -480,7 +480,7 @@ export function ProjectsPage() {
 
                                 {/* Delete Confirmation Modal */}
                                 {deleteTarget && (
-                                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={t("projects.deleteProject")}>
+                                        <dialog className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" open aria-modal="true" aria-label={t("projects.deleteProject")}>
                                                 <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-2xl">
                                                         <h3 className="text-lg font-semibold text-foreground">
                                                                 {t("projects.deleteProject")}

@@ -46,6 +46,7 @@ export const ExportManagerPage: React.FC = () => {
           const Icon = format.icon;
           return (
             <button
+              type="button"
               key={format.id}
               onClick={() => setSelectedFormat(format.id)}
               className={`p-4 rounded-lg border-2 transition-all ${
@@ -62,7 +63,7 @@ export const ExportManagerPage: React.FC = () => {
         })}
       </div>
 
-      <button className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+      <button type="button" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
         Export Project
       </button>
     </div>

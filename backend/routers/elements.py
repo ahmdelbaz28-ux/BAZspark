@@ -9,7 +9,7 @@ CRUD endpoints for building elements.
 import logging
 import math
 import re
-from typing import Optional
+from typing import Annotated, Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -32,9 +32,14 @@ logger = logging.getLogger(__name__)
 # producing /api/v1/api/v1/elements which broke all tests.
 router = APIRouter(prefix="/elements", tags=["elements"])
 
+# ── Annotated dependency aliases (S8410) ────────────────────────────────────
+DbDep = Annotated[Any, Depends(get_db_service)]
+# ────────────────────────────────────────────────────────────────────────────
+
 
 @router.get("", response_model=ApiResponse[PaginatedData[ElementResponse]], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def list_elements(
+    db: DbDep,
     element_type: Optional[str] = Query(None, description="Filter by element type"),
     project_id: Optional[str] = Query(None, description="Filter by project ID"),
     is_deleted: Optional[bool] = Query(None, description="Include deleted elements"),
@@ -42,7 +47,6 @@ async def list_elements(
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("created_timestamp", description="Sort field"),
     sort_order: str = Query("desc", description="Sort order (asc/desc)"),
-    db = Depends(get_db_service),
 ):
     """List elements with optional filtering and pagination."""
     if sort_order not in ("asc", "desc"):
@@ -79,7 +83,7 @@ async def list_elements(
 async def create_element(
     request: Request,
     element_data: ElementCreate,
-    db = Depends(get_db_service),
+    db: DbDep,
 ):
     """Create a new element."""
     try:
@@ -100,7 +104,7 @@ async def create_element(
 @router.get("/{element_id}", response_model=ApiResponse[ElementResponse], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def get_element(
     element_id: str,
-    db = Depends(get_db_service),
+    db: DbDep,
 ):
     """Get an element by ID."""
     try:
@@ -121,7 +125,7 @@ async def update_element(
     request: Request,
     element_id: str,
     element_data: ElementUpdate,
-    db = Depends(get_db_service),
+    db: DbDep,
 ):
     """Update an element."""
     try:
@@ -141,7 +145,7 @@ async def update_element(
 async def delete_element(
     request: Request,
     element_id: str,
-    db = Depends(get_db_service),
+    db: DbDep,
 ):
     """Soft delete an element."""
     try:

@@ -2,7 +2,7 @@ import { useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 
 interface PrototypeSwitcherProps {
-  variants: { key: string; label: string }[];
+  readonly variants: readonly { readonly key: string; readonly label: string }[];
 }
 
 export function PrototypeSwitcher({ variants }: PrototypeSwitcherProps) {
@@ -66,6 +66,7 @@ export function PrototypeSwitcher({ variants }: PrototypeSwitcherProps) {
       }}
     >
       <button
+        type="button"
         onClick={prev}
         style={{ background: "none", border: "none", color: "#38bdf8", cursor: "pointer", padding: "0.25rem 0.5rem", fontWeight: 700, fontSize: "0.875rem" }}
         aria-label="Previous variant"
@@ -78,6 +79,7 @@ export function PrototypeSwitcher({ variants }: PrototypeSwitcherProps) {
         <span style={{ color: "#cbd5e1" }}>{label}</span>
       </span>
       <button
+        type="button"
         onClick={next}
         style={{ background: "none", border: "none", color: "#38bdf8", cursor: "pointer", padding: "0.25rem 0.5rem", fontWeight: 700, fontSize: "0.875rem" }}
         aria-label="Next variant"

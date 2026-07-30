@@ -54,21 +54,23 @@ const PhysicsGuardsMonitor: React.FC<PhysicsGuardsMonitorProps> = ({
 
   /* ---- Compact pill ---- */
   if (compact) {
-    const cfg = fails > 0
-      ? STATUS_CFG.fail
-      : warns > 0
-      ? STATUS_CFG.warn
-      : STATUS_CFG.pass;
+    let cfg = STATUS_CFG.pass;
+    if (fails > 0) cfg = STATUS_CFG.fail;
+    else if (warns > 0) cfg = STATUS_CFG.warn;
     const { Icon } = cfg;
+    let compactLabel = "All pass";
+    if (fails > 0) compactLabel = `${fails} fail`;
+    else if (warns > 0) compactLabel = `${warns} warn`;
     return (
       <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-semibold ${cfg.badge}`}>
         <Icon size={11} strokeWidth={2.5} />
-        {fails > 0 ? `${fails} fail` : warns > 0 ? `${warns} warn` : "All pass"}
+        {compactLabel}
       </div>
     );
   }
 
   /* ---- Full view ---- */
+  const headerIconClass = allOk ? "text-emerald-400" : fails > 0 ? "text-red-400" : "text-amber-400";
   return (
     <div className="rounded-[5px] overflow-hidden border border-[#1a1a24] bg-[#0e0e14]">
       {/* Header row */}
@@ -77,7 +79,7 @@ const PhysicsGuardsMonitor: React.FC<PhysicsGuardsMonitorProps> = ({
           <ShieldCheck
             size={13}
             strokeWidth={2}
-            className={allOk ? "text-emerald-400" : fails > 0 ? "text-red-400" : "text-amber-400"}
+            className={headerIconClass}
           />
           <span className="text-[11px] font-semibold uppercase tracking-widest text-[#8a8a9e]">
             Physics Guards
@@ -100,6 +102,7 @@ const PhysicsGuardsMonitor: React.FC<PhysicsGuardsMonitorProps> = ({
           const pct = hasRange
             ? Math.max(0, Math.min(100, ((rule.currentValue! - rule.min!) / (rule.max! - rule.min!)) * 100))
             : 0;
+          const barColor = rule.status === "fail" ? "bg-red-500" : rule.status === "warn" ? "bg-amber-500" : "bg-emerald-500";
 
           return (
             <div key={rule.id} className={`flex items-start gap-3 px-4 py-3 ${cfg.bg}`}>
@@ -126,10 +129,7 @@ const PhysicsGuardsMonitor: React.FC<PhysicsGuardsMonitorProps> = ({
                 {hasRange && (
                   <div className="mt-2 h-1 bg-[#1a1a28] rounded-full overflow-hidden w-full max-w-xs">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        rule.status === "fail" ? "bg-red-500" :
-                        rule.status === "warn" ? "bg-amber-500" : "bg-emerald-500"
-                      }`}
+                      className={`h-full rounded-full transition-all duration-500 ${barColor}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>

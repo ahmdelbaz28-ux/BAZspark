@@ -22,13 +22,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import type { LoginVariantProps as _LoginVariantProps } from "./types";
+// LoginVariantProps type is used by sub-components that need access to the full props shape
 
 // ── Error Alert ─────────────────────────────────────────────────────────
 
 interface ErrorAlertProps {
-        lang: "en" | "ar";
-        error: string | null;
+        readonly lang: "en" | "ar";
+        readonly error: string | null;
 }
 
 export function LoginErrorAlert({ lang, error }: ErrorAlertProps) {
@@ -73,12 +73,12 @@ export function LoginErrorAlert({ lang, error }: ErrorAlertProps) {
 // ── API Key Input Field ─────────────────────────────────────────────────
 
 interface ApiKeyInputProps {
-        t: Record<string, string>;
-        apiKey: string;
-        setApiKey: (v: string) => void;
-        showKey: boolean;
-        setShowKey: (v: boolean) => void;
-        submitting: boolean;
+        readonly t: Record<string, string>;
+        readonly apiKey: string;
+        readonly setApiKey: (v: string) => void;
+        readonly showKey: boolean;
+        readonly setShowKey: (v: boolean) => void;
+        readonly submitting: boolean;
 }
 
 export function ApiKeyInputField({
@@ -167,9 +167,9 @@ export function ApiKeyInputField({
 // ── Submit Button ───────────────────────────────────────────────────────
 
 interface SubmitButtonProps {
-        t: Record<string, string>;
-        submitting: boolean;
-        disabled: boolean;
+        readonly t: Record<string, string>;
+        readonly submitting: boolean;
+        readonly disabled: boolean;
 }
 
 export function LoginSubmitButton({ t, submitting, disabled }: SubmitButtonProps) {
@@ -214,7 +214,7 @@ export function LoginSubmitButton({ t, submitting, disabled }: SubmitButtonProps
 // ── Success View ────────────────────────────────────────────────────────
 
 interface SuccessViewProps {
-        t: Record<string, string>;
+        readonly t: Record<string, string>;
 }
 
 export function LoginSuccessView({ t }: SuccessViewProps) {
@@ -275,10 +275,10 @@ export function LoginSuccessView({ t }: SuccessViewProps) {
 // ── Remember Me Checkbox ────────────────────────────────────────────────
 
 interface RememberCheckboxProps {
-        t: Record<string, string>;
-        remember: boolean;
-        setRemember: (v: boolean) => void;
-        submitting: boolean;
+        readonly t: Record<string, string>;
+        readonly remember: boolean;
+        readonly setRemember: (v: boolean) => void;
+        readonly submitting: boolean;
 }
 
 export function RememberCheckbox({ t, remember, setRemember, submitting }: RememberCheckboxProps) {
@@ -304,9 +304,9 @@ export function RememberCheckbox({ t, remember, setRemember, submitting }: Remem
 // ── Support Modal ───────────────────────────────────────────────────────
 
 interface SupportModalProps {
-        t: Record<string, string>;
-        showSupportModal: boolean;
-        setShowSupportModal: (v: boolean) => void;
+        readonly t: Record<string, string>;
+        readonly showSupportModal: boolean;
+        readonly setShowSupportModal: (v: boolean) => void;
 }
 
 export function SupportModal({ t, showSupportModal, setShowSupportModal }: SupportModalProps) {
@@ -408,10 +408,10 @@ export function SupportModal({ t, showSupportModal, setShowSupportModal }: Suppo
 // ── Request Access Modal ────────────────────────────────────────────────
 
 interface RequestAccessModalProps {
-        t: Record<string, string>;
-        showRequestModal: boolean;
-        setShowRequestModal: (v: boolean) => void;
-        handleAutoFillTestKey: () => void;
+        readonly t: Record<string, string>;
+        readonly showRequestModal: boolean;
+        readonly setShowRequestModal: (v: boolean) => void;
+        readonly handleAutoFillTestKey: () => void;
 }
 
 export function RequestAccessModal({
@@ -511,8 +511,8 @@ export function RequestAccessModal({
 // ── Language Toggle ─────────────────────────────────────────────────────
 
 interface LanguageToggleProps {
-        lang: "en" | "ar";
-        toggleLanguage: () => void;
+        readonly lang: "en" | "ar";
+        readonly toggleLanguage: () => void;
 }
 
 export function LanguageToggle({ lang, toggleLanguage }: LanguageToggleProps) {

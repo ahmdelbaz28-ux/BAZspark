@@ -11,7 +11,7 @@ class WebhookUseCase:
     def __init__(self):
         self._subscriptions: Dict[str, Dict[str, Any]] = {}
 
-    def subscribe(self, url: str, events: List[str], secret: Optional[str] = None) -> Dict[str, Any]:
+    def subscribe(self, url: str, events: List[str], _secret: Optional[str] = None) -> Dict[str, Any]:
         sub_id = f"sub_{uuid.uuid4().hex[:12]}"
         subscription = {
             "subscription_id": sub_id,

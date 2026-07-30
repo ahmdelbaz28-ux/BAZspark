@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   FolderOpen,
   Layers2,
-  GitFork,
   AlertTriangle,
   FlameKindling,
   Box,
@@ -139,7 +138,7 @@ const navGroups: NavGroup[] = [
 /*  BADGE COMPONENT                                            */
 /* ---------------------------------------------------------- */
 
-const NavBadge: React.FC<{ text: string; variant?: NavItem["badgeVariant"] }> = ({
+const NavBadge: React.FC<{ text: string; variant: NavItem["badgeVariant"] }> = ({
   text, variant = "accent"
 }) => {
   const colors: Record<string, string> = {
@@ -176,6 +175,7 @@ const NavGroupSection: React.FC<GroupProps> = ({ group, expanded, collapsed, onT
       {/* Group header — hidden in icon-only mode */}
       {!collapsed && (
         <button
+          type="button"
           onClick={onToggle}
           className={`w-full flex items-center gap-2 px-3 py-1 mb-0.5 rounded text-[10px] font-semibold tracking-widest uppercase
             transition-colors duration-150 cursor-pointer select-none
@@ -328,6 +328,7 @@ const EnhancedSidebar: React.FC = () => {
       {/* ---- Collapse toggle ---- */}
       <div className="shrink-0 border-t border-[#1a1a20] p-2">
         <button
+          type="button"
           onClick={() => setCollapsed(v => !v)}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className="

@@ -57,7 +57,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     *)
-      echo "{\"error\": \"Unknown argument: $1\"}"
+      echo "{"error": \"Unknown argument: $1\"}" >&2
       exit 1
       ;;
   esac
@@ -73,7 +73,7 @@ fi
 
 if [[ -n "$IDLE_TIMEOUT_MINUTES" ]]; then
   if ! [[ "$IDLE_TIMEOUT_MINUTES" =~ ^[0-9]+$ ]] || [[ "$IDLE_TIMEOUT_MINUTES" -lt 1 ]]; then
-    echo "{\"error\": \"--idle-timeout-minutes must be a positive integer\"}"
+    echo "{\"error\": \"--idle-timeout-minutes must be a positive integer\"}" >&2
     exit 1
   fi
   export BRAINSTORM_IDLE_TIMEOUT_MS=$(( IDLE_TIMEOUT_MINUTES * 60 * 1000 ))
@@ -82,6 +82,7 @@ fi
 is_windows_like_shell() {
   case "${OSTYPE:-}" in
     msys*|cygwin*|mingw*) return 0 ;;
+    *) ;;
   esac
   if [[ -n "${MSYSTEM:-}" ]]; then
     return 0
@@ -90,6 +91,7 @@ is_windows_like_shell() {
   uname_s="$(uname -s 2>/dev/null || true)"
   case "$uname_s" in
     MSYS*|MINGW*|CYGWIN*) return 0 ;;
+    *) ;;
   esac
   return 1
 }
@@ -100,10 +102,8 @@ if [[ -n "${CODEX_CI:-}" && "$FOREGROUND" != "true" && "$FORCE_BACKGROUND" != "t
 fi
 
 # Windows/Git Bash reaps nohup background processes. Auto-foreground when detected.
-if [[ "$FOREGROUND" != "true" && "$FORCE_BACKGROUND" != "true" ]]; then
-  if is_windows_like_shell; then
-    FOREGROUND="true"
-  fi
+if [[ "$FOREGROUND" != "true" && "$FORCE_BACKGROUND" != "true" ]] && is_windows_like_shell; then
+  FOREGROUND="true"
 fi
 
 # Session files (server.log, server-info, .last-token) embed the session key —
@@ -195,7 +195,7 @@ for _ in {1..50}; do
       sleep 0.1
     done
     if [[ "$alive" != "true" ]]; then
-      echo "{\"error\": \"Server started but was killed. Retry in a persistent terminal with: $SCRIPT_DIR/start-server.sh${PROJECT_DIR:+ --project-dir $PROJECT_DIR} --host $BIND_HOST --url-host $URL_HOST --foreground\"}"
+      echo "{\"error\": \"Server started but was killed. Retry in a persistent terminal with: $SCRIPT_DIR/start-server.sh${PROJECT_DIR:+ --project-dir $PROJECT_DIR} --host $BIND_HOST --url-host $URL_HOST --foreground\"}" >&2
       exit 1
     fi
     grep "server-started" "$LOG_FILE" | head -1
@@ -205,5 +205,5 @@ for _ in {1..50}; do
 done
 
 # Timeout - server didn't start
-echo '{"error": "Server failed to start within 5 seconds"}'
+echo '{"error": "Server failed to start within 5 seconds"}' >&2
 exit 1

@@ -78,6 +78,8 @@ PRIORITY_MAGNITUDE_THRESHOLDS = {
 
 DEFAULT_BASE_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 
+_NFPA_72_REF = "NFPA 72-2022 §14.4.3.3"
+
 
 # ===========================================================================
 # Result Types
@@ -267,7 +269,7 @@ class EarthquakeAdapter(ExternalApiAdapter):
                     f"No M{min_magnitude}+ earthquakes in last "
                     f"{lookback_days}d within {radius_km}km."
                 ),
-                nfpa_reference="NFPA 72-2022 §14.4.3.3",
+                nfpa_reference=_NFPA_72_REF,
                 data_source=self._base_url,
                 coordinates=(lat, lon),
                 lookback_days=lookback_days,

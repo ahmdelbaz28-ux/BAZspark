@@ -9,7 +9,7 @@ import redis.asyncio as redis
 from ..config import Config
 
 
-async def get_redis_client() -> redis.Redis:
+async def get_redis_client() -> redis.Redis:  # noqa: S7503 — async for redis.asynci compatibility
     """
     Get a Redis client instance.
 

@@ -177,7 +177,7 @@ class FACPSpecRequest(BaseModel):
 if _HAS_LIMITER:
     _rate_limit = limiter.limit
 else:
-    def _rate_limit(s: str) -> object:
+    def _rate_limit(_s: str) -> object:
         return lambda f: f
 
 _facp_available: Optional[bool] =  None

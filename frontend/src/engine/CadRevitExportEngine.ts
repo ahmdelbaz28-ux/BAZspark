@@ -453,7 +453,7 @@ function exportToIFCInner(
                 ifc +=
                         catId +
                         "=IFCPROPERTYSINGLEVALUE('Category',$,IFCLABEL('" +
-                        device.category.replace(/'/g, "''") +
+                        device.category.replaceAll("'", "''") +
                         "'),$);\n";
                 ifc +=
                         voltId +
@@ -471,7 +471,7 @@ function exportToIFCInner(
                         "=IFCPROPERTYSET(" +
                         generateGUID() +
                         ",$,'" +
-                        device.type.replace(/'/g, "''") +
+                        device.type.replaceAll("'", "''") +
                         " Properties',$,(" +
                         catId +
                         "," +

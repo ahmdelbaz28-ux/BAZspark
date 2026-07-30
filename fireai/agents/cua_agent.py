@@ -219,7 +219,7 @@ class CUAAgent:
             analysis = analyze_screenshot(screenshot_bytes, prompt=self.prompt)
         except Exception as e:
             # cua_loop should never raise, but defend-in-depth
-            logger.error("CUA loop raised unexpectedly: %s", type(e).__name__)
+            logger.exception("CUA loop raised unexpectedly: %s", type(e).__name__)
             return CUAAgentResult(
                 ok=False,
                 provider="none",

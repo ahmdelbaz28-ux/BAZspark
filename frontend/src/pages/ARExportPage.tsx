@@ -143,11 +143,11 @@ export function ARExportPage() {
                                                                         <option value="both">Both GLB + USDZ</option>
                                                                 </select>
                                                                 <p className="text-xs text-muted-foreground">
-                                                                        {format === "glb"
-                                                                                ? "Compatible with WebXR, Three.js, and most AR platforms"
-                                                                                : format === "usdz"
-                                                                                  ? "Native AR Quick Look on iOS/iPadOS devices"
-                                                                                  : "Both formats for maximum compatibility"}
+                                                                        {(() => {
+                                                                                if (format === "glb") return "Compatible with WebXR, Three.js, and most AR platforms";
+                                                                                if (format === "usdz") return "Native AR Quick Look on iOS/iPadOS devices";
+                                                                                return "Both formats for maximum compatibility";
+                                                                        })()}
                                                                 </p>
                                                         </div>
                                                 </div>

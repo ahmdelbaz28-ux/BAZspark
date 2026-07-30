@@ -26,14 +26,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # ── Node 20 (via features) + global CLI tools ─────────────────────────────
 # Node itself is installed by the `node` feature; we only add CLIs here.
-RUN npm install -g --no-audit --no-fund \
+RUN npm install -g --no-audit --no-fund --ignore-scripts \
         npm@latest pnpm@latest yarn typescript@latest \
         @biomejs/biome prettier eslint \
         vitest @playwright/test
 
 # ── Python dev tools (kept separate from runtime requirements.txt) ────────
-RUN pip install --no-cache-dir --upgrade pip setuptools>=68 wheel && \
-    pip install --no-cache-dir \
+RUN pip install --no-cache-dir --only-binary :all: --upgrade pip setuptools>=68 wheel && \
+    pip install --no-cache-dir --only-binary :all: \
         ruff==0.6.9 bandit[toml]==1.7.10 mypy==1.11.2 \
         pip-audit==2.7.3 pytest==8.3.3 pytest-cov==5.0.0 \
         pytest-asyncio==0.24.0 pytest-timeout==2.3.1 \

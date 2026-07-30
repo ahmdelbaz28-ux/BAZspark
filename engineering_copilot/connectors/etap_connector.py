@@ -44,6 +44,9 @@ from engineering_copilot.models.unified_model import (
 )
 
 
+_NOT_CONNECTED_MSG = "Not connected to ETAP"
+
+
 class ETAPConnector:
     """
     ETAP integration connector for electrical engineering analysis.
@@ -125,7 +128,7 @@ class ETAPConnector:
             Dict: ETAP project data with elements
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read the ETAP project
@@ -157,7 +160,7 @@ class ETAPConnector:
             List[Dict]: List of SLD information
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read SLDs from ETAP
@@ -180,7 +183,7 @@ class ETAPConnector:
             List[Dict]: List of bus information
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read buses from ETAP
@@ -203,7 +206,7 @@ class ETAPConnector:
             List[Dict]: List of transformer information
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read transformers from ETAP
@@ -226,7 +229,7 @@ class ETAPConnector:
             List[Dict]: List of cable information
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read cables from ETAP
@@ -249,7 +252,7 @@ class ETAPConnector:
             List[Dict]: List of panel information
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read panels from ETAP
@@ -272,7 +275,7 @@ class ETAPConnector:
             List[Dict]: List of breaker information
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read breakers from ETAP
@@ -295,7 +298,7 @@ class ETAPConnector:
             List[Dict]: List of load information
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read loads from ETAP
@@ -318,7 +321,7 @@ class ETAPConnector:
             List[Dict]: List of generator information
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read generators from ETAP
@@ -341,7 +344,7 @@ class ETAPConnector:
             Dict: Protection study results
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read protection studies from ETAP
@@ -365,7 +368,7 @@ class ETAPConnector:
             Dict: Short circuit results
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read short circuit results from ETAP
@@ -391,7 +394,7 @@ class ETAPConnector:
             Dict: Load flow results
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read load flow results from ETAP
@@ -419,7 +422,7 @@ class ETAPConnector:
             Dict: Study results
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         if study_type not in self.study_types:
             raise ValueError(f"Unsupported study type: {study_type}")
@@ -440,7 +443,7 @@ class ETAPConnector:
             self.logger.error(f"Error running {study_type} study: {e}")
             raise
 
-    def convert_to_unified_model(self, etap_data: Dict[str, Any]) -> UnifiedEngineeringModel:
+    def convert_to_unified_model(self, _etap_data: Dict[str, Any]) -> UnifiedEngineeringModel:
         """
         Convert ETAP project data to unified engineering model.
 
@@ -655,7 +658,7 @@ class ETAPConnector:
             Dict: Sync results
         """
         if not self.is_connected:
-            raise Exception("Not connected to ETAP")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             sync_results = {

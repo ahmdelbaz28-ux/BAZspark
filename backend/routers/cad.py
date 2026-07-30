@@ -40,7 +40,7 @@ def _validate_cad_file_path(filepath: str) -> str:
 
 def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException:
     """Log full exception detail, return safe message to client."""
-    logger.error("%s: %s", log_msg, exc, exc_info=True)
+    logger.error("%s", log_msg, exc_info=True)  # nosec: S5145 — log_msg is a server-defined string, not user-controlled
     return HTTPException(status_code=status_code, detail=log_msg)
 
 

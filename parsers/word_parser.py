@@ -66,7 +66,7 @@ class WordParser(ParserBase):
     ]
 
     def __init__(self):
-        pass
+        """No custom initialization needed; parent class handles all setup."""
 
     def parse(self, file_path: str) -> WordParseResult:
         try:
@@ -160,7 +160,7 @@ class WordParser(ParserBase):
         for para in paragraphs:
             text = para.text.strip()
 
-            if text.startswith('•') or text.startswith('- ') or text.startswith('* '):
+            if text.startswith(('•', '- ', '* ')):
                 clean_text = text.lstrip('•-* ').strip()
 
                 if any(kw in clean_text.lower() for kw in [

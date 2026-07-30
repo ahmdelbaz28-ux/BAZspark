@@ -125,21 +125,28 @@ export function BIMProvidersPage() {
                                                 </CardDescription>
                                         </CardHeader>
                                         <CardContent>
-                                                {providers === null ? (
-                                                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                                                                <Building2 aria-hidden="true" className="h-12 w-12 mb-3 opacity-30" />
-                                                                <p className="text-sm">No providers loaded yet</p>
-                                                                <p className="text-xs mt-1">
-                                                                        Click the refresh button above to discover available BIM providers
-                                                                </p>
-                                                        </div>
-                                                ) : providers.length === 0 ? (
-                                                        <p className="text-sm text-muted-foreground">
-                                                                No BIM providers are currently registered. Set the FIREAI_BIM_PROVIDER
-                                                                environment variable and ensure at least one provider is configured.
-                                                        </p>
-                                                ) : (
-                                                        <div className="space-y-3">
+                                                {(() => {
+                                                        if (providers === null) {
+                                                                return (
+                                                                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                                                                                <Building2 aria-hidden="true" className="h-12 w-12 mb-3 opacity-30" />
+                                                                                <p className="text-sm">No providers loaded yet</p>
+                                                                                <p className="text-xs mt-1">
+                                                                                        Click the refresh button above to discover available BIM providers
+                                                                                </p>
+                                                                        </div>
+                                                                );
+                                                        }
+                                                        if (providers.length === 0) {
+                                                                return (
+                                                                        <p className="text-sm text-muted-foreground">
+                                                                                No BIM providers are currently registered. Set the FIREAI_BIM_PROVIDER
+                                                                                environment variable and ensure at least one provider is configured.
+                                                                        </p>
+                                                                );
+                                                        }
+                                                        return (
+                                                                <div className="space-y-3">
                                                                 {providers.map((provider) => (
                                                                         <div
                                                                                 key={provider}
@@ -167,7 +174,8 @@ export function BIMProvidersPage() {
                                                                         </div>
                                                                 ))}
                                                         </div>
-                                                )}
+                                                        );
+                                                })()}
                                         </CardContent>
                                 </Card>
 
@@ -278,7 +286,7 @@ export function BIMProvidersPage() {
                                                                         <div className="space-y-2 max-h-80 overflow-auto">
                                                                                 {rooms.map((room, idx) => (
                                                                                         <div
-                                                                                                key={idx}
+                                                                                                key={room.room_id || `room-${idx}`}
                                                                                                 className="p-3 rounded-lg bg-card border border-border text-sm"
                                                                                         >
                                                                                                 <div className="flex items-center justify-between mb-1">

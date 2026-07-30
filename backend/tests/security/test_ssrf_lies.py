@@ -238,13 +238,7 @@ def test_dns_state_can_be_reset_for_testing():
     This test verifies that a _reset_dns_state_for_testing() function
     exists and can be called to restore clean state.
     """
-    try:
-        from backend.integrations._ssrf_guard import _reset_dns_state_for_testing
-    except ImportError:
-        pytest.fail(
-            "_reset_dns_state_for_testing() does not exist. The global DNS "
-            "semaphore cannot be reset between tests, breaking test isolation."
-        )
+    from backend.integrations._ssrf_guard import _reset_dns_state_for_testing
 
     # Should be callable without error
     _reset_dns_state_for_testing()

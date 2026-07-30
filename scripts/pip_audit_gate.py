@@ -60,7 +60,7 @@ def main() -> int:
         is_high = False
         for aid in all_ids:
             # GHSA advisories often have severity in the description
-            if aid.startswith("GHSA-") or aid.startswith("CVE-"):
+            if aid.startswith(("GHSA-", "CVE-")):
                 # We can't determine severity from ID alone,
                 # so we report all vulns and let the pipeline decide
                 is_high = True

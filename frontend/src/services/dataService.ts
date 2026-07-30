@@ -41,7 +41,7 @@ const WS_MAX_RECONNECT_ATTEMPTS = 10;
 const WS_HEALTH_CHECK_INTERVAL = 30000;
 
 export class DataService {
-        private static instance: DataService;
+        private static readonly instance: DataService;
         private buffer: Record<string, unknown>[] = [];
         private readonly maxBufferSize = 50;
         private isConnected = false;
@@ -448,7 +448,7 @@ export class DataService {
                 // Handle faults from server data
                 if (data.fault) {
                         actions.addFault(data.fault as string | { type: string; });
-                        actions.addLog(`CRITICAL: Server reported fault on ${String(data.fault)}`);
+                        actions.addLog(`CRITICAL: Server reported fault on ${JSON.stringify(data.fault)}`);
                 }
         };
 

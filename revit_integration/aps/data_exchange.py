@@ -224,7 +224,7 @@ class APSDataExchange:
             bool: True if successful
         """
         if not self._check_aiohttp():
-            return None
+            return False
         headers = self.auth_service.get_auth_headers()
 
         try:
@@ -350,7 +350,7 @@ class APSDataExchange:
             bool: True if sync successful
         """
         if not self._check_aiohttp():
-            return None
+            return False
         try:
             # Upload the Revit file
             upload_result = await self.upload_file(project_id, local_revit_file)

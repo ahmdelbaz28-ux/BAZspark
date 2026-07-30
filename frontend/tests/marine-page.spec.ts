@@ -38,7 +38,7 @@ test.describe('Marine Page End-to-End Tests', () => {
  'marine-export-revit-btn'
  ]) {
  await page.click(`[data-testid="${testId}"]`);
- await page.waitForTimeout(100);
+ await page.waitForSelector('[data-testid="marine-loading"]', { state: 'hidden', timeout: 2000 }).catch(() => {});
  }
 
  // Verify API calls were made

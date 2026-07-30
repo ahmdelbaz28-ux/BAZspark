@@ -70,10 +70,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e .
-          pip install ruff bandit mypy pytest pytest-cov pytest-asyncio hypothesis
+          python -m pip install --upgrade pip --only-binary :all:
+          pip install --only-binary :all: -r requirements.txt
+          pip install --only-binary :all: -e .
+          pip install --only-binary :all: ruff==0.9.7 bandit==1.9.0 mypy==1.15.0 pytest==8.3.4 pytest-cov==6.0.0 pytest-asyncio==0.25.2 hypothesis==6.124.7
           mkdir -p reports
 
       - name: Generate ephemeral test secrets (V288 SECURITY — no hardcoded creds)
@@ -177,7 +177,7 @@ jobs:
           rm -rf db/ /tmp/fireai_deploy_test.db /tmp/udm_deploy_test.db
           # Explicitly remove api_keys.secret if it exists (may be invalid from prior run)
           rm -f db/api_keys.secret
-          pip install pytest-timeout slowapi tenacity openpyxl
+          pip install --only-binary :all: pytest-timeout==2.3.1 slowapi==0.5.1 tenacity==9.0.0 openpyxl==3.1.5
           # Run pytest with coverage (pytest-cov >=5.0.0 resolves atexit hang)
           python -m pytest tests/ backend/tests/ \
             --tb=short \
@@ -193,7 +193,7 @@ jobs:
       - name: Build frontend
         run: |
           cd frontend
-          npm ci
+          npm ci --ignore-scripts
           npm run typecheck
           npm run build
 
@@ -287,22 +287,32 @@ jobs:
       # H-13 FIX: Write secrets to temp YAML file instead of --set (avoids
       # leaking secrets in /proc/<pid>/cmdline on the runner).
       - name: Create Helm secrets values file (staging)
+        env:
+          FIREAI_API_KEY: ${{ secrets.FIREAI_API_KEY }}
+          FIREAI_EVIDENCE_HMAC_KEY: ${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD_STAGING }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD_STAGING }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL_STAGING }}
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL_STAGING }}
         run: |
-          cat > /tmp/helm-secrets-staging.yaml << 'HELMEOF'
+          cat > /tmp/helm-secrets-staging.yaml << HELMEOF
           secrets:
             fireai-secrets:
               stringData:
-                FIREAI_API_KEY: "${{ secrets.FIREAI_API_KEY }}"
-                FIREAI_EVIDENCE_HMAC_KEY: "${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }}"
-                DB_PASSWORD: "${{ secrets.DB_PASSWORD_STAGING }}"
-                REDIS_PASSWORD: "${{ secrets.REDIS_PASSWORD_STAGING }}"
-                GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
-                ENCRYPTION_KEY: "${{ secrets.ENCRYPTION_KEY }}"
-                JWT_SECRET: "${{ secrets.JWT_SECRET }}"
+                FIREAI_API_KEY: "${FIREAI_API_KEY}"
+                FIREAI_EVIDENCE_HMAC_KEY: "${FIREAI_EVIDENCE_HMAC_KEY}"
+                DB_PASSWORD: "${DB_PASSWORD}"
+                REDIS_PASSWORD: "${REDIS_PASSWORD}"
+                GEMINI_API_KEY: "${GEMINI_API_KEY}"
+                ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
+                JWT_SECRET: "${JWT_SECRET}"
           api:
             environment:
-              DATABASE_URL: "${{ secrets.DATABASE_URL_STAGING }}"
-              NEON_DATABASE_URL: "${{ secrets.NEON_DATABASE_URL_STAGING }}"
+              DATABASE_URL: "${DATABASE_URL}"
+              NEON_DATABASE_URL: "${NEON_DATABASE_URL}"
           HELMEOF
 
       - name: Deploy Helm chart
@@ -330,7 +340,7 @@ jobs:
           sleep 30
           kubectl run smoke-test --image=curlimages/curl:latest \
             -n fireai --rm --restart=Never -- \
-            curl -sf http://fireai-api.fireai.svc.cluster.local/api/health
+            curl -sf https://fireai-api.fireai.svc.cluster.local/api/health
 
   deploy-production:
     name: Deploy to Production
@@ -393,31 +403,43 @@ jobs:
 
       - name: Set up kubeconfig
         if: steps.validate.outputs.deploy_skipped != 'true'
+        env:
+          KUBE_CONFIG_PRODUCTION: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > $HOME/.kube/config
+          echo "$KUBE_CONFIG_PRODUCTION" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
       # H-13 FIX: Write secrets to temp YAML file instead of --set (avoids
       # leaking secrets in /proc/<pid>/cmdline on the runner).
       - name: Create Helm secrets values file (production)
         if: steps.validate.outputs.deploy_skipped != 'true'
+        env:
+          FIREAI_API_KEY: ${{ secrets.FIREAI_API_KEY }}
+          FIREAI_EVIDENCE_HMAC_KEY: ${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD_PRODUCTION }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD_PRODUCTION }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL_PRODUCTION }}
         run: |
-          cat > /tmp/helm-secrets-production.yaml << 'HELMEOF'
+          cat > /tmp/helm-secrets-production.yaml << HELMEOF
           secrets:
             fireai-secrets:
               stringData:
-                FIREAI_API_KEY: "${{ secrets.FIREAI_API_KEY }}"
-                FIREAI_EVIDENCE_HMAC_KEY: "${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }}"
-                DB_PASSWORD: "${{ secrets.DB_PASSWORD_PRODUCTION }}"
-                REDIS_PASSWORD: "${{ secrets.REDIS_PASSWORD_PRODUCTION }}"
-                GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
-                ENCRYPTION_KEY: "${{ secrets.ENCRYPTION_KEY }}"
-                JWT_SECRET: "${{ secrets.JWT_SECRET }}"
+                FIREAI_API_KEY: "${FIREAI_API_KEY}"
+                FIREAI_EVIDENCE_HMAC_KEY: "${FIREAI_EVIDENCE_HMAC_KEY}"
+                DB_PASSWORD: "${DB_PASSWORD}"
+                REDIS_PASSWORD: "${REDIS_PASSWORD}"
+                GEMINI_API_KEY: "${GEMINI_API_KEY}"
+                ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
+                JWT_SECRET: "${JWT_SECRET}"
           api:
             environment:
-              DATABASE_URL: "${{ secrets.DATABASE_URL_PRODUCTION }}"
-              NEON_DATABASE_URL: "${{ secrets.NEON_DATABASE_URL_PRODUCTION }}"
+              DATABASE_URL: "${DATABASE_URL}"
+              NEON_DATABASE_URL: "${NEON_DATABASE_URL}"
           HELMEOF
 
       - name: Deploy Helm chart
@@ -452,7 +474,7 @@ jobs:
           sleep 30
           kubectl run smoke-test --image=curlimages/curl:latest \
             -n fireai --rm --restart=Never -- \
-            curl -sf http://fireai-api.fireai.svc.cluster.local/api/health
+            curl -sf https://fireai-api.fireai.svc.cluster.local/api/health
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')

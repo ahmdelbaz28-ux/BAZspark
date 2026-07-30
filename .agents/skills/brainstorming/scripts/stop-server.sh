@@ -9,7 +9,7 @@
 SESSION_DIR="$1"
 
 if [[ -z "$SESSION_DIR" ]]; then
-  echo '{"error": "Usage: stop-server.sh <session_dir>"}'
+  echo '{"error": "Usage: stop-server.sh <session_dir>"}' >&2
   exit 1
 fi
 
@@ -21,6 +21,7 @@ mark_stopped() {
   local reason="$1"
   rm -f "${STATE_DIR}/server-info"
   printf '{"reason":"%s","timestamp":%s}\n' "$reason" "$(date +%s)" > "${STATE_DIR}/server-stopped"
+  return 0
 }
 
 read_expected_server_id() {
@@ -63,10 +64,11 @@ command_has_server_id() {
 # Confirm a PID has this session's per-start instance id, not just a familiar
 # process name. Ambiguous or legacy metadata fails closed as stale_pid.
 is_brainstorm_server() {
-  kill -0 "$1" 2>/dev/null || return 1
+  local pid="$1"
+  kill -0 "$pid" 2>/dev/null || return 1
   local expected_id
   expected_id="$(read_expected_server_id)" || return 1
-  command_has_server_id "$1" "$expected_id" || return 1
+  command_has_server_id "$pid" "$expected_id" || return 1
   return 0
 }
 
@@ -102,7 +104,7 @@ if [[ -f "$PID_FILE" ]]; then
   fi
 
   if kill -0 "$pid" 2>/dev/null; then
-    echo '{"status": "failed", "error": "process still running"}'
+    echo '{"status": "failed", "error": "process still running"}' >&2
     exit 1
   fi
 

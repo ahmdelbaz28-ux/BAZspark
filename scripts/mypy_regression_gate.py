@@ -21,6 +21,7 @@ To update the baseline after fixing a batch of type errors:
 from __future__ import annotations
 
 import re
+import shlex
 import subprocess
 import sys
 
@@ -48,7 +49,7 @@ def main() -> int:
             i += 1
 
     cmd = ["mypy"] + targets + mypy_args
-    print(f"Running: {' '.join(cmd)}")
+    print(f"Running: {shlex.join(cmd)}")
 
     try:
         result = subprocess.run(

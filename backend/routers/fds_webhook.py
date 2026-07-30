@@ -13,7 +13,7 @@ Handles:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Annotated, Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -31,6 +31,10 @@ from backend.services.fds_queue_service import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/fds", tags=["FDS Simulation Queue"])
+
+# ── Annotated dependency aliases (S8410) ────────────────────────────────────
+SystemConfigRole = Annotated[None, Depends(require_permission(Permission.SYSTEM_CONFIG))]
+# ────────────────────────────────────────────────────────────────────────────
 
 
 # ── Pydantic models ───────────────────────────────────────────────────────────
@@ -59,7 +63,7 @@ class FDSWebhookPayload(BaseModel):
 async def submit_simulation(
     body: FDSSubmitRequest,
     request: Request,
-    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _: SystemConfigRole,
 ) -> Dict[str, Any]:
     """
     Submit an FDS input file for cloud simulation.
@@ -89,7 +93,7 @@ async def submit_simulation(
 @router.get("/status/{job_id}", summary="Get FDS job status")
 async def get_job_status(
     job_id: str,
-    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _: SystemConfigRole,
 ) -> Dict[str, Any]:
     """Poll the status and result of an FDS simulation job."""
     result = get_fds_job_status(job_id)
@@ -100,9 +104,9 @@ async def get_job_status(
 
 @router.get("/jobs", summary="List FDS simulation jobs")
 async def list_jobs(
+    _: SystemConfigRole,
     request: Request,
     limit: int = 20,
-    _: None = Depends(require_permission(Permission.SYSTEM_CONFIG)),
 ) -> Dict[str, Any]:
     """List recent FDS jobs for the authenticated user."""
     user_id = getattr(request.state, "user_id", "") or ""

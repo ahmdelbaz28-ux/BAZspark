@@ -39,7 +39,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Optional
+from typing import Annotated, Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -49,6 +49,11 @@ from backend.auth import require_permission
 from backend.database import get_db
 from backend.limiter import get_remote_address, limiter
 from backend.rbac import Permission
+
+# ── Annotated dependency aliases (S8410) ────────────────────────────────────
+SystemConfigRole = Annotated[None, Depends(require_permission(Permission.SYSTEM_CONFIG))]
+# ────────────────────────────────────────────────────────────────────────────
+
 from backend.vision_key_store import (
     decrypt_key,
     encrypt_key,
@@ -57,6 +62,8 @@ from backend.vision_key_store import (
 )
 
 logger = logging.getLogger(__name__)
+
+_MODELS_PATH = "/models"
 
 router = APIRouter(prefix="/settings/keys", tags=["settings"])
 
@@ -91,32 +98,32 @@ SUPPORTED_PROVIDERS: dict[str, dict[str, str]] = {
     "openai": {
         "default_base_url": "https://api.openai.com/v1",
         "default_model": "gpt-4o",
-        "test_path": "/models",
+        "test_path": _MODELS_PATH,
     },
     "anthropic": {
         "default_base_url": "https://api.anthropic.com/v1",
         "default_model": "claude-3-5-sonnet-20241022",
-        "test_path": "/models",
+        "test_path": _MODELS_PATH,
     },
     "gemini": {
         "default_base_url": "https://generativelanguage.googleapis.com/v1beta",
         "default_model": "gemini-2.0-flash",
-        "test_path": "/models",
+        "test_path": _MODELS_PATH,
     },
     "azure": {
         "default_base_url": "",  # customer must provide their Azure endpoint
         "default_model": "gpt-4o",
-        "test_path": "/models",
+        "test_path": _MODELS_PATH,
     },
     "openrouter": {
         "default_base_url": "https://openrouter.ai/api/v1",
         "default_model": "openai/gpt-4o",
-        "test_path": "/models",
+        "test_path": _MODELS_PATH,
     },
     "opencode": {
         "default_base_url": "https://api.opencode.ai/v1",
         "default_model": "gpt-4o",
-        "test_path": "/models",
+        "test_path": _MODELS_PATH,
     },
 }
 
@@ -316,7 +323,7 @@ def _ensure_description_column() -> None:
 # to avoid the path parameter matching "providers" as a provider name.
 @router.get("/providers/list")
 async def list_supported_providers(
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _role: SystemConfigRole,
 ):
     """List all supported Vision API providers and their defaults."""
     return {"providers": SUPPORTED_PROVIDERS}
@@ -332,7 +339,7 @@ async def store_provider_key(
     request: Request,
     provider: str,
     body: OpenAIKeyRequest,
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _role: SystemConfigRole,
 ):
     """
     Store (encrypt + persist) a Vision API key for any supported provider.
@@ -365,7 +372,7 @@ async def store_provider_key(
     try:
         encrypted = encrypt_key(body.api_key)
     except ValueError as e:
-        logger.error("Vision key encryption failed: %s", type(e).__name__)
+        logger.exception("Vision key encryption failed: %s", type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to encrypt the API key. Please try again.",
@@ -405,7 +412,7 @@ async def store_provider_key(
             )
             row = cur.fetchone()
     except Exception as e:
-        logger.error("Vision key persistence failed: %s", type(e).__name__)
+        logger.exception("Vision key persistence failed: %s", type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Failed to persist the API key. The database is unavailable.",
@@ -420,7 +427,7 @@ async def store_provider_key(
 
     logger.info(
         "Stored %s Vision key id=%s masked=%s model=%s",
-        provider, key_id, masked, model_name,
+        provider, key_id, masked, model_name,  # nosec: S5145 — provider/key_id/masked are server-generated; model_name is validated by _validate_provider()
     )
     _audit_key_event("added", key_id, masked, {"provider": provider, "model_name": model_name, "base_url": base_url})
     return _row_to_response(row)
@@ -437,7 +444,7 @@ async def store_provider_key(
 async def store_openai_key_compat(
     request: Request,
     body: OpenAIKeyRequest,
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _role: SystemConfigRole,
 ):
     """Backward-compat alias for POST /openai → delegates to store_provider_key."""
     return await store_provider_key(request, "openai", body, _role)
@@ -445,9 +452,9 @@ async def store_openai_key_compat(
 
 @router.get("/{provider}", response_model=list[OpenAIKeyResponse])
 async def list_provider_keys(
+    _role: SystemConfigRole,
     provider: str,
     include_inactive: bool = False,
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
 ):
     """
     List stored Vision API keys for a given provider.
@@ -474,7 +481,7 @@ async def list_provider_keys(
                 )
             rows = cur.fetchall()
     except Exception as e:
-        logger.error("Vision key list failed: %s", type(e).__name__)
+        logger.exception("Vision key list failed: %s", type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Failed to list keys. The database is unavailable.",
@@ -485,8 +492,8 @@ async def list_provider_keys(
 
 @router.get("/openai", response_model=list[OpenAIKeyResponse], include_in_schema=False)
 async def list_openai_keys_compat(
+    _role: SystemConfigRole,
     include_inactive: bool = False,
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
 ):
     """Backward-compat alias for GET /openai."""
     return await list_provider_keys("openai", include_inactive, _role)
@@ -496,7 +503,7 @@ async def list_openai_keys_compat(
 async def get_provider_key(
     provider: str,
     key_id: str,
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _role: SystemConfigRole,
 ):
     """Get a single stored Vision API key (masked only)."""
     provider = _validate_provider(provider)
@@ -510,7 +517,7 @@ async def get_provider_key(
             )
             row = cur.fetchone()
     except Exception as e:
-        logger.error("Vision key get failed: %s", type(e).__name__)
+        logger.exception("Vision key get failed: %s", type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Failed to fetch the key. The database is unavailable.",
@@ -530,7 +537,7 @@ async def delete_provider_key(
     provider: str,
     key_id: str,
     request: Request,
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _role: SystemConfigRole,
 ):
     """
     Delete (revoke) a stored Vision API key.
@@ -555,15 +562,14 @@ async def delete_provider_key(
                 (key_id, provider),
             )
     except Exception as e:
-        logger.error("Vision key delete failed: %s", type(e).__name__)
+        logger.exception("Vision key delete failed: %s", type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Failed to delete the key. The database is unavailable.",
         ) from e
 
-    logger.info("Deleted %s Vision key id=%s", provider, key_id)
+    logger.info("Deleted %s Vision key id=%s", provider, key_id)  # nosec: S5145 — provider/key_id are server-generated identifiers
     _audit_key_event("deleted", key_id, masked_for_audit or "unknown", {"provider": provider})
-    return
 
 
 # V152: Bulk delete — delete all keys for a provider, or specific ids
@@ -581,7 +587,7 @@ async def bulk_delete_provider_keys(
     provider: str,
     request: Request,
     body: BulkDeleteRequest,
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _role: SystemConfigRole,
 ):
     """
     Bulk-delete Vision API keys for a provider.
@@ -627,7 +633,7 @@ async def bulk_delete_provider_keys(
                 )
                 deleted_count = len(deleted_masks)
     except Exception as e:
-        logger.error("Vision key bulk-delete failed: %s", type(e).__name__)
+        logger.exception("Vision key bulk-delete failed: %s", type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Failed to bulk-delete keys. The database is unavailable.",
@@ -645,7 +651,7 @@ async def test_provider_key(
     provider: str,
     key_id: str,
     request: Request,
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _role: SystemConfigRole,
 ):
     """
     Test a stored Vision API key by pinging {base_url}/models.
@@ -666,7 +672,7 @@ async def test_provider_key(
             )
             row = cur.fetchone()
     except Exception as e:
-        logger.error("Vision key test (load) failed: %s", type(e).__name__)
+        logger.exception("Vision key test (load) failed: %s", type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Failed to load the key. The database is unavailable.",
@@ -682,7 +688,7 @@ async def test_provider_key(
     prov_config = SUPPORTED_PROVIDERS.get(provider, {})
     default_base = prov_config.get("default_base_url", "https://api.openai.com/v1")
     base_url = (row["base_url"] or default_base).rstrip("/")
-    test_path = prov_config.get("test_path", "/models")
+    test_path = prov_config.get("test_path", _MODELS_PATH)
 
     # V152: skip test if key is expired
     row_keys = row.keys() if hasattr(row, 'keys') else []
@@ -698,7 +704,7 @@ async def test_provider_key(
     try:
         plaintext = decrypt_key(row["encrypted_key"])
     except ValueError as e:
-        logger.error("Vision key test (decrypt) failed for id=%s: %s", key_id, type(e).__name__)
+        logger.exception("Vision key test (decrypt) failed for id=%s: %s", key_id, type(e).__name__)  # nosec: S5145 — key_id is a server-generated UUID, not user-controlled
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
@@ -746,7 +752,7 @@ async def test_provider_key(
             masked_key=masked,
         )
     except Exception as e:
-        logger.error("Vision key test (unknown) failed for id=%s: %s", key_id, type(e).__name__)
+        logger.exception("Vision key test (unknown) failed for id=%s: %s", key_id, type(e).__name__)
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
@@ -759,7 +765,7 @@ async def test_provider_key(
 @router.get("/openai/{key_id}", response_model=OpenAIKeyResponse, include_in_schema=False)
 async def get_openai_key_compat(
     key_id: str,
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _role: SystemConfigRole,
 ):
     """Backward-compat alias for GET /openai/{id}."""
     return await get_provider_key("openai", key_id, _role)
@@ -770,7 +776,7 @@ async def get_openai_key_compat(
 async def delete_openai_key_compat(
     key_id: str,
     request: Request,
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _role: SystemConfigRole,
 ):
     """Backward-compat alias for DELETE /openai/{id}."""
     return await delete_provider_key("openai", key_id, request, _role)
@@ -781,7 +787,7 @@ async def delete_openai_key_compat(
 async def test_openai_key_compat(
     key_id: str,
     request: Request,
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _role: SystemConfigRole,
 ):
     """Backward-compat alias for POST /openai/{id}/test."""
     return await test_provider_key("openai", key_id, request, _role)

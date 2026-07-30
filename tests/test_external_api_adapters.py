@@ -628,12 +628,17 @@ class TestAdaptersShareBaseContract:
             # All adapters accept (lat, lon) — call should NEVER raise
             try:
                 result = await adapter.call(lat=30.0, lon=31.0)
-                assert isinstance(result, ApiResult)
-                assert isinstance(result.ok, bool)
-                assert isinstance(result.value, object)
-                assert result.source == adapter.source_name
             except Exception as e:
                 pytest.fail(f"{cls.__name__} raised {type(e).__name__}: {e}")
+            else:
+                if not isinstance(result, ApiResult):
+                    pytest.fail(f"{cls.__name__}: expected ApiResult, got {type(result).__name__}")
+                if not isinstance(result.ok, bool):
+                    pytest.fail(f"{cls.__name__}: expected ok to be bool")
+                if not isinstance(result.value, object):
+                    pytest.fail(f"{cls.__name__}: expected value to be object")
+                if result.source != adapter.source_name:
+                    pytest.fail(f"{cls.__name__}: source mismatch")
             finally:
                 await adapter.aclose()
 

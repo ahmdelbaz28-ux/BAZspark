@@ -355,13 +355,13 @@ export interface PdfReportData {
  */
 function escapeHtml(value: unknown): string {
         if (value === null || value === undefined) return "";
-        const s = String(value);
+        const s = typeof value === "object" ? JSON.stringify(value) : String(value);
         return s
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#39;");
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#39;");
 }
 
 /** Escape a value that is expected to be numeric. Coerces via Number() and
@@ -506,15 +506,25 @@ export function exportToPdfReport(data: PdfReportData): string {
 
   ${
                 data.calculations
-                        ? `
+                        ? (() => {
+                                const calcRows: string[] = [];
+                                if (data.calculations.voltageDrop !== undefined) {
+                                        calcRows.push(`<tr><td>Voltage Drop</td><td>${escapeNumber(data.calculations.voltageDrop)}%</td></tr>`);
+                                }
+                                if (data.calculations.shortCircuit !== undefined) {
+                                        calcRows.push(`<tr><td>Short Circuit Current</td><td>${escapeNumber(data.calculations.shortCircuit)} kA</td></tr>`);
+                                }
+                                if (data.calculations.cableSize !== undefined) {
+                                        calcRows.push(`<tr><td>Recommended Cable Size</td><td>${escapeHtml(data.calculations.cableSize)} mm²</td></tr>`);
+                                }
+                                return `
   <h2>Engineering Calculations</h2>
   <table>
     <tr><th>Parameter</th><th>Value</th></tr>
-    ${data.calculations.voltageDrop !== undefined ? `<tr><td>Voltage Drop</td><td>${escapeNumber(data.calculations.voltageDrop)}%</td></tr>` : ""}
-    ${data.calculations.shortCircuit !== undefined ? `<tr><td>Short Circuit Current</td><td>${escapeNumber(data.calculations.shortCircuit)} kA</td></tr>` : ""}
-    ${data.calculations.cableSize !== undefined ? `<tr><td>Recommended Cable Size</td><td>${escapeHtml(data.calculations.cableSize)} mm²</td></tr>` : ""}
+    ${calcRows.join("\n    ")}
   </table>
-  `
+  `;
+                        })()
                         : ""
         }
 

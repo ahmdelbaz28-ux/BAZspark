@@ -75,7 +75,7 @@ async function loadClubPlugins() {
 
 // Load club plugins on client side
 if (typeof window !== "undefined") {
-  loadClubPlugins();
+  void loadClubPlugins();
 }
 
 // ─── Import Centralized Presets ─────────────────────────────────────
@@ -433,8 +433,6 @@ export function useGsapGridBackground(
       ctx.save();
       ctx.strokeStyle = "rgba(239, 68, 68, 0.04)";
       ctx.lineWidth = 0.5;
-      const perspective = 0.4;
-      const vanishY = height * 0.35;
 
       for (let i = -10; i < width / gridSize + 10; i++) {
         const x = i * gridSize + offset % gridSize;

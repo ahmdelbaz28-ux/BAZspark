@@ -6,13 +6,12 @@ import {
   CheckCircle2,
   AlertCircle,
   Zap,
-  Database,
   Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const SystemHealthPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   const healthStatus = {
@@ -212,7 +211,7 @@ export const SystemHealthPage: React.FC = () => {
             { type: "info", message: "System update applied", time: "6 hours ago" },
             { type: "success", message: "Database optimization completed", time: "1 day ago" },
           ].map((event, idx) => (
-            <div key={idx} className="flex items-start gap-3 p-3 bg-slate-700/30 rounded-lg">
+            <div key={`event-${idx}`} className="flex items-start gap-3 p-3 bg-slate-700/30 rounded-lg">
               <div className="mt-1">
                 {event.type === "info" && <Activity className="h-4 w-4 text-blue-400" />}
                 {event.type === "warning" && <AlertCircle className="h-4 w-4 text-yellow-400" />}

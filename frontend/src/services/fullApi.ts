@@ -882,12 +882,16 @@ export const v2Api = {
         getRedisValue: (key: string) => apiCall(`/multi-db/redis/get/${key}`),
 
         /** POST /multi-db/redis/set — Set a value in Redis */
-        setRedisValue: (key: string, value: string, ttl?: number) =>
-                apiCall(`/multi-db/redis/set?key=${key}&value=${encodeURIComponent(value)}${ttl ? `&ttl=${ttl}` : ""}`, { method: "POST" }),
+        setRedisValue: (key: string, value: string, ttl?: number) => {
+                const ttlParam = ttl ? `&ttl=${ttl}` : "";
+                return apiCall(`/multi-db/redis/set?key=${key}&value=${encodeURIComponent(value)}${ttlParam}`, { method: "POST" });
+        },
 
         /** GET /multi-db/neo4j/query — Execute predefined Neo4j query */
-        executeNeo4jQuery: (queryType: string, parameters?: string) =>
-                apiCall(`/multi-db/neo4j/query?query_type=${queryType}${parameters ? `&parameters=${encodeURIComponent(parameters)}` : ""}`),
+        executeNeo4jQuery: (queryType: string, parameters?: string) => {
+                const paramsSuffix = parameters ? `&parameters=${encodeURIComponent(parameters)}` : "";
+                return apiCall(`/multi-db/neo4j/query?query_type=${queryType}${paramsSuffix}`);
+        },
 
         /** GET /multi-db/qdrant/collections — List Qdrant collections */
         getQdrantCollections: () => apiCall("/multi-db/qdrant/collections"),
@@ -902,8 +906,10 @@ export const v2Api = {
                 apiCall(`/fds/status/${jobId}`, {}, API_V2_BASE),
 
         /** GET /fds/jobs — List FDS simulation jobs */
-        listFdsJobs: (limit?: number) =>
-                apiCall(`/fds/jobs${limit ? `?limit=${limit}` : ""}`, {}, API_V2_BASE),
+        listFdsJobs: (limit?: number) => {
+                const limitParam = limit ? `?limit=${limit}` : "";
+                return apiCall(`/fds/jobs${limitParam}`, {}, API_V2_BASE);
+        },
 
         /** POST /smoke-simulation/state — Create/update smoke simulation state */
         setSmokeSimulationState: (data: {

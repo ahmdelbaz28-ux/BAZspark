@@ -297,7 +297,7 @@ class CategoryMapper:
 
         return etap_element
 
-    def _transform_parameters(self, parameters: Dict[str, Any], equipment_type: str) -> Dict[str, Any]:
+    def _transform_parameters(self, parameters: Dict[str, Any], _equipment_type: str) -> Dict[str, Any]:
         """
         Transform Revit parameters to ETAP-compatible parameters.
 

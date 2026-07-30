@@ -97,8 +97,8 @@ class PDFParser(ParserBase):
     Parses PDF floor plans for fire alarm devices.
     """
 
-    allowed_extensions = {'.pdf'}
-    max_file_size_bytes = int(os.getenv("FIREAI_PDF_MAX_FILE_SIZE_BYTES", 200 * 1024 * 1024))
+    allowed_extensions: set[str] = {'.pdf'}
+    max_file_size_bytes: int = int(os.getenv("FIREAI_PDF_MAX_FILE_SIZE_BYTES", 200 * 1024 * 1024))
 
     def __init__(self, min_confidence: float = 0.5):
         self.min_confidence = min_confidence
@@ -236,15 +236,12 @@ class PDFParser(ParserBase):
 
         return None
 
-    def _guess_coordinates(self, text: str, position: int) -> tuple:
+    def _guess_coordinates(self, _text: str, _position: int) -> tuple:
         return (0.0, 0.0)
 
     def _extract_layout_devices(self, _page_num: int) -> List[PDFDevice]:
         devices = []
-        try:
-            pass
-        except Exception as exc:
-            logger.debug("Symbol detection placeholder failed: %s", exc)
+        # TODO: Implement symbol detection for PDF layout devices (placeholder)
         return devices
 
     def _deduplicate_devices(self, devices: List[PDFDevice]) -> List[PDFDevice]:

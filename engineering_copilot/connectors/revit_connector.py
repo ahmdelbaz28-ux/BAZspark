@@ -32,8 +32,8 @@ if HAS_CLR:
 
 if HAS_CLR:
     try:
-        from Autodesk.Revit.DB import *
-        from Autodesk.Revit.UI import *
+        from Autodesk.Revit.DB import *  # noqa: S2208 — Revit .NET interop requires full namespace imports as per API convention
+        from Autodesk.Revit.UI import *  # noqa: S2208
     except ImportError:
         # Mock classes when not in Revit environment
         BuiltInCategory = None
@@ -53,6 +53,11 @@ from engineering_copilot.models.unified_model import (
     Transformer,
     UnifiedEngineeringModel,
 )
+
+
+_NOT_CONNECTED_MSG = "Not connected to Revit"
+_ELECTRICAL_PANEL = "Electrical Equipment: Panel"
+_ELECTRICAL_TRANSFORMER = "Electrical Equipment: Transformer"
 
 
 class RevitConnector:
@@ -81,13 +86,13 @@ class RevitConnector:
 
         # Family type mapping
         self.family_mapping = {
-            'Panel': 'Electrical Equipment: Panel',
-            'Transformer': 'Electrical Equipment: Transformer',
+            'Panel': _ELECTRICAL_PANEL,
+            'Transformer': _ELECTRICAL_TRANSFORMER,
             'Breaker': 'Electrical Equipment: Breaker',
             'Cable': 'Cable Tray'
         }
 
-    def connect(self, revit_app_path: str = None) -> bool:
+    def connect(self, _revit_app_path: str = None) -> bool:
         """
         Connect to the active Revit session.
 
@@ -133,7 +138,7 @@ class RevitConnector:
             Dict: BIM model data with elements
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read the Revit document
@@ -167,7 +172,7 @@ class RevitConnector:
             str: Element ID
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create an element in the Revit document
@@ -179,7 +184,7 @@ class RevitConnector:
             self.logger.error(f"Error creating element {element_type}: {e}")
             raise
 
-    def update_element(self, element_id: str, parameters: Dict[str, Any]) -> bool:
+    def update_element(self, element_id: str, _parameters: Dict[str, Any]) -> bool:
         """
         Update an existing element in Revit.
 
@@ -191,7 +196,7 @@ class RevitConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             self.logger.info(f"Updated element: {element_id}")
@@ -209,13 +214,13 @@ class RevitConnector:
             List[Dict]: List of family information
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read families from the document
             families = [
-                {"name": "Electrical Equipment: Panel", "category": "Electrical Equipment"},
-                {"name": "Electrical Equipment: Transformer", "category": "Electrical Equipment"},
+                {"name": _ELECTRICAL_PANEL, "category": "Electrical Equipment"},
+                {"name": _ELECTRICAL_TRANSFORMER, "category": "Electrical Equipment"},
                 {"name": "Cable Tray", "category": "Cable Trays"}
             ]
             self.logger.info(f"Read {len(families)} families from Revit")
@@ -239,7 +244,7 @@ class RevitConnector:
             str: Instance ID
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would place a family instance
@@ -263,7 +268,7 @@ class RevitConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             self.logger.info(f"Updated parameters for element: {element_id}")
@@ -284,7 +289,7 @@ class RevitConnector:
             Dict: Parameter dictionary
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read parameters from the element
@@ -310,7 +315,7 @@ class RevitConnector:
             Coordinates: Element coordinates or None
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read the element's location
@@ -330,7 +335,7 @@ class RevitConnector:
             List[Dict]: List of level information
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read levels from the document
@@ -353,7 +358,7 @@ class RevitConnector:
             List[Dict]: List of room information
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read rooms from the document
@@ -376,7 +381,7 @@ class RevitConnector:
             Dict: MEP data
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read MEP systems from the document
@@ -400,7 +405,7 @@ class RevitConnector:
             List[Dict]: List of electrical system information
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read electrical systems
@@ -426,7 +431,7 @@ class RevitConnector:
             Dict: Generated documentation
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would generate Revit sheets/reports
@@ -453,7 +458,7 @@ class RevitConnector:
             Dict: Sync results
         """
         if not self.is_connected:
-            raise Exception("Not connected to Revit")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             sync_results = {
@@ -488,7 +493,7 @@ class RevitConnector:
             self.logger.error(f"Error during bidirectional sync: {e}")
             raise
 
-    def convert_to_unified_model(self, bim_data: Dict[str, Any]) -> UnifiedEngineeringModel:
+    def convert_to_unified_model(self, _bim_data: Dict[str, Any]) -> UnifiedEngineeringModel:
         """
         Convert Revit BIM data to unified engineering model.
 
@@ -567,7 +572,7 @@ class RevitConnector:
                 # Create panel as electrical equipment
                 operation = {
                     "operation": "create_family_instance",
-                    "family": "Electrical Equipment: Panel",
+                    "family": _ELECTRICAL_PANEL,
                     "coordinates": [entity.coordinates.x, entity.coordinates.y],
                     "parameters": {
                         "Panel Name": entity.name,
@@ -578,13 +583,13 @@ class RevitConnector:
                 }
                 revit_operations["operations"].append(operation)
                 revit_operations["elements_created"] += 1
-                revit_operations["families_used"].append("Electrical Equipment: Panel")
+                revit_operations["families_used"].append(_ELECTRICAL_PANEL)
 
             elif isinstance(entity, Transformer):
                 # Create transformer as electrical equipment
                 operation = {
                     "operation": "create_family_instance",
-                    "family": "Electrical Equipment: Transformer",
+                    "family": _ELECTRICAL_TRANSFORMER,
                     "coordinates": [entity.coordinates.x, entity.coordinates.y],
                     "parameters": {
                         "Transformer Name": entity.name,
@@ -595,7 +600,7 @@ class RevitConnector:
                 }
                 revit_operations["operations"].append(operation)
                 revit_operations["elements_created"] += 1
-                revit_operations["families_used"].append("Electrical Equipment: Transformer")
+                revit_operations["families_used"].append(_ELECTRICAL_TRANSFORMER)
 
         self.logger.info(f"Converted unified model to {len(revit_operations['operations'])} Revit operations")
         return revit_operations

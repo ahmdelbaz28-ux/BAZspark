@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Zap, Mic, Settings, Trash2, AlertTriangle, FileText, CheckCircle2,
+  Zap, Mic, Settings, Trash2, FileText,
   Cpu, Server, Send, Loader, Plus, Eye
 } from 'lucide-react';
 
@@ -18,7 +18,7 @@ interface ChatMessage {
 }
 
 export function AgentChatPage() {
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
   
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -169,7 +169,7 @@ export function AgentChatPage() {
                   <div className="flex gap-2 mt-3 flex-wrap">
                     {message.actions.map((action, idx) => (
                       <Button
-                        key={idx}
+                        key={action.label}
                         variant="outline"
                         size="sm"
                         className="h-8 text-xs bg-transparent border-border hover:bg-muted"

@@ -17,9 +17,9 @@ TEAM_ID="${VERCEL_TEAM_ID:-team_thkWFCepMKbBSrOf5ulqi4wF}"
 REPO="${GH_REPO:-ahmdelbaz28-ux/BAZspark}"
 
 VERCEL_TOKEN="${VERCEL_TOKEN:-}"
-if [ -z "$VERCEL_TOKEN" ]; then
-    echo "❌ ERROR: VERCEL_TOKEN is not set"
-    echo "   export VERCEL_TOKEN=\"vcp_...\""
+if [[ -z "$VERCEL_TOKEN" ]]; then
+    echo "❌ ERROR: VERCEL_TOKEN is not set" >&2
+    echo "   export VERCEL_TOKEN=\"vcp_...\"" >&2
     exit 2
 fi
 
@@ -43,7 +43,7 @@ echo "  gitRepository: $GIT_REPO"
 echo "  gitStatus: $GIT_STATUS"
 echo ""
 
-if [ "$GIT_REPO" = "null" ]; then
+if [[ "$GIT_REPO" = "null" ]]; then
     echo "  ❌ NATIVE INTEGRATION NOT CONFIGURED"
     echo "     The Vercel project has gitRepository=null — no GitHub repo is connected."
     echo "     trigger-vercel.yml is the ONLY deployment trigger."
@@ -105,7 +105,7 @@ except Exception as e:
 echo ""
 echo "─── Step 4: GitHub webhooks (informational — may be empty even with native integration) ───"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
-if [ -n "$GITHUB_TOKEN" ]; then
+if [[ -n "$GITHUB_TOKEN" ]]; then
     HOOK_COUNT=$(curl -sS -H "Authorization: token $GITHUB_TOKEN" \
         "https://api.github.com/repos/$REPO/hooks" 2>&1 | python -c "import sys, json; print(len(json.loads(sys.stdin.read())))" 2>/dev/null || echo "?")
     echo "  Webhooks registered on GitHub repo: $HOOK_COUNT"
@@ -119,11 +119,11 @@ fi
 echo ""
 echo "─── Step 5: trigger-vercel.yml current trigger state ───"
 WORKFLOW_FILE=".github/workflows/trigger-vercel.yml"
-if [ -f "$WORKFLOW_FILE" ]; then
+if [[ -f "$WORKFLOW_FILE" ]]; then
     PUSH_ENABLED=$(grep -c "^  push:" "$WORKFLOW_FILE" || echo "0")
-    if [ "$PUSH_ENABLED" -gt 0 ]; then
+    if [[ "$PUSH_ENABLED" -gt 0 ]]; then
         echo "  ✅ Push trigger: ENABLED (workflow fires on push to main)"
-        if [ "$GIT_REPO" = "null" ]; then
+        if [[ "$GIT_REPO" = "null" ]]; then
             echo "     → CORRECT: native integration not configured, workflow is needed"
         else
             echo "     → ⚠️  WARNING: native integration IS configured but workflow push trigger is still enabled"
@@ -132,7 +132,7 @@ if [ -f "$WORKFLOW_FILE" ]; then
         fi
     else
         echo "  ✅ Push trigger: DISABLED (workflow is manual-only)"
-        if [ "$GIT_REPO" = "null" ]; then
+        if [[ "$GIT_REPO" = "null" ]]; then
             echo "     → ❌ CRITICAL ERROR: native integration NOT configured but push trigger is disabled!"
             echo "       NO deployments will happen! Re-enable the push trigger immediately:"
             echo "       Edit $WORKFLOW_FILE → uncomment the 'push:' trigger"
@@ -146,7 +146,7 @@ fi
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════════"
-if [ "$GIT_REPO" = "null" ]; then
+if [[ "$GIT_REPO" = "null" ]]; then
     echo "VERDICT: ❌ Native integration NOT configured — workflow is the only trigger"
     exit 1
 else

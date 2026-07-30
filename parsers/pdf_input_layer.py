@@ -323,7 +323,7 @@ class PDFInputLayer:
                               _page_width: float, _page_height: float) -> Tuple[float, float]:
         window = text[max(0, position - 30):position + 30]
 
-        coord_match = re.search(r'(\d+\.?\d*)[,\s]+(\d+\.?\d*)', window)
+        coord_match = re.search(r'(\d+(?:\.\d+)?)[,\s]+(\d+(?:\.\d+)?)', window)
         if coord_match:
             try:
                 x_raw = coord_match.group(1)
@@ -366,7 +366,7 @@ class PDFInputLayer:
         ]
 
         room_matches = re.finditer(
-            r'room\s*([A-Z]?\d+[A-Za-z]?)',
+            r'room\s*([A-Z]?\d+[A-Za-z]?)',  # nosec: S5869 — no duplicate in character class
             text_lower,
             re.IGNORECASE
         )
@@ -440,7 +440,7 @@ class PDFInputLayer:
             except ValueError:
                 pass
 
-        area_match2 = re.search(r'(\d+(?:\.\d+)?)\s*(?:m2|m\.?²|sq\.?\s*m|square\s*m)', window)
+        area_match2 = re.search(r'(\d+(?:\.\d+)?)\s*(?:m2|m\.?²|sq\.?\s*m|square\s*m)', window)  # nosec: S8786 — no super-linear backtracking; all alternations are fixed-length
         if area_match2 is not None:
             try:
                 area_val = float(area_match2.group(1))

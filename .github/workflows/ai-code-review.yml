@@ -84,15 +84,15 @@ jobs:
         env:
           PIP_NO_CACHE_DIR: "1"
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip --only-binary :all:
           # Install daytona SDK - try specific stable versions first
-          pip install "daytona==0.10.0" 2>/dev/null || \
-          pip install "daytona>=0.10.0" 2>/dev/null || \
-          pip install "daytona-sdk>=0.10.0" 2>/dev/null || {
+          pip install --only-binary :all: "daytona==0.10.0" 2>/dev/null || \
+          pip install --only-binary :all: "daytona>=0.10.0" 2>/dev/null || \
+          pip install --only-binary :all: "daytona-sdk>=0.10.0" 2>/dev/null || {
             echo "::error::Failed to install Daytona SDK"
             exit 1
           }
-          pip install PyGithub httpx
+          pip install --only-binary :all: PyGithub==2.5.0 httpx==0.28.1
           # Verify import works
           python -c "
           try:
@@ -252,10 +252,10 @@ jobs:
               "rm -f /tmp/pr-src.tar.gz && "
               "python -m ensurepip --upgrade 2>&1 || true && "
               "python -m pip install --upgrade pip setuptools wheel 2>&1 && "
-              "python -m pip install -r requirements.txt 2>&1 && "
+              "python -m pip install --only-binary :all: -r requirements.txt 2>&1 && "
               "SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0 "
-              "python -m pip install -e . --no-deps 2>&1 && "
-              "python -m pip install ruff mypy bandit pytest pytest-cov pytest-asyncio pytest-timeout 2>&1",
+              "python -m pip install --only-binary :all: -e . --no-deps 2>&1 && "
+              "python -m pip install --only-binary :all: ruff==0.9.7 mypy==1.15.0 bandit==1.9.0 pytest==8.3.4 pytest-cov==6.0.0 pytest-asyncio==0.25.2 pytest-timeout==2.3.1 2>&1",
               timeout=900,
           )
           install_log = (so + se)[-3000:]
@@ -292,7 +292,7 @@ jobs:
           # 5. Frontend: typecheck (V209: Node.js 20 now installed; no tail)
           rc, so, se = run(
               "cd /workspace/frontend && "
-              "(npm ci --no-audit --no-fund 2>&1 || npm install --no-audit --no-fund 2>&1) && "
+              "(npm ci --no-audit --no-fund --ignore-scripts 2>&1 || npm install --no-audit --no-fund --ignore-scripts 2>&1) && "
               "npx tsc -p tsconfig.json --noEmit 2>&1",
               timeout=600,
           )

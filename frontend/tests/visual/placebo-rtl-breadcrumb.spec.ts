@@ -33,7 +33,7 @@ test.describe("Placebo Settings — Backend Integration", () => {
 
     // Click on the API tab
     await apiTab.click();
-    await page.waitForTimeout(300);
+    await page.waitForLoadState('networkidle');
 
     // Verify the apiTimeout field is present
     const timeoutInput = page.locator('input[type="number"]').first();
@@ -62,13 +62,13 @@ test.describe("Placebo Settings — Backend Integration", () => {
     const apiTab = page.getByRole("tab", { name: /api|API/i }).first();
     if (await apiTab.isVisible()) {
       await apiTab.click();
-      await page.waitForTimeout(300);
+      await page.waitForLoadState('networkidle');
 
       // Find and click the save button
       const saveBtn = page.getByRole("button", { name: /save|حفظ/i }).first();
       if (await saveBtn.isVisible()) {
         await saveBtn.click();
-        await page.waitForTimeout(500);
+        await page.waitForLoadState('networkidle');
 
         // Verify the payload was sent
         if (capturedPayload) {
@@ -124,7 +124,7 @@ test.describe("RTL Breadcrumb Navigation", () => {
     await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
 
     // Wait for page to render
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
 
     // Verify breadcrumb contains "Settings" text (if component exists)
     const breadcrumbText = await page.locator("nav[aria-label='breadcrumb'], .breadcrumb-container").textContent().catch(() => "");
@@ -148,7 +148,7 @@ test.describe("Placebo Settings — RTL Support", () => {
 
     if (langBtnVisible) {
       await langBtn.click();
-      await page.waitForTimeout(500);
+      await page.waitForLoadState('networkidle');
 
       // Verify RTL direction
       const dir = await page.evaluate(() => document.documentElement.dir);

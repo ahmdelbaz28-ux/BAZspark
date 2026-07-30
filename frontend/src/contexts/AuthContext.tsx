@@ -153,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         const keysToRemove: string[] = [];
                         for (let i = 0; i < localStorage.length; i++) {
                                 const key = localStorage.key(i);
-                                if (key && key.startsWith("fireai_settings_")) {
+                                if (key?.startsWith("fireai_settings_")) {
                                         keysToRemove.push(key);
                                 }
                         }

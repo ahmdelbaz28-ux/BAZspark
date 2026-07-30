@@ -54,10 +54,10 @@ jobs:
       matrix:
         python-version: ["3.12"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -67,10 +67,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e .
-          pip install ruff bandit mypy pytest pytest-cov pytest-asyncio hypothesis
+          python -m pip install --upgrade pip --only-binary :all:
+          pip install --only-binary :all: -r requirements.txt
+          pip install --only-binary :all: -e .
+          pip install --only-binary :all: ruff==0.9.7 bandit==1.9.0 mypy==1.15.0 pytest==8.3.4 pytest-cov==6.0.0 pytest-asyncio==0.25.2 hypothesis==6.124.7
           mkdir -p reports
 
       - name: Lint
@@ -95,12 +95,12 @@ jobs:
       - name: Build frontend
         run: |
           cd frontend
-          npm ci
+          npm ci --ignore-scripts
           npm run typecheck
           npm run build
 
       - name: Upload frontend build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: frontend-build
           path: frontend/build/
@@ -127,13 +127,13 @@ jobs:
             - dockerfile: deploy/docker/Dockerfile.nginx
               target: nginx
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c  # v4.2.0
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7  # v4.4.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ env.REGISTRY_USERNAME }}
@@ -141,7 +141,7 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302  # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image.target }}
           tags: |
@@ -152,7 +152,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7.3.0
         with:
           context: .
           file: ${{ matrix.image.dockerfile }}
@@ -173,10 +173,10 @@ jobs:
     needs: test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Download frontend build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2976314b4f8e42989a1e9d41e3d0c7f1  # v5.0.0
         with:
           name: frontend-build
           path: frontend-build/
@@ -185,7 +185,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          pip install huggingface_hub
+          pip install --only-binary :all: huggingface_hub==0.28.1
           python -c "
           from huggingface_hub import HfApi
           import os
@@ -211,14 +211,14 @@ jobs:
     needs: test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Trigger Render Deploy
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
         run: |
           curl -X POST "https://api.render.com/v1/services/${{ env.RENDER_SERVICE_ID }}/deploys" \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Authorization: Bearer ${RENDER_API_KEY}" \
             -H "Content-Type: application/json" \
             -d '{"clearCache": "clear"}'
           echo '✅ Render deployment triggered'
@@ -238,24 +238,37 @@ jobs:
       name: ${{ matrix.environment }}
       url: ${{ matrix.environment == 'production' && 'https://fireai.example.com' || 'https://staging.fireai.example.com' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Configure kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d  # v5.1.0
         with:
           version: latest
 
       - name: Set up kubeconfig
+        env:
+          KUBE_CONFIG_STAGING: ${{ secrets.KUBE_CONFIG_STAGING }}
+          KUBE_CONFIG_PRODUCTION: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
         run: |
           mkdir -p $HOME/.kube
           if [ "${{ matrix.environment }}" == "production" ]; then
-            echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > $HOME/.kube/config
+            echo "$KUBE_CONFIG_PRODUCTION" | base64 -d > $HOME/.kube/config
           else
-            echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
+            echo "$KUBE_CONFIG_STAGING" | base64 -d > $HOME/.kube/config
           fi
           chmod 600 $HOME/.kube/config
 
       - name: Deploy Helm chart
+        env:
+          FIREAI_API_KEY: ${{ secrets.FIREAI_API_KEY }}
+          FIREAI_EVIDENCE_HMAC_KEY: ${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          DB_PASSWORD_STAGING: ${{ secrets.DB_PASSWORD_STAGING }}
+          DB_PASSWORD_PRODUCTION: ${{ secrets.DB_PASSWORD_PRODUCTION }}
+          REDIS_PASSWORD_STAGING: ${{ secrets.REDIS_PASSWORD_STAGING }}
+          REDIS_PASSWORD_PRODUCTION: ${{ secrets.REDIS_PASSWORD_PRODUCTION }}
         run: |
           helm upgrade --install fireai-${{ matrix.environment }} deploy/helm/fireai \
             --namespace fireai-${{ matrix.environment }} \
@@ -265,13 +278,13 @@ jobs:
             --set images.nginx.tag=${{ env.VERSION }} \
             --set ingress.hosts[0].host=${{ matrix.environment == 'production' && 'fireai.example.com' || 'staging.fireai.example.com' }} \
             --set replicas.api=${{ matrix.environment == 'production' && '3' || '1' }} \
-            --set secrets.fireai-secrets.stringData.FIREAI_API_KEY=${{ secrets.FIREAI_API_KEY }} \
-            --set secrets.fireai-secrets.stringData.FIREAI_EVIDENCE_HMAC_KEY=${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }} \
-            --set secrets.fireai-secrets.stringData.GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
-            --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }} \
-            --set secrets.fireai-secrets.stringData.JWT_SECRET=${{ secrets.JWT_SECRET }} \
-            --set secrets.fireai-secrets.stringData.DB_PASSWORD=${{ secrets[matrix.environment == 'production' && 'DB_PASSWORD_PRODUCTION' || 'DB_PASSWORD_STAGING'] }} \
-            --set secrets.fireai-secrets.stringData.REDIS_PASSWORD=${{ secrets[matrix.environment == 'production' && 'REDIS_PASSWORD_PRODUCTION' || 'REDIS_PASSWORD_STAGING'] }} \
+            --set secrets.fireai-secrets.stringData.FIREAI_API_KEY=${FIREAI_API_KEY} \
+            --set secrets.fireai-secrets.stringData.FIREAI_EVIDENCE_HMAC_KEY=${FIREAI_EVIDENCE_HMAC_KEY} \
+            --set secrets.fireai-secrets.stringData.GEMINI_API_KEY=${GEMINI_API_KEY} \
+            --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY=${ENCRYPTION_KEY} \
+            --set secrets.fireai-secrets.stringData.JWT_SECRET=${JWT_SECRET} \
+            --set secrets.fireai-secrets.stringData.DB_PASSWORD=${{ matrix.environment == 'production' && '$DB_PASSWORD_PRODUCTION' || '$DB_PASSWORD_STAGING' }} \
+            --set secrets.fireai-secrets.stringData.REDIS_PASSWORD=${{ matrix.environment == 'production' && '$REDIS_PASSWORD_PRODUCTION' || '$REDIS_PASSWORD_STAGING' }} \
             --wait --timeout 300s
 
       - name: Verify deployment
@@ -289,7 +302,7 @@ jobs:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
 
@@ -302,7 +315,7 @@ jobs:
         env:
           ETAP_TOKEN: ${{ secrets.ETAP_TOKEN }}
         run: |
-          git clone https://$ETAP_TOKEN@github.com/${{ env.ETAP_REPO }} etap-repo
+          git clone https://${ETAP_TOKEN}@github.com/${{ env.ETAP_REPO }} etap-repo
           cd etap-repo
           git checkout main || git checkout master
           

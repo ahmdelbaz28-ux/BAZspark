@@ -105,7 +105,7 @@ class TestEtapSchemas:
 
         def test_connection_settings_empty_host_raises(self):
                 from backend.integrations.etap_schemas import EtapConnectionSettings
-                with pytest.raises(Exception):
+                with pytest.raises(ValueError):
                         EtapConnectionSettings(
                                 host="",
                                 port=9876,

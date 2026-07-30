@@ -315,7 +315,12 @@ class PredictiveAnalyticsEngine:
             X = np.array(features)
             y = np.array(labels)
 
-            model = RandomForestRegressor(n_estimators=10, random_state=42)
+            model = RandomForestRegressor(
+                n_estimators=10,
+                random_state=42,
+                min_samples_leaf=2,
+                max_features="sqrt",
+            )
             model.fit(X, y)
 
             # Prepare features for prediction (current state)

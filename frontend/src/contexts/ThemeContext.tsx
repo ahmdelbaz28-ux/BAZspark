@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, useMemo, ReactNode } from "react";
 
 interface Theme {
   readonly dark: boolean;
@@ -7,7 +7,7 @@ interface Theme {
 
 const ThemeContext = createContext<Theme | null>(null);
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
+export function ThemeProvider({ children }: { readonly children: ReactNode }) {
   const [dark, setDark] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem("dark");
@@ -28,8 +28,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const toggle = useCallback(() => setDark((prev) => !prev), []);
 
+  const contextValue = useMemo(() => ({ dark, toggle }), [dark, toggle]);
+
   return (
-    <ThemeContext.Provider value={{ dark, toggle }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );

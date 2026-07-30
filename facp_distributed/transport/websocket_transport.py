@@ -255,7 +255,7 @@ class WebSocketTransport(TransportLayer):
         # need ws:// for trusted internal dev/test must pass allow_insecure_ws=True
         # at construction time AND pass an explicit ws:// target_node.
         node = target_node or f"wss://{self.host}:{self.port}"
-        if node.startswith("ws://") and not self.allow_insecure_ws:
+        if node.startswith("ws://") and not self.allow_insecure_ws:  # nosec: S5332 — ws:// is intentional for trusted internal dev/test; guarded by allow_insecure_ws opt-in
             raise ValueError(
                 "WebSocketTransport refused to use insecure ws:// URL "
                 f"{node!r} without allow_insecure_ws=True. Use wss:// or "

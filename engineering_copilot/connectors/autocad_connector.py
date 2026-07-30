@@ -34,10 +34,10 @@ if HAS_CLR:
 if HAS_CLR:
     try:
         from Autodesk.AutoCAD.ApplicationServices import Application
-        from Autodesk.AutoCAD.DatabaseServices import *
-        from Autodesk.AutoCAD.EditorInput import *
-        from Autodesk.AutoCAD.Geometry import *
-        from Autodesk.AutoCAD.Runtime import *
+        from Autodesk.AutoCAD.DatabaseServices import *  # noqa: S2208 — AutoCAD .NET interop requires full namespace imports as per API convention
+        from Autodesk.AutoCAD.EditorInput import *  # noqa: S2208
+        from Autodesk.AutoCAD.Geometry import *  # noqa: S2208
+        from Autodesk.AutoCAD.Runtime import *  # noqa: S2208
         from System import IntPtr
     except ImportError:
         # Mock classes when not in AutoCAD environment
@@ -57,6 +57,9 @@ from engineering_copilot.models.unified_model import (
     Transformer,
     UnifiedEngineeringModel,
 )
+
+
+_NOT_CONNECTED_MSG = "Not connected to AutoCAD"
 
 
 class AutoCADConnector:
@@ -144,7 +147,7 @@ class AutoCADConnector:
             str: Drawing ID or path
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a new drawing
@@ -168,7 +171,7 @@ class AutoCADConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would open the drawing
@@ -190,7 +193,7 @@ class AutoCADConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would save the drawing
@@ -209,7 +212,7 @@ class AutoCADConnector:
             Dict: Drawing data with entities
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read the drawing
@@ -228,7 +231,7 @@ class AutoCADConnector:
             self.logger.error(f"Error reading drawing: {e}")
             raise
 
-    def create_layer(self, layer_name: str, color_index: int = 7) -> bool:
+    def create_layer(self, layer_name: str, _color_index: int = 7) -> bool:
         """
         Create a new layer in AutoCAD.
 
@@ -240,7 +243,7 @@ class AutoCADConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a layer in the database
@@ -263,7 +266,7 @@ class AutoCADConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             self.logger.info(f"Updated layer: {layer_name}")
@@ -285,7 +288,7 @@ class AutoCADConnector:
             str: Block ID
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a block definition
@@ -298,8 +301,8 @@ class AutoCADConnector:
             raise
 
     def insert_block(self, block_name: str, coordinates: Coordinates,
-                    rotation: float = 0.0, scale_x: float = 1.0,
-                    scale_y: float = 1.0, scale_z: float = 1.0) -> str:
+                    _rotation: float = 0.0, _scale_x: float = 1.0,
+                    _scale_y: float = 1.0, _scale_z: float = 1.0) -> str:
         """
         Insert a block instance into the drawing.
 
@@ -315,7 +318,7 @@ class AutoCADConnector:
             str: Instance ID
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would insert a block instance
@@ -327,7 +330,7 @@ class AutoCADConnector:
             self.logger.error(f"Error inserting block {block_name}: {e}")
             raise
 
-    def draw_line(self, start: Coordinates, end: Coordinates, layer: str = "0") -> str:
+    def draw_line(self, start: Coordinates, end: Coordinates, _layer: str = "0") -> str:
         """
         Draw a line in AutoCAD.
 
@@ -340,7 +343,7 @@ class AutoCADConnector:
             str: Entity ID
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a line entity
@@ -352,7 +355,7 @@ class AutoCADConnector:
             self.logger.error(f"Error drawing line: {e}")
             raise
 
-    def draw_polyline(self, points: List[Coordinates], layer: str = "0") -> str:
+    def draw_polyline(self, points: List[Coordinates], _layer: str = "0") -> str:
         """
         Draw a polyline in AutoCAD.
 
@@ -364,7 +367,7 @@ class AutoCADConnector:
             str: Entity ID
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a polyline entity
@@ -376,7 +379,7 @@ class AutoCADConnector:
             self.logger.error(f"Error drawing polyline: {e}")
             raise
 
-    def draw_circle(self, center: Coordinates, radius: float, layer: str = "0") -> str:
+    def draw_circle(self, center: Coordinates, radius: float, _layer: str = "0") -> str:
         """
         Draw a circle in AutoCAD.
 
@@ -389,7 +392,7 @@ class AutoCADConnector:
             str: Entity ID
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a circle entity
@@ -401,8 +404,8 @@ class AutoCADConnector:
             self.logger.error(f"Error drawing circle: {e}")
             raise
 
-    def draw_text(self, text: str, coordinates: Coordinates, height: float = 0.2,
-                 rotation: float = 0.0, layer: str = "0") -> str:
+    def draw_text(self, text: str, coordinates: Coordinates, _height: float = 0.2,
+                 _rotation: float = 0.0, _layer: str = "0") -> str:
         """
         Draw text in AutoCAD.
 
@@ -417,7 +420,7 @@ class AutoCADConnector:
             str: Entity ID
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a text entity
@@ -440,7 +443,7 @@ class AutoCADConnector:
             Dict: Geometry properties or None
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read the entity's geometry
@@ -467,7 +470,7 @@ class AutoCADConnector:
             Dict: Attribute dictionary
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read the entity's attributes
@@ -495,7 +498,7 @@ class AutoCADConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             self.logger.info(f"Deleted entity: {entity_id}")
@@ -517,7 +520,7 @@ class AutoCADConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         try:
             self.logger.info(f"Updated entity: {entity_id}")
@@ -527,7 +530,7 @@ class AutoCADConnector:
             self.logger.error(f"Error updating entity {entity_id}: {e}")
             return False
 
-    def convert_to_unified_model(self, drawing_data: Dict[str, Any]) -> UnifiedEngineeringModel:
+    def convert_to_unified_model(self, _drawing_data: Dict[str, Any]) -> UnifiedEngineeringModel:
         """
         Convert AutoCAD drawing data to unified engineering model.
 
@@ -638,7 +641,7 @@ class AutoCADConnector:
             Dict: Operation results
         """
         if not self.is_connected:
-            raise Exception("Not connected to AutoCAD")
+            raise Exception(_NOT_CONNECTED_MSG)
 
         results = {
             "successful": 0,

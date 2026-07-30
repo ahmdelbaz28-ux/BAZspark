@@ -71,13 +71,10 @@ const MetricCard: React.FC<MetricProps> = ({ label, value, unit, status = "neutr
     neutral: "border-[#1e1e28] text-[#00d4ff]",
   };
 
-  const StatusIcon = status === "pass"
-    ? CheckCircle2
-    : status === "fail"
-    ? XCircle
-    : status === "warn"
-    ? AlertCircle
-    : null;
+  let StatusIcon: typeof CheckCircle2 | null = null;
+  if (status === "pass") StatusIcon = CheckCircle2;
+  else if (status === "fail") StatusIcon = XCircle;
+  else if (status === "warn") StatusIcon = AlertCircle;
 
   return (
     <div className={`baz-panel p-4 border ${statusColors[status].split(" ")[0]}`}>
@@ -104,7 +101,11 @@ const SmokeCalculator: React.FC = () => {
 
   const requiredDetectors = Math.ceil(roomArea / 900);
   const spacing = Math.sqrt(roomArea / requiredDetectors);
-  const spacingStatus: GuardRule["status"] = spacing <= 30 && spacing >= 20 ? "pass" : spacing <= 35 ? "warn" : "fail";
+  const spacingStatus: GuardRule["status"] = (() => {
+    if (spacing <= 30 && spacing >= 20) return "pass";
+    if (spacing <= 35) return "warn";
+    return "fail";
+  })();
 
   const guards: GuardRule[] = [
     { id: "s1", name: "Detector Spacing", description: "NFPA 72 Table 23.3.6 — max 30 ft", severity: "error", category: "spacing", min: 20, max: 30, currentValue: spacing, unit: "ft", status: spacingStatus },
@@ -209,7 +210,11 @@ const VoltageDropCalculator: React.FC = () => {
   const rFt = resistance[wireGauge] ?? 0.0025;
   const vDrop = (2 * rFt * wireLength * current);
   const pctDrop = (vDrop / 12) * 100;
-  const voltStatus: GuardRule["status"] = pctDrop <= 5 ? "pass" : pctDrop <= 7 ? "warn" : "fail";
+  const voltStatus: GuardRule["status"] = (() => {
+    if (pctDrop <= 5) return "pass";
+    if (pctDrop <= 7) return "warn";
+    return "fail";
+  })();
 
   const guards: GuardRule[] = [
     { id: "v1", name: "Voltage Drop", description: "NFPA 72: Max 5% drop allowed", severity: "error", category: "voltage", min: 0, max: 5, currentValue: pctDrop, unit: "%", status: voltStatus },
@@ -246,14 +251,14 @@ const VoltageDropCalculator: React.FC = () => {
       <div className="baz-panel p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-medium text-[#6a6a80] uppercase tracking-wider">Drop vs. 5% NFPA Limit</span>
-          <span className={`text-[11px] font-mono font-semibold ${voltStatus === "pass" ? "text-emerald-400" : voltStatus === "warn" ? "text-amber-400" : "text-red-400"}`}>
+          <span className={`text-[11px] font-mono font-semibold ${(() => { if (voltStatus === "pass") return "text-emerald-400"; if (voltStatus === "warn") return "text-amber-400"; return "text-red-400"; })()}`}>
             {pctDrop.toFixed(2)}%
           </span>
         </div>
         <div className="h-1.5 bg-[#1a1a24] rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
-              voltStatus === "pass" ? "bg-emerald-500" : voltStatus === "warn" ? "bg-amber-500" : "bg-red-500"
+              (() => { if (voltStatus === "pass") return "bg-emerald-500"; if (voltStatus === "warn") return "bg-amber-500"; return "bg-red-500"; })()
             }`}
             style={{ width: `${Math.min((pctDrop / 10) * 100, 100)}%` }}
           />
@@ -286,7 +291,7 @@ const tabs: TabDef[] = [
 ];
 
 export const QOMNCalculatorPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>("smoke");
 
   return (
@@ -310,6 +315,7 @@ export const QOMNCalculatorPage: React.FC = () => {
             const isActive = activeTab === tab.id;
             return (
               <button
+                type="button"
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`baz-tab ${isActive ? "baz-tab-active" : ""}`}

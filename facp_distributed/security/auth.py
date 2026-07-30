@@ -247,7 +247,7 @@ class AuthProvider:
             "node_id": node_id  # Which node registered this user
         }
 
-    def authenticate_request(self, security_block: Dict[str, Any], source_node: Optional[str] = None) -> tuple[bool, Optional[Dict[str, Any]]]:
+    def authenticate_request(self, security_block: Dict[str, Any], _source_node: Optional[str] = None) -> tuple[bool, Optional[Dict[str, Any]]]:
         """
         Authenticate a request based on security block
         :param security_block: Security information from request

@@ -30,7 +30,7 @@ let fetchPromise: Promise<string | null> | null = null;
 
 /** Hoisted RegExp — created once at module level instead of on every call. */
 const CSRF_COOKIE_REGEX = new RegExp(
-        `(?:^|;\\s*)${CSRF_COOKIE_NAME}=([^;]+)`,
+        String.raw`(?:^|;\s*)${CSRF_COOKIE_NAME}=([^;]+)`,
 );
 
 /**
@@ -39,7 +39,7 @@ const CSRF_COOKIE_REGEX = new RegExp(
  */
 function readCookieToken(): string | null {
         if (typeof document === "undefined") return null;
-        const match = document.cookie.match(CSRF_COOKIE_REGEX);
+        const match = CSRF_COOKIE_REGEX.exec(document.cookie);
         return match ? decodeURIComponent(match[1]) : null;
 }
 

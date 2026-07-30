@@ -351,22 +351,15 @@ export function GenerativeDesignPage() {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="flex items-center gap-2 text-base">
-                          {variant.variant_name === "cost-min" ? (
-                            <TrendingDown
-                              aria-hidden="true"
-                              className={`h-4 w-4 ${VARIANT_COLORS["cost-min"]}`}
-                            />
-                          ) : variant.variant_name === "safety-max" ? (
-                            <TrendingUp
-                              aria-hidden="true"
-                              className={`h-4 w-4 ${VARIANT_COLORS["safety-max"]}`}
-                            />
-                          ) : (
-                            <Layers
-                              aria-hidden="true"
-                              className={`h-4 w-4 ${VARIANT_COLORS["standard"]}`}
-                            />
-                          )}
+                          {(() => {
+                            if (variant.variant_name === "cost-min") {
+                              return <TrendingDown aria-hidden="true" className={`h-4 w-4 ${VARIANT_COLORS["cost-min"]}`} />;
+                            }
+                            if (variant.variant_name === "safety-max") {
+                              return <TrendingUp aria-hidden="true" className={`h-4 w-4 ${VARIANT_COLORS["safety-max"]}`} />;
+                            }
+                            return <Layers aria-hidden="true" className={`h-4 w-4 ${VARIANT_COLORS["standard"]}`} />;
+                          })()}
                           <span className="capitalize">
                             {variant.variant_name?.replace("-", " ")}
                           </span>

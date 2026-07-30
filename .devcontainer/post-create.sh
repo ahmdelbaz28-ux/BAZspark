@@ -11,13 +11,13 @@ echo "▶ [post-create] BAZSPARK FireAI devbox bootstrap"
 # ── 1. Python backend deps ────────────────────────────────────────────────
 if [[ -f pyproject.toml ]]; then
   echo "▶ Installing Python project (editable)…"
-  pip install --user -e . 2>&1 | tail -5 || pip install -e . 2>&1 | tail -5
+  pip install --only-binary :all: --user -e . 2>&1 | tail -5 || pip install --only-binary :all: -e . 2>&1 | tail -5
 fi
 
 # ── 2. Frontend deps ──────────────────────────────────────────────────────
 if [[ -f frontend/package.json ]]; then
   echo "▶ Installing frontend deps (npm ci)…"
-  ( cd frontend && npm ci --no-audit --no-fund 2>&1 | tail -5 )
+  ( cd frontend && npm ci --no-audit --no-fund --ignore-scripts 2>&1 | tail -5 )
 fi
 
 # ── 3. Playwright browsers (for visual tests) ────────────────────────────

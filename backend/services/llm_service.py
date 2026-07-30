@@ -350,7 +350,7 @@ class LLMService:
         try:
             completion = await _do_completion()
         except asyncio.TimeoutError:
-            logger.error(
+            logger.warning(
                 "LLM chat completion timed out (provider=%s, timeout=%.1fs)",
                 provider.name,
                 self._timeout
@@ -481,7 +481,7 @@ class LLMService:
                 timeout=self._timeout
             )
         except asyncio.TimeoutError:
-            logger.error(
+            logger.warning(
                 "LLM stream creation timed out (provider=%s, timeout=%.1fs)",
                 provider.name,
                 self._timeout
@@ -542,7 +542,7 @@ class LLMService:
                 "usage": usage_data,
             }
         except asyncio.TimeoutError:
-            logger.error(
+            logger.warning(
                 "LLM stream timed out during processing (provider=%s, timeout=%.1fs)",
                 provider.name,
                 self._timeout

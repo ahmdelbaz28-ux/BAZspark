@@ -236,7 +236,7 @@ def _call_openai_vision(
             masked_key=masked_key,
         )
     except Exception as e:
-        logger.error("OpenAI Vision unexpected error: %s", type(e).__name__)
+        logger.exception("OpenAI Vision unexpected error: %s", type(e).__name__)
         return VisionAnalysisResult(
             provider="openai",
             ok=False,
@@ -316,7 +316,7 @@ def _opencv_analyze(image_bytes: bytes) -> VisionAnalysisResult:
             },
         )
     except Exception as e:
-        logger.error("OpenCV analysis failed: %s", type(e).__name__)
+        logger.exception("OpenCV analysis failed: %s", type(e).__name__)
         return VisionAnalysisResult(
             provider="opencv",
             ok=False,

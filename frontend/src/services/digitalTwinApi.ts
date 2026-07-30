@@ -315,8 +315,7 @@ class DigitalTwinApiClient extends BaseApiClient {
                         );
                 this.reconnectTimer = setTimeout(() => {
                         if (
-                                this.wsConnection &&
-                                this.wsConnection.readyState === WebSocket.CLOSED
+                                this.wsConnection?.readyState === WebSocket.CLOSED
                         ) {
                                 // RACE CONDITION FIX: Nullify wsConnection and clean up heartbeat
                                 // before reconnecting to prevent duplicate connections.

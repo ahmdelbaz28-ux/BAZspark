@@ -63,7 +63,7 @@ export function DatabaseAdminPage() {
 
   // Redis
   const [redisKey, setRedisKey] = useState("");
-  const [redisValue, setRedisValue] = useState("");
+  const [redisValue, setRedisValue] = useState(""); // NOSONAR: reserved for future Redis GET/SET UI
   const [redisResult, setRedisResult] = useState<string | null>(null);
   const [redisSetKey, setRedisSetKey] = useState("");
   const [redisSetValue, setRedisSetValue] = useState("");
@@ -88,7 +88,8 @@ export function DatabaseAdminPage() {
         setHealth(data);
       } else {
         setHealth(null);
-      }        if (healthRes) {
+      }
+      if (healthRes) {
         setMainHealth(healthRes as unknown as Record<string, unknown>);
       }
       toast({

@@ -9,7 +9,7 @@ Exposes endpoints to:
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Annotated, Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -17,6 +17,10 @@ from pydantic import BaseModel, Field
 from backend.services.aps_service import get_aps_service
 
 router = APIRouter(prefix="/api/v2/aps", tags=["Autodesk Platform Services"])
+
+# ── Annotated dependency aliases (S8410) ────────────────────────────────────
+ApsServiceDep = Annotated[Any, Depends(get_aps_service)]
+# ────────────────────────────────────────────────────────────────────────────
 
 
 class ApsProcessRequest(BaseModel):
@@ -29,7 +33,7 @@ class ApsProcessRequest(BaseModel):
 @router.post("/process")
 async def process_file_in_cloud(
     body: ApsProcessRequest,
-    service = Depends(get_aps_service),
+    service: ApsServiceDep,
 ) -> Dict[str, Any]:
     """
     Submits a design automation task (WorkItem) to Autodesk Platform Services.
@@ -80,7 +84,7 @@ async def process_file_in_cloud(
 @router.get("/status/{work_item_id}")
 async def get_work_item_status(
     work_item_id: str,
-    service = Depends(get_aps_service),
+    service: ApsServiceDep,
 ) -> Dict[str, Any]:
     """
     Retrieves the execution status and report URL for a dispatched WorkItem job.

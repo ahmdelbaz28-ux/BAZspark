@@ -134,6 +134,19 @@ else:
         "http://localhost:3000,http://localhost:5173,http://localhost:8000",
     ).split(",")
 
+# Middleware order matters: FastAPI add_middleware() adds to the TOP of the
+# stack, so the LAST call is the OUTERMOST middleware (first to handle
+# incoming requests, last to process responses).
+# Order (innermost → outermost):
+#   1. _RoleDevMiddleware   — sets dev role on request.state
+#   2. SecurityHeadersMiddleware — appends security headers to response
+#   3. CorrelationIdMiddleware   — adds X-Correlation-ID audit header
+#   4. CORSMiddleware            — handles preflight OPTIONS (outermost)
+# CORSMiddleware MUST be outermost so preflight OPTIONS requests are
+# answered before any other middleware processes them (S8414).
+app.add_middleware(_RoleDevMiddleware)
+app.add_middleware(CorrelationIdMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
@@ -144,14 +157,6 @@ app.add_middleware(
     # requests are unnecessary and would expand the attack surface.
     allow_credentials=False,
 )
-# V129: SecurityHeadersMiddleware — added AFTER CORS so it's the OUTERMOST
-# middleware (runs last on response, can append security headers to every
-# response regardless of which inner middleware handled it).
-app.add_middleware(SecurityHeadersMiddleware)
-# V129: CorrelationIdMiddleware — adds X-Correlation-ID to every request
-# for end-to-end audit tracing (NFPA 72 §14.2.4 compliance).
-app.add_middleware(CorrelationIdMiddleware)
-app.add_middleware(_RoleDevMiddleware)
 
 
 # ----------------------------------------------------------------------------

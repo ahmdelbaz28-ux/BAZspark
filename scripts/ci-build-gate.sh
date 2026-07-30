@@ -18,7 +18,7 @@ echo ""
 cd "$(dirname "$0")/../frontend"
 
 echo "▶ Step 1/3: Install dependencies (npm ci)"
-npm ci --no-audit --no-fund
+npm ci --no-audit --no-fund --ignore-scripts
 echo ""
 
 echo "▶ Step 2/3: TypeScript type-check (tsc --noEmit)"

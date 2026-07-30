@@ -120,8 +120,9 @@ class ApiClient extends BaseApiClient {
                 if (params?.sort_by) searchParams.set("sort_by", params.sort_by);
                 if (params?.sort_order) searchParams.set("sort_order", params.sort_order);
                 const query = searchParams.toString();
+                const querySuffix = query ? `?${query}` : "";
                 return this.get<UdmPaginatedData<Element>>(
-                        `/elements${query ? `?${query}` : ""}`,
+                        `/elements${querySuffix}`,
                 );
         }
 
@@ -257,8 +258,9 @@ class ApiClient extends BaseApiClient {
                 if (params?.page_size !== undefined)
                         searchParams.set("page_size", String(params.page_size));
                 const query = searchParams.toString();
+                const querySuffix = query ? `?${query}` : "";
                 return this.get<UdmPaginatedData<UdmConnection>>(
-                        `/connections${query ? `?${query}` : ""}`,
+                        `/connections${querySuffix}`,
                 );
         }
 
@@ -295,8 +297,9 @@ class ApiClient extends BaseApiClient {
                 if (params?.page_size !== undefined)
                         searchParams.set("page_size", String(params.page_size));
                 const query = searchParams.toString();
+                const querySuffix = query ? `?${query}` : "";
                 return this.get<UdmPaginatedData<Conflict>>(
-                        `/conflicts${query ? `?${query}` : ""}`,
+                        `/conflicts${querySuffix}`,
                 );
         }
 

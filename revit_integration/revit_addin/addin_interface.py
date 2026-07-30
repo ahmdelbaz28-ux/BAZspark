@@ -11,6 +11,9 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 
+_NOT_AUTHENTICATED_MSG = "Not authenticated"
+
+
 class IExternalCommand(ABC):
     """
     Interface representing Revit's IExternalCommand.
@@ -86,7 +89,7 @@ class RevitAddinManager:
             Dict: Sync status and results
         """
         if not self.authenticated:
-            return {"success": False, "error": "Not authenticated"}
+            return {"success": False, "error": _NOT_AUTHENTICATED_MSG}
 
         try:
             # In a real implementation, this would:
@@ -126,7 +129,7 @@ class RevitAddinManager:
             Dict: Model status information
         """
         if not self.authenticated:
-            return {"success": False, "error": "Not authenticated"}
+            return {"success": False, "error": _NOT_AUTHENTICATED_MSG}
 
         try:
             # In a real implementation, this would query the backend for model status
@@ -157,7 +160,7 @@ class RevitAddinManager:
             Dict: Push results
         """
         if not self.authenticated:
-            return {"success": False, "error": "Not authenticated"}
+            return {"success": False, "error": _NOT_AUTHENTICATED_MSG}
 
         try:
             # In a real implementation, this would send elements to the backend
@@ -185,7 +188,7 @@ class RevitAddinManager:
             Dict: Analysis results
         """
         if not self.authenticated:
-            return {"success": False, "error": "Not authenticated"}
+            return {"success": False, "error": _NOT_AUTHENTICATED_MSG}
 
         try:
             # In a real implementation, this would fetch analysis results from the backend

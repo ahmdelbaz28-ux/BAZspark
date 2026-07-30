@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
 interface LoginModalProps {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  icon: ReactNode;
-  children: ReactNode;
+  readonly open: boolean;
+  readonly onClose: () => void;
+  readonly title: string;
+  readonly icon: ReactNode;
+  readonly children: ReactNode;
 }
 
 export function LoginModal({ open, onClose, title, icon, children }: LoginModalProps) {
@@ -32,9 +32,9 @@ export function LoginModal({ open, onClose, title, icon, children }: LoginModalP
   return (
     <AnimatePresence>
       {open && (
-        <div
+        <dialog
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
-          role="dialog"
+          open
           aria-modal="true"
           aria-labelledby={headingId}
         >
@@ -62,7 +62,7 @@ export function LoginModal({ open, onClose, title, icon, children }: LoginModalP
             </div>
             {children}
           </motion.div>
-        </div>
+        </dialog>
       )}
     </AnimatePresence>
   );

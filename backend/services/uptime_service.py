@@ -83,6 +83,7 @@ class UptimeService:
                 await self._task
             except asyncio.CancelledError:
                 # S7497: Re-raise CancelledError after cleanup per asyncio guidelines
+                self._task = None
                 raise
             self._task = None
         logger.info("UptimeRobot Heartbeat background task stopped.")

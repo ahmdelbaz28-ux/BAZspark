@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Cloud, AlertTriangle, Droplets } from "lucide-react";
 
 export const EnvironmentContextPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
   const [location, setLocation] = useState("New York, USA");
   const [latitude, setLatitude] = useState(40.7128);
   const [longitude, setLongitude] = useState(-74.006);
@@ -23,16 +23,16 @@ export const EnvironmentContextPage: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-slate-700">
-        <button className="px-4 py-2 border-b-2 border-blue-500 text-blue-400 font-medium">
+        <button type="button" className="px-4 py-2 border-b-2 border-blue-500 text-blue-400 font-medium">
           Weather & Geocoding
         </button>
-        <button className="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-300">
+        <button type="button" className="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-300">
           Air Quality
         </button>
-        <button className="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-300">
+        <button type="button" className="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-300">
           HazMat Database
         </button>
-        <button className="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-300">
+        <button type="button" className="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-300">
           Severe Weather
         </button>
       </div>
@@ -41,18 +41,19 @@ export const EnvironmentContextPage: React.FC = () => {
       <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 space-y-6">
         {/* Location Input */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label htmlFor="location-search" className="block text-sm font-medium text-slate-300 mb-2">
             Location Search
           </label>
           <div className="flex gap-2">
             <input
+              id="location-search"
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none"
               placeholder="Enter address or location..."
             />
-            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+            <button type="button" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
               Search
             </button>
           </div>
@@ -61,10 +62,11 @@ export const EnvironmentContextPage: React.FC = () => {
         {/* Coordinates */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="latitude-input" className="block text-sm font-medium text-slate-300 mb-2">
               Latitude
             </label>
             <input
+              id="latitude-input"
               type="number"
               value={latitude}
               onChange={(e) => setLatitude(Number(e.target.value))}
@@ -72,10 +74,11 @@ export const EnvironmentContextPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="longitude-input" className="block text-sm font-medium text-slate-300 mb-2">
               Longitude
             </label>
             <input
+              id="longitude-input"
               type="number"
               value={longitude}
               onChange={(e) => setLongitude(Number(e.target.value))}

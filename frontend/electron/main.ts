@@ -289,7 +289,7 @@ function registerCustomProtocol(): void {
         // (already handled by second-instance listener above, but we also
         // check argv on startup for URLs passed as arguments)
         const lastArg = process.argv[process.argv.length - 1];
-        if (lastArg && lastArg.startsWith("bazspark://")) {
+        if (lastArg?.startsWith("bazspark://")) {
                 handleProtocolUrl(lastArg);
         }
 }

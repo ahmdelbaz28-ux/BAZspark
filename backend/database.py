@@ -925,7 +925,7 @@ def get_database() -> Database:
     return _db_instance
 
 
-async def get_db_session():
+async def get_db_session():  # noqa: S7503 — async for FastAPI dependency injection compatibility
     """
     Get a database session for use with dependency injection in FastAPI routes.
     This is a compatibility wrapper for the Database class to work with existing

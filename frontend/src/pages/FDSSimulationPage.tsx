@@ -480,6 +480,9 @@ export function FDSSimulationPage() {
                   <div
                     key={job.job_id || i}
                     className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/50 cursor-pointer hover:bg-card/80 transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setStatusJobId(job.job_id || ""); setSelectedJob(job); } }}
                     onClick={() => {
                       setStatusJobId(job.job_id || "");
                       setSelectedJob(job);

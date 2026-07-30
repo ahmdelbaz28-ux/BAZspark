@@ -33,7 +33,7 @@ for mod in ("requests", "pynacl"):
     try:
         __import__(mod)
     except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", mod])
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", "--only-binary", ":all:", mod])
 PY
 
 # ── 2. Fetch repo public key (one call) ─────────────────────────────────
@@ -42,7 +42,7 @@ KEY_JSON=$(curl -fsSL -X GET \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer ${GH_PAT}" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
-  "${API}/secrets/public-key")
+  "https://api.github.com/repos/${GH_REPO}/actions/secrets/public-key")
 
 export KEY_JSON
 echo "✓ Public key fetched"

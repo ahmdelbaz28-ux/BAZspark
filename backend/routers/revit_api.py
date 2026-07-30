@@ -10,7 +10,7 @@ import logging
 import os
 import tempfile
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 
 from fastapi import (
     APIRouter,
@@ -21,6 +21,10 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from pydantic import BaseModel
+
+# ── Annotated type aliases (S8410) ────────────────────────────────────────────
+UploadFileDep = Annotated[UploadFile, File(...)]
+# ────────────────────────────────────────────────────────────────────────────
 
 from revit_integration.aps.auth_service import APSAuthService
 from revit_integration.aps.data_exchange import APSDataExchange
@@ -81,10 +85,10 @@ class RevitStatusResponse(BaseModel):
     """Response model for Revit status."""
     project_id: str
     sync_status: str
-    last_sync: Optional[datetime]
+    last_sync: Optional[datetime] = None
     element_count: int
     electrical_elements: int
-    next_sync: Optional[datetime]
+    next_sync: Optional[datetime] = None
     connection_status: str
 
 
@@ -109,7 +113,7 @@ active_connections: Dict[str, WebSocket] = {}
 @router.post("/upload", response_model=RevitSyncResponse)
 async def upload_revit_model(
     project_id: str,
-    file: UploadFile = File(...)
+    file: UploadFileDep
 ) -> RevitSyncResponse:
     """
     Upload a Revit model file for processing.
@@ -161,7 +165,7 @@ async def upload_revit_model(
             os.unlink(temp_path)
 
     except Exception as e:
-        logger.error(f"Error uploading Revit model: {e}")
+        logger.exception("Error uploading Revit model")
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
@@ -199,7 +203,7 @@ async def sync_revit_model(request: RevitSyncRequest) -> RevitSyncResponse:
         return response
 
     except Exception as e:
-        logger.error(f"Error syncing Revit model: {e}")
+        logger.exception("Error syncing Revit model")
         raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
 
 
@@ -258,7 +262,7 @@ async def get_revit_model(model_id: str) -> RevitModelResponse:
         return response
 
     except Exception as e:
-        logger.error(f"Error retrieving Revit model {model_id}: {e}")
+        logger.exception("Error retrieving Revit model")
         raise HTTPException(status_code=500, detail=f"Model retrieval failed: {str(e)}")
 
 
@@ -294,7 +298,7 @@ async def export_revit_data(request: RevitExportRequest) -> Dict[str, Any]:
         return response
 
     except Exception as e:
-        logger.error(f"Error exporting Revit data: {e}")
+        logger.exception("Error exporting Revit data")
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
 
 
@@ -326,7 +330,7 @@ async def get_revit_status(project_id: str) -> RevitStatusResponse:
         return response
 
     except Exception as e:
-        logger.error(f"Error getting Revit status: {e}")
+        logger.exception("Error getting Revit status")
         raise HTTPException(status_code=500, detail=f"Status retrieval failed: {str(e)}")
 
 
@@ -412,7 +416,7 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                         ).model_dump_json())
 
                 except Exception as e:
-                    logger.error(f"Error processing WebSocket message: {e}")
+                    logger.exception("Error processing WebSocket message")
                     await websocket.send_text(WebSocketMessage(
                         type="error",
                         data={
@@ -425,7 +429,7 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                 break
 
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+        logger.exception("WebSocket error")
     finally:
         # Remove from active connections
         active_connections.pop(connection_key, None)
@@ -445,7 +449,7 @@ async def broadcast_to_project(project_id: str, message: WebSocketMessage):
             try:
                 await ws.send_text(message.model_dump_json())
             except Exception as e:
-                logger.error(f"Error broadcasting to {conn_key}: {e}")
+                logger.exception("Error broadcasting to connection")
                 # Remove broken connection
                 active_connections.pop(conn_key, None)
 

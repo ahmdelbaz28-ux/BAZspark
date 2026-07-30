@@ -621,7 +621,7 @@ export function useReportManager() {
                         );
 
                         return {
-                                id: `RPT_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+                                id: `RPT_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
                                 type,
                                 name: template.name,
                                 timestamp: new Date(),
@@ -846,18 +846,18 @@ function generateReportSections(
                                         ],
                                         data: devices
                                                 .slice(0, 5)
-                                                .map((d) => [
-                                                        d.name,
-                                                        incidentEnergy.toFixed(2),
-                                                        Math.sqrt(incidentEnergy * 100).toFixed(0),
-                                                        incidentEnergy > 40
-                                                                ? "4"
-                                                                : incidentEnergy > 12
-                                                                        ? "3"
-                                                                        : incidentEnergy > 8
-                                                                                ? "2"
-                                                                                : "1",
-                                                ]),
+                                                .map((d) => {
+                                                        let ppeCategory = "1";
+                                                        if (incidentEnergy > 40) ppeCategory = "4";
+                                                        else if (incidentEnergy > 12) ppeCategory = "3";
+                                                        else if (incidentEnergy > 8) ppeCategory = "2";
+                                                        return [
+                                                                d.name,
+                                                                incidentEnergy.toFixed(2),
+                                                                Math.sqrt(incidentEnergy * 100).toFixed(0),
+                                                                ppeCategory,
+                                                        ];
+                                                }),
                                 },
                         ];
                 }
@@ -905,7 +905,7 @@ function generateReportSections(
                         const conduitData = connections.slice(0, 10).map((c, i) => {
                                 // Estimate fill from cable size string (e.g., "2.5mm²", "4mm²", "1.5mm²")
                                 // Default: 1 cable per conduit for estimation, NEC Table 4 EMT 25mm = 366mm²
-                                const cableAreaMatch = c.cableSize?.match(/([\d.]+)/);
+                                const cableAreaMatch = /([\d.]+)/.exec(c.cableSize ?? "");
                                 const cableAreaMm2 = cableAreaMatch
                                         ? parseFloat(cableAreaMatch[1])
                                         : 2.5;
@@ -1023,11 +1023,11 @@ function generateReportSections(
                                         // Use known estimate if available, otherwise use a default based on category
                                         const estimatedCost =
                                                 COST_ESTIMATES[d.type.toLowerCase()] ||
-                                                (d.category === "FIRE_ALARM"
-                                                        ? 100
-                                                        : d.category === "DATA_NETWORK"
-                                                                ? 200
-                                                                : 75);
+                                                (() => {
+                                                        if (d.category === "FIRE_ALARM") return 100;
+                                                        if (d.category === "DATA_NETWORK") return 200;
+                                                        return 75;
+                                                })();
                                         byType[d.type] = { count: 0, unitCost: estimatedCost };
                                 }
                                 byType[d.type].count++;
@@ -1072,7 +1072,7 @@ function generateReportSections(
                                 for (let j = i + 1; j < devices.length; j++) {
                                         const dx = devices[i].x - devices[j].x;
                                         const dy = devices[i].y - devices[j].y;
-                                        const dist = Math.sqrt(dx * dx + dy * dy);
+                                        const dist = Math.hypot(dx, dy);
                                         if (dist < clearance) {
                                                 clashes.push({
                                                         id: `CLASH-${clashes.length + 1}`,
@@ -1474,22 +1474,28 @@ function generateRecommendations(
 ): string[] {
         const recs: string[] = [];
         if (type === "LOAD_CALCULATION") {
-                recs.push("Consider load diversity for more accurate demand calculation.");
-                recs.push("Verify future expansion capacity in main distribution panel.");
+                recs.push(
+                        "Consider load diversity for more accurate demand calculation.",
+                        "Verify future expansion capacity in main distribution panel.",
+                );
         }
         if (type === "VOLTAGE_DROP") {
-                recs.push("Increase conductor size for runs exceeding 3% voltage drop.");
-                recs.push("Consider relocating loads closer to source for long runs.");
+                recs.push(
+                        "Increase conductor size for runs exceeding 3% voltage drop.",
+                        "Consider relocating loads closer to source for long runs.",
+                );
         }
         if (type === "BOM_SUMMARY") {
-                recs.push("Include 10-15% spare capacity for future expansion.");
-                recs.push("Verify lead times for specialized equipment.");
+                recs.push(
+                        "Include 10-15% spare capacity for future expansion.",
+                        "Verify lead times for specialized equipment.",
+                );
         }
         if (type === "CODE_COMPLIANCE") {
                 recs.push(
                         "Schedule review with local authority having jurisdiction (AHJ).",
+                        "Document all deviations and obtain written approvals.",
                 );
-                recs.push("Document all deviations and obtain written approvals.");
         }
         if (recs.length === 0)
                 recs.push("Review all findings with qualified engineering staff.");

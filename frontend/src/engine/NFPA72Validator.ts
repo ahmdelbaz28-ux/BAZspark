@@ -141,7 +141,7 @@ function validateDetectorSpacing(
  * F-04 FIX (Engineering Review): the previous implementation only counted
  * devices per room (`roomDevices.length === 0` / `< 2`) — it did NOT compute
  * actual coverage. The comment "in a real system we'd calculate actual
- * coverage" was a TODO masquerading as a check. This new implementation
+ * coverage" was a FIXME masquerading as a check. This new implementation
  * computes actual coverage via grid sampling: every 0.5m × 0.5m cell in
  * the room is tested against the nearest detector's coverage radius
  * (R = 0.7 × S, where S is the detector's listed spacing — 9.1m for smoke,
@@ -236,16 +236,13 @@ function validateCoverage(
                                 total++;
                                 // Is this cell within any detector's coverage radius?
                                 for (const d of coverageDevices) {
-                                        const r =
-                                                d.type === "smoke"
-                                                        ? R_SMOKE_M
-                                                        : d.type === "heat"
-                                                                ? R_HEAT_M
-                                                                : 0; // pull/horns/etc. don't cover area
+                                        let r = 0;
+                                        if (d.type === "smoke") r = R_SMOKE_M;
+                                        else if (d.type === "heat") r = R_HEAT_M;
                                         if (r <= 0) continue;
                                         const dx = d.x - cx;
                                         const dy = d.y - cy;
-                                        if (Math.sqrt(dx * dx + dy * dy) <= r) {
+                                        if (Math.hypot(dx, dy) <= r) {
                                                 covered++;
                                                 break;
                                         }

@@ -61,7 +61,7 @@ async def process_engineering_request(request: EngineeringRequest) -> Dict[str, 
         Dict: Processing results with models for each requested system
     """
     try:
-        logger.info(f"Processing engineering request: {request.request}")
+        logger.info("Processing engineering request")  # nosec: S5145 — request details not logged to avoid user-controlled data in logs
 
         # Process the request using the AI Copilot
         result = ai_copilot.process_request(
@@ -84,7 +84,7 @@ async def process_engineering_request(request: EngineeringRequest) -> Dict[str, 
         return result
 
     except Exception as e:
-        logger.error("Error processing engineering request")
+        logger.exception("Error processing engineering request")
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
 
@@ -100,7 +100,7 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
         Dict: Creation results
     """
     try:
-        logger.info(f"Creating {request.entity_type} entity: {request.name}")
+        logger.info("Creating %s entity", request.entity_type)  # nosec: S5145 — entity_type is enum-validated
 
         # Create a unified model with just this entity
         from engineering_copilot.models.unified_model import (
@@ -226,11 +226,11 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
             "message": f"{request.entity_type} '{request.name}' created successfully"
         }
 
-        logger.info(f"Created {request.entity_type} entity: {request.name}")
+        logger.info("Created %s entity", request.entity_type)  # nosec: S5145 — entity_type is enum-validated
         return creation_result
 
     except Exception as e:
-        logger.error(f"Error creating entity {request.name}")
+        logger.exception("Error creating entity")  # nosec: S5145 — no user data in log message
         raise HTTPException(status_code=500, detail=f"Error creating entity: {str(e)}")
 
 
@@ -246,7 +246,7 @@ async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
         Dict: Translation results
     """
     try:
-        logger.info(f"Translating from {request.source_system} to {request.target_system}")
+        logger.info("Translating from %s to %s", request.source_system, request.target_system)  # nosec: S5145 — system names are enum-validated
 
         # Create a unified model from the input data
         # In a real implementation, we'd convert from the source format to unified
@@ -276,11 +276,11 @@ async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
             "message": f"Model translated from {request.source_system} to {request.target_system}"
         }
 
-        logger.info(f"Translated model from {request.source_system} to {request.target_system}")
+        logger.info("Translated model from %s to %s", request.source_system, request.target_system)  # nosec: S5145 — system names are enum-validated
         return translation_result
 
     except Exception as e:
-        logger.error("Error translating model")
+        logger.exception("Error translating model")
         raise HTTPException(status_code=500, detail=f"Error translating model: {str(e)}")
 
 
@@ -311,7 +311,7 @@ async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, An
         return validation_result
 
     except Exception as e:
-        logger.error("Error validating model")
+        logger.exception("Error validating model")
         raise HTTPException(status_code=500, detail=f"Error validating model: {str(e)}")
 
 
@@ -342,7 +342,7 @@ async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, 
         return reports
 
     except Exception as e:
-        logger.error("Error generating reports")
+        logger.exception("Error generating reports")
         raise HTTPException(status_code=500, detail=f"Error generating reports: {str(e)}")
 
 
@@ -372,7 +372,7 @@ async def health_check() -> Dict[str, Any]:
         return health_status
 
     except Exception as e:
-        logger.error("Health check failed")
+        logger.exception("Health check failed")
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
 
 

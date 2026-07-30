@@ -205,14 +205,8 @@ def test_resolve_to_safe_ip_returns_original_hostname_for_tls_sni():
 
     The current API only returns the IP. This is a latent gap.
     """
-    # Try to import the new function — should exist after the fix
-    try:
-        from backend.integrations._ssrf_guard import resolve_to_safe_ip_with_hostname
-    except ImportError:
-        pytest.fail(
-            "resolve_to_safe_ip_with_hostname() does not exist. "
-            "Future HTTPS code will have no way to do correct SNI/cert validation."
-        )
+    # Import the new function — should exist after the fix
+    from backend.integrations._ssrf_guard import resolve_to_safe_ip_with_hostname
 
     with patch("backend.integrations._ssrf_guard.socket.getaddrinfo") as mock:
         mock.return_value = [

@@ -97,7 +97,7 @@ test.describe("Settings Page — Placebo Settings Backend Sync", () => {
     await saveButton.click();
 
     // Wait for the save request
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
 
     // Verify the PUT request was sent
     expect(settingsRequestCaptured, "Settings save should send PUT request to backend").toBe(true);
@@ -142,7 +142,7 @@ test.describe("Settings Page — Placebo Settings Backend Sync", () => {
     await saveButton.click();
 
     // Wait for the save request
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
 
     // Verify the PUT request was sent
     expect(settingsRequestCaptured, "Reports settings save should send PUT request to backend").toBe(true);

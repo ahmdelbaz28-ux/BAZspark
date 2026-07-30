@@ -651,7 +651,7 @@ class AICopilot:
 
         return schedules
 
-    def _calculate_connected_load(self, model: UnifiedEngineeringModel, panel: Panel) -> float:
+    def _calculate_connected_load(self, _model: UnifiedEngineeringModel, panel: Panel) -> float:
         """Calculate connected load for a panel (simplified)."""
         # In a real implementation, this would trace connections to loads
         # For now, we'll use a simple estimation

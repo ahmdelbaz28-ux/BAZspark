@@ -248,7 +248,7 @@ class ImageParser(ParserBase):
         valid.sort(key=cv2.contourArea, reverse=True)
         return valid[:20]
 
-    def _process_contour(self, contour, img, image_size=None) -> Optional[ImageRoom]:
+    def _process_contour(self, contour, img, _image_size=None) -> Optional[ImageRoom]:
         x, y, w, h = cv2.boundingRect(contour)
 
         width_m = w * self.scale_factor

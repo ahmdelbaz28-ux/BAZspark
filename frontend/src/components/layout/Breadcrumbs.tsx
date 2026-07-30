@@ -51,7 +51,7 @@ const Breadcrumbs: React.FC = () => {
       {crumbs.map((crumb, idx) => {
         const isLast = idx === crumbs.length - 1;
         return (
-          <React.Fragment key={idx}>
+          <React.Fragment key={crumb.path || `crumb-${idx}`}>
             {idx > 0 && (
               <ChevronRight
                 size={11}
