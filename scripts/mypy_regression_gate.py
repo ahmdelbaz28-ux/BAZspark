@@ -26,6 +26,24 @@ import subprocess
 import sys
 
 
+def _validate_target(raw: str) -> None:
+    """Validate a mypy target path — reject shell metacharacters and absolute paths.
+
+    Raises SystemExit(2) if validation fails.
+    """
+    if not raw.strip():
+        print("ERROR: --target path cannot be empty", file=sys.stderr)
+        sys.exit(2)
+    # Reject absolute paths and parent-dir traversal
+    if raw.startswith("/") or raw.startswith("\\") or ".." in raw.split("/"):
+        print(f"ERROR: --target path must be relative (got: {raw})", file=sys.stderr)
+        sys.exit(2)
+    # Reject shell metacharacters
+    if re.search(r'[;&|`$(){}!]', raw):
+        print(f"ERROR: --target path contains shell metacharacters (got: {raw})", file=sys.stderr)
+        sys.exit(2)
+
+
 def main() -> int:  # NOSONAR — S3776: CI gate orchestrates multiple pipeline steps
     # Parse simple args
     baseline = 434  # Current baseline (V140): 434 pre-existing errors
@@ -43,7 +61,10 @@ def main() -> int:  # NOSONAR — S3776: CI gate orchestrates multiple pipeline 
             baseline = int(sys.argv[i + 1])
             i += 2
         elif sys.argv[i] == "--target":
-            targets = [sys.argv[i + 1]]
+            raw = sys.argv[i + 1]
+            # Validate target path: allow relative dir paths, reject shell metacharacters
+            _validate_target(raw)
+            targets = [raw]
             i += 2
         else:
             i += 1
