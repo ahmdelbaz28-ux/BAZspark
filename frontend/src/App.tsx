@@ -201,6 +201,9 @@ const GenerativeDesignPage = lazy(() =>
 const RbacPage = lazy(() =>
     import("./pages/RbacPage").then((m) => ({ default: m.RbacPage })),
 );
+const ExperimentalServicesPage = lazy(() =>
+    import("./pages/ExperimentalServicesPage").then((m) => ({ default: m.ExperimentalServicesPage })),
+);
 const WebhookManagementPage = lazy(() =>
     import("./pages/WebhookManagementPage").then((m) => ({ default: m.WebhookManagementPage })),
 );
@@ -424,6 +427,7 @@ const handleSearchOpen = useCallback(() => {
                 { path: "/engineering/topology", element: <TopologyPage /> },
                 { path: "/engineering/qomn", element: <QOMNCalculatorPage /> },
                 { path: "/settings/rbac", element: <RbacPage />, requiredRole: "admin" },
+                { path: "/settings/experimental", element: <ExperimentalServicesPage />, requiredRole: "admin" },
                 { path: "/settings/webhooks", element: <WebhookManagementPage /> },
                 { path: "/monitor/agent", element: <AgentChatPage /> },
                 // V273: Add routes for previously unrouted orphaned pages

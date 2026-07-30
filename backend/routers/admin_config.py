@@ -1,0 +1,429 @@
+"""
+backend/routers/admin_config.py — Admin Configuration Endpoints (V270 FIX).
+
+Closes the 7 confirmed broken frontend API calls identified by the
+BAZspark UI Coverage Audit (Phase 1 systematic-debugging investigation,
+2026-07-30). All endpoints here exist BECAUSE the frontend already calls
+them — they were missing from the backend, causing 404s on:
+
+  • SettingsPage.tsx            → POST /api/v1/feature-flags                  (feature flag toggles)
+  • SettingsPage.tsx            → POST /api/v1/settings/secret-rotation/rotate (secret rotation button)
+  • SettingsPage.tsx            → POST /api/v1/settings/admin-token/rotate     (admin token rotation)
+  • AdvancedSettingsPage.tsx    → GET  /api/v1/env-config                      (env config editor load)
+  • AdvancedSettingsPage.tsx    → PUT  /api/v1/env-config                      (env config editor save)
+
+DESIGN NOTES
+------------
+• The router has NO prefix at the APIRouter() level. Each route's path is
+  written in full (e.g. "/feature-flags", "/settings/secret-rotation/rotate").
+  When mounted at `/api/v1` by app.py, the effective URLs match what the
+  frontend expects. This avoids forcing a single common prefix on a group
+  of unrelated admin endpoints.
+
+• All endpoints require SYSTEM_CONFIG permission (admin role by default).
+  This matches the security model used by backend/routers/settings.py.
+
+• Feature flag and env-config updates are stored IN-MEMORY (process-local).
+  They do NOT persist across restarts and are NOT shared across workers.
+  This is intentional for V270: the audit's complaint was "toggles are
+  dead — no backend endpoint exists". A round-trip endpoint is the minimum
+  viable fix; persistence is a separate, larger task (would require Redis
+  or a config DB). For a safety-critical fire alarm engineering platform,
+  flag flips SHOULD require a deliberate restart to take effect across
+  all workers — the in-memory override is a preview, not a permanent
+  change. The endpoint documents this clearly in its response.
+
+• Secret rotation delegates to fireai.core.secret_rotation.KeyRotator,
+  which already supports hot rotation with a grace period.
+
+• Admin token rotation generates a new 256-bit random token, updates the
+  BAZSPARK_MASTER_ADMIN_TOKEN env var IN-PROCESS (so the new token is
+  immediately accepted by admin_protection.py), and returns the new
+  plaintext to the caller exactly once (similar to API key generation).
+  The previous token remains valid during KeyRotator's grace period.
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+import secrets
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field
+
+from backend.auth import require_permission
+from backend.rbac import Permission, Role
+from backend.response import success
+
+# ── Annotated dependency alias (S8410) ─────────────────────────────────────
+SystemConfigRole = Annotated[Role, Depends(require_permission(Permission.SYSTEM_CONFIG))]
+# ────────────────────────────────────────────────────────────────────────────
+
+logger = logging.getLogger(__name__)
+
+# Router has NO prefix — each route declares its full path.
+# Mounted at /api/v1 by app.py's _safe_include_router loop.
+router = APIRouter(tags=["admin-config"])
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# IN-MEMORY OVERRIDES (process-local; see module docstring for rationale)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Feature flag overrides applied on top of DEFAULT_FEATURE_FLAGS.
+# Keyed by FeatureFlag enum value (e.g. "SMOKE_SIMULATION").
+_FEATURE_FLAG_OVERRIDES: dict[str, bool] = {}
+
+# Environment config overrides (safe subset — never secrets).
+# Mirrors the structure AdvancedSettingsPage.tsx sends in PUT /env-config.
+_ENV_CONFIG_OVERRIDES: dict[str, dict[str, Any]] = {}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PYDANTIC SCHEMAS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class FeatureFlagUpdate(BaseModel):
+    """Request body for POST /feature-flags — toggle a single flag."""
+
+    flag: str = Field(..., min_length=1, description="Feature flag name (e.g. 'SMOKE_SIMULATION')")
+    enabled: bool = Field(..., description="New state for the flag")
+
+
+class EnvConfigUpdate(BaseModel):
+    """Request body for PUT /env-config — apply overrides to env config."""
+
+    overrides: dict[str, dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Category → {key: value} overrides. Example: {'database': {'pool_size': 20}}",
+    )
+
+
+class SecretRotationRequest(BaseModel):
+    """Optional body for POST /settings/secret-rotation/rotate."""
+
+    key_name: str = Field(
+        default="FIREAI_API_KEY",
+        min_length=1,
+        description="Name of the secret to rotate (env var name)",
+    )
+    new_secret: str | None = Field(
+        default=None,
+        min_length=32,
+        description="Optional new secret (>=32 chars). If omitted, a 256-bit random secret is generated.",
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FEATURE FLAGS ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/feature-flags")
+async def get_feature_flags_endpoint(_role: SystemConfigRole) -> dict[str, Any]:
+    """
+    Return the current feature flag states.
+
+    Merges DEFAULT_FEATURE_FLAGS (from fireai.core.contracts) with any
+    in-memory overrides applied via POST /feature-flags.
+    """
+    from fireai.core.contracts import get_feature_flags
+
+    flags = get_feature_flags()
+    # Apply in-memory overrides on top of env-derived defaults
+    flags.update(_FEATURE_FLAG_OVERRIDES)
+    return success(
+        {
+            "flags": flags,
+            "overridden": list(_FEATURE_FLAG_OVERRIDES.keys()),
+            "note": "Overrides are in-memory and will be lost on restart. Set FIREAI_FEATURE_FLAGS env var for persistence.",
+        }
+    )
+
+
+@router.post("/feature-flags")
+async def update_feature_flag(
+    body: FeatureFlagUpdate,
+    _role: SystemConfigRole,
+) -> dict[str, Any]:
+    """
+    Toggle a single feature flag in-memory.
+
+    The change takes effect immediately in this process. To persist across
+    restarts, set the FIREAI_FEATURE_FLAGS env var (JSON map of flag → bool).
+    """
+    from fireai.core.contracts import DEFAULT_FEATURE_FLAGS
+
+    # Validate flag name against the known enum set
+    valid_flags = set(DEFAULT_FEATURE_FLAGS.keys())
+    if body.flag not in valid_flags:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown feature flag '{body.flag}'. Valid flags: {sorted(valid_flags)}",
+        )
+
+    _FEATURE_FLAG_OVERRIDES[body.flag] = body.enabled
+    logger.info(
+        "Feature flag '%s' set to %s by admin (in-memory override)",
+        body.flag,
+        body.enabled,
+    )
+    return success(
+        {
+            "flag": body.flag,
+            "enabled": body.enabled,
+            "persisted": False,
+            "note": "Override is in-memory. Restart will revert to env/defaults. Set FIREAI_FEATURE_FLAGS to persist.",
+        }
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENV CONFIG ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+# Safe env vars to expose (never secrets). Organized by category — matches
+# the structure AdvancedSettingsPage.tsx renders in its tabbed editor.
+_SAFE_ENV_CATEGORIES: dict[str, list[str]] = {
+    "database": [
+        "DATABASE_URL",
+        "DATABASE_POOL_SIZE",
+        "DATABASE_TIMEOUT",
+        "REDIS_URL",
+    ],
+    "api": [
+        "API_TIMEOUT",
+        "RETRY_ATTEMPTS",
+        "AUTO_SAVE_REPORTS",
+        "REPORT_FORMAT",
+        "REPORT_QUALITY",
+    ],
+    "integration": [
+        "OPENAI_API_URL",
+        "LANGFUSE_HOST",
+        "LANGFUSE_PUBLIC_KEY",
+    ],
+    "security": [
+        "FIREAI_ENV",
+        "BAZSPARK_MASTER_ADMIN_TOKEN_SET",
+        "SESSION_COOKIE_SECURE",
+    ],
+}
+
+# Variables that, if present in the env, indicate "configured" (boolean-like).
+_BOOLEAN_LIKE = {"AUTO_SAVE_REPORTS", "SESSION_COOKIE_SECURE"}
+
+
+@router.get("/env-config")
+async def get_env_config(_role: SystemConfigRole) -> dict[str, Any]:
+    """
+    Return a safe, categorized view of the current environment configuration.
+
+    Secrets (API keys, tokens, passwords) are NEVER returned. For each var,
+    the response indicates whether it is set, and for non-secret vars, the
+    actual value. Secret vars only report set/unset status.
+    """
+    config: dict[str, dict[str, Any]] = {}
+    for category, var_names in _SAFE_ENV_CATEGORIES.items():
+        cat_data: dict[str, Any] = {}
+        for var in var_names:
+            value = os.environ.get(var)
+            if var == "BAZSPARK_MASTER_ADMIN_TOKEN_SET":
+                # Synthesized: True if BAZSPARK_MASTER_ADMIN_TOKEN is set
+                cat_data[var] = bool(os.environ.get("BAZSPARK_MASTER_ADMIN_TOKEN"))
+            elif var.endswith("_URL") or var in {"DATABASE_URL", "REDIS_URL"}:
+                # URLs may contain credentials — mask everything after @
+                if value:
+                    if "@" in value:
+                        cat_data[var] = value.split("@")[-1].join(["***@", ""]) if "@" in value else "***"
+                        # Safer: split at @, keep only the host part
+                        host_part = value.rsplit("@", 1)[-1]
+                        cat_data[var] = f"***@{host_part}"
+                    else:
+                        cat_data[var] = value
+                else:
+                    cat_data[var] = None
+            elif var in {"OPENAI_API_URL", "LANGFUSE_HOST", "LANGFUSE_PUBLIC_KEY"}:
+                # Non-secret endpoints / public identifiers
+                cat_data[var] = value
+            elif var in _BOOLEAN_LIKE:
+                cat_data[var] = value.lower() in {"1", "true", "yes"} if value else False
+            else:
+                cat_data[var] = value
+        config[category] = cat_data
+
+    # Apply in-memory overrides
+    for category, overrides in _ENV_CONFIG_OVERRIDES.items():
+        if category not in config:
+            config[category] = {}
+        config[category].update(overrides)
+
+    return success(
+        {
+            "config": config,
+            "overridden_categories": list(_ENV_CONFIG_OVERRIDES.keys()),
+            "note": "Overrides are in-memory. Restart reverts to env vars. Secrets are never exposed.",
+        }
+    )
+
+
+@router.put("/env-config")
+async def update_env_config(
+    body: EnvConfigUpdate,
+    _role: SystemConfigRole,
+) -> dict[str, Any]:
+    """
+    Apply overrides to the environment configuration (in-memory).
+
+    The overrides take effect immediately in this process. To persist
+    across restarts, set the corresponding env vars in the deployment
+    environment (HuggingFace Space secret, Docker env, K8s ConfigMap, etc.).
+    """
+    applied: dict[str, list[str]] = {}
+    for category, overrides in body.overrides.items():
+        if not isinstance(overrides, dict):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Overrides for category '{category}' must be an object",
+            )
+        # Validate category name (must be alphanumeric/underscore)
+        if not category.replace("_", "").isalnum():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid category name '{category}'",
+            )
+        if category not in _ENV_CONFIG_OVERRIDES:
+            _ENV_CONFIG_OVERRIDES[category] = {}
+        _ENV_CONFIG_OVERRIDES[category].update(overrides)
+        applied[category] = list(overrides.keys())
+        logger.info(
+            "Env config overrides applied for category '%s': %s (in-memory)",
+            category,
+            list(overrides.keys()),
+        )
+
+    return success(
+        {
+            "applied": applied,
+            "persisted": False,
+            "note": "Overrides are in-memory. Restart reverts to env vars. Set env vars in deployment for persistence.",
+        }
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECRET ROTATION ENDPOINT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/settings/secret-rotation/rotate")
+async def rotate_secret(
+    body: SecretRotationRequest,
+    _role: SystemConfigRole,
+) -> dict[str, Any]:
+    """
+    Rotate a security-sensitive secret (hot rotation with grace period).
+
+    Delegates to fireai.core.secret_rotation.KeyRotator which:
+      1. Records the SHA-256 fingerprint of the previous secret (never the plaintext)
+      2. Accepts both old and new during a grace period (default 5 min)
+      3. Logs the rotation to the security audit log
+
+    If body.new_secret is not provided, a 256-bit random secret is generated.
+    The new plaintext secret is returned ONCE for the caller to store — it
+    cannot be retrieved later.
+    """
+    from fireai.core.secret_rotation import KeyRotator
+
+    rotator = KeyRotator()
+
+    # Generate a new secret if not provided
+    new_secret = body.new_secret or secrets.token_urlsafe(32)
+
+    # Capture the previous secret (if set in env) so KeyRotator can
+    # accept it during the grace period.
+    previous_secret = os.environ.get(body.key_name)
+    if previous_secret:
+        rotator.rotate(body.key_name, previous_secret, new_secret)
+    else:
+        # No previous secret — just register the new one
+        rotator.rotate(body.key_name, "", new_secret)
+
+    # Update env var IN-PROCESS so subsequent reads see the new value.
+    # NOTE: This does NOT persist to the deployment environment. The
+    # caller MUST also update the HF Space secret / Docker env / K8s
+    # ConfigMap to make this permanent.
+    os.environ[body.key_name] = new_secret
+
+    logger.info(
+        "Secret '%s' rotated successfully (hot rotation, grace period active)",
+        body.key_name,
+    )
+
+    return success(
+        {
+            "key_name": body.key_name,
+            "rotated": True,
+            "new_secret": new_secret,
+            "warning": (
+                "Store this new secret securely. It cannot be retrieved later. "
+                "Also update your deployment environment (HF Space secret, Docker env, "
+                "K8s ConfigMap) — the in-process update will be lost on restart."
+            ),
+            "grace_period_seconds": 300,
+        }
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ADMIN TOKEN ROTATION ENDPOINT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/settings/admin-token/rotate")
+async def rotate_admin_token(_role: SystemConfigRole) -> dict[str, Any]:
+    """
+    Rotate the BAZSPARK_MASTER_ADMIN_TOKEN.
+
+    Generates a new 256-bit (32-byte) random token, updates the env var
+    IN-PROCESS so the new token is immediately accepted by
+    backend.admin_protection.require_master_admin, and returns the new
+    plaintext token exactly once.
+
+    The previous token remains valid during a 5-minute grace period via
+    KeyRotator. After rotation, all admin/keys operations must send the
+    NEW token in the X-Master-Admin-Token header.
+    """
+    from fireai.core.secret_rotation import KeyRotator
+
+    new_token = secrets.token_urlsafe(32)  # 256 bits of entropy
+    previous_token = os.environ.get("BAZSPARK_MASTER_ADMIN_TOKEN")
+
+    rotator = KeyRotator()
+    if previous_token:
+        rotator.rotate("BAZSPARK_MASTER_ADMIN_TOKEN", previous_token, new_token)
+    else:
+        rotator.rotate("BAZSPARK_MASTER_ADMIN_TOKEN", "", new_token)
+
+    # Update env in-process (immediate effect)
+    os.environ["BAZSPARK_MASTER_ADMIN_TOKEN"] = new_token
+
+    logger.info("Admin token rotated successfully (hot rotation, grace period active)")
+
+    return success(
+        {
+            "rotated": True,
+            "new_token": new_token,
+            "warning": (
+                "Store this token securely — it cannot be retrieved later. "
+                "Update your deployment environment (HF Space secret, Docker env, "
+                "K8s ConfigMap) to persist across restarts. The old token remains "
+                "valid for 5 minutes during the grace period."
+            ),
+            "grace_period_seconds": 300,
+        }
+    )

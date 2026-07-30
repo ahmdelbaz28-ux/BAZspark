@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useSidebarBadges, type SidebarBadgeState } from "@/hooks/useSidebarBadges";
 import {
   LayoutDashboard,
   FolderOpen,
@@ -46,6 +47,7 @@ import {
   Ship,
   Wand2,
   Cloud,
+  Sparkles,
 } from "lucide-react";
 
 /* ---------------------------------------------------------- */
@@ -58,6 +60,8 @@ interface NavItem {
   icon: React.ElementType;
   path: string;
   badge?: string;
+  /** V270: if set, badge text is fetched live from useSidebarBadges using this key */
+  badgeKey?: "conflicts" | "physicsGuards" | "agentActivity";
   badgeVariant?: "danger" | "warning" | "accent" | "success";
   dataOnboarding?: string;
 }
@@ -78,7 +82,7 @@ const navGroups: NavGroup[] = [
       { labelKey: "nav.projects",     label: "Projects",     icon: FolderOpen,      path: "/projects",    dataOnboarding: "nav-projects"  },
       { labelKey: "nav.elements",     label: "Elements",     icon: Layers2,         path: "/elements"   },
       { labelKey: "nav.connections",  label: "Connections",  icon: Cable,           path: "/connections" },
-      { labelKey: "nav.conflicts",    label: "Conflicts",    icon: AlertTriangle,   path: "/conflicts",  badge: "3", badgeVariant: "danger" },
+      { labelKey: "nav.conflicts",    label: "Conflicts",    icon: AlertTriangle,   path: "/conflicts",  badgeKey: "conflicts",  badgeVariant: "danger"  /* V270: live value via useSidebarBadges */ },
     ],
   },
   {
@@ -89,7 +93,7 @@ const navGroups: NavGroup[] = [
       { labelKey: "nav.engineering",     label: "Console",       icon: Cpu,          path: "/engineering",       dataOnboarding: "nav-engineering" },
       { labelKey: "nav.qomn",            label: "QOMN Calc",     icon: Bolt,         path: "/engineering/qomn"  },
       { labelKey: "nav.facp",            label: "FACP Designer", icon: FlameKindling, path: "/facp" },
-      { labelKey: "nav.physicsGuards",   label: "Physics Guards",icon: ShieldAlert,  path: "/engineering/guards", badge: "safe", badgeVariant: "success" },
+      { labelKey: "nav.physicsGuards",   label: "Physics Guards",icon: ShieldAlert,  path: "/engineering/guards", badgeKey: "physicsGuards", badgeVariant: "success"  /* V270: live value via useSidebarBadges */ },
       { labelKey: "nav.fireAlarmDesigner", label: "Fire Alarm", icon: BellRing,     path: "/fire-alarm/designer", dataOnboarding: "nav-fire-alarm-designer" },
       { labelKey: "nav.engineeringCopilot", label: "Copilot",   icon: Brain,       path: "/engineering-copilot" },
       { labelKey: "nav.analysis",           label: "Analysis",  icon: BarChart3,   path: "/analysis" },
@@ -151,7 +155,7 @@ const navGroups: NavGroup[] = [
     separator: true,
     items: [
       { labelKey: "nav.systemHealth",    label: "System Health", icon: Activity,   path: "/dashboard/system-health"   },
-      { labelKey: "nav.agentActivity",   label: "AI Agent",      icon: Bot,        path: "/monitor/agent",     badge: "live", badgeVariant: "accent" },
+      { labelKey: "nav.agentActivity",   label: "AI Agent",      icon: Bot,        path: "/monitor/agent",     badgeKey: "agentActivity", badgeVariant: "accent"  /* V270: live value via useSidebarBadges */ },
       { labelKey: "nav.securityAlerts",  label: "Security",      icon: BellRing,   path: "/security-alerts" },
       { labelKey: "nav.multiDb",         label: "Multi-DB",      icon: Database,   path: "/multi-db" },
       { labelKey: "nav.monitor",         label: "Monitor",       icon: Monitor,    path: "/monitor" },
@@ -173,6 +177,7 @@ const navGroups: NavGroup[] = [
       { labelKey: "nav.settings",         label: "Preferences",     icon: Settings,  path: "/settings",          dataOnboarding: "nav-settings" },
       { labelKey: "nav.advancedSettings", label: "Advanced",        icon: Settings2, path: "/settings/advanced" },
       { labelKey: "nav.rbac",             label: "RBAC",            icon: Shield,    path: "/settings/rbac" },
+      { labelKey: "nav.experimental",     label: "Experimental",    icon: Sparkles,  path: "/settings/experimental" },
       { labelKey: "nav.webhooks",         label: "Webhooks",        icon: Link2,     path: "/settings/webhooks" },
       { labelKey: "nav.settingsCad",      label: "CAD Settings",    icon: PenLine,   path: "/settings/cad" },
       { labelKey: "nav.settingsDatabase", label: "Database",        icon: Database,  path: "/settings/database" },
@@ -211,9 +216,10 @@ interface GroupProps {
   collapsed: boolean; // sidebar icon-only mode
   onToggle: () => void;
   currentPath: string;
+  liveBadges: SidebarBadgeState;
 }
 
-const NavGroupSection: React.FC<GroupProps> = ({ group, expanded, collapsed, onToggle, currentPath }) => {
+const NavGroupSection: React.FC<GroupProps> = ({ group, expanded, collapsed, onToggle, currentPath, liveBadges }) => {
   const { t } = useTranslation();
   const isAnyActive = group.items.some(i => currentPath === i.path || currentPath.startsWith(i.path + "/"));
 
@@ -244,6 +250,10 @@ const NavGroupSection: React.FC<GroupProps> = ({ group, expanded, collapsed, onT
             const Icon = item.icon;
             const isActive = currentPath === item.path || currentPath.startsWith(item.path + "/");
             const label = t(item.labelKey, item.label);
+
+            // V270: resolve live badge value. badgeKey takes precedence over static badge.
+            const liveBadge = item.badgeKey ? liveBadges[item.badgeKey] : null;
+            const effectiveBadge = liveBadge ?? item.badge ?? undefined;
 
             return (
               <Link
@@ -280,8 +290,8 @@ const NavGroupSection: React.FC<GroupProps> = ({ group, expanded, collapsed, onT
                 )}
 
                 {/* Badge */}
-                {!collapsed && item.badge && (
-                  <NavBadge text={item.badge} variant={item.badgeVariant} />
+                {!collapsed && effectiveBadge && (
+                  <NavBadge text={effectiveBadge} variant={item.badgeVariant} />
                 )}
 
                 {/* Tooltip in collapsed mode */}
@@ -296,8 +306,8 @@ const NavGroupSection: React.FC<GroupProps> = ({ group, expanded, collapsed, onT
                     transition-all duration-150
                   ">
                     {label}
-                    {item.badge && (
-                      <NavBadge text={item.badge} variant={item.badgeVariant} />
+                    {effectiveBadge && (
+                      <NavBadge text={effectiveBadge} variant={item.badgeVariant} />
                     )}
                   </span>
                 )}
@@ -316,6 +326,7 @@ const NavGroupSection: React.FC<GroupProps> = ({ group, expanded, collapsed, onT
 
 const EnhancedSidebar: React.FC = () => {
   const location = useLocation();
+  const liveBadges = useSidebarBadges();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     core: true,
@@ -368,6 +379,7 @@ const EnhancedSidebar: React.FC = () => {
             collapsed={collapsed}
             onToggle={() => toggle(group.key)}
             currentPath={location.pathname}
+            liveBadges={liveBadges}
           />
         ))}
       </nav>

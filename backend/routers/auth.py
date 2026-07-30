@@ -359,6 +359,56 @@ async def get_current_user(request: Request):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# V270 FIX (systematic-debugging Phase 1 finding):
+# Frontend services/fullApi.ts:1217 calls POST /api/v1/auth/verify via the
+# legacy `verifyToken` method. The endpoint did not exist, causing 404 on
+# any caller that exercised this code path. Adding it here closes that gap.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class VerifyTokenRequest(BaseModel):
+    """Request body for POST /auth/verify — verifies a session token."""
+
+    token: str = Field(..., min_length=1, description="Session token to verify")
+
+
+@router.post("/verify")
+async def verify_token(body: VerifyTokenRequest) -> dict[str, object]:
+    """
+    Verify a session token and return its validity + role if valid.
+
+    This endpoint is callable WITHOUT an active session — its purpose is
+    to let a client check whether a token they hold is still valid (e.g.
+    on page reload, before deciding whether to redirect to /login).
+
+    Returns:
+      200 with {valid: true, role: "<role>"} if the token is valid.
+      200 with {valid: false} if the token is invalid/expired.
+      (We deliberately do NOT return 401 for invalid tokens — the caller
+      asked "is this token valid?" and the answer is "no", which is a
+      successful lookup, not an auth failure on the endpoint itself.)
+    """
+    session_id = _verify_session_token(body.token)
+    if session_id is None:
+        return success({"valid": False})
+
+    session_id_hash = _hash_secret(session_id)
+    session = _session_store.get(session_id_hash)
+    if session is None:
+        return success({"valid": False})
+
+    # Server-side expiration re-check (defense-in-depth — _verify_session_token
+    # already checks this, but a race between the two reads could let an
+    # expired session slip through; this guards against that).
+    import time as _time
+    if _time.time() > session.get("expires_at", 0):
+        _session_store.delete(session_id_hash)
+        return success({"valid": False})
+
+    return success({"valid": True, "role": session.get("role")})
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # PUBLIC API FOR MIDDLEWARE
 # ═══════════════════════════════════════════════════════════════════════════════
 

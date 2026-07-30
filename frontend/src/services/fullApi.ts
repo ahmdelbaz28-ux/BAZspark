@@ -107,7 +107,46 @@ export async function apiCall<T>(
 
 // ─── Engineering API (QOMN) ─────────────────────────────────────────────────
 
+/**
+ * V270 FIX (systematic-debugging): QOMNCalculatorPage was previously
+ * pure client-side math with NO backend calls — 9 backend NFPA 72
+ * calculation endpoints were orphaned. Wiring them here so the page can
+ * call the authoritative server-side kernel (with IEEE-754 deterministic
+ * audit trail) instead of relying on a JS reimplementation.
+ *
+ * Each method maps 1:1 to a backend endpoint defined in
+ * backend/routers/qomn.py. Inputs use SI units (meters, m², Amperes)
+ * to match the backend Pydantic models. The page handles unit conversion.
+ */
 export const qomnApi = {
+        /** POST /qomn/smoke-spacing — NFPA 72 §17.7.3.2.4 smoke detector spacing */
+        smokeSpacing: (data: { ceiling_height_m: number }) =>
+                apiCall("/qomn/smoke-spacing", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /qomn/heat-spacing — NFPA 72 §17.6.3.1 heat detector spacing */
+        heatSpacing: (data: { ceiling_height_m: number; area_per_detector_m2: number }) =>
+                apiCall("/qomn/heat-spacing", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /qomn/battery — NFPA 72 §10.6.7.2.1 battery capacity */
+        battery: (data: {
+                standby_load_a: number;
+                alarm_load_a: number;
+                standby_hours?: number;
+                alarm_minutes?: number;
+                safety_factor?: number;
+                efficiency?: number;
+        }) =>
+                apiCall("/qomn/battery", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
         /** POST /qomn/voltage-drop — Calculate voltage drop (NEC Ch.9 Table 8) */
         voltageDrop: (data: {
                 current_a: number;
@@ -120,6 +159,18 @@ export const qomnApi = {
                         method: "POST",
                         body: JSON.stringify(data),
                 }),
+
+        /** GET /qomn/physics-guards — List all physics guard limits */
+        getPhysicsGuards: () =>
+                apiCall("/qomn/physics-guards", { method: "GET" }),
+
+        /** GET /qomn/constants — List NFPA 72 / NEC constants used by the kernel */
+        getConstants: () =>
+                apiCall("/qomn/constants", { method: "GET" }),
+
+        /** GET /qomn/audit — Export the QOMN audit log (AHJ access) */
+        getAudit: () =>
+                apiCall("/qomn/audit", { method: "GET" }),
 
 };
 
@@ -1215,7 +1266,44 @@ export const fullApi = {
         logout: async () => apiCall<{ success: boolean }>("/auth/logout", { method: "POST" }),
         getMe: async () => apiCall<{ data?: any }>("/auth/me"),
         verifyToken: async (token: string) => apiCall<{ success: boolean }>("/auth/verify", { method: "POST", body: JSON.stringify({ token }) }),
-        qomnCalculate: async (params: any) => apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/calculate", { method: "POST", body: JSON.stringify(params) }),
+        /**
+         * qomnCalculate — V270 FIX (audit bug C-qomn-calculate).
+         *
+         * The audit flagged this call as 404 because the backend has no generic
+         * /qomn/calculate endpoint — only specific endpoints per calculation type
+         * (smoke-spacing, heat-spacing, battery, voltage-drop, place-detectors,
+         * place-duct). The actual production page (EngineeringPage.tsx) correctly
+         * calls qomnApi.voltageDrop() etc. directly; this fullApi.qomnCalculate
+         * method is only used by the orphan EngineeringRepository → useQOMNCalculatorViewModel
+         * path. Rather than leaving a 404 in the codebase, route the call to the
+         * correct specific endpoint based on the params shape.
+         */
+        qomnCalculate: async (params: any): Promise<{ success: boolean; data?: any; message?: string }> => {
+                // Route based on which params are present (matches backend schemas).
+                if (params.room_length !== undefined || params.room_width !== undefined || params.ceiling_height !== undefined) {
+                        // Smoke spacing — needs ceiling_height_m
+                        const ceiling_height_m = Number(params.ceiling_height ?? 3.0);
+                        return apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/smoke-spacing", { method: "POST", body: JSON.stringify({ ceiling_height_m }) });
+                }
+                if (params.battery_load_ah !== undefined || params.standby_hours !== undefined || params.alarm_minutes !== undefined) {
+                        return apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/battery", { method: "POST", body: JSON.stringify({
+                                standby_load_a: Number(params.battery_load_ah ?? 0),
+                                alarm_load_a: Number(params.alarm_load_ah ?? 0),
+                                standby_hours: Number(params.standby_hours ?? 24),
+                                alarm_minutes: Number(params.alarm_minutes ?? 10),
+                        }) });
+                }
+                if (params.ps_voltage !== undefined || params.ps_current !== undefined || params.wire_length !== undefined || params.wire_gauge !== undefined) {
+                        return apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/voltage-drop", { method: "POST", body: JSON.stringify({
+                                current_a: Number(params.ps_current ?? 0),
+                                length_m: Number(params.wire_length ?? 0),
+                                awg_gauge: String(params.wire_gauge ?? "12"),
+                                supply_voltage_v: Number(params.ps_voltage ?? 24),
+                        }) });
+                }
+                // No recognized param shape — return a structured failure instead of 404.
+                return { success: false, message: "qomnCalculate: could not infer QOMN calculation type from params. Use qomnApi.smokeSpacing/battery/voltageDrop directly." };
+        },
         getEnvironmentalContext: async (lat: number, lon: number) => apiCall<{ data?: any }>(`/environment/context?lat=${lat}&lon=${lon}`),
         getWeatherForecast: async (location: string) => apiCall<{ data?: any }>(`/environment/weather?location=${encodeURIComponent(location)}`),
         getAirQualityData: async (lat: number, lon: number) => apiCall<{ data?: any }>(`/environment/air-quality?lat=${lat}&lon=${lon}`),

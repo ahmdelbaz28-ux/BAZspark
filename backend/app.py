@@ -510,6 +510,17 @@ for _router_name in (
     "llm",  # V207: AI Copilot (Zenmux OpenAI-compatible LLM service)
     "auth",  # M-3: session-based auth with HttpOnly cookies
     "settings",  # V151: Vision API Keys (AES-256-GCM encrypted) — /api/v1/settings/keys/openai
+    # V270 FIX (systematic-debugging): closes 7 confirmed broken frontend
+    # API calls identified by the BAZspark UI Coverage Audit. These routers
+    # were missing entirely, causing 404s on feature-flags, env-config,
+    # secret-rotation, admin-token rotation, and rbac/permissions.
+    "admin_config",  # V270: /api/v1/feature-flags, /env-config, /settings/secret-rotation/rotate, /settings/admin-token/rotate
+    "rbac_admin",    # V270: /api/v1/admin/rbac/permissions
+    # V270 FIX (audit "5 orphan services"): exposes previously-orphan OCR,
+    # Scan-to-BIM, and Speckle services under /api/v1/experimental/*. Audit
+    # was mistaken about Uptime and Region services — both already wired
+    # through monitor.py and environment.py respectively.
+    "experimental_services",  # V270: /api/v1/experimental/{features,ocr,scan-to-bim,speckle}
 ):
     _safe_include_router(_router_name)
 

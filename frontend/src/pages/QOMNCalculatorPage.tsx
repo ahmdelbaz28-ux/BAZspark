@@ -3,8 +3,107 @@ import { useTranslation } from "react-i18next";
 import {
   Zap, AlertTriangle, Settings, Thermometer,
   Wind, Activity, CheckCircle2, XCircle, AlertCircle,
+  Loader2, Server,
 } from "lucide-react";
 import PhysicsGuardsMonitor, { GuardRule } from "@/components/engineering/PhysicsGuardsMonitor";
+import { qomnApi } from "@/services/fullApi";
+import { useToast } from "@/hooks/use-toast";
+
+/* ---------------------------------------------------------- */
+/*  UNIT CONVERSION HELPERS (imperial → SI for backend)        */
+/*  Backend qomn endpoints expect: meters, m², Amperes         */
+/* ---------------------------------------------------------- */
+
+const FT_TO_M = 0.3048;
+const SQFT_TO_M2 = 0.092903;
+const MA_TO_A = 0.001;
+
+/**
+ * V270 FIX (systematic-debugging): wraps each calculator with an optional
+ * "Verify on Server" call to the authoritative QOMN kernel. The kernel
+ * produces IEEE-754 deterministic output with an audit trail (computation_hash,
+ * nfpa_section, formula) — properties the client-side JS reimplementation
+ * cannot guarantee. For a safety-critical fire alarm platform, the kernel's
+ * output is the legal record; the client-side preview is just a UX aid.
+ */
+interface ServerVerifyState {
+  loading: boolean;
+  result: Record<string, unknown> | null;
+  error: string | null;
+}
+
+function useServerVerify() {
+  const [state, setState] = useState<ServerVerifyState>({
+    loading: false,
+    result: null,
+    error: null,
+  });
+  const { toast } = useToast();
+
+  const verify = async (
+    label: string,
+    call: () => Promise<unknown>,
+  ) => {
+    setState({ loading: true, result: null, error: null });
+    try {
+      const resp = await call();
+      // apiCall already unwraps {success, data} → resp is `data`
+      setState({ loading: false, result: resp as Record<string, unknown>, error: null });
+      toast({
+        title: `${label} verified`,
+        description: "NFPA 72 compliance check completed on the server kernel.",
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Server verification failed";
+      setState({ loading: false, result: null, error: msg });
+      toast({
+        title: `${label} verification failed`,
+        description: msg,
+        variant: "destructive",
+      });
+    }
+  };
+
+  return { ...state, verify };
+}
+
+/**
+ * Renders the server-verification result panel.
+ * Shows computation_hash, nfpa_section, formula, and all returned fields.
+ */
+const ServerVerifyPanel: React.FC<{ state: ServerVerifyState }> = ({ state }) => {
+  if (state.loading) {
+    return (
+      <div className="baz-panel p-4 flex items-center gap-2 text-[12px] text-[#6a6a80]">
+        <Loader2 size={13} className="animate-spin text-[#00d4ff]" />
+        Verifying on server (NFPA 72 kernel)…
+      </div>
+    );
+  }
+  if (state.error) {
+    return (
+      <div className="baz-panel p-4 border border-red-500/30">
+        <div className="flex items-center gap-2 text-[12px] text-red-400 mb-2">
+          <XCircle size={13} />
+          Server verification failed
+        </div>
+        <pre className="text-[11px] font-mono text-red-300/80 whitespace-pre-wrap">{state.error}</pre>
+      </div>
+    );
+  }
+  if (!state.result) return null;
+  return (
+    <div className="baz-panel p-4 border border-emerald-500/30">
+      <div className="flex items-center gap-2 text-[12px] text-emerald-400 mb-3">
+        <CheckCircle2 size={13} />
+        Server-verified (authoritative NFPA 72 result)
+      </div>
+      <pre className="text-[11px] font-mono text-[#a0a0b8] bg-[#0a0a12] rounded-md p-3 overflow-auto max-h-60">
+        {JSON.stringify(state.result, null, 2)}
+      </pre>
+    </div>
+  );
+};
 
 type Tab = "smoke" | "heat" | "battery" | "voltage" | "detectors" | "duct";
 
@@ -98,6 +197,7 @@ const SmokeCalculator: React.FC = () => {
   const [roomArea, setRoomArea] = useState(400);
   const [ceilingHeight, setCeilingHeight] = useState(10);
   const [detectorType, setDetectorType] = useState("standard");
+  const verify = useServerVerify();
 
   const requiredDetectors = Math.ceil(roomArea / 900);
   const spacing = Math.sqrt(roomArea / requiredDetectors);
@@ -112,6 +212,14 @@ const SmokeCalculator: React.FC = () => {
     { id: "s2", name: "Ceiling Height", description: "Standard detectors: 8–12 ft", severity: "error", category: "smoke", min: 8, max: 50, currentValue: ceilingHeight, unit: "ft", status: ceilingHeight >= 8 ? "pass" : "fail" },
     { id: "s3", name: "Coverage Area", description: `${requiredDetectors} detectors × 900 sq ft`, severity: "warn", category: "smoke", status: "pass" },
   ];
+
+  const handleServerVerify = () => {
+    // Convert imperial → SI for the backend
+    const ceilingHeightM = ceilingHeight * FT_TO_M;
+    verify.verify("Smoke spacing", () =>
+      qomnApi.smokeSpacing({ ceiling_height_m: ceilingHeightM }),
+    );
+  };
 
   return (
     <div className="space-y-6 anim-fade-in">
@@ -139,6 +247,17 @@ const SmokeCalculator: React.FC = () => {
         <MetricCard label="Max Spacing" value={spacing} precision={1} unit="ft between detectors" status={spacingStatus} />
       </div>
 
+      <button
+        type="button"
+        onClick={handleServerVerify}
+        disabled={verify.loading}
+        className="baz-tab baz-tab-active inline-flex items-center gap-1.5 text-[12px]"
+      >
+        {verify.loading ? <Loader2 size={13} className="animate-spin" /> : <Server size={13} />}
+        Verify on Server (NFPA 72)
+      </button>
+      <ServerVerifyPanel state={verify} />
+
       <PhysicsGuardsMonitor rules={guards} />
     </div>
   );
@@ -153,6 +272,7 @@ const BatteryCalculator: React.FC = () => {
   const [currentDraw, setCurrentDraw] = useState(2);
   const [standbyHours, setStandbyHours] = useState(24);
   const [alarmMinutes, setAlarmMinutes] = useState(15);
+  const verify = useServerVerify();
 
   const standbyAh   = (standbyHours * deviceCount * currentDraw) / 1000;
   const alarmAh     = ((alarmMinutes / 60) * deviceCount * currentDraw) / 1000;
@@ -164,6 +284,20 @@ const BatteryCalculator: React.FC = () => {
     { id: "b2", name: "Safety Margin (20%)", description: "Required 20% safety factor", severity: "warn", category: "battery", status: "pass" },
     { id: "b3", name: "Total w/ Margin", description: `${marginAh.toFixed(2)} Ah required`, severity: "warn", category: "battery", status: "pass" },
   ];
+
+  const handleServerVerify = () => {
+    // Convert: deviceCount × currentDraw(mA) → standby_load_a, alarm_load_a
+    const standbyLoadA = (deviceCount * currentDraw * MA_TO_A) / 1; // standby load = standby current (continuous)
+    const alarmLoadA = deviceCount * currentDraw * MA_TO_A;          // alarm load (peak during alarm)
+    verify.verify("Battery capacity", () =>
+      qomnApi.battery({
+        standby_load_a: standbyLoadA,
+        alarm_load_a: alarmLoadA,
+        standby_hours: standbyHours,
+        alarm_minutes: alarmMinutes,
+      }),
+    );
+  };
 
   return (
     <div className="space-y-6 anim-fade-in">
@@ -192,6 +326,17 @@ const BatteryCalculator: React.FC = () => {
         <MetricCard label="Total + 20% Margin" value={marginAh} precision={2} unit="Ah" status="pass" />
       </div>
 
+      <button
+        type="button"
+        onClick={handleServerVerify}
+        disabled={verify.loading}
+        className="baz-tab baz-tab-active inline-flex items-center gap-1.5 text-[12px]"
+      >
+        {verify.loading ? <Loader2 size={13} className="animate-spin" /> : <Server size={13} />}
+        Verify on Server (NFPA 72)
+      </button>
+      <ServerVerifyPanel state={verify} />
+
       <PhysicsGuardsMonitor rules={guards} />
     </div>
   );
@@ -205,6 +350,7 @@ const VoltageDropCalculator: React.FC = () => {
   const [wireLength, setWireLength] = useState(100);
   const [wireGauge, setWireGauge] = useState(14);
   const [current, setCurrent] = useState(10);
+  const verify = useServerVerify();
 
   const resistance: Record<number, number> = { 14: 0.0025, 12: 0.00156, 10: 0.001, 8: 0.000625 };
   const rFt = resistance[wireGauge] ?? 0.0025;
@@ -219,6 +365,18 @@ const VoltageDropCalculator: React.FC = () => {
   const guards: GuardRule[] = [
     { id: "v1", name: "Voltage Drop", description: "NFPA 72: Max 5% drop allowed", severity: "error", category: "voltage", min: 0, max: 5, currentValue: pctDrop, unit: "%", status: voltStatus },
   ];
+
+  const handleServerVerify = () => {
+    // Convert ft → m for the backend; AWG stays as string
+    const lengthM = wireLength * FT_TO_M;
+    verify.verify("Voltage drop", () =>
+      qomnApi.voltageDrop({
+        current_a: current,
+        length_m: lengthM,
+        awg_gauge: String(wireGauge),
+      }),
+    );
+  };
 
   return (
     <div className="space-y-6 anim-fade-in">
@@ -246,6 +404,17 @@ const VoltageDropCalculator: React.FC = () => {
         <MetricCard label="Voltage Drop" value={vDrop} precision={3} unit="V" status="neutral" />
         <MetricCard label="% Drop"       value={pctDrop} precision={1} unit={`of 12V — ${pctDrop <= 5 ? "within limit" : "exceeds limit"}`} status={voltStatus} />
       </div>
+
+      <button
+        type="button"
+        onClick={handleServerVerify}
+        disabled={verify.loading}
+        className="baz-tab baz-tab-active inline-flex items-center gap-1.5 text-[12px]"
+      >
+        {verify.loading ? <Loader2 size={13} className="animate-spin" /> : <Server size={13} />}
+        Verify on Server (NEC Ch.9 Table 8)
+      </button>
+      <ServerVerifyPanel state={verify} />
 
       {/* Visual progress bar */}
       <div className="baz-panel p-4">
@@ -278,6 +447,84 @@ const VoltageDropCalculator: React.FC = () => {
 /* ---------------------------------------------------------- */
 /*  PAGE                                                       */
 /* ---------------------------------------------------------- */
+
+/**
+ * V270 FIX: HeatSpacingCalculator — previously the "heat" tab showed a
+ * "Module under development" placeholder. Now wired to POST /api/v1/qomn/heat-spacing
+ * (NFPA 72 §17.6.3.1) so the page covers all 4 core NFPA 72 calculations.
+ */
+const HeatSpacingCalculator: React.FC = () => {
+  const [ceilingHeight, setCeilingHeight] = useState(10);
+  const [areaPerDetector, setAreaPerDetector] = useState(900); // sq ft
+  const verify = useServerVerify();
+
+  const handleServerVerify = () => {
+    const ceilingHeightM = ceilingHeight * FT_TO_M;
+    const areaM2 = areaPerDetector * SQFT_TO_M2;
+    verify.verify("Heat spacing", () =>
+      qomnApi.heatSpacing({
+        ceiling_height_m: ceilingHeightM,
+        area_per_detector_m2: areaM2,
+      }),
+    );
+  };
+
+  // Local preview: heat detector spacing per NFPA 72 §17.6.3.1
+  const linearSpacingFt = Math.sqrt(areaPerDetector);
+  const spacingStatus: GuardRule["status"] = (() => {
+    if (linearSpacingFt <= 50) return "pass";   // NFPA 72 max 50 ft for heat
+    if (linearSpacingFt <= 60) return "warn";
+    return "fail";
+  })();
+
+  const guards: GuardRule[] = [
+    {
+      id: "h1",
+      name: "Linear Spacing",
+      description: "NFPA 72 §17.6.3.1 — max 50 ft for heat detectors",
+      severity: "error",
+      category: "spacing",
+      min: 10,
+      max: 50,
+      currentValue: linearSpacingFt,
+      unit: "ft",
+      status: spacingStatus,
+    },
+  ];
+
+  return (
+    <div className="space-y-6 anim-fade-in">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <FieldLabel unit="ft">Ceiling Height</FieldLabel>
+          <NumInput value={ceilingHeight} onChange={setCeilingHeight} min={6} max={30} step={0.5} />
+        </div>
+        <div>
+          <FieldLabel unit="sq ft">Coverage Area per Detector</FieldLabel>
+          <NumInput value={areaPerDetector} onChange={setAreaPerDetector} min={100} max={2500} step={50} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <MetricCard label="Linear Spacing" value={linearSpacingFt} precision={1} unit="ft (square root of area)" status={spacingStatus} />
+        <MetricCard label="Coverage Area" value={areaPerDetector} unit="sq ft per detector" status="neutral" />
+      </div>
+
+      <button
+        type="button"
+        onClick={handleServerVerify}
+        disabled={verify.loading}
+        className="baz-tab baz-tab-active inline-flex items-center gap-1.5 text-[12px]"
+      >
+        {verify.loading ? <Loader2 size={13} className="animate-spin" /> : <Server size={13} />}
+        Verify on Server (NFPA 72 §17.6.3.1)
+      </button>
+      <ServerVerifyPanel state={verify} />
+
+      <PhysicsGuardsMonitor rules={guards} />
+    </div>
+  );
+};
 
 interface TabDef { id: Tab; label: string; icon: React.ElementType; }
 
@@ -331,9 +578,10 @@ export const QOMNCalculatorPage: React.FC = () => {
       {/* Calculator content */}
       <div className="flex-1 overflow-y-auto p-6">
         {activeTab === "smoke"   && <SmokeCalculator />}
+        {activeTab === "heat"    && <HeatSpacingCalculator />}
         {activeTab === "battery" && <BatteryCalculator />}
         {activeTab === "voltage" && <VoltageDropCalculator />}
-        {(activeTab === "heat" || activeTab === "detectors" || activeTab === "duct") && (
+        {(activeTab === "detectors" || activeTab === "duct") && (
           <div className="flex flex-col items-center justify-center py-24 text-center anim-fade-in">
             <div className="w-10 h-10 rounded-lg bg-[#111118] border border-[#1e1e28] flex items-center justify-center mb-4">
               <Settings size={18} strokeWidth={1.5} className="text-[#3a3a50]" />
@@ -341,7 +589,12 @@ export const QOMNCalculatorPage: React.FC = () => {
             <h3 className="text-[14px] font-semibold text-[#4a4a60] mb-1">
               {tabs.find(t => t.id === activeTab)?.label}
             </h3>
-            <p className="text-[12px] text-[#2a2a38]">Module under development</p>
+            <p className="text-[12px] text-[#2a2a38]">
+              Module under development — backend endpoint exists at{" "}
+              <code className="font-mono text-[#3a3a50]">
+                /api/v1/qomn/{activeTab === "detectors" ? "place-detectors" : "place-duct"}
+              </code>
+            </p>
           </div>
         )}
       </div>
