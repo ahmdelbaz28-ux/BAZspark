@@ -26,7 +26,11 @@ from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-from reportlab.platypus import Paragraph
+
+try:
+    from reportlab.platypus import Paragraph
+except ImportError:  # pragma: no cover
+    Paragraph = None  # type: ignore[assignment,misc]
 
 from backend.auth import require_permission
 from backend.database import get_db
@@ -862,6 +866,11 @@ def _add_data_to_pdf(story, styles, data, prefix="", depth=0) -> None:
 
 def _build_pdf_report(report, report_id):
     """Build a PDF StreamingResponse for the given report."""
+    if Paragraph is None:
+        raise HTTPException(
+            status_code=503,
+            detail="PDF export unavailable: reportlab package not installed",
+        )
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib.units import mm
