@@ -366,7 +366,7 @@ test.describe("Chaos Engineering — Failure Injection", () => {
                 await page.waitForLoadState("networkidle");
 
                 await page.locator("#api-key").fill("test-key-123");
-                const signInBtn = page.getByRole("button", { name: /INITIALIZE SESSION/i });
+                const signInBtn = page.locator('button[data-testid="initialize-session-btn"]');
 
                 // Rapid double-click
                 await signInBtn.click({ clickCount: 2 });

@@ -150,7 +150,7 @@ test.describe("Projects Page Button Tests", () => {
 
 		// Test any buttons on the projects page
 		const createButton = page.locator(
-			'button:has-text("New Project"), button:has-text("Create Project"), button:has-text("Add Project")',
+			'button[data-testid="create-project-btn"]',
 		);
 
 		if ((await createButton.count()) > 0) {
@@ -191,7 +191,7 @@ test.describe("AutoCAD Page Button Tests", () => {
 		await page.waitForLoadState("networkidle");
 
 		const connectButton = page.locator(
-			'button:has-text("Connect"), button:has-text("Connect to AutoCAD")',
+			'button[data-testid="connect-autocad-btn"]',
 		);
 
 		if ((await connectButton.count()) > 0) {
@@ -266,7 +266,7 @@ test.describe("Revit Page Button Tests", () => {
 		await page.waitForLoadState("networkidle");
 
 		const connectButton = page.locator(
-			'button:has-text("Connect"), button:has-text("Connect to Revit")',
+			'button[data-testid="connect-revit-btn"]',
 		);
 
 		if ((await connectButton.count()) > 0) {
@@ -341,7 +341,7 @@ test.describe("Digital Twin Page Button Tests", () => {
 		await page.waitForLoadState("networkidle");
 
 		const convertButton = page.locator(
-			'button:has-text("Convert"), button:has-text("Start Conversion")',
+			'button[data-testid="convert-btn"]',
 		);
 
 		if ((await convertButton.count()) > 0) {

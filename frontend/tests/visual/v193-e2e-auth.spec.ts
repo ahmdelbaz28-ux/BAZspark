@@ -37,7 +37,7 @@ async function loginViaUI(page: Page, apiKey = "test-engineer-key") {
         await apiKeyInput.fill(apiKey);
 
         // Click the INITIALIZE SESSION button
-        await page.getByRole("button", { name: /INITIALIZE SESSION/i }).click();
+        await page.locator('button[data-testid="initialize-session-btn"]').click();
 
         // Wait for redirect to dashboard (or ?from= target)
         await page.waitForURL(/\/dashboard/, { timeout: 10000 });
@@ -91,7 +91,7 @@ test("login page renders with correct elements", async ({ page }) => {
         await expect(page.getByLabel(/persistent secure connection/i)).toBeVisible();
 
         // INITIALIZE SESSION button (disabled until input has value)
-        const signInButton = page.getByRole("button", { name: /INITIALIZE SESSION/i });
+        const signInButton = page.locator('button[data-testid="initialize-session-btn"]');
         await expect(signInButton).toBeDisabled();
 
         // Show/hide toggle
@@ -104,7 +104,7 @@ test("INITIALIZE SESSION button enables when API key is entered", async ({ page 
         await page.goto("/login");
         await page.waitForLoadState("networkidle");
 
-        const signInButton = page.getByRole("button", { name: /INITIALIZE SESSION/i });
+        const signInButton = page.locator('button[data-testid="initialize-session-btn"]');
         await expect(signInButton).toBeDisabled();
 
         await page.locator("#api-key").fill("some-test-key");
@@ -120,7 +120,7 @@ test("invalid API key shows error message", async ({ page }) => {
 
         // V236: Use #api-key selector instead of getByLabel (strict mode violation)
         await page.locator("#api-key").fill("invalid-key-1234567890");
-        await page.getByRole("button", { name: /INITIALIZE SESSION/i }).click();
+        await page.locator('button[data-testid="initialize-session-btn"]').click();
 
         // Should show error alert (not redirect)
         await expect(page.getByRole("alert")).toBeVisible({ timeout: 5000 });

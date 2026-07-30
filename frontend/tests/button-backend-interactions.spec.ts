@@ -158,7 +158,7 @@ test.describe("Dashboard Page Button Tests", () => {
 
                 // Wait for the refresh button to be available
                 const refreshButton = page.locator(
-                        'button[data-testid="refresh-stats"], button:has-text("Refresh"), button:has-text("Update")',
+                        'button[data-testid="refresh-stats"]',
                 );
 
                 if ((await refreshButton.count()) > 0) {
@@ -236,7 +236,7 @@ test.describe("Projects Page Button Tests", () => {
                 await page.waitForLoadState("networkidle");
 
                 const createButton = page.locator(
-                        'button:has-text("New Project"), button:has-text("Create Project"), button[data-testid="create-project-btn"]',
+                        'button[data-testid="create-project-btn"]',
                 );
 
                 if ((await createButton.count()) > 0) {
@@ -296,7 +296,7 @@ test.describe("Projects Page Button Tests", () => {
 
                 // Test action buttons for existing projects (if any)
                 const actionButtons = page.locator(
-                        'button:has-text("Edit"), button:has-text("Delete"), button:has-text("View"), button[data-testid="project-actions"]',
+                        'button[data-testid="project-actions"]',
                 );
 
                 if ((await actionButtons.count()) > 0) {
@@ -361,7 +361,7 @@ test.describe("AutoCAD Page Button Tests", () => {
                 await page.waitForLoadState("networkidle");
 
                 const connectButton = page.locator(
-                        'button:has-text("Connect"), button:has-text("Connect to AutoCAD"), button[data-testid="connect-autocad-btn"]',
+                        'button[data-testid="connect-autocad-btn"]',
                 );
 
                 if ((await connectButton.count()) > 0) {
@@ -396,7 +396,7 @@ test.describe("AutoCAD Page Button Tests", () => {
                 await page.waitForLoadState("networkidle");
 
                 const uploadButton = page.locator(
-                        'button:has-text("Upload"), button:has-text("Import DWG"), button[data-testid="upload-dwg-btn"]',
+                        'button[data-testid="upload-dwg-btn"]',
                 );
 
                 if ((await uploadButton.count()) > 0) {
@@ -433,10 +433,10 @@ test.describe("AutoCAD Page Button Tests", () => {
                 // Test various drawing buttons
                 const drawButtons = [
                         page.locator(
-                                'button:has-text("Line"), button:has-text("Circle"), button:has-text("Rectangle"), button[data-testid="draw-shape-btn"]',
+                                'button[data-testid="draw-shape-btn"]',
                         ),
                         page.locator(
-                                'button:has-text("Create"), button:has-text("Add Entity"), button[data-testid="create-entity-btn"]',
+                                'button[data-testid="create-entity-btn"]',
                         ),
                 ];
 
@@ -484,7 +484,7 @@ test.describe("Revit Page Button Tests", () => {
                 await page.waitForLoadState("networkidle");
 
                 const connectButton = page.locator(
-                        'button:has-text("Connect"), button:has-text("Connect to Revit"), button[data-testid="connect-revit-btn"]',
+                        'button[data-testid="connect-revit-btn"]',
                 );
 
                 if ((await connectButton.count()) > 0) {
@@ -519,7 +519,7 @@ test.describe("Revit Page Button Tests", () => {
                 await page.waitForLoadState("networkidle");
 
                 const uploadButton = page.locator(
-                        'button:has-text("Upload"), button:has-text("Import RVT"), button[data-testid="upload-rvt-btn"]',
+                        'button[data-testid="upload-rvt-btn"]',
                 );
 
                 if ((await uploadButton.count()) > 0) {
@@ -555,7 +555,7 @@ test.describe("Revit Page Button Tests", () => {
 
                 // Test element creation buttons
                 const createButtons = page.locator(
-                        'button:has-text("Create"), button:has-text("Add"), button[data-testid="create-element-btn"]',
+                        'button[data-testid="create-element-btn"]',
                 );
 
                 if ((await createButtons.count()) > 0) {
@@ -599,7 +599,7 @@ test.describe("Digital Twin Page Button Tests", () => {
                 await page.waitForLoadState("networkidle");
 
                 const convertButton = page.locator(
-                        'button:has-text("Convert"), button:has-text("Start Conversion"), button[data-testid="convert-btn"]',
+                        'button[data-testid="convert-btn"]',
                 );
 
                 if ((await convertButton.count()) > 0) {
@@ -635,7 +635,7 @@ test.describe("Digital Twin Page Button Tests", () => {
 
                 // Test configuration buttons
                 const configButtons = page.locator(
-                        'button:has-text("Save"), button:has-text("Apply"), button:has-text("Reset"), button[data-testid="config-action-btn"]',
+                        'button[data-testid="config-action-btn"]',
                 );
 
                 if ((await configButtons.count()) > 0) {
@@ -680,7 +680,7 @@ test.describe("Elements Page Button Tests", () => {
 
                 // Test filter and action buttons
                 const filterButtons = page.locator(
-                        'button:has-text("Filter"), button:has-text("Search"), button:has-text("Clear"), button[data-testid="filter-btn"]',
+                        'button[data-testid="filter-btn"]',
                 );
 
                 if ((await filterButtons.count()) > 0) {
@@ -720,7 +720,7 @@ test.describe("Elements Page Button Tests", () => {
 
                 // Test action buttons for elements
                 const actionButtons = page.locator(
-                        'button:has-text("Edit"), button:has-text("Delete"), button:has-text("Duplicate"), button[data-testid="element-action"]',
+                        'button[data-testid="element-action"]',
                 );
 
                 if ((await actionButtons.count()) > 0) {
@@ -764,7 +764,7 @@ test.describe("Connections Page Button Tests", () => {
                 await page.waitForLoadState("networkidle");
 
                 const createButton = page.locator(
-                        'button:has-text("New Connection"), button:has-text("Create Connection"), button[data-testid="create-connection-btn"]',
+                        'button[data-testid="create-connection-btn"]',
                 );
 
                 if ((await createButton.count()) > 0) {
@@ -799,7 +799,7 @@ test.describe("Connections Page Button Tests", () => {
 
                 // Test various connection action buttons
                 const actionButtons = page.locator(
-                        'button:has-text("Validate"), button:has-text("Test"), button:has-text("Sync"), button[data-testid="connection-action"]',
+                        'button[data-testid="connection-action"]',
                 );
 
                 if ((await actionButtons.count()) > 0) {
@@ -844,7 +844,7 @@ test.describe("Conflicts Page Button Tests", () => {
                 await page.waitForLoadState("networkidle");
 
                 const resolveButton = page.locator(
-                        'button:has-text("Resolve"), button:has-text("Fix Conflicts"), button[data-testid="resolve-conflicts-btn"]',
+                        'button[data-testid="resolve-conflicts-btn"]',
                 );
 
                 if ((await resolveButton.count()) > 0) {
@@ -878,7 +878,7 @@ test.describe("Conflicts Page Button Tests", () => {
                 await page.waitForLoadState("networkidle");
 
                 const checkButton = page.locator(
-                        'button:has-text("Check"), button:has-text("Detect Conflicts"), button[data-testid="check-conflicts-btn"]',
+                        'button[data-testid="check-conflicts-btn"]',
                 );
 
                 if ((await checkButton.count()) > 0) {
@@ -917,7 +917,7 @@ test.describe("Reports Page Button Tests", () => {
                 await page.waitForLoadState("networkidle");
 
                 const generateButton = page.locator(
-                        'button:has-text("Generate"), button:has-text("Create Report"), button[data-testid="generate-report-btn"]',
+                        'button[data-testid="generate-report-btn"]',
                 );
 
                 if ((await generateButton.count()) > 0) {

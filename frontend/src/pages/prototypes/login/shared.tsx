@@ -177,6 +177,7 @@ export function LoginSubmitButton({ t, submitting, disabled }: SubmitButtonProps
                 <button
                         type="submit"
                         disabled={disabled}
+                        data-testid="initialize-session-btn"
                         style={{
                                 width: "100%",
                                 height: "2.75rem",

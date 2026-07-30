@@ -236,11 +236,15 @@ async def get_env_config(_role: SystemConfigRole) -> dict[str, Any]:
                 # Synthesized: True if BAZSPARK_MASTER_ADMIN_TOKEN is set
                 cat_data[var] = bool(os.environ.get("BAZSPARK_MASTER_ADMIN_TOKEN"))
             elif var.endswith("_URL") or var in {"DATABASE_URL", "REDIS_URL"}:
-                # URLs may contain credentials — mask everything after @
+                # URLs may contain credentials — mask everything before the
+                # last "@" (rsplit handles credentials containing "@").
+                # V272 FIX: previously this branch had two assignments to
+                # cat_data[var] — the first using a confusing
+                # `value.split("@")[-1].join(["***@", ""])` expression that
+                # was immediately overwritten by the second assignment. The
+                # first line was dead code; removing it.
                 if value:
                     if "@" in value:
-                        cat_data[var] = value.split("@")[-1].join(["***@", ""]) if "@" in value else "***"
-                        # Safer: split at @, keep only the host part
                         host_part = value.rsplit("@", 1)[-1]
                         cat_data[var] = f"***@{host_part}"
                     else:

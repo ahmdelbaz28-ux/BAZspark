@@ -401,6 +401,7 @@ export function DigitalTwinPage() {
                                                         <CardContent>
                                                                 <Button
                                                                         className="w-full bg-danger hover:bg-danger/90 text-white border-none h-12"
+                                                                        data-testid="convert-btn"
                                                                         onClick={handleConvert}
                                                                         disabled={!selectedFile || converting}
                                                                 >

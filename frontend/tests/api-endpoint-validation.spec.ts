@@ -96,7 +96,7 @@ test.describe("API Endpoint Validation Tests", () => {
 
 		// Find and click the connect button
 		const connectButton = page.locator(
-			'button:has-text("Connect"), button:has-text("Connect to AutoCAD")',
+			'button[data-testid="connect-autocad-btn"]',
 		);
 
 		if ((await connectButton.count()) > 0) {
@@ -126,7 +126,7 @@ test.describe("API Endpoint Validation Tests", () => {
 
 		// Find and click the connect button
 		const connectButton = page.locator(
-			'button:has-text("Connect"), button:has-text("Connect to Revit")',
+			'button[data-testid="connect-revit-btn"]',
 		);
 
 		if ((await connectButton.count()) > 0) {
@@ -156,7 +156,7 @@ test.describe("API Endpoint Validation Tests", () => {
 
 		// Find and click the create project button
 		const createButton = page.locator(
-			'button:has-text("New Project"), button:has-text("Create Project")',
+			'button[data-testid="create-project-btn"]',
 		);
 
 		if ((await createButton.count()) > 0) {
@@ -186,7 +186,7 @@ test.describe("API Endpoint Validation Tests", () => {
 
 		// Find and click the convert button
 		const convertButton = page.locator(
-			'button:has-text("Convert"), button:has-text("Start Conversion")',
+			'button[data-testid="convert-btn"]',
 		);
 
 		if ((await convertButton.count()) > 0) {
