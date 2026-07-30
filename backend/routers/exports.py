@@ -29,7 +29,7 @@ project_router = APIRouter(prefix="/exports", tags=["exports"])
 
 def _generate_excel_export(project, devices, connections):
     """Generate Excel export content with multiple sheets."""
-    if Workbook is None:  # NOSONAR: false-positive — Workbook can be None when openpyxl is missing
+    if Workbook is None:  # NOSONAR
         raise HTTPException(
             status_code=503,
             detail={
