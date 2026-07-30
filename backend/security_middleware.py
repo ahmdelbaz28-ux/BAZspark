@@ -117,36 +117,10 @@ def _should_emit_hsts(_scope: Scope) -> bool:  # NOSONAR — S1172: parameter re
     """
     return True
 
-# Production CSP: locked down. unsafe-inline is permitted for script-src
-# ONLY because the frontend (Vite/React) uses inline event handlers in
-# some legacy components; this is a known acceptable risk documented in
-# the V119 fix. unsafe-eval is NEVER permitted in production.
-# WARNING: unsafe-inline weakens XSS protection. Remove once all inline
-# handlers are migrated to React event handlers.
-_CSP_PRODUCTION = (
-    "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline'; "
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-    "img-src 'self' data: blob:; "
-    "font-src 'self' data:; "
-    "object-src 'none'; "
-    "base-uri 'self'; "
-    "frame-ancestors 'none'"
-)
-
-# Development CSP: allows unsafe-eval (Vite HMR + source maps) and
-# localhost connect-src (Vite dev server, websockets).
-_CSP_DEVELOPMENT = (
-    "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-    "style-src 'self' 'unsafe-inline'; "
-    "img-src 'self' data: blob:; "
-    "connect-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*; "
-    "font-src 'self' data:; "
-    "object-src 'none'; "
-    "base-uri 'self'; "
-    "frame-ancestors 'none'"
-)
+# CSP is built by backend.csp.build_csp() — a single source of truth.
+# Production: no unsafe-inline or unsafe-eval for scripts.
+# Development: allows unsafe-inline + unsafe-eval for Vite HMR.
+# See backend/csp.py for the full policy builder.
 
 
 def _is_production_env() -> bool:
@@ -158,13 +132,13 @@ def _build_csp(_scope: Scope) -> str:  # NOSONAR — S1172: parameter retained f
     """
     Build the Content-Security-Policy header value.
 
+    Delegates to backend.csp.build_csp() which is the single source of truth.
     Environment-aware:
-      - production: locked-down CSP (no unsafe-eval, self-only connect-src)
-      - development: permissive CSP (unsafe-eval for Vite HMR, localhost)
+      - production: locked-down CSP (no unsafe-inline or unsafe-eval)
+      - development: permissive CSP (Vite HMR, localhost connect-src)
     """
-    if _is_production_env():
-        return _CSP_PRODUCTION
-    return _CSP_DEVELOPMENT
+    from backend.csp import build_csp
+    return build_csp()
 
 
 class SecurityHeadersMiddleware:
