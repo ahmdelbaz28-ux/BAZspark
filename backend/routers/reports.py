@@ -27,6 +27,11 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
+try:
+    from reportlab.platypus import Paragraph
+except ImportError:  # pragma: no cover
+    Paragraph = None  # type: ignore[assignment,misc]
+
 from backend.auth import require_permission
 from backend.database import get_db
 from backend.limiter import limiter
@@ -863,10 +868,15 @@ def _add_data_to_pdf(story, styles, data, prefix="", depth=0) -> None:
 
 def _build_pdf_report(report, report_id):
     """Build a PDF StreamingResponse for the given report."""
+    if Paragraph is None:
+        raise HTTPException(
+            status_code=503,
+            detail="PDF export unavailable: reportlab package not installed",
+        )
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib.units import mm
-    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+    from reportlab.platypus import SimpleDocTemplate, Spacer
 
     pdf_buffer = io.BytesIO()
     doc = SimpleDocTemplate(pdf_buffer, pagesize=A4,
@@ -944,7 +954,16 @@ def _build_dxf_report(report, report_id):
     )
 
 
-@router.get("/{report_id}/export", dependencies=[Depends(require_permission(Permission.REPORT_READ))])
+@router.get(
+    "/{report_id}/export",
+    dependencies=[Depends(require_permission(Permission.REPORT_READ))],
+    responses={
+        404: {"description": "Report not found"},
+        400: {"description": "Report is not ready for export"},
+        501: {"description": "PDF export requires the reportlab package"},
+        503: {"description": "PDF export unavailable: reportlab package not installed"},
+    },
+)
 async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     project_id: str,
     report_id: str,

@@ -31,7 +31,7 @@ interface SpeechRecognition extends EventTarget {
         stop(): void;
 }
 
-type SpeechRecognitionConstructor = () => SpeechRecognition;
+type SpeechRecognitionConstructor = new () => SpeechRecognition;
 
 export function useVoiceControl() {
         const [isListening, setIsListening] = useState(false);

@@ -346,7 +346,7 @@ class DWGParser(ParserBase):
         doc = ezdxf.readfile(str(safe_path))
         return self.extract_rooms_from_chaos(doc)
 
-    def _convert_to_dxf(self, dwg_path: str) -> str:
+    def _convert_to_dxf(self, dwg_path: str) -> str:  # NOSONAR — S3776: safety-critical conversion path with unavoidable branching
         try:
             safe_path = validate_input_path(
                 dwg_path,

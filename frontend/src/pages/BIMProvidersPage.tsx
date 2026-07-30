@@ -286,7 +286,7 @@ export function BIMProvidersPage() {
                                                                         <div className="space-y-2 max-h-80 overflow-auto">
                                                                                 {rooms.map((room, idx) => (
                                                                                         <div
-                                                                                                key={room.room_id || `room-${idx}`}
+                                                                                                key={(room.room_id as string) || `room-${idx}`}
                                                                                                 className="p-3 rounded-lg bg-card border border-border text-sm"
                                                                                         >
                                                                                                 <div className="flex items-center justify-between mb-1">
