@@ -55,6 +55,10 @@ router = APIRouter(tags=["facp"])
 NFPA_72_REF = "NFPA 72-2022 SS10.6.7"
 UL_864_REF = "UL 864 10th Edition"
 
+_SUCCESS = "success"
+_ERROR = "error"
+_INTERNAL_ERROR = "INTERNAL_ERROR"
+
 # ── Request/Response Models ──────────────────────────────────────────────────
 
 class FACPSelectionRequest(BaseModel):
@@ -219,7 +223,7 @@ def _require_facp() -> None:
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
             detail={
-                "error": "FACP_SERVICE_UNAVAILABLE",
+                _ERROR: "FACP_SERVICE_UNAVAILABLE",
                 "detail": (
                     "FACP selection engine is not available. "
                     "The facp_system package could not be imported. "
@@ -271,7 +275,7 @@ async def select_facp(request: Request, req: FACPSelectionRequest):
         recommendation = SelectionEngine.select_panel(project_req)
 
         return {
-            "success": True,
+            _SUCCESS: True,
             "data": {
                 "recommended_model": recommendation.recommended_model,
                 "manufacturer": recommendation.manufacturer,
@@ -299,7 +303,7 @@ async def select_facp(request: Request, req: FACPSelectionRequest):
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=422,
             detail={
-                "error": "NO_COMPLIANT_PANEL",
+                _ERROR: "NO_COMPLIANT_PANEL",
                 "detail": "No compliant panel available for the requested configuration.",
                 "action": (
                     "Relax design requirements or expand the panel database. "
@@ -312,7 +316,7 @@ async def select_facp(request: Request, req: FACPSelectionRequest):
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=500,
             detail={
-                "error": "INTERNAL_ERROR",
+                _ERROR: _INTERNAL_ERROR,
                 "detail": "An unexpected error occurred during FACP selection.",
             },
         )
@@ -385,7 +389,7 @@ async def verify_facp(request: Request, req: FACPVerificationRequest):
         is_compliant = len(violations) == 0
 
         return {
-            "success": True,
+            _SUCCESS: True,
             "data": {
                 "is_compliant": is_compliant,
                 "violations": violations,
@@ -399,7 +403,7 @@ async def verify_facp(request: Request, req: FACPVerificationRequest):
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=500,
             detail={
-                "error": "INTERNAL_ERROR",
+                _ERROR: _INTERNAL_ERROR,
                 "detail": "An unexpected error occurred during FACP compliance verification.",
             },
         )
@@ -447,7 +451,7 @@ async def generate_facp_schedule(request: Request, req: FACPScheduleRequest):
         )
 
         return {
-            "success": True,
+            _SUCCESS: True,
             "data": {
                 "schedule": schedule_text,
                 "format": "text_table",
@@ -460,7 +464,7 @@ async def generate_facp_schedule(request: Request, req: FACPScheduleRequest):
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=500,
             detail={
-                "error": "INTERNAL_ERROR",
+                _ERROR: _INTERNAL_ERROR,
                 "detail": "An unexpected error occurred during schedule generation.",
             },
         )
@@ -521,7 +525,7 @@ async def generate_facp_spec(request: Request, req: FACPSpecRequest):
         alternatives_table = OutputGenerator.generate_alternatives_table(recommendation)
 
         return {
-            "success": True,
+            _SUCCESS: True,
             "data": {
                 "csi_specification": csi_spec,
                 "alternatives_table": alternatives_table,
@@ -534,7 +538,7 @@ async def generate_facp_spec(request: Request, req: FACPSpecRequest):
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=500,
             detail={
-                "error": "INTERNAL_ERROR",
+                _ERROR: _INTERNAL_ERROR,
                 "detail": "An unexpected error occurred during specification generation.",
             },
         )
@@ -580,7 +584,7 @@ async def list_available_panels():
             })
 
         return {
-            "success": True,
+            _SUCCESS: True,
             "data": {
                 "panels": panels,
                 "total_count": len(panels),
@@ -598,7 +602,7 @@ async def list_available_panels():
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=500,
             detail={
-                "error": "INTERNAL_ERROR",
+                _ERROR: _INTERNAL_ERROR,
                 "detail": "An unexpected error occurred while listing panels.",
             },
         )

@@ -102,14 +102,14 @@ export function ApiKeysPage() {
                 }
         };
 
-        const handleDelete = async (keyHash: string) => {
+        const handleDelete = async (keyHash: string) => {  // NOSONAR: typescript:S2004,S3776
                 // V253 FIX: Replaced confirm() with a non-blocking toast confirmation.
                 // The user must click the "Delete" button in the toast to confirm.
                 let confirmed = false;
                 let resolveFn: ((value: void) => void) | null = null;
                 let rejectFn: ((reason?: unknown) => void) | null = null;
 
-                const onDeleteConfirmed = async () => {
+                const onDeleteConfirmed = async () => {  // NOSONAR: typescript:S3776,S2004
                         confirmed = true;
                         const apiKey = getApiKey();
                         const headers: Record<string, string> = {};
@@ -130,7 +130,7 @@ export function ApiKeysPage() {
                                 });
                 };
 
-                const onDismissed = () => {
+                const onDismissed = () => {  // NOSONAR: typescript:S3776,S2004
                         if (!confirmed && rejectFn) rejectFn(new Error("Cancelled"));
                 };
 

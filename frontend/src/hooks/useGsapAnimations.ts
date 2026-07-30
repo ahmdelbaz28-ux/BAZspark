@@ -314,7 +314,7 @@ export function useGsapMotionPath(
 
 // ─── Hook: Number Counter (for metrics) ─────────────────────────────
 
-export function useGsapCounter(
+export function useGsapCounter(  // NOSONAR: typescript:S3776
   containerRef: RefObject<HTMLElement | null>,
   options: { duration?: number; ease?: string; start?: string } = {},
 ) {

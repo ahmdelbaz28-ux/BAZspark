@@ -1,7 +1,7 @@
 import io
 import json
 from datetime import datetime, timezone
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -13,17 +13,24 @@ from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.response import safe_filename as _safe_filename
 
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+except ImportError:  # pragma: no cover
+    Workbook = None  # type: ignore[assignment,misc]
+    Alignment = None  # type: ignore[assignment]
+    Font = None  # type: ignore[assignment]
+    PatternFill = None  # type: ignore[assignment]
+    get_column_letter = None  # type: ignore[assignment]
+
 project_router = APIRouter(prefix="/exports", tags=["exports"])
 
 
 def _generate_excel_export(project, devices, connections):
     """Generate Excel export content with multiple sheets."""
-    try:
-        from openpyxl import Workbook
-        from openpyxl.styles import Alignment, Font, PatternFill
-        from openpyxl.utils import get_column_letter
-    except ImportError:
-        raise HTTPException(  # NOSONAR — S8415
+    if Workbook is None:
+        raise HTTPException(
             status_code=503,
             detail={
                 "success": False,
@@ -76,8 +83,6 @@ def _write_project_sheet(wb, project, device_count, connection_count):
 
 
 def _write_devices_sheet(wb, devices):
-    from openpyxl.utils import get_column_letter
-
     ws_dev = wb.create_sheet("Devices")
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
@@ -112,8 +117,6 @@ def _write_devices_sheet(wb, devices):
 
 
 def _write_connections_sheet(wb, connections):
-    from openpyxl.utils import get_column_letter
-
     ws_conn = wb.create_sheet("Connections")
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
@@ -136,8 +139,6 @@ def _write_connections_sheet(wb, connections):
 
 
 def _write_boq_sheet(wb, devices, connections):
-    from openpyxl.utils import get_column_letter
-
     ws_boq = wb.create_sheet("Bill of Quantities")
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")

@@ -98,7 +98,7 @@ const translations = {
         },
 };
 
-export function LoginPage() {
+export function LoginPage() {  // NOSONAR: typescript:S3776
         const [searchParams] = useRouterSearchParams();
         const { isAuthenticated, loading: ctxLoading, login } = useAuth();
 

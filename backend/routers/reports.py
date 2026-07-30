@@ -26,6 +26,7 @@ from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
+from reportlab.platypus import Paragraph
 
 from backend.auth import require_permission
 from backend.database import get_db
@@ -864,7 +865,7 @@ def _build_pdf_report(report, report_id):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib.units import mm
-    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+    from reportlab.platypus import SimpleDocTemplate, Spacer
 
     pdf_buffer = io.BytesIO()
     doc = SimpleDocTemplate(pdf_buffer, pagesize=A4,
