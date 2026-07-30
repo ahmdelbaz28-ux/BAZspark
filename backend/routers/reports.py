@@ -829,14 +829,18 @@ async def generate_report(request: Request, project_id: str, input_data: Generat
             },
         )
     except Exception:
-        # M-4 FIX: Never store str(e) in report parameters. The old code  # NOSONAR
+        # M-4 FIX: Never store str(e) in report parameters. The old code
         # stored raw exception text in the database, which could include
         # file paths, variable names, and internal implementation details.
         # This data is retrievable via the API, creating an information
         # leakage vulnerability. Log the full error server-side instead.
-        logger.exception(
+        # NOSONAR: S5145 — project_id is validated by _verify_project() above
+        # (raises 404 if not a real DB record) so it cannot contain arbitrary
+        # log-injection payloads; the taint analyzer does not recognize the
+        # DB-existence check as a sanitizer.
+        logger.exception(  # NOSONAR
             "Report generation failed for project %s", project_id, exc_info=True
-        )  # NOSONAR
+        )
         db.update_report(
             project_id,
             report["id"],
