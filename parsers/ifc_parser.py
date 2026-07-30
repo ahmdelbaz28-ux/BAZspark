@@ -58,7 +58,7 @@ class IFCParser(ParserBase):
         try:
             return ifcopenshell.open(safe_path)
         except Exception as e:
-            logging.error("Could not open IFC file: %s", e)
+            logging.exception("Could not open IFC file: %s", e)
             raise
 
     def _load_json(self) -> Dict:

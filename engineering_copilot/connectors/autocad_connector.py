@@ -27,7 +27,7 @@ if HAS_CLR:
         clr.AddReference("acdbmgd")
         clr.AddReference("acmgd")
         clr.AddReference("accoremgd")
-    except Exception:
+    except ImportError:
         # Mock for testing outside AutoCAD
         pass
 
@@ -59,6 +59,10 @@ from engineering_copilot.models.unified_model import (
 )
 
 _NOT_CONNECTED_MSG = "Not connected to AutoCAD"
+
+
+class NotConnectedError(ConnectionError):
+    """Raised when an operation is attempted without an active connection."""
 
 
 class AutoCADConnector:
@@ -116,7 +120,7 @@ class AutoCADConnector:
             self.logger.info("Successfully connected to AutoCAD")
             return True
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Failed to connect to AutoCAD: {e}")
             return False
 
@@ -131,7 +135,7 @@ class AutoCADConnector:
             self.is_connected = False
             self.logger.info("Disconnected from AutoCAD")
             return True
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error disconnecting from AutoCAD: {e}")
             return False
 
@@ -146,7 +150,7 @@ class AutoCADConnector:
             str: Drawing ID or path
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a new drawing
@@ -155,7 +159,7 @@ class AutoCADConnector:
             self.logger.info(f"Created new drawing: {drawing_id}")
             return drawing_id
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error creating drawing: {e}")
             raise
 
@@ -170,14 +174,14 @@ class AutoCADConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would open the drawing
             self.logger.info(f"Opened drawing: {file_path}")
             return True
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error opening drawing {file_path}: {e}")
             raise
 
@@ -192,14 +196,14 @@ class AutoCADConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would save the drawing
             self.logger.info(f"Saved drawing to: {file_path or 'current path'}")
             return True
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error saving drawing: {e}")
             raise
 
@@ -211,7 +215,7 @@ class AutoCADConnector:
             Dict: Drawing data with entities
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read the drawing
@@ -226,7 +230,7 @@ class AutoCADConnector:
             self.logger.info("Read drawing data successfully")
             return drawing_data
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error reading drawing: {e}")
             raise
 
@@ -242,14 +246,14 @@ class AutoCADConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a layer in the database
             self.logger.info(f"Created layer: {layer_name}")
             return True
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error creating layer {layer_name}: {e}")
             raise
 
@@ -265,13 +269,13 @@ class AutoCADConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             self.logger.info(f"Updated layer: {layer_name}")
             return True
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error updating layer {layer_name}: {e}")
             raise
 
@@ -287,7 +291,7 @@ class AutoCADConnector:
             str: Block ID
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a block definition
@@ -295,7 +299,7 @@ class AutoCADConnector:
             self.logger.info(f"Created block: {block_name} with ID: {block_id}")
             return block_id
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error creating block {block_name}: {e}")
             raise
 
@@ -317,7 +321,7 @@ class AutoCADConnector:
             str: Instance ID
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would insert a block instance
@@ -325,7 +329,7 @@ class AutoCADConnector:
             self.logger.info(f"Inserted block {block_name} at ({coordinates.x}, {coordinates.y})")
             return instance_id
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error inserting block {block_name}: {e}")
             raise
 
@@ -342,7 +346,7 @@ class AutoCADConnector:
             str: Entity ID
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a line entity
@@ -350,7 +354,7 @@ class AutoCADConnector:
             self.logger.info(f"Drew line from ({start.x}, {start.y}) to ({end.x}, {end.y})")
             return entity_id
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error drawing line: {e}")
             raise
 
@@ -366,7 +370,7 @@ class AutoCADConnector:
             str: Entity ID
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a polyline entity
@@ -374,7 +378,7 @@ class AutoCADConnector:
             self.logger.info(f"Drew polyline with {len(points)} points")
             return entity_id
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error drawing polyline: {e}")
             raise
 
@@ -391,7 +395,7 @@ class AutoCADConnector:
             str: Entity ID
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a circle entity
@@ -399,7 +403,7 @@ class AutoCADConnector:
             self.logger.info(f"Drew circle at ({center.x}, {center.y}) with radius {radius}")
             return entity_id
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error drawing circle: {e}")
             raise
 
@@ -419,7 +423,7 @@ class AutoCADConnector:
             str: Entity ID
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create a text entity
@@ -427,7 +431,7 @@ class AutoCADConnector:
             self.logger.info(f"Drew text '{text}' at ({coordinates.x}, {coordinates.y})")
             return entity_id
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error drawing text: {e}")
             raise
 
@@ -442,7 +446,7 @@ class AutoCADConnector:
             Dict: Geometry properties or None
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read the entity's geometry
@@ -454,7 +458,7 @@ class AutoCADConnector:
             self.logger.info(f"Read geometry for entity: {entity_id}")
             return geometry
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error reading geometry for entity {entity_id}: {e}")
             return None
 
@@ -469,7 +473,7 @@ class AutoCADConnector:
             Dict: Attribute dictionary
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read the entity's attributes
@@ -482,7 +486,7 @@ class AutoCADConnector:
             self.logger.info(f"Read attributes for entity: {entity_id}")
             return attributes
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error reading attributes for entity {entity_id}: {e}")
             return {}
 
@@ -497,13 +501,13 @@ class AutoCADConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             self.logger.info(f"Deleted entity: {entity_id}")
             return True
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error deleting entity {entity_id}: {e}")
             return False
 
@@ -519,13 +523,13 @@ class AutoCADConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             self.logger.info(f"Updated entity: {entity_id}")
             return True
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error updating entity {entity_id}: {e}")
             return False
 
@@ -640,7 +644,7 @@ class AutoCADConnector:
             Dict: Operation results
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         results = {
             "successful": 0,
@@ -684,13 +688,13 @@ class AutoCADConnector:
                         results["errors"].append(f"Unknown operation type: {op_type}")
                         results["failed"] += 1
 
-                except Exception as e:
+                except Exception as e:  # NOSONAR: S112 — connector boundary handler  # NOSONAR: S112 — batch operation error isolation
                     results["errors"].append(f"Error in operation {op_type}: {str(e)}")
                     results["failed"] += 1
 
             self.logger.info(f"Batch operation completed: {results['successful']} successful, {results['failed']} failed")
             return results
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR: S112 — connector boundary handler
             self.logger.error(f"Error in batch operation: {e}")
             raise

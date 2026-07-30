@@ -106,10 +106,10 @@ class RevitAddinManager:
             sync_result = {
                 "success": True,
                 "project_id": self.current_project_id,
-                "elements_processed": random.randint(50, 200),
-                "elements_successful": random.randint(45, 195),
-                "elements_failed": random.randint(0, 5),
-                "duration_seconds": round(random.uniform(1.0, 5.0), 2),
+                "elements_processed": random.randint(50, 200),  # NOSONAR: S2245 — simulation/mock data, not security-sensitive
+                "elements_successful": random.randint(45, 195),  # NOSONAR: S2245 — simulation/mock data, not security-sensitive
+                "elements_failed": random.randint(0, 5),  # NOSONAR: S2245 — simulation/mock data, not security-sensitive
+                "duration_seconds": round(random.uniform(1.0, 5.0), 2),  # NOSONAR: S2245 — simulation/mock data
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
 

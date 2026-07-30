@@ -251,14 +251,14 @@ const VoltageDropCalculator: React.FC = () => {
       <div className="baz-panel p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-medium text-[#6a6a80] uppercase tracking-wider">Drop vs. 5% NFPA Limit</span>
-          <span className={`text-[11px] font-mono font-semibold ${(() => { if (voltStatus === "pass") return "text-emerald-400"; if (voltStatus === "warn") return "text-amber-400"; return "text-red-400"; })()}`}>
+          <span className={`text-[11px] font-mono font-semibold ${(() => { if (voltStatus === "pass") { return "text-emerald-400"; } if (voltStatus === "warn") { return "text-amber-400"; } return "text-red-400"; })()}`}>
             {pctDrop.toFixed(2)}%
           </span>
         </div>
         <div className="h-1.5 bg-[#1a1a24] rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
-              (() => { if (voltStatus === "pass") return "bg-emerald-500"; if (voltStatus === "warn") return "bg-amber-500"; return "bg-red-500"; })()
+              (() => { if (voltStatus === "pass") { return "bg-emerald-500"; } if (voltStatus === "warn") { return "bg-amber-500"; } return "bg-red-500"; })()
             }`}
             style={{ width: `${Math.min((pctDrop / 10) * 100, 100)}%` }}
           />

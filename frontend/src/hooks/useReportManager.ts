@@ -621,7 +621,7 @@ export function useReportManager() {
                         );
 
                         return {
-                                id: `RPT_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+                                id: `RPT_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
                                 type,
                                 name: template.name,
                                 timestamp: new Date(),

@@ -38,7 +38,7 @@ WORKDIR /build
 RUN pip install --no-cache-dir --upgrade pip setuptools>=68 wheel
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir --only-binary :all: --prefix=/install -r requirements.txt
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────
 FROM python:3.14-slim

@@ -156,135 +156,129 @@ function validateDetectorSpacing(
  *   - A room with detectors clustered on one side is flagged even if the
  *     device count is high.
  */
+
+// Grid resolution: 0.5m cells. Trade-off: smaller = more accurate but
+// slower. 0.5m gives 4 samples per m² — sufficient for NFPA 72 audit.
+const GRID_STEP_M = 0.5;
+
+// Coverage radius per detector type: R = 0.7 × S
+//   SMOKE: S = 9.1m → R = 6.37m (NFPA 72 §17.7.3.2.3 + §17.7.4.2.3.1)
+//   HEAT:  S = 6.1m → R = 4.27m (NFPA 72 §17.6.3.1 + §17.7.4.2.3.1)
+const R_SMOKE_M = 0.7 * 9.1;
+const R_HEAT_M = 0.7 * 6.1;
+
+function getRequiredCoverage(occupancy: string): number {
+        switch (occupancy) {
+                case "high-hazard":
+                        return 90; // 90% minimum
+                case "ordinary":
+                case "light-hazard":
+                default:
+                        return 70; // 70% minimum
+        }
+}
+
+function computeGridCoverage(
+        room: Room,
+        coverageDevices: Device[],
+): number {
+        const nx = Math.max(1, Math.ceil(room.width / GRID_STEP_M));
+        const ny = Math.max(1, Math.ceil(room.length / GRID_STEP_M));
+        let covered = 0;
+        let total = 0;
+        for (let i = 0; i < nx; i++) {
+                for (let j = 0; j < ny; j++) {
+                        const cx = (i + 0.5) * GRID_STEP_M;
+                        const cy = (j + 0.5) * GRID_STEP_M;
+                        if (cx > room.width || cy > room.length) continue;
+                        total++;
+                        if (isCellCovered(cx, cy, coverageDevices)) covered++;
+                }
+        }
+        return total > 0 ? (covered / total) * 100 : 0;
+}
+
+function isCellCovered(cx: number, cy: number, coverageDevices: Device[]): boolean {
+        for (const d of coverageDevices) {
+                const r = d.type === "smoke" ? R_SMOKE_M : d.type === "heat" ? R_HEAT_M : 0;
+                if (r <= 0) continue;
+                if (Math.hypot(d.x - cx, d.y - cy) <= r) return true;
+        }
+        return false;
+}
+
+function evaluateRoomCoverage(
+        room: Room,
+        devices: Device[],
+        result: { violations: string[]; warnings: string[]; passedChecks: string[] },
+): void {
+        const roomDevices = devices.filter((d) => d.room === room.id);
+        const requiredCoverage = getRequiredCoverage(room.occupancy);
+
+        if (roomDevices.length === 0) {
+                result.violations.push(
+                        `Room ${room.name} has no detectors - required minimum coverage ${requiredCoverage}% per NFPA 72 §17.7.5.2.2`,
+                );
+                return;
+        }
+
+        const coverageDevices = roomDevices.filter(
+                (d) => d.type === "smoke" || d.type === "heat",
+        );
+        if (coverageDevices.length === 0) {
+                result.warnings.push(
+                        `Room ${room.name} has devices but no smoke/heat detectors — coverage cannot be computed. Add a smoke or heat detector per NFPA 72 §17.7.5.2.2.`,
+                );
+                return;
+        }
+
+        if (room.width <= 0 || room.length <= 0) {
+                result.warnings.push(
+                        `Room ${room.name} has invalid dimensions (${room.width}×${room.length}m) — coverage not computed`,
+                );
+                return;
+        }
+
+        const coveragePct = computeGridCoverage(room, coverageDevices);
+
+        if (coveragePct < requiredCoverage) {
+                result.violations.push(
+                        `Room ${room.name} actual coverage ${coveragePct.toFixed(1)}% is below required ${requiredCoverage}% per NFPA 72 §17.7.5.2.2 — add more detectors or reposition existing ones`,
+                );
+        } else if (coveragePct < requiredCoverage + 5) {
+                result.warnings.push(
+                        `Room ${room.name} coverage ${coveragePct.toFixed(1)}% is marginal (within 5% of required ${requiredCoverage}%) — consider adding detectors for safety margin per NFPA 72 §17.7.5.2.2`,
+                );
+        } else {
+                result.passedChecks.push(
+                        `Room ${room.name} coverage ${coveragePct.toFixed(1)}% meets required ${requiredCoverage}% per NFPA 72 §17.7.5.2.2`,
+                );
+        }
+
+        if (room.occupancy === "high-hazard" && roomDevices.length >= 2) {
+                result.passedChecks.push(
+                        `High-hazard room ${room.name} has ≥2 detectors per NFPA 72 §17.7.5.2.2`,
+                );
+        } else if (room.occupancy === "high-hazard" && roomDevices.length < 2) {
+                result.warnings.push(
+                        `High hazard room ${room.name} may require additional detectors for adequate coverage per NFPA 72 §17.7.5.2.2`,
+                );
+        }
+}
+
 function validateCoverage(
         devices: Device[],
         rooms: Room[],
 ): { violations: string[]; warnings: string[]; passedChecks: string[] } {
-        const violations: string[] = [];
-        const warnings: string[] = [];
-        const passedChecks: string[] = [];
+        const result: { violations: string[]; warnings: string[]; passedChecks: string[] } = {
+                violations: [],
+                warnings: [],
+                passedChecks: [],
+        };
 
-        // Grid resolution: 0.5m cells. Trade-off: smaller = more accurate but
-        // slower. 0.5m gives 4 samples per m² — sufficient for NFPA 72 audit.
-        const GRID_STEP_M = 0.5;
+        rooms.forEach((room) => evaluateRoomCoverage(room, devices, result));
 
-        // Coverage radius per detector type: R = 0.7 × S
-        //   SMOKE: S = 9.1m → R = 6.37m (NFPA 72 §17.7.3.2.3 + §17.7.4.2.3.1)
-        //   HEAT:  S = 6.1m → R = 4.27m (NFPA 72 §17.6.3.1 + §17.7.4.2.3.1)
-        const R_SMOKE_M = 0.7 * 9.1;
-        const R_HEAT_M = 0.7 * 6.1;
-
-        // NOSONAR — S3776: NFPA 72 coverage validation must handle all occupancy types per §17.7.5.2.2
-        rooms.forEach((room) => {
-                const roomDevices = devices.filter((d) => d.room === room.id);
-
-                // According to NFPA 72 §17.7.5.2.2 - Coverage Requirements by Occupancy
-                let requiredCoverage: number;
-                switch (room.occupancy) {
-                        case "high-hazard":
-                                requiredCoverage = 90; // 90% minimum
-                                break;
-                        case "ordinary":
-                        case "light-hazard":
-                                requiredCoverage = 70; // 70% minimum
-                                break;
-                        default:
-                                requiredCoverage = 70; // Default minimum
-                }
-
-                if (roomDevices.length === 0) {
-                        violations.push(
-                                `Room ${room.name} has no detectors - required minimum coverage ${requiredCoverage}% per NFPA 72 §17.7.5.2.2`,
-                        );
-                        return;
-                }
-
-                // F-04 FIX: only smoke/heat detectors contribute to area coverage.
-                // Pull stations, horns, panels, etc. are NOT area-coverage devices.
-                // If a room has only non-coverage devices (e.g., only a pull station),
-                // emit a WARNING (not a violation) — the room still needs a smoke/heat
-                // detector, but the engineer may have placed it in a different room
-                // entry that wasn't modelled. The previous code counted ALL devices
-                // toward coverage, which masked rooms with only a pull station.
-                const coverageDevices = roomDevices.filter(
-                        (d) => d.type === "smoke" || d.type === "heat",
-                );
-                if (coverageDevices.length === 0) {
-                        warnings.push(
-                                `Room ${room.name} has devices but no smoke/heat detectors — coverage cannot be computed. Add a smoke or heat detector per NFPA 72 §17.7.5.2.2.`,
-                        );
-                        return;
-                }
-
-                // F-04 FIX: compute actual coverage via grid sampling.
-                // Skip rooms with degenerate dimensions to avoid divide-by-zero.
-                if (room.width <= 0 || room.length <= 0) {
-                        warnings.push(
-                                `Room ${room.name} has invalid dimensions (${room.width}×${room.length}m) — coverage not computed`,
-                        );
-                        return;
-                }
-
-                const nx = Math.max(1, Math.ceil(room.width / GRID_STEP_M));
-                const ny = Math.max(1, Math.ceil(room.length / GRID_STEP_M));
-                let covered = 0;
-                let total = 0;
-                for (let i = 0; i < nx; i++) {
-                        for (let j = 0; j < ny; j++) {
-                                const cx = (i + 0.5) * GRID_STEP_M;
-                                const cy = (j + 0.5) * GRID_STEP_M;
-                                if (cx > room.width || cy > room.length) continue;
-                                total++;
-                                // Is this cell within any detector's coverage radius?
-                                for (const d of coverageDevices) {
-                                        let r = 0;
-                                        if (d.type === "smoke") r = R_SMOKE_M;
-                                        else if (d.type === "heat") r = R_HEAT_M;
-                                        if (r <= 0) continue;
-                                        const dx = d.x - cx;
-                                        const dy = d.y - cy;
-                                        if (Math.hypot(dx, dy) <= r) {
-                                                covered++;
-                                                break;
-                                        }
-                                }
-                        }
-                }
-                const coveragePct = total > 0 ? (covered / total) * 100 : 0;
-
-                if (coveragePct < requiredCoverage) {
-                        violations.push(
-                                `Room ${room.name} actual coverage ${coveragePct.toFixed(1)}% is below required ${requiredCoverage}% per NFPA 72 §17.7.5.2.2 — add more detectors or reposition existing ones`,
-                        );
-                } else if (coveragePct < requiredCoverage + 5) {
-                        warnings.push(
-                                `Room ${room.name} coverage ${coveragePct.toFixed(1)}% is marginal (within 5% of required ${requiredCoverage}%) — consider adding detectors for safety margin per NFPA 72 §17.7.5.2.2`,
-                        );
-                } else {
-                        passedChecks.push(
-                                `Room ${room.name} coverage ${coveragePct.toFixed(1)}% meets required ${requiredCoverage}% per NFPA 72 §17.7.5.2.2`,
-                        );
-                }
-
-                // F-03 partial: per-device checks (height, type-specific) recorded as
-                // passed checks so the report reflects what actually passed.
-                if (roomDevices.length >= 2 && room.occupancy === "high-hazard") {
-                        passedChecks.push(
-                                `High-hazard room ${room.name} has ≥2 detectors per NFPA 72 §17.7.5.2.2`,
-                        );
-                } else if (roomDevices.length < 2 && room.occupancy === "high-hazard") {
-                        // Preserve the original warning that was emitted by the pre-F-04
-                        // implementation. The new coverage calculation may pass even with
-                        // 1 detector in a small high-hazard room, but NFPA 72 §17.7.5.2.2
-                        // still recommends ≥2 for redundancy. Emit both the coverage
-                        // verdict AND the redundancy warning.
-                        warnings.push(
-                                `High hazard room ${room.name} may require additional detectors for adequate coverage per NFPA 72 §17.7.5.2.2`,
-                        );
-                }
-        });
-
-        return { violations, warnings, passedChecks };
+        return result;
 }
 
 /**

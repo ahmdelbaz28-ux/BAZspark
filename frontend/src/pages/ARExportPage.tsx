@@ -64,7 +64,7 @@ export function ARExportPage() {
                                 const slice = byteChars.slice(offset, offset + 512);
                                 const byteNumbers = new Array(slice.length);
                                 for (let i = 0; i < slice.length; i++) {
-                                        byteNumbers[i] = slice.charCodeAt(i);
+                                        byteNumbers[i] = slice.codePointAt(i)!;
                                 }
                                 byteArrays.push(new Uint8Array(byteNumbers));
                         }

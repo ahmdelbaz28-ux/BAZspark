@@ -26,7 +26,7 @@ if HAS_CLR:
     try:
         clr.AddReference("RevitAPI")
         clr.AddReference("RevitAPIUI")
-    except Exception:
+    except ImportError:
         # Mock for testing outside Revit
         pass
 
@@ -55,6 +55,10 @@ from engineering_copilot.models.unified_model import (
 )
 
 _NOT_CONNECTED_MSG = "Not connected to Revit"
+
+
+class NotConnectedError(ConnectionError):
+    """Raised when an operation is attempted without an active connection."""
 _ELECTRICAL_PANEL = "Electrical Equipment: Panel"
 _ELECTRICAL_TRANSFORMER = "Electrical Equipment: Transformer"
 
@@ -137,7 +141,7 @@ class RevitConnector:
             Dict: BIM model data with elements
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read the Revit document
@@ -171,7 +175,7 @@ class RevitConnector:
             str: Element ID
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would create an element in the Revit document
@@ -195,7 +199,7 @@ class RevitConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             self.logger.info(f"Updated element: {element_id}")
@@ -213,7 +217,7 @@ class RevitConnector:
             List[Dict]: List of family information
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read families from the document
@@ -243,7 +247,7 @@ class RevitConnector:
             str: Instance ID
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would place a family instance
@@ -267,7 +271,7 @@ class RevitConnector:
             bool: True if successful
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             self.logger.info(f"Updated parameters for element: {element_id}")
@@ -288,7 +292,7 @@ class RevitConnector:
             Dict: Parameter dictionary
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read parameters from the element
@@ -314,7 +318,7 @@ class RevitConnector:
             Coordinates: Element coordinates or None
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read the element's location
@@ -334,7 +338,7 @@ class RevitConnector:
             List[Dict]: List of level information
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read levels from the document
@@ -357,7 +361,7 @@ class RevitConnector:
             List[Dict]: List of room information
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read rooms from the document
@@ -380,7 +384,7 @@ class RevitConnector:
             Dict: MEP data
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read MEP systems from the document
@@ -404,7 +408,7 @@ class RevitConnector:
             List[Dict]: List of electrical system information
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would read electrical systems
@@ -430,7 +434,7 @@ class RevitConnector:
             Dict: Generated documentation
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             # In a real implementation, this would generate Revit sheets/reports
@@ -457,7 +461,7 @@ class RevitConnector:
             Dict: Sync results
         """
         if not self.is_connected:
-            raise Exception(_NOT_CONNECTED_MSG)
+            raise NotConnectedError(_NOT_CONNECTED_MSG)
 
         try:
             sync_results = {

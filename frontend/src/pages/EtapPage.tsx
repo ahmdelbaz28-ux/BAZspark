@@ -509,8 +509,8 @@ export function EtapPage() {
                                                                                 </div>
 
                                                                                 {connectionMessage && (
-                                                                                        <div className={`etap-alert mt-4 ${(() => { if (connectionStatus === "connected") return "etap-alert-success"; if (connectionStatus === "error") return "etap-alert-error"; return ""; })()}`}>
-                                                                                                {(() => { if (connectionStatus === "connected") return <CheckCircle2 aria-hidden="true" className="h-5 w-5 mt-0.5" />; if (connectionStatus === "error") return <AlertTriangle aria-hidden="true" className="h-5 w-5 mt-0.5" />; return <Activity aria-hidden="true" className="h-5 w-5 mt-0.5" />; })()}
+                                                                                        <div className={`etap-alert mt-4 ${(() => { if (connectionStatus === "connected") { return "etap-alert-success"; } if (connectionStatus === "error") { return "etap-alert-error"; } return ""; })()}`}>
+                                                                                                {(() => { if (connectionStatus === "connected") { return <CheckCircle2 aria-hidden="true" className="h-5 w-5 mt-0.5" />; } if (connectionStatus === "error") { return <AlertTriangle aria-hidden="true" className="h-5 w-5 mt-0.5" />; } return <Activity aria-hidden="true" className="h-5 w-5 mt-0.5" />; })()}
                                                                                                 <div>
                                                                                                         <p className="font-medium">{connectionMessage}</p>
                                                                                                         {serverVersion && <p className="text-sm mt-1 opacity-80 font-mono">{serverVersion}</p>}
