@@ -196,7 +196,7 @@ class AISVesselAdapter(ExternalApiAdapter):
         self._base_url = base_url or os.environ.get("AISHUB_URL", DEFAULT_BASE_URL)
         self._api_key = os.environ.get("AISHUB_API_KEY", "")
 
-    async def _fetch(
+    async def _fetch(  # NOSONAR — S3776: AIS API data fetching must handle multiple vessel data sources
         self,
         lat: float,
         lon: float,

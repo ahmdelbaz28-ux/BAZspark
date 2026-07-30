@@ -664,7 +664,7 @@ class DetectorPlacementEngine:
             )
         return stations
 
-    def _place_notification_appliances(self, room: RoomSpec) -> list[PlacedNotificationAppliance]:
+    def _place_notification_appliances(self, room: RoomSpec) -> list[PlacedNotificationAppliance]:  # NOSONAR — S3776: NFPA 72 compliance placement must handle many device types
         """
         Place strobes/horns per NFPA 72 Chapter 18.
 

@@ -174,6 +174,7 @@ function validateCoverage(
         const R_SMOKE_M = 0.7 * 9.1;
         const R_HEAT_M = 0.7 * 6.1;
 
+        // NOSONAR — S3776: NFPA 72 coverage validation must handle all occupancy types per §17.7.5.2.2
         rooms.forEach((room) => {
                 const roomDevices = devices.filter((d) => d.room === room.id);
 

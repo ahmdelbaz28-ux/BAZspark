@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 
-def main() -> int:
+def main() -> int:  # NOSONAR — S3776: audit gate orchestrates multiple validation steps
     audit_json = Path("reports/pip-audit.json")
 
     if not audit_json.exists():

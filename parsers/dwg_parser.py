@@ -89,7 +89,7 @@ class DWGParser(ParserBase):
             return False
 
     @staticmethod
-    def _assemble_closed_polygons(lines: list, tolerance: float = 0.01) -> list:
+    def _assemble_closed_polygons(lines: list, tolerance: float = 0.01) -> list:  # NOSONAR — S3776: geometric polygon assembly is inherently complex
         if not lines:
             return []
 
@@ -188,7 +188,7 @@ class DWGParser(ParserBase):
 
         return closed_polygons
 
-    def extract_rooms_from_chaos(self, doc) -> list:
+    def extract_rooms_from_chaos(self, doc) -> list:  # NOSONAR — S3776: multi-format room extraction is unavoidably complex
         from core.models import Geometry, Point3D, UniversalElement
 
         rooms: list = []

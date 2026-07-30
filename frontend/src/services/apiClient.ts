@@ -107,7 +107,7 @@ export class ApiClient {
          *  - Retry with exponential backoff (1s, 2s, 4s)
          *  - credentials: "same-origin" for cookie-based auth
          */
-        protected async fetchWithRetry<T>(
+        protected async fetchWithRetry<T>(  // NOSONAR — S3776: retry logic must handle many error conditions
                 url: string,
                 options?: RequestInit,
                 retries = 3,

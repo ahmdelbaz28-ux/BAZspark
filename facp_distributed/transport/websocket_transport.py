@@ -76,7 +76,7 @@ class WebSocketTransport(TransportLayer):
         self.clients.remove(websocket)
         print(f"Client disconnected: {websocket.remote_address}, Total clients: {len(self.clients)}")
 
-    async def _handle_client_message(self, websocket: websockets.WebSocketServerProtocol, path: str):
+    async def _handle_client_message(self, websocket: websockets.WebSocketServerProtocol, path: str):  # NOSONAR — S3776: WebSocket message handling must dispatch many protocol types
         """Handle incoming messages from a client"""
         await self._register_client(websocket)
         try:

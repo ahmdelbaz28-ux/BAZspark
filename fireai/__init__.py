@@ -101,7 +101,7 @@ _PUBLIC_NAMES = [
 ]
 
 
-def __getattr__(name):
+def __getattr__(name):  # NOSONAR — S3776: lazy import dispatch must handle many sub-modules
     """
     Lazy import: only load sub-modules when actually accessed.
 

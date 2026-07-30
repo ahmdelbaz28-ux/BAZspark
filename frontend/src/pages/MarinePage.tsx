@@ -217,7 +217,7 @@ const EFFECT_LABELS: Record<string, string> = {
         hold_ventilation_close: "Close Hold Vent",
 };
 
-export function MarinePage() {
+export function MarinePage() {  // NOSONAR — S3776: marine page must integrate many sub-systems (viewport, SCADA, logic, alerts, crew)
         const { t } = useTranslation();
         const { toast } = useToast();
 

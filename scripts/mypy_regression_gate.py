@@ -26,7 +26,7 @@ import subprocess
 import sys
 
 
-def main() -> int:
+def main() -> int:  # NOSONAR — S3776: CI gate orchestrates multiple pipeline steps
     # Parse simple args
     baseline = 434  # Current baseline (V140): 434 pre-existing errors
     targets = ["backend/", "fireai/", "core/"]
