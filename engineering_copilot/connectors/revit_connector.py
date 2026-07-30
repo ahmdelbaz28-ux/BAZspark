@@ -54,7 +54,6 @@ from engineering_copilot.models.unified_model import (
     UnifiedEngineeringModel,
 )
 
-
 _NOT_CONNECTED_MSG = "Not connected to Revit"
 _ELECTRICAL_PANEL = "Electrical Equipment: Panel"
 _ELECTRICAL_TRANSFORMER = "Electrical Equipment: Transformer"

@@ -97,7 +97,7 @@ class PDFParser(ParserBase):
     Parses PDF floor plans for fire alarm devices.
     """
 
-    allowed_extensions: set[str] = {'.pdf'}
+    allowed_extensions: frozenset[str] = frozenset({'.pdf'})
     max_file_size_bytes: int = int(os.getenv("FIREAI_PDF_MAX_FILE_SIZE_BYTES", 200 * 1024 * 1024))
 
     def __init__(self, min_confidence: float = 0.5):
