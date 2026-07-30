@@ -38,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { apiCall } from "@/services/fullApi";
 
 interface FeatureStatus {
 	name: string;
@@ -75,9 +76,13 @@ export function ExperimentalServicesPage() {
 	const fetchFeatures = useCallback(async () => {
 		setLoading(true);
 		try {
-			const resp = await fetch("/api/v1/experimental/features", { credentials: "same-origin" });
-			if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-			const json = await resp.json();
+			// V271 FIX: use apiCall for CSRF header injection + auth + retry.
+			// Previous direct fetch() bypassed CSRF middleware, causing 403 on
+			// all state-changing operations against /api/v1/experimental/*.
+			const json = await apiCall<{ data?: { features?: FeatureStatus[] } }>(
+				"/experimental/features",
+				{ method: "GET" },
+			);
 			setFeatures(json?.data?.features ?? []);
 		} catch (err) {
 			toast({
@@ -98,17 +103,26 @@ export function ExperimentalServicesPage() {
 		setBusy("ocr");
 		setOcrResult(null);
 		try {
+			// V271 FIX: UploadFile endpoints need multipart/form-data.
+			// apiCall sets Content-Type: application/json by default, which
+			// would break multipart uploads. To let the browser set the
+			// correct boundary automatically, we omit Content-Type entirely
+			// — the browser sees FormData body and adds multipart/form-data
+			// with a generated boundary. CSRF header is still injected by
+			// apiCall via fetchWithRetry.
 			const fd = new FormData();
 			fd.append("file", file);
 			fd.append("lang", "eng+ara");
-			const resp = await fetch("/api/v1/experimental/ocr/process", {
-				method: "POST",
-				body: fd,
-				credentials: "same-origin",
-			});
-			const json = await resp.json();
-			if (!resp.ok) throw new Error(json.detail || `HTTP ${resp.status}`);
-			setOcrResult(json.data as ProcessResult);
+			const json = await apiCall<ProcessResult & { detail?: string }>(
+				"/experimental/ocr/process",
+				{
+					method: "POST",
+					body: fd,
+					// Deliberately no Content-Type header — browser sets it.
+					headers: { "Content-Type": "" },
+				},
+			);
+			setOcrResult(json as ProcessResult);
 			toast({ title: "OCR complete", description: file.name });
 		} catch (err) {
 			toast({
@@ -128,14 +142,15 @@ export function ExperimentalServicesPage() {
 			const fd = new FormData();
 			fd.append("file", file);
 			fd.append("lang", "eng+ara");
-			const resp = await fetch("/api/v1/experimental/scan-to-bim/process", {
-				method: "POST",
-				body: fd,
-				credentials: "same-origin",
-			});
-			const json = await resp.json();
-			if (!resp.ok) throw new Error(json.detail || `HTTP ${resp.status}`);
-			setBimResult(json.data as ProcessResult);
+			const json = await apiCall<ProcessResult & { detail?: string }>(
+				"/experimental/scan-to-bim/process",
+				{
+					method: "POST",
+					body: fd,
+					headers: { "Content-Type": "" },
+				},
+			);
+			setBimResult(json as ProcessResult);
 			toast({ title: "Scan-to-BIM complete", description: file.name });
 		} catch (err) {
 			toast({
@@ -173,20 +188,19 @@ export function ExperimentalServicesPage() {
 				}
 				elements = JSON.parse(speckleElements);
 			}
-			const resp = await fetch(`/api/v1/experimental/speckle/${op}`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					stream_id: streamId,
-					server_url: serverUrl,
-					token: speckleToken,
-					elements,
-				}),
-				credentials: "same-origin",
-			});
-			const json = await resp.json();
-			if (!resp.ok) throw new Error(json.detail || `HTTP ${resp.status}`);
-			setSpeckleResult(json.data as ProcessResult);
+			const json = await apiCall<ProcessResult & { detail?: string }>(
+				`/experimental/speckle/${op}`,
+				{
+					method: "POST",
+					body: JSON.stringify({
+						stream_id: streamId,
+						server_url: serverUrl,
+						token: speckleToken,
+						elements,
+					}),
+				},
+			);
+			setSpeckleResult(json as ProcessResult);
 			toast({ title: `Speckle ${op} complete` });
 		} catch (err) {
 			toast({

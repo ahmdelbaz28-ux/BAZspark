@@ -201,10 +201,14 @@ async def process_ocr(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except Exception as exc:
+        # V271 FIX (CodeQL py/stack-trace-exposure): previously we exposed
+        # {exc} in the detail, which can leak internal paths, DB URLs, or
+        # credential fragments from the underlying library. Now we log the
+        # full exception server-side and return a generic message.
         logger.exception("OCR processing failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"OCR processing failed: {exc}",
+            detail="OCR processing failed. Check server logs for details.",
         ) from exc
     finally:
         try:
@@ -250,10 +254,11 @@ async def process_scan_to_bim(
         }
         return success(data=payload)
     except Exception as exc:
+        # V271 FIX (CodeQL py/stack-trace-exposure): do not expose {exc}.
         logger.exception("Scan-to-BIM processing failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Scan-to-BIM processing failed: {exc}",
+            detail="Scan-to-BIM processing failed. Check server logs for details.",
         ) from exc
     finally:
         try:
@@ -282,10 +287,11 @@ async def speckle_push(body: SpeckleOperationRequest, _role: SystemConfigRole) -
         )
         return success(data={"service": "speckle-push", "result": result})
     except Exception as exc:
+        # V271 FIX (CodeQL py/stack-trace-exposure): do not expose {exc}.
         logger.exception("Speckle push failed")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Speckle push failed: {exc}",
+            detail="Speckle push failed. Check server logs and Speckle service status.",
         ) from exc
 
 
@@ -303,8 +309,9 @@ async def speckle_receive(body: SpeckleOperationRequest, _role: SystemConfigRole
         )
         return success(data={"service": "speckle-receive", "result": result})
     except Exception as exc:
+        # V271 FIX (CodeQL py/stack-trace-exposure): do not expose {exc}.
         logger.exception("Speckle receive failed")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Speckle receive failed: {exc}",
+            detail="Speckle receive failed. Check server logs and Speckle service status.",
         ) from exc

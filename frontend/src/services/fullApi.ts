@@ -1279,6 +1279,14 @@ export const fullApi = {
          * correct specific endpoint based on the params shape.
          */
         qomnCalculate: async (params: any): Promise<{ success: boolean; data?: any; message?: string }> => {
+                // V271 FIX: guard against null/undefined params to prevent TypeError
+                // on property access. Returns structured failure instead of crashing.
+                if (params === null || params === undefined || typeof params !== "object") {
+                        return {
+                                success: false,
+                                message: "qomnCalculate: params must be a non-null object. Use qomnApi.smokeSpacing/battery/voltageDrop directly for typed calls.",
+                        };
+                }
                 // Route based on which params are present (matches backend schemas).
                 if (params.room_length !== undefined || params.room_width !== undefined || params.ceiling_height !== undefined) {
                         // Smoke spacing — needs ceiling_height_m
