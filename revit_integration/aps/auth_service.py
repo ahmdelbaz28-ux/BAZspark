@@ -12,7 +12,13 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
-import aiohttp
+try:
+    import aiohttp
+except ImportError:
+    # V270 FIX: aiohttp is optional (only needed for distributed FACP mode).
+    # Without it, the module can still be imported for type checking and
+    # service initialization. Actual APS API calls will fail at runtime.
+    aiohttp = None  # type: ignore[assignment]
 
 
 @dataclass
@@ -67,6 +73,9 @@ class APSAuthService:
         }
 
         try:
+            if aiohttp is None:
+                self.logger.error("aiohttp not installed — cannot authenticate")
+                return None
             async with aiohttp.ClientSession() as session:
                 async with session.post(self.token_url, headers=headers, data=data) as response:
                     if response.status == 200:
@@ -137,6 +146,9 @@ class APSAuthService:
         }
 
         try:
+            if aiohttp is None:
+                self.logger.error("aiohttp not installed — cannot refresh token")
+                return None
             async with aiohttp.ClientSession() as session:
                 async with session.post(self.refresh_url, headers=headers, data=data) as response:
                     if response.status == 200:

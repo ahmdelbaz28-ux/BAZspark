@@ -102,3 +102,6 @@ asyncio-mqtt>=0.16.0,<1.0.0
 # langfuse 2.x (latest 2.54.1) depends on langsmith >=0.8.18 which fixes the
 # vulnerability. NOTE: langfuse 3.x does NOT exist on PyPI — pin was invalid.
 langfuse>=2.0.0,<5.0.0  # V163: avoid langsmith 0.8.5 vulnerability; 3.x unavailable on PyPI
+
+# ── Test Dependencies (required for CI) ──────────────────────────────────────
+respx>=0.21.0,<1.0.0  # V270: HTTP mocking for httpx — used by test_external_api_adapters.py

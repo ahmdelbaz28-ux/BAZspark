@@ -693,6 +693,15 @@ class MemoryService:
 
         try:
             history = self._memory.history(memory_id=memory_id)
+            # V270 FIX: Mem0's history() returns an empty list for
+            # nonexistent IDs without raising. Treat empty history as
+            # "not found" so the router returns 404 instead of 200.
+            if not history or (isinstance(history, list) and len(history) == 0):
+                return {
+                    "success": False,
+                    "error": f"Memory not found: {memory_id}",
+                    "source": "memory",
+                }
             return {
                 "success": True,
                 "memory_id": memory_id,

@@ -164,6 +164,13 @@ try:
     _original_testclient_init = _StarletteTestClient.__init__
     _BACKEND_TESTS_DIR = _os.path.dirname(_os.path.abspath(__file__))
     _BACKEND_TESTS_DIR_NORM = _os.path.normcase(_BACKEND_TESTS_DIR)
+    # V270 FIX: Store this conftest's own path so the frame walker can
+    # skip it when called from the FastAPI TestClient patch below.
+    # Without this, the inner patch's frame walker stops at this conftest
+    # (because it contains "conftest" in the filename) and incorrectly
+    # identifies non-backend tests as backend tests, causing FIREAI_API_KEY
+    # to be overwritten and X-API-Key to be injected on the wrong tests.
+    _THIS_CONFTEST_FILE = _os.path.normcase(_os.path.abspath(__file__))
 
     def _patched_testclient_init(self, *args, **kwargs):
         """
@@ -171,6 +178,13 @@ try:
         when called from a test under backend/tests/. Other test directories
         (tests/, fireai/core/tests/, etc.) get an unpatched TestClient so they
         can test unauthenticated request paths.
+
+        V270 FIX: The frame walker now skips frames from THIS conftest file.
+        Previously, when called from _fastapi_patched_init (which is defined
+        in this conftest), the walker would stop at the conftest frame and
+        incorrectly identify the test as a backend test, causing
+        FIREAI_API_KEY to be overwritten and X-API-Key to be injected on
+        tests that should NOT have it (e.g. tests/test_v2_api.py).
         """
         # Walk the call stack to find the originating test/conftest file.
         frame = _sys2._getframe(1)
@@ -181,6 +195,13 @@ try:
                 "test_" in _os.path.basename(f_filename)
                 or "conftest" in f_filename
             ):
+                # V270 FIX: Skip frames from THIS conftest module.
+                # The double-patching (FastAPITestClient IS StarletteTestClient)
+                # causes the inner patch to be called from within this file,
+                # and the frame walker would incorrectly stop here.
+                if _os.path.normcase(_os.path.abspath(f_filename)) == _THIS_CONFTEST_FILE:
+                    frame = frame.f_back
+                    continue
                 caller_file = f_filename
                 break
             frame = frame.f_back
@@ -212,7 +233,17 @@ try:
 
     _StarletteTestClient.__init__ = _patched_testclient_init
 
-    # Patch FastAPI TestClient similarly
+    # V270 FIX: FastAPITestClient IS StarletteTestClient (same class object),
+    # so the second patch below would overwrite the first patch. When the
+    # _fastapi_patched_init calls _fastapi_original_init (which is actually
+    # _patched_testclient_init), the inner frame walker would find THIS
+    # conftest as the caller and incorrectly set is_backend_test=True for
+    # non-backend tests.
+    #
+    # The fix above (skipping this conftest's own frames in the walker)
+    # makes the double-patching safe. We keep the FastAPI patch for
+    # consistency — it sets self.headers AFTER init (which is the correct
+    # approach for FastAPI's TestClient, which uses httpx-style headers).
     try:
         from fastapi.testclient import TestClient as _FastAPITestClient
 
@@ -227,6 +258,10 @@ try:
                     "test_" in _os.path.basename(f_filename)
                     or "conftest" in f_filename
                 ):
+                    # V270 FIX: Skip frames from THIS conftest module.
+                    if _os.path.normcase(_os.path.abspath(f_filename)) == _THIS_CONFTEST_FILE:
+                        frame = frame.f_back
+                        continue
                     caller_file = f_filename
                     break
                 frame = frame.f_back

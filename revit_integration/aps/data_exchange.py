@@ -10,7 +10,11 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-import aiohttp
+try:
+    import aiohttp
+except ImportError:
+    # V270 FIX: aiohttp is optional — module can be imported without it
+    aiohttp = None  # type: ignore[assignment]
 
 
 class APSDataExchange:
@@ -26,6 +30,13 @@ class APSDataExchange:
         self.data_management_url = f"{self.base_url}/data/v1"
         self.logger = logging.getLogger(__name__)
 
+    def _check_aiohttp(self) -> bool:
+        """V270 FIX: Check if aiohttp is available before making HTTP calls."""
+        if aiohttp is None:
+            self.logger.error("aiohttp not installed — APS API calls unavailable")
+            return False
+        return True
+
     async def create_project(self, project_name: str, description: str = "") -> Optional[Dict[str, Any]]:
         """
         Create a new project in APS.
@@ -37,6 +48,8 @@ class APSDataExchange:
         Returns:
             Dict: Project information or None if failed
         """
+        if not self._check_aiohttp():
+            return None
         headers = self.auth_service.get_auth_headers()
 
         data = {
@@ -91,6 +104,8 @@ class APSDataExchange:
         Returns:
             Dict: Upload result or None if failed
         """
+        if not self._check_aiohttp():
+            return None
         if not os.path.exists(file_path):
             self.logger.error(f"File does not exist: {file_path}")
             return None
@@ -173,6 +188,8 @@ class APSDataExchange:
         Returns:
             Dict: Folder contents or None if failed
         """
+        if not self._check_aiohttp():
+            return None
         headers = self.auth_service.get_auth_headers()
 
         try:
@@ -206,6 +223,8 @@ class APSDataExchange:
         Returns:
             bool: True if successful
         """
+        if not self._check_aiohttp():
+            return None
         headers = self.auth_service.get_auth_headers()
 
         try:
@@ -252,6 +271,8 @@ class APSDataExchange:
         Returns:
             Dict: Job information or None if failed
         """
+        if not self._check_aiohttp():
+            return None
         if output_formats is None:
             output_formats = ['svf2']
 
@@ -296,6 +317,8 @@ class APSDataExchange:
         Returns:
             Dict: Job status or None if failed
         """
+        if not self._check_aiohttp():
+            return None
         headers = self.auth_service.get_auth_headers()
 
         try:
@@ -326,6 +349,8 @@ class APSDataExchange:
         Returns:
             bool: True if sync successful
         """
+        if not self._check_aiohttp():
+            return None
         try:
             # Upload the Revit file
             upload_result = await self.upload_file(project_id, local_revit_file)

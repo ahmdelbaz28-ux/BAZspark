@@ -6,18 +6,12 @@ import sys
 
 import pytest
 
-# Add the backend directory to the path so we can import the app
-# Add the backend directory to the path so we can import the app
-_backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if _backend_path not in sys.path:
-    sys.path.insert(0, _backend_path)
-# Ensure project root is prioritized over backend in sys.path
+# Ensure project root is on sys.path so `from backend.app import app` works
 _project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 if _project_root not in sys.path:
-    # Insert after backend path to keep backend first but root second
-    sys.path.insert(1, _project_root)
+    sys.path.insert(0, _project_root)
 
-from app import app
+from backend.app import app
 from fastapi.testclient import TestClient
 
 
