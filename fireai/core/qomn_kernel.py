@@ -229,8 +229,12 @@ from fireai.constants.nfpa72 import (  # noqa: I001
     COVERAGE_RADIUS_FACTOR as NFPA72_COVERAGE_RADIUS_FACTOR,
     HEAT_ABSOLUTE_MAX_SPACING_M as _HEAT_ABSOLUTE_MAX_SPACING_M,
     HEAT_MAX_SPACING_M as NFPA72_HEAT_MAX_SPACING_M,  # noqa: F401
+    NAC_MIN_CD as NFPA72_NAC_MIN_CD,
+    NAC_SLEEPING_MIN_CD as NFPA72_NAC_SLEEPING_MIN_CD,
+    NAC_WALL_HEIGHT_M as NFPA72_NAC_WALL_HEIGHT_M,
     PULL_STATION_FROM_EXIT_M as NFPA72_PULL_STATION_FROM_EXIT_M,  # noqa: F401
     PULL_STATION_HEIGHT_M as NFPA72_PULL_STATION_HEIGHT_M,  # noqa: F401
+    PULL_STATION_MAX_CORRIDOR_SPACING_M as NFPA72_PULL_STATION_MAX_CORRIDOR_SPACING_M,
     SMOKE_HEIGHT_SPACING_TABLE as NFPA72_SMOKE_SPACING_TABLE,  # noqa: F401
     SMOKE_MAX_SPACING_M as NFPA72_SMOKE_MAX_SPACING_M,
     SMOKE_PRACTICAL_CEILING_HEIGHT_M as _SMOKE_PRACTICAL_CEILING_HEIGHT_M,
@@ -271,22 +275,18 @@ NFPA72_WALL_MAX_DISTANCE_FACTOR = 0.5  # S/2 per NFPA 72 §17.6.3.1.1
 # NOTE: NFPA72_PULL_STATION_HEIGHT_M is imported from fireai.constants.nfpa72 at line 224.
 # Do NOT redefine with a literal value here.
 
-# Pull station max spacing in corridor — NFPA 72 §17.15.5
-NFPA72_PULL_STATION_MAX_CORRIDOR_SPACING_M = 61.0  # 200 ft
+# Pull station max spacing imported from NFPA 72 SSoT above:
+# NFPA72_PULL_STATION_MAX_CORRIDOR_SPACING_M
 
 # Pull station from exit door — NFPA 72 §17.15.3
 # 5 ft = 1.524m
 # NOTE: NFPA72_PULL_STATION_FROM_EXIT_M is imported from fireai.constants.nfpa72 at line 223.
 # Do NOT redefine with a literal value here.
 
-# Notification appliance: wall mount height — NFPA 72 §18.5.5.1
-NFPA72_NAC_WALL_HEIGHT_M = 2.032  # 80 inches AFF to bottom
-
-# Notification appliance: minimum strobe intensity — NFPA 72 §18.5.3.1
-NFPA72_NAC_MIN_CD = 75  # 75 candela
-
-# Sleeping area strobe intensity — NFPA 72 §18.5.5.7
-NFPA72_NAC_SLEEPING_MIN_CD = 177  # 177 candela
+# Notification appliance constants imported from NFPA 72 SSoT above:
+# NFPA72_NAC_WALL_HEIGHT_M  (from NAC_WALL_HEIGHT_M)
+# NFPA72_NAC_MIN_CD          (from NAC_MIN_CD)
+# NFPA72_NAC_SLEEPING_MIN_CD (from NAC_SLEEPING_MIN_CD)
 
 # ── NEC Table 8 — Wire Resistance (Copper, Stranded) ──────────────────────
 # C-3 FIX: Values now sourced from the canonical Single Source of Truth
@@ -308,42 +308,16 @@ from fireai.constants.nec import (
     TABLE8_REFERENCE_TEMP_C as _NEC_TABLE8_REFERENCE_TEMP_C,
 )
 
-# NEC wire ampacity at 60°C insulation — NEC 2023 §310.16
-NEC_AMPACITY_60C: dict[str, float] = {
-    "18": 7.0,
-    "16": 13.0,
-    "14": 15.0,
-    "12": 20.0,
-    "10": 30.0,
-    "8": 40.0,
-    "6": 55.0,
-    "4": 70.0,
-    "2": 95.0,
-    "1": 110.0,
-    "1/0": 125.0,
-    "2/0": 145.0,
-    "3/0": 165.0,
-    "4/0": 195.0,
-}
+# NEC ampacity at 60°C now imported from canonical source (fireai/constants/nec.py)
+from fireai.constants.nec import NEC_AMPACITY_60C as NEC_AMPACITY_60C
 
-# ── TIA-568 Cabling Standards ─────────────────────────────────────────────
-# Source: TIA-568-D (2018 Edition)
-TIA568_HORIZONTAL_MAX_M = 90.0  # 90m horizontal — TIA-568-D §6.1.1
-TIA568_TOTAL_CHANNEL_MAX_M = 100.0  # 100m total including patch cords
-
-# ── CCTV Lens Coverage Angles (standard lenses) ──────────────────────────
-# Source: Manufacturer specifications + geometric optics
-CCTV_LENS_FOV_DEG: dict[str, float] = {
-    "3.6mm": 90.0,
-    "6mm": 60.0,
-    "8mm": 45.0,
-    "12mm": 30.0,
-    "16mm": 22.0,
-    "25mm": 14.0,
-}
-
-# Access control reader height — ADA + NFPA 101 §7.2.1.6
-ACCESS_CONTROL_READER_HEIGHT_M: tuple[float, float] = (1.067, 1.219)  # 42"–48"
+# TIA-568, CCTV, and access control constants now imported from canonical source
+from fireai.constants import (
+    TIA568_HORIZONTAL_MAX_M as TIA568_HORIZONTAL_MAX_M,
+    TIA568_TOTAL_CHANNEL_MAX_M as TIA568_TOTAL_CHANNEL_MAX_M,
+    CCTV_LENS_FOV_DEG as CCTV_LENS_FOV_DEG,
+    ACCESS_CONTROL_READER_HEIGHT_M as ACCESS_CONTROL_READER_HEIGHT_M,
+)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -367,7 +341,7 @@ def _f64_hash(value: float) -> str:
     return hashlib.sha256(bits).hexdigest()[:16]
 
 
-def compute_smoke_detector_spacing(ceiling_height_m: float) -> dict[str, Any]:
+def compute_smoke_detector_spacing(ceiling_height_m: float) -> SmokeSpacingResult:
     """
     Compute smoke detector spacing per NFPA 72-2022 §17.7.3.2.3.
 
@@ -399,8 +373,8 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> dict[str, Any]:
         ceiling_height_m: Ceiling height in meters.
 
     Returns:
-        dict with listed_spacing_m, coverage_radius_m, nfpa_table_ref,
-        computation_hash, and audit_notice when above 6.096 m.
+        SmokeSpacingResult with listed_spacing_m, coverage_radius_m,
+        nfpa_section, computation_hash, and audit_notice when above 6.096 m.
 
     Raises:
         PhysicsGuardError: If ceiling_height_m is outside bounds.
@@ -458,26 +432,26 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> dict[str, Any]:
         f"[flat per §17.7.3.2.3]"
     )
 
-    result = {
-        "listed_spacing_m": round(spacing_m, 6),
-        "coverage_radius_m": round(radius_m, 6),
-        "wall_min_m": round(NFPA72_WALL_MIN_DISTANCE_M, 4),  # 0.1016m dead air space per §17.6.3.1.1
-        "wall_max_m": round(0.5 * spacing_m, 6),  # S/2 max wall distance per §17.6.3.1.1
-        "corner_min_m": round(0.7 * spacing_m, 6),
-        "nfpa_section": nfpa_section,
-        "table_row_used": table_row,
-        "formula": formula,
-        "computation_hash": result_hash,
-    }
+    result = SmokeSpacingResult(
+        listed_spacing_m=round(spacing_m, 6),
+        coverage_radius_m=round(radius_m, 6),
+        wall_min_m=round(NFPA72_WALL_MIN_DISTANCE_M, 4),
+        wall_max_m=round(0.5 * spacing_m, 6),
+        corner_min_m=round(0.7 * spacing_m, 6),
+        nfpa_section=nfpa_section,
+        table_row_used=table_row,
+        formula=formula,
+        computation_hash=result_hash,
+    )
     if audit_notice is not None:
-        result["audit_notice"] = audit_notice
+        result.audit_notice = audit_notice
     return result
 
 
 def compute_heat_detector_spacing(
     ceiling_height_m: float,
     area_per_detector_m2: float,
-) -> dict[str, Any]:
+) -> HeatSpacingResult:
     """
     Compute heat detector spacing per NFPA 72 §17.6.
 
@@ -489,7 +463,7 @@ def compute_heat_detector_spacing(
         area_per_detector_m2: Coverage area per detector in m².
 
     Returns:
-        dict with spacing_m, coverage_radius_m, compliance status.
+        HeatSpacingResult with spacing_m, coverage_radius_m, compliance status.
 
     """
     guard_ceiling_height_m(ceiling_height_m)
@@ -546,15 +520,15 @@ def compute_heat_detector_spacing(
 
     result_hash = _f64_hash(spacing_m) + _f64_hash(radius_m)
 
-    return {
-        "spacing_m": round(spacing_m, 6),
-        "coverage_radius_m": round(radius_m, 6),
-        "max_spacing_m": _HEAT_ABSOLUTE_MAX_SPACING_M,  # V121: 15.24m absolute max
-        "is_within_max": spacing_m <= _HEAT_ABSOLUTE_MAX_SPACING_M,
-        "nfpa_section": "NFPA 72-2022 §17.6.3.1",
-        "formula": "S = 0.7 × √A [§17.6.3.1]",
-        "computation_hash": result_hash,
-    }
+    return HeatSpacingResult(
+        spacing_m=round(spacing_m, 6),
+        coverage_radius_m=round(radius_m, 6),
+        max_spacing_m=_HEAT_ABSOLUTE_MAX_SPACING_M,
+        is_within_max=spacing_m <= _HEAT_ABSOLUTE_MAX_SPACING_M,
+        nfpa_section="NFPA 72-2022 §17.6.3.1",
+        formula="S = 0.7 × √A [§17.6.3.1]",
+        computation_hash=result_hash,
+    )
 
 
 def compute_battery_capacity_ah(
@@ -565,7 +539,7 @@ def compute_battery_capacity_ah(
     alarm_minutes: float = NFPA72_ALARM_MINUTES,
     safety_factor: float = NFPA72_BATTERY_SAFETY_FACTOR,
     discharge_efficiency: float = NFPA72_BATTERY_DISCHARGE_EFFICIENCY,
-) -> dict[str, Any]:
+) -> BatteryCapacityResult:
     """
     Compute battery capacity per NFPA 72 §10.6.7.2.1.
 
@@ -586,7 +560,7 @@ def compute_battery_capacity_ah(
         discharge_efficiency: Usable fraction (default 0.80 = 80%).
 
     Returns:
-        dict with required_ah, formula, and computation_hash.
+        BatteryCapacityResult with required_ah, formula, and computation_hash.
 
     """
     i_sb = _guard_finite(standby_load_a, "standby_load_a")
@@ -612,23 +586,23 @@ def compute_battery_capacity_ah(
 
     result_hash = _f64_hash(ah_required)
 
-    return {
-        "standby_load_a": i_sb,
-        "alarm_load_a": i_al,
-        "standby_hours": standby_hours,
-        "alarm_minutes": alarm_minutes,
-        "ah_standby": round(ah_standby, 6),
-        "ah_alarm": round(ah_alarm, 6),
-        "ah_raw": round(ah_raw, 6),
-        "discharge_efficiency": eff,
-        "safety_factor": sf,
-        "required_ah": round(ah_required, 4),
-        "nfpa_section": "NFPA 72-2022 §10.6.7.2.1",
-        "formula": (
+    return BatteryCapacityResult(
+        standby_load_a=i_sb,
+        alarm_load_a=i_al,
+        standby_hours=standby_hours,
+        alarm_minutes=alarm_minutes,
+        ah_standby=round(ah_standby, 6),
+        ah_alarm=round(ah_alarm, 6),
+        ah_raw=round(ah_raw, 6),
+        discharge_efficiency=eff,
+        safety_factor=sf,
+        required_ah=round(ah_required, 4),
+        nfpa_section="NFPA 72-2022 §10.6.7.2.1",
+        formula=(
             f"Ah = (({i_sb}A×{standby_hours}h + {i_al}A×{alarm_hours:.4f}h) / {eff}) × {sf} = {ah_required:.4f}Ah"
         ),
-        "computation_hash": result_hash,
-    }
+        computation_hash=result_hash,
+    )
 
 
 def compute_voltage_drop(
@@ -637,7 +611,7 @@ def compute_voltage_drop(
     awg_gauge: str,
     supply_voltage_v: float = 24.0,
     max_drop_pct: float = 10.0,
-) -> dict[str, Any]:
+) -> VoltageDropResult:
     """
     Compute circuit voltage drop per NEC Chapter 9, Table 8.
 
@@ -654,7 +628,7 @@ def compute_voltage_drop(
         max_drop_pct:     Maximum allowable drop % (default 10%).
 
     Returns:
-        dict with voltage_drop_v, drop_pct, is_compliant, computation_hash.
+        VoltageDropResult with voltage_drop_v, drop_pct, is_compliant, computation_hash.
 
     Raises:
         PhysicsGuardError: If inputs violate physical/code bounds.
@@ -700,21 +674,21 @@ def compute_voltage_drop(
 
     result_hash = _f64_hash(v_drop) + _f64_hash(drop_pct)
 
-    return {
-        "current_a": i,
-        "length_m": L,
-        "awg_gauge": awg,
-        "supply_voltage_v": v,
-        "r_ohm_per_m": r_ohm_per_m,
-        "voltage_drop_v": round(v_drop, 6),
-        "drop_pct": round(drop_pct, 4),
-        "max_drop_pct": max_drop_pct,
-        "max_length_m": round(max_length_m, 3),
-        "is_compliant": is_compliant,
-        "nec_section": "NEC 2023 Chapter 9, Table 8 / NEC 760",
-        "formula": f"V_drop = 2 × {i}A × {L}m × {r_ohm_per_m:.6f}Ω/m = {v_drop:.4f}V",
-        "computation_hash": result_hash,
-    }
+    return VoltageDropResult(
+        current_a=i,
+        length_m=L,
+        awg_gauge=awg,
+        supply_voltage_v=v,
+        r_ohm_per_m=r_ohm_per_m,
+        voltage_drop_v=round(v_drop, 6),
+        drop_pct=round(drop_pct, 4),
+        max_drop_pct=max_drop_pct,
+        max_length_m=round(max_length_m, 3),
+        is_compliant=is_compliant,
+        nec_section="NEC 2023 Chapter 9, Table 8 / NEC 760",
+        formula=f"V_drop = 2 × {i}A × {L}m × {r_ohm_per_m:.6f}Ω/m = {v_drop:.4f}V",
+        computation_hash=result_hash,
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -723,7 +697,7 @@ def compute_voltage_drop(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def validate_smoke_spacing_result(result: dict) -> dict:
+def validate_smoke_spacing_result(result: SmokeSpacingResult) -> SmokeSpacingResult:
     """
     Validate computed smoke spacing against code limits.
 
@@ -744,7 +718,7 @@ def validate_smoke_spacing_result(result: dict) -> dict:
     return result
 
 
-def validate_battery_result(result: dict) -> dict:
+def validate_battery_result(result: BatteryCapacityResult) -> BatteryCapacityResult:
     """
     Validate battery calculation result.
 
@@ -760,7 +734,7 @@ def validate_battery_result(result: dict) -> dict:
     return result
 
 
-def validate_voltage_drop_result(result: dict) -> dict:
+def validate_voltage_drop_result(result: VoltageDropResult) -> VoltageDropResult:
     """
     Validate voltage drop result against physical and code limits.
 
@@ -775,7 +749,7 @@ def validate_voltage_drop_result(result: dict) -> dict:
     return result
 
 
-def validate_heat_spacing_result(result: dict) -> dict:
+def validate_heat_spacing_result(result: HeatSpacingResult) -> HeatSpacingResult:
     """
     Validate computed heat detector spacing against code limits.
 
@@ -1054,6 +1028,13 @@ class QOMNKernel:
 import functools
 import logging as _logging
 import os as _os
+
+from fireai.core.results import (
+    BatteryCapacityResult,
+    HeatSpacingResult,
+    SmokeSpacingResult,
+    VoltageDropResult,
+)
 
 _healing_logger = _logging.getLogger("fireai.core.qomn_kernel.self_healing")
 

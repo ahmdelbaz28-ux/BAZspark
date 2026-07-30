@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 FireAI Centralized Constants — NFPA 72 / NEC Clause-Cited Registry.
 
@@ -120,8 +122,26 @@ sustained loads."""
 
 
 # ============================================================================
-# NEC — WIRE GAUGE & AMPACITY (Chapter 9, Table 8)
+# NEC — WIRE GAUGE & AMPACITY (Chapter 9, Table 8 and §310.16)
 # ============================================================================
+
+# Wire ampacity at 60°C insulation — NEC 2023 §310.16 (60°C column)
+NEC_AMPACITY_60C: dict[str, float] = {
+    "18": 7.0,
+    "16": 13.0,
+    "14": 15.0,
+    "12": 20.0,
+    "10": 30.0,
+    "8": 40.0,
+    "6": 55.0,
+    "4": 70.0,
+    "2": 95.0,
+    "1": 110.0,
+    "1/0": 125.0,
+    "2/0": 145.0,
+    "3/0": 165.0,
+    "4/0": 195.0,
+}
 
 # AWG resistance table at 75°C — NEC Chapter 9 Table 8
 # Old values for AWG 14/12/10 were ~18% too low (20°C values, unsafe).
@@ -241,6 +261,40 @@ GRAVITY_M_PER_S2: float = 9.81
 """Standard gravitational acceleration (m/s²)."""
 
 
+# ============================================================================
+# TIA-568 Cabling Standards
+# ============================================================================
+
+# Maximum horizontal cable length — TIA-568-D §6.1.1
+TIA568_HORIZONTAL_MAX_M: float = 90.0
+
+# Maximum total channel length including patch cords — TIA-568-D §6.1.1
+TIA568_TOTAL_CHANNEL_MAX_M: float = 100.0
+
+
+# ============================================================================
+# CCTV Standard Lens Coverage Angles
+# ============================================================================
+
+# Field of view for common CCTV lens sizes (manufacturer specifications)
+CCTV_LENS_FOV_DEG: dict[str, float] = {
+    "3.6mm": 90.0,
+    "6mm": 60.0,
+    "8mm": 45.0,
+    "12mm": 30.0,
+    "16mm": 22.0,
+    "25mm": 14.0,
+}
+
+
+# ============================================================================
+# ACCESS CONTROL — Mounting Heights (ADA + NFPA 101)
+# ============================================================================
+
+# Access control reader height range — ADA + NFPA 101 §7.2.1.6
+ACCESS_CONTROL_READER_HEIGHT_M: tuple[float, float] = (1.067, 1.219)
+
+
 __all__ = [
     "BATTERY_ALARM_MINUTES",
     "BATTERY_DISCHARGE_EFFICIENCY",
@@ -287,4 +341,9 @@ __all__ = [
     "VERIFY_STEP_M",
     "VOLTAGE_DROP_MAX_FRACTION",
     "WALL_MIN_DISTANCE_M",
+    "NEC_AMPACITY_60C",
+    "TIA568_HORIZONTAL_MAX_M",
+    "TIA568_TOTAL_CHANNEL_MAX_M",
+    "CCTV_LENS_FOV_DEG",
+    "ACCESS_CONTROL_READER_HEIGHT_M",
 ]

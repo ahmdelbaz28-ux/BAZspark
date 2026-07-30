@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 FireAI — NEC (National Electrical Code) Constants.
 
@@ -187,3 +189,22 @@ DEFAULT_OPERATING_TEMP_C: float = 75.0
 
 # Reference temperature for NEC Table 8 values
 TABLE8_REFERENCE_TEMP_C: float = 20.0
+
+# NEC wire ampacity at 60°C insulation — NEC 2023 §310.16 (60°C column)
+# Mapping: AWG gauge string → ampacity in amperes
+NEC_AMPACITY_60C: dict[str, float] = {
+    "18": 7.0,
+    "16": 13.0,
+    "14": 15.0,
+    "12": 20.0,
+    "10": 30.0,
+    "8": 40.0,
+    "6": 55.0,
+    "4": 70.0,
+    "2": 95.0,
+    "1": 110.0,
+    "1/0": 125.0,
+    "2/0": 145.0,
+    "3/0": 165.0,
+    "4/0": 195.0,
+}
