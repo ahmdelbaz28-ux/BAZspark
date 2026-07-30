@@ -1,0 +1,908 @@
+{
+  "service_name": "auth-service",
+  "display_name": "Authentication Service",
+  "description": "Manages user authentication, session management, and API key administration. Provides session-based authentication with HttpOnly cookies, CSRF protection, and role-based access control (admin, engineer, viewer).",
+  "version": "1.0.0",
+  "base_url": "/api/v1/auth",
+  "generated_at": "2026-07-29T23:40:39.173165+00:00",
+  "total_endpoints": 10,
+  "endpoints": [
+    {
+      "path": "/api/v1/auth/login",
+      "method": "POST",
+      "summary": "Authenticate with API key and receive HttpOnly session cookie",
+      "description": "Validates API key credentials and creates an authenticated session. Returns a signed HttpOnly session cookie for subsequent requests. The session is validated against FIREAI_SESSION_SECRET (minimum 43 chars / 256 bits of entropy). On failure, returns 401 with a generic error message to prevent user enumeration.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "format": "password",
+            "description": "API key for authentication (dpk_...)"
+          },
+          "username": {
+            "type": "string",
+            "description": "Username (optional, for compatibility)"
+          }
+        },
+        "required": [
+          "api_key"
+        ]
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "engineer",
+                      "viewer"
+                    ]
+                  },
+                  "session_expires": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Authentication successful, session cookie set"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Invalid API key"
+          },
+          {
+            "status_code": 429,
+            "description": "Too many login attempts"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Invalid API key",
+        "429": "Too many login attempts",
+        "500": "Internal server error"
+      },
+      "auth_required": false,
+      "auth_details": "No authentication required — this is the login endpoint",
+      "rate_limit": "5/minute",
+      "notes": [
+        "Sets HttpOnly, Secure, SameSite=Lax cookie named 'session_id'",
+        "Session secret must be >= 43 chars (256 bits of entropy)"
+      ],
+      "examples": {
+        "request": {
+          "api_key": "dpk_f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "role": "admin",
+            "session_expires": "2026-07-30T18:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "authentication",
+        "session"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/auth/session/login",
+      "method": "POST",
+      "summary": "Session-based login (alternate path)",
+      "description": "Alternate login path that authenticates with an API key and sets a session cookie. Functionally identical to /auth/login but provided for client compatibility. Supports CSRF protection via double-submit cookie pattern.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "format": "password",
+            "description": "API key for authentication"
+          }
+        },
+        "required": [
+          "api_key"
+        ]
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Session login successful"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Invalid API key"
+          },
+          {
+            "status_code": 429,
+            "description": "Too many login attempts"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Invalid API key",
+        "429": "Too many login attempts",
+        "500": "Internal server error"
+      },
+      "auth_required": false,
+      "auth_details": "No authentication required — this is the login endpoint",
+      "rate_limit": "5/minute",
+      "notes": [
+        "Alternate path for /auth/login",
+        "Same CSRF protection as primary login"
+      ],
+      "examples": {
+        "request": {
+          "api_key": "dpk_f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "role": "admin"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "authentication",
+        "session"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/auth/logout",
+      "method": "POST",
+      "summary": "Clear session cookie and revoke server-side session",
+      "description": "Invalidates the current session cookie and clears the server-side session state. The cookie becomes unusable even if intercepted. This endpoint does NOT require a specific permission — it only clears the caller's own session.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Logged out successfully"
+        },
+        "error": [
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "500": "Internal server error"
+      },
+      "auth_required": false,
+      "auth_details": "No specific permission required — clears the caller's own session cookie",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Clears HttpOnly session cookie",
+        "No specific permission check — anyone can clear their own session"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "message": "Logged out successfully"
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "authentication",
+        "session"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/auth/me",
+      "method": "GET",
+      "summary": "Get current session role",
+      "description": "Returns the current authenticated user's role (admin, engineer, viewer). Requires an active session but no specific permission beyond authentication. Used by the frontend to determine UI visibility and access control.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "engineer",
+                      "viewer"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "description": "Current user role returned"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "No active session"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "No active session",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Authenticated session required (any role) — no specific permission needed",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Returns role only, not full user profile",
+        "No specific permission check — just requires active session"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "role": "admin"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "authentication",
+        "user"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/auth/csrf-token",
+      "method": "GET",
+      "summary": "Get CSRF token for state-changing requests",
+      "description": "Returns a CSRF token for use with POST/PUT/DELETE/PATCH requests. Implements the OWASP double-submit cookie pattern. The token must be included in the X-CSRF-Token header for all state-changing requests.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "csrf_token": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "CSRF token returned"
+        },
+        "error": [
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "500": "Internal server error"
+      },
+      "auth_required": false,
+      "auth_details": "No authentication required",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Implements OWASP double-submit cookie pattern",
+        "Token must be sent in X-CSRF-Token header for POST/PUT/DELETE/PATCH"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "csrf_token": "tok_x7y8z9w0a1b2c3d4e5f6g7h8"
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "authentication",
+        "csrf"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/admin/keys",
+      "method": "GET",
+      "summary": "List all API keys with metadata",
+      "description": "Returns a list of all API keys with their metadata (role, creation date, last used). Key hashes are returned instead of actual keys for security. Requires admin role with system:config permission.",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "page",
+            "type": "integer",
+            "required": false,
+            "description": "Page number (1-indexed, default 1)"
+          },
+          {
+            "name": "limit",
+            "type": "integer",
+            "required": false,
+            "description": "Items per page (1-100, default 50)"
+          }
+        ],
+        "header": [
+          {
+            "name": "X-API-Key",
+            "type": "string",
+            "required": true,
+            "description": "Admin API key"
+          }
+        ]
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key_hash": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "last_used": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "List of API keys returned"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 403,
+            "description": "Insufficient permissions — system:config required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "403": "Insufficient permissions — system:config required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config (admin only)",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Returns key hashes, not actual keys",
+        "Only admin role has system:config permission"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": [
+            {
+              "key_hash": "sha256_a1b2c3d4e5f6g7h8",
+              "role": "admin",
+              "created_at": "2026-06-15T10:30:00Z",
+              "last_used": "2026-07-29T14:22:00Z"
+            }
+          ]
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "authentication",
+        "api-keys",
+        "admin"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/admin/keys",
+      "method": "POST",
+      "summary": "Create a new API key",
+      "description": "Generates a new API key with the specified role. The key is returned once and cannot be retrieved again. The key is hashed using SHA-256 before storage. Requires admin role with system:config permission.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "engineer",
+              "viewer"
+            ],
+            "description": "Role for the new API key"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of the key's purpose"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 201,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "format": "password"
+                  },
+                  "key_hash": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "API key created"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid role specified"
+          },
+          {
+            "status_code": 403,
+            "description": "Insufficient permissions — system:config required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid role specified",
+        "403": "Insufficient permissions — system:config required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config (admin only)",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Key is returned ONLY once — cannot be retrieved later",
+        "Key is SHA-256 hashed before storage"
+      ],
+      "examples": {
+        "request": {
+          "role": "engineer",
+          "description": "Engineering team API key"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "key": "dpk_f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2",
+            "key_hash": "sha256_a1b2c3d4e5f6g7h8",
+            "role": "engineer"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "authentication",
+        "api-keys",
+        "admin"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/admin/keys/{key_hash}",
+      "method": "PUT",
+      "summary": "Update an existing API key role or metadata",
+      "description": "Updates the role or metadata of an existing API key. The key hash (not the actual key) is used to identify the key to update. Requires admin role with system:config permission.",
+      "parameters": {
+        "path": [
+          {
+            "name": "key_hash",
+            "type": "string",
+            "required": true,
+            "description": "SHA-256 hash of the API key"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "engineer",
+              "viewer"
+            ],
+            "description": "New role for the key"
+          },
+          "description": {
+            "type": "string",
+            "description": "Updated description"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "key_hash": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "API key updated"
+        },
+        "error": [
+          {
+            "status_code": 403,
+            "description": "Insufficient permissions — system:config required"
+          },
+          {
+            "status_code": 404,
+            "description": "API key not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "403": "Insufficient permissions — system:config required",
+        "404": "API key not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config (admin only)",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Uses key_hash (SHA-256) to identify the key, not the actual key value"
+      ],
+      "examples": {
+        "request": {
+          "role": "viewer",
+          "description": "Downgraded to viewer role"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "key_hash": "sha256_a1b2c3d4e5f6g7h8",
+            "role": "viewer"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "authentication",
+        "api-keys",
+        "admin"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/admin/keys/{key_hash}",
+      "method": "DELETE",
+      "summary": "Revoke an API key",
+      "description": "Permanently revokes an API key by its hash. The key immediately becomes invalid for all subsequent requests. This action is irreversible. Requires admin role with system:config permission.",
+      "parameters": {
+        "path": [
+          {
+            "name": "key_hash",
+            "type": "string",
+            "required": true,
+            "description": "SHA-256 hash of the API key to revoke"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "API key revoked"
+        },
+        "error": [
+          {
+            "status_code": 403,
+            "description": "Insufficient permissions — system:config required"
+          },
+          {
+            "status_code": 404,
+            "description": "API key not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "403": "Insufficient permissions — system:config required",
+        "404": "API key not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config (admin only)",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Irreversible action — revoked keys cannot be restored"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "message": "API key revoked successfully"
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "authentication",
+        "api-keys",
+        "admin"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/admin/keys/roles",
+      "method": "GET",
+      "summary": "Get available API key roles and permissions",
+      "description": "Returns the list of available roles (admin, engineer, viewer) and their associated permissions. Used by the admin UI to display role options when creating or updating API keys. Requires admin role with system:config permission.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string"
+                    },
+                    "permissions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Roles and permissions returned"
+        },
+        "error": [
+          {
+            "status_code": 403,
+            "description": "Insufficient permissions — system:config required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "403": "Insufficient permissions — system:config required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config (admin only)",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Three roles: admin (all permissions), engineer (CRUD + calculations), viewer (read-only)",
+        "Permissions use format: resource:action (e.g., project:read, qomn:execute)"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": [
+            {
+              "role": "admin",
+              "permissions": [
+                "project:read",
+                "project:create",
+                "system:config"
+              ]
+            },
+            {
+              "role": "engineer",
+              "permissions": [
+                "project:read",
+                "project:create",
+                "qomn:execute"
+              ]
+            },
+            {
+              "role": "viewer",
+              "permissions": [
+                "project:read",
+                "device:read",
+                "qomn:read"
+              ]
+            }
+          ]
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "authentication",
+        "api-keys",
+        "admin",
+        "rbac"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

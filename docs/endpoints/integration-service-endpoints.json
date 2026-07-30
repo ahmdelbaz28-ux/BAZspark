@@ -1,0 +1,886 @@
+{
+  "service_name": "integration-service",
+  "display_name": "Integration Service",
+  "description": "Manages CAD/BIM integrations with AutoCAD, Revit, and Digital Twin systems. Provides bidirectional conversion, ETAP power system analysis, and marine/mining engineering integrations.",
+  "version": "1.0.0",
+  "base_url": "/api/v1",
+  "generated_at": "2026-07-29T23:40:39.184437+00:00",
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "path": "/api/v1/autocad/connect",
+      "method": "POST",
+      "summary": "Connect to AutoCAD instance",
+      "description": "Establishes a connection to a running AutoCAD instance. Supports both local and remote connections. The connection is used for bidirectional data exchange between the FireAI platform and AutoCAD.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "timeout": {
+            "type": "integer"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "host": {
+                    "type": "string"
+                  },
+                  "port": {
+                    "type": "integer"
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Connect to AutoCAD instance"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid connection parameters"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "AutoCAD not available"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid connection parameters",
+        "401": "Authentication required",
+        "503": "AutoCAD not available"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: integration:manage",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of integration-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "host": "localhost",
+          "port": 8080,
+          "timeout": 30
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "status": "connected",
+            "host": "localhost",
+            "port": 8080,
+            "version": "AutoCAD 2025"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "autocad",
+        "integration"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/revit/connect",
+      "method": "POST",
+      "summary": "Connect to Revit instance",
+      "description": "Establishes a connection to a running Revit instance. Used for bidirectional data exchange and element synchronization between the FireAI platform and Revit.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "project_path": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "host": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
+                  "project": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Connect to Revit instance"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid connection parameters"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "Revit not available"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid connection parameters",
+        "401": "Authentication required",
+        "503": "Revit not available"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: integration:manage",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of integration-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "host": "localhost",
+          "port": 8081,
+          "project_path": "C:/Projects/FireAlarm_Tower.rvt"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "status": "connected",
+            "host": "localhost",
+            "version": "Revit 2025",
+            "project": "FireAlarm_Tower.rvt"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "revit",
+        "integration"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/revit/elements",
+      "method": "GET",
+      "summary": "List all Revit elements",
+      "description": "Returns a list of all elements in the connected Revit project. Supports filtering by category and level. Used for Digital Twin synchronization and element mapping.",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false,
+            "description": "Filter by Revit category"
+          },
+          {
+            "name": "level",
+            "type": "string",
+            "required": false,
+            "description": "Filter by level name"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "elements": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "category": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "level": {
+                          "type": "string"
+                        },
+                        "family": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "total": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "List all Revit elements"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "Revit not connected"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "503": "Revit not connected"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: integration:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of integration-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "elements": [
+              {
+                "id": 12345,
+                "category": "OST_MechanicalEquipment",
+                "name": "Smoke Detector - Photoelectric",
+                "level": "Level 1",
+                "family": "Smoke Detector"
+              }
+            ],
+            "total": 342
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "revit",
+        "integration",
+        "elements"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/revit/elements/create/wall",
+      "method": "POST",
+      "summary": "Create a wall element in Revit",
+      "description": "Creates a new wall element in the connected Revit project. The wall is created with the specified parameters including type, height, and location. Used for automated design generation.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "start_point": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              }
+            }
+          },
+          "end_point": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              }
+            }
+          },
+          "wall_type": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "element_id": {
+                    "type": "integer"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "length": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Create a wall element in Revit"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid wall parameters"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "Revit not connected"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid wall parameters",
+        "401": "Authentication required",
+        "503": "Revit not connected"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: integration:manage",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of integration-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "start_point": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "end_point": {
+            "x": 12.5,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "wall_type": "FW-200-Concrete-2HR",
+          "level": "Level 1"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "element_id": 67890,
+            "category": "OST_Walls",
+            "type": "FW-200-Concrete-2HR",
+            "length": 12.5
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "revit",
+        "integration",
+        "create"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/integrations/etap/connect",
+      "method": "POST",
+      "summary": "Connect to ETAP power system analysis",
+      "description": "Establishes a connection to ETAP for power system analysis integration. ETAP provides short circuit, load flow, and coordination studies that complement the FireAI engineering calculations.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "project_path": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "project": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Connect to ETAP power system analysis"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid connection parameters"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "ETAP not available"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid connection parameters",
+        "401": "Authentication required",
+        "503": "ETAP not available"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: integration:manage",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of integration-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "host": "localhost",
+          "project_path": "C:/Projects/Tower_Power.etap"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "status": "connected",
+            "project": "PowerSystem.etap",
+            "version": "ETAP 22.5"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "etap",
+        "integration",
+        "power"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/integrations/etap/projects",
+      "method": "GET",
+      "summary": "List ETAP projects",
+      "description": "Returns a list of available ETAP projects for integration. Projects can be linked to FireAI projects for power system analysis and coordination studies.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "projects": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "last_modified": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "List ETAP projects"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "ETAP not connected"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "503": "ETAP not connected"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: integration:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of integration-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "projects": [
+              {
+                "id": "etp_001",
+                "name": "Tower Power System",
+                "path": "C:/Projects/Tower.etap",
+                "last_modified": "2026-07-28T10:00:00Z"
+              }
+            ]
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "etap",
+        "integration",
+        "projects"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/mining/compliance-report",
+      "method": "POST",
+      "summary": "Generate mining compliance report",
+      "description": "Generates a compliance report for mining fire protection systems per IMO SOLAS II-2, IEC 60092-502, and local mining regulations. Includes methane detection, ventilation, and conveyor suppression checks.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string"
+          },
+          "standards": {
+            "type": "array",
+            "items": {
+              "type": "str"
+            }
+          },
+          "include_ventilation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "project_id"
+        ]
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "compliant": {
+                    "type": "boolean"
+                  },
+                  "checks_performed": {
+                    "type": "integer"
+                  },
+                  "violations": {
+                    "type": "integer"
+                  },
+                  "standards": {
+                    "type": "array",
+                    "items": {
+                      "type": "str"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Generate mining compliance report"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid project ID"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid project ID",
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:execute",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of integration-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "project_id": "prj_m1n2o3",
+          "standards": [
+            "IMO SOLAS II-2",
+            "IEC 60092-502"
+          ],
+          "include_ventilation": true
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "compliant": true,
+            "checks_performed": 12,
+            "violations": 0,
+            "standards": [
+              "IMO SOLAS II-2",
+              "IEC 60092-502"
+            ]
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "mining",
+        "integration",
+        "compliance"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/cad/connect",
+      "method": "POST",
+      "summary": "Connect to generic CAD system",
+      "description": "Establishes a connection to a generic CAD system through the unified CAD gateway. Supports AutoCAD, Revit, and other CAD systems through a common interface.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "system": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "system": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Connect to generic CAD system"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid connection parameters"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "CAD system not available"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid connection parameters",
+        "401": "Authentication required",
+        "503": "CAD system not available"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: integration:manage",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of integration-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "system": "autocad",
+          "host": "localhost",
+          "port": 8080
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "status": "connected",
+            "system": "autocad",
+            "version": "2025"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "cad",
+        "integration"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

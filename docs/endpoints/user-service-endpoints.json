@@ -1,0 +1,665 @@
+{
+  "service_name": "user-service",
+  "display_name": "User Service",
+  "description": "Manages user projects, user profiles, and project-level operations. Handles CRUD operations for fire alarm engineering projects including project creation, updates, and deletion.",
+  "version": "1.0.0",
+  "base_url": "/api/v1/projects",
+  "generated_at": "2026-07-29T23:40:39.174832+00:00",
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "path": "/api/v1/projects",
+      "method": "GET",
+      "summary": "List all projects with pagination and filtering",
+      "description": "Returns a paginated list of all fire alarm engineering projects. Supports filtering by status (active, archived, draft) and sorting by name, creation date, or update date. Default pagination is 20 items per page.",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "page",
+            "type": "integer",
+            "required": false,
+            "description": "Page number (1-indexed, default 1)"
+          },
+          {
+            "name": "limit",
+            "type": "integer",
+            "required": false,
+            "description": "Items per page (1-100, default 20)"
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "required": false,
+            "description": "Filter by status: active, archived, draft"
+          },
+          {
+            "name": "sort",
+            "type": "string",
+            "required": false,
+            "description": "Sort field (default: createdAt)"
+          },
+          {
+            "name": "order",
+            "type": "string",
+            "required": false,
+            "description": "Sort order: asc or desc (default: desc)"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "author": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "deviceCount": {
+                          "type": "integer"
+                        },
+                        "connectionCount": {
+                          "type": "integer"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "page": {
+                    "type": "integer"
+                  },
+                  "limit": {
+                    "type": "integer"
+                  },
+                  "totalPages": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "List all projects with pagination and filtering"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: project:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of user-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "items": [
+              {
+                "id": "prj_k1l2m3n4o5p6",
+                "name": "Al Haramain Tower - Fire Alarm",
+                "description": "NFPA 72 fire alarm system design for 45-story tower",
+                "author": "Eng. Ahmed Elbaz",
+                "status": "active",
+                "deviceCount": 342,
+                "connectionCount": 289,
+                "createdAt": "2026-06-15T10:30:00Z",
+                "updatedAt": "2026-07-28T14:22:00Z"
+              }
+            ],
+            "total": 1,
+            "page": 1,
+            "limit": 20,
+            "totalPages": 1
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "projects",
+        "user"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects",
+      "method": "POST",
+      "summary": "Create a new fire alarm engineering project",
+      "description": "Creates a new fire alarm engineering project with the specified name, description, and author. The project is created in 'draft' status by default. All string fields are validated for null bytes (C string truncation attack prevention).",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 201,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "deviceCount": {
+                    "type": "integer"
+                  },
+                  "connectionCount": {
+                    "type": "integer"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Create a new fire alarm engineering project"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid input — name is required and must be 1-255 characters"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid input — name is required and must be 1-255 characters",
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: project:create",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of user-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "name": "King Abdulaziz Center - Fire Alarm",
+          "description": "NFPA 72 fire alarm system design for mixed-use development",
+          "author": "Eng. Ahmed Elbaz"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "id": "prj_q7r8s9t0u1v2",
+            "name": "King Abdulaziz Center - Fire Alarm",
+            "status": "draft",
+            "deviceCount": 0,
+            "connectionCount": 0,
+            "createdAt": "2026-07-30T12:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "projects",
+        "user"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}",
+      "method": "GET",
+      "summary": "Get project details by ID",
+      "description": "Returns the full details of a specific project including device count, connection count, and metadata.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "deviceCount": {
+                    "type": "integer"
+                  },
+                  "connectionCount": {
+                    "type": "integer"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get project details by ID"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: project:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of user-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "id": "prj_k1l2m3n4o5p6",
+            "name": "Al Haramain Tower - Fire Alarm",
+            "description": "NFPA 72 fire alarm system design for 45-story tower",
+            "status": "active",
+            "deviceCount": 342,
+            "connectionCount": 289,
+            "createdAt": "2026-06-15T10:30:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "projects",
+        "user"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}",
+      "method": "PUT",
+      "summary": "Update project details",
+      "description": "Updates the specified project's fields. Only provided fields are updated; omitted fields remain unchanged. Supports updating name, description, author, and status. Null byte stripping is applied to all string fields.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "updatedAt": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Update project details"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "No valid fields to update"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "No valid fields to update",
+        "401": "Authentication required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: project:update",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of user-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "status": "active",
+          "description": "Updated description for Phase 2"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "id": "prj_k1l2m3n4o5p6",
+            "name": "Al Haramain Tower - Fire Alarm",
+            "status": "active",
+            "updatedAt": "2026-07-30T12:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "projects",
+        "user"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}",
+      "method": "DELETE",
+      "summary": "Delete a project and all associated data",
+      "description": "Permanently deletes a project and all its associated devices, connections, and reports. This action is irreversible. Requires PROJECT_DELETE permission.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project to delete"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Delete a project and all associated data"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 403,
+            "description": "PROJECT_DELETE permission required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "403": "PROJECT_DELETE permission required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: project:delete",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of user-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "message": "Project deleted successfully"
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "projects",
+        "user"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/export/revit",
+      "method": "GET",
+      "summary": "Export project data as Revit file",
+      "description": "Exports the project's fire alarm design data in Revit format. Creates a Revit-compatible file with all fire alarm devices, connections, and system configurations. Used for BIM coordination and Revit model integration.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "content_type": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Export project data as Revit file"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: export:read",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of user-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "type": "StreamingResponse",
+          "content_type": "application/octet-stream",
+          "filename": "FireAlarm_Revit_Export.rvt"
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "projects",
+        "export",
+        "revit"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

@@ -1,0 +1,1173 @@
+{
+  "service_name": "device-service",
+  "display_name": "Device Service",
+  "description": "Manages fire alarm devices and building elements within projects. Handles device CRUD, element management, connections between devices, and cable wiring for NFPA 72 voltage drop calculations.",
+  "version": "1.0.0",
+  "base_url": "/api/v1",
+  "generated_at": "2026-07-29T23:40:39.175974+00:00",
+  "total_endpoints": 9,
+  "endpoints": [
+    {
+      "path": "/api/v1/projects/{project_id}/devices",
+      "method": "GET",
+      "summary": "List all devices in a project",
+      "description": "Returns a paginated list of fire alarm devices within the specified project. Supports filtering by device type, category, and sorting by various fields. Default pagination is 20 items per page. Devices include position coordinates, voltage, current, and load data for NFPA 72 calculations.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          }
+        ],
+        "query": [
+          {
+            "name": "page",
+            "type": "integer",
+            "required": false,
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "limit",
+            "type": "integer",
+            "required": false,
+            "description": "Items per page (1-100)"
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": false,
+            "description": "Filter by device type"
+          },
+          {
+            "name": "category",
+            "type": "string",
+            "required": false,
+            "description": "Filter by device category"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "category": {
+                          "type": "string"
+                        },
+                        "x": {
+                          "type": "number"
+                        },
+                        "y": {
+                          "type": "number"
+                        },
+                        "z": {
+                          "type": "number"
+                        },
+                        "voltage": {
+                          "type": "number"
+                        },
+                        "current": {
+                          "type": "number"
+                        },
+                        "load": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "page": {
+                    "type": "integer"
+                  },
+                  "limit": {
+                    "type": "integer"
+                  },
+                  "totalPages": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "List all devices in a project"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: device:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of device-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "items": [
+              {
+                "id": "dev_a1b2c3",
+                "type": "smoke_detector",
+                "name": "SD-001",
+                "category": "detection",
+                "x": 12.5,
+                "y": 8.3,
+                "z": 3.0,
+                "voltage": 24.0,
+                "current": 0.1,
+                "load": 0.1
+              }
+            ],
+            "total": 1,
+            "page": 1,
+            "limit": 20,
+            "totalPages": 1
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "devices",
+        "projects"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/devices",
+      "method": "POST",
+      "summary": "Create a new fire alarm device",
+      "description": "Creates a new fire alarm device within the specified project. The device includes position coordinates, electrical parameters (voltage, current, load), and optional load_unit for NFPA 72 battery calculations. Load unit defaults to Amperes (A); mA and W are converted automatically.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "smoke_detector",
+        "name": "SD-001",
+        "category": "detection",
+        "x": 12.5,
+        "y": 8.3,
+        "z": 3.0,
+        "voltage": 24.0,
+        "current": 0.1,
+        "load": 0.1,
+        "load_unit": "A"
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 201,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "projectId": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "z": {
+                    "type": "number"
+                  },
+                  "voltage": {
+                    "type": "number"
+                  },
+                  "current": {
+                    "type": "number"
+                  },
+                  "load": {
+                    "type": "number"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Create a new fire alarm device"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid input — load must be finite, voltage/current/load must be >= 0"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Project not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid input — load must be finite, voltage/current/load must be >= 0",
+        "401": "Authentication required",
+        "404": "Project not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: device:create",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of device-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "type": "smoke_detector",
+          "name": "SD-001",
+          "category": "detection",
+          "x": 12.5,
+          "y": 8.3,
+          "z": 3.0,
+          "voltage": 24.0,
+          "current": 0.1,
+          "load": 0.1,
+          "load_unit": "A"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "id": "dev_d4e5f6",
+            "projectId": "prj_k1l2m3",
+            "type": "smoke_detector",
+            "name": "SD-001",
+            "category": "detection",
+            "x": 12.5,
+            "y": 8.3,
+            "z": 3.0,
+            "voltage": 24.0,
+            "current": 0.1,
+            "load": 0.1,
+            "createdAt": "2026-07-30T12:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "devices",
+        "projects"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/devices/{device_id}",
+      "method": "GET",
+      "summary": "Get a specific device by ID",
+      "description": "Returns the full details of a specific fire alarm device including position, electrical parameters, and custom properties. Used for device detail views and edit forms.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          },
+          {
+            "name": "device_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the device"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "projectId": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "z": {
+                    "type": "number"
+                  },
+                  "voltage": {
+                    "type": "number"
+                  },
+                  "current": {
+                    "type": "number"
+                  },
+                  "load": {
+                    "type": "number"
+                  },
+                  "properties": {
+                    "type": "object",
+                    "properties": {
+                      "coverage_radius": {
+                        "type": "number"
+                      },
+                      "sensitivity": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get a specific device by ID"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Device not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Device not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: device:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of device-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "id": "dev_d4e5f6",
+            "projectId": "prj_k1l2m3",
+            "type": "smoke_detector",
+            "name": "SD-001",
+            "category": "detection",
+            "x": 12.5,
+            "y": 8.3,
+            "z": 3.0,
+            "voltage": 24.0,
+            "current": 0.1,
+            "load": 0.1,
+            "properties": {
+              "coverage_radius": 6.37,
+              "sensitivity": "normal"
+            },
+            "createdAt": "2026-07-30T12:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "devices",
+        "projects"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/devices/{device_id}",
+      "method": "PUT",
+      "summary": "Update a device's properties",
+      "description": "Updates the specified device's fields. Only provided fields are updated. The load_unit field is required when updating load to prevent silent wrong-unit errors in NFPA 72 battery calculations. Without load_unit, updating load: 500 intending 500mA would store 500A — a 1000x error in life-safety calculations.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          },
+          {
+            "name": "device_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the device"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "voltage": {
+            "type": "number"
+          },
+          "load": {
+            "type": "number"
+          },
+          "load_unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "voltage": {
+                    "type": "number"
+                  },
+                  "load": {
+                    "type": "number"
+                  },
+                  "updatedAt": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Update a device's properties"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "No fields to update or invalid load_unit"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Device not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "No fields to update or invalid load_unit",
+        "401": "Authentication required",
+        "404": "Device not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: device:update",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of device-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "name": "SD-001-Updated",
+          "voltage": 24.0,
+          "load": 0.15,
+          "load_unit": "A"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "id": "dev_d4e5f6",
+            "name": "SD-001-Updated",
+            "voltage": 24.0,
+            "load": 0.15,
+            "updatedAt": "2026-07-30T13:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "devices",
+        "projects"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/projects/{project_id}/devices/{device_id}",
+      "method": "DELETE",
+      "summary": "Delete a device from a project",
+      "description": "Permanently deletes a device from the project. All associated connections are also removed. This action is irreversible.",
+      "parameters": {
+        "path": [
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the project"
+          },
+          {
+            "name": "device_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the device to delete"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Delete a device from a project"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Device not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Device not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: device:delete",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of device-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "message": "Device deleted"
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "devices",
+        "projects"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/elements",
+      "method": "GET",
+      "summary": "List building elements with filtering",
+      "description": "Returns a paginated list of building elements (walls, doors, windows, rooms, equipment). Supports filtering by element type, project ID, and deletion status. Elements are part of the Universal Data Model (UDM) for cross-CAD/BIM interoperability.",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "element_type",
+            "type": "string",
+            "required": false,
+            "description": "Filter by type (wall, door, window, room, equipment)"
+          },
+          {
+            "name": "project_id",
+            "type": "string",
+            "required": false,
+            "description": "Filter by project ID"
+          },
+          {
+            "name": "page",
+            "type": "integer",
+            "required": false,
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "type": "integer",
+            "required": false,
+            "description": "Items per page (1-100, default 20)"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "element_id": {
+                          "type": "string"
+                        },
+                        "properties": {
+                          "type": "object",
+                          "properties": {
+                            "element_type": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "fire_rating": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "version": {
+                          "type": "integer"
+                        },
+                        "is_deleted": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "page": {
+                    "type": "integer"
+                  },
+                  "page_size": {
+                    "type": "integer"
+                  },
+                  "total_pages": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "List building elements with filtering"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: element:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of device-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "items": [
+              {
+                "element_id": "elm_f1g2h3",
+                "properties": {
+                  "element_type": "wall",
+                  "name": "Wall-001",
+                  "fire_rating": "2HR"
+                },
+                "version": 1,
+                "is_deleted": false
+              }
+            ],
+            "total": 1,
+            "page": 1,
+            "page_size": 20,
+            "total_pages": 1
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "elements",
+        "udm"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/elements",
+      "method": "POST",
+      "summary": "Create a new building element",
+      "description": "Creates a new building element in the Universal Data Model. Elements include semantic properties (type, name, fire_rating, material) and optional geometry. Extra fields are forbidden (strict validation) to prevent injection in safety-critical systems.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "properties": {
+          "element_type": "wall",
+          "name": "Wall-002",
+          "fire_rating": "2HR"
+        },
+        "project_id": "prj_k1l2m3"
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 201,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "element_id": {
+                    "type": "string"
+                  },
+                  "properties": {
+                    "type": "object",
+                    "properties": {
+                      "element_type": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "fire_rating": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "version": {
+                    "type": "integer"
+                  },
+                  "is_deleted": {
+                    "type": "boolean"
+                  },
+                  "created_timestamp": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Create a new building element"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid input — extra fields forbidden, properties.element_type required"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid input — extra fields forbidden, properties.element_type required",
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: element:create",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of device-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "properties": {
+            "element_type": "wall",
+            "name": "Wall-002",
+            "fire_rating": "2HR"
+          },
+          "project_id": "prj_k1l2m3"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "element_id": "elm_i4j5k6",
+            "properties": {
+              "element_type": "wall",
+              "name": "Wall-002",
+              "fire_rating": "2HR"
+            },
+            "version": 0,
+            "is_deleted": false,
+            "created_timestamp": "2026-07-30T12:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "elements",
+        "udm"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/elements/{element_id}",
+      "method": "GET",
+      "summary": "Get a specific building element by ID",
+      "description": "Returns the full details of a specific building element including semantic properties, geometry, and relationships. Used for element detail views and cross-CAD/BIM synchronization.",
+      "parameters": {
+        "path": [
+          {
+            "name": "element_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the element"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "element_id": {
+                    "type": "string"
+                  },
+                  "properties": {
+                    "type": "object",
+                    "properties": {
+                      "element_type": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "fire_rating": {
+                        "type": "string"
+                      },
+                      "material": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "geometry": {
+                    "type": "object",
+                    "properties": {
+                      "area": {
+                        "type": "number"
+                      },
+                      "perimeter": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "version": {
+                    "type": "integer"
+                  },
+                  "is_deleted": {
+                    "type": "boolean"
+                  },
+                  "created_timestamp": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get a specific building element by ID"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Element not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Element not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: element:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of device-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "element_id": "elm_f1g2h3",
+            "properties": {
+              "element_type": "wall",
+              "name": "Wall-001",
+              "fire_rating": "2HR",
+              "material": "Concrete"
+            },
+            "geometry": {
+              "area": 45.2,
+              "perimeter": 28.0
+            },
+            "version": 1,
+            "is_deleted": false,
+            "created_timestamp": "2026-07-28T10:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "elements",
+        "udm"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/elements/{element_id}",
+      "method": "DELETE",
+      "summary": "Soft-delete a building element",
+      "description": "Soft-deletes a building element by setting is_deleted=True. The element remains in the database for audit trail purposes but is excluded from default queries. Hard deletion is not supported for regulatory compliance.",
+      "parameters": {
+        "path": [
+          {
+            "name": "element_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the element to delete"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Soft-delete a building element"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Element not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Element not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: element:delete",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of device-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "message": "Element deleted successfully"
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "elements",
+        "udm"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

@@ -1,0 +1,920 @@
+{
+  "service_name": "scheduler-service",
+  "display_name": "Scheduler Service",
+  "description": "Manages workflow orchestration, approval pipelines, and long-term memory for AI agents. Provides LangGraph workflow engine for multi-step engineering processes and Mem0-based memory storage.",
+  "version": "1.0.0",
+  "base_url": "/api/v1",
+  "generated_at": "2026-07-29T23:40:39.181220+00:00",
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "path": "/api/v1/workflow/start",
+      "method": "POST",
+      "summary": "Start a new engineering workflow",
+      "description": "Starts a new LangGraph-based engineering workflow. Workflows can include multi-step processes like compliance checking, report generation, and approval pipelines. Returns the workflow ID for tracking.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "workflow_type": {
+            "type": "string"
+          },
+          "project_id": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "standard": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "project_id"
+        ]
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "workflow_id": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "started_at": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Start a new engineering workflow"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid workflow type"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "Workflow service not installed (pip install fireai[workflow])"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid workflow type",
+        "401": "Authentication required",
+        "503": "Workflow service not installed (pip install fireai[workflow])",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: workflow:manage",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of scheduler-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "workflow_type": "compliance_check",
+          "project_id": "prj_k1l2m3",
+          "parameters": {
+            "standard": "nfpa72"
+          }
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "workflow_id": "wf_m1n2o3",
+            "status": "running",
+            "type": "compliance_check",
+            "started_at": "2026-07-30T12:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "workflow",
+        "scheduler"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/workflow/status",
+      "method": "GET",
+      "summary": "List all workflow statuses",
+      "description": "Returns the status of all workflows for the current user. Supports filtering by status (running, completed, failed).",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "status",
+            "type": "string",
+            "required": false,
+            "description": "Filter by status: running, completed, failed"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "workflow_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "progress": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "List all workflow statuses"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: workflow:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of scheduler-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": [
+            {
+              "workflow_id": "wf_m1n2o3",
+              "status": "completed",
+              "type": "compliance_check",
+              "progress": 100
+            }
+          ]
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "workflow",
+        "scheduler"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/workflow/{workflow_id}/status",
+      "method": "GET",
+      "summary": "Get specific workflow status",
+      "description": "Returns the detailed status of a specific workflow including current step, progress percentage, and any errors encountered.",
+      "parameters": {
+        "path": [
+          {
+            "name": "workflow_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the workflow"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "workflow_id": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "current_step": {
+                    "type": "string"
+                  },
+                  "progress": {
+                    "type": "integer"
+                  },
+                  "result": {
+                    "type": "object",
+                    "properties": {
+                      "compliant": {
+                        "type": "boolean"
+                      },
+                      "violations": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get specific workflow status"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Workflow not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Workflow not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: workflow:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of scheduler-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "workflow_id": "wf_m1n2o3",
+            "status": "completed",
+            "current_step": "nfpa72_verification",
+            "progress": 100,
+            "result": {
+              "compliant": true,
+              "violations": 0
+            }
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "workflow",
+        "scheduler"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/workflow/{workflow_id}/approve",
+      "method": "POST",
+      "summary": "Approve a workflow step",
+      "description": "Approves the current step in an approval-gated workflow. The workflow proceeds to the next step after approval. Requires the appropriate approval permission.",
+      "parameters": {
+        "path": [
+          {
+            "name": "workflow_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the workflow"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "comment": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "workflow_id": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "approved_step": {
+                    "type": "string"
+                  },
+                  "next_step": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Approve a workflow step"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Workflow not in approval state"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Workflow not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Workflow not in approval state",
+        "401": "Authentication required",
+        "404": "Workflow not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: workflow:manage",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of scheduler-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "comment": "Design approved for Phase 2"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "workflow_id": "wf_m1n2o3",
+            "status": "running",
+            "approved_step": "design_review",
+            "next_step": "final_approval"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "workflow",
+        "approval"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/workflow/{workflow_id}/reject",
+      "method": "POST",
+      "summary": "Reject a workflow step",
+      "description": "Rejects the current step in an approval-gated workflow. The workflow is marked as failed and a reason is recorded.",
+      "parameters": {
+        "path": [
+          {
+            "name": "workflow_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the workflow"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "workflow_id": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "rejected_step": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Reject a workflow step"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Workflow not in approval state"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Workflow not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Workflow not in approval state",
+        "401": "Authentication required",
+        "404": "Workflow not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: workflow:manage",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of scheduler-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "reason": "Non-compliant detector spacing in Zone 3B"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "workflow_id": "wf_m1n2o3",
+            "status": "rejected",
+            "rejected_step": "design_review",
+            "reason": "Non-compliant detector spacing"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "workflow",
+        "approval"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/memory/add",
+      "method": "POST",
+      "summary": "Store a new memory for AI agent context",
+      "description": "Adds a new memory entry to the long-term memory system (Mem0). Memories are used by AI agents to maintain context across conversations and engineering sessions.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "project_id": {
+                "type": "string"
+              }
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "str"
+            }
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "memory_id": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "created_at": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Store a new memory for AI agent context"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid memory content"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "Memory service not installed (pip install fireai[memory])"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid memory content",
+        "401": "Authentication required",
+        "503": "Memory service not installed (pip install fireai[memory])",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: user:manage",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of scheduler-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "content": "Project uses NFPA 72-2022 for smoke detector placement",
+          "metadata": {
+            "project_id": "prj_k1l2m3"
+          },
+          "tags": [
+            "nfpa72",
+            "smoke_detector"
+          ]
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "memory_id": "mem_p4q5r6",
+            "content": "Project uses NFPA 72-2022 for smoke detector placement",
+            "created_at": "2026-07-30T12:00:00Z"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "memory",
+        "ai"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/memory/search",
+      "method": "POST",
+      "summary": "Search AI agent memories",
+      "description": "Searches the long-term memory system (Mem0) for relevant memories matching the query. Supports semantic search and tag-based filtering. Returns ranked results with relevance scores. Used by AI agents to recall project context and engineering decisions.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "str"
+            }
+          },
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "results": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "memory_id": {
+                          "type": "string"
+                        },
+                        "content": {
+                          "type": "string"
+                        },
+                        "relevance": {
+                          "type": "number"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "total": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Search AI agent memories"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid search query"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 503,
+            "description": "Memory service not installed"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid search query",
+        "401": "Authentication required",
+        "503": "Memory service not installed",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:read",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of scheduler-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "query": "NFPA 72 smoke detector spacing requirements",
+          "tags": [
+            "nfpa72",
+            "smoke_detector"
+          ],
+          "limit": 10
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "results": [
+              {
+                "memory_id": "mem_p4q5r6",
+                "content": "Project uses NFPA 72-2022 for smoke detector placement",
+                "relevance": 0.95,
+                "created_at": "2026-07-28T10:00:00Z"
+              }
+            ],
+            "total": 1
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "memory",
+        "ai",
+        "search"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/workflow/{workflow_id}/audit",
+      "method": "GET",
+      "summary": "Get workflow audit trail",
+      "description": "Returns the complete audit trail of a workflow including all state transitions, approvals, rejections, and error events. Each entry includes the timestamp, user, action, and any associated metadata. Used for regulatory compliance and traceability.",
+      "parameters": {
+        "path": [
+          {
+            "name": "workflow_id",
+            "type": "string",
+            "required": true,
+            "description": "UUID of the workflow"
+          }
+        ],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "workflow_id": {
+                    "type": "string"
+                  },
+                  "audit_entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "timestamp": {
+                          "type": "string"
+                        },
+                        "action": {
+                          "type": "string"
+                        },
+                        "user": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "details": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get workflow audit trail"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 404,
+            "description": "Workflow not found"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "404": "Workflow not found",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: workflow:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of scheduler-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "workflow_id": "wf_m1n2o3",
+            "audit_entries": [
+              {
+                "timestamp": "2026-07-30T12:00:00Z",
+                "action": "started",
+                "user": "eng.ahmed@datapuff.io",
+                "details": "Compliance check initiated"
+              },
+              {
+                "timestamp": "2026-07-30T12:01:00Z",
+                "action": "completed",
+                "user": "system",
+                "details": "All checks passed"
+              }
+            ]
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "workflow",
+        "audit",
+        "compliance"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

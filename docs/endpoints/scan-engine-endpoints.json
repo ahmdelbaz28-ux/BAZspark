@@ -1,0 +1,788 @@
+{
+  "service_name": "scan-engine",
+  "display_name": "Scan Engine Service",
+  "description": "Handles CAD/BIM file parsing, DWG analysis, and file format detection. Provides scanning capabilities for AutoCAD and Revit files, including IFC parsing and geometry validation.",
+  "version": "1.0.0",
+  "base_url": "/api/v1",
+  "generated_at": "2026-07-29T23:40:39.177556+00:00",
+  "total_endpoints": 7,
+  "endpoints": [
+    {
+      "path": "/api/v1/autocad/read_dwg",
+      "method": "POST",
+      "summary": "Read and parse a DWG file",
+      "description": "Reads a DWG file from the connected AutoCAD instance and returns its contents including entities, layers, and geometry. Supports filtering by layer and entity type.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string"
+          },
+          "layers": {
+            "type": "array",
+            "items": {
+              "type": "str"
+            }
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "entities": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "handle": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "layer": {
+                          "type": "string"
+                        },
+                        "start": {
+                          "type": "object",
+                          "properties": {
+                            "x": {
+                              "type": "number"
+                            },
+                            "y": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "end": {
+                          "type": "object",
+                          "properties": {
+                            "x": {
+                              "type": "number"
+                            },
+                            "y": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "layers": {
+                    "type": "array",
+                    "items": {
+                      "type": "str"
+                    }
+                  },
+                  "total_entities": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Read and parse a DWG file"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid file path or no AutoCAD connection"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid file path or no AutoCAD connection",
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: integration:read",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of scan-engine microservice"
+      ],
+      "examples": {
+        "request": {
+          "file_path": "C:/Projects/Tower_FireAlarm.dwg",
+          "layers": [
+            "FIRE_ALARM",
+            "DETECTION"
+          ]
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "entities": [
+              {
+                "handle": "A1B2",
+                "type": "LINE",
+                "layer": "FIRE_ALARM",
+                "start": {
+                  "x": 0.0,
+                  "y": 0.0
+                },
+                "end": {
+                  "x": 12.5,
+                  "y": 8.3
+                }
+              }
+            ],
+            "layers": [
+              "FIRE_ALARM",
+              "DETECTION",
+              "NOTIFICATION"
+            ],
+            "total_entities": 156
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "autocad",
+        "scan",
+        "dwg"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/autocad/upload_dwg",
+      "method": "POST",
+      "summary": "Upload and parse a DWG file",
+      "description": "Uploads a DWG file from the client and parses its contents. The file is processed server-side and returned as structured data.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "entities": {
+                    "type": "integer"
+                  },
+                  "layers": {
+                    "type": "array",
+                    "items": {
+                      "type": "str"
+                    }
+                  },
+                  "file_size": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Upload and parse a DWG file"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid file format — must be .dwg"
+          },
+          {
+            "status_code": 413,
+            "description": "File too large (max 50MB)"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid file format — must be .dwg",
+        "413": "File too large (max 50MB)",
+        "401": "Authentication required"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: integration:read",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of scan-engine microservice"
+      ],
+      "examples": {
+        "request": {
+          "file": "binary_dwg_content"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "entities": 89,
+            "layers": [
+              "FIRE_ALARM",
+              "SPRINKLER"
+            ],
+            "file_size": 245760
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "autocad",
+        "scan",
+        "upload"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/revit/read_rvt",
+      "method": "POST",
+      "summary": "Read and parse a Revit file",
+      "description": "Reads a Revit (.rvt) file and extracts building elements, views, levels, and families. Returns structured data including element parameters and geometry for Digital Twin integration.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "str"
+            }
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "elements": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "category": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "level": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "levels": {
+                    "type": "integer"
+                  },
+                  "views": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Read and parse a Revit file"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid file path or no Revit connection"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid file path or no Revit connection",
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: integration:read",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of scan-engine microservice"
+      ],
+      "examples": {
+        "request": {
+          "file_path": "C:/Projects/Tower_FireAlarm.rvt",
+          "categories": [
+            "OST_MechanicalEquipment"
+          ]
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "elements": [
+              {
+                "id": 12345,
+                "category": "OST_MechanicalEquipment",
+                "name": "Smoke Detector",
+                "level": "Level 1"
+              }
+            ],
+            "levels": 5,
+            "views": 12
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "revit",
+        "scan",
+        "rvt"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/revit/upload_rvt",
+      "method": "POST",
+      "summary": "Upload and parse a Revit file",
+      "description": "Uploads a Revit (.rvt) file from the client and parses its contents. Extracts all building elements, views, and levels for Digital Twin processing.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "elements": {
+                    "type": "integer"
+                  },
+                  "levels": {
+                    "type": "integer"
+                  },
+                  "views": {
+                    "type": "integer"
+                  },
+                  "file_size": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Upload and parse a Revit file"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid file format — must be .rvt"
+          },
+          {
+            "status_code": 413,
+            "description": "File too large (max 100MB)"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid file format — must be .rvt",
+        "413": "File too large (max 100MB)",
+        "401": "Authentication required"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: integration:read",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of scan-engine microservice"
+      ],
+      "examples": {
+        "request": {
+          "file": "binary_rvt_content"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "elements": 234,
+            "levels": 8,
+            "views": 24,
+            "file_size": 15728640
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "revit",
+        "scan",
+        "upload"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/digital-twin/status",
+      "method": "GET",
+      "summary": "Get Digital Twin conversion engine status",
+      "description": "Returns the current status of the Digital Twin conversion engine, including the number of configured mappings, active conversions, and supported formats.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "active_mappings": {
+                    "type": "integer"
+                  },
+                  "supported_formats": {
+                    "type": "array",
+                    "items": {
+                      "type": "str"
+                    }
+                  },
+                  "conversions_in_progress": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get Digital Twin conversion engine status"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: element:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of scan-engine microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "status": "operational",
+            "active_mappings": 45,
+            "supported_formats": [
+              "dwg",
+              "rvt",
+              "ifc",
+              "dxf"
+            ],
+            "conversions_in_progress": 2
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "digital-twin",
+        "scan",
+        "status"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/digital-twin/configure",
+      "method": "POST",
+      "summary": "Configure Digital Twin conversion settings",
+      "description": "Configures the Digital Twin conversion engine with mapping rules, format preferences, and synchronization settings. Used to set up bidirectional conversion between AutoCAD and Revit formats.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "mappings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source_format": {
+                  "type": "string"
+                },
+                "target_format": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "sync_mode": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "configured_mappings": {
+                    "type": "integer"
+                  },
+                  "sync_mode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Configure Digital Twin conversion settings"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid mapping configuration"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid mapping configuration",
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: system:config",
+      "rate_limit": "10/minute",
+      "notes": [
+        "Part of scan-engine microservice"
+      ],
+      "examples": {
+        "request": {
+          "mappings": [
+            {
+              "source_format": "dwg",
+              "target_format": "ifc"
+            }
+          ],
+          "sync_mode": "realtime"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "configured_mappings": 45,
+            "sync_mode": "realtime"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "digital-twin",
+        "scan",
+        "configuration"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/digital-twin/mappings",
+      "method": "GET",
+      "summary": "List all configured format mappings",
+      "description": "Returns all configured format mappings in the Digital Twin conversion engine. Each mapping defines how elements are converted between source and target formats.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "mappings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "string"
+                        },
+                        "target": {
+                          "type": "string"
+                        },
+                        "elements_converted": {
+                          "type": "integer"
+                        },
+                        "last_sync": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "List all configured format mappings"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: element:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of scan-engine microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "mappings": [
+              {
+                "source": "autocad",
+                "target": "revit",
+                "elements_converted": 234,
+                "last_sync": "2026-07-29T14:22:00Z"
+              }
+            ]
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "digital-twin",
+        "scan",
+        "mappings"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

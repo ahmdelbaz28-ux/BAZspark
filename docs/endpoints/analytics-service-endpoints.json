@@ -1,0 +1,866 @@
+{
+  "service_name": "analytics-service",
+  "display_name": "Analytics Service",
+  "description": "Provides system monitoring, QOMN engineering calculations, FACP panel selection, and compliance analytics. Implements the NFPA 72-2022 QOMN kernel for detector placement, battery calculations, and voltage drop analysis.",
+  "version": "1.0.0",
+  "base_url": "/api/v1",
+  "generated_at": "2026-07-29T23:40:39.182470+00:00",
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "path": "/api/v1/monitor/health",
+      "method": "GET",
+      "summary": "Get system health metrics",
+      "description": "Returns detailed system health metrics including database connectivity, Redis status, and service availability. Used by the monitoring dashboard and alerting systems.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "database": {
+                    "type": "string"
+                  },
+                  "redis": {
+                    "type": "string"
+                  },
+                  "uptime_seconds": {
+                    "type": "integer"
+                  },
+                  "active_connections": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get system health metrics"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: monitor:read",
+      "rate_limit": "1000/minute",
+      "notes": [
+        "Part of analytics-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "status": "healthy",
+            "database": "connected",
+            "redis": "connected",
+            "uptime_seconds": 86400,
+            "active_connections": 12
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "monitor",
+        "analytics"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/monitor/metrics",
+      "method": "GET",
+      "summary": "Get Prometheus-style metrics",
+      "description": "Returns system metrics in Prometheus exposition format. Includes request counts, response times, error rates, and resource utilization. Used by Prometheus for scraping.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Get Prometheus-style metrics"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: monitor:read",
+      "rate_limit": "1000/minute",
+      "notes": [
+        "Part of analytics-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "content": "# HELP http_requests_total Total HTTP requests\n# TYPE http_requests_total counter\nhttp_requests_total{method=\"GET\",path=\"/api/v1/projects\"} 12345"
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "monitor",
+        "analytics",
+        "prometheus"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/monitor/engine-status",
+      "method": "GET",
+      "summary": "Get QOMN engine status",
+      "description": "Returns the current status of the QOMN engineering engine including loaded modules, active calculations, and cache status.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "engine": {
+                    "type": "string"
+                  },
+                  "modules_loaded": {
+                    "type": "integer"
+                  },
+                  "active_calculations": {
+                    "type": "integer"
+                  },
+                  "cache_hit_rate": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get QOMN engine status"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: monitor:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of analytics-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "engine": "operational",
+            "modules_loaded": 12,
+            "active_calculations": 2,
+            "cache_hit_rate": 0.87
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "monitor",
+        "analytics",
+        "engine"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/qomn/smoke-spacing",
+      "method": "POST",
+      "summary": "Calculate NFPA 72 smoke detector spacing",
+      "description": "Calculates the optimal smoke detector spacing per NFPA 72-2022 requirements. Inputs include room dimensions, ceiling height, and air flow characteristics. Returns the maximum allowable spacing, number of detectors required, and compliance status.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "room_area": {
+            "type": "number"
+          },
+          "ceiling_height": {
+            "type": "number"
+          },
+          "room_type": {
+            "type": "string"
+          },
+          "air_flow": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "max_spacing_m": {
+                    "type": "number"
+                  },
+                  "detector_count": {
+                    "type": "integer"
+                  },
+                  "compliant": {
+                    "type": "boolean"
+                  },
+                  "coverage_area": {
+                    "type": "number"
+                  },
+                  "nfpa_reference": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Calculate NFPA 72 smoke detector spacing"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid input — room_area must be > 0, ceiling_height must be > 0"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid input — room_area must be > 0, ceiling_height must be > 0",
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:execute",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of analytics-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "room_area": 100.0,
+          "ceiling_height": 3.0,
+          "room_type": "office",
+          "air_flow": "natural"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "max_spacing_m": 9.1,
+            "detector_count": 12,
+            "compliant": true,
+            "coverage_area": 100.0,
+            "nfpa_reference": "NFPA 72-2022 §17.7.3"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "qomn",
+        "engineering",
+        "nfpa72"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/qomn/battery",
+      "method": "POST",
+      "summary": "Calculate NFPA 72 battery requirements",
+      "description": "Calculates the battery capacity required for fire alarm system backup per NFPA 72-2022 §27.6.2. Includes derating factors for temperature and aging. Returns the required amp-hours, recommended battery model, and compliance status.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "total_load_amps": {
+            "type": "number"
+          },
+          "backup_hours": {
+            "type": "integer"
+          },
+          "derating_factor": {
+            "type": "number"
+          },
+          "battery_type": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "required_ah": {
+                    "type": "number"
+                  },
+                  "recommended_battery": {
+                    "type": "string"
+                  },
+                  "backup_hours": {
+                    "type": "integer"
+                  },
+                  "derating_factor": {
+                    "type": "number"
+                  },
+                  "compliant": {
+                    "type": "boolean"
+                  },
+                  "nfpa_reference": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Calculate NFPA 72 battery requirements"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid input — total_load_amps must be > 0"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid input — total_load_amps must be > 0",
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:execute",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of analytics-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "total_load_amps": 1.2,
+          "backup_hours": 24,
+          "derating_factor": 1.2,
+          "battery_type": "lead_acid"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "required_ah": 26.5,
+            "recommended_battery": "PS-120 (12V, 120Ah)",
+            "backup_hours": 24,
+            "derating_factor": 1.2,
+            "compliant": true,
+            "nfpa_reference": "NFPA 72-2022 §27.6.2"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "qomn",
+        "engineering",
+        "nfpa72",
+        "battery"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/qomn/voltage-drop",
+      "method": "POST",
+      "summary": "Calculate voltage drop per NFPA 72",
+      "description": "Calculates the voltage drop across fire alarm circuit wiring per NFPA 72-2022 §27.4.1.2. Ensures the voltage at the end of the circuit does not fall below the device minimum operating voltage.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "cable_length": {
+            "type": "number"
+          },
+          "cable_size": {
+            "type": "string"
+          },
+          "load_current": {
+            "type": "number"
+          },
+          "source_voltage": {
+            "type": "number"
+          },
+          "cable_type": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "voltage_drop_v": {
+                    "type": "number"
+                  },
+                  "end_voltage_v": {
+                    "type": "number"
+                  },
+                  "max_allowable_drop_v": {
+                    "type": "number"
+                  },
+                  "compliant": {
+                    "type": "boolean"
+                  },
+                  "percentage_drop": {
+                    "type": "number"
+                  },
+                  "nfpa_reference": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Calculate voltage drop per NFPA 72"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid input — cable_length must be > 0"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid input — cable_length must be > 0",
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:execute",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of analytics-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "cable_length": 85.0,
+          "cable_size": "1.5mm²",
+          "load_current": 0.5,
+          "source_voltage": 24.0,
+          "cable_type": "copper"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "voltage_drop_v": 2.35,
+            "end_voltage_v": 21.65,
+            "max_allowable_drop_v": 4.8,
+            "compliant": true,
+            "percentage_drop": 9.8,
+            "nfpa_reference": "NFPA 72-2022 §27.4.1.2"
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "qomn",
+        "engineering",
+        "nfpa72",
+        "voltage-drop"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/facp/select",
+      "method": "POST",
+      "summary": "Select optimal FACP panel for project",
+      "description": "Selects the optimal Fire Alarm Control Panel (FACP) based on the project's device count, zone requirements, and compliance standards. Returns recommended panel models with specifications.",
+      "parameters": {
+        "path": [],
+        "query": [],
+        "header": []
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "device_count": {
+            "type": "integer"
+          },
+          "required_zones": {
+            "type": "integer"
+          },
+          "notification_circuits": {
+            "type": "integer"
+          },
+          "compliance_standard": {
+            "type": "string"
+          }
+        }
+      },
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "recommended_panel": {
+                    "type": "string"
+                  },
+                  "max_devices": {
+                    "type": "integer"
+                  },
+                  "max_zones": {
+                    "type": "integer"
+                  },
+                  "compliant": {
+                    "type": "boolean"
+                  },
+                  "specifications": {
+                    "type": "object",
+                    "properties": {
+                      "voltage": {
+                        "type": "string"
+                      },
+                      "battery_capacity": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Select optimal FACP panel for project"
+        },
+        "error": [
+          {
+            "status_code": 400,
+            "description": "Invalid input — device_count must be > 0"
+          },
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "400": "Invalid input — device_count must be > 0",
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: facp:manage",
+      "rate_limit": "30/minute",
+      "notes": [
+        "Part of analytics-service microservice"
+      ],
+      "examples": {
+        "request": {
+          "device_count": 150,
+          "required_zones": 10,
+          "notification_circuits": 8,
+          "compliance_standard": "nfpa72"
+        },
+        "response": {
+          "success": true,
+          "data": {
+            "recommended_panel": "NOTIFIER NFS2-3030",
+            "max_devices": 636,
+            "max_zones": 64,
+            "compliant": true,
+            "specifications": {
+              "voltage": "24VDC",
+              "battery_capacity": "2x 12V 40Ah"
+            }
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "facp",
+        "engineering",
+        "panel-selection"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "path": "/api/v1/qomn/audit",
+      "method": "GET",
+      "summary": "Get QOMN calculation audit trail",
+      "description": "Returns the complete audit trail of all QOMN calculations performed. Each entry includes the calculation type, input parameters, output results, and compliance status. Used for regulatory verification and traceability.",
+      "parameters": {
+        "path": [],
+        "query": [
+          {
+            "name": "calculation_type",
+            "type": "string",
+            "required": false,
+            "description": "Filter by calculation type"
+          },
+          {
+            "name": "from_date",
+            "type": "string",
+            "required": false,
+            "description": "Start date (ISO 8601)"
+          },
+          {
+            "name": "to_date",
+            "type": "string",
+            "required": false,
+            "description": "End date (ISO 8601)"
+          }
+        ],
+        "header": []
+      },
+      "request_body_schema": null,
+      "response_schemas": {
+        "success": {
+          "status_code": 200,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "audit_entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "input": {
+                          "type": "object",
+                          "properties": {
+                            "room_area": {
+                              "type": "integer"
+                            },
+                            "ceiling_height": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "output": {
+                          "type": "object",
+                          "properties": {
+                            "compliant": {
+                              "type": "boolean"
+                            },
+                            "spacing_m": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "timestamp": {
+                          "type": "string"
+                        },
+                        "user": {
+                          "type": "string",
+                          "format": "email"
+                        }
+                      }
+                    }
+                  },
+                  "total": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Get QOMN calculation audit trail"
+        },
+        "error": [
+          {
+            "status_code": 401,
+            "description": "Authentication required"
+          },
+          {
+            "status_code": 500,
+            "description": "Internal server error"
+          }
+        ]
+      },
+      "error_responses": {
+        "401": "Authentication required",
+        "500": "Internal server error"
+      },
+      "auth_required": true,
+      "auth_details": "Requires permission: qomn:read",
+      "rate_limit": "100/minute",
+      "notes": [
+        "Part of analytics-service microservice"
+      ],
+      "examples": {
+        "request": {},
+        "response": {
+          "success": true,
+          "data": {
+            "audit_entries": [
+              {
+                "id": "aud_s1t2",
+                "type": "smoke_spacing",
+                "input": {
+                  "room_area": 100,
+                  "ceiling_height": 3.0
+                },
+                "output": {
+                  "compliant": true,
+                  "spacing_m": 9.1
+                },
+                "timestamp": "2026-07-28T10:00:00Z",
+                "user": "eng.ahmed@datapuff.io"
+              }
+            ],
+            "total": 1
+          }
+        }
+      },
+      "deprecated": false,
+      "deprecation_date": null,
+      "tags": [
+        "qomn",
+        "audit",
+        "compliance"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}
