@@ -7,7 +7,7 @@ Python classes for the unified engineering data model across ETAP, AutoCAD, and 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
@@ -81,9 +81,9 @@ class BaseEntity:
         if self.coordinates is None:
             self.coordinates = Coordinates(0.0, 0.0, 0.0)
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = datetime.now(timezone.utc)
         if self.updated_at is None:
-            self.updated_at = datetime.utcnow()
+            self.updated_at = datetime.now(timezone.utc)
 
 
 @dataclass
