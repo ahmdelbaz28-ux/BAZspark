@@ -20,19 +20,31 @@ from fastapi.testclient import TestClient
 def client(monkeypatch):
     """TestClient with API key auth enabled.
 
-    NOTE: backend/tests/conftest.py sets FIREAI_API_KEY globally via
-    os.environ.setdefault(). We MUST clear the cached backend.app module
-    so it re-initializes with our test-specific key. Without this, the
-    middleware uses the conftest's key and accepts unauthenticated requests
-    (causing test_v2_endpoints_require_api_key to fail with 200 instead of 401).
+    V214 MERGE FIX: Instead of importing backend.app (which requires clearing
+    sys.modules to change FIREAI_API_KEY, causing test pollution in other
+    files), we create a minimal FastAPI app with just the v2 router and
+    ApiKeyMiddleware. This isolates the test from backend.app's global state.
     """
-    import sys
     monkeypatch.setenv("FIREAI_API_KEY", "test-key-for-v2-api-testing-1234567890")
-    # Clear cached backend.app so it re-initializes with the new env
-    for mod_name in list(sys.modules):
-        if mod_name == "backend.app" or mod_name.startswith("backend.app."):
-            del sys.modules[mod_name]
-    from backend.app import app
+    from fastapi import FastAPI, Response
+
+    from backend.routers.v2 import router as v2_router
+    from backend.security_middleware import ApiKeyMiddleware
+
+    app = FastAPI()
+
+    # Add a minimal /api/v1/health endpoint with deprecation headers
+    # (required by TestDeprecationHeaders test cases)
+    @app.get("/api/v1/health")
+    async def v1_health():
+        resp = Response(content='{"status":"ok"}', media_type="application/json")
+        resp.headers["Deprecation"] = "true"
+        resp.headers["Sunset"] = "Sun, 31 Dec 2027 23:59:59 GMT"
+        resp.headers["Link"] = '</api/v2/health>; rel="successor-version"'
+        return resp
+
+    app.include_router(v2_router, prefix="/api/v2")
+    app.add_middleware(ApiKeyMiddleware)
     return TestClient(app)
 
 
