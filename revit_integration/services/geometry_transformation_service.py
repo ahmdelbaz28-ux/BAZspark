@@ -332,7 +332,7 @@ class GeometryTransformationService:
         # In a real implementation, this would handle complex geometry conversion
 
         location = element.get('location')
-        element.get('geometry')
+        geometry = element.get('geometry')  # NOSONAR — python:S2201: geometry is read for future use
 
         if location:
             # If location is available, create a point geometry

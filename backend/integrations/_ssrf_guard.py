@@ -282,7 +282,7 @@ def _resolve_host_with_timeout(host: str, dns_timeout: float) -> list[str]:
         global _DNS_THREAD_COUNT
         try:
             result_box.append(_resolve_host(host))
-        except BaseException as e:  # noqa: BLE001 — re-raised below
+        except BaseException as e:  # noqa: BLE001  # NOSONAR — python:S5754: BaseException needed to catch thread SystemExit; re-raised via exc_box
             exc_box.append(e)
         finally:
             with _DNS_THREAD_COUNT_LOCK:
