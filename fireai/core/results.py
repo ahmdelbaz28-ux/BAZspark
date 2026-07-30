@@ -10,11 +10,14 @@ enabling incremental migration from raw dicts to typed results.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Iterator, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Iterator, Optional
 
 
 class _DictCompatMixin:
     """Mixin providing dict-like access for dataclass instances."""
+
+    if TYPE_CHECKING:
+        __dataclass_fields__: ClassVar[Dict[str, Any]]
 
     _extra: dict[str, Any] = field(default_factory=dict, repr=False)
 

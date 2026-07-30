@@ -13,7 +13,7 @@ Facades:
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from fireai.core.results import (
     BatteryCapacityResult,
@@ -22,8 +22,14 @@ from fireai.core.results import (
     VoltageDropResult,
 )
 
+if TYPE_CHECKING:
+    from fireai.core.qomn_kernel import SelfHealingQOMNKernel
+    from fireai.core.safety_assurance import SafetyTier
+    from fireai.core.safety_audit_engine import AuditResult, SafetyAuditEngine as _SafetyAuditEngine
+
 
 class Engine:
+    _kernel: SelfHealingQOMNKernel
     """
     Engineering calculation facade.
 
@@ -145,19 +151,19 @@ class Safety:
         coverage_pct: float,
         proof_valid: bool = False,
         fallback_used: bool = False,
-    ) -> str:
+    ) -> SafetyTier:
         """Classify design safety tier per engineering policy."""
         from fireai.core.safety_assurance import classify_safety_tier as _classify
         return _classify(coverage_pct, proof_valid, fallback_used)
 
     @staticmethod
-    def requires_fpe_review(tier: str) -> bool:
+    def requires_fpe_review(tier: SafetyTier) -> bool:
         """Check if a safety tier requires FPE review."""
         from fireai.core.safety_assurance import tier_requires_fpe_review
         return tier_requires_fpe_review(tier)
 
     @staticmethod
-    def can_submit(tier: str) -> bool:
+    def can_submit(tier: SafetyTier) -> bool:
         """Check if a safety tier can be submitted to AHJ."""
         from fireai.core.safety_assurance import tier_can_submit
         return tier_can_submit(tier)
@@ -165,9 +171,9 @@ class Safety:
     @staticmethod
     def audit_report(
         design: Any,
-        include_proof: bool = True,
-    ) -> dict[str, Any]:
+        **kwargs: Any,
+    ) -> AuditResult:
         """Run full safety audit on a design."""
         from fireai.core.safety_audit_engine import SafetyAuditEngine
         engine = SafetyAuditEngine()
-        return engine.audit(design, include_proof=include_proof)
+        return engine.run_audit(audit_input=design, **kwargs)
