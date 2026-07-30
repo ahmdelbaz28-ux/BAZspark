@@ -124,6 +124,7 @@ export function SelfHealingPage() {
         const lru = health?.lru_cache;
         const auditLog = health?.audit_logger;
         const llm = health?.llm_breaker;
+        const cfg = health?.config;
         const chainValid = audit?.chain_integrity?.valid;
 
         return (
@@ -381,13 +382,15 @@ export function SelfHealingPage() {
                                 <CardContent>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-2">
-                                                        <div className="flex items-center justify-between p-2 rounded border border-border">
-                                                                <div>
-                                                                        <p className="text-sm font-medium">QOMN_AUDIT_SECRET_KEY</p>
-                                                                        <p className="text-xs text-muted-foreground">HMAC key for audit signing</p>
-                                                                </div>
-                                                                <Badge className="bg-emerald-600">SET</Badge>
+                                                <div className="flex items-center justify-between p-2 rounded border border-border">
+                                                        <div>
+                                                                <p className="text-sm font-medium">QOMN_AUDIT_SECRET_KEY</p>
+                                                                <p className="text-xs text-muted-foreground">HMAC key for audit signing</p>
                                                         </div>
+                                                        <Badge className={cfg?.audit_secret_key_configured ? "bg-emerald-600" : "bg-amber-500"}>
+                                                                {cfg?.audit_secret_key_configured ? "SET" : "NOT SET"}
+                                                        </Badge>
+                                                </div>
                                                         <div className="flex items-center justify-between p-2 rounded border border-border">
                                                                 <div>
                                                                         <p className="text-sm font-medium">QOMN_AUDIT_LOG_PATH</p>
@@ -407,7 +410,7 @@ export function SelfHealingPage() {
                                                                         </p>
                                                                 </div>
                                                                 <span className="font-mono text-sm">
-                                                                        {cb?.threshold || 10.0}
+                                                                        {cfg?.cb_threshold ?? cb?.threshold ?? 10.0}
                                                                 </span>
                                                         </div>
                                                         <div className="flex items-center justify-between p-2 rounded border border-border">
@@ -418,7 +421,7 @@ export function SelfHealingPage() {
                                                                         </p>
                                                                 </div>
                                                                 <span className="font-mono text-sm">
-                                                                        {cb?.cooldown_seconds || 10.0}s
+                                                                        {cfg?.cb_cooldown ?? cb?.cooldown_seconds ?? 10.0}s
                                                                 </span>
                                                         </div>
                                                 </div>

@@ -462,6 +462,8 @@ class AsyncAuditLogger:
         self._total_events: int = 0
         self._failed_writes: int = 0
         self._bytes_written: int = 0
+        self._rotation_count: int = 0
+        self._last_event_time: str | None = None
 
     def _rotate_if_needed(self) -> None:
         """
@@ -494,6 +496,7 @@ class AsyncAuditLogger:
             if os.path.exists(dst):
                 os.remove(dst)
             os.rename(self.filepath, dst)
+            self._rotation_count += 1
 
             logging.info(f"[AUDIT ROTATION] Rotated audit log to {dst}")
         except OSError as e:
@@ -561,6 +564,7 @@ class AsyncAuditLogger:
                 # Update statistics
                 self._total_events += 1
                 self._bytes_written += len(entry_str)
+                self._last_event_time = event_data["timestamp_utc"]
 
                 return True
 
@@ -582,12 +586,23 @@ class AsyncAuditLogger:
     def stats(self) -> dict[str, Any]:
         """Return audit logger statistics for operational monitoring."""
         with self.lock:
+            actual_size = 0
+            try:
+                if os.path.exists(self.filepath):
+                    actual_size = os.path.getsize(self.filepath)
+            except OSError:
+                pass
             return {
                 "total_events": self._total_events,
+                "events_logged": self._total_events,
                 "failed_writes": self._failed_writes,
                 "bytes_written": self._bytes_written,
+                "file_size_bytes": actual_size,
                 "filepath": self.filepath,
-                "chain_hash": self._last_chain_hash,  # V76: Current chain tip
+                "file_path": self.filepath,
+                "chain_hash": self._last_chain_hash,
+                "rotation_count": self._rotation_count,
+                "last_event_time": self._last_event_time,
             }
 
     def verify_chain(self, filepath: str | None = None) -> dict[str, Any]:
@@ -1003,6 +1018,7 @@ class LLMCircuitBreaker:
         self.max_rps = max_rps
         self.timeout = timeout
         self._call_timestamps: deque = deque()
+        self._failed_calls: int = 0
         self.lock = threading.Lock()
 
     def allow_request(self) -> bool:
@@ -1042,7 +1058,8 @@ class LLMCircuitBreaker:
 
     def record_failure(self) -> None:
         """Record an LLM call failure for monitoring."""
-        pass  # Placeholder for future circuit-breaking on LLM failures
+        with self.lock:
+            self._failed_calls += 1
 
     def stats(self) -> dict[str, Any]:
         """Return rate limiter statistics."""
@@ -1052,6 +1069,8 @@ class LLMCircuitBreaker:
                 self._call_timestamps.popleft()
             return {
                 "calls_in_window": len(self._call_timestamps),
+                "requests_allowed": len(self._call_timestamps),
+                "requests_blocked": self._failed_calls,
                 "max_rps": self.max_rps,
                 "timeout": self.timeout,
             }

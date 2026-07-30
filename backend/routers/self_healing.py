@@ -8,8 +8,10 @@ V214: Exposes the self-healing engine's internal state:
 """
 
 import logging
+import os
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
 
 from backend.auth import require_permission
 from backend.limiter import limiter
@@ -18,6 +20,32 @@ from backend.rbac import Permission
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/self-healing", tags=["self-healing"])
+
+_LLM_HEALING_ENV_VAR = "QOMN_ENABLE_LLM_HEALING"
+
+
+class LlmHealingToggle(BaseModel):
+    enabled: bool
+
+
+def _get_llm_healing_status() -> bool:
+    return os.environ.get(_LLM_HEALING_ENV_VAR, "").lower() in ("1", "true", "yes")
+
+
+@router.get("/llm-healing", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
+async def get_llm_healing():
+    """Get the current LLM healing toggle state."""
+    return {"success": True, "enabled": _get_llm_healing_status()}
+
+
+@router.put("/llm-healing", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
+@limiter.limit("10/minute")
+async def set_llm_healing(body: LlmHealingToggle, request: Request):
+    """Set the LLM healing toggle at runtime. Updates process environment immediately."""
+    os.environ[_LLM_HEALING_ENV_VAR] = "true" if body.enabled else ""
+    status = "enabled" if body.enabled else "disabled"
+    logger.info("LLM healing %s via API toggle", status)
+    return {"success": True, "enabled": body.enabled, "message": f"LLM healing {status}"}
 
 
 @router.get("/health", dependencies=[Depends(require_permission(Permission.MONITOR_READ))])
@@ -41,12 +69,21 @@ async def self_healing_health():
             detail=f"Self-healing engine not available: {e}",
         )
 
+    config_status = {
+        "audit_secret_key_configured": bool(os.environ.get("QOMN_AUDIT_SECRET_KEY", "")),
+        "llm_healing_enabled": _get_llm_healing_status(),
+        "audit_log_path": os.environ.get("QOMN_AUDIT_LOG_PATH", "qomn_fire_healing_audit.jsonl"),
+        "cb_threshold": global_circuit_breaker.threshold,
+        "cb_cooldown": global_circuit_breaker.cooldown_seconds,
+    }
+
     return {
         "success": True,
         "circuit_breaker": global_circuit_breaker.health(),
         "lru_cache": global_lru_cache.stats(),
         "audit_logger": global_audit_logger.stats(),
         "llm_breaker": global_llm_breaker.stats(),
+        "config": config_status,
     }
 
 

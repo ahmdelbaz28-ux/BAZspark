@@ -53,9 +53,9 @@ def _reset_healing_state():
                 f.truncate(0)
         except OSError:  # V216 FIX (S5713): FileNotFoundError is a subclass of OSError
             pass
-        # Reset the audit logger's internal state (previous_hash)
-        global_audit_logger._previous_hash = None
-        global_audit_logger._event_count = 0
+        # Reset the audit logger's internal state (chain hash + event count)
+        global_audit_logger._last_chain_hash = "0" * 64
+        global_audit_logger._total_events = 0
     except ImportError:
         pass
     yield

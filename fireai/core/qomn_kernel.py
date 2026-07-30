@@ -1126,14 +1126,11 @@ def _healing_wrapper(
                     )
                     raise
 
-                # Register with circuit breaker
-                cb_open, _ = global_circuit_breaker.check_and_cooldown()
-                if cb_open:
-                    _healing_logger.warning(
-                        "Circuit breaker OPEN — returning safe fallback for %s",
-                        method.__name__,
-                    )
-                else:
+                # Register with circuit breaker (atomic check + half-open handling)
+                cb_open, state_at_check = global_circuit_breaker.check_and_cooldown()
+                if state_at_check == global_circuit_breaker.HALF_OPEN:
+                    global_circuit_breaker.record_probe_failure()
+                if not cb_open:
                     global_circuit_breaker.register_healing_event(
                         error_type=type(exc).__name__
                     )
