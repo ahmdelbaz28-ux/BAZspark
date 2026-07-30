@@ -5,17 +5,11 @@
 
 import { useState, type FormEvent } from "react";
 import { Navigate as RouterNavigate, useSearchParams as useRouterSearchParams } from "react-router-dom";
-import { BazSparkLogo, BazSparkWordmark } from "@/components/auth/BazSparkLogo";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { motion, AnimatePresence } from "framer-motion";
 import { PrototypeSwitcher } from "@/components/ui/PrototypeSwitcher";
 import { VariantA } from "@/pages/prototypes/login/VariantA";
 import { VariantB } from "@/pages/prototypes/login/VariantB";
 import { VariantC } from "@/pages/prototypes/login/VariantC";
-import type { LoginVariantProps } from "@/pages/prototypes/login/types";
 import "@/styles/login.css";
 
 // Multilingual Translation Dictionary for SCREEN_6

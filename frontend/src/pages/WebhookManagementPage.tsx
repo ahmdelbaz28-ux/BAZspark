@@ -11,7 +11,6 @@ import { useState } from "react";
 import {
   Bell,
   BellOff,
-  ExternalLink,
   Globe,
   Loader2,
   Plus,
@@ -30,7 +29,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,

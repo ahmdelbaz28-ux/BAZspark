@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Download, FileJson, File, Archive } from "lucide-react";
+import { Download, FileJson, File } from "lucide-react";
 
 export const ExportManagerPage: React.FC = () => {
   const [selectedFormat, setSelectedFormat] = useState("dxf");

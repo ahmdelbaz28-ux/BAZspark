@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Cloud, MapPin, AlertTriangle, Droplets } from "lucide-react";
+import { Cloud, AlertTriangle, Droplets } from "lucide-react";
 
 export const EnvironmentContextPage: React.FC = () => {
   const { t } = useTranslation();
