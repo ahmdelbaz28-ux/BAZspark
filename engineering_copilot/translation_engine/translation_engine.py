@@ -398,7 +398,7 @@ class TranslationEngine:
         self.logger.info(f"Converted Revit data to unified model with {len(unified_model.entities)} entities")
         return unified_model
 
-    def unified_to_etap(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:
+    def unified_to_etap(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:  # NOSONAR — S3776: ETAP conversion must translate all engineering entities
         """
         Convert Unified Engineering Model to ETAP operations.
 
@@ -484,7 +484,7 @@ class TranslationEngine:
         self.logger.info(f"Converted unified model to {sum(len(v) for v in etap_operations.values())} ETAP operations")
         return etap_operations
 
-    def unified_to_autocad(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:
+    def unified_to_autocad(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:  # NOSONAR — S3776: AutoCAD conversion must translate all engineering entities
         """
         Convert Unified Engineering Model to AutoCAD operations.
 
@@ -567,7 +567,7 @@ class TranslationEngine:
         self.logger.info(f"Converted unified model to {sum(len(v) for v in autocad_operations.values())} AutoCAD operations")
         return autocad_operations
 
-    def unified_to_revit(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:
+    def unified_to_revit(self, unified_model: UnifiedEngineeringModel) -> Dict[str, Any]:  # NOSONAR — S3776: Revit conversion must translate all engineering entities
         """
         Convert Unified Engineering Model to Revit operations.
 

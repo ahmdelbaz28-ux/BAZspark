@@ -792,7 +792,7 @@ class RevitService:
                                     self.create_wall(
                                         start_point=elem.get("location_curve", [[0,0,0],[1,0,0]])[0],
                                         end_point=elem.get("location_curve", [[0,0,0],[1,0,0]])[1],
-                                        level=elem.get("level", "Level 1"),
+                                        _level=elem.get("level", "Level 1"),
                                     )
                                     created_count += 1
                                 elif cat in ("floors", "doors", "columns", "beams"):
@@ -2343,7 +2343,7 @@ class RevitService:
                 points = context.get("points", [[0, 0, 0], [5000, 0, 0]])
                 level = self._extract_level(command) or "Level 1"
 
-                element_id = self.create_wall(points[0], points[1], level=level)
+                element_id = self.create_wall(points[0], points[1], _level=level)
 
                 result = {
                     "success": element_id is not None,

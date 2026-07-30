@@ -45,7 +45,7 @@ class RevitSyncService:
         self.element_cache = {}
         self.sync_cache = {}
 
-    async def sync_project(self, project_dto: RevitProjectDTO) -> SyncStatusDTO:
+    async def sync_project(self, project_dto: RevitProjectDTO) -> SyncStatusDTO:  # NOSONAR — S3776: multi-step sync must handle all project data
         """
         Synchronize a Revit project with the Digital Twin.
 

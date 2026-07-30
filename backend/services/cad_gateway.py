@@ -96,7 +96,7 @@ class CADGateway:
             }
         return {"connected": False}
 
-    def read_drawing(self, provider: str, filepath: str) -> List[CADElement]:
+    def read_drawing(self, provider: str, filepath: str) -> List[CADElement]:  # NOSONAR — S3776: multi-format CAD reading requires provider-specific branching
         service = self.get_service(provider)
         elements = []
         provider_lower = provider.lower()

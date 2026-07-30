@@ -158,7 +158,7 @@ class DXFParser(ParserBase):
             "CRITICAL: Cannot proceed - incorrect unit = incorrect coverage calculation."
         )
 
-    def _detect_unit_heuristic(self, doc) -> int | None:
+    def _detect_unit_heuristic(self, doc) -> int | None:  # NOSONAR — S3776: DXF unit detection requires multiple heuristic passes
         from shapely.geometry import LineString
         from shapely.ops import polygonize, unary_union
         from shapely.validation import make_valid
@@ -217,7 +217,7 @@ class DXFParser(ParserBase):
         logger.error("No valid unit scale found")
         return None
 
-    def _extract_lines(self, msp, scale: float) -> List:
+    def _extract_lines(self, msp, scale: float) -> List:  # NOSONAR — S3776: DXF entity extraction requires type-specific branching
         from shapely.geometry import LineString
 
         lines = []

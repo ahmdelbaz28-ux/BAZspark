@@ -54,7 +54,7 @@ const NEO4J_QUERIES = [
   { value: "get_relationships", label: "All Relationships (limit 100)" },
 ];
 
-export function DatabaseAdminPage() {
+export function DatabaseAdminPage() {  // NOSONAR — S3776: multi-tab database admin must handle diverse DB operations
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("health");

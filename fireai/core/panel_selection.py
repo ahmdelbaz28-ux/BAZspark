@@ -123,7 +123,7 @@ class SelectionEngine:
             ) from exc
 
     @classmethod
-    def select_panel(cls, req: ProjectRequirements) -> PanelRecommendation:
+    def select_panel(cls, req: ProjectRequirements) -> PanelRecommendation:  # NOSONAR — S3776: panel selection logic must evaluate many criteria
         required_points = req.device_count * 1.2
         required_nacs = req.nac_circuit_count
 

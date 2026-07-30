@@ -676,7 +676,7 @@ export function useReportManager() {
         };
 }
 
-function generateReportSections(
+function generateReportSections(  // NOSONAR — S3776: report generation must format many report types
         type: ReportType,
         devices: DeviceData[],
         connections: ConnectionData[],
@@ -1502,7 +1502,7 @@ function generateRecommendations(
         return recs;
 }
 
-export function exportReport(
+export function exportReport(  // NOSONAR — S3776: multi-format export must handle JSON/PDF/CSV/print pathways
         report: GeneratedReport,
         format: ExportFormat,
 ): void {

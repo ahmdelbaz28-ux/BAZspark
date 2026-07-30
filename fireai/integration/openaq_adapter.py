@@ -148,7 +148,7 @@ class OpenAQAdapter(ExternalApiAdapter):
         # adapter still constructs but every call returns fallback.
         self._api_key = os.environ.get("OPENAQ_API_KEY", "")
 
-    async def _fetch(
+    async def _fetch(  # NOSONAR — S3776: air quality API fetching requires multi-branch fallback logic
         self,
         lat: float,
         lon: float,

@@ -174,7 +174,7 @@ class RevitAgent:
 
         return electrical_assets
 
-    async def prepare_clash_detection_data(self, model_data: List[RevitElementDTO]) -> Dict[str, Any]:
+    async def prepare_clash_detection_data(self, model_data: List[RevitElementDTO]) -> Dict[str, Any]:  # NOSONAR — S3776: clash detection must process all element types
         """
         Prepare data for clash detection analysis.
 

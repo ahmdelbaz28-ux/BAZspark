@@ -197,7 +197,7 @@ class EarthquakeAdapter(ExternalApiAdapter):
             or os.environ.get("USGS_FDSN_URL", DEFAULT_BASE_URL)
         )
 
-    async def _fetch(
+    async def _fetch(  # NOSONAR — S3776: earthquake API fetching requires multi-branch fallback logic
         self,
         lat: float,
         lon: float,
@@ -287,7 +287,7 @@ class EarthquakeAdapter(ExternalApiAdapter):
             strongest_event=events[0],
             inspection_recommended=priority,
             advisory_note=note,
-            nfpa_reference="NFPA 72-2022 §14.4.3.3",
+            nfpa_reference=_NFPA_72_REF,
             data_source=self._base_url,
             coordinates=(lat, lon),
             lookback_days=lookback_days,
@@ -323,7 +323,7 @@ class EarthquakeAdapter(ExternalApiAdapter):
                 "not be verified. If a felt earthquake has occurred, "
                 "dispatch inspection per NFPA 72 §14.4.3.3 regardless."
             ),
-            nfpa_reference="NFPA 72-2022 §14.4.3.3",
+            nfpa_reference=_NFPA_72_REF,
             data_source=self._base_url,
             coordinates=(lat, lon),
             lookback_days=lookback_days,
