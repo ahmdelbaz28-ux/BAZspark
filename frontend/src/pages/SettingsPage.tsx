@@ -80,6 +80,12 @@ export function SettingsPage() {
                 if (key === "qomnEnableLlmHealing") {
                         setQomnEnableLlmHealing(value as boolean);
                         persistSettings("security-config", { qomnEnableLlmHealing: value });
+                        // Sync to backend at runtime
+                        import("@/services/selfHealingApi").then(({ selfHealingApi }) => {
+                                selfHealingApi.setLlmHealing(value as boolean).catch(() => {
+                                        // Backend may be unavailable — localStorage value serves as fallback
+                                });
+                        });
                 }
         };
 
@@ -187,6 +193,16 @@ export function SettingsPage() {
                         }
                 };
                 fetchBackendSettings();
+                // Fetch current LLM healing toggle state from backend
+                import("@/services/selfHealingApi").then(({ selfHealingApi }) => {
+                        selfHealingApi.getLlmHealing().then((res) => {
+                                if (res?.enabled != null) {
+                                        setQomnEnableLlmHealing(res.enabled);
+                                }
+                        }).catch(() => {
+                                // Backend unavailable — use localStorage value
+                        });
+                });
         }, [API_BASE]);
 
         const persistSettings = (key: string, value: Record<string, unknown>) => {

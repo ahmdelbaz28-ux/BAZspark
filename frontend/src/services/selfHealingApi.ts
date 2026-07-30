@@ -48,12 +48,21 @@ export interface LlmBreakerStats {
 	requests_blocked: number;
 }
 
+export interface SelfHealingConfig {
+	audit_secret_key_configured: boolean;
+	llm_healing_enabled: boolean;
+	audit_log_path: string;
+	cb_threshold: number;
+	cb_cooldown: number;
+}
+
 export interface SelfHealingHealth {
 	success: boolean;
 	circuit_breaker: CircuitBreakerHealth;
 	lru_cache: LruCacheStats;
 	audit_logger: AuditLoggerStats;
 	llm_breaker: LlmBreakerStats;
+	config?: SelfHealingConfig;
 }
 
 export interface AuditEntry {
@@ -84,5 +93,12 @@ export const selfHealingApi = {
 	reset: () =>
 		client.post<{ success: boolean; message: string; circuit_breaker: CircuitBreakerHealth }>(
 			"/self-healing/reset",
+		),
+	getLlmHealing: () =>
+		client.get<{ success: boolean; enabled: boolean }>("/self-healing/llm-healing"),
+	setLlmHealing: (enabled: boolean) =>
+		client.put<{ success: boolean; enabled: boolean; message: string }>(
+			"/self-healing/llm-healing",
+			{ enabled },
 		),
 };
