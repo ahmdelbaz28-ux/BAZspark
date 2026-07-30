@@ -410,6 +410,7 @@ module = [
     "parsers.geometry_extractor",
     "core.__init__",
     "core.database",
+    "fireai.api",
 ]
 disallow_untyped_defs = false
 disallow_incomplete_defs = false

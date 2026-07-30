@@ -278,7 +278,7 @@ function Connections() {
                                                 </Button>
                                         </div>
                                 </div>
-                        </div>
+                        </dialog>
                 )}
                 </div>
         );
@@ -393,7 +393,7 @@ function CreateConnectionModal({
                                         </Button>
                                 </div>
                         </div>
-                </div>
+                        </dialog>
         );
 }
 

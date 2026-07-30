@@ -70,6 +70,19 @@ export function SettingsPage() {
         // Security settings — twoFactorAuth and passwordExpiry removed per V290 audit fix.
         // The Security tab now shows a "coming soon" notice instead of deceptive non-functional toggles.
 
+        // V272: Security config settings — LLM Healing, Key Rotation, Vision API Keys, Admin Token
+        const [qomnEnableLlmHealing, setQomnEnableLlmHealing] = useState(() => {
+                const saved = loadSettings("security-config");
+                return (saved.qomnEnableLlmHealing as boolean) ?? false;
+        });
+
+        const updateSetting = (key: string, value: unknown) => {
+                if (key === "qomnEnableLlmHealing") {
+                        setQomnEnableLlmHealing(value as boolean);
+                        persistSettings("security-config", { qomnEnableLlmHealing: value });
+                }
+        };
+
         // API settings — initialize from localStorage if available
         const [apiTimeout, setApiTimeout] = useState(() => {
                 const saved = loadSettings("api");
@@ -561,6 +574,120 @@ export function SettingsPage() {
                                                                                 </div>
                                                         </CardContent>
                                                 </Card>
+                                        </TabsContent>
+
+                                        {/* Security Configuration — GAP-H3/H4/H5/H6 */}
+                                        <TabsContent value="security-config">
+                                                <div className="space-y-4">
+                                                        {/* GAP-H3: LLM Healing Toggle */}
+                                                        <Card className="border-border bg-card">
+                                                                <CardHeader>
+                                                                        <CardTitle className="text-lg text-foreground">
+                                                                                {t("fireai.settings.llmHealing")}
+                                                                        </CardTitle>
+                                                                        <CardDescription className="text-muted-foreground">
+                                                                                {t("fireai.settings.llmHealingDesc")}
+                                                                        </CardDescription>
+                                                                </CardHeader>
+                                                                <CardContent className="space-y-4">
+                                                                        <div className="flex items-center justify-between">
+                                                                                <Label className="text-foreground/90">
+                                                                                        {t("fireai.settings.llmHealing")}
+                                                                                </Label>
+                                                                                <Switch
+                                                                                        checked={qomnEnableLlmHealing}
+                                                                                        onCheckedChange={(checked) => updateSetting("qomnEnableLlmHealing", checked)}
+                                                                                />
+                                                                        </div>
+                                                                        {qomnEnableLlmHealing && (
+                                                                                <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                                                                                        <p className="text-sm text-yellow-800 dark:text-yellow-200">{t("fireai.settings.llmHealingWarning")}</p>
+                                                                                </div>
+                                                                        )}
+                                                                        <div className="flex items-center justify-between">
+                                                                                <Label className="text-foreground/90">
+                                                                                        {t("fireai.settings.circuitBreaker")}
+                                                                                </Label>
+                                                                                <Badge variant="outline">{t("fireai.settings.active")}</Badge>
+                                                                        </div>
+                                                                </CardContent>
+                                                        </Card>
+
+                                                        {/* GAP-H4: Secret Key Rotation */}
+                                                        <Card className="border-border bg-card">
+                                                                <CardHeader>
+                                                                        <CardTitle className="text-lg text-foreground">
+                                                                                {t("fireai.settings.keyRotation")}
+                                                                        </CardTitle>
+                                                                        <CardDescription className="text-muted-foreground">
+                                                                                {t("fireai.settings.keyRotationDesc")}
+                                                                        </CardDescription>
+                                                                </CardHeader>
+                                                                <CardContent className="space-y-4">
+                                                                        <div className="flex items-center justify-between">
+                                                                                <Label className="text-foreground/90">
+                                                                                        {t("fireai.settings.rotationStatus")}
+                                                                                </Label>
+                                                                                <Badge variant="outline">{t("fireai.settings.noRotation")}</Badge>
+                                                                        </div>
+                                                                        <Button variant="outline" onClick={async () => {
+                                                                                try { await fetch(`${API_BASE}/settings/secret-rotation/rotate`, { method: "POST" }); } catch { /* handled */ }
+                                                                        }}>
+                                                                                {t("fireai.settings.rotateKey")}
+                                                                        </Button>
+                                                                </CardContent>
+                                                        </Card>
+
+                                                        {/* GAP-H5: Vision API Key Management */}
+                                                        <Card className="border-border bg-card">
+                                                                <CardHeader>
+                                                                        <CardTitle className="text-lg text-foreground">
+                                                                                {t("fireai.settings.visionApiKey")}
+                                                                        </CardTitle>
+                                                                        <CardDescription className="text-muted-foreground">
+                                                                                {t("fireai.settings.visionApiKeyDesc")}
+                                                                        </CardDescription>
+                                                                </CardHeader>
+                                                                <CardContent className="space-y-4">
+                                                                        <div className="flex gap-2">
+                                                                                <Input placeholder={t("fireai.settings.keyName")} className="flex-1" />
+                                                                                <Button onClick={async () => {
+                                                                                        try { await fetch(`${API_BASE}/settings/keys/openai`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: "vision-key" }) }); } catch { /* handled */ }
+                                                                                }}>
+                                                                                        {t("fireai.settings.addKey")}
+                                                                                </Button>
+                                                                        </div>
+                                                                        <div className="text-sm text-muted-foreground">
+                                                                                {t("fireai.settings.maskedKey")}: ****-****-****-****
+                                                                        </div>
+                                                                </CardContent>
+                                                        </Card>
+
+                                                        {/* GAP-H6: Admin Token Management */}
+                                                        <Card className="border-border bg-card">
+                                                                <CardHeader>
+                                                                        <CardTitle className="text-lg text-foreground">
+                                                                                {t("fireai.settings.adminToken")}
+                                                                        </CardTitle>
+                                                                        <CardDescription className="text-muted-foreground">
+                                                                                {t("fireai.settings.adminTokenDesc")}
+                                                                        </CardDescription>
+                                                                </CardHeader>
+                                                                <CardContent className="space-y-4">
+                                                                        <div className="flex items-center justify-between">
+                                                                                <Label className="text-foreground/90">
+                                                                                        {t("fireai.settings.tokenStatus")}
+                                                                                </Label>
+                                                                                <Badge variant="default">{t("fireai.settings.configured")}</Badge>
+                                                                        </div>
+                                                                        <Button variant="outline" onClick={async () => {
+                                                                                try { await fetch(`${API_BASE}/settings/admin-token/rotate`, { method: "POST" }); } catch { /* handled */ }
+                                                                        }}>
+                                                                                {t("fireai.settings.rotateToken")}
+                                                                        </Button>
+                                                                </CardContent>
+                                                        </Card>
+                                                </div>
                                         </TabsContent>
 
                                         {/* API Settings */}

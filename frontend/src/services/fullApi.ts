@@ -96,7 +96,7 @@ class FullApiClient extends ApiClient {
 const client = new FullApiClient();
 
 /** Unifies auth, CSRF, timeout, retry for all fullApi endpoints. */
-async function apiCall<T>(
+export async function apiCall<T>(
         path: string,
         options: RequestInit = {},
         baseUrl: string = API_BASE,

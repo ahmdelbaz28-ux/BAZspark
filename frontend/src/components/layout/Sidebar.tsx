@@ -23,6 +23,10 @@ import {
         Brain,
         Network,
         Flame,
+        Sparkles,
+        MessageSquare,
+        Link2,
+        HeartPulse,
         Workflow as WorkflowIcon,
         Settings2,
         Info,
@@ -76,6 +80,15 @@ const routePrefetchMap: Record<string, () => Promise<unknown>> = {
         "/bim-providers": () => import("@/pages/BIMProvidersPage"),
         "/ifc43-mapping": () => import("@/pages/IFC43MappingPage"),
         "/ar-export": () => import("@/pages/ARExportPage"),
+        "/dashboard/system-health": () => import("@/pages/SystemHealthPage"),
+        "/engineering/generative": () => import("@/pages/GenerativeDesignPage"),
+        "/engineering/fireai": () => import("@/pages/EngineeringFireAIPage"),
+        "/engineering/pipeline": () => import("@/pages/PipelineLayersPage"),
+        "/engineering/topology": () => import("@/pages/TopologyPage"),
+        "/settings/rbac": () => import("@/pages/RbacPage"),
+        "/settings/webhooks": () => import("@/pages/WebhookManagementPage"),
+        "/monitor/agent": () => import("@/pages/AgentChatPage"),
+        "/engineering/qomn": () => import("@/pages/QOMNCalculatorPage"),
 };
 
 interface NavItem {
@@ -97,6 +110,12 @@ const navItems: NavItem[] = [
                 dataOnboarding: "nav-dashboard",
         },
         {
+                labelKey: "nav.systemHealth",
+                defaultLabel: "System Health",
+                icon: HeartPulse,
+                path: "/dashboard/system-health",
+        },
+        {
                 labelKey: "nav.projects",
                 defaultLabel: "Projects",
                 icon: FolderKanban,
@@ -109,6 +128,30 @@ const navItems: NavItem[] = [
                 icon: Calculator,
                 path: "/engineering",
                 dataOnboarding: "nav-engineering",
+        },
+        {
+                labelKey: "nav.engineeringFireAI",
+                defaultLabel: "FireAI Analysis",
+                icon: Flame,
+                path: "/engineering/fireai",
+        },
+        {
+                labelKey: "nav.generativeDesign",
+                defaultLabel: "Generative Design",
+                icon: Sparkles,
+                path: "/engineering/generative",
+        },
+        {
+                labelKey: "nav.pipelineLayers",
+                defaultLabel: "Pipeline Layers",
+                icon: Layers,
+                path: "/engineering/pipeline",
+        },
+        {
+                labelKey: "nav.topology",
+                defaultLabel: "Topology",
+                icon: Network,
+                path: "/engineering/topology",
         },
         {
                 labelKey: "nav.facp",
@@ -221,6 +264,12 @@ const navItems: NavItem[] = [
                 defaultLabel: "Monitor",
                 icon: Activity,
                 path: "/monitor",
+        },
+        {
+                labelKey: "nav.agentChat",
+                defaultLabel: "Agent Chat",
+                icon: MessageSquare,
+                path: "/monitor/agent",
         },                {
                         labelKey: "nav.fdsSimulation",
                         defaultLabel: "FDS Simulation",
@@ -277,6 +326,19 @@ const navItems: NavItem[] = [
                 icon: Settings,
                 path: "/settings",
                 dataOnboarding: "nav-settings",
+        },
+        {
+                labelKey: "nav.rbac",
+                defaultLabel: "RBAC",
+                icon: Shield,
+                path: "/settings/rbac",
+                requiredRole: "admin",
+        },
+        {
+                labelKey: "nav.webhooks",
+                defaultLabel: "Webhooks",
+                icon: Link2,
+                path: "/settings/webhooks",
         },                {
                         labelKey: "nav.apiKeys",
                         defaultLabel: "API Keys",

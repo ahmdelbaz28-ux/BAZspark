@@ -475,7 +475,7 @@ export function ProjectsPage() {
                                                                 </Button>
                                                         </div>
                                                 </div>
-                                        </div>
+                                        </dialog>
                                 )}
 
                                 {/* Delete Confirmation Modal */}
@@ -514,7 +514,7 @@ export function ProjectsPage() {
                                                                 </Button>
                                                         </div>
                                                 </div>
-                                        </div>
+                                        </dialog>
                                 )}
                         </div>
                 </div>

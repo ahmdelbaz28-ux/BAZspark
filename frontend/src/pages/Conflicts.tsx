@@ -397,8 +397,8 @@ function Conflicts() {
                                                         </Button>
                                                 </div>
                                         </div>
-                                </div>
-                        )}
+                                </dialog>
+                )}
                 </div>
         );
 }

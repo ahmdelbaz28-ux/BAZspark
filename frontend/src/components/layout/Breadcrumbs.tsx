@@ -34,6 +34,14 @@ const CRUMB_MAP: Record<string, Crumb[]> = {
   "/environment/context":   [{ label: "Environment" }, { label: "Weather & Geocoding" }],
   "/environment/air-quality":[{ label: "Environment" }, { label: "Air Quality" }],
   "/environment/hazmat":    [{ label: "Environment" }, { label: "HazMat Database" }],
+  "/engineering/generative": [{ label: "Engineering", path: "/engineering" }, { label: "Generative Design" }],
+  "/engineering/fireai":     [{ label: "Engineering", path: "/engineering" }, { label: "FireAI Analysis" }],
+  "/engineering/pipeline":   [{ label: "Engineering", path: "/engineering" }, { label: "Pipeline Layers" }],
+  "/engineering/topology":   [{ label: "Engineering", path: "/engineering" }, { label: "Topology" }],
+  "/settings/rbac":          [{ label: "Settings", path: "/settings" }, { label: "RBAC" }],
+  "/settings/webhooks":      [{ label: "Settings", path: "/settings" }, { label: "Webhooks" }],
+  "/monitor/agent":          [{ label: "Monitor", path: "/monitor" }, { label: "Agent Chat" }],
+  "/dashboard/system-health": [{ label: "Dashboard", path: "/dashboard" }, { label: "System Health" }],
 };
 
 const Breadcrumbs: React.FC = () => {

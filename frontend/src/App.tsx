@@ -192,6 +192,33 @@ const ARExportPage = lazy(() =>
 const WorkflowPage = lazy(() =>
         import("./pages/WorkflowPage").then((m) => ({ default: m.WorkflowPage })),
 );
+const SystemHealthPage = lazy(() =>
+    import("./pages/SystemHealthPage").then((m) => ({ default: m.SystemHealthPage })),
+);
+const GenerativeDesignPage = lazy(() =>
+    import("./pages/GenerativeDesignPage").then((m) => ({ default: m.GenerativeDesignPage })),
+);
+const RbacPage = lazy(() =>
+    import("./pages/RbacPage").then((m) => ({ default: m.RbacPage })),
+);
+const WebhookManagementPage = lazy(() =>
+    import("./pages/WebhookManagementPage").then((m) => ({ default: m.WebhookManagementPage })),
+);
+const AgentChatPage = lazy(() =>
+    import("./pages/AgentChatPage").then((m) => ({ default: m.AgentChatPage })),
+);
+const TopologyPage = lazy(() =>
+    import("./pages/TopologyPage").then((m) => ({ default: m.TopologyPage })),
+);
+const EngineeringFireAIPage = lazy(() =>
+    import("./pages/EngineeringFireAIPage").then((m) => ({ default: m.EngineeringFireAIPage })),
+);
+const PipelineLayersPage = lazy(() =>
+    import("./pages/PipelineLayersPage").then((m) => ({ default: m.PipelineLayersPage })),
+);
+const QOMNCalculatorPage = lazy(() =>
+    import("./pages/QOMNCalculatorPage").then((m) => ({ default: m.QOMNCalculatorPage })),
+);
 
 // C-07 FIX: Typed route structure with optional requiredRole for role-based access
 interface ProtectedRoute {
@@ -341,6 +368,16 @@ const handleSearchOpen = useCallback(() => {
                 { path: "/bim-providers", element: <BIMProvidersPage /> },
                 { path: "/ifc43-mapping", element: <IFC43MappingPage />, requiredRole: "admin" },
                 { path: "/ar-export", element: <ARExportPage />, requiredRole: "admin" },
+                // V272: Route previously unrouted pages
+                { path: "/dashboard/system-health", element: <SystemHealthPage /> },
+                { path: "/engineering/generative", element: <GenerativeDesignPage /> },
+                { path: "/engineering/fireai", element: <EngineeringFireAIPage /> },
+                { path: "/engineering/pipeline", element: <PipelineLayersPage /> },
+                { path: "/engineering/topology", element: <TopologyPage /> },
+                { path: "/engineering/qomn", element: <QOMNCalculatorPage /> },
+                { path: "/settings/rbac", element: <RbacPage />, requiredRole: "admin" },
+                { path: "/settings/webhooks", element: <WebhookManagementPage /> },
+                { path: "/monitor/agent", element: <AgentChatPage /> },
         ], []);
 
         // Determine if we're on a public route (no AppShell)

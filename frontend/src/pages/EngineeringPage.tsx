@@ -6,7 +6,7 @@
  * calculation when API is unavailable (offline mode).
  */
 
-import { Battery, Cable, Zap } from "lucide-react";
+import { Battery, Cable, Zap, Flame, Network, CheckCircle2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExplainButton } from "@/components/ai/ExplainButton";
@@ -29,7 +29,7 @@ import {
         SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { qomnApi } from "@/services/fullApi";
+import { qomnApi, apiCall } from "@/services/fullApi";
 
 // ============================================================================
 // EngineeringPage Component
@@ -320,6 +320,30 @@ export function EngineeringPage() {
                                         >
                                                 <Battery aria-hidden="true" className="h-4 w-4 mr-2" />
                                                 {t("engineering.batteryCalculation")}
+                                        </Button>
+                                        <Button
+                                                variant={activeTab === "room-analysis" ? "default" : "outline"}
+                                                className={
+                                                        activeTab === "room-analysis"
+                                                                ? "bg-danger hover:bg-danger/90 text-white border-none"
+                                                                : "border-border text-foreground/90 hover:bg-card"
+                                                }
+                                                onClick={() => setActiveTab("room-analysis")}
+                                        >
+                                                <Flame aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                {t("fireai.room.title")}
+                                        </Button>
+                                        <Button
+                                                variant={activeTab === "integration" ? "default" : "outline"}
+                                                className={
+                                                        activeTab === "integration"
+                                                                ? "bg-danger hover:bg-danger/90 text-white border-none"
+                                                                : "border-border text-foreground/90 hover:bg-card"
+                                                }
+                                                onClick={() => setActiveTab("integration")}
+                                        >
+                                                <Network aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                {t("fireai.integration.title")}
                                         </Button>
                                 </div>
 
@@ -855,6 +879,74 @@ export function EngineeringPage() {
                                                                         </CardContent>
                                                                 </Card>
                                                         </div>
+                                                </CardContent>
+                                        </Card>
+                                )}
+
+                                {/* Room Analysis Tab */}
+                                {activeTab === "room-analysis" && (
+                                        <Card className="border-border bg-card">
+                                                <CardHeader>
+                                                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                <Flame aria-hidden="true" className="h-5 w-5" />
+                                                                {t("fireai.room.title")}
+                                                        </CardTitle>
+                                                        <CardDescription className="text-muted-foreground">
+                                                                {t("fireai.room.description")}
+                                                        </CardDescription>
+                                                </CardHeader>
+                                                <CardContent className="space-y-4">
+                                                        <div className="flex gap-4 items-end">
+                                                                <div className="flex-1 space-y-2">
+                                                                        <Label className="text-foreground/90">
+                                                                                {t("fireai.room.selectProject")}
+                                                                        </Label>
+                                                                        <Input placeholder="Project ID" id="analyze-project-id" />
+                                                                </div>
+                                                                <Button onClick={async () => {
+                                                                        const projectId = (document.getElementById("analyze-project-id") as HTMLInputElement)?.value;
+                                                                        if (!projectId) return;
+                                                                        try {
+                                                                                await apiCall(`/analyze/projects/${projectId}/analyze/room`, { method: "POST" });
+                                                                        } catch { /* handled */ }
+                                                                }}>
+                                                                        <Flame aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                                        {t("fireai.room.analyze")}
+                                                                </Button>
+                                                        </div>
+                                                </CardContent>
+                                        </Card>
+                                )}
+
+                                {/* Integration Pipeline Tab */}
+                                {activeTab === "integration" && (
+                                        <Card className="border-border bg-card">
+                                                <CardHeader>
+                                                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                <Network aria-hidden="true" className="h-5 w-5" />
+                                                                {t("fireai.integration.title")}
+                                                        </CardTitle>
+                                                        <CardDescription className="text-muted-foreground">
+                                                                {t("fireai.integration.description")}
+                                                        </CardDescription>
+                                                </CardHeader>
+                                                <CardContent className="space-y-4">
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                                {["fireAlarm", "sprinkler", "hvac", "elevator", "doorHolder", "ductDetector", "supervision", "notification"].map((sub) => (
+                                                                        <div key={sub} className="flex items-center gap-2 p-2 rounded bg-muted">
+                                                                                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                                                                                <span className="text-sm">{t(`fireai.integration.${sub}`)}</span>
+                                                                        </div>
+                                                                ))}
+                                                        </div>
+                                                        <Button onClick={async () => {
+                                                                try {
+                                                                        await apiCall("/integration", { method: "POST" });
+                                                                } catch { /* handled */ }
+                                                        }}>
+                                                                <Network aria-hidden="true" className="h-4 w-4 mr-2" />
+                                                                {t("fireai.integration.runIntegration")}
+                                                        </Button>
                                                 </CardContent>
                                         </Card>
                                 )}
