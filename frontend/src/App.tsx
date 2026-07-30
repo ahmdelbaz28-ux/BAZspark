@@ -219,6 +219,54 @@ const PipelineLayersPage = lazy(() =>
 const QOMNCalculatorPage = lazy(() =>
     import("./pages/QOMNCalculatorPage").then((m) => ({ default: m.QOMNCalculatorPage })),
 );
+const MultiDBPage = lazy(() =>
+    import("./pages/MultiDBPage").then((m) => ({ default: m.MultiDBPage })),
+);
+const AdvancedSettingsPage = lazy(() =>
+    import("./pages/AdvancedSettingsPage").then((m) => ({ default: m.AdvancedSettingsPage })),
+);
+const AirQualityPage = lazy(() =>
+    import("./pages/AirQualityPage").then((m) => ({ default: m.AirQualityPage })),
+);
+const AnalysisPage = lazy(() =>
+    import("./pages/AnalysisPage").then((m) => ({ default: m.AnalysisPage })),
+);
+const APSPage = lazy(() =>
+    import("./pages/APSPage").then((m) => ({ default: m.APSPage })),
+);
+const AuditTrailPage = lazy(() =>
+    import("./pages/AuditTrailPage").then((m) => ({ default: m.AuditTrailPage })),
+);
+const BMSPage = lazy(() =>
+    import("./pages/BMSPage").then((m) => ({ default: m.BMSPage })),
+);
+const CADToolsPage = lazy(() =>
+    import("./pages/CADToolsPage").then((m) => ({ default: m.CADToolsPage })),
+);
+const ContextPage = lazy(() =>
+    import("./pages/ContextPage").then((m) => ({ default: m.ContextPage })),
+);
+const DevicesPage = lazy(() =>
+    import("./pages/DevicesPage").then((m) => ({ default: m.DevicesPage })),
+);
+const DWGPage = lazy(() =>
+    import("./pages/DWGPage").then((m) => ({ default: m.DWGPage })),
+);
+const EngineeringCopilotPage = lazy(() =>
+    import("./pages/EngineeringCopilotPage").then((m) => ({ default: m.EngineeringCopilotPage })),
+);
+const GuardsPage = lazy(() =>
+    import("./pages/GuardsPage").then((m) => ({ default: m.GuardsPage })),
+);
+const HazMatPage = lazy(() =>
+    import("./pages/HazMatPage").then((m) => ({ default: m.HazMatPage })),
+);
+const SecurityAlertsPage = lazy(() =>
+    import("./pages/SecurityAlertsPage").then((m) => ({ default: m.SecurityAlertsPage })),
+);
+const SyncPage = lazy(() =>
+    import("./pages/SyncPage").then((m) => ({ default: m.SyncPage })),
+);
 
 // C-07 FIX: Typed route structure with optional requiredRole for role-based access
 interface ProtectedRoute {
@@ -378,6 +426,23 @@ const handleSearchOpen = useCallback(() => {
                 { path: "/settings/rbac", element: <RbacPage />, requiredRole: "admin" },
                 { path: "/settings/webhooks", element: <WebhookManagementPage /> },
                 { path: "/monitor/agent", element: <AgentChatPage /> },
+                // V273: Add routes for previously unrouted orphaned pages
+                { path: "/analysis", element: <AnalysisPage /> },
+                { path: "/aps", element: <APSPage /> },
+                { path: "/audit-trail", element: <AuditTrailPage /> },
+                { path: "/bms", element: <BMSPage /> },
+                { path: "/cad-tools", element: <CADToolsPage /> },
+                { path: "/devices", element: <DevicesPage /> },
+                { path: "/dwg", element: <DWGPage /> },
+                { path: "/engineering-copilot", element: <EngineeringCopilotPage /> },
+                { path: "/engineering/guards", element: <GuardsPage /> },
+                { path: "/environment/air-quality", element: <AirQualityPage /> },
+                { path: "/environment/context", element: <ContextPage /> },
+                { path: "/environment/hazmat", element: <HazMatPage /> },
+                { path: "/security-alerts", element: <SecurityAlertsPage /> },
+                { path: "/settings/advanced", element: <AdvancedSettingsPage /> },
+                { path: "/sync", element: <SyncPage /> },
+                { path: "/multi-db", element: <MultiDBPage /> },
         ], []);
 
         // Determine if we're on a public route (no AppShell)

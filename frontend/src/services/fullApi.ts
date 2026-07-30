@@ -896,6 +896,51 @@ export const v2Api = {
         /** GET /multi-db/qdrant/collections — List Qdrant collections */
         getQdrantCollections: () => apiCall("/multi-db/qdrant/collections"),
 
+        // ── Multi-DB: BIM-specific endpoints (V273) ──
+        /** POST /multi-db/bim/cache-element — Cache a BIM element in Redis */
+        cacheBimElement: (elementId: string, elementData: Record<string, unknown>) =>
+                apiCall("/multi-db/bim/cache-element", {
+                        method: "POST",
+                        body: JSON.stringify({ element_id: elementId, element_data: elementData }),
+                }),
+
+        /** GET /multi-db/bim/get-cached-element/{elementId} — Get cached BIM element */
+        getCachedBimElement: (elementId: string) =>
+                apiCall(`/multi-db/bim/get-cached-element/${elementId}`),
+
+        /** POST /multi-db/bim/store-embeddings — Store element embeddings in Qdrant */
+        storeElementEmbeddings: (elementId: string, embeddings: number[]) =>
+                apiCall("/multi-db/bim/store-embeddings", {
+                        method: "POST",
+                        body: JSON.stringify({ element_id: elementId, embeddings }),
+                }),
+
+        /** POST /multi-db/bim/find-similar — Find similar elements by vector search */
+        findSimilarElements: (queryEmbedding: number[], limit: number = 5) =>
+                apiCall("/multi-db/bim/find-similar", {
+                        method: "POST",
+                        body: JSON.stringify({ query_embedding: queryEmbedding, limit }),
+                }),
+
+        /** POST /multi-db/bim/create-relationships — Create Neo4j relationships */
+        createElementRelationships: (
+                elementId: string,
+                relatedElements: string[],
+                relationshipType: string = "CONNECTED_TO",
+        ) =>
+                apiCall("/multi-db/bim/create-relationships", {
+                        method: "POST",
+                        body: JSON.stringify({
+                                element_id: elementId,
+                                related_elements: relatedElements,
+                                relationship_type: relationshipType,
+                        }),
+                }),
+
+        /** GET /multi-db/bim/related-elements/{elementId} — Find related elements in Neo4j */
+        findRelatedElements: (elementId: string, relationshipType: string = "CONNECTED_TO") =>
+                apiCall(`/multi-db/bim/related-elements/${elementId}?relationship_type=${relationshipType}`),
+
         // ── V270: FDS Simulation endpoints ──
         /** POST /fds/submit — Submit an FDS simulation job */
         submitFdsJob: (data: { fds_input: string; project_id?: string; metadata?: Record<string, unknown> }) =>
