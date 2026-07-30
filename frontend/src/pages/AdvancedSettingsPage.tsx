@@ -151,70 +151,72 @@ export const AdvancedSettingsPage: React.FC = () => {
     }
   };
 
-  const renderSettingInput = (setting: EnvSetting) => {
-    const isVisible = visibleSecrets.has(setting.key);
-    const value = editedValues[setting.key] ?? setting.value;
-
-    if (setting.type === "boolean") {
-      const isChecked = value === "true" || value === "1";
-      return (
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            className="sr-only peer"
-            checked={isChecked}
-            onChange={(e) => handleValueChange(setting.key, e.target.checked ? "true" : "false")}
-          />
-          <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600" />
-        </label>
-      );
-    }
-
-    if (setting.is_secret || setting.type === "secret") {
-      const displayValue = isVisible ? value : setting.value;
-      return (
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <input
-              type={isVisible ? "text" : "password"}
-              value={value}
-              onChange={(e) => handleValueChange(setting.key, e.target.value)}
-              placeholder={setting.is_set ? "••••••••" : `Default: ${setting.type === "url" ? "https://..." : "Not set"}`}
-              className="w-full px-3 py-2 pr-9 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm font-mono placeholder-slate-600 focus:border-blue-500 focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => toggleSecretVisibility(setting.key)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-              title={isVisible ? "Hide value" : "Show value"}
-            >
-              {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    if (setting.type === "number") {
-      return (
-        <input
-          type="number"
-          value={value}
-          onChange={(e) => handleValueChange(setting.key, e.target.value)}
-          className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm font-mono focus:border-blue-500 focus:outline-none"
-        />
-      );
-    }
-
+  const renderBooleanInput = (setting: EnvSetting, value: string) => {
+    const isChecked = value === "true" || value === "1";
     return (
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => handleValueChange(setting.key, e.target.value)}
-        placeholder={`Default: ${setting.type === "url" ? "https://..." : "Not set"}`}
-        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm font-mono focus:border-blue-500 focus:outline-none"
-      />
+      <label className="relative inline-flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          className="sr-only peer"
+          checked={isChecked}
+          onChange={(e) => handleValueChange(setting.key, e.target.checked ? "true" : "false")}
+        />
+        <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600" />
+      </label>
     );
+  };
+
+  const renderSecretInput = (setting: EnvSetting, value: string, isVisible: boolean) => {
+    return (
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <input
+            type={isVisible ? "text" : "password"}
+            value={value}
+            onChange={(e) => handleValueChange(setting.key, e.target.value)}
+            placeholder={setting.is_set ? "••••••••" : `Default: ${setting.type === "url" ? "https://..." : "Not set"}`}
+            className="w-full px-3 py-2 pr-9 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm font-mono placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => toggleSecretVisibility(setting.key)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+            title={isVisible ? "Hide value" : "Show value"}
+          >
+            {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderNumericInput = (setting: EnvSetting, value: string) => (
+    <input
+      type="number"
+      value={value}
+      onChange={(e) => handleValueChange(setting.key, e.target.value)}
+      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm font-mono focus:border-blue-500 focus:outline-none"
+    />
+  );
+
+  const renderTextInput = (setting: EnvSetting, value: string) => (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => handleValueChange(setting.key, e.target.value)}
+      placeholder={`Default: ${setting.type === "url" ? "https://..." : "Not set"}`}
+      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm font-mono focus:border-blue-500 focus:outline-none"
+    />
+  );
+
+  const renderSettingInput = (setting: EnvSetting) => {
+    const value = editedValues[setting.key] ?? setting.value;
+    if (setting.type === "boolean") return renderBooleanInput(setting, value);
+    if (setting.is_secret || setting.type === "secret") {
+      return renderSecretInput(setting, value, visibleSecrets.has(setting.key));
+    }
+    if (setting.type === "number") return renderNumericInput(setting, value);
+    return renderTextInput(setting, value);
   };
 
   const getSourceBadge = (source: string) => {

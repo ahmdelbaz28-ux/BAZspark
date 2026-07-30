@@ -49,6 +49,7 @@ Usage pattern (two-layer defense):
       sock = socket.create_connection((safe_ip, self.port), timeout=...)
       # ↑ uses LITERAL IP — no further DNS lookup, no rebinding possible
 """
+
 from __future__ import annotations
 
 import ipaddress
@@ -93,9 +94,9 @@ __all__ = [
 #    - Old: repeated requests for same host spawn repeated threads (no cache)
 #    - New: repeated requests within TTL return cached result (no new thread)
 
-_DNS_POSITIVE_TTL = 60.0   # cache successful resolution for 60s
-_DNS_NEGATIVE_TTL = 10.0   # cache timeout/failure for 10s (shorter, allows retry)
-_DNS_THREAD_LIMIT = 500    # global cap on concurrent DNS threads (OS protection)
+_DNS_POSITIVE_TTL = 60.0  # cache successful resolution for 60s
+_DNS_NEGATIVE_TTL = 10.0  # cache timeout/failure for 10s (shorter, allows retry)
+_DNS_THREAD_LIMIT = 500  # global cap on concurrent DNS threads (OS protection)
 
 # Cache: host -> (ip_str_or_None, expiry_monotonic)
 # None means "last lookup failed/timed out" — return SSRFError without new lookup
@@ -114,25 +115,27 @@ _DNS_THREAD_COUNT_LOCK = threading.Lock()
 # ─── Static blocklists ────────────────────────────────────────────────────
 
 _HOSTNAME_RE = re.compile(
-    r'^[a-zA-Z0-9]'                # first char: alphanumeric
-    r'([a-zA-Z0-9\-]*[a-zA-Z0-9])?'  # middle: hyphens allowed
-    r'(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$'  # dots + labels
+    r"^[a-zA-Z0-9]"  # first char: alphanumeric
+    r"([a-zA-Z0-9\-]*[a-zA-Z0-9])?"  # middle: hyphens allowed
+    r"(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$"  # dots + labels
 )
 
 # Hostnames that must ALWAYS be blocked regardless of DNS resolution.
 # These either resolve to private IPs (localhost variants) or are
 # cloud metadata service endpoints that must never be reachable from user input.
-_BLOCKED_HOSTNAMES = frozenset({
-    "localhost",
-    "localhost.localdomain",
-    "localhost4",
-    "localhost6",
-    "ip6-localhost",
-    "ip6-loopback",
-    "metadata",                    # GCP metadata alias
-    "metadata.google.internal",   # GCP metadata (resolved via /etc/hosts in GCP)
-    "metadata.azure.com",         # Azure metadata alias
-})
+_BLOCKED_HOSTNAMES = frozenset(
+    {
+        "localhost",
+        "localhost.localdomain",
+        "localhost4",
+        "localhost6",
+        "ip6-localhost",
+        "ip6-loopback",
+        "metadata",  # GCP metadata alias
+        "metadata.google.internal",  # GCP metadata (resolved via /etc/hosts in GCP)
+        "metadata.azure.com",  # Azure metadata alias
+    }
+)
 
 # IP networks that must ALWAYS be blocked.
 # This is defense-in-depth on top of Python's ipaddress.is_private etc.
@@ -141,25 +144,25 @@ _BLOCKED_HOSTNAMES = frozenset({
 _BLOCKED_NETWORKS = tuple(
     ipaddress.ip_network(net)
     for net in [
-        "0.0.0.0/8",          # nosec: S1313 — "This host" network, SSRF blocklist
-        "10.0.0.0/8",         # nosec: S1313 — RFC1918 private, SSRF blocklist
-        "100.64.0.0/10",      # nosec: S1313 — CGNAT (RFC6598), SSRF blocklist
-        "127.0.0.0/8",        # nosec: S1313 — Loopback, SSRF blocklist
-        "169.254.0.0/16",     # nosec: S1313 — Link-local (AWS/GCP/Azure metadata), SSRF blocklist
-        "172.16.0.0/12",      # nosec: S1313 — RFC1918 private, SSRF blocklist
-        "192.0.0.0/24",       # nosec: S1313 — IETF protocol assignments, SSRF blocklist
-        "192.0.2.0/24",       # nosec: S1313 — TEST-NET-1, SSRF blocklist
-        "192.168.0.0/16",     # nosec: S1313 — RFC1918 private, SSRF blocklist
-        "198.18.0.0/15",      # nosec: S1313 — Benchmarking, SSRF blocklist
-        "198.51.100.0/24",    # nosec: S1313 — TEST-NET-2, SSRF blocklist
-        "203.0.113.0/24",     # nosec: S1313 — TEST-NET-3, SSRF blocklist
-        "224.0.0.0/4",        # nosec: S1313 — Multicast, SSRF blocklist
-        "240.0.0.0/4",        # nosec: S1313 — Reserved, SSRF blocklist
-        "::1/128",            # nosec: S1313 — IPv6 loopback, SSRF blocklist
-        "::/128",             # nosec: S1313 — IPv6 unspecified, SSRF blocklist
-        "fc00::/7",           # nosec: S1313 — IPv6 Unique Local Addresses, SSRF blocklist
-        "fe80::/10",          # nosec: S1313 — IPv6 link-local, SSRF blocklist
-        "ff00::/8",           # nosec: S1313 — IPv6 multicast, SSRF blocklist
+        "0.0.0.0/8",  # nosec: S1313 — "This host" network, SSRF blocklist
+        "10.0.0.0/8",  # nosec: S1313 — RFC1918 private, SSRF blocklist
+        "100.64.0.0/10",  # nosec: S1313 — CGNAT (RFC6598), SSRF blocklist
+        "127.0.0.0/8",  # nosec: S1313 — Loopback, SSRF blocklist
+        "169.254.0.0/16",  # nosec: S1313 — Link-local (AWS/GCP/Azure metadata), SSRF blocklist
+        "172.16.0.0/12",  # nosec: S1313 — RFC1918 private, SSRF blocklist
+        "192.0.0.0/24",  # nosec: S1313 — IETF protocol assignments, SSRF blocklist
+        "192.0.2.0/24",  # nosec: S1313 — TEST-NET-1, SSRF blocklist
+        "192.168.0.0/16",  # nosec: S1313 — RFC1918 private, SSRF blocklist
+        "198.18.0.0/15",  # nosec: S1313 — Benchmarking, SSRF blocklist
+        "198.51.100.0/24",  # nosec: S1313 — TEST-NET-2, SSRF blocklist
+        "203.0.113.0/24",  # nosec: S1313 — TEST-NET-3, SSRF blocklist
+        "224.0.0.0/4",  # nosec: S1313 — Multicast, SSRF blocklist
+        "240.0.0.0/4",  # nosec: S1313 — Reserved, SSRF blocklist
+        "::1/128",  # nosec: S1313 — IPv6 loopback, SSRF blocklist
+        "::/128",  # nosec: S1313 — IPv6 unspecified, SSRF blocklist
+        "fc00::/7",  # nosec: S1313 — IPv6 Unique Local Addresses, SSRF blocklist
+        "fe80::/10",  # nosec: S1313 — IPv6 link-local, SSRF blocklist
+        "ff00::/8",  # nosec: S1313 — IPv6 multicast, SSRF blocklist
     ]
 )
 
@@ -428,9 +431,7 @@ def resolve_to_safe_ip(host: str, dns_timeout: float = 5.0) -> str:
     return safe_ip
 
 
-def resolve_to_safe_ip_with_hostname(
-    host: str, dns_timeout: float = 5.0
-) -> Tuple[str, str]:
+def resolve_to_safe_ip_with_hostname(host: str, dns_timeout: float = 5.0) -> Tuple[str, str]:
     """Like resolve_to_safe_ip, but also returns the original hostname.
 
     Use this for TLS/HTTPS connections:
@@ -451,29 +452,92 @@ def resolve_to_safe_ip_with_hostname(
     return _resolve_to_safe_ip_impl(host, dns_timeout)
 
 
+def _try_resolve_literal_ip(host: str) -> Optional[Tuple[str, str]]:
+    """If ``host`` is a literal IP, return ``(ip_str, host)`` after safety check.
+
+    Returns ``None`` if ``host`` is not a literal IP (caller should treat it
+    as a hostname). Raises :class:`SSRFError` if the literal IP is unsafe.
+    """
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return None  # not a literal IP — caller falls through to hostname path
+    if _is_unsafe_ip(ip):
+        raise SSRFError(
+            f"Host '{host}' is an unsafe IP address. SSRF protection: refused to connect."
+        )
+    return str(ip), host
+
+
+def _read_dns_cache(host: str, now: float) -> Optional[str]:
+    """Return cached safe IP for ``host`` if cache entry is fresh.
+
+    Returns:
+        - safe IP string on positive cache hit
+        - ``None`` on cache miss / stale entry (caller should perform DNS lookup)
+        - Special marker ``"__NEGATIVE__"`` on negative cache hit — caller MUST
+          raise :class:`SSRFError`.
+
+    Negative cache indicates a recent DNS failure; the caller must refuse to
+    retry within the TTL to prevent slow-DNS DoS.
+    """
+    with _DNS_CACHE_LOCK:
+        cached = _DNS_CACHE.get(host)
+    if cached is None or cached[1] <= now:
+        return None  # miss or expired
+    cached_ip, _expiry = cached
+    if cached_ip is None:
+        return "__NEGATIVE__"
+    # Positive cache hit — re-validate the cached IP (defense-in-depth)
+    try:
+        ip = ipaddress.ip_address(cached_ip)
+    except ValueError:
+        # Cached value is not a valid IP — evict and fall through
+        with _DNS_CACHE_LOCK:
+            _DNS_CACHE.pop(host, None)
+        return None
+    if _is_unsafe_ip(ip):
+        # Cached IP became unsafe? Shouldn't happen, but reject.
+        raise SSRFError(
+            f"Cached IP '{cached_ip}' for host '{host}' is unsafe. "
+            f"SSRF protection: refused to connect."
+        )
+    return cached_ip
+
+
+def _cache_dns_result(host: str, ip: Optional[str]) -> None:
+    """Write a DNS cache entry. ``None`` IP = negative cache."""
+    ttl = _DNS_POSITIVE_TTL if ip is not None else _DNS_NEGATIVE_TTL
+    with _DNS_CACHE_LOCK:
+        _DNS_CACHE[host] = (ip, time.monotonic() + ttl)
+
+
+def _find_first_safe_ip(ip_literals: list) -> Optional[str]:
+    """Return the first safe IP string from ``ip_literals``, or ``None``."""
+    for ip_str in ip_literals:
+        try:
+            ip = ipaddress.ip_address(ip_str)
+        except ValueError:
+            continue
+        if _is_unsafe_ip(ip):
+            continue  # skip unsafe IPs in the resolution list
+        return str(ip)
+    return None
+
+
 def _resolve_to_safe_ip_impl(host: str, dns_timeout: float) -> Tuple[str, str]:
     """Shared implementation for resolve_to_safe_ip and the _with_hostname variant."""
     if not host:
         raise SSRFError("Host cannot be empty")
 
     # Case 1: literal IP — validate and return as-is
-    try:
-        ip = ipaddress.ip_address(host)
-    except ValueError:
-        pass  # not a literal IP — fall through to hostname path
-    else:
-        if _is_unsafe_ip(ip):
-            raise SSRFError(
-                f"Host '{host}' is an unsafe IP address. "
-                f"SSRF protection: refused to connect."
-            )
-        return str(ip), host
+    literal = _try_resolve_literal_ip(host)
+    if literal is not None:
+        return literal
 
     # Case 2: blocked hostname
     if _is_blocked_hostname(host):
-        raise SSRFError(
-            f"Host '{host}' is blocked. SSRF protection: refused to connect."
-        )
+        raise SSRFError(f"Host '{host}' is blocked. SSRF protection: refused to connect.")
 
     # Case 3: re-resolve hostname at connection time.
     # This is the critical defense: even if the validator passed earlier,
@@ -489,31 +553,15 @@ def _resolve_to_safe_ip_impl(host: str, dns_timeout: float) -> Tuple[str, str]:
     #     "blocked" for 10s so repeated requests don't spawn new threads.
 
     # Step 1: check cache (fast path — no lock contention for cache hits)
-    now = time.monotonic()
-    with _DNS_CACHE_LOCK:
-        cached = _DNS_CACHE.get(host)
-        if cached is not None and cached[1] > now:
-            cached_ip, _expiry = cached
-            if cached_ip is None:
-                # Negative cache hit — previous lookup failed/timed out
-                raise SSRFError(
-                    f"Host '{host}' recently failed DNS resolution. "
-                    f"Refusing to retry within negative-cache TTL "
-                    f"({_DNS_NEGATIVE_TTL}s) to prevent slow-DNS DoS."
-                )
-            # Positive cache hit — re-validate the cached IP (defense-in-depth)
-            try:
-                ip = ipaddress.ip_address(cached_ip)
-                if _is_unsafe_ip(ip):
-                    # Cached IP became unsafe? Shouldn't happen, but reject.
-                    raise SSRFError(
-                        f"Cached IP '{cached_ip}' for host '{host}' is unsafe. "
-                        f"SSRF protection: refused to connect."
-                    )
-                return cached_ip, host
-            except ValueError:
-                # Cached value is not a valid IP — evict and fall through
-                _DNS_CACHE.pop(host, None)
+    cached_ip = _read_dns_cache(host, time.monotonic())
+    if cached_ip == "__NEGATIVE__":
+        raise SSRFError(
+            f"Host '{host}' recently failed DNS resolution. "
+            f"Refusing to retry within negative-cache TTL "
+            f"({_DNS_NEGATIVE_TTL}s) to prevent slow-DNS DoS."
+        )
+    if cached_ip is not None:
+        return cached_ip, host
 
     # Step 2: acquire per-host lock (concurrent requests for same host
     # share one DNS call)
@@ -521,61 +569,37 @@ def _resolve_to_safe_ip_impl(host: str, dns_timeout: float) -> Tuple[str, str]:
     with host_lock:
         # Step 2a: double-check cache (another thread may have populated it
         # while we waited for the lock)
-        now = time.monotonic()
-        with _DNS_CACHE_LOCK:
-            cached = _DNS_CACHE.get(host)
-            if cached is not None and cached[1] > now:
-                cached_ip, _expiry = cached
-                if cached_ip is None:
-                    raise SSRFError(
-                        f"Host '{host}' recently failed DNS resolution "
-                        f"(cached by another thread). Refusing to retry "
-                        f"within negative-cache TTL."
-                    )
-                try:
-                    ip = ipaddress.ip_address(cached_ip)
-                    if not _is_unsafe_ip(ip):
-                        return cached_ip, host
-                except ValueError:
-                    pass
+        cached_ip = _read_dns_cache(host, time.monotonic())
+        if cached_ip == "__NEGATIVE__":
+            raise SSRFError(
+                f"Host '{host}' recently failed DNS resolution "
+                f"(cached by another thread). Refusing to retry "
+                f"within negative-cache TTL."
+            )
+        if cached_ip is not None:
+            return cached_ip, host
 
         # Step 2b: perform the actual DNS lookup with timeout
         try:
             ip_literals = _resolve_host_with_timeout(host, dns_timeout)
-        except socket.gaierror as e:
-            # DNS resolution failed — cache negative for short TTL
-            with _DNS_CACHE_LOCK:
-                _DNS_CACHE[host] = (None, time.monotonic() + _DNS_NEGATIVE_TTL)
-            raise SSRFError(f"Could not resolve host '{host}': {e}")
-        except SSRFError:
-            # Timeout or thread-limit — cache negative for short TTL
-            with _DNS_CACHE_LOCK:
-                _DNS_CACHE[host] = (None, time.monotonic() + _DNS_NEGATIVE_TTL)
+        except (socket.gaierror, SSRFError) as e:
+            # DNS resolution failed / timed out / thread-limit — cache negative
+            _cache_dns_result(host, None)
+            if isinstance(e, socket.gaierror):
+                raise SSRFError(f"Could not resolve host '{host}': {e}") from e
             raise
 
         if not ip_literals:
-            with _DNS_CACHE_LOCK:
-                _DNS_CACHE[host] = (None, time.monotonic() + _DNS_NEGATIVE_TTL)
+            _cache_dns_result(host, None)
             raise SSRFError(f"Host '{host}' did not resolve to any IP address")
 
         # Find the first safe IP. We return the literal IP (not the hostname)
         # so the caller's socket.create_connection uses the IP directly.
-        safe_ip: Optional[str] = None
-        for ip_str in ip_literals:
-            try:
-                ip = ipaddress.ip_address(ip_str)
-            except ValueError:
-                continue
-            if _is_unsafe_ip(ip):
-                continue  # skip unsafe IPs in the resolution list
-            safe_ip = str(ip)
-            break
-
+        safe_ip = _find_first_safe_ip(ip_literals)
         if safe_ip is None:
             # All resolved IPs were unsafe — cache negative (the hostname
             # resolves only to unsafe IPs, unlikely to change quickly)
-            with _DNS_CACHE_LOCK:
-                _DNS_CACHE[host] = (None, time.monotonic() + _DNS_NEGATIVE_TTL)
+            _cache_dns_result(host, None)
             raise SSRFError(
                 f"Host '{host}' resolves only to unsafe IP addresses "
                 f"({', '.join(ip_literals[:3])}{'...' if len(ip_literals) > 3 else ''}). "
@@ -583,7 +607,5 @@ def _resolve_to_safe_ip_impl(host: str, dns_timeout: float) -> Tuple[str, str]:
             )
 
         # Cache positive result for long TTL
-        with _DNS_CACHE_LOCK:
-            _DNS_CACHE[host] = (safe_ip, time.monotonic() + _DNS_POSITIVE_TTL)
-
+        _cache_dns_result(host, safe_ip)
         return safe_ip, host

@@ -22,7 +22,7 @@ import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -51,10 +51,14 @@ def _verify_project(project_id: str) -> None:
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
+        raise HTTPException(
+            status_code=404, detail="Project not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
 
 
-def _generate_voltage_drop_report(devices: list, connections: list, now: str) -> dict:  # NOSONAR: python:S3776
+def _generate_voltage_drop_report(
+    devices: list, connections: list, now: str
+) -> dict:  # NOSONAR: python:S3776
     """
     Generate voltage drop report content.
 
@@ -79,11 +83,13 @@ def _generate_voltage_drop_report(devices: list, connections: list, now: str) ->
     # heavy dependency that is unavailable in some environments.
     try:
         from fireai.core.qomn_kernel import compute_voltage_drop
+
         _qomn_available = True
     except ImportError as ie:
         logger.warning(
             "fireai.core.qomn_kernel not available (%s) — voltage drop "
-            "will be listed without real NEC Table 8 calculations.", ie
+            "will be listed without real NEC Table 8 calculations.",
+            ie,
         )
         _qomn_available = False
 
@@ -217,24 +223,25 @@ def _cable_size_to_awg(cable_size: str) -> Optional[str]:
 
     # Case 1: explicit AWG (e.g. "12 AWG", "#12", "12AWG")
     import re
-    awg_match = re.match(r'^#?\s*(\d{1,3}(?:/\d)?)\s*AWG?$', s, re.IGNORECASE)
+
+    awg_match = re.match(r"^#?\s*(\d{1,3}(?:/\d)?)\s*AWG?$", s, re.IGNORECASE)
     if awg_match:
         return awg_match.group(1)
 
     # Case 2: bare integer like "12", "#12", "14" — assume AWG (≤ 30 to
     # avoid confusing with mm²)
-    bare_match = re.match(r'^#?\s*(\d{1,3}(?:/\d)?)$', s)
+    bare_match = re.match(r"^#?\s*(\d{1,3}(?:/\d)?)$", s)
     if bare_match:
         val = bare_match.group(1)
         try:
-            num = int(val.split('/')[0])
+            num = int(val.split("/")[0])
             if 0 <= num <= 30:
                 return val
         except ValueError:
             pass
 
     # Case 3: metric mm² (e.g. "1.5mm²", "2.5 mm2", "1.5 mm²")
-    mm_match = re.match(r'^(\d+(?:\.\d+)?)\s*mm[\s²2]*$', s, re.IGNORECASE)
+    mm_match = re.match(r"^(\d+(?:\.\d+)?)\s*mm[\s²2]*$", s, re.IGNORECASE)
     if mm_match:
         try:
             mm2 = float(mm_match.group(1))
@@ -246,6 +253,7 @@ def _cable_size_to_awg(cable_size: str) -> Optional[str]:
             pass
 
     return None
+
 
 def _generate_nfpa72_coverage_report(devices: list, now: str) -> dict:
     """
@@ -273,8 +281,14 @@ def _generate_nfpa72_coverage_report(devices: list, now: str) -> dict:
     _SMOKE_TYPES = {"FA_SMOKE", "FA_DUCT_SMOKE", "FA_BEAM_SMOKE", "FA_ASPIRATING"}
     _HEAT_TYPES = {"FA_HEAT", "FA_HEAT_FIXED", "FA_HEAT_RATE_OF_RISE"}
     _NOTIFICATION_TYPES = {
-        "FA_SOUND_STROBE", "FA_HORN", "FA_STROBE", "FA_BELL", "FA_SIREN",
-        "PA_CEILING_SPEAKER", "PA_WALL_SPEAKER", "PA_HORN",
+        "FA_SOUND_STROBE",
+        "FA_HORN",
+        "FA_STROBE",
+        "FA_BELL",
+        "FA_SIREN",
+        "PA_CEILING_SPEAKER",
+        "PA_WALL_SPEAKER",
+        "PA_HORN",
     }
     _MANUAL_TYPES = {"FA_MANUAL_PULL", "FA_PULL_STATION"}
 
@@ -282,8 +296,12 @@ def _generate_nfpa72_coverage_report(devices: list, now: str) -> dict:
     heat_detectors = [d for d in devices if d.get("type", "") in _HEAT_TYPES]
     notification = [d for d in devices if d.get("type", "") in _NOTIFICATION_TYPES]
     manual_stations = [d for d in devices if d.get("type", "") in _MANUAL_TYPES]
-    other_devices = [d for d in devices if d.get("type", "") not in
-                     (_SMOKE_TYPES | _HEAT_TYPES | _NOTIFICATION_TYPES | _MANUAL_TYPES)]
+    other_devices = [
+        d
+        for d in devices
+        if d.get("type", "")
+        not in (_SMOKE_TYPES | _HEAT_TYPES | _NOTIFICATION_TYPES | _MANUAL_TYPES)
+    ]
 
     # Lazy import of NFPA 72 spacing constants from qomn_kernel
     try:
@@ -291,11 +309,13 @@ def _generate_nfpa72_coverage_report(devices: list, now: str) -> dict:
             NFPA72_HEAT_MAX_SPACING_M,
             NFPA72_SMOKE_MAX_SPACING_M,
         )
+
         _spacing_available = True
     except ImportError as ie:
         logger.warning(
             "fireai.core.qomn_kernel not available (%s) — NFPA 72 spacing "
-            "verification will use default values (smoke=9.1m, heat=6.1m).", ie
+            "verification will use default values (smoke=9.1m, heat=6.1m).",
+            ie,
         )
         _spacing_available = False
         NFPA72_SMOKE_MAX_SPACING_M = 9.1
@@ -322,8 +342,10 @@ def _generate_nfpa72_coverage_report(devices: list, now: str) -> dict:
                 "devicesMissingCoordinates": 0,
             }
         radius_m = max_spacing_m * _COVERAGE_RADIUS_FACTOR
-        area_per = 3.14159 * radius_m ** 2
-        with_coords = sum(1 for d in detector_list if d.get("x") is not None and d.get("y") is not None)
+        area_per = 3.14159 * radius_m**2
+        with_coords = sum(
+            1 for d in detector_list if d.get("x") is not None and d.get("y") is not None
+        )
         return {
             "count": count,
             "maxSpacingM": max_spacing_m,
@@ -369,9 +391,7 @@ def _generate_nfpa72_coverage_report(devices: list, now: str) -> dict:
             "Add horns/strobes per NFPA 72 §18.4."
         )
     if len(manual_stations) == 0 and len(devices) > 0:
-        notes.append(
-            "⚠️ No manual pull stations found — required per NFPA 72 §17.14 at exits."
-        )
+        notes.append("⚠️ No manual pull stations found — required per NFPA 72 §17.14 at exits.")
 
     return {
         "type": "nfpa72_coverage",
@@ -398,7 +418,9 @@ def _generate_nfpa72_coverage_report(devices: list, now: str) -> dict:
             "smokeMaxSpacingM": NFPA72_SMOKE_MAX_SPACING_M,
             "heatMaxSpacingM": NFPA72_HEAT_MAX_SPACING_M,
             "coverageRadiusFactor": _COVERAGE_RADIUS_FACTOR,
-            "source": "fireai.core.qomn_kernel" if _spacing_available else "default fallback values",
+            "source": "fireai.core.qomn_kernel"
+            if _spacing_available
+            else "default fallback values",
         },
         "complianceNotes": notes,
         "disclaimer": (
@@ -407,6 +429,7 @@ def _generate_nfpa72_coverage_report(devices: list, now: str) -> dict:
             "stratification), use the spatial_engine via POST /api/v1/qomn/place-detectors."
         ),
     }
+
 
 def _generate_nfpa72_battery_report(devices: list, now: str) -> dict:
     """Generate NFPA 72 battery calculation report content."""
@@ -421,14 +444,14 @@ def _generate_nfpa72_battery_report(devices: list, now: str) -> dict:
     # speakers used for evacuation) active for 5 minutes during alarm condition.
     # Standby load = all other devices (detectors, modules, panels) for 24 hours.
     _ALARM_DEVICE_TYPES = {
-        "FA_SOUND_STROBE",    # Combined sounder/strobe — PRIMARY evacuation signal
-        "FA_HORN",           # Fire alarm horn
-        "FA_STROBE",         # Visual alarm strobe
-        "FA_BELL",           # Fire alarm bell
-        "FA_SIREN",          # Electronic siren
-        "PA_CEILING_SPEAKER", # PA speaker used for voice evacuation
-        "PA_WALL_SPEAKER",   # Wall-mounted PA speaker for voice evacuation
-        "PA_HORN",           # Outdoor horn for voice evacuation
+        "FA_SOUND_STROBE",  # Combined sounder/strobe — PRIMARY evacuation signal
+        "FA_HORN",  # Fire alarm horn
+        "FA_STROBE",  # Visual alarm strobe
+        "FA_BELL",  # Fire alarm bell
+        "FA_SIREN",  # Electronic siren
+        "PA_CEILING_SPEAKER",  # PA speaker used for voice evacuation
+        "PA_WALL_SPEAKER",  # Wall-mounted PA speaker for voice evacuation
+        "PA_HORN",  # Outdoor horn for voice evacuation
     }
     # Also classify by category + type combination for devices using category-based storage
     _ALARM_CATEGORIES = {"PA_SYSTEM"}  # PA system devices are typically voice alarm
@@ -444,7 +467,10 @@ def _generate_nfpa72_battery_report(devices: list, now: str) -> dict:
         is_alarm = (
             device_type in _ALARM_DEVICE_TYPES
             or device_category == "notification"  # Legacy compatibility
-            or (device_category in _ALARM_CATEGORIES and device_type not in {"PA_AMPLIFIER", "PA_MICROPHONE"})
+            or (
+                device_category in _ALARM_CATEGORIES
+                and device_type not in {"PA_AMPLIFIER", "PA_MICROPHONE"}
+            )
         )
 
         if is_alarm:
@@ -456,7 +482,11 @@ def _generate_nfpa72_battery_report(devices: list, now: str) -> dict:
     # returned zero battery when only notification appliances exist.
     # NFPA 72 §27.6.2 requires battery capacity for alarm load regardless
     # of standby load. A system with only horns/strobes still needs battery.
-    battery_ah = (total_standby * 24 + total_alarm * 0.25) / 0.8 if (total_standby > 0 or total_alarm > 0) else 0
+    battery_ah = (
+        (total_standby * 24 + total_alarm * 0.25) / 0.8
+        if (total_standby > 0 or total_alarm > 0)
+        else 0
+    )
     return {
         "type": "nfpa72_battery",
         "standard": "NFPA 72-2022 §27.6.2",
@@ -476,7 +506,10 @@ def _generate_nfpa72_battery_report(devices: list, now: str) -> dict:
         ),
     }
 
-def _generate_cable_sizing_report(connections: list, devices: list, now: str) -> dict:  # NOSONAR: python:S3776
+
+def _generate_cable_sizing_report(
+    connections: list, devices: list, now: str
+) -> dict:  # NOSONAR: python:S3776
     """
     Generate cable sizing report content with real NEC ampacity verification.
 
@@ -509,12 +542,15 @@ def _generate_cable_sizing_report(connections: list, devices: list, now: str) ->
     # Lazy import of NEC ampacity table from qomn_kernel
     try:
         from fireai.core.qomn_kernel import NEC_AMPACITY_60C
+
         _nec_available = True
     except ImportError as ie:
         import logging
+
         logging.getLogger(__name__).warning(
             "fireai.core.qomn_kernel not available (%s) — cable sizing "
-            "will be listed without NEC ampacity verification.", ie
+            "will be listed without NEC ampacity verification.",
+            ie,
         )
         _nec_available = False
         NEC_AMPACITY_60C = {}
@@ -621,6 +657,7 @@ def _generate_cable_sizing_report(connections: list, devices: list, now: str) ->
         "connections": verified_connections,
     }
 
+
 def _generate_generic_report(devices: list, connections: list, report_type: str, now: str) -> dict:
     """Generate a generic report with project summary."""
     return {
@@ -631,6 +668,7 @@ def _generate_generic_report(devices: list, connections: list, report_type: str,
         "totalConnections": len(connections),
         "devicesByCategory": _count_by_category(devices),
     }
+
 
 def _generate_report_content(report_type: str, project_id: str) -> dict:
     """
@@ -699,11 +737,15 @@ async def list_reports(
     """List all reports for a project."""
     _verify_project(project_id)
     db = get_db()
-    result = db.list_reports(project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order)
+    result = db.list_reports(
+        project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order
+    )
     return {"success": True, "data": result}
 
 
-@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
+@router.post(
+    "", status_code=201, dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))]
+)
 @limiter.limit("30/minute")
 async def generate_report(request: Request, project_id: str, input_data: GenerateReportInput):
     """Generate a new engineering report."""
@@ -743,13 +785,18 @@ async def generate_report(request: Request, project_id: str, input_data: Generat
         # file paths, variable names, and internal implementation details.
         # This data is retrievable via the API, creating an information
         # leakage vulnerability. Log the full error server-side instead.
-        logger.exception("Report generation failed for project %s", project_id, exc_info=True)  # NOSONAR
+        logger.exception(
+            "Report generation failed for project %s", project_id, exc_info=True
+        )  # NOSONAR
         db.update_report(
             project_id,
             report["id"],
             {
                 "status": "failed",
-                "parameters": {**report.get("parameters", {}), "error": "Report generation failed. Contact administrator for details."},
+                "parameters": {
+                    **report.get("parameters", {}),
+                    "error": "Report generation failed. Contact administrator for details.",
+                },
             },
         )
 
@@ -761,14 +808,20 @@ async def generate_report(request: Request, project_id: str, input_data: Generat
     return {"data": result, "success": report_success}
 
 
-@project_router.post("/generate", status_code=200, dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
+@project_router.post(
+    "/generate",
+    status_code=200,
+    dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))],
+)
 @limiter.limit("30/minute")
 async def generate_global_report(request: Request, input_data: GenerateReportInput):
     """Generate a report globally using the first available project for compatibility."""
     db = get_db()
     projects = db.list_projects(page=1, limit=1)
     if not projects or not projects.get("data"):
-        raise HTTPException(status_code=404, detail="No projects found to generate report")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
+        raise HTTPException(
+            status_code=404, detail="No projects found to generate report"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
 
     project_id = projects["data"][0]["id"]
     report_type = input_data.type or input_data.reportType or "summary"  # NOSONAR
@@ -803,7 +856,10 @@ async def generate_global_report(request: Request, input_data: GenerateReportInp
             report["id"],
             {
                 "status": "failed",
-                "parameters": {**report.get("parameters", {}), "error": "Report generation failed. Contact administrator for details."},
+                "parameters": {
+                    **report.get("parameters", {}),
+                    "error": "Report generation failed. Contact administrator for details.",
+                },
             },
         )
 
@@ -819,12 +875,14 @@ async def get_report(project_id: str, report_id: str):
     db = get_db()
     report = db.get_report(project_id, report_id)
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
+        raise HTTPException(
+            status_code=404, detail="Report not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
     return {"data": report, "success": True}
 
 
 def _escape_xml(value):
-    return str(value).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    return str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def _add_pdf_value(story, styles, value, label, safe_label, depth):
@@ -833,17 +891,13 @@ def _add_pdf_value(story, styles, value, label, safe_label, depth):
 
     if isinstance(value, (str, int, float, bool)):
         safe_value = _escape_xml(value)
-        story.append(_Paragraph(
-            f"<b>{safe_label}:</b> {safe_value}", styles['Normal']
-        ))
+        story.append(_Paragraph(f"<b>{safe_label}:</b> {safe_value}", styles["Normal"]))
     elif isinstance(value, list):
-        story.append(_Paragraph(
-            f"<b>{safe_label}:</b> {len(value)} items", styles['Normal']
-        ))
+        story.append(_Paragraph(f"<b>{safe_label}:</b> {len(value)} items", styles["Normal"]))
         for i, item in enumerate(value[:20]):
             _add_data_to_pdf(story, styles, item, f"{label}[{i}].", depth + 1)
     elif isinstance(value, dict):
-        story.append(_Paragraph(f"<b>{label}:</b>", styles['Normal']))
+        story.append(_Paragraph(f"<b>{label}:</b>", styles["Normal"]))
         _add_data_to_pdf(story, styles, value, f"  {label}.", depth + 1)
 
 
@@ -879,27 +933,35 @@ def _build_pdf_report(report, report_id):
     from reportlab.platypus import SimpleDocTemplate, Spacer
 
     pdf_buffer = io.BytesIO()
-    doc = SimpleDocTemplate(pdf_buffer, pagesize=A4,
-                            topMargin=20*mm, bottomMargin=20*mm,
-                            leftMargin=15*mm, rightMargin=15*mm)
+    doc = SimpleDocTemplate(
+        pdf_buffer,
+        pagesize=A4,
+        topMargin=20 * mm,
+        bottomMargin=20 * mm,
+        leftMargin=15 * mm,
+        rightMargin=15 * mm,
+    )
     styles = getSampleStyleSheet()
     story = []
 
-    story.append(Paragraph(f"FireAI Report: {report['name']}", styles['Title']))
-    story.append(Paragraph(f"Type: {report['type']} | Status: {report['status']}", styles['Normal']))
-    story.append(Paragraph(f"Generated: {report.get('createdAt', 'N/A')}", styles['Normal']))
-    story.append(Spacer(1, 10*mm))
+    story.append(Paragraph(f"FireAI Report: {report['name']}", styles["Title"]))
+    story.append(
+        Paragraph(f"Type: {report['type']} | Status: {report['status']}", styles["Normal"])
+    )
+    story.append(Paragraph(f"Generated: {report.get('createdAt', 'N/A')}", styles["Normal"]))
+    story.append(Spacer(1, 10 * mm))
 
     params = report.get("parameters", {})
     content_data = params.get("content", {})
     if isinstance(content_data, dict):
         _add_data_to_pdf(story, styles, content_data)
 
-    story.append(Spacer(1, 15*mm))
-    story.append(Paragraph(
-        "FireAI Digital Twin — NFPA 72-2022 Compliant Engineering Report",
-        styles['Normal']
-    ))
+    story.append(Spacer(1, 15 * mm))
+    story.append(
+        Paragraph(
+            "FireAI Digital Twin — NFPA 72-2022 Compliant Engineering Report", styles["Normal"]
+        )
+    )
 
     doc.build(story)
     pdf_buffer.seek(0)
@@ -907,7 +969,7 @@ def _build_pdf_report(report, report_id):
         pdf_buffer,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f"attachment; filename=\"report_{_safe_filename(report_id)}.pdf\""
+            "Content-Disposition": f'attachment; filename="report_{_safe_filename(report_id)}.pdf"'
         },
     )
 
@@ -949,7 +1011,7 @@ def _build_dxf_report(report, report_id):
         io.BytesIO(dxf_bytes),
         media_type="application/dxf",
         headers={
-            "Content-Disposition": f"attachment; filename=\"report_{_safe_filename(report_id)}.dxf\""
+            "Content-Disposition": f'attachment; filename="report_{_safe_filename(report_id)}.dxf"'
         },
     )
 
@@ -974,7 +1036,9 @@ async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent 
     db = get_db()
     report = db.get_report(project_id, report_id)
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
+        raise HTTPException(
+            status_code=404, detail="Report not found"
+        )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
 
     if report["status"] != "completed":
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
@@ -988,7 +1052,7 @@ async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent 
             io.BytesIO(content.encode("utf-8")),
             media_type="application/json",
             headers={
-                "Content-Disposition": f"attachment; filename=\"report_{_safe_filename(report_id)}.json\""
+                "Content-Disposition": f'attachment; filename="report_{_safe_filename(report_id)}.json"'
             },
         )
     if format == "pdf":
@@ -1014,7 +1078,9 @@ async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent 
                 detail="DXF export requires ezdxf package",
             )
     else:
-        raise HTTPException(status_code=400, detail=f"Unsupported format: {format}")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(
+            status_code=400, detail=f"Unsupported format: {format}"
+        )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1040,16 +1106,115 @@ class AhjSubmittalRequest(BaseModel):
     designer: str = PydField("", description="Designer name + PE license #")
     jurisdiction: str = PydField("", description="AHJ jurisdiction name")
     nfpa_edition: str = PydField("2022", description="NFPA 72 edition")
-    rooms: Optional[List[AhjRoomInput]] =  PydField(
+    rooms: Optional[List[AhjRoomInput]] = PydField(
         None,
         description="Optional list of rooms. If omitted, a single room is "
         "derived from the device bounding box.",
     )
 
 
-@router.post("/ahj-submittal", dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
+def _build_ahj_rooms(body: AhjSubmittalRequest, devices: list, Room_cls) -> list:
+    """Build the list of ``(Room, detector_type)`` tuples for AHJ generation.
+
+    Order of preference:
+      1. Rooms provided in the request body.
+      2. A single bounding-box room derived from device coordinates.
+      3. An empty list (caller will raise 400).
+    """
+    if body.rooms:
+        return [
+            (
+                Room_cls(
+                    name=r.name, width=r.width, length=r.length, ceiling_height=r.ceiling_height
+                ),
+                r.detector_type,
+            )
+            for r in body.rooms
+        ]
+    if not devices:
+        return []
+    xs = [float(d.get("x", 0) or 0) for d in devices]
+    ys = [float(d.get("y", 0) or 0) for d in devices]
+    if not (xs and ys):
+        return []
+    width = max(max(xs) - min(xs), 1.0)
+    length = max(max(ys) - min(ys), 1.0)
+    return [(Room_cls(name="Project Bounding Box", width=width, length=length), "smoke")]
+
+
+def _compute_ahj_consensus(layout, room) -> Any:
+    """Run the ConsensusEngine cross-check for a single room layout.
+
+    Returns the consensus object on success, or ``None`` if the engine is
+    unavailable or verification fails (both logged as warnings).
+    """
+    try:
+        from fireai.core.spatial_engine.consensus_engine import ConsensusEngine
+    except ImportError:
+        logger.warning(
+            "ConsensusEngine not available — consensus will be None for room '%s'.",
+            room.name,
+        )
+        return None
+    try:
+        consensus_engine = ConsensusEngine(coverage_radius=layout.coverage_radius)
+        detector_positions = [(float(d[0]), float(d[1])) for d in layout.detectors]
+        consensus = consensus_engine.verify(
+            width=room.width,
+            length=room.length,
+            detectors=detector_positions,
+            grid_proof_valid=layout.proof_valid,
+            grid_coverage_pct=layout.coverage_pct,
+        )
+        logger.info(
+            "AHJ consensus for room '%s': confidence=%s, verdict=%s",
+            room.name,
+            getattr(consensus, "confidence", "N/A"),
+            getattr(consensus, "verdict", "N/A"),
+        )
+        return consensus
+    except Exception as cons_err:
+        logger.warning(
+            "Consensus verification failed for room '%s': %s",
+            room.name,
+            cons_err,
+        )
+        return None
+
+
+def _process_room_for_ahj(doc, optimizer, room, detector_type, DetectorLayout_cls) -> None:
+    """Optimize detector placement for one room and append the result to ``doc``.
+
+    On optimization failure, a stub record is appended so the room still
+    appears in the AHJ document with an error note.
+    """
+    try:
+        layout: DetectorLayout_cls = optimizer.optimize(room=room)
+        consensus = _compute_ahj_consensus(layout, room)
+        doc.add_room_result(room, layout, consensus)
+    except Exception as room_err:
+        logger.warning(
+            "AHJ submittal: room '%s' optimization failed: %s",
+            room.name,
+            room_err,
+        )
+        stub_layout = DetectorLayout_cls(
+            room=room,
+            detectors=[],
+            coverage_pct=0.0,
+            proof_valid=False,
+            nfpa_valid=False,
+            method="optimization_failed",
+            violations=[f"Optimization error: {room_err}"],
+        )
+        doc.add_room_result(room, stub_layout, None, notes=[str(room_err)])
+
+
+@router.post(
+    "/ahj-submittal", dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))]
+)
 @limiter.limit("10/minute")
-async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSubmittalRequest):  # NOSONAR: python:S3776
+async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSubmittalRequest):
     """
     Generate an AHJ-ready NFPA 72 compliance proof document.
 
@@ -1108,27 +1273,7 @@ async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSub
     )
 
     optimizer = DensityOptimizer()
-
-    # Determine rooms: either from the request body, or derive a single
-    # room from the device bounding box.
-    if body.rooms:
-        rooms = [
-            (Room(name=r.name, width=r.width, length=r.length, ceiling_height=r.ceiling_height), r.detector_type)
-            for r in body.rooms
-        ]
-    elif devices:
-        # Derive bounding box from device coordinates
-        xs = [float(d.get("x", 0) or 0) for d in devices]
-        ys = [float(d.get("y", 0) or 0) for d in devices]
-        if xs and ys:
-            width = max(max(xs) - min(xs), 1.0)
-            length = max(max(ys) - min(ys), 1.0)
-            rooms = [(Room(name="Project Bounding Box", width=width, length=length), "smoke")]
-        else:
-            rooms = []
-    else:
-        rooms = []
-
+    rooms = _build_ahj_rooms(body, devices, Room)
     if not rooms:
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability
             status_code=400,
@@ -1142,70 +1287,7 @@ async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSub
     # For each room, run the density optimizer to compute detector coverage
     # and add the result to the AHJ document.
     for room, detector_type in rooms:
-        try:
-            # accept a detector_type kwarg — the detector type is fixed at the
-            # optimizer instance level. The detector_type from the loop is
-            # informational only (used in the AHJ document metadata below).
-            layout: DetectorLayout = optimizer.optimize(
-                room=room,
-            )
-            # Previously ConsensusEngine() was called without the required
-            # coverage_radius argument → TypeError → caught → consensus=None.
-            # The AHJ document claimed "Triple Verification System" but the
-            # consensus column always showed "N/A". Now we pass the correct
-            # coverage_radius from the layout and call verify() with the
-            # room dimensions + detector positions.
-            consensus = None
-            try:
-                from fireai.core.spatial_engine.consensus_engine import ConsensusEngine
-                consensus_engine = ConsensusEngine(
-                    coverage_radius=layout.coverage_radius,
-                )
-                # Extract detector (x, y) positions from the layout
-                detector_positions = [
-                    (float(d[0]), float(d[1])) for d in layout.detectors
-                ]
-                consensus = consensus_engine.verify(
-                    width=room.width,
-                    length=room.length,
-                    detectors=detector_positions,
-                    grid_proof_valid=layout.proof_valid,
-                    grid_coverage_pct=layout.coverage_pct,
-                )
-                logger.info(
-                    "AHJ consensus for room '%s': confidence=%s, verdict=%s",
-                    room.name,
-                    getattr(consensus, "confidence", "N/A"),
-                    getattr(consensus, "verdict", "N/A"),
-                )
-            except ImportError:
-                logger.warning(
-                    "ConsensusEngine not available — consensus will be None "
-                    "for room '%s'.", room.name,
-                )
-            except Exception as cons_err:
-                logger.warning(
-                    "Consensus verification failed for room '%s': %s",
-                    room.name, cons_err,
-                )
-
-            doc.add_room_result(room, layout, consensus)
-        except Exception as room_err:
-            logger.warning(
-                "AHJ submittal: room '%s' optimization failed: %s",
-                room.name, room_err,
-            )
-            # Add a stub record so the room appears in the document with an error note
-            stub_layout = DetectorLayout(
-                room=room,
-                detectors=[],
-                coverage_pct=0.0,
-                proof_valid=False,
-                nfpa_valid=False,
-                method="optimization_failed",
-                violations=[f"Optimization error: {room_err}"],
-            )
-            doc.add_room_result(room, stub_layout, None, notes=[str(room_err)])
+        _process_room_for_ahj(doc, optimizer, room, detector_type, DetectorLayout)
 
     try:
         markdown_content = doc.generate()
