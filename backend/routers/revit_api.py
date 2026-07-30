@@ -9,7 +9,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 import logging
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import (
@@ -351,7 +351,7 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
             type="connection_established",
             data={
                 "project_id": project_id,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "message": f"Connected to project {project_id}"
             }
         ).model_dump_json())
@@ -373,9 +373,9 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                         await websocket.send_text(WebSocketMessage(
                             type="sync_started",
                             data={
-                                "sync_id": f"sync_{project_id}_{int(datetime.utcnow().timestamp())}",
+                                "sync_id": f"sync_{project_id}_{int(datetime.now(timezone.utc).timestamp())}",
                                 "project_id": project_id,
-                                "timestamp": datetime.utcnow().isoformat()
+                                "timestamp": datetime.now(timezone.utc).isoformat()
                             }
                         ).model_dump_json())
 
@@ -384,9 +384,9 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                             await websocket.send_text(WebSocketMessage(
                                 type="sync_progress",
                                 data={
-                                    "sync_id": f"sync_{project_id}_{int(datetime.utcnow().timestamp())}",
+                                    "sync_id": f"sync_{project_id}_{int(datetime.now(timezone.utc).timestamp())}",
                                     "progress": progress,
-                                    "timestamp": datetime.utcnow().isoformat()
+                                    "timestamp": datetime.now(timezone.utc).isoformat()
                                 }
                             ).model_dump_json())
 
@@ -396,19 +396,19 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                         await websocket.send_text(WebSocketMessage(
                             type="sync_completed",
                             data={
-                                "sync_id": f"sync_{project_id}_{int(datetime.utcnow().timestamp())}",
+                                "sync_id": f"sync_{project_id}_{int(datetime.now(timezone.utc).timestamp())}",
                                 "project_id": project_id,
                                 "elements_processed": 100,
                                 "elements_successful": 98,
                                 "elements_failed": 2,
-                                "timestamp": datetime.utcnow().isoformat()
+                                "timestamp": datetime.now(timezone.utc).isoformat()
                             }
                         ).model_dump_json())
 
                     elif message.type == "ping":
                         await websocket.send_text(WebSocketMessage(
                             type="pong",
-                            data={"timestamp": datetime.utcnow().isoformat()}
+                            data={"timestamp": datetime.now(timezone.utc).isoformat()}
                         ).model_dump_json())
 
                 except Exception as e:
@@ -417,7 +417,7 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                         type="error",
                         data={
                             "error": str(e),
-                            "timestamp": datetime.utcnow().isoformat()
+                            "timestamp": datetime.now(timezone.utc).isoformat()
                         }
                     ).model_dump_json())
 

@@ -84,7 +84,7 @@ async def process_engineering_request(request: EngineeringRequest) -> Dict[str, 
         return result
 
     except Exception as e:
-        logger.error(f"Error processing engineering request: {e}")
+        logger.error(f"Error processing engineering request")
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
 
@@ -230,7 +230,7 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
         return creation_result
 
     except Exception as e:
-        logger.error(f"Error creating entity {request.name}: {e}")
+        logger.error(f"Error creating entity {request.name}")
         raise HTTPException(status_code=500, detail=f"Error creating entity: {str(e)}")
 
 
@@ -280,7 +280,7 @@ async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
         return translation_result
 
     except Exception as e:
-        logger.error(f"Error translating model: {e}")
+        logger.error(f"Error translating model")
         raise HTTPException(status_code=500, detail=f"Error translating model: {str(e)}")
 
 
@@ -311,7 +311,7 @@ async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, An
         return validation_result
 
     except Exception as e:
-        logger.error(f"Error validating model: {e}")
+        logger.error(f"Error validating model")
         raise HTTPException(status_code=500, detail=f"Error validating model: {str(e)}")
 
 
@@ -342,7 +342,7 @@ async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, 
         return reports
 
     except Exception as e:
-        logger.error(f"Error generating reports: {e}")
+        logger.error(f"Error generating reports")
         raise HTTPException(status_code=500, detail=f"Error generating reports: {str(e)}")
 
 
@@ -372,7 +372,7 @@ async def health_check() -> Dict[str, Any]:
         return health_status
 
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
+        logger.error(f"Health check failed")
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
 
 
@@ -426,3 +426,4 @@ async def get_capabilities() -> Dict[str, Any]:
 
     logger.info("Capabilities retrieved")
     return capabilities
+
