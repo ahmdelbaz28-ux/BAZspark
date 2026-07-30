@@ -1159,3 +1159,17 @@ export const etapApi = {
                 }),
 };
 
+export const fullApi = {
+        login: async (username: string, password?: string) => apiCall<{ success: boolean; token?: string; user?: any; message?: string }>("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
+        logout: async () => apiCall<{ success: boolean }>("/auth/logout", { method: "POST" }),
+        getMe: async () => apiCall<{ data?: any }>("/auth/me"),
+        verifyToken: async (token: string) => apiCall<{ success: boolean }>("/auth/verify", { method: "POST", body: JSON.stringify({ token }) }),
+        qomnCalculate: async (params: any) => apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/calculate", { method: "POST", body: JSON.stringify(params) }),
+        getEnvironmentalContext: async (lat: number, lon: number) => apiCall<{ data?: any }>(`/environment/context?lat=${lat}&lon=${lon}`),
+        getWeatherForecast: async (location: string) => apiCall<{ data?: any }>(`/environment/weather?location=${encodeURIComponent(location)}`),
+        getAirQualityData: async (lat: number, lon: number) => apiCall<{ data?: any }>(`/environment/air-quality?lat=${lat}&lon=${lon}`),
+};
+
+export default fullApi;
+
+
