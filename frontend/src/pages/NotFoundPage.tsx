@@ -7,7 +7,7 @@
  */
 import { Button } from "@/components/ui/button";
 import { Home, Compass, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 export function NotFoundPage() {
 	const navigate = useNavigate();

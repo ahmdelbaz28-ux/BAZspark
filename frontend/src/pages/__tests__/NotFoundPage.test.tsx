@@ -3,13 +3,13 @@
  */
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 import { NotFoundPage } from "../NotFoundPage";
 
 // Mock useNavigate
 const mockNavigate = vi.fn();
-vi.mock("react-router-dom", async () => {
-	const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+vi.mock("react-router", async () => {
+	const actual = await vi.importActual<typeof import("react-router")>("react-router");
 	return {
 		...actual,
 		useNavigate: () => mockNavigate,

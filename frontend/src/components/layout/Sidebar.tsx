@@ -40,7 +40,7 @@ import {
 import type React from "react";
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { BazSparkLogo } from "@/components/auth/BazSparkLogo";
 

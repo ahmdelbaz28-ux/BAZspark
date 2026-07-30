@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useSidebarBadges, type SidebarBadgeState } from "@/hooks/useSidebarBadges";
 import {

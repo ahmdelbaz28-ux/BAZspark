@@ -6,7 +6,7 @@
  * to give a unified building health view.
  */
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import {
   Building2,
   FlameKindling,

@@ -5,7 +5,7 @@
  * quick actions links, and health API fetch.
  */
 import { render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BMSPage } from "../BMSPage";
 

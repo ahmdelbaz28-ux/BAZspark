@@ -1,7 +1,7 @@
 import { Globe, HelpCircle, Search, Settings, Sun, Moon } from "lucide-react";
 import type React from "react";
 import { memo, useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { ContextualHelpButton } from "@/components/shared/ContextualHelpButton";
 import { useTheme } from "@/contexts/ThemeContext";

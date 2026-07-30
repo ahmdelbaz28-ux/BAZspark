@@ -9,7 +9,7 @@
 
 import { HelpCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 import { toast } from "sonner";
 import { HELP_TOPICS as TOPICS } from "@/help/helpTopics";
 import { ROUTE_HELP_MAP } from "@/help/types";

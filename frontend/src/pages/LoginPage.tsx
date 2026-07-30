@@ -4,7 +4,7 @@
  */
 
 import { useState, type FormEvent } from "react";
-import { Navigate as RouterNavigate, useSearchParams as useRouterSearchParams } from "react-router-dom";
+import { Navigate as RouterNavigate, useSearchParams as useRouterSearchParams } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { PrototypeSwitcher } from "@/components/ui/PrototypeSwitcher";
 import { VariantA } from "@/pages/prototypes/login/VariantA";

@@ -41,8 +41,8 @@ vi.mock("@/hooks/useApiQuery", () => ({
 	}),
 }));
 
-// Mock react-router-dom
-vi.mock("react-router-dom", () => ({
+// Mock react-router
+vi.mock("react-router", () => ({
 	NavLink: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
 	useNavigate: () => vi.fn(),
 }));

@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 
 interface PrototypeSwitcherProps {
   readonly variants: readonly { readonly key: string; readonly label: string }[];

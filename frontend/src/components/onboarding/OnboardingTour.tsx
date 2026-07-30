@@ -1,7 +1,7 @@
 
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 import { cn } from "@/lib/utils";
 
 export interface TourStep {

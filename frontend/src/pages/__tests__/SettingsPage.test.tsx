@@ -50,8 +50,8 @@ vi.mock("@/hooks/useApiQuery", () => ({
 	}),
 }));
 
-// Mock react-router-dom
-vi.mock("react-router-dom", () => ({
+// Mock react-router
+vi.mock("react-router", () => ({
 	useNavigate: () => vi.fn(),
 }));
 

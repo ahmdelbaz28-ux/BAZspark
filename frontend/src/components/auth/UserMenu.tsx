@@ -6,7 +6,7 @@
  * clears the session cookie and redirects to /login.
  */
 import { LogOut, ShieldCheck, User } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
