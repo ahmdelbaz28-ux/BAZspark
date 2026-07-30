@@ -353,7 +353,7 @@ export function useSyncProject(): {
                 },
                 loading: mutation.isPending,
                 error: mutation.error?.message ?? null,
-                data: mutation.data ?? null,
+                data: (mutation.data ?? null) as Record<string, unknown> | null,
                 reset: mutation.reset,
         };
 }
