@@ -368,7 +368,7 @@ def get_provider(name: str | None = None, **kwargs: Any) -> BIMProvider | None:
 # ---------------------------------------------------------------------------
 
 
-class LocalRevitProvider(BuildingModelProvider):  # type: ignore[no-any-import]
+class LocalRevitProvider(BuildingModelProvider):
     """
     BIMProvider implementation backed by local Revit/AutoCAD/IFC/JSON.
 
