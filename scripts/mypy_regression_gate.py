@@ -28,7 +28,7 @@ import sys
 
 def main() -> int:
     # Parse simple args
-    baseline = 715  # Current baseline (V273): 715 pre-existing errors
+    baseline = 703  # Current baseline (V273): 703 pre-existing errors
     targets = ["backend/", "fireai/", "core/"]
     mypy_args = [
         "--ignore-missing-imports",

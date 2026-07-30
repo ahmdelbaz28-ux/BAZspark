@@ -76,7 +76,7 @@ jobs:
         # CRUD endpoints). These are pre-existing in the merged branches,
         # not regressions introduced by the merge itself. Progressive cleanup
         # tracked separately.
-        run: python3 scripts/mypy_regression_gate.py --baseline 715
+        run: python3 scripts/mypy_regression_gate.py --baseline 703
 
 
       - name: Bandit security scan

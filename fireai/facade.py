@@ -25,7 +25,7 @@ from fireai.core.results import (
 if TYPE_CHECKING:
     from fireai.core.qomn_kernel import SelfHealingQOMNKernel
     from fireai.core.safety_assurance import SafetyTier
-    from fireai.core.safety_audit_engine import AuditResult, SafetyAuditEngine as _SafetyAuditEngine
+    from fireai.core.safety_audit_engine import AuditResult
 
 
 class Engine:
