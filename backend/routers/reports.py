@@ -56,9 +56,90 @@ def _verify_project(project_id: str) -> None:
         )  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
 
 
-def _generate_voltage_drop_report(
-    devices: list, connections: list, now: str
-) -> dict:  # NOSONAR: python:S3776
+def _compute_voltage_drop_for_circuit(
+    conn: dict, from_dev: dict, to_dev: dict, qomn_available: bool
+) -> tuple[dict, str]:
+    """Compute voltage-drop fields for a single circuit.
+
+    Returns ``(circuit, status)`` where status is one of:
+      ``"computed"``, ``"skipped"``, ``"error"``, ``"unavailable"``.
+    ``circuit`` is the partial dict (without ``from``/``to``/``cableSize``/
+    ``length``/``load``/``voltage`` which the caller already filled in).
+    """
+    if not qomn_available:
+        return ({"calculation": "unavailable"}, "unavailable")
+
+    awg = _cable_size_to_awg(conn["cableSize"])
+    if awg is None:
+        return (
+            {
+                "calculation": "skipped",
+                "calculation_note": (
+                    f"Cable size '{conn['cableSize']}' could not be mapped "
+                    "to an AWG gauge — voltage drop not computed."
+                ),
+            },
+            "skipped",
+        )
+
+    try:
+        # NFPA 72 §27.4.1.2: max drop = 15% of PLFA voltage under normal
+        # load; we use 10% as a conservative default per the
+        # compute_voltage_drop signature.
+        current_a = float(to_dev.get("current", 0) or 0)
+        if current_a <= 0:
+            # If current not recorded, derive from P=VI
+            v = float(to_dev.get("voltage", 24.0) or 24.0)
+            load_w = float(to_dev.get("load", 0) or 0)
+            current_a = load_w / v if v > 0 else 0.0
+        length_m = float(conn["length"] or 0)
+        supply_v = float(to_dev.get("voltage", 24.0) or 24.0)
+
+        if not (current_a > 0 and length_m > 0 and supply_v > 0):
+            return (
+                {
+                    "calculation": "skipped",
+                    "calculation_note": ("Missing current/length/voltage — cannot compute."),
+                },
+                "skipped",
+            )
+
+        from fireai.core.qomn_kernel import compute_voltage_drop
+
+        result = compute_voltage_drop(
+            current_a=current_a,
+            length_m=length_m,
+            awg_gauge=awg,
+            supply_voltage_v=supply_v,
+            max_drop_pct=10.0,
+        )
+        return (
+            {
+                "awg_gauge": awg,
+                "voltage_drop_v": result["voltage_drop_v"],
+                "drop_pct": result["drop_pct"],
+                "is_compliant": result["is_compliant"],
+                "max_length_m": result["max_length_m"],
+                "nec_section": result["nec_section"],
+                "formula": result["formula"],
+                "computation_hash": result["computation_hash"],
+                "calculation": "computed",
+            },
+            "computed" if result["is_compliant"] else "non_compliant",
+        )
+    except Exception as calc_err:
+        # compute_voltage_drop may raise PhysicsGuardError or
+        # ValueError on bad AWG — record the error honestly.
+        return (
+            {
+                "calculation": "error",
+                "calculation_error": str(calc_err),
+            },
+            "error",
+        )
+
+
+def _generate_voltage_drop_report(devices: list, connections: list, now: str) -> dict:
     """
     Generate voltage drop report content.
 
@@ -82,16 +163,16 @@ def _generate_voltage_drop_report(
     # Lazy import so the reports module still loads if qomn_kernel has a
     # heavy dependency that is unavailable in some environments.
     try:
-        from fireai.core.qomn_kernel import compute_voltage_drop
+        from fireai.core.qomn_kernel import compute_voltage_drop  # noqa: F401
 
-        _qomn_available = True
+        qomn_available = True
     except ImportError as ie:
         logger.warning(
             "fireai.core.qomn_kernel not available (%s) — voltage drop "
             "will be listed without real NEC Table 8 calculations.",
             ie,
         )
-        _qomn_available = False
+        qomn_available = False
 
     for conn in connections:
         from_dev = device_map.get(conn["fromId"])
@@ -108,63 +189,15 @@ def _generate_voltage_drop_report(
             "voltage": to_dev.get("voltage", 24.0) or 24.0,
         }
 
-        if _qomn_available:
-            awg = _cable_size_to_awg(conn["cableSize"])
-            if awg is None:
-                circuit["calculation"] = "skipped"
-                circuit["calculation_note"] = (
-                    f"Cable size '{conn['cableSize']}' could not be mapped "
-                    "to an AWG gauge — voltage drop not computed."
-                )
-                skipped_count += 1
-            else:
-                try:
-                    # NFPA 72 §27.4.1.2: max drop = 15% of PLFA voltage
-                    # under normal load; we use 10% as a conservative default
-                    # per the compute_voltage_drop signature.
-                    current_a = float(to_dev.get("current", 0) or 0)
-                    if current_a <= 0:
-                        # If current not recorded, derive from P=VI
-                        v = float(to_dev.get("voltage", 24.0) or 24.0)
-                        load_w = float(to_dev.get("load", 0) or 0)
-                        current_a = load_w / v if v > 0 else 0.0
-                    length_m = float(conn["length"] or 0)
-                    supply_v = float(to_dev.get("voltage", 24.0) or 24.0)
+        partial, status = _compute_voltage_drop_for_circuit(conn, from_dev, to_dev, qomn_available)
+        circuit.update(partial)
 
-                    if current_a > 0 and length_m > 0 and supply_v > 0:
-                        result = compute_voltage_drop(
-                            current_a=current_a,
-                            length_m=length_m,
-                            awg_gauge=awg,
-                            supply_voltage_v=supply_v,
-                            max_drop_pct=10.0,
-                        )
-                        circuit["awg_gauge"] = awg
-                        circuit["voltage_drop_v"] = result["voltage_drop_v"]
-                        circuit["drop_pct"] = result["drop_pct"]
-                        circuit["is_compliant"] = result["is_compliant"]
-                        circuit["max_length_m"] = result["max_length_m"]
-                        circuit["nec_section"] = result["nec_section"]
-                        circuit["formula"] = result["formula"]
-                        circuit["computation_hash"] = result["computation_hash"]
-                        circuit["calculation"] = "computed"
-                        computed_count += 1
-                        if not result["is_compliant"]:
-                            non_compliant_count += 1
-                    else:
-                        circuit["calculation"] = "skipped"
-                        circuit["calculation_note"] = (
-                            "Missing current/length/voltage — cannot compute."
-                        )
-                        skipped_count += 1
-                except Exception as calc_err:
-                    # compute_voltage_drop may raise PhysicsGuardError or
-                    # ValueError on bad AWG — record the error honestly.
-                    circuit["calculation"] = "error"
-                    circuit["calculation_error"] = str(calc_err)
-                    skipped_count += 1
+        if status == "computed":
+            computed_count += 1
+        elif status == "non_compliant":
+            computed_count += 1
+            non_compliant_count += 1
         else:
-            circuit["calculation"] = "unavailable"
             skipped_count += 1
 
         circuits.append(circuit)
@@ -507,9 +540,68 @@ def _generate_nfpa72_battery_report(devices: list, now: str) -> dict:
     }
 
 
-def _generate_cable_sizing_report(
-    connections: list, devices: list, now: str
-) -> dict:  # NOSONAR: python:S3776
+def _verify_cable_ampacity(conn: dict, to_dev: dict, nec_table: dict) -> tuple[dict, str]:
+    """Verify NEC ampacity for a single cable connection.
+
+    Returns ``(fields, status)`` where status is one of:
+      ``"computed"``, ``"skipped"``, ``"unavailable"``.
+    ``fields`` is the partial dict to merge into the conn entry.
+    """
+    awg = _cable_size_to_awg(conn["cableSize"])
+    if awg is None:
+        return (
+            {
+                "verification": "skipped",
+                "verification_note": (
+                    f"Cable size '{conn['cableSize']}' could not be mapped to an "
+                    "AWG gauge — ampacity not verified."
+                ),
+            },
+            "skipped",
+        )
+
+    # Look up NEC ampacity (60°C column, §310.16)
+    ampacity_a = nec_table.get(awg)
+    if ampacity_a is None:
+        return (
+            {
+                "verification": "skipped",
+                "verification_note": (f"AWG '{awg}' not in NEC ampacity table — cannot verify."),
+            },
+            "skipped",
+        )
+
+    # Compute load current: use device's current field, or derive
+    # from P=VI if only load (watts) is available
+    current_a = float(to_dev.get("current", 0) or 0)
+    if current_a <= 0:
+        v = float(to_dev.get("voltage", 24.0) or 24.0)
+        load_w = float(to_dev.get("load", 0) or 0)
+        current_a = load_w / v if v > 0 else 0.0
+
+    # Apply NEC 125% derating for continuous loads
+    NEC_CONTINUOUS_LOAD_DERATING = 1.25
+    derated_current_a = current_a * NEC_CONTINUOUS_LOAD_DERATING
+    is_adequate = ampacity_a >= derated_current_a
+    utilization_pct = (derated_current_a / ampacity_a * 100.0) if ampacity_a > 0 else 0.0
+
+    return (
+        {
+            "awg_gauge": awg,
+            "nec_ampacity_a": ampacity_a,
+            "load_current_a": round(current_a, 4),
+            "derated_current_a": round(derated_current_a, 4),
+            "derating_factor": NEC_CONTINUOUS_LOAD_DERATING,
+            "utilization_pct": round(utilization_pct, 2),
+            "is_adequate": is_adequate,
+            "nec_section": "NEC 2023 §310.16 (60°C) + §210.19(A) 125% continuous",
+            "verification": "computed",
+        },
+        "adequate" if is_adequate else "inadequate",
+    )
+
+
+def _generate_cable_sizing_report(connections: list, devices: list, now: str) -> dict:
     """
     Generate cable sizing report content with real NEC ampacity verification.
 
@@ -543,16 +635,14 @@ def _generate_cable_sizing_report(
     try:
         from fireai.core.qomn_kernel import NEC_AMPACITY_60C
 
-        _nec_available = True
+        nec_available = True
     except ImportError as ie:
-        import logging
-
-        logging.getLogger(__name__).warning(
+        logger.warning(
             "fireai.core.qomn_kernel not available (%s) — cable sizing "
             "will be listed without NEC ampacity verification.",
             ie,
         )
-        _nec_available = False
+        nec_available = False
         NEC_AMPACITY_60C = {}
 
     # NEC §210.19(A): Continuous loads (3+ hours) require 125% ampacity.
@@ -583,60 +673,19 @@ def _generate_cable_sizing_report(
             verified_connections.append(conn_entry)
             continue
 
-        if _nec_available:
-            awg = _cable_size_to_awg(c["cableSize"])
-            if awg is None:
-                conn_entry["verification"] = "skipped"
-                conn_entry["verification_note"] = (
-                    f"Cable size '{c['cableSize']}' could not be mapped to an "
-                    "AWG gauge — ampacity not verified."
-                )
-                skipped_count += 1
-                verified_connections.append(conn_entry)
-                continue
-
-            # Look up NEC ampacity (60°C column, §310.16)
-            ampacity_a = NEC_AMPACITY_60C.get(awg)
-            if ampacity_a is None:
-                conn_entry["verification"] = "skipped"
-                conn_entry["verification_note"] = (
-                    f"AWG '{awg}' not in NEC ampacity table — cannot verify."
-                )
-                skipped_count += 1
-                verified_connections.append(conn_entry)
-                continue
-
-            # Compute load current: use device's current field, or derive
-            # from P=VI if only load (watts) is available
-            current_a = float(to_dev.get("current", 0) or 0)
-            if current_a <= 0:
-                v = float(to_dev.get("voltage", 24.0) or 24.0)
-                load_w = float(to_dev.get("load", 0) or 0)
-                current_a = load_w / v if v > 0 else 0.0
-
-            # Apply NEC 125% derating for continuous loads
-            derated_current_a = current_a * NEC_CONTINUOUS_LOAD_DERATING
-            is_adequate = ampacity_a >= derated_current_a
-
-            # Compute utilization percentage
-            utilization_pct = (derated_current_a / ampacity_a * 100.0) if ampacity_a > 0 else 0.0
-
-            conn_entry["awg_gauge"] = awg
-            conn_entry["nec_ampacity_a"] = ampacity_a
-            conn_entry["load_current_a"] = round(current_a, 4)
-            conn_entry["derated_current_a"] = round(derated_current_a, 4)
-            conn_entry["derating_factor"] = NEC_CONTINUOUS_LOAD_DERATING
-            conn_entry["utilization_pct"] = round(utilization_pct, 2)
-            conn_entry["is_adequate"] = is_adequate
-            conn_entry["nec_section"] = "NEC 2023 §310.16 (60°C) + §210.19(A) 125% continuous"
-            conn_entry["verification"] = "computed"
-
-            if is_adequate:
-                adequate_count += 1
-            else:
-                inadequate_count += 1
-        else:
+        if not nec_available:
             conn_entry["verification"] = "unavailable"
+            skipped_count += 1
+            verified_connections.append(conn_entry)
+            continue
+
+        fields, status = _verify_cable_ampacity(c, to_dev, NEC_AMPACITY_60C)
+        conn_entry.update(fields)
+        if status == "adequate":
+            adequate_count += 1
+        elif status == "inadequate":
+            inadequate_count += 1
+        else:
             skipped_count += 1
 
         verified_connections.append(conn_entry)
@@ -1113,7 +1162,7 @@ class AhjSubmittalRequest(BaseModel):
     )
 
 
-def _build_ahj_rooms(body: AhjSubmittalRequest, devices: list, Room_cls) -> list:
+def _build_ahj_rooms(body: AhjSubmittalRequest, devices: list, room_cls) -> list:
     """Build the list of ``(Room, detector_type)`` tuples for AHJ generation.
 
     Order of preference:
@@ -1124,7 +1173,7 @@ def _build_ahj_rooms(body: AhjSubmittalRequest, devices: list, Room_cls) -> list
     if body.rooms:
         return [
             (
-                Room_cls(
+                room_cls(
                     name=r.name, width=r.width, length=r.length, ceiling_height=r.ceiling_height
                 ),
                 r.detector_type,
@@ -1139,7 +1188,7 @@ def _build_ahj_rooms(body: AhjSubmittalRequest, devices: list, Room_cls) -> list
         return []
     width = max(max(xs) - min(xs), 1.0)
     length = max(max(ys) - min(ys), 1.0)
-    return [(Room_cls(name="Project Bounding Box", width=width, length=length), "smoke")]
+    return [(room_cls(name="Project Bounding Box", width=width, length=length), "smoke")]
 
 
 def _compute_ahj_consensus(layout, room) -> Any:
@@ -1182,14 +1231,14 @@ def _compute_ahj_consensus(layout, room) -> Any:
         return None
 
 
-def _process_room_for_ahj(doc, optimizer, room, detector_type, DetectorLayout_cls) -> None:
+def _process_room_for_ahj(doc, optimizer, room, detector_layout_cls) -> None:
     """Optimize detector placement for one room and append the result to ``doc``.
 
     On optimization failure, a stub record is appended so the room still
     appears in the AHJ document with an error note.
     """
     try:
-        layout: DetectorLayout_cls = optimizer.optimize(room=room)
+        layout = optimizer.optimize(room=room)
         consensus = _compute_ahj_consensus(layout, room)
         doc.add_room_result(room, layout, consensus)
     except Exception as room_err:
@@ -1198,7 +1247,7 @@ def _process_room_for_ahj(doc, optimizer, room, detector_type, DetectorLayout_cl
             room.name,
             room_err,
         )
-        stub_layout = DetectorLayout_cls(
+        stub_layout = detector_layout_cls(
             room=room,
             detectors=[],
             coverage_pct=0.0,
@@ -1286,8 +1335,8 @@ async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSub
 
     # For each room, run the density optimizer to compute detector coverage
     # and add the result to the AHJ document.
-    for room, detector_type in rooms:
-        _process_room_for_ahj(doc, optimizer, room, detector_type, DetectorLayout)
+    for room, _detector_type in rooms:
+        _process_room_for_ahj(doc, optimizer, room, DetectorLayout)
 
     try:
         markdown_content = doc.generate()
