@@ -446,6 +446,7 @@ ignore = [
     "D102",  # Missing docstring in public method
     "D103",  # Missing docstring in public function
     "D107",  # Missing docstring in __init__
+    "D203",  # Conflicts with D211 — codebase uses D211 (no blank line before class docstring)
     # V140: The following rules are disabled globally because they are style
     # preferences, not safety/correctness issues. The FireAI codebase uses:
     # - Engineering Unicode symbols (×, °C, δ, Ω, π) — required for NFPA/IEC formulas

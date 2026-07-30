@@ -8,7 +8,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
 import math
-from datetime import timezone, datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 
@@ -332,7 +332,6 @@ class GeometryTransformationService:
         # In a real implementation, this would handle complex geometry conversion
 
         location = element.get('location')
-        geometry = element.get('geometry')  # NOSONAR — python:S2201: geometry is read for future use
 
         if location:
             # If location is available, create a point geometry

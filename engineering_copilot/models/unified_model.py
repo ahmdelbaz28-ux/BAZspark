@@ -7,8 +7,7 @@ Python classes for the unified engineering data model across ETAP, AutoCAD, and 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 from dataclasses import dataclass, field
-from datetime import datetime
-from datetime import timezone, timezone
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4

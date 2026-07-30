@@ -8,7 +8,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 """
 import asyncio
 import logging
-from datetime import timezone, datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from .event_definitions import (

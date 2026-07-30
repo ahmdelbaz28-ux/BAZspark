@@ -7,7 +7,7 @@ Service for extracting electrical and other assets from Revit models.
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
-from datetime import timezone, datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 
