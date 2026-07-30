@@ -80,7 +80,8 @@ class Result(Generic[T, E]):
                 "Attempted to access .value on an error Result. "
                 "Always check is_ok() before accessing .value."
             )
-        return self._value
+        # After the guard, self._value is guaranteed to be T (not None)
+        return self._value  # type: ignore[return-value]
 
     @property
     def error(self) -> E:
@@ -90,7 +91,8 @@ class Result(Generic[T, E]):
                 "Attempted to access .error on a success Result. "
                 "Always check is_err() before accessing .error."
             )
-        return self._error
+        # After the guard, self._error is guaranteed to be E (not None)
+        return self._error  # type: ignore[return-value]
 
     def __repr__(self) -> str:
         if self._ok:

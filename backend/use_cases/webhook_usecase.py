@@ -3,8 +3,8 @@ webhook_usecase.py — Webhook Management Interactor (Clean Architecture).
 Encapsulates subscription management and event payload validation.
 """
 
-from typing import Dict, Any, List, Optional
 import uuid
+from typing import Any, Dict, List, Optional
 
 
 class WebhookUseCase:

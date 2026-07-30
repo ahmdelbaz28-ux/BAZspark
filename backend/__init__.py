@@ -7,11 +7,11 @@ import hashlib
 
 _original_md5 = hashlib.md5  # NOSONAR — python:S4790: compatibility patch for ReportLab, NOT used for security
 
-def _patched_md5(*args, **kwargs):
+def _patched_md5(*args, **kwargs):  # type: ignore[no-untyped-def]
     kwargs.pop("usedforsecurity", None)
     return _original_md5(*args, **kwargs)  # NOSONAR — python:S4790: ReportLab compat, no security context
 
-hashlib.md5 = _patched_md5  # type: ignore  # NOSONAR — python:S4790: ReportLab backward compat patch
+hashlib.md5 = _patched_md5  # NOSONAR — python:S4790: ReportLab backward compat patch
 
 try:
     with open("VERSION") as f:

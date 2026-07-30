@@ -7,6 +7,8 @@ from the request and enforcing permission checks on endpoints.
 
 from __future__ import annotations
 
+from typing import Optional
+
 from fastapi import HTTPException, Request, status
 
 from backend.rbac import Permission, Role, has_permission
@@ -22,13 +24,13 @@ def get_current_role(request: Request) -> Role:
     If no role is found (e.g., whitelisted paths or development mode),
     defaults to VIEWER for safety (least privilege).
     """
-    role = getattr(request.state, "fireai_role", None)
+    role: Optional[Role] = getattr(request.state, "fireai_role", None)
     if role is not None:
         return role
     # Fallback: check for role in request scope (set by ASGI middleware)
-    role = request.scope.get("fireai_role")
-    if role is not None:
-        return role
+    scope_role = request.scope.get("fireai_role")
+    if scope_role is not None and isinstance(scope_role, Role):
+        return scope_role
     # Default to VIEWER (least privilege) when no role is set
     return Role.VIEWER
 

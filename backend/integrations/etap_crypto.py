@@ -5,15 +5,16 @@ backend/integrations/etap_crypto.py — ETAP credential encryption utilities.
 """
 from __future__ import annotations
 
+import logging
 import os
+from typing import Optional
 
 from cryptography.fernet import Fernet, InvalidToken
 
 _ETAP_ENCRYPTION_KEY_ENV = "ETAP_ENCRYPTION_KEY"
 _MASTER_ENCRYPTION_KEY_ENV = "ENCRYPTION_KEY"
 
-
-logger: type(None) = None  # placeholder to satisfy linters without adding logging import here
+logger = logging.getLogger(__name__)
 
 
 def _get_key() -> bytes:
@@ -24,15 +25,13 @@ def _get_key() -> bytes:
       2. ENCRYPTION_KEY (shared master key, already configured in deploy.yml)
       3. Raise OSError if neither is set
     """
-    key = os.getenv(_ETAP_ENCRYPTION_KEY_ENV) or os.getenv(_MASTER_ENCRYPTION_KEY_ENV)
+    key: Optional[str] = os.getenv(_ETAP_ENCRYPTION_KEY_ENV) or os.getenv(_MASTER_ENCRYPTION_KEY_ENV)
     if not key:
         raise OSError(
             f"Missing required env var {_ETAP_ENCRYPTION_KEY_ENV} or {_MASTER_ENCRYPTION_KEY_ENV}. "
             "Generate one with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
         )
-    if isinstance(key, str):
-        key = key.encode("utf-8")
-    return key
+    return key.encode("utf-8")
 
 
 def encrypt_password(plaintext: str) -> str:

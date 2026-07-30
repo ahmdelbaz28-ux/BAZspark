@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 import redis.asyncio as redis
 
-from ..config import settings
+from ..config import Config
 
 
 async def get_redis_client() -> redis.Redis:
@@ -17,9 +17,9 @@ async def get_redis_client() -> redis.Redis:
         redis.Redis: Redis client instance
     """
     redis_client = redis.Redis(
-        host=settings.redis_host,
-        port=settings.redis_port,
-        password=settings.redis_password,
+        host=Config.REDIS_HOST or "localhost",
+        port=Config.REDIS_PORT,
+        password=Config.REDIS_PASSWORD,
         decode_responses=False,  # Keep as bytes for consistency
         health_check_interval=30
     )

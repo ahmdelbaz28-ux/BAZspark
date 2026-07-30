@@ -4,7 +4,7 @@ Decouples layout generation algorithms from API controllers.
 Preserves 100% existing generation logic and data schemas.
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict
 
 
 class GenerativeDesignUseCase:

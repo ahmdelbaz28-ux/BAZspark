@@ -84,7 +84,7 @@ async def process_engineering_request(request: EngineeringRequest) -> Dict[str, 
         return result
 
     except Exception as e:
-        logger.error(f"Error processing engineering request")
+        logger.error("Error processing engineering request")
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
 
@@ -280,7 +280,7 @@ async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
         return translation_result
 
     except Exception as e:
-        logger.error(f"Error translating model")
+        logger.error("Error translating model")
         raise HTTPException(status_code=500, detail=f"Error translating model: {str(e)}")
 
 
@@ -311,7 +311,7 @@ async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, An
         return validation_result
 
     except Exception as e:
-        logger.error(f"Error validating model")
+        logger.error("Error validating model")
         raise HTTPException(status_code=500, detail=f"Error validating model: {str(e)}")
 
 
@@ -342,7 +342,7 @@ async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, 
         return reports
 
     except Exception as e:
-        logger.error(f"Error generating reports")
+        logger.error("Error generating reports")
         raise HTTPException(status_code=500, detail=f"Error generating reports: {str(e)}")
 
 
@@ -372,7 +372,7 @@ async def health_check() -> Dict[str, Any]:
         return health_status
 
     except Exception as e:
-        logger.error(f"Health check failed")
+        logger.error("Health check failed")
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
 
 

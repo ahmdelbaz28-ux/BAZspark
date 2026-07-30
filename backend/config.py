@@ -102,7 +102,7 @@ class Config:
                 issues.append("DATABASE_URL may have invalid PostgreSQL format")
 
         # Check if Neo4j has credentials when using remote server
-        if not cls.NEO4J_URI.startswith("bolt://localhost") and not cls.NEO4J_PASSWORD:
+        if cls.NEO4J_URI is not None and not cls.NEO4J_URI.startswith("bolt://localhost") and not cls.NEO4J_PASSWORD:
             issues.append("Neo4j remote connection detected without password")
 
         return issues
