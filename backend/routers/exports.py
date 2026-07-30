@@ -29,7 +29,7 @@ project_router = APIRouter(prefix="/exports", tags=["exports"])
 
 def _generate_excel_export(project, devices, connections):
     """Generate Excel export content with multiple sheets."""
-    if Workbook is None:
+    if Workbook is None:  # NOSONAR: false-positive — Workbook can be None when openpyxl is missing
         raise HTTPException(
             status_code=503,
             detail={
@@ -219,6 +219,7 @@ class ExportDataInput(BaseModel):
     dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
     responses={
         404: {"description": "No projects found to export data"},
+        503: {"description": "Excel export unavailable: openpyxl package not installed"},
     },
 )
 @limiter.limit("10/minute")

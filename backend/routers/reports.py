@@ -952,7 +952,16 @@ def _build_dxf_report(report, report_id):
     )
 
 
-@router.get("/{report_id}/export", dependencies=[Depends(require_permission(Permission.REPORT_READ))])
+@router.get(
+    "/{report_id}/export",
+    dependencies=[Depends(require_permission(Permission.REPORT_READ))],
+    responses={
+        404: {"description": "Report not found"},
+        400: {"description": "Report is not ready for export"},
+        501: {"description": "PDF export requires the reportlab package"},
+        503: {"description": "PDF export unavailable: reportlab package not installed"},
+    },
+)
 async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     project_id: str,
     report_id: str,
