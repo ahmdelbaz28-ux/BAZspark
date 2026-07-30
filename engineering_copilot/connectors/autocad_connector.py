@@ -27,7 +27,7 @@ if HAS_CLR:
         clr.AddReference("acdbmgd")
         clr.AddReference("acmgd")
         clr.AddReference("accoremgd")
-    except:
+    except Exception:
         # Mock for testing outside AutoCAD
         pass
 

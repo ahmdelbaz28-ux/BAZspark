@@ -159,9 +159,9 @@ class RevitElementAdapter(IRevitAdapter):
                         param_value = self._get_parameter_value(param)
                         if param_name and param_value is not None:
                             parameters[param_name] = param_value
-                    except:
+                    except Exception:
                         continue
-        except:
+        except Exception:
             pass
         return parameters
 
@@ -179,7 +179,7 @@ class RevitElementAdapter(IRevitAdapter):
                     return str(parameter.AsElementId())
                 else:
                     return str(parameter.AsValueString())
-        except:
+        except Exception:
             return None
 
     def _extract_location(self, revit_element: Any) -> Optional[Dict[str, float]]:
@@ -193,7 +193,7 @@ class RevitElementAdapter(IRevitAdapter):
                     'y': float(point.Y),
                     'z': float(point.Z)
                 }
-        except:
+        except Exception:
             pass
         return None
 
@@ -207,7 +207,7 @@ class RevitElementAdapter(IRevitAdapter):
                 'geometry_type': 'Unknown'  # Would be determined based on element type
             }
             return geometry_info
-        except:
+        except Exception:
             return None
 
     def _extract_electrical_parameters(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

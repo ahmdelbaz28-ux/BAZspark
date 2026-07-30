@@ -108,7 +108,7 @@ class RevitAddinManager:
                 "elements_successful": random.randint(45, 195),
                 "elements_failed": random.randint(0, 5),
                 "duration_seconds": round(random.uniform(1.0, 5.0), 2),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
 
             self.logger.info(f"Sync completed: {sync_result['elements_successful']} successful, {sync_result['elements_failed']} failed")
@@ -133,7 +133,7 @@ class RevitAddinManager:
             # For now, we'll simulate the status
             status = {
                 "project_id": self.current_project_id,
-                "last_sync": datetime.utcnow().isoformat(),
+                "last_sync": datetime.now(timezone.utc).isoformat(),
                 "sync_status": "up_to_date",
                 "element_count": random.randint(100, 1000),
                 "pending_changes": random.randint(0, 10),
@@ -168,7 +168,7 @@ class RevitAddinManager:
                 "success": True,
                 "elements_pushed": len(elements),
                 "elements_successful": len(elements),  # Assume all succeed in simulation
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
 
             return result
@@ -194,7 +194,7 @@ class RevitAddinManager:
                 "success": True,
                 "analysis_type": "load_flow",
                 "results_available": True,
-                "last_analysis_date": datetime.utcnow().isoformat(),
+                "last_analysis_date": datetime.now(timezone.utc).isoformat(),
                 "critical_elements": [],
                 "summary": {
                     "total_elements_analyzed": random.randint(50, 150),
@@ -229,4 +229,4 @@ class RevitAddinManager:
 
 # Import asyncio and datetime for the simulation
 import asyncio
-from datetime import datetime
+from datetime import timezone, datetime

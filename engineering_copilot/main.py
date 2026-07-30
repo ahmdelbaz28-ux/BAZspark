@@ -48,8 +48,8 @@ if __name__ == "__main__":
     import uvicorn
     app = create_app()
     uvicorn.run(
-        app,
-        host="0.0.0.0",
+        "engineering_copilot.main:create_app",
+        host="127.0.0.1",
         port=8001,
         reload=True
     )

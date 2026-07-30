@@ -26,7 +26,7 @@ if HAS_CLR:
     try:
         clr.AddReference("RevitAPI")
         clr.AddReference("RevitAPIUI")
-    except:
+    except Exception:
         # Mock for testing outside Revit
         pass
 

@@ -8,7 +8,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 """
 import asyncio
 import logging
-from datetime import datetime
+from datetime import timezone, datetime
 from typing import Any, Dict, List
 
 from .event_definitions import (
@@ -70,7 +70,7 @@ class RevitEventPublisher:
 
         # Add timestamp if not present
         if 'timestamp' not in payload:
-            payload['timestamp'] = datetime.utcnow().isoformat()
+            payload['timestamp'] = datetime.now(timezone.utc).isoformat()
 
         # Add event metadata
         event_data = {

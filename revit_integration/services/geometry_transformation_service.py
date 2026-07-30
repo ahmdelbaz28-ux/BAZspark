@@ -8,7 +8,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
 import math
-from datetime import datetime
+from datetime import timezone, datetime
 from typing import Any, Dict, List, Optional
 
 
@@ -313,7 +313,7 @@ class GeometryTransformationService:
                     }
                 },
                 "metadata": {
-                    "generated_at": datetime.utcnow().isoformat(),
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
                     "source": "Revit Model",
                     "format": "GeoJSON"
                 }
@@ -323,7 +323,7 @@ class GeometryTransformationService:
         return {
             "elements": model_elements,
             "format": target_format,
-            "transformed_at": datetime.utcnow().isoformat()
+            "transformed_at": datetime.now(timezone.utc).isoformat()
         }
 
     async def _element_to_geometry(self, element: Dict[str, Any]) -> Dict[str, Any]:

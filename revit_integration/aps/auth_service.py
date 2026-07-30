@@ -9,7 +9,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import timezone, datetime, timedelta
 from typing import Dict, Optional
 
 try:
@@ -86,7 +86,7 @@ class APSAuthService:
                             expires_in=token_data['expires_in'],
                             token_type=token_data['token_type'],
                             scope=token_data['scope'],
-                            issued_at=datetime.utcnow()
+                            issued_at=datetime.now(timezone.utc)
                         )
                         self.logger.info("Successfully authenticated with 2-legged OAuth")
                         return self._access_token
@@ -111,7 +111,7 @@ class APSAuthService:
 
         # Check if token is expired
         expiry_time = self._access_token.issued_at + timedelta(seconds=self._access_token.expires_in)
-        if datetime.utcnow() >= expiry_time:
+        if datetime.now(timezone.utc) >= expiry_time:
             # Token expired, need to refresh or re-authenticate
             if self._access_token.refresh_token:
                 # Refresh token (for 3-legged auth)
@@ -159,7 +159,7 @@ class APSAuthService:
                             expires_in=token_data['expires_in'],
                             token_type=token_data['token_type'],
                             scope=token_data['scope'],
-                            issued_at=datetime.utcnow()
+                            issued_at=datetime.now(timezone.utc)
                         )
                         self.logger.info("Successfully refreshed access token")
                         return self._access_token

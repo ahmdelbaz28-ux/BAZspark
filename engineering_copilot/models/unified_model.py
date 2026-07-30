@@ -7,7 +7,8 @@ Python classes for the unified engineering data model across ETAP, AutoCAD, and 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
+from datetime import timezone, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
@@ -333,7 +334,7 @@ class UnifiedEngineeringModel:
     def add_entity(self, entity: BaseEntity) -> None:
         """Add an entity to the model."""
         self.entities.append(entity)
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
 
     def get_entities_by_type(self, entity_type: EntityType) -> List[BaseEntity]:
         """Get all entities of a specific type."""
@@ -351,7 +352,7 @@ class UnifiedEngineeringModel:
         for i, existing_entity in enumerate(self.entities):
             if existing_entity.id == entity.id:
                 self.entities[i] = entity
-                self.updated_at = datetime.utcnow()
+                self.updated_at = datetime.now(timezone.utc)
                 return True
         return False
 
@@ -360,7 +361,7 @@ class UnifiedEngineeringModel:
         for i, entity in enumerate(self.entities):
             if entity.id == entity_id:
                 del self.entities[i]
-                self.updated_at = datetime.utcnow()
+                self.updated_at = datetime.now(timezone.utc)
                 return True
         return False
 

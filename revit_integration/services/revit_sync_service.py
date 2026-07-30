@@ -9,7 +9,7 @@ Principal Software Architect: Eng. Ahmed Elbaz
 import asyncio
 import logging
 import os
-from datetime import datetime
+from datetime import timezone, datetime
 from typing import Any, Dict, List, Optional
 
 from ..adapters.revit_adapter import RevitElementAdapter
@@ -55,14 +55,14 @@ class RevitSyncService:
         Returns:
             SyncStatusDTO: Status of the synchronization
         """
-        sync_id = f"sync_{project_dto.project_id}_{int(datetime.utcnow().timestamp())}"
+        sync_id = f"sync_{project_dto.project_id}_{int(datetime.now(timezone.utc).timestamp())}"
 
         # Create initial sync status
         sync_status = SyncStatusDTO(
             sync_id=sync_id,
             project_id=project_dto.project_id,
             status="in_progress",
-            start_time=datetime.utcnow()
+            start_time=datetime.now(timezone.utc)
         )
 
         # Add to active syncs
@@ -73,7 +73,7 @@ class RevitSyncService:
             await self.event_publisher.publish_event("RevitSyncStarted", {
                 "sync_id": sync_id,
                 "project_id": project_dto.project_id,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             })
 
             # Get model metadata
@@ -118,7 +118,7 @@ class RevitSyncService:
                         "sync_id": sync_id,
                         "element_id": element.id,
                         "status": "success" if processed_successfully else "failed",
-                        "timestamp": datetime.utcnow().isoformat()
+                        "timestamp": datetime.now(timezone.utc).isoformat()
                     })
 
                     # Small delay to allow other operations
@@ -133,7 +133,7 @@ class RevitSyncService:
             sync_status.successful_elements = successful_count
             sync_status.failed_elements = failed_count
             sync_status.progress = 100.0
-            sync_status.end_time = datetime.utcnow()
+            sync_status.end_time = datetime.now(timezone.utc)
             sync_status.status = "completed" if failed_count == 0 else "completed_with_errors"
 
             # Publish sync completed event
@@ -144,18 +144,18 @@ class RevitSyncService:
                 "failed_elements": failed_count,
                 "total_elements": processed_count,
                 "duration": (sync_status.end_time - sync_status.start_time).total_seconds(),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             })
 
             # Update project last sync time
-            project_dto.last_sync = datetime.utcnow()
+            project_dto.last_sync = datetime.now(timezone.utc)
 
             return sync_status
 
         except Exception as e:
             self.logger.error(f"Error during project sync: {e}")
             sync_status.status = "failed"
-            sync_status.end_time = datetime.utcnow()
+            sync_status.end_time = datetime.now(timezone.utc)
             sync_status.error_details = {"error": str(e)}
 
             # Publish sync failed event
@@ -163,7 +163,7 @@ class RevitSyncService:
                 "sync_id": sync_id,
                 "project_id": project_dto.project_id,
                 "error": str(e),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             })
 
             return sync_status
@@ -184,14 +184,14 @@ class RevitSyncService:
         Returns:
             SyncStatusDTO: Status of the incremental sync
         """
-        sync_id = f"incremental_{project_id}_{int(datetime.utcnow().timestamp())}"
+        sync_id = f"incremental_{project_id}_{int(datetime.now(timezone.utc).timestamp())}"
 
         sync_status = SyncStatusDTO(
             sync_id=sync_id,
             project_id=project_id,
             status="in_progress",
             total_elements=len(changed_elements),
-            start_time=datetime.utcnow()
+            start_time=datetime.now(timezone.utc)
         )
 
         try:
@@ -219,7 +219,7 @@ class RevitSyncService:
                         "sync_id": sync_id,
                         "element_id": element.id,
                         "status": "success" if processed_successfully else "failed",
-                        "timestamp": datetime.utcnow().isoformat()
+                        "timestamp": datetime.now(timezone.utc).isoformat()
                     })
 
                 except Exception as e:
@@ -228,7 +228,7 @@ class RevitSyncService:
 
             sync_status.successful_elements = successful_count
             sync_status.failed_elements = failed_count
-            sync_status.end_time = datetime.utcnow()
+            sync_status.end_time = datetime.now(timezone.utc)
             sync_status.status = "completed" if failed_count == 0 else "completed_with_errors"
 
             # Publish incremental sync completed event
@@ -237,7 +237,7 @@ class RevitSyncService:
                 "project_id": project_id,
                 "successful_elements": successful_count,
                 "failed_elements": failed_count,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             })
 
             return sync_status
@@ -245,7 +245,7 @@ class RevitSyncService:
         except Exception as e:
             self.logger.error(f"Error during incremental sync: {e}")
             sync_status.status = "failed"
-            sync_status.end_time = datetime.utcnow()
+            sync_status.end_time = datetime.now(timezone.utc)
             sync_status.error_details = {"error": str(e)}
             return sync_status
 
@@ -343,7 +343,7 @@ class RevitSyncService:
                 "element_id": element_dto.id,
                 "category": element_dto.category,
                 "target_model": target_model.value if target_model else "Unknown",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             })
 
             return True
@@ -373,7 +373,7 @@ class RevitSyncService:
                 "element_id": etap_element['id'],
                 "model_type": model_type,
                 "change_type": "element_added",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             })
 
         return True
@@ -397,7 +397,7 @@ class RevitSyncService:
             "element_id": electrical_asset.element_id,
             "asset_type": electrical_asset.asset_type,
             "name": electrical_asset.name,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
 
         return True
@@ -447,12 +447,12 @@ class RevitSyncService:
         if sync_id in self.active_syncs:
             sync_status = self.active_syncs[sync_id]
             sync_status.status = "cancelled"
-            sync_status.end_time = datetime.utcnow()
+            sync_status.end_time = datetime.now(timezone.utc)
 
             # Publish sync cancelled event
             await self.event_publisher.publish_event("RevitSyncCancelled", {
                 "sync_id": sync_id,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             })
 
             del self.active_syncs[sync_id]

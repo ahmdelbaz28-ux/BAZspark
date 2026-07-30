@@ -7,7 +7,7 @@ AI agent for inspecting BIM models, extracting electrical assets, and synchroniz
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
-from datetime import datetime
+from datetime import timezone, datetime
 from typing import Any, Dict, List
 
 from revit_integration.dto.revit_dto import ElectricalAssetDTO, RevitElementDTO
@@ -51,7 +51,7 @@ class RevitAgent:
 
         inspection_results = {
             "project_id": project_id,
-            "inspection_date": datetime.utcnow().isoformat(),
+            "inspection_date": datetime.now(timezone.utc).isoformat(),
             "total_elements": len(model_data),
             "categories_found": [],
             "issues_found": [],
@@ -124,7 +124,7 @@ class RevitAgent:
             "total_elements": total_elements,
             "issues_found": len(issues),
             "completeness_score": inspection_results["completeness_score"],
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
 
         return inspection_results
@@ -169,7 +169,7 @@ class RevitAgent:
         # Publish electrical assets extracted event
         await self.event_publisher.publish_event("ElectricalAssetsExtracted", {
             "asset_count": len(electrical_assets),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
 
         return electrical_assets
@@ -215,7 +215,7 @@ class RevitAgent:
             "systems": systems,
             "element_count_by_system": {sys: len(elems) for sys, elems in systems.items()},
             "potential_conflict_zones": [],  # Would be populated with actual clash detection logic
-            "analysis_date": datetime.utcnow().isoformat()
+            "analysis_date": datetime.now(timezone.utc).isoformat()
         }
 
         # Identify potential conflict zones based on overlapping locations
@@ -266,7 +266,7 @@ class RevitAgent:
             "validation_rules_applied": [],
             "errors": [],
             "warnings": [],
-            "validation_date": datetime.utcnow().isoformat()
+            "validation_date": datetime.now(timezone.utc).isoformat()
         }
 
         valid_count = 0
@@ -390,7 +390,7 @@ class RevitAgent:
             "by_power_rating": {},
             "critical_assets": [],
             "system_topology": {},
-            "analysis_date": datetime.utcnow().isoformat()
+            "analysis_date": datetime.now(timezone.utc).isoformat()
         }
 
         # Count by type
@@ -454,7 +454,7 @@ class RevitAgent:
         self.logger.info("Generating comprehensive Revit integration report")
 
         report = {
-            "report_date": datetime.utcnow().isoformat(),
+            "report_date": datetime.now(timezone.utc).isoformat(),
             "executive_summary": {
                 "model_quality_score": inspection_results.get("completeness_score", 0),
                 "validation_score": validation_results.get("validation_score", 0),

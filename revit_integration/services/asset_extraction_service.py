@@ -7,7 +7,7 @@ Service for extracting electrical and other assets from Revit models.
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
-from datetime import datetime
+from datetime import timezone, datetime
 from typing import Any, Dict, List
 
 
@@ -45,7 +45,7 @@ class AssetExtractionService:
                     'parameters': element.get('parameters', {}),
                     'location': element.get('location'),
                     'connections': [],  # Will be populated with connected elements
-                    'created_at': datetime.utcnow().isoformat()
+                    'created_at': datetime.now(timezone.utc).isoformat()
                 }
                 electrical_assets.append(asset)
 
@@ -76,7 +76,7 @@ class AssetExtractionService:
                     'category': element.get('category'),
                     'parameters': element.get('parameters', {}),
                     'location': element.get('location'),
-                    'created_at': datetime.utcnow().isoformat()
+                    'created_at': datetime.now(timezone.utc).isoformat()
                 }
                 mechanical_assets.append(asset)
 
@@ -107,7 +107,7 @@ class AssetExtractionService:
                     'category': element.get('category'),
                     'parameters': element.get('parameters', {}),
                     'location': element.get('location'),
-                    'created_at': datetime.utcnow().isoformat()
+                    'created_at': datetime.now(timezone.utc).isoformat()
                 }
                 structural_assets.append(asset)
 
@@ -139,7 +139,7 @@ class AssetExtractionService:
                     'parameters': element.get('parameters', {}),
                     'location': element.get('location'),
                     'geometry': element.get('geometry'),
-                    'created_at': datetime.utcnow().isoformat()
+                    'created_at': datetime.now(timezone.utc).isoformat()
                 }
                 spatial_elements.append(spatial_element)
 

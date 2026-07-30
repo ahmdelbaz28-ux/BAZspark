@@ -27,7 +27,7 @@ if HAS_CLR:
         # In a real implementation, we would add reference to ETAP API
         # clr.AddReference("ETAP.API")
         pass
-    except:
+    except Exception:
         # Mock for testing without ETAP
         pass
 

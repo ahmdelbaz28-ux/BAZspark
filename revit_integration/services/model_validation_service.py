@@ -7,7 +7,7 @@ Service for validating Revit models against standards.
 Principal Software Architect: Eng. Ahmed Elbaz
 """
 import logging
-from datetime import datetime
+from datetime import timezone, datetime
 from typing import Any, Dict, List
 
 
@@ -34,7 +34,7 @@ class ModelValidationService:
             "completeness_score": 0.0,
             "missing_elements": [],
             "incomplete_parameters": [],
-            "validation_date": datetime.utcnow().isoformat(),
+            "validation_date": datetime.now(timezone.utc).isoformat(),
             "passed": True
         }
 
@@ -59,7 +59,7 @@ class ModelValidationService:
             "invalid_elements": 0,
             "errors": [],
             "warnings": [],
-            "validation_date": datetime.utcnow().isoformat()
+            "validation_date": datetime.now(timezone.utc).isoformat()
         }
 
         # Placeholder implementation
@@ -92,7 +92,7 @@ class ModelValidationService:
         validation_results = {
             "accuracy_score": 0.0,
             "geometric_issues": [],
-            "validation_date": datetime.utcnow().isoformat(),
+            "validation_date": datetime.now(timezone.utc).isoformat(),
             "passed": True
         }
 
@@ -117,7 +117,7 @@ class ModelValidationService:
             "non_compliant_standards": [],
             "issues": [],
             "compliance_score": 0.0,
-            "validation_date": datetime.utcnow().isoformat()
+            "validation_date": datetime.now(timezone.utc).isoformat()
         }
 
         # Placeholder implementation
