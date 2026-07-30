@@ -31,7 +31,9 @@ def _get_cors_middleware_kwargs(app):
     """Extract CORS middleware kwargs from a FastAPI app."""
     for m in app.user_middleware:
         if m.cls is CORSMiddleware:
-            return m.options
+            # V214 MERGE FIX: Starlette's Middleware object uses .options in
+            # older versions and .kwargs in newer versions. Support both.
+            return getattr(m, "options", None) or getattr(m, "kwargs", None)
     return None
 
 

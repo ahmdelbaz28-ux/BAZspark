@@ -18,8 +18,20 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client(monkeypatch):
-    """TestClient with API key auth enabled."""
+    """TestClient with API key auth enabled.
+
+    NOTE: backend/tests/conftest.py sets FIREAI_API_KEY globally via
+    os.environ.setdefault(). We MUST clear the cached backend.app module
+    so it re-initializes with our test-specific key. Without this, the
+    middleware uses the conftest's key and accepts unauthenticated requests
+    (causing test_v2_endpoints_require_api_key to fail with 200 instead of 401).
+    """
+    import sys
     monkeypatch.setenv("FIREAI_API_KEY", "test-key-for-v2-api-testing-1234567890")
+    # Clear cached backend.app so it re-initializes with the new env
+    for mod_name in list(sys.modules):
+        if mod_name == "backend.app" or mod_name.startswith("backend.app."):
+            del sys.modules[mod_name]
     from backend.app import app
     return TestClient(app)
 

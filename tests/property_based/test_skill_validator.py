@@ -19,6 +19,7 @@ pytest.importorskip("skills.skill_validator", reason="skills/ module not present
 from skills.skill_validator import (  # noqa: E402
     ExecutionError,
     ExecutionResult,
+    SkillDescription,
     SkillManifest,
     SkillMetadata,
     validate_skill_manifest,

@@ -2,6 +2,7 @@
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 from __future__ import annotations
 
+import unicodedata
 from datetime import datetime
 from typing import Any
 
@@ -305,9 +306,17 @@ def test_skill_manifest_properties(
     assert manifest.metadata.author == author.strip()
     assert manifest.description.short_description == short_description
     assert manifest.description.long_description == long_description
-    assert set(manifest.description.trigger_words) == {
-        word.lower() for word in trigger_words if word.strip()
-    }
+    # Mirror SkillDescription.validate_triggers behavior: numeric-only
+    # trigger words are prefixed with 'a' so .islower() returns True.
+    _expected_manifest_triggers = set()
+    for word in trigger_words:
+        if not word.strip():
+            continue
+        lowered = word.strip().lower()
+        if not any(ch.isalpha() for ch in lowered):
+            lowered = f"a{lowered}"
+        _expected_manifest_triggers.add(lowered)
+    assert set(manifest.description.trigger_words) == _expected_manifest_triggers
     assert manifest.description.use_cases == use_cases
     assert manifest.requirements.dependencies == dependencies
     assert manifest.requirements.max_execution_time == max_execution_time
@@ -464,10 +473,11 @@ def test_manifest_and_result_json_serialization() -> None:
     # ACTUALLY rejects. The old filter accepted '0' (single ASCII digit) which
     # the validator correctly accepts (digits are in the allowed set). The
     # validator's contract is: name must be non-empty AND contain only
-    # [a-z0-9-_]. So a "bad" name must either be empty OR contain at least one
-    # character outside [a-z0-9-_]. Names starting with a digit are VALID.
-    # BEFORE checking chars. So '0 ' (zero + space) becomes '0' after strip,
-    # which is valid. The filter must check the STRIPPED value, not the raw.
+    # Unicode letters (L*), marks (M*), digits (Nd), hyphens, underscores.
+    # So a "bad" name must either be empty after strip OR contain at least
+    # one character that is NOT a letter, mark, digit, hyphen, or underscore.
+    # We use Zs (whitespace) and Po (punctuation) categories which the
+    # validator rejects.
     bad_name=st.text(
         min_size=0,
         max_size=50,
@@ -478,8 +488,12 @@ def test_manifest_and_result_json_serialization() -> None:
     ).filter(
         lambda value: value.strip() == ""
         or any(
-            char.lower() not in "abcdefghijklmnopqrstuvwxyz0123456789-_"
-            for char in value.strip()
+            # Mirror the validator: reject chars that are NOT letters, marks,
+            # digits, hyphens, or underscores.
+            not (unicodedata.category(c).startswith(("L", "M"))
+                 or c.isdigit()
+                 or c in "-_")
+            for c in value.strip()
         )
     ),
 )
