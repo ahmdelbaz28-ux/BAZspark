@@ -1379,6 +1379,190 @@ export const fullApi = {
         getAirQualityData: async (lat: number, lon: number) => apiCall<{ data?: any }>(`/environment/air-quality?lat=${lat}&lon=${lon}`),
 };
 
+// ─── System Admin API (Cache, Feature Flags, Secret Rotation) ──────────────
+
+export const adminApi = {
+        /** GET /cache/stats — Cache statistics (admin only) */
+        getCacheStats: () =>
+                apiCall<{ success: boolean; data: { entries: number; max_entries: number; memory_usage_mb: number; hit_rate: number } }>("/cache/stats"),
+
+        /** POST /cache/clear — Clear all cached data (admin only) */
+        clearCache: () =>
+                apiCall<{ success: boolean; message: string }>("/cache/clear", { method: "POST" }),
+
+        /** GET /feature-flags — Get all feature flag states */
+        getFeatureFlags: () =>
+                apiCall<{ success: boolean; data: Record<string, boolean> }>("/feature-flags"),
+
+        /** POST /feature-flags — Toggle a feature flag */
+        setFeatureFlag: (data: { key: string; enabled: boolean }) =>
+                apiCall<{ success: boolean; message: string }>("/feature-flags", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /settings/secret-rotation/rotate — Hot-rotate a security secret */
+        rotateSecret: (data: { secret_name: string; new_value: string; grace_period_seconds?: number }) =>
+                apiCall<{ success: boolean; message: string }>("/settings/secret-rotation/rotate", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /settings/admin-token/rotate — Rotate master admin token */
+        rotateAdminToken: (data: { new_token: string; grace_period_seconds?: number }) =>
+                apiCall<{ success: boolean; message: string }>("/settings/admin-token/rotate", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** GET /api/database-health — Multi-DB health check */
+        getDatabaseHealth: () =>
+                apiCall<{ success: boolean; data: Record<string, { status: string; latency_ms: number; details?: string }> }>("/database-health", undefined, API_BASE.replace("/v1", "")),
+
+        /** GET /health/statistics — System-wide statistics */
+        getHealthStatistics: () =>
+                apiCall<{ success: boolean; data: { projects: number; devices: number; connections: number; reports: number; uptime_seconds: number } }>("/health/statistics"),
+};
+
+// ─── Extended FACP API (verify, schedule, spec) ────────────────────────────
+
+export const facpExtendedApi = {
+        /** POST /facp/verify — Verify FACP compliance (UL/FDNY/NFPA) */
+        verify: (data: { panel_id: string; jurisdiction?: string; standards?: string[] }) =>
+                apiCall("/facp/verify", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /facp/schedule — Generate DXF schedule table */
+        generateSchedule: (data: { panel_id: string; project_id?: string }) =>
+                apiCall("/facp/schedule", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /facp/spec — Generate CSI specification (28 31 11) */
+        generateSpec: (data: { panel_id: string; project_id?: string }) =>
+                apiCall("/facp/spec", { method: "POST", body: JSON.stringify(data) }),
+};
+
+// ─── Extended QOMN API (golden tests, place duct) ─────────────────────────
+
+export const qomnExtendedApi = {
+        /** POST /qomn/place-duct — Duct detector placement */
+        placeDuct: (data: { duct_width_m: number; duct_velocity_mps?: number; airflow_direction?: string }) =>
+                apiCall("/qomn/place-duct", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /qomn/golden-tests — Run golden test suite */
+        runGoldenTests: () =>
+                apiCall("/qomn/golden-tests", { method: "POST" }),
+};
+
+// ─── Extended LLM API (models, compliance narrative) ───────────────────────
+
+export const llmExtendedApi = {
+        /** GET /llm/models — List available LLM models */
+        getModels: () => apiCall<{ success: boolean; data: { id: string; name: string; provider: string }[] }>("/llm/models"),
+
+        /** POST /llm/compliance-narrative — Draft compliance narrative for AHJ */
+        complianceNarrative: (data: { calculation_type: string; calculation_result: Record<string, unknown>; jurisdiction?: string }) =>
+                apiCall("/llm/compliance-narrative", { method: "POST", body: JSON.stringify(data) }),
+};
+
+// ─── Extended Revit API (search, execute NL) ──────────────────────────────
+
+export const revitExtendedApi = {
+        /** POST /revit/search/api/load — Load RevitAPIDocs.com index */
+        loadApiSearchIndex: () =>
+                apiCall("/revit/search/api/load", { method: "POST" }),
+
+        /** POST /revit/search/api — Search RevitAPIDocs.com (local) */
+        searchApi: (data: { query: string; max_results?: number }) =>
+                apiCall("/revit/search/api", { method: "POST", body: JSON.stringify(data) }),
+
+        /** GET /revit/search/online?q= — Search RevitAPIDocs.com (online) */
+        searchOnline: (query: string) =>
+                apiCall(`/revit/search/online?q=${encodeURIComponent(query)}`),
+
+        /** POST /revit/execute — Execute natural language command */
+        executeNlCommand: (data: { command: string; context?: Record<string, unknown> }) =>
+                apiCall("/revit/execute", { method: "POST", body: JSON.stringify(data) }),
+};
+
+// ─── Extended Marine API (SCADA, ETAP, DXF, Revit, Alarm, Divisions) ─────
+
+export const marineExtendedApi = {
+        /** POST /marine/generate-alarm-logic — Generate alarm logic */
+        generateAlarmLogic: (data: { ship_id: string; zone_ids?: string[] }) =>
+                apiCall("/marine/generate-alarm-logic", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /marine/generate-divisions — Generate ship divisions */
+        generateDivisions: (data: { ship_id: string; division_count?: number }) =>
+                apiCall("/marine/generate-divisions", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /marine/generate-scada — SCADA integration generation */
+        generateScada: (data: { ship_id: string; protocol?: string }) =>
+                apiCall("/marine/generate-scada", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /marine/generate-etap — ETAP integration generation */
+        generateEtap: (data: { ship_id: string }) =>
+                apiCall("/marine/generate-etap", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /marine/generate-dxf — Generate DXF output */
+        generateDxf: (data: { ship_id: string }) =>
+                apiCall("/marine/generate-dxf", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /marine/generate-revit — Generate Revit output */
+        generateRevit: (data: { ship_id: string }) =>
+                apiCall("/marine/generate-revit", { method: "POST", body: JSON.stringify(data) }),
+};
+
+// ─── Engineering Copilot Extended API ──────────────────────────────────────
+
+export const copilotExtendedApi = {
+        /** POST /engineering-copilot/translate-model — Translate model between formats */
+        translateModel: (data: { source_format: string; target_format: string; model_data: Record<string, unknown> }) =>
+                apiCall("/engineering-copilot/translate-model", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /engineering-copilot/validate-model — Validate model compliance */
+        validateModel: (data: { model_data: Record<string, unknown>; standard?: string }) =>
+                apiCall("/engineering-copilot/validate-model", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /engineering-copilot/generate-reports — Generate engineering reports */
+        generateReports: (data: { project_id?: string; report_types?: string[] }) =>
+                apiCall("/engineering-copilot/generate-reports", { method: "POST", body: JSON.stringify(data) }),
+};
+
+// ─── Extended V2 API (smoke sim, webhook publish, multi-db BIM) ────────────
+
+export const v2ExtendedApi = {
+        /** POST /v2/smoke-simulation/state — Create/update smoke simulation state */
+        updateSmokeSimulation: (data: { simulation_id?: string; state: Record<string, unknown> }) =>
+                apiCall("/smoke-simulation/state", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** POST /v2/webhooks/publish — Publish a webhook event */
+        publishWebhook: (data: { event_type: string; payload: Record<string, unknown> }) =>
+                apiCall("/webhooks/publish", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** POST /v2/multi-db/bim/cache-element — Cache BIM element in Redis */
+        cacheBimElement: (data: { element_id: string; element_data: Record<string, unknown>; ttl_seconds?: number }) =>
+                apiCall("/multi-db/bim/cache-element", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** GET /v2/multi-db/bim/get-cached-element/{element_id} — Get cached BIM element */
+        getCachedBimElement: (elementId: string) =>
+                apiCall(`/multi-db/bim/get-cached-element/${elementId}`, undefined, API_V2_BASE),
+
+        /** POST /v2/multi-db/bim/store-embeddings — Store embeddings in Qdrant */
+        storeEmbeddings: (data: { element_id: string; embedding: number[]; metadata?: Record<string, unknown> }) =>
+                apiCall("/multi-db/bim/store-embeddings", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** POST /v2/multi-db/bim/find-similar — Find similar elements via Qdrant */
+        findSimilar: (data: { embedding: number[]; top_k?: number }) =>
+                apiCall("/multi-db/bim/find-similar", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** POST /v2/multi-db/bim/create-relationships — Create relationships in Neo4j */
+        createRelationships: (data: { element_id: string; related_ids: string[]; relationship_type: string }) =>
+                apiCall("/multi-db/bim/create-relationships", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** GET /v2/multi-db/bim/related-elements/{element_id} — Get related elements from Neo4j */
+        getRelatedElements: (elementId: string) =>
+                apiCall(`/multi-db/bim/related-elements/${elementId}`, undefined, API_V2_BASE),
+};
+
 export default fullApi;
 
 
