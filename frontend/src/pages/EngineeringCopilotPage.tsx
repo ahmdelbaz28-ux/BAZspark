@@ -20,6 +20,9 @@ import {
   ArrowRightLeft,
   ShieldCheck,
   FileOutput,
+  PlusCircle,
+  Info,
+  Heart,
 } from "lucide-react";
 
 import { llmExtendedApi, copilotExtendedApi } from "@/services/fullApi";
@@ -37,6 +40,20 @@ interface ChatResponse {
   model?: string;
 }
 
+// ── Entity creation form state ──
+interface EntityForm {
+  name: string;
+  entity_type: string;
+  description: string;
+  x: string;
+  y: string;
+  z: string;
+}
+
+const ENTITY_TYPES = [
+  "Panel", "Transformer", "Bus", "Cable", "Breaker", "Load", "Generator", "Equipment"
+];
+
 export const EngineeringCopilotPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -49,6 +66,13 @@ export const EngineeringCopilotPage: React.FC = () => {
   ]);
   const [extResult, setExtResult] = useState<Record<string, unknown> | null>(null);
   const [extLoading, setExtLoading] = useState(false);
+  const [capabilitiesResult, setCapabilitiesResult] = useState<Record<string, unknown> | null>(null);
+  const [healthResult, setHealthResult] = useState<Record<string, unknown> | null>(null);
+  const [showEntityForm, setShowEntityForm] = useState(false);
+  const [entityForm, setEntityForm] = useState<EntityForm>({
+    name: "", entity_type: "Panel", description: "", x: "0", y: "0", z: "0"
+  });
+  const [entityLoading, setEntityLoading] = useState(false);
 
   const handleListModels = async () => {
     setExtLoading(true);
@@ -117,6 +141,72 @@ export const EngineeringCopilotPage: React.FC = () => {
       // silent
     } finally {
       setExtLoading(false);
+    }
+  };
+
+  const handleGetCapabilities = async () => {
+    setExtLoading(true);
+    try {
+      const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
+      const res = await fetch(`${API_BASE}/engineering-copilot/capabilities`, {
+        credentials: "same-origin",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setCapabilitiesResult(data as Record<string, unknown>);
+    } catch (err) {
+      // silent
+    } finally {
+      setExtLoading(false);
+    }
+  };
+
+  const handleHealthCheck = async () => {
+    setExtLoading(true);
+    try {
+      const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
+      const res = await fetch(`${API_BASE}/engineering-copilot/health`, {
+        credentials: "same-origin",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setHealthResult(data as Record<string, unknown>);
+    } catch (err) {
+      // silent
+    } finally {
+      setExtLoading(false);
+    }
+  };
+
+  const handleCreateEntity = async () => {
+    if (!entityForm.name.trim()) return;
+    setEntityLoading(true);
+    try {
+      const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
+      const res = await fetch(`${API_BASE}/engineering-copilot/create-entity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          name: entityForm.name,
+          entity_type: entityForm.entity_type,
+          description: entityForm.description,
+          coordinates: {
+            x: parseFloat(entityForm.x) || 0,
+            y: parseFloat(entityForm.y) || 0,
+            z: parseFloat(entityForm.z) || 0,
+          },
+          properties: {},
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setExtResult(data as Record<string, unknown>);
+      setShowEntityForm(false);
+    } catch (err) {
+      // silent
+    } finally {
+      setEntityLoading(false);
     }
   };
 
@@ -263,11 +353,114 @@ export const EngineeringCopilotPage: React.FC = () => {
               {extLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileOutput className="h-3.5 w-3.5" />}
               Generate Reports
             </button>
+            <button
+              type="button"
+              onClick={handleGetCapabilities}
+              disabled={extLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {extLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Info className="h-3.5 w-3.5" />}
+              Capabilities
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowEntityForm(!showEntityForm)}
+              disabled={extLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {extLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlusCircle className="h-3.5 w-3.5" />}
+              Create Entity
+            </button>
+            <button
+              type="button"
+              onClick={handleHealthCheck}
+              disabled={extLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {extLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Heart className="h-3.5 w-3.5" />}
+              Health
+            </button>
           </div>
           {extResult && (
             <pre className="mt-3 text-xs font-mono text-slate-400 bg-slate-900 p-3 rounded-lg overflow-auto max-h-48">
               {JSON.stringify(extResult, null, 2)}
             </pre>
+          )}
+          {capabilitiesResult && (
+            <div className="mt-3">
+              <h4 className="text-xs font-semibold text-slate-300 mb-2">Copilot Capabilities</h4>
+              <pre className="text-xs font-mono text-slate-400 bg-slate-900 p-3 rounded-lg overflow-auto max-h-48">
+                {JSON.stringify(capabilitiesResult, null, 2)}
+              </pre>
+              <button
+                type="button"
+                onClick={() => setCapabilitiesResult(null)}
+                className="mt-1 text-xs text-slate-500 hover:text-slate-300"
+              >
+                Close
+              </button>
+            </div>
+          )}
+          {healthResult && (
+            <div className="mt-3">
+              <h4 className="text-xs font-semibold text-slate-300 mb-2 flex items-center gap-1.5">
+                <Heart className="h-3 w-3 text-emerald-400" />
+                Copilot Health Status
+              </h4>
+              <pre className="text-xs font-mono text-slate-400 bg-slate-900 p-3 rounded-lg overflow-auto max-h-48">
+                {JSON.stringify(healthResult, null, 2)}
+              </pre>
+              <button
+                type="button"
+                onClick={() => setHealthResult(null)}
+                className="mt-1 text-xs text-slate-500 hover:text-slate-300"
+              >
+                Close
+              </button>
+            </div>
+          )}
+          {showEntityForm && (
+            <div className="mt-3 bg-slate-900/50 border border-slate-600 rounded-lg p-3">
+              <h4 className="text-xs font-semibold text-slate-300 mb-2">Create Engineering Entity</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  placeholder="Entity name"
+                  value={entityForm.name}
+                  onChange={(e) => setEntityForm({ ...entityForm, name: e.target.value })}
+                  className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-slate-100"
+                />
+                <select
+                  value={entityForm.entity_type}
+                  onChange={(e) => setEntityForm({ ...entityForm, entity_type: e.target.value })}
+                  className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-slate-100"
+                >
+                  {ENTITY_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  placeholder="Description"
+                  value={entityForm.description}
+                  onChange={(e) => setEntityForm({ ...entityForm, description: e.target.value })}
+                  className="col-span-2 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-slate-100"
+                />
+                <div className="col-span-2 flex gap-2">
+                  <input type="text" placeholder="X" value={entityForm.x} onChange={(e) => setEntityForm({ ...entityForm, x: e.target.value })} className="w-16 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-slate-100" />
+                  <input type="text" placeholder="Y" value={entityForm.y} onChange={(e) => setEntityForm({ ...entityForm, y: e.target.value })} className="w-16 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-slate-100" />
+                  <input type="text" placeholder="Z" value={entityForm.z} onChange={(e) => setEntityForm({ ...entityForm, z: e.target.value })} className="w-16 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-slate-100" />
+                  <button
+                    type="button"
+                    onClick={handleCreateEntity}
+                    disabled={entityLoading || !entityForm.name.trim()}
+                    className="ml-auto px-3 py-1 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white text-xs rounded transition-colors"
+                  >
+                    {entityLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Create"}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 

@@ -5,7 +5,7 @@
  * Store/search/retrieve engineering decisions, preferences, and learned patterns.
  */
 import { useState } from "react";
-import { Brain, Loader2, Plus, Search, Trash2 } from "lucide-react";
+import { Brain, Loader2, Plus, Search, Trash2, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,6 +118,25 @@ export function MemoryPage() {
                         });
                 } finally {
                         setLoading(false);
+                }
+        };
+
+        const [historyResult, setHistoryResult] = useState<Record<string, unknown> | null>(null);
+        const [historyLoading, setHistoryLoading] = useState(false);
+
+        const handleHistory = async (id: string) => {
+                setHistoryLoading(true);
+                try {
+                        const res = await memoryApi.getHistory(id);
+                        setHistoryResult(res as Record<string, unknown>);
+                } catch (err) {
+                        toast({
+                                title: "History Failed",
+                                description: err instanceof Error ? err.message : "Failed",
+                                variant: "destructive",
+                        });
+                } finally {
+                        setHistoryLoading(false);
                 }
         };
 
@@ -252,9 +271,43 @@ export function MemoryPage() {
                                                                                 >
                                                                                         <Trash2 aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
                                                                                 </Button>
+                                                                                <Button
+                                                                                        onClick={() => handleHistory(m.id)}
+                                                                                        disabled={historyLoading}
+                                                                                        variant="ghost"
+                                                                                        size="icon"
+                                                                                        title="View history"
+                                                                                >
+                                                                                        <History aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
+                                                                                </Button>
                                                                         </div>
                                                                 ))}
                                                         </div>
+                                                </CardContent>
+                                        </Card>
+                                )}
+
+                                {/* Memory History Result */}
+                                {historyResult && (
+                                        <Card>
+                                                <CardHeader>
+                                                        <CardTitle className="flex items-center gap-2">
+                                                                <History aria-hidden="true" className="h-4 w-4" />
+                                                                Memory History
+                                                        </CardTitle>
+                                                </CardHeader>
+                                                <CardContent>
+                                                        <pre className="text-xs font-mono bg-muted/50 p-3 rounded overflow-auto max-h-64">
+                                                                {JSON.stringify(historyResult, null, 2)}
+                                                        </pre>
+                                                        <Button
+                                                                onClick={() => setHistoryResult(null)}
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="mt-2"
+                                                        >
+                                                                Close
+                                                        </Button>
                                                 </CardContent>
                                         </Card>
                                 )}

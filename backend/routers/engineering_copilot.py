@@ -27,6 +27,11 @@ ai_copilot = AICopilot()
 translation_engine = TranslationEngine()
 
 
+class ChatRequest(BaseModel):
+    """Request model for chat-based interaction."""
+    request: str
+
+
 class EngineeringRequest(BaseModel):
     """Request model for engineering operations."""
     request: str
@@ -49,6 +54,41 @@ class SyncRequest(BaseModel):
     source_system: str
     target_system: str
     model_data: Dict[str, Any] = {}
+
+
+@router.post("/chat", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
+async def chat_with_copilot(request: ChatRequest) -> Dict[str, Any]:
+    """
+    Chat with the Engineering Copilot using natural language.
+
+    This is the primary endpoint for the EngineeringCopilotPage.tsx chat UI.
+    It delegates to the AI Copilot's process_request method with default
+    target systems and without automatic report generation.
+
+    Args:
+        request: Chat request with natural language message
+
+    Returns:
+        Dict: Response with AI-generated answer
+    """
+    try:
+        logger.info("Processing engineering chat request")
+        result = ai_copilot.process_request(
+            request.request,
+            ["AutoCAD", "ETAP", "Revit"]
+        )
+        # Extract the response text for the chat UI
+        response_text = result.get("response", result.get("message", "Processing complete."))
+        return {
+            "success": True,
+            "response": response_text,
+            "model": result.get("model", "engineering-copilot"),
+            "sources": result.get("sources", []),
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        logger.exception("Error processing chat request")
+        raise HTTPException(status_code=500, detail="Error processing chat request")
 
 
 @router.post("/process-request", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])

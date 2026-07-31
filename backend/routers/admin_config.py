@@ -194,6 +194,15 @@ _SAFE_ENV_CATEGORIES: dict[str, list[str]] = {
         "DATABASE_POOL_SIZE",
         "DATABASE_TIMEOUT",
         "REDIS_URL",
+        "REDIS_HOST",
+        "REDIS_PORT",
+        "REDIS_DB",
+        "QDRANT_HOST",
+        "QDRANT_PORT",
+        "QDRANT_URL",
+        "NEO4J_URI",
+        "NEO4J_USERNAME",
+        "NEO4J_DATABASE",
     ],
     "api": [
         "API_TIMEOUT",
@@ -212,10 +221,29 @@ _SAFE_ENV_CATEGORIES: dict[str, list[str]] = {
         "BAZSPARK_MASTER_ADMIN_TOKEN_SET",
         "SESSION_COOKIE_SECURE",
     ],
+    "nvidia": [
+        "NVIDIA_API_KEY",
+        "NVIDIA_BASE_URL",
+        "NVIDIA_MODEL",
+    ],
+    "langfuse": [
+        "LANGFUSE_SECRET_KEY",
+        "LANGFUSE_PUBLIC_KEY",
+        "LANGFUSE_HOST",
+    ],
+    "akamai": [
+        "AKAMAI_ENABLED",
+        "AKAMAI_BLOCKED_COUNTRIES",
+        "AKAMAI_ALLOWED_BOT_SCORE",
+        "AKAMAI_RATE_LIMIT_HEADER",
+    ],
+    "cors": [
+        "CORS_ORIGINS",
+    ],
 }
 
 # Variables that, if present in the env, indicate "configured" (boolean-like).
-_BOOLEAN_LIKE = {"AUTO_SAVE_REPORTS", "SESSION_COOKIE_SECURE"}
+_BOOLEAN_LIKE = {"AUTO_SAVE_REPORTS", "SESSION_COOKIE_SECURE", "AKAMAI_ENABLED", "AKAMAI_RATE_LIMIT_HEADER"}
 
 
 def _resolve_env_var_value(var: str, value: str | None) -> Any:

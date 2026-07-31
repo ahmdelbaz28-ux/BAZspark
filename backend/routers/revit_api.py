@@ -40,7 +40,7 @@ from revit_integration.dto.revit_dto import (
 from revit_integration.services.revit_sync_service import RevitSyncService
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/revit", tags=["Revit Integration"])
+router = APIRouter(prefix="/revit-integration", tags=["Revit Integration"])
 
 # Initialize services
 # In a real implementation, these would be injected via DI container

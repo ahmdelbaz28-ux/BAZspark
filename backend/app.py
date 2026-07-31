@@ -550,6 +550,18 @@ from backend.routers import self_healing as self_healing_router_module
 
 app.include_router(self_healing_router_module.router, prefix="/api/v1", tags=["Self-Healing"])
 
+# V274: Register revit_api router (APS-based Revit integration with sync,
+# model retrieval, export, and WebSocket). Previously this router was
+# defined but never registered, so all its endpoints returned 404.
+# The main revit.py router handles local Revit operations; this one
+# handles cloud/APS-based sync and model management.
+# Uses /revit-integration prefix to avoid conflicts with main revit.py.
+try:
+    from backend.routers import revit_api as revit_api_module
+    app.include_router(revit_api_module.router, prefix="/api/v1", tags=["Revit Integration API"])
+except ImportError as e:
+    logger.warning("Router 'revit_api' skipped (optional dependency missing): %s", e)
+
 # Previously monitor.router was defined but NEVER registered via include_router,
 # so every Prometheus scrape returned 404 and all dashboards/alerts had no data.
 # Auth is enforced INSIDE the router via require_permission(Permission.MONITOR_READ).

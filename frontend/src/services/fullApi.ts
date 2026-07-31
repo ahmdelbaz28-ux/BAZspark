@@ -842,6 +842,8 @@ export const memoryApi = {
                 apiCall(`/memory/${memoryId}`, { method: "DELETE" }),
 
         /** GET /memory/{memory_id}/history */
+        getHistory: (memoryId: string) =>
+                apiCall(`/memory/${memoryId}/history`),
 };
 
 // ─── V2 API (generative, BIM, IFC43, AR, webhooks, topology, graphrag) ──────
@@ -1561,6 +1563,43 @@ export const v2ExtendedApi = {
         /** GET /v2/multi-db/bim/related-elements/{element_id} — Get related elements from Neo4j */
         getRelatedElements: (elementId: string) =>
                 apiCall(`/multi-db/bim/related-elements/${elementId}`, undefined, API_V2_BASE),
+};
+
+// ─── Revit Integration API (APS-based cloud sync) ──────────────────────────
+
+export const revitIntegrationApi = {
+        /** POST /revit-integration/upload — Upload a Revit model file for processing */
+        uploadModel: (projectId: string, file: File) => {
+                const formData = new FormData();
+                formData.append("file", file);
+                return apiCall(`/revit-integration/upload?project_id=${encodeURIComponent(projectId)}`, {
+                        method: "POST",
+                        body: formData,
+                        headers: {},
+                });
+        },
+
+        /** POST /revit-integration/sync — Initiate synchronization of a Revit model */
+        syncModel: (data: { project_id: string; incremental?: boolean; force_full_sync?: boolean }) =>
+                apiCall("/revit-integration/sync", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** GET /revit-integration/model/{model_id} — Retrieve a specific Revit model */
+        getModel: (modelId: string) =>
+                apiCall(`/revit-integration/model/${modelId}`),
+
+        /** POST /revit-integration/export — Export Revit data in various formats */
+        exportData: (data: { project_id: string; format: string; include_electrical?: boolean; include_structural?: boolean; include_architectural?: boolean }) =>
+                apiCall("/revit-integration/export", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** GET /revit-integration/status — Get synchronization status of a Revit project */
+        getSyncStatus: (projectId: string) =>
+                apiCall(`/revit-integration/status?project_id=${encodeURIComponent(projectId)}`),
 };
 
 export default fullApi;
