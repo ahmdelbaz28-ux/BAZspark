@@ -168,7 +168,7 @@ async def upload_revit_model(
             # Clean up temporary file
             os.unlink(temp_path)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error uploading Revit model")
         raise HTTPException(status_code=500, detail="Upload failed")
 
@@ -206,7 +206,7 @@ async def sync_revit_model(request: RevitSyncRequest) -> RevitSyncResponse:
 
         return response
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error syncing Revit model")
         raise HTTPException(status_code=500, detail="Sync failed")
 
@@ -265,7 +265,7 @@ async def get_revit_model(model_id: str) -> RevitModelResponse:
 
         return response
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error retrieving Revit model")
         raise HTTPException(status_code=500, detail="Model retrieval failed")
 
@@ -301,7 +301,7 @@ async def export_revit_data(request: RevitExportRequest) -> Dict[str, Any]:
 
         return response
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error exporting Revit data")
         raise HTTPException(status_code=500, detail="Export failed")
 
@@ -333,7 +333,7 @@ async def get_revit_status(project_id: str) -> RevitStatusResponse:
 
         return response
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error getting Revit status")
         raise HTTPException(status_code=500, detail="Status retrieval failed")
 
@@ -419,7 +419,7 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                             data={"timestamp": datetime.now(timezone.utc).isoformat()}
                         ).model_dump_json())
 
-                except Exception as e:
+                except Exception:
                     logger.exception("Error processing WebSocket message")
                     await websocket.send_text(WebSocketMessage(
                         type="error",

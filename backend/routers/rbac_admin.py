@@ -32,7 +32,6 @@ from fastapi import APIRouter, Depends
 
 from backend.auth import require_permission
 from backend.rbac import (
-    ROLE_PERMISSIONS,
     Permission,
     Role,
     get_role_permissions,

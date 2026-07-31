@@ -85,7 +85,7 @@ async def process_engineering_request(request: EngineeringRequest) -> Dict[str, 
         logger.info(f"Engineering request processed successfully for {len(request.target_systems)} systems")
         return result
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error processing engineering request")
         raise HTTPException(status_code=500, detail="Error processing request")
 
@@ -231,7 +231,7 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
         logger.info("Created %s entity", request.entity_type)  # nosec: S5145 — entity_type is enum-validated
         return creation_result
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error creating entity")  # nosec: S5145 — no user data in log message
         raise HTTPException(status_code=500, detail="Error creating entity")
 
@@ -281,7 +281,7 @@ async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
         logger.info("Translated model from %s to %s", request.source_system, request.target_system)  # nosec: S5145 — system names are enum-validated
         return translation_result
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error translating model")
         raise HTTPException(status_code=500, detail="Error translating model")
 
@@ -312,7 +312,7 @@ async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, An
         logger.info(f"Model validation completed: {validation_result['summary']}")
         return validation_result
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error validating model")
         raise HTTPException(status_code=500, detail="Error validating model")
 
@@ -343,7 +343,7 @@ async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, 
         logger.info("Engineering reports generated successfully")
         return reports
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error generating reports")
         raise HTTPException(status_code=500, detail="Error generating reports")
 
@@ -373,7 +373,7 @@ async def health_check() -> Dict[str, Any]:
         logger.info("Health check completed")
         return health_status
 
-    except Exception as e:
+    except Exception:
         logger.exception("Health check failed")
         raise HTTPException(status_code=500, detail="Health check failed")
 
