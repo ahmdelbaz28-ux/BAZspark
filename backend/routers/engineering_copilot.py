@@ -86,7 +86,7 @@ async def chat_with_copilot(request: ChatRequest) -> Dict[str, Any]:
             "sources": result.get("sources", []),
             "timestamp": datetime.now().isoformat(),
         }
-    except Exception as e:
+    except Exception:
         logger.exception("Error processing chat request")
         raise HTTPException(status_code=500, detail="Error processing chat request")
 

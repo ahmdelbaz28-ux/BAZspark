@@ -166,7 +166,7 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=tag
-            type=sha,prefix={{github.ref_name}}-latest,
+            type=sha,prefix={{branch}}-,format=short
             type=sha,format=short
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
@@ -195,7 +195,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Download frontend build
-        uses: actions/download-artifact@634f93cb2976314b4f8e42989a1e9d41e3d0c7f1  # v5.0.0
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab7da83084079b3d3a  # v4.2.1
         with:
           name: frontend-build
           path: frontend-build/
@@ -352,7 +352,12 @@ jobs:
       - name: Sync files
         run: |
           # Copy updated files to ETAP repo
+          # V301 FIX: Exclude etap-repo/ from rsync to prevent infinite nesting
+          # (etap-repo/etap-repo/etap-repo/...). The previous rsync copied
+          # the entire working directory including etap-repo/ itself, causing
+          # recursive directory nesting and rsync to run out of memory/disk.
           rsync -av --exclude='.git' --exclude='node_modules' --exclude='__pycache__' \
+            --exclude='etap-repo' \
             ./ etap-repo/
 
           cd etap-repo

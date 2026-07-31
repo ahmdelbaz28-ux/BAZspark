@@ -42,6 +42,8 @@ vi.mock("lucide-react", () => {
     ShieldCheck: createIcon("ShieldCheck"),
     FileOutput: createIcon("FileOutput"),
     Info: createIcon("Info"),
+    PlusCircle: createIcon("PlusCircle"),
+    Heart: createIcon("Heart"),
   };
 });
 
