@@ -54,12 +54,26 @@ jobs:
          || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Check HF_TOKEN secret
+        id: check-token
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::warning::HF_TOKEN secret is not set — skipping HuggingFace sync"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout GitHub source
+        if: steps.check-token.outputs.skip != 'true'
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           fetch-depth: 1
 
       - name: Checkout HF Space
+        if: steps.check-token.outputs.skip != 'true'
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           repository: ${{ env.HF_USERNAME }}/${{ env.HF_SPACE_NAME }}
@@ -68,11 +82,13 @@ jobs:
           fetch-depth: 1
 
       - name: Configure git
+        if: steps.check-token.outputs.skip != 'true'
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
       - name: Sync runtime files
+        if: steps.check-token.outputs.skip != 'true'
         run: |
           # Wipe HF working tree clean (keep .git/)
           find hf_space -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
@@ -106,6 +122,7 @@ jobs:
           ls -la hf_space/ | head -20
 
       - name: Commit & push to HuggingFace
+        if: steps.check-token.outputs.skip != 'true'
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           GH_SHA: ${{ github.sha }}
