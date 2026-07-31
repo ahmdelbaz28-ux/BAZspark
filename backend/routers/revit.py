@@ -437,7 +437,7 @@ class WriteRvtRequest(BaseModel):
 # CONNECTION ENDPOINTS
 # =============================================================================
 
-@router.post("/connect", response_model=ConnectResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.post("/connect", response_model=ConnectResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def connect_to_revit(request: Request, body: ConnectRequest = None) -> ConnectResponse:
     """
@@ -484,7 +484,7 @@ async def connect_to_revit(request: Request, body: ConnectRequest = None) -> Con
         raise _safe_error(503, "Failed to connect to Revit", e)
 
 
-@router.post("/disconnect", response_model=ConnectResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.post("/disconnect", response_model=ConnectResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def disconnect_from_revit(request: Request) -> ConnectResponse:
     """Disconnect from Revit application."""
@@ -504,7 +504,7 @@ async def disconnect_from_revit(request: Request) -> ConnectResponse:
         raise _safe_error(500, "Failed to disconnect from Revit", e)
 
 
-@router.get("/status", response_model=StatusResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.get("/status", response_model=StatusResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def get_revit_status() -> StatusResponse:
     """Get current connection status and capabilities."""
     try:
@@ -529,7 +529,7 @@ async def get_revit_status() -> StatusResponse:
 # DOCUMENT ENDPOINTS
 # =============================================================================
 
-@router.post("/document/open", tags=["revit"])
+@router.post("/document/open", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
 async def open_document(request: Request, body: DocumentOpenRequest) -> Dict[str, Any]:
     """Open an RVT file."""
@@ -546,7 +546,7 @@ async def open_document(request: Request, body: DocumentOpenRequest) -> Dict[str
     raise HTTPException(status_code=500, detail="Failed to open document")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@router.post("/document/save", tags=["revit"])
+@router.post("/document/save", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
 async def save_document(request: Request, body: DocumentSaveRequest) -> Dict[str, Any]:
     """Save the current document."""
@@ -564,7 +564,7 @@ async def save_document(request: Request, body: DocumentSaveRequest) -> Dict[str
     raise HTTPException(status_code=500, detail="Failed to save document")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@router.post("/document/close", tags=["revit"])
+@router.post("/document/close", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
 async def close_document(request: Request, body: DocumentCloseRequest) -> Dict[str, Any]:
     """Close the current document."""
@@ -673,7 +673,7 @@ async def upload_and_read_rvt(request: Request, file: UploadFile = File(...)) ->
 # ELEMENT READ ENDPOINTS
 # =============================================================================
 
-@router.get("/elements", response_model=ElementsResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.get("/elements", response_model=ElementsResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def get_elements(
     category: Optional[str] = Query(None, description="Filter by category (Walls, Floors, Doors, etc.)"),  # NOSONAR - python:S8410
     element_class: Optional[str] = Query(None, description="Filter by class name")  # NOSONAR - python:S8410
@@ -687,7 +687,7 @@ async def get_elements(
     return ElementsResponse(success=True, elements=elements, count=len(elements))
 
 
-@router.get("/elements/selected", response_model=ElementsResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.get("/elements/selected", response_model=ElementsResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def get_selected_elements() -> ElementsResponse:
     """Get currently selected elements in Revit UI."""
     svc = get_revit_service()
@@ -698,7 +698,7 @@ async def get_selected_elements() -> ElementsResponse:
     return ElementsResponse(success=True, elements=elements, count=len(elements))
 
 
-@router.get("/elements/{element_id}", tags=["revit"])
+@router.get("/elements/{element_id}", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def get_element(element_id: str) -> Dict[str, Any]:
     """Get a single element by ID."""
     svc = get_revit_service()
@@ -711,7 +711,7 @@ async def get_element(element_id: str) -> Dict[str, Any]:
     raise HTTPException(status_code=404, detail="Element not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
 
-@router.get("/elements/{element_id}/parameters", tags=["revit"])
+@router.get("/elements/{element_id}/parameters", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def get_element_parameters(element_id: str) -> Dict[str, Any]:
     """Get all parameters of an element."""
     svc = get_revit_service()
@@ -726,7 +726,7 @@ async def get_element_parameters(element_id: str) -> Dict[str, Any]:
 # ELEMENT CREATE ENDPOINTS
 # =============================================================================
 
-@router.post("/elements/create/wall", response_model=ElementResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.post("/elements/create/wall", response_model=ElementResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def create_wall(request: Request, body: CreateWallRequest) -> ElementResponse:
     """Create a wall in Revit."""
@@ -749,7 +749,7 @@ async def create_wall(request: Request, body: CreateWallRequest) -> ElementRespo
     )
 
 
-@router.post("/elements/create/floor", response_model=ElementResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.post("/elements/create/floor", response_model=ElementResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def create_floor(request: Request, body: CreateFloorRequest) -> ElementResponse:
     """Create a floor in Revit."""
@@ -770,7 +770,7 @@ async def create_floor(request: Request, body: CreateFloorRequest) -> ElementRes
     )
 
 
-@router.post("/elements/create/door", response_model=ElementResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.post("/elements/create/door", response_model=ElementResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def create_door(request: Request, body: CreateDoorRequest) -> ElementResponse:
     """Create a door in a wall."""
@@ -792,7 +792,7 @@ async def create_door(request: Request, body: CreateDoorRequest) -> ElementRespo
     )
 
 
-@router.post("/elements/create/window", response_model=ElementResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.post("/elements/create/window", response_model=ElementResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def create_window(request: Request, body: CreateWindowRequest) -> ElementResponse:
     """Create a window in a wall."""
@@ -814,7 +814,7 @@ async def create_window(request: Request, body: CreateWindowRequest) -> ElementR
     )
 
 
-@router.post("/elements/create/column", response_model=ElementResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.post("/elements/create/column", response_model=ElementResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def create_column(request: Request, body: CreateColumnRequest) -> ElementResponse:
     """Create a structural column."""
@@ -843,7 +843,7 @@ async def create_column(request: Request, body: CreateColumnRequest) -> ElementR
     )
 
 
-@router.post("/elements/create/beam", response_model=ElementResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.post("/elements/create/beam", response_model=ElementResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def create_beam(request: Request, body: CreateBeamRequest) -> ElementResponse:
     """Create a structural beam."""
@@ -872,7 +872,7 @@ async def create_beam(request: Request, body: CreateBeamRequest) -> ElementRespo
     )
 
 
-@router.post("/elements/create/family", response_model=ElementResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.post("/elements/create/family", response_model=ElementResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def create_family(request: Request, body: CreateFamilyRequest) -> ElementResponse:
     """Create a generic family instance."""
@@ -906,7 +906,7 @@ async def create_family(request: Request, body: CreateFamilyRequest) -> ElementR
 # ELEMENT UPDATE/DELETE ENDPOINTS
 # =============================================================================
 
-@router.put("/elements/{element_id}/parameters", tags=["revit"])
+@router.put("/elements/{element_id}/parameters", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_UPDATE))])
 @limiter.limit("30/minute")
 async def update_parameters(
     request: Request,
@@ -934,7 +934,7 @@ async def update_parameters(
     }
 
 
-@router.delete("/elements/{element_id}", tags=["revit"])
+@router.delete("/elements/{element_id}", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_DELETE))])
 @limiter.limit("30/minute")
 async def delete_element(request: Request, element_id: str) -> Dict[str, Any]:
     """Delete an element."""
@@ -955,7 +955,7 @@ async def delete_element(request: Request, element_id: str) -> Dict[str, Any]:
 # VIEW/LEVEL/GRID ENDPOINTS
 # =============================================================================
 
-@router.get("/views", response_model=ElementsResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.get("/views", response_model=ElementsResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def get_views() -> ElementsResponse:
     """Get all views in the project."""
     if has_active_agent():
@@ -970,7 +970,7 @@ async def get_views() -> ElementsResponse:
     return ElementsResponse(success=True, elements=views, count=len(views))
 
 
-@router.get("/levels", response_model=ElementsResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.get("/levels", response_model=ElementsResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def get_levels() -> ElementsResponse:
     """Get all levels in the project."""
     if has_active_agent():
@@ -985,7 +985,7 @@ async def get_levels() -> ElementsResponse:
     return ElementsResponse(success=True, elements=levels, count=len(levels))
 
 
-@router.get("/grids", response_model=ElementsResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.get("/grids", response_model=ElementsResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def get_grids() -> ElementsResponse:
     """Get all grids in the project."""
     if has_active_agent():
@@ -1000,7 +1000,7 @@ async def get_grids() -> ElementsResponse:
     return ElementsResponse(success=True, elements=grids, count=len(grids))
 
 
-@router.get("/worksets", response_model=ElementsResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.get("/worksets", response_model=ElementsResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def get_worksets() -> ElementsResponse:
     """Get all worksets in the project."""
     if has_active_agent():
@@ -1019,7 +1019,7 @@ async def get_worksets() -> ElementsResponse:
 # FAMILY ENDPOINTS
 # =============================================================================
 
-@router.get("/families/{category}/symbols", tags=["revit"])
+@router.get("/families/{category}/symbols", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def get_family_symbols(category: str) -> Dict[str, Any]:
     """
     Get all family symbols for a category.
@@ -1034,7 +1034,7 @@ async def get_family_symbols(category: str) -> Dict[str, Any]:
     return {"success": True, "symbols": symbols, "count": len(symbols)}
 
 
-@router.post("/families/load", tags=["revit"])
+@router.post("/families/load", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("30/minute")
 async def load_family(request: Request, body: LoadFamilyRequest) -> Dict[str, Any]:
     """Load a family (.rfa) file into the project."""
@@ -1052,7 +1052,7 @@ async def load_family(request: Request, body: LoadFamilyRequest) -> Dict[str, An
 # API SEARCH ENDPOINTS
 # =============================================================================
 
-@router.post("/search/api/load", tags=["revit"])
+@router.post("/search/api/load", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 @limiter.limit("30/minute")
 async def load_api_data(request: Request, body: LoadAPIDataRequest) -> Dict[str, Any]:
     """
@@ -1067,7 +1067,7 @@ async def load_api_data(request: Request, body: LoadAPIDataRequest) -> Dict[str,
     raise HTTPException(status_code=500, detail="Failed to load API data")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-@router.post("/search/api", response_model=APIResultResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.post("/search/api", response_model=APIResultResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def search_api_data(request: Request, body: SearchAPIRequest) -> APIResultResponse:
     """
@@ -1098,7 +1098,7 @@ async def search_api_data(request: Request, body: SearchAPIRequest) -> APIResult
     return APIResultResponse(success=True, results=api_results, count=len(api_results))
 
 
-@router.get("/search/online", response_model=APIResultResponse, tags=["revit"])  # NOSONAR - python:S8409
+@router.get("/search/online", response_model=APIResultResponse, tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def search_online(
     query: str = Query(..., description="Search query"),  # NOSONAR - python:S8410
     engine: str = Query("revitapidocs", description="Search engine")  # NOSONAR - python:S8410

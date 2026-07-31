@@ -250,7 +250,7 @@ class OperationResponse(BaseModel):
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
-@router.post("/connect", response_model=ConnectResponse)  # NOSONAR - python:S8409
+@router.post("/connect", response_model=ConnectResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def connect_to_autocad(request: Request, body: ConnectRequest) -> ConnectResponse:
     """Connect to AutoCAD application.
@@ -292,7 +292,7 @@ async def connect_to_autocad(request: Request, body: ConnectRequest) -> ConnectR
         raise _safe_error(503, "Failed to connect to AutoCAD", e)
 
 
-@router.post("/disconnect", response_model=ConnectResponse)  # NOSONAR - python:S8409
+@router.post("/disconnect", response_model=ConnectResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def disconnect_from_autocad(request: Request) -> ConnectResponse:
     """Disconnect from AutoCAD application."""
@@ -539,7 +539,7 @@ async def draw_text(request: Request, body: DrawTextRequest) -> OperationRespons
         raise _safe_error(500, "Error drawing text", e)
 
 
-@router.get("/status", response_model=StatusResponse)  # NOSONAR - python:S8409
+@router.get("/status", response_model=StatusResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def get_autocad_status() -> StatusResponse:
     """Get the current AutoCAD connection status."""
     try:
@@ -558,7 +558,7 @@ async def get_autocad_status() -> StatusResponse:
         raise _safe_error(500, "Error getting AutoCAD status", e)
 
 
-@router.post("/save", response_model=OperationResponse)  # NOSONAR - python:S8409
+@router.post("/save", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def save_document(request: Request, body: SaveRequest) -> OperationResponse:
     """Save the current AutoCAD document."""

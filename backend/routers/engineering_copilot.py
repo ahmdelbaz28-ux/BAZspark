@@ -10,9 +10,11 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from backend.auth import require_permission
+from backend.rbac import Permission
 from engineering_copilot.ai_agent.ai_agent import AICopilot
 from engineering_copilot.models.unified_model import UnifiedEngineeringModel
 from engineering_copilot.translation_engine.translation_engine import TranslationEngine
@@ -49,7 +51,7 @@ class SyncRequest(BaseModel):
     model_data: Dict[str, Any] = {}
 
 
-@router.post("/process-request", response_model=Dict[str, Any])
+@router.post("/process-request", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def process_engineering_request(request: EngineeringRequest) -> Dict[str, Any]:
     """
     Process a natural language engineering request.
@@ -88,7 +90,7 @@ async def process_engineering_request(request: EngineeringRequest) -> Dict[str, 
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
 
-@router.post("/create-entity", response_model=Dict[str, Any])
+@router.post("/create-entity", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
     """
     Create a specific engineering entity.
@@ -234,7 +236,7 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Error creating entity: {str(e)}")
 
 
-@router.post("/translate-model", response_model=Dict[str, Any])
+@router.post("/translate-model", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
     """
     Translate engineering model between systems.
@@ -284,7 +286,7 @@ async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Error translating model: {str(e)}")
 
 
-@router.post("/validate-model", response_model=Dict[str, Any])
+@router.post("/validate-model", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Validate an engineering model for common issues.
@@ -315,7 +317,7 @@ async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, An
         raise HTTPException(status_code=500, detail=f"Error validating model: {str(e)}")
 
 
-@router.post("/generate-reports", response_model=Dict[str, Any])
+@router.post("/generate-reports", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
 async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Generate engineering reports from a model.
@@ -346,7 +348,7 @@ async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, 
         raise HTTPException(status_code=500, detail=f"Error generating reports: {str(e)}")
 
 
-@router.get("/health", response_model=Dict[str, Any])
+@router.get("/health", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
 async def health_check() -> Dict[str, Any]:
     """
     Health check endpoint for the Engineering Copilot.
@@ -376,7 +378,7 @@ async def health_check() -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
 
 
-@router.get("/capabilities", response_model=Dict[str, Any])
+@router.get("/capabilities", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_READ))])
 async def get_capabilities() -> Dict[str, Any]:
     """
     Get the capabilities of the Engineering Copilot.

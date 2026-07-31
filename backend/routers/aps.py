@@ -14,6 +14,8 @@ from typing import Annotated, Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
+from backend.auth import require_permission
+from backend.rbac import Permission
 from backend.services.aps_service import get_aps_service
 
 router = APIRouter(prefix="/api/v2/aps", tags=["Autodesk Platform Services"])
@@ -30,7 +32,7 @@ class ApsProcessRequest(BaseModel):
     params: Dict[str, Any] = Field(default_factory=dict, description="Command line parameter overrides")
 
 
-@router.post("/process")
+@router.post("/process", dependencies=[Depends(require_permission(Permission.INTEGRATION_MANAGE))])
 async def process_file_in_cloud(
     body: ApsProcessRequest,
     service: ApsServiceDep,
@@ -81,7 +83,7 @@ async def process_file_in_cloud(
     }
 
 
-@router.get("/status/{work_item_id}")
+@router.get("/status/{work_item_id}", dependencies=[Depends(require_permission(Permission.INTEGRATION_READ))])
 async def get_work_item_status(
     work_item_id: str,
     service: ApsServiceDep,

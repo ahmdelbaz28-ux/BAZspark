@@ -14,6 +14,7 @@ from typing import Annotated, Any, Dict, List, Optional
 
 from fastapi import (
     APIRouter,
+    Depends,
     File,
     HTTPException,
     UploadFile,
@@ -21,6 +22,9 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from pydantic import BaseModel
+
+from backend.auth import require_permission
+from backend.rbac import Permission
 
 # ── Annotated type aliases (S8410) ────────────────────────────────────────────
 UploadFileDep = Annotated[UploadFile, File(...)]
@@ -110,7 +114,7 @@ class WebSocketMessage(BaseModel):
 active_connections: Dict[str, WebSocket] = {}
 
 
-@router.post("/upload", response_model=RevitSyncResponse)
+@router.post("/upload", response_model=RevitSyncResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def upload_revit_model(
     project_id: str,
     file: UploadFileDep
@@ -169,7 +173,7 @@ async def upload_revit_model(
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
-@router.post("/sync", response_model=RevitSyncResponse)
+@router.post("/sync", response_model=RevitSyncResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def sync_revit_model(request: RevitSyncRequest) -> RevitSyncResponse:
     """
     Initiate synchronization of a Revit model.
@@ -207,7 +211,7 @@ async def sync_revit_model(request: RevitSyncRequest) -> RevitSyncResponse:
         raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
 
 
-@router.get("/model/{model_id}", response_model=RevitModelResponse)
+@router.get("/model/{model_id}", response_model=RevitModelResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def get_revit_model(model_id: str) -> RevitModelResponse:
     """
     Retrieve a specific Revit model.
@@ -266,7 +270,7 @@ async def get_revit_model(model_id: str) -> RevitModelResponse:
         raise HTTPException(status_code=500, detail=f"Model retrieval failed: {str(e)}")
 
 
-@router.post("/export", response_model=Dict[str, Any])
+@router.post("/export", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
 async def export_revit_data(request: RevitExportRequest) -> Dict[str, Any]:
     """
     Export Revit data in various formats.
@@ -302,7 +306,7 @@ async def export_revit_data(request: RevitExportRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
 
 
-@router.get("/status", response_model=RevitStatusResponse)
+@router.get("/status", response_model=RevitStatusResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def get_revit_status(project_id: str) -> RevitStatusResponse:
     """
     Get the synchronization status of a Revit project.
