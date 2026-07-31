@@ -170,7 +170,7 @@ async def upload_revit_model(
 
     except Exception as e:
         logger.exception("Error uploading Revit model")
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Upload failed")
 
 
 @router.post("/sync", response_model=RevitSyncResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
@@ -208,7 +208,7 @@ async def sync_revit_model(request: RevitSyncRequest) -> RevitSyncResponse:
 
     except Exception as e:
         logger.exception("Error syncing Revit model")
-        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Sync failed")
 
 
 @router.get("/model/{model_id}", response_model=RevitModelResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
@@ -267,7 +267,7 @@ async def get_revit_model(model_id: str) -> RevitModelResponse:
 
     except Exception as e:
         logger.exception("Error retrieving Revit model")
-        raise HTTPException(status_code=500, detail=f"Model retrieval failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Model retrieval failed")
 
 
 @router.post("/export", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
@@ -303,7 +303,7 @@ async def export_revit_data(request: RevitExportRequest) -> Dict[str, Any]:
 
     except Exception as e:
         logger.exception("Error exporting Revit data")
-        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Export failed")
 
 
 @router.get("/status", response_model=RevitStatusResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
@@ -335,7 +335,7 @@ async def get_revit_status(project_id: str) -> RevitStatusResponse:
 
     except Exception as e:
         logger.exception("Error getting Revit status")
-        raise HTTPException(status_code=500, detail=f"Status retrieval failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Status retrieval failed")
 
 
 @router.websocket("/ws/{project_id}")
@@ -424,7 +424,7 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str):
                     await websocket.send_text(WebSocketMessage(
                         type="error",
                         data={
-                            "error": str(e),
+                            "error": "Internal error",
                             "timestamp": datetime.now(timezone.utc).isoformat()
                         }
                     ).model_dump_json())

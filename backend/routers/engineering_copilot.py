@@ -87,7 +87,7 @@ async def process_engineering_request(request: EngineeringRequest) -> Dict[str, 
 
     except Exception as e:
         logger.exception("Error processing engineering request")
-        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error processing request")
 
 
 @router.post("/create-entity", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
@@ -233,7 +233,7 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
 
     except Exception as e:
         logger.exception("Error creating entity")  # nosec: S5145 — no user data in log message
-        raise HTTPException(status_code=500, detail=f"Error creating entity: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error creating entity")
 
 
 @router.post("/translate-model", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
@@ -283,7 +283,7 @@ async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
 
     except Exception as e:
         logger.exception("Error translating model")
-        raise HTTPException(status_code=500, detail=f"Error translating model: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error translating model")
 
 
 @router.post("/validate-model", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
@@ -314,7 +314,7 @@ async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, An
 
     except Exception as e:
         logger.exception("Error validating model")
-        raise HTTPException(status_code=500, detail=f"Error validating model: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error validating model")
 
 
 @router.post("/generate-reports", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
@@ -345,7 +345,7 @@ async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, 
 
     except Exception as e:
         logger.exception("Error generating reports")
-        raise HTTPException(status_code=500, detail=f"Error generating reports: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error generating reports")
 
 
 @router.get("/health", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
@@ -375,7 +375,7 @@ async def health_check() -> Dict[str, Any]:
 
     except Exception as e:
         logger.exception("Health check failed")
-        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Health check failed")
 
 
 @router.get("/capabilities", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_READ))])
