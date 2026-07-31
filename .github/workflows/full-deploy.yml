@@ -197,15 +197,30 @@ jobs:
     needs: test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     steps:
+      - name: Check HF_TOKEN secret
+        id: check-token
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::warning::HF_TOKEN secret is not set — skipping HuggingFace deployment"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        if: steps.check-token.outputs.skip != 'true'
 
       - name: Download frontend build
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab7da83084079b3d3a  # v4.2.1
+        if: steps.check-token.outputs.skip != 'true'
+        uses: actions/download-artifact@v4
         with:
           name: frontend-build
           path: frontend-build/
 
       - name: Deploy to Hugging Face Space
+        if: steps.check-token.outputs.skip != 'true'
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
@@ -333,16 +348,31 @@ jobs:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
+      - name: Check ETAP_TOKEN secret
+        id: check-token
+        env:
+          ETAP_TOKEN: ${{ secrets.ETAP_TOKEN }}
+        run: |
+          if [ -z "$ETAP_TOKEN" ]; then
+            echo "::warning::ETAP_TOKEN secret is not set — skipping ETAP sync"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        if: steps.check-token.outputs.skip != 'true'
         with:
           fetch-depth: 0
 
       - name: Configure Git
+        if: steps.check-token.outputs.skip != 'true'
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
 
       - name: Clone ETAP-AI-WORK repository
+        if: steps.check-token.outputs.skip != 'true'
         # V300 FIX: Use git credential helper instead of embedding token in URL
         # to prevent leaking the token in /proc/<pid>/cmdline on the runner.
         env:
@@ -355,6 +385,7 @@ jobs:
           git checkout main || git checkout master
           
       - name: Sync files
+        if: steps.check-token.outputs.skip != 'true'
         run: |
           # Copy updated files to ETAP repo
           # V301 FIX: Exclude etap-repo/ from rsync to prevent infinite nesting
@@ -372,7 +403,7 @@ jobs:
           echo '✅ Synced to ETAP-AI-WORK repository'
 
       - name: Cleanup credentials
-        if: always()
+        if: always() && steps.check-token.outputs.skip != 'true'
         run: rm -f $HOME/.git-credentials
 
   # ============================================================================

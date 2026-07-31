@@ -19,28 +19,34 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("lucide-react", async (importOriginal) => {
-	const actual = await importOriginal() as Record<string, unknown>;
-	// Create a simple mock component for each icon export
-	const createIcon = (name: string) => {
-		const Icon = (props: Record<string, unknown>) => (
-			<span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
-		);
-		Icon.displayName = name;
-		return Icon;
-	};
-	const mocked: Record<string, unknown> = {};
-	for (const [key, value] of Object.entries(actual)) {
-		if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
-			mocked[key] = createIcon(key);
-		} else {
-			mocked[key] = value;
-		}
-	}
-	return mocked;
+        const actual = await importOriginal() as Record<string, unknown>;
+        // Create a simple mock component for each icon export
+        const createIcon = (name: string) => {
+                const Icon = (props: Record<string, unknown>) => (
+                        <span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
+                );
+                Icon.displayName = name;
+                return Icon;
+        };
+        const mocked: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(actual)) {
+                if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
+                        mocked[key] = createIcon(key);
+                } else {
+                        mocked[key] = value;
+                }
+        }
+        return mocked;
 });
 
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+// Mock the fullApi module so we control dwgApi.parse directly
+// without going through the real apiCall/fetchWithRetry/CSRF pipeline.
+const mockParseDwg = vi.fn();
+vi.mock("@/services/fullApi", () => ({
+  dwgApi: {
+    parse: (...args: unknown[]) => mockParseDwg(...args),
+  },
+}));
 
 function createMockFile(name: string, ext: string, size = 1000): File {
   const content = new ArrayBuffer(size);
@@ -100,7 +106,7 @@ describe("DWGPage", () => {
   });
 
   it("shows uploading state while parsing", async () => {
-    mockFetch.mockImplementation(
+    mockParseDwg.mockImplementation(
       () => new Promise(() => {}) // Never resolves
     );
 
@@ -116,17 +122,13 @@ describe("DWGPage", () => {
   });
 
   it("displays parse results on success", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          success: true,
-          source: "building_a.dwg",
-          room_count: 24,
-          conversion_time_s: 3.45,
-          errors: [],
-          warnings: [],
-        }),
+    mockParseDwg.mockResolvedValue({
+      success: true,
+      source: "building_a.dwg",
+      room_count: 24,
+      conversion_time_s: 3.45,
+      errors: [],
+      warnings: [],
     });
 
     renderPage();
@@ -147,17 +149,13 @@ describe("DWGPage", () => {
   });
 
   it("displays warnings when present", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          success: true,
-          source: "test.dwg",
-          room_count: 10,
-          conversion_time_s: 1.2,
-          errors: [],
-          warnings: ["Layer '0' has no geometry", "Missing xref: furniture.dwg"],
-        }),
+    mockParseDwg.mockResolvedValue({
+      success: true,
+      source: "test.dwg",
+      room_count: 10,
+      conversion_time_s: 1.2,
+      errors: [],
+      warnings: ["Layer '0' has no geometry", "Missing xref: furniture.dwg"],
     });
 
     renderPage();
@@ -175,17 +173,13 @@ describe("DWGPage", () => {
   });
 
   it("displays errors when present", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          success: false,
-          source: "broken.dxf",
-          room_count: 0,
-          conversion_time_s: 0.5,
-          errors: ["Unsupported DXF version: AC1032"],
-          warnings: [],
-        }),
+    mockParseDwg.mockResolvedValue({
+      success: false,
+      source: "broken.dxf",
+      room_count: 0,
+      conversion_time_s: 0.5,
+      errors: ["Unsupported DXF version: AC1032"],
+      warnings: [],
     });
 
     renderPage();
@@ -203,14 +197,7 @@ describe("DWGPage", () => {
   });
 
   it("shows error banner on API error", async () => {
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 422,
-      json: () =>
-        Promise.resolve({
-          detail: { error: "Empty file uploaded" },
-        }),
-    });
+    mockParseDwg.mockRejectedValue(new Error("Empty file uploaded"));
 
     renderPage();
     const file = createMockFile("empty.dwg", ".dwg");

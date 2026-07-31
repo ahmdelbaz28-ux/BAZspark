@@ -19,28 +19,36 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("lucide-react", async (importOriginal) => {
-	const actual = await importOriginal() as Record<string, unknown>;
-	// Create a simple mock component for each icon export
-	const createIcon = (name: string) => {
-		const Icon = (props: Record<string, unknown>) => (
-			<span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
-		);
-		Icon.displayName = name;
-		return Icon;
-	};
-	const mocked: Record<string, unknown> = {};
-	for (const [key, value] of Object.entries(actual)) {
-		if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
-			mocked[key] = createIcon(key);
-		} else {
-			mocked[key] = value;
-		}
-	}
-	return mocked;
+        const actual = await importOriginal() as Record<string, unknown>;
+        // Create a simple mock component for each icon export
+        const createIcon = (name: string) => {
+                const Icon = (props: Record<string, unknown>) => (
+                        <span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
+                );
+                Icon.displayName = name;
+                return Icon;
+        };
+        const mocked: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(actual)) {
+                if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
+                        mocked[key] = createIcon(key);
+                } else {
+                        mocked[key] = value;
+                }
+        }
+        return mocked;
 });
 
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+// Mock the fullApi module so we control apsApi directly
+// without going through the real apiCall/fetchWithRetry/CSRF pipeline.
+const mockApsProcess = vi.fn();
+const mockApsGetStatus = vi.fn();
+vi.mock("@/services/fullApi", () => ({
+  apsApi: {
+    process: (...args: unknown[]) => mockApsProcess(...args),
+    getStatus: (...args: unknown[]) => mockApsGetStatus(...args),
+  },
+}));
 
 function createQueryClient() {
   return new QueryClient({
@@ -111,7 +119,7 @@ describe("APSPage", () => {
   });
 
   it("shows submitting state while mutation is pending", async () => {
-    mockFetch.mockImplementation(
+    mockApsProcess.mockImplementation(
       () => new Promise(() => {}) // Never resolves
     );
 
@@ -128,15 +136,11 @@ describe("APSPage", () => {
   });
 
   it("shows success message after submission", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          work_item_id: "wi-123",
-          input_urn: "urn:test",
-          output_urn: "urn:output",
-          simulation_mode: false,
-        }),
+    mockApsProcess.mockResolvedValue({
+      work_item_id: "wi-123",
+      input_urn: "urn:test",
+      output_urn: "urn:output",
+      simulation_mode: false,
     });
 
     renderPage();
@@ -158,10 +162,7 @@ describe("APSPage", () => {
   });
 
   it("shows error message on submit failure", async () => {
-    mockFetch.mockResolvedValue({
-      ok: false,
-      json: () => Promise.resolve({ detail: "Authentication failed" }),
-    });
+    mockApsProcess.mockRejectedValue(new Error("Authentication failed"));
 
     renderPage();
     const objectInput = screen.getByPlaceholderText("filename.dwg");
@@ -186,15 +187,15 @@ describe("APSPage", () => {
   });
 
   it("shows job ID in status panel after setting jobId", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          work_item_id: "wi-456",
-          input_urn: "urn:test",
-          output_urn: "urn:output",
-          simulation_mode: false,
-        }),
+    mockApsProcess.mockResolvedValue({
+      work_item_id: "wi-456",
+      input_urn: "urn:test",
+      output_urn: "urn:output",
+      simulation_mode: false,
+    });
+    mockApsGetStatus.mockResolvedValue({
+      success: true,
+      status: "completed",
     });
 
     renderPage();

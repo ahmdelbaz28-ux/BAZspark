@@ -20,26 +20,41 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("lucide-react", async (importOriginal) => {
-	const actual = await importOriginal() as Record<string, unknown>;
-	// Create a simple mock component for each icon export
-	const createIcon = (name: string) => {
-		const Icon = (props: Record<string, unknown>) => (
-			<span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
-		);
-		Icon.displayName = name;
-		return Icon;
-	};
-	const mocked: Record<string, unknown> = {};
-	for (const [key, value] of Object.entries(actual)) {
-		if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
-			mocked[key] = createIcon(key);
-		} else {
-			mocked[key] = value;
-		}
-	}
-	return mocked;
+        const actual = await importOriginal() as Record<string, unknown>;
+        // Create a simple mock component for each icon export
+        const createIcon = (name: string) => {
+                const Icon = (props: Record<string, unknown>) => (
+                        <span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
+                );
+                Icon.displayName = name;
+                return Icon;
+        };
+        const mocked: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(actual)) {
+                if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
+                        mocked[key] = createIcon(key);
+                } else {
+                        mocked[key] = value;
+                }
+        }
+        return mocked;
 });
 
+// Mock the fullApi module so we control analyzeApi directly
+// without going through the real apiCall/fetchWithRetry/CSRF pipeline.
+const mockBattery = vi.fn();
+const mockVoltage = vi.fn();
+const mockRoom = vi.fn();
+vi.mock("@/services/fullApi", () => ({
+  analyzeApi: {
+    battery: (...args: unknown[]) => mockBattery(...args),
+    voltage: (...args: unknown[]) => mockVoltage(...args),
+    room: (...args: unknown[]) => mockRoom(...args),
+  },
+  apiCall: vi.fn(() => Promise.resolve({})),
+}));
+
+// Mock global.fetch for the projects query (AnalysisPage uses fetch directly for projects)
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
@@ -61,30 +76,19 @@ describe("AnalysisPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default: projects fetch succeeds
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes("/projects")) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              success: true,
-              data: {
-                data: [
-                  { id: "proj-1", name: "Building A" },
-                  { id: "proj-2", name: "Building B" },
-                ],
-                total: 2,
-              },
-            }),
-        });
-      }
-      if (url.includes("/analyze")) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({}),
-        });
-      }
-      return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          success: true,
+          data: {
+            data: [
+              { id: "proj-1", name: "Building A" },
+              { id: "proj-2", name: "Building B" },
+            ],
+            total: 2,
+          },
+        }),
     });
   });
 
@@ -153,33 +157,14 @@ describe("AnalysisPage", () => {
   });
 
   it("shows battery capacity results after successful battery analysis", async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes("/projects")) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              success: true,
-              data: { data: [{ id: "proj-1", name: "Building A" }], total: 1 },
-            }),
-        });
-      }
-      if (url.includes("/analyze/battery")) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              success: true,
-              data: {
-                required_capacity_ah: 18.5,
-                selected_battery_ah: 24,
-                backup_minutes: 24,
-                margin_percent: 29.7,
-              },
-            }),
-        });
-      }
-      return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
+    mockBattery.mockResolvedValue({
+      success: true,
+      data: {
+        required_capacity_ah: 18.5,
+        selected_battery_ah: 24,
+        backup_minutes: 24,
+        margin_percent: 29.7,
+      },
     });
 
     renderPage();
@@ -198,33 +183,14 @@ describe("AnalysisPage", () => {
   });
 
   it("shows voltage drop results after successful voltage analysis", async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes("/projects")) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              success: true,
-              data: { data: [{ id: "proj-1", name: "Building A" }], total: 1 },
-            }),
-        });
-      }
-      if (url.includes("/analyze/voltage")) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              success: true,
-              data: {
-                drop_percent: 2.34,
-                drop_volts: 0.562,
-                passes: true,
-                recommended_wire: "12 AWG",
-              },
-            }),
-        });
-      }
-      return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
+    mockVoltage.mockResolvedValue({
+      success: true,
+      data: {
+        drop_percent: 2.34,
+        drop_volts: 0.562,
+        passes: true,
+        recommended_wire: "12 AWG",
+      },
     });
 
     renderPage();
@@ -246,27 +212,7 @@ describe("AnalysisPage", () => {
   });
 
   it("shows error message on analysis failure", async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes("/projects")) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              success: true,
-              data: { data: [], total: 0 },
-            }),
-        });
-      }
-      if (url.includes("/analyze/battery")) {
-        return Promise.resolve({
-          ok: false,
-          status: 400,
-          json: () =>
-            Promise.resolve({ detail: "Invalid load value" }),
-        });
-      }
-      return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
-    });
+    mockBattery.mockRejectedValue(new Error("Invalid load value"));
 
     renderPage();
     const runBtn = screen.getByText("Run Analysis");
@@ -280,20 +226,8 @@ describe("AnalysisPage", () => {
   });
 
   it("shows Calculating... during pending analysis", async () => {
-    mockFetch.mockImplementation(
-      (url: string) => {
-        if (url.includes("/projects")) {
-          return Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                success: true,
-                data: { data: [], total: 0 },
-              }),
-          });
-        }
-        return new Promise(() => {}); // Never resolves
-      }
+    mockBattery.mockImplementation(
+      () => new Promise(() => {}) // Never resolves
     );
 
     renderPage();

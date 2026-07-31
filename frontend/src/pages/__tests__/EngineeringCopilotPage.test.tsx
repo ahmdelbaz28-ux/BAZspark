@@ -23,7 +23,6 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("lucide-react", async (importOriginal) => {
 	const actual = await importOriginal() as Record<string, unknown>;
-	// Create a simple mock component for each icon export
 	const createIcon = (name: string) => {
 		const Icon = (props: Record<string, unknown>) => (
 			<span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
@@ -42,8 +41,26 @@ vi.mock("lucide-react", async (importOriginal) => {
 	return mocked;
 });
 
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+// Mock the fullApi module so we control the chat function directly
+// without going through the real apiCall/fetchWithRetry/CSRF pipeline.
+const mockChat = vi.fn();
+vi.mock("@/services/fullApi", () => ({
+  copilotApi: {
+    chat: (...args: unknown[]) => mockChat(...args),
+    getCapabilities: vi.fn(() => Promise.resolve({})),
+    getHealth: vi.fn(() => Promise.resolve({})),
+    createEntity: vi.fn(() => Promise.resolve({})),
+  },
+  copilotExtendedApi: {
+    translateModel: vi.fn(() => Promise.resolve({})),
+    validateModel: vi.fn(() => Promise.resolve({})),
+    generateReports: vi.fn(() => Promise.resolve({})),
+  },
+  llmExtendedApi: {
+    getModels: vi.fn(() => Promise.resolve({})),
+    complianceNarrative: vi.fn(() => Promise.resolve({})),
+  },
+}));
 
 function createQueryClient() {
   return new QueryClient({
@@ -69,6 +86,8 @@ function findSendButton(): HTMLElement | undefined {
 describe("EngineeringCopilotPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: keep the chat pending so send button tests work
+    mockChat.mockImplementation(() => new Promise(() => {}));
   });
 
   it("renders the page title", () => {
@@ -112,10 +131,6 @@ describe("EngineeringCopilotPage", () => {
   });
 
   it("adds user message on send", async () => {
-    mockFetch.mockImplementation(
-      () => new Promise(() => {}) // Keep pending
-    );
-
     renderPage();
     const input = screen.getByPlaceholderText(
       "Ask about NFPA 72, NEC, fire safety design..."
@@ -129,10 +144,6 @@ describe("EngineeringCopilotPage", () => {
   });
 
   it("shows thinking indicator while waiting for response", async () => {
-    mockFetch.mockImplementation(
-      () => new Promise(() => {}) // Never resolves
-    );
-
     renderPage();
     const input = screen.getByPlaceholderText(
       "Ask about NFPA 72, NEC, fire safety design..."
@@ -146,14 +157,9 @@ describe("EngineeringCopilotPage", () => {
   });
 
   it("shows assistant response after successful API call", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          response:
-            "NFPA 72 is the National Fire Alarm and Signaling Code.",
-          model: "gpt-4",
-        }),
+    mockChat.mockResolvedValue({
+      response: "NFPA 72 is the National Fire Alarm and Signaling Code.",
+      model: "gpt-4",
     });
 
     renderPage();
@@ -173,10 +179,10 @@ describe("EngineeringCopilotPage", () => {
   });
 
   it("shows error message on API failure", async () => {
-    mockFetch.mockResolvedValue({
-      ok: false,
-      json: () => Promise.resolve({ detail: "Service unavailable" }),
-    });
+    // When the API call fails, the mutation's error is an Error instance.
+    // The component displays chatMutation.error.message if it's an Error,
+    // otherwise "Failed to get response".
+    mockChat.mockRejectedValue(new Error("Service unavailable"));
 
     renderPage();
     const input = screen.getByPlaceholderText(
@@ -197,10 +203,6 @@ describe("EngineeringCopilotPage", () => {
   it("clear chat button resets to welcome message", async () => {
     renderPage();
 
-    // Add a user message first
-    mockFetch.mockImplementation(
-      () => new Promise(() => {})
-    );
     const input = screen.getByPlaceholderText(
       "Ask about NFPA 72, NEC, fire safety design..."
     );
