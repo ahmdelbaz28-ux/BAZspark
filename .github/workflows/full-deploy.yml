@@ -103,7 +103,12 @@ jobs:
           UDM_DB_PATH: "/tmp/udm_full_deploy_test.db"
         run: |
           pip install --only-binary :all: pytest-timeout==2.3.1 slowapi==0.1.10 tenacity==9.0.0 openpyxl==3.1.5
+          # V301 FIX: Aggressive cleanup of stale db/ artifacts before pytest.
+          # backend.api_keys creates db/api_keys.secret at module import time,
+          # and if it persists from a previous test run, the secret format may
+          # be incompatible → RuntimeError on _load_server_secret().
           rm -rf db/ /tmp/fireai_full_deploy_test.db /tmp/udm_full_deploy_test.db
+          find . -name "api_keys.secret" -delete 2>/dev/null || true
           pytest tests/ backend/tests/ -v \
             --tb=short \
             --timeout=300 \
