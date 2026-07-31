@@ -1066,6 +1066,10 @@ export const v2Api = {
         // ── V2 Health ──
         /** GET /health — V2 API health check */
         getV2Health: () => apiCall("/health", {}, API_V2_BASE),
+
+        // ── V2 Auth ──
+        /** GET /auth/csrf-token — Get CSRF token for V2 API */
+        getAuthCsrfToken: () => apiCall("/auth/csrf-token", {}, API_V2_BASE),
 };
 
 // ─── Marine API ─────────────────────────────────────────────────────────────
@@ -1833,6 +1837,10 @@ export const healthApi = {
         /** GET /health/statistics — Detailed health statistics */
         getStatistics: () =>
                 apiCall("/health/statistics", { method: "GET" }, API_BASE.replace("/api/v1", "/api")),
+
+        /** GET /reports/statistics — Legacy alias for /health/statistics */
+        getReportsStatistics: () =>
+                apiCall("/reports/statistics", { method: "GET" }, API_BASE.replace("/api/v1", "/api")),
 };
 
 // ─── LLM Extended API (backend/routers/llm.py) ────────────────────────────
@@ -1971,6 +1979,63 @@ export const revitIntegrationApi = {
         /** GET /revit-integration/status — Get synchronization status of a Revit project */
         getSyncStatus: (projectId: string) =>
                 apiCall(`/revit-integration/status?project_id=${encodeURIComponent(projectId)}`),
+};
+
+// ─── Sync API (backend/routers/sync.py) ─────────────────────────────────────
+
+export const syncApi = {
+        /** POST /projects/{project_id}/sync — Trigger project synchronization */
+        syncProject: (projectId: string) =>
+                apiCall(`/projects/${encodeURIComponent(projectId)}/sync`, {
+                        method: "POST",
+                }),
+
+        /** GET /projects/{project_id}/sync — Get project sync status */
+        getSyncStatus: (projectId: string) =>
+                apiCall(`/projects/${encodeURIComponent(projectId)}/sync`),
+};
+
+// ─── Reports API (backend/routers/reports.py) ────────────────────────────────
+
+export const reportsApi = {
+        /** GET /projects/{project_id}/reports — List reports for a project */
+        list: (projectId: string, params?: { page?: number; limit?: number; type?: string }) => {
+                const query = new URLSearchParams();
+                if (params?.page) query.set("page", String(params.page));
+                if (params?.limit) query.set("limit", String(params.limit));
+                if (params?.type) query.set("type", params.type);
+                const qs = query.toString();
+                return apiCall(`/projects/${encodeURIComponent(projectId)}/reports${qs ? `?${qs}` : ""}`);
+        },
+
+        /** POST /projects/{project_id}/reports — Generate a new report */
+        generate: (projectId: string, data: { report_type: string; config?: Record<string, unknown> }) =>
+                apiCall(`/projects/${encodeURIComponent(projectId)}/reports`, {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** POST /reports/generate — Generate a global report (no project_id in URL) */
+        generateGlobal: (data: { project_id: string; report_type: string; config?: Record<string, unknown> }) =>
+                apiCall("/reports/generate", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
+        /** GET /projects/{project_id}/reports/{report_id} — Get a specific report */
+        get: (projectId: string, reportId: string) =>
+                apiCall(`/projects/${encodeURIComponent(projectId)}/reports/${encodeURIComponent(reportId)}`),
+
+        /** GET /projects/{project_id}/reports/{report_id}/export — Export a report (PDF or DXF) */
+        exportReport: (projectId: string, reportId: string, format: string = "pdf") =>
+                apiCall(`/projects/${encodeURIComponent(projectId)}/reports/${encodeURIComponent(reportId)}/export?format=${encodeURIComponent(format)}`),
+
+        /** POST /projects/{project_id}/reports/ahj-submittal — Generate AHJ submittal document */
+        generateAhjSubmittal: (projectId: string, data: { designer?: string; jurisdiction?: string; nfpa_edition?: string }) =>
+                apiCall(`/projects/${encodeURIComponent(projectId)}/reports/ahj-submittal`, {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
 };
 
 export default fullApi;

@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/select";
 import { miningApi } from "@/services/miningApi";
 
-type Tab = "methane" | "ventilation" | "co" | "conveyor" | "report";
+type Tab = "standards" | "methane" | "ventilation" | "co" | "conveyor" | "report";
 
 export function MiningPage() {
         const [activeTab, setActiveTab] = useState<Tab>("methane");
@@ -63,6 +63,9 @@ export function MiningPage() {
         const [mineName, setMineName] = useState("Test Mine");
         const [sectionName, setSectionName] = useState("Section A");
         const [reportResult, setReportResult] = useState<Record<string, unknown> | null>(null);
+
+        // Standards state
+        const [standardsResult, setStandardsResult] = useState<Array<{ code: string; title: string }> | null>(null);
 
         const handleMethaneCheck = async () => {
                 setLoading(true);
@@ -126,6 +129,19 @@ export function MiningPage() {
                 }
         };
 
+        const handleStandards = async () => {
+                setLoading(true);
+                try {
+                        const result = await miningApi.getStandards();
+                        setStandardsResult(result.standards);
+                        toast.success(`Loaded ${result.standards.length} mining standards`);
+                } catch (err) {
+                        toast.error(`Failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                } finally {
+                        setLoading(false);
+                }
+        };
+
         const handleReport = async () => {
                 setLoading(true);
                 try {
@@ -168,6 +184,7 @@ export function MiningPage() {
                         {/* Tab selector */}
                         <div className="flex flex-wrap gap-2 border-b border-border pb-2">
                                 {([
+                                        ["standards", "Standards"],
                                         ["methane", "Methane CH₄"],
                                         ["ventilation", "Ventilation"],
                                         ["co", "CO Monitoring"],
@@ -184,6 +201,34 @@ export function MiningPage() {
                                         </Button>
                                 ))}
                         </div>
+
+                        {/* Standards Tab */}
+                        {activeTab === "standards" && (
+                                <Card className="border-border bg-card">
+                                        <CardHeader>
+                                                <CardTitle className="flex items-center gap-2">
+                                                        <FileText aria-hidden="true" className="h-5 w-5 text-primary" />
+                                                        Supported Mining Standards
+                                                </CardTitle>
+                                                <CardDescription>NFPA 120/122 · MSHA 30 CFR · IEC 60079</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                                <Button onClick={handleStandards} disabled={loading}>
+                                                        {loading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : "Load Standards"}
+                                                </Button>
+                                                {standardsResult && (
+                                                        <div className="space-y-2 p-4 rounded-lg bg-muted/50">
+                                                                {standardsResult.map((s) => (
+                                                                        <div key={s.code} className="flex items-center gap-2">
+                                                                                <Badge className="bg-primary text-white">{s.code}</Badge>
+                                                                                <span className="text-sm text-foreground">{s.title}</span>
+                                                                        </div>
+                                                                ))}
+                                                        </div>
+                                                )}
+                                        </CardContent>
+                                </Card>
+                        )}
 
                         {/* Methane Tab */}
                         {activeTab === "methane" && (

@@ -7,11 +7,13 @@ import {
         Activity,
         AlertTriangle,
         BookOpen,
+        Building2,
         FileText,
         Globe,
         Loader2,
         Power,
         PowerOff,
+        RefreshCw,
         Search,
         Terminal,
         Wifi,
@@ -32,7 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { revitApi, revitExtendedApi } from "@/services/fullApi";
+import { revitApi, revitExtendedApi, revitIntegrationApi } from "@/services/fullApi";
 
 export function RevitPage() {
         const [connected, setConnected] = useState(false);
@@ -45,6 +47,11 @@ export function RevitPage() {
         const [apiSearchResult, setApiSearchResult] = useState<Record<string, unknown> | null>(null);
         const [nlCommand, setNlCommand] = useState("");
         const [nlResult, setNlResult] = useState<Record<string, unknown> | null>(null);
+
+        // Revit Integration state
+        const [integrationProjectId, setIntegrationProjectId] = useState("");
+        const [integrationResult, setIntegrationResult] = useState<Record<string, unknown> | null>(null);
+        const [integrationLoading, setIntegrationLoading] = useState(false);
 
         const checkStatus = useCallback(async () => {
                 try {
@@ -378,6 +385,88 @@ export function RevitPage() {
                                         {nlResult && (
                                                 <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48">
                                                         {JSON.stringify(nlResult, null, 2)}
+                                                </pre>
+                                        )}
+                                </CardContent>
+                        </Card>
+
+                        {/* Revit Integration (revit_api.py) */}
+                        <Card className="border-border bg-card">
+                                <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-foreground">
+                                                <Building2 aria-hidden="true" className="h-5 w-5 text-primary" /> Revit Integration (Cloud Sync)
+                                        </CardTitle>
+                                        <CardDescription className="text-muted-foreground">
+                                                Upload, sync, and export Revit models via APS cloud integration
+                                        </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                        <div className="flex gap-2">
+                                                <Input
+                                                        placeholder="Project ID"
+                                                        value={integrationProjectId}
+                                                        onChange={(e) => setIntegrationProjectId(e.target.value)}
+                                                        className="bg-card border-border text-foreground"
+                                                />
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                                <Button
+                                                        onClick={async () => {
+                                                                if (!integrationProjectId) { toast.error("Enter a project ID"); return; }
+                                                                setIntegrationLoading(true);
+                                                                try {
+                                                                        const res = await revitIntegrationApi.getSyncStatus(integrationProjectId);
+                                                                        setIntegrationResult(res as Record<string, unknown>);
+                                                                        toast.success("Sync status retrieved");
+                                                                } catch (err) {
+                                                                        toast.error(`Failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                } finally { setIntegrationLoading(false); }
+                                                        }}
+                                                        disabled={integrationLoading || !integrationProjectId}
+                                                        variant="outline"
+                                                >
+                                                        {integrationLoading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Activity aria-hidden="true" className="h-4 w-4" />}
+                                                        Sync Status
+                                                </Button>
+                                                <Button
+                                                        onClick={async () => {
+                                                                if (!integrationProjectId) { toast.error("Enter a project ID"); return; }
+                                                                setIntegrationLoading(true);
+                                                                try {
+                                                                        const res = await revitIntegrationApi.syncModel({ project_id: integrationProjectId });
+                                                                        setIntegrationResult(res as Record<string, unknown>);
+                                                                        toast.success("Sync initiated");
+                                                                } catch (err) {
+                                                                        toast.error(`Sync failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                } finally { setIntegrationLoading(false); }
+                                                        }}
+                                                        disabled={integrationLoading || !integrationProjectId}
+                                                >
+                                                        {integrationLoading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <RefreshCw aria-hidden="true" className="h-4 w-4" />}
+                                                        Sync Model
+                                                </Button>
+                                                <Button
+                                                        onClick={async () => {
+                                                                if (!integrationProjectId) { toast.error("Enter a project ID"); return; }
+                                                                setIntegrationLoading(true);
+                                                                try {
+                                                                        const res = await revitIntegrationApi.exportData({ project_id: integrationProjectId, format: "ifc" });
+                                                                        setIntegrationResult(res as Record<string, unknown>);
+                                                                        toast.success("Export initiated");
+                                                                } catch (err) {
+                                                                        toast.error(`Export failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                } finally { setIntegrationLoading(false); }
+                                                        }}
+                                                        disabled={integrationLoading || !integrationProjectId}
+                                                        variant="outline"
+                                                >
+                                                        {integrationLoading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <FileText aria-hidden="true" className="h-4 w-4" />}
+                                                        Export (IFC)
+                                                </Button>
+                                        </div>
+                                        {integrationResult && (
+                                                <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48">
+                                                        {JSON.stringify(integrationResult, null, 2)}
                                                 </pre>
                                         )}
                                 </CardContent>
