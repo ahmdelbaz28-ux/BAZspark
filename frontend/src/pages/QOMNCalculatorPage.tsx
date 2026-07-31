@@ -3,10 +3,10 @@ import { useTranslation } from "react-i18next";
 import {
   Zap, AlertTriangle, Settings, Thermometer,
   Wind, Activity, CheckCircle2, XCircle, AlertCircle,
-  Loader2, Server,
+  Loader2, Server, Play, TestTube,
 } from "lucide-react";
 import PhysicsGuardsMonitor, { GuardRule } from "@/components/engineering/PhysicsGuardsMonitor";
-import { qomnApi } from "@/services/fullApi";
+import { qomnApi, qomnExtendedApi } from "@/services/fullApi";
 import { useToast } from "@/hooks/use-toast";
 
 /* ---------------------------------------------------------- */
@@ -528,6 +528,73 @@ const HeatSpacingCalculator: React.FC = () => {
 
 interface TabDef { id: Tab; label: string; icon: React.ElementType; }
 
+/* ---------------------------------------------------------- */
+/*  DUCT DETECTOR SECTION (Extended API)                       */
+/* ---------------------------------------------------------- */
+
+const DuctDetectorSection: React.FC = () => {
+  const [ductWidth, setDuctWidth] = useState(0.6);
+  const [ductResult, setDuctResult] = useState<Record<string, unknown> | null>(null);
+  const [ductLoading, setDuctLoading] = useState(false);
+  const [ductError, setDuctError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handlePlaceDuct = async () => {
+    setDuctLoading(true);
+    setDuctError(null);
+    try {
+      const res = await qomnExtendedApi.placeDuct({ duct_width_m: ductWidth });
+      setDuctResult(res as Record<string, unknown>);
+      toast({ title: "Duct detector placed", description: `Width: ${ductWidth}m` });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed";
+      setDuctError(msg);
+      toast({ title: "Place duct failed", description: msg, variant: "destructive" });
+    } finally {
+      setDuctLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <FieldLabel unit="m">Duct Width</FieldLabel>
+          <NumInput value={ductWidth} onChange={setDuctWidth} min={0.1} max={10} step={0.1} />
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={handlePlaceDuct}
+        disabled={ductLoading}
+        className="baz-tab baz-tab-active inline-flex items-center gap-1.5 text-[12px]"
+      >
+        {ductLoading ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
+        Place Duct Detector
+      </button>
+      {ductError && (
+        <div className="baz-panel p-4 border border-red-500/30">
+          <div className="flex items-center gap-2 text-[12px] text-red-400">
+            <XCircle size={13} />
+            {ductError}
+          </div>
+        </div>
+      )}
+      {ductResult && (
+        <div className="baz-panel p-4 border border-emerald-500/30">
+          <div className="flex items-center gap-2 text-[12px] text-emerald-400 mb-2">
+            <CheckCircle2 size={13} />
+            Duct detector result
+          </div>
+          <pre className="text-[11px] font-mono text-[#a0a0b8] bg-[#0a0a12] rounded-md p-3 overflow-auto max-h-60">
+            {JSON.stringify(ductResult, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const tabs: TabDef[] = [
   { id: "smoke",     label: "Smoke Spacing", icon: Wind        },
   { id: "heat",      label: "Heat Spacing",  icon: Thermometer },
@@ -540,6 +607,23 @@ const tabs: TabDef[] = [
 export const QOMNCalculatorPage: React.FC = () => {
   const { t: _t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>("smoke");
+  const [goldenTestsLoading, setGoldenTestsLoading] = useState(false);
+  const [goldenTestsResult, setGoldenTestsResult] = useState<Record<string, unknown> | null>(null);
+  const { toast } = useToast();
+
+  const handleRunGoldenTests = async () => {
+    setGoldenTestsLoading(true);
+    setGoldenTestsResult(null);
+    try {
+      const res = await qomnExtendedApi.runGoldenTests();
+      setGoldenTestsResult(res as Record<string, unknown>);
+      toast({ title: "Golden tests completed" });
+    } catch (err) {
+      toast({ title: "Golden tests failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+    } finally {
+      setGoldenTestsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-[#09090d]">
@@ -553,6 +637,20 @@ export const QOMNCalculatorPage: React.FC = () => {
             </p>
           </div>
           <span className="baz-badge baz-badge-accent">NFPA 72</span>
+          <button
+            type="button"
+            onClick={handleRunGoldenTests}
+            disabled={goldenTestsLoading}
+            className="baz-tab baz-tab-active inline-flex items-center gap-1.5 text-[12px] ml-3"
+          >
+            {goldenTestsLoading ? <Loader2 size={13} className="animate-spin" /> : <TestTube size={13} />}
+            Run Golden Tests
+          </button>
+          {goldenTestsResult && (
+            <pre className="text-[11px] font-mono text-[#a0a0b8] bg-[#0a0a12] rounded-md p-3 overflow-auto max-h-40 ml-2 max-w-md">
+              {JSON.stringify(goldenTestsResult, null, 2)}
+            </pre>
+          )}
         </div>
 
         {/* Tab bar */}
@@ -581,7 +679,12 @@ export const QOMNCalculatorPage: React.FC = () => {
         {activeTab === "heat"    && <HeatSpacingCalculator />}
         {activeTab === "battery" && <BatteryCalculator />}
         {activeTab === "voltage" && <VoltageDropCalculator />}
-        {(activeTab === "detectors" || activeTab === "duct") && (
+        {activeTab === "duct" && (
+          <div className="space-y-6 anim-fade-in">
+            <DuctDetectorSection />
+          </div>
+        )}
+        {activeTab === "detectors" && (
           <div className="flex flex-col items-center justify-center py-24 text-center anim-fade-in">
             <div className="w-10 h-10 rounded-lg bg-[#111118] border border-[#1e1e28] flex items-center justify-center mb-4">
               <Settings size={18} strokeWidth={1.5} className="text-[#3a3a50]" />
@@ -592,7 +695,7 @@ export const QOMNCalculatorPage: React.FC = () => {
             <p className="text-[12px] text-[#2a2a38]">
               Module under development — backend endpoint exists at{" "}
               <code className="font-mono text-[#3a3a50]">
-                /api/v1/qomn/{activeTab === "detectors" ? "place-detectors" : "place-duct"}
+                /api/v1/qomn/place-detectors
               </code>
             </p>
           </div>

@@ -3,6 +3,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation } from "react-router";
 import { Toaster } from "sonner";
+import { AlertTriangle, X } from "lucide-react";
 import { RouteGuard } from "@/components/auth/RouteGuard";
 import { PageErrorBoundary } from "@/components/core/PageErrorBoundary";
 import { SmoothScroll } from "@/components/interaction/SmoothScroll";
@@ -305,6 +306,7 @@ interface ProtectedRoute {
  * (previously the SPA silently returned 200 with empty content).
  */
 function App() {
+        const [deprecationBannerDismissed, setDeprecationBannerDismissed] = useState(false);
         const { i18n } = useTranslation();
         const { connected } = useHealth();
         const location = useLocation();
@@ -464,6 +466,24 @@ const handleSearchOpen = useCallback(() => {
                                             on a live connection. Renders above AppShell so it is
                                             always visible regardless of which page is loaded. */}
                                         {!isPublicRoute && <DemoDataBanner />}
+                                        {!isPublicRoute && !deprecationBannerDismissed && (
+                                                <div className="bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between gap-3">
+                                                        <div className="flex items-center gap-2">
+                                                                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                                                                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                                                        API v1 is deprecated. Migrate to v2.
+                                                                </span>
+                                                        </div>
+                                                        <button
+                                                                type="button"
+                                                                onClick={() => setDeprecationBannerDismissed(true)}
+                                                                className="text-amber-500 hover:text-amber-300 transition-colors shrink-0"
+                                                                aria-label="Dismiss deprecation banner"
+                                                        >
+                                                                <X className="h-4 w-4" />
+                                                        </button>
+                                                </div>
+                                        )}
                                         {isPublicRoute ? (
                                         publicRoutes
                                 ) : (

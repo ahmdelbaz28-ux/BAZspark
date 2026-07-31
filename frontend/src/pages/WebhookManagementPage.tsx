@@ -36,7 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { v2Api } from "@/services/fullApi";
+import { v2Api, v2ExtendedApi } from "@/services/fullApi";
 import { useToast } from "@/hooks/use-toast";
 
 interface WebhookSubscription {
@@ -170,6 +170,30 @@ export function WebhookManagementPage() {
     } catch (err) {
       toast({
         title: "Publish failed",
+        description: err instanceof Error ? err.message : "Failed",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePublishExtended = async () => {
+    let parsedPayload: Record<string, unknown>;
+    try {
+      parsedPayload = JSON.parse(pubData);
+    } catch {
+      toast({ title: "Invalid JSON in data field", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await v2ExtendedApi.publishWebhook({ event_type: pubEventType, payload: parsedPayload });
+      setPublishResult(res as Record<string, unknown>);
+      toast({ title: "Event published (v2 Extended)", description: `Event type: ${pubEventType}` });
+    } catch (err) {
+      toast({
+        title: "Publish failed (v2 Extended)",
         description: err instanceof Error ? err.message : "Failed",
         variant: "destructive",
       });
@@ -403,6 +427,18 @@ export function WebhookManagementPage() {
                 <Send aria-hidden="true" className="h-4 w-4" />
               )}
               Publish Event
+            </Button>
+            <Button
+              onClick={handlePublishExtended}
+              disabled={loading}
+              className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {loading ? (
+                <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send aria-hidden="true" className="h-4 w-4" />
+              )}
+              Publish Event (v2 Extended)
             </Button>
 
             {publishResult && (

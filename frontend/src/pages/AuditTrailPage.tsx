@@ -5,7 +5,7 @@
  * and safety-critical operations for NFPA 72 traceability.
  */
 import React, { useCallback, useEffect, useState } from "react";
-import { ClipboardList, Loader2, RefreshCw, AlertTriangle, Search } from "lucide-react";
+import { ClipboardList, Loader2, RefreshCw, AlertTriangle, Search, ShieldCheck } from "lucide-react";
 
 interface AuditEvent {
   id: string;
@@ -24,6 +24,8 @@ export const AuditTrailPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
+  const [integrityResult, setIntegrityResult] = useState<Record<string, unknown> | null>(null);
+  const [integrityLoading, setIntegrityLoading] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
@@ -116,7 +118,41 @@ export const AuditTrailPage: React.FC = () => {
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
+        <button
+          type="button"
+          onClick={async () => {
+            setIntegrityLoading(true);
+            try {
+              const res = await fetch(`${API_BASE}/audit/integrity`, { credentials: "same-origin" });
+              if (res.ok) {
+                const data = await res.json();
+                setIntegrityResult(data as Record<string, unknown>);
+              } else {
+                setIntegrityResult({ error: `HTTP ${res.status}`, note: "Audit integrity endpoint may not be available yet" });
+              }
+            } catch {
+              setIntegrityResult({ error: "Network error", note: "Audit integrity endpoint may not be available yet" });
+            } finally {
+              setIntegrityLoading(false);
+            }
+          }}
+          disabled={integrityLoading}
+          className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm transition-colors disabled:opacity-50"
+        >
+          {integrityLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+          Verify Integrity
+        </button>
       </div>
+
+      {integrityResult && (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            <span className="text-sm font-medium text-slate-200">Integrity Check Result</span>
+          </div>
+          <pre className="text-xs font-mono text-slate-400 whitespace-pre-wrap">{JSON.stringify(integrityResult, null, 2)}</pre>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">

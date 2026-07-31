@@ -13,6 +13,9 @@ import {
         RefreshCw,
         Trash2,
         User,
+        Download,
+        FileCode2,
+        Box,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -45,6 +48,7 @@ import {
 } from "@/hooks/useApiQuery";
 import type { Project } from "@/services/digitalTwinApi";
 import { DEVICE_CATEGORIES, getDevicesByCategory } from "@/types/deviceLibrary";
+import { apiCall } from "@/services/fullApi";
 
 // ============================================================================
 // Connection types for the dropdown
@@ -435,6 +439,57 @@ export function ProjectsPage() {
                                                                                                         <Trash2 aria-hidden="true" className="h-4 w-4" />
                                                                                                 </Button>
                                                                                         </div>
+                                                                                </div>
+                                                                                {/* Export Buttons */}
+                                                                                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
+                                                                                        <Button
+                                                                                                variant="outline"
+                                                                                                size="sm"
+                                                                                                className="border-border text-foreground/90"
+                                                                                                onClick={async () => {
+                                                                                                        try {
+                                                                                                                await apiCall(`/projects/${project.id}/export/dxf`);
+                                                                                                                toast.success("DXF exported");
+                                                                                                        } catch (err) {
+                                                                                                                toast.error(`DXF export failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                                                        }
+                                                                                                }}
+                                                                                        >
+                                                                                                <FileCode2 aria-hidden="true" className="h-4 w-4" />
+                                                                                                Export DXF
+                                                                                        </Button>
+                                                                                        <Button
+                                                                                                variant="outline"
+                                                                                                size="sm"
+                                                                                                className="border-border text-foreground/90"
+                                                                                                onClick={async () => {
+                                                                                                        try {
+                                                                                                                await apiCall(`/projects/${project.id}/export/revit`);
+                                                                                                                toast.success("Revit exported");
+                                                                                                        } catch (err) {
+                                                                                                                toast.error(`Revit export failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                                                        }
+                                                                                                }}
+                                                                                        >
+                                                                                                <Download aria-hidden="true" className="h-4 w-4" />
+                                                                                                Export Revit
+                                                                                        </Button>
+                                                                                        <Button
+                                                                                                variant="outline"
+                                                                                                size="sm"
+                                                                                                className="border-border text-foreground/90"
+                                                                                                onClick={async () => {
+                                                                                                        try {
+                                                                                                                await apiCall(`/projects/${project.id}/export/ifc`);
+                                                                                                                toast.success("IFC exported");
+                                                                                                        } catch (err) {
+                                                                                                                toast.error(`IFC export failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                                                        }
+                                                                                                }}
+                                                                                        >
+                                                                                                <Box aria-hidden="true" className="h-4 w-4" />
+                                                                                                Export IFC
+                                                                                        </Button>
                                                                                 </div>
                                                                         </CardContent>
                                                                 </Card>

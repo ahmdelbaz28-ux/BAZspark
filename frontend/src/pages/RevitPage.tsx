@@ -6,10 +6,14 @@
 import {
         Activity,
         AlertTriangle,
+        BookOpen,
         FileText,
+        Globe,
         Loader2,
         Power,
         PowerOff,
+        Search,
+        Terminal,
         Wifi,
         WifiOff,
 } from "lucide-react";
@@ -28,7 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { revitApi } from "@/services/fullApi";
+import { revitApi, revitExtendedApi } from "@/services/fullApi";
 
 export function RevitPage() {
         const [connected, setConnected] = useState(false);
@@ -37,6 +41,10 @@ export function RevitPage() {
         const [status, setStatus] = useState<Record<string, unknown> | null>(null);
         const [visible, setVisible] = useState(true);
         const [filepath, setFilepath] = useState("");
+        const [apiSearchQuery, setApiSearchQuery] = useState("");
+        const [apiSearchResult, setApiSearchResult] = useState<Record<string, unknown> | null>(null);
+        const [nlCommand, setNlCommand] = useState("");
+        const [nlResult, setNlResult] = useState<Record<string, unknown> | null>(null);
 
         const checkStatus = useCallback(async () => {
                 try {
@@ -267,6 +275,111 @@ export function RevitPage() {
                                                         onUpload={handleUpload}
                                                 />
                                         </div>
+                                </CardContent>
+                                </Card>
+
+                        {/* Revit API Search & NL Execute */}
+                        <Card className="border-border bg-card">
+                                <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-foreground">
+                                                <BookOpen aria-hidden="true" className="h-5 w-5 text-primary" /> API Search & Natural Language
+                                        </CardTitle>
+                                        <CardDescription className="text-muted-foreground">
+                                                Search Revit API docs and execute natural language commands
+                                        </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                        <div className="flex flex-wrap gap-2">
+                                                <Button
+                                                        onClick={async () => {
+                                                                try {
+                                                                        await revitExtendedApi.loadApiSearchIndex();
+                                                                        toast.success("API index loaded");
+                                                                } catch (err) {
+                                                                        toast.error(`Load failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                }
+                                                        }}
+                                                        variant="outline"
+                                                >
+                                                        <BookOpen aria-hidden="true" className="h-4 w-4" />
+                                                        Load API Index
+                                                </Button>
+                                        </div>
+                                        <div className="flex gap-2">
+                                                <Input
+                                                        placeholder="Search API docs..."
+                                                        value={apiSearchQuery}
+                                                        onChange={(e) => setApiSearchQuery(e.target.value)}
+                                                        className="bg-card border-border text-foreground"
+                                                />
+                                                <Button
+                                                        onClick={async () => {
+                                                                if (!apiSearchQuery) return;
+                                                                try {
+                                                                        const res = await revitExtendedApi.searchApi({ query: apiSearchQuery });
+                                                                        setApiSearchResult(res as Record<string, unknown>);
+                                                                        toast.success("Search complete");
+                                                                } catch (err) {
+                                                                        toast.error(`Search failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                }
+                                                        }}
+                                                        disabled={!apiSearchQuery}
+                                                >
+                                                        <Search aria-hidden="true" className="h-4 w-4" />
+                                                        Search API
+                                                </Button>
+                                                <Button
+                                                        onClick={async () => {
+                                                                if (!apiSearchQuery) return;
+                                                                try {
+                                                                        const res = await revitExtendedApi.searchOnline(apiSearchQuery);
+                                                                        setApiSearchResult(res as Record<string, unknown>);
+                                                                        toast.success("Online search complete");
+                                                                } catch (err) {
+                                                                        toast.error(`Online search failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                }
+                                                        }}
+                                                        disabled={!apiSearchQuery}
+                                                        variant="outline"
+                                                >
+                                                        <Globe aria-hidden="true" className="h-4 w-4" />
+                                                        Search Online
+                                                </Button>
+                                        </div>
+                                        {apiSearchResult && (
+                                                <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48">
+                                                        {JSON.stringify(apiSearchResult, null, 2)}
+                                                </pre>
+                                        )}
+                                        <div className="flex gap-2">
+                                                <Input
+                                                        placeholder="Natural language command..."
+                                                        value={nlCommand}
+                                                        onChange={(e) => setNlCommand(e.target.value)}
+                                                        className="bg-card border-border text-foreground"
+                                                />
+                                                <Button
+                                                        onClick={async () => {
+                                                                if (!nlCommand) return;
+                                                                try {
+                                                                        const res = await revitExtendedApi.executeNlCommand({ command: nlCommand });
+                                                                        setNlResult(res as Record<string, unknown>);
+                                                                        toast.success("Command executed");
+                                                                } catch (err) {
+                                                                        toast.error(`Execute failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                }
+                                                        }}
+                                                        disabled={!nlCommand}
+                                                >
+                                                        <Terminal aria-hidden="true" className="h-4 w-4" />
+                                                        Execute NL Command
+                                                </Button>
+                                        </div>
+                                        {nlResult && (
+                                                <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48">
+                                                        {JSON.stringify(nlResult, null, 2)}
+                                                </pre>
+                                        )}
                                 </CardContent>
                         </Card>
                 </div>

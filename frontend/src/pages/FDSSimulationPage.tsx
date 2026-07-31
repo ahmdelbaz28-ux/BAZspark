@@ -33,7 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { v2Api } from "@/services/fullApi";
+import { v2Api, v2ExtendedApi } from "@/services/fullApi";
 import { useToast } from "@/hooks/use-toast";
 
 interface FdsJob {
@@ -96,6 +96,8 @@ export function FDSSimulationPage() {
     ),
   );
   const [smokeFdsRunId, setSmokeFdsRunId] = useState("");
+  const [simUpdateState, setSimUpdateState] = useState("");
+  const [simUpdateResult, setSimUpdateResult] = useState<Record<string, unknown> | null>(null);
 
   const handleSubmitJob = async () => {
     if (!fdsInput || fdsInput.length < 10) {
@@ -453,6 +455,67 @@ export function FDSSimulationPage() {
               )}
               Create Smoke State
             </Button>
+
+            <Separator className="bg-border my-4" />
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Update Simulation State (v2 Extended)
+              </Label>
+              <p className="text-xs text-muted-foreground/60">
+                Update the smoke simulation state via v2 Extended API
+              </p>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  autoComplete="off"
+                  value={simUpdateState}
+                  onChange={(e) => setSimUpdateState(e.target.value)}
+                  placeholder='{"status": "running", "progress": 0.5}'
+                  className="flex-1"
+                />
+                <Button
+                  onClick={async () => {
+                    let parsedState: Record<string, unknown>;
+                    try {
+                      parsedState = JSON.parse(simUpdateState || "{}");
+                    } catch {
+                      toast({ title: "Invalid JSON state", variant: "destructive" });
+                      return;
+                    }
+                    setLoading(true);
+                    try {
+                      const res = await v2ExtendedApi.updateSmokeSimulation({ state: parsedState });
+                      setSimUpdateResult(res as Record<string, unknown>);
+                      toast({ title: "Simulation state updated" });
+                    } catch (err) {
+                      toast({
+                        title: "Update failed",
+                        description: err instanceof Error ? err.message : "Failed",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  {loading ? (
+                    <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Activity aria-hidden="true" className="h-4 w-4" />
+                  )}
+                  Update Simulation State
+                </Button>
+              </div>
+              {simUpdateResult && (
+                <div className="mt-3 p-3 rounded-lg bg-muted/50 border border-border">
+                  <pre className="text-xs font-mono whitespace-pre-wrap text-foreground max-h-48 overflow-auto">
+                    {JSON.stringify(simUpdateResult, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
 
             {smokeState && (
               <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border">

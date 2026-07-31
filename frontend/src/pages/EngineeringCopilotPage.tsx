@@ -15,12 +15,14 @@ import {
   User,
   AlertTriangle,
   Trash2,
+  List,
+  FileText,
+  ArrowRightLeft,
+  ShieldCheck,
+  FileOutput,
 } from "lucide-react";
 
-const COPILOT_API =
-  import.meta.env.VITE_API_URL
-    ? `${import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, "")}/engineering-copilot`
-    : "/engineering-copilot";
+import { llmExtendedApi, copilotExtendedApi } from "@/services/fullApi";
 
 interface Message {
   id: string;
@@ -45,6 +47,83 @@ export const EngineeringCopilotPage: React.FC = () => {
       timestamp: new Date(),
     },
   ]);
+  const [extResult, setExtResult] = useState<Record<string, unknown> | null>(null);
+  const [extLoading, setExtLoading] = useState(false);
+
+  const handleListModels = async () => {
+    setExtLoading(true);
+    try {
+      const res = await llmExtendedApi.getModels();
+      setExtResult(res as Record<string, unknown>);
+    } catch (err) {
+      // silent
+    } finally {
+      setExtLoading(false);
+    }
+  };
+
+  const handleComplianceNarrative = async () => {
+    setExtLoading(true);
+    try {
+      const res = await llmExtendedApi.complianceNarrative({
+        calculation_type: "voltage_drop",
+        calculation_result: { drop_pct: 3.2 },
+      });
+      setExtResult(res as Record<string, unknown>);
+    } catch (err) {
+      // silent
+    } finally {
+      setExtLoading(false);
+    }
+  };
+
+  const handleTranslateModel = async () => {
+    setExtLoading(true);
+    try {
+      const res = await copilotExtendedApi.translateModel({
+        source_format: "ifc",
+        target_format: "revit",
+        model_data: {},
+      });
+      setExtResult(res as Record<string, unknown>);
+    } catch (err) {
+      // silent
+    } finally {
+      setExtLoading(false);
+    }
+  };
+
+  const handleValidateModel = async () => {
+    setExtLoading(true);
+    try {
+      const res = await copilotExtendedApi.validateModel({
+        model_data: {},
+        standard: "NFPA 72",
+      });
+      setExtResult(res as Record<string, unknown>);
+    } catch (err) {
+      // silent
+    } finally {
+      setExtLoading(false);
+    }
+  };
+
+  const handleGenerateReports = async () => {
+    setExtLoading(true);
+    try {
+      const res = await copilotExtendedApi.generateReports({});
+      setExtResult(res as Record<string, unknown>);
+    } catch (err) {
+      // silent
+    } finally {
+      setExtLoading(false);
+    }
+  };
+
+  const COPILOT_API =
+  import.meta.env.VITE_API_URL
+    ? `${import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, "")}/engineering-copilot`
+    : "/engineering-copilot";
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -133,6 +212,63 @@ export const EngineeringCopilotPage: React.FC = () => {
             <Trash2 className="h-3.5 w-3.5" />
             Clear Chat
           </button>
+        </div>
+
+        {/* Extended Operations */}
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-4">
+          <h3 className="text-sm font-semibold text-slate-200 mb-3">Extended Operations</h3>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleListModels}
+              disabled={extLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {extLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <List className="h-3.5 w-3.5" />}
+              List Models
+            </button>
+            <button
+              type="button"
+              onClick={handleComplianceNarrative}
+              disabled={extLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {extLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+              Compliance Narrative
+            </button>
+            <button
+              type="button"
+              onClick={handleTranslateModel}
+              disabled={extLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {extLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRightLeft className="h-3.5 w-3.5" />}
+              Translate Model
+            </button>
+            <button
+              type="button"
+              onClick={handleValidateModel}
+              disabled={extLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {extLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+              Validate Model
+            </button>
+            <button
+              type="button"
+              onClick={handleGenerateReports}
+              disabled={extLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {extLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileOutput className="h-3.5 w-3.5" />}
+              Generate Reports
+            </button>
+          </div>
+          {extResult && (
+            <pre className="mt-3 text-xs font-mono text-slate-400 bg-slate-900 p-3 rounded-lg overflow-auto max-h-48">
+              {JSON.stringify(extResult, null, 2)}
+            </pre>
+          )}
         </div>
 
         {/* Chat Messages */}

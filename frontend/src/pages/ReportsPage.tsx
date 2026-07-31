@@ -3,7 +3,7 @@
  * ReportsPage.tsx - Report generation with deterministic analysis
  */
 
-import { Calendar, Clock, Download, FileText, Loader2, AlertTriangle } from "lucide-react";
+import { Calendar, Clock, Download, FileText, Loader2, AlertTriangle, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -34,6 +34,7 @@ import type { BatteryCalcInput } from "@/engine/BatteryCalculator";
 import { calculateCoverage } from "@/engine/CoverageEngine";
 import { useGenerateReport, useProjects, useReports } from "@/hooks/useApiQuery";
 import { api as apiClient } from "@/services/api";
+import { apiCall } from "@/services/fullApi";
 
 // ============================================================================
 // ReportsPage Component
@@ -525,6 +526,42 @@ export function ReportsPage() {
                                                                         disabled={report.status !== "completed"}
                                                                 >
                                                                         <Download aria-hidden="true" className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="border-border text-foreground/90"
+                                                                        onClick={async () => {
+                                                                                try {
+                                                                                        await apiCall(`/projects/${firstProjectId}/reports/${report.id}/download`);
+                                                                                        toast.success("Report downloaded");
+                                                                                } catch (err) {
+                                                                                        toast.error(`Download failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                                }
+                                                                        }}
+                                                                        aria-label="Download from API"
+                                                                        title="Download from API"
+                                                                        disabled={report.status !== "completed"}
+                                                                >
+                                                                        <Download aria-hidden="true" className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="border-border text-destructive/90 hover:text-destructive"
+                                                                        onClick={async () => {
+                                                                                try {
+                                                                                        await apiCall(`/projects/${firstProjectId}/reports/${report.id}/download`, { method: "DELETE" });
+                                                                                        toast.success("Report deleted");
+                                                                                        refetchReports();
+                                                                                } catch (err) {
+                                                                                        toast.error(`Delete failed: ${err instanceof Error ? err.message : "Unknown"}`);
+                                                                                }
+                                                                        }}
+                                                                        aria-label="Delete report"
+                                                                        title="Delete report"
+                                                                >
+                                                                        <Trash2 aria-hidden="true" className="h-4 w-4" />
                                                                 </Button>
                                                         </div>
                                                 </div>

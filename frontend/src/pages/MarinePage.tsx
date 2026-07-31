@@ -58,7 +58,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { marineApi } from "@/services/fullApi";
+import { marineApi, marineExtendedApi } from "@/services/fullApi";
 import "@/styles/marine.css";
 
 interface ShipForm {
@@ -1410,6 +1410,127 @@ useEffect(() => {
                                                 </div>
                                         </TabsContent>
                                 </Tabs>
+
+                                {/* Extended Marine Operations */}
+                                <div className="marine-section mt-6">
+                                        <div className="marine-section-header">
+                                                <span className="text-[11px] font-bold text-[#c9a84c] uppercase tracking-wider">Extended Integrations</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-3 mt-3">
+                                                <Button
+                                                        data-testid="marine-gen-alarm-logic-btn"
+                                                        size="sm"
+                                                        className="marine-btn marine-btn--primary h-8 text-[10px] px-3"
+                                                        disabled={loading !== null}
+                                                        onClick={async () => {
+                                                                if (!imoNumber) { toast({ title: "Ship ID required", variant: "destructive" }); return; }
+                                                                setLoading("alarm-logic");
+                                                                try {
+                                                                        const res = await marineExtendedApi.generateAlarmLogic({ ship_id: imoNumber });
+                                                                        setAlarmLogic(res as Record<string, unknown>);
+                                                                        toast({ title: "Alarm logic generated" });
+                                                                } catch (err) {
+                                                                        toast({ title: "Alarm logic failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                                                                } finally { setLoading(null); }
+                                                        }}
+                                                >
+                                                        {loading === "alarm-logic" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Siren className="h-3 w-3" />}
+                                                        Generate Alarm Logic
+                                                </Button>
+                                                <Button
+                                                        size="sm"
+                                                        className="marine-btn marine-btn--primary h-8 text-[10px] px-3"
+                                                        disabled={loading !== null}
+                                                        onClick={async () => {
+                                                                if (!imoNumber) { toast({ title: "Ship ID required", variant: "destructive" }); return; }
+                                                                setLoading("divisions");
+                                                                try {
+                                                                        const res = await marineExtendedApi.generateDivisions({ ship_id: imoNumber });
+                                                                        setDivisions(res as Record<string, unknown>);
+                                                                        toast({ title: "Divisions generated" });
+                                                                } catch (err) {
+                                                                        toast({ title: "Divisions failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                                                                } finally { setLoading(null); }
+                                                        }}
+                                                >
+                                                        {loading === "divisions" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Layers className="h-3 w-3" />}
+                                                        Generate Divisions
+                                                </Button>
+                                                <Button
+                                                        size="sm"
+                                                        className="marine-btn marine-btn--primary h-8 text-[10px] px-3"
+                                                        disabled={loading !== null}
+                                                        onClick={async () => {
+                                                                if (!imoNumber) { toast({ title: "Ship ID required", variant: "destructive" }); return; }
+                                                                setLoading("scada-ext");
+                                                                try {
+                                                                        const res = await marineExtendedApi.generateScada({ ship_id: imoNumber });
+                                                                        setScadaConfig(res as Record<string, unknown>);
+                                                                        toast({ title: "SCADA generated" });
+                                                                } catch (err) {
+                                                                        toast({ title: "SCADA failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                                                                } finally { setLoading(null); }
+                                                        }}
+                                                >
+                                                        {loading === "scada-ext" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Cpu className="h-3 w-3" />}
+                                                        Generate SCADA
+                                                </Button>
+                                                <Button
+                                                        size="sm"
+                                                        className="marine-btn marine-btn--primary h-8 text-[10px] px-3"
+                                                        disabled={loading !== null}
+                                                        onClick={async () => {
+                                                                if (!imoNumber) { toast({ title: "Ship ID required", variant: "destructive" }); return; }
+                                                                setLoading("etap");
+                                                                try {
+                                                                        await marineExtendedApi.generateEtap({ ship_id: imoNumber });
+                                                                        toast({ title: "ETAP generated" });
+                                                                } catch (err) {
+                                                                        toast({ title: "ETAP failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                                                                } finally { setLoading(null); }
+                                                        }}
+                                                >
+                                                        {loading === "etap" ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileSpreadsheet className="h-3 w-3" />}
+                                                        Generate ETAP
+                                                </Button>
+                                                <Button
+                                                        size="sm"
+                                                        className="marine-btn marine-btn--primary h-8 text-[10px] px-3"
+                                                        disabled={loading !== null}
+                                                        onClick={async () => {
+                                                                if (!imoNumber) { toast({ title: "Ship ID required", variant: "destructive" }); return; }
+                                                                setLoading("dxf");
+                                                                try {
+                                                                        await marineExtendedApi.generateDxf({ ship_id: imoNumber });
+                                                                        toast({ title: "DXF generated" });
+                                                                } catch (err) {
+                                                                        toast({ title: "DXF failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                                                                } finally { setLoading(null); }
+                                                        }}
+                                                >
+                                                        {loading === "dxf" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                                                        Generate DXF
+                                                </Button>
+                                                <Button
+                                                        size="sm"
+                                                        className="marine-btn marine-btn--primary h-8 text-[10px] px-3"
+                                                        disabled={loading !== null}
+                                                        onClick={async () => {
+                                                                if (!imoNumber) { toast({ title: "Ship ID required", variant: "destructive" }); return; }
+                                                                setLoading("revit");
+                                                                try {
+                                                                        await marineExtendedApi.generateRevit({ ship_id: imoNumber });
+                                                                        toast({ title: "Revit generated" });
+                                                                } catch (err) {
+                                                                        toast({ title: "Revit failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                                                                } finally { setLoading(null); }
+                                                        }}
+                                                >
+                                                        {loading === "revit" ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileCode2 className="h-3 w-3" />}
+                                                        Generate Revit
+                                                </Button>
+                                        </div>
+                                </div>
                         </div>
                 </div>
         );

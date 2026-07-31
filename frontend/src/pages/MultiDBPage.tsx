@@ -28,6 +28,10 @@ import {
   GitBranch,
   Link2,
   Unlink,
+  Archive,
+  Fingerprint,
+  GitMerge,
+  Network,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,7 +53,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { v2Api } from "@/services/fullApi";
+import { v2Api, v2ExtendedApi } from "@/services/fullApi";
 import { useToast } from "@/hooks/use-toast";
 
 interface DbHealth {
@@ -1001,6 +1005,230 @@ export function MultiDBPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* BIM Operations (Extended API) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Archive aria-hidden="true" className="h-4 w-4 text-primary" />
+              BIM Element Operations (v2 Extended)
+            </CardTitle>
+            <CardDescription>
+              Cache, retrieve, embed, and relate BIM elements across databases
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Cache Element */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-foreground">Cache & Retrieve</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Element ID</Label>
+                  <Input
+                    autoComplete="off"
+                    value={cacheElementId}
+                    onChange={(e) => setCacheElementId(e.target.value)}
+                    placeholder="element-001"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Element Data (JSON)</Label>
+                  <Input
+                    autoComplete="off"
+                    value={cacheElementJson}
+                    onChange={(e) => setCacheElementJson(e.target.value)}
+                    placeholder='{"type": "wall"}'
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={async () => {
+                    if (!cacheElementId) { toast({ title: "Element ID required", variant: "destructive" }); return; }
+                    setLoading(true);
+                    try {
+                      let parsedData: Record<string, unknown>;
+                      try { parsedData = JSON.parse(cacheElementJson); } catch { parsedData = {}; }
+                      const res = await v2ExtendedApi.cacheBimElement({ element_id: cacheElementId, element_data: parsedData });
+                      setCacheResult(JSON.stringify(res, null, 2));
+                      toast({ title: "Element cached" });
+                    } catch (err) {
+                      toast({ title: "Cache failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                    } finally { setLoading(false); }
+                  }}
+                  disabled={loading}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Archive aria-hidden="true" className="h-4 w-4" />
+                  Cache Element
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (!retrieveElementId) { toast({ title: "Element ID required", variant: "destructive" }); return; }
+                    setLoading(true);
+                    try {
+                      const res = await v2ExtendedApi.getCachedBimElement(retrieveElementId);
+                      setRetrievedData(JSON.stringify(res, null, 2));
+                      toast({ title: "Element retrieved" });
+                    } catch (err) {
+                      toast({ title: "Retrieve failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                    } finally { setLoading(false); }
+                  }}
+                  disabled={loading}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Search aria-hidden="true" className="h-4 w-4" />
+                  Get Cached Element
+                </Button>
+              </div>
+            </div>
+
+            {/* Embeddings */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-foreground">Embeddings & Similarity</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Element ID</Label>
+                  <Input
+                    autoComplete="off"
+                    value={embedElementId}
+                    onChange={(e) => setEmbedElementId(e.target.value)}
+                    placeholder="element-001"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Embedding (comma-separated)</Label>
+                  <Input
+                    autoComplete="off"
+                    value={simElementId}
+                    onChange={(e) => setSimElementId(e.target.value)}
+                    placeholder="0.1,0.2,0.3,..."
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={async () => {
+                    if (!embedElementId) { toast({ title: "Element ID required", variant: "destructive" }); return; }
+                    setLoading(true);
+                    try {
+                      const embedding = Array.from({ length: VECTOR_DIMENSIONS }, () => Math.random());
+                      await v2ExtendedApi.storeEmbeddings({ element_id: embedElementId, embedding });
+                      toast({ title: "Embeddings stored" });
+                    } catch (err) {
+                      toast({ title: "Store failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                    } finally { setLoading(false); }
+                  }}
+                  disabled={loading}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Fingerprint aria-hidden="true" className="h-4 w-4" />
+                  Store Embeddings
+                </Button>
+                <Button
+                  onClick={async () => {
+                    setLoading(true);
+                    try {
+                      const embedding = Array.from({ length: VECTOR_DIMENSIONS }, () => Math.random());
+                      const res = await v2ExtendedApi.findSimilar({ embedding });
+                      setSimResults(JSON.stringify(res, null, 2));
+                      toast({ title: "Similar elements found" });
+                    } catch (err) {
+                      toast({ title: "Find similar failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                    } finally { setLoading(false); }
+                  }}
+                  disabled={loading}
+                  variant="outline"
+                  size="sm"
+                >
+                  <FileSearch aria-hidden="true" className="h-4 w-4" />
+                  Find Similar
+                </Button>
+              </div>
+            </div>
+
+            {/* Relationships */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-foreground">Relationships (Neo4j)</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Element ID</Label>
+                  <Input
+                    autoComplete="off"
+                    value={cacheElementId}
+                    onChange={(e) => setCacheElementId(e.target.value)}
+                    placeholder="element-001"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Related IDs (comma-separated)</Label>
+                  <Input
+                    autoComplete="off"
+                    value={retrieveElementId}
+                    onChange={(e) => setRetrieveElementId(e.target.value)}
+                    placeholder="element-002,element-003"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Relationship Type</Label>
+                  <Select value={neo4jQueryType} onValueChange={setNeo4jQueryType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RELATIONSHIP_TYPES.map((rt) => (
+                        <SelectItem key={rt.value} value={rt.value}>{rt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={async () => {
+                    if (!cacheElementId) { toast({ title: "Element ID required", variant: "destructive" }); return; }
+                    setLoading(true);
+                    try {
+                      const relatedIds = retrieveElementId.split(",").map((s) => s.trim()).filter(Boolean);
+                      await v2ExtendedApi.createRelationships({ element_id: cacheElementId, related_ids: relatedIds, relationship_type: neo4jQueryType });
+                      toast({ title: "Relationships created" });
+                    } catch (err) {
+                      toast({ title: "Create relationships failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                    } finally { setLoading(false); }
+                  }}
+                  disabled={loading}
+                  variant="outline"
+                  size="sm"
+                >
+                  <GitMerge aria-hidden="true" className="h-4 w-4" />
+                  Create Relationships
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (!cacheElementId) { toast({ title: "Element ID required", variant: "destructive" }); return; }
+                    setLoading(true);
+                    try {
+                      const res = await v2ExtendedApi.getRelatedElements(cacheElementId);
+                      setNeo4jResults([(res)] as unknown[]);
+                      toast({ title: "Related elements retrieved" });
+                    } catch (err) {
+                      toast({ title: "Get related failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                    } finally { setLoading(false); }
+                  }}
+                  disabled={loading}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Network aria-hidden="true" className="h-4 w-4" />
+                  Get Related Elements
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

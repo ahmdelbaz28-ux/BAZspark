@@ -36,6 +36,7 @@ import {
         Server,
         Globe,
         Smartphone,
+        FilePlus,
 } from "lucide-react";
 import type React from "react";
 import { memo, useState } from "react";
@@ -89,6 +90,7 @@ const routePrefetchMap: Record<string, () => Promise<unknown>> = {
         "/settings/webhooks": () => import("@/pages/WebhookManagementPage"),
         "/monitor/agent": () => import("@/pages/AgentChatPage"),
         "/engineering/qomn": () => import("@/pages/QOMNCalculatorPage"),
+        "/reports/generate": () => import("@/pages/ReportGeneratorPage"),
 };
 
 interface NavItem {
@@ -239,7 +241,14 @@ const navItems: NavItem[] = [
                 icon: FileText,
                 path: "/reports",
                 dataOnboarding: "nav-reports",
-        },                {
+        },
+        {
+                labelKey: "nav.reportGenerator",
+                defaultLabel: "Report Generator",
+                icon: FilePlus,
+                path: "/reports/generate",
+        },
+                {
                         labelKey: "nav.exports",
                         defaultLabel: "Exports",
                         icon: Download,
