@@ -60,6 +60,7 @@ function Conflicts() {
                         <Button
                                 onClick={() => detectMutation.mutate()}
                                 disabled={detectMutation.isPending}
+                                data-testid="check-conflicts-btn"
                                 className="gap-2"
                         >
                                         {detectMutation.isPending ? (

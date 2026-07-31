@@ -25,9 +25,13 @@ DESIGN NOTES
 • File uploads use UploadFile (PDF/PNG/JPG). Files are written to a
   temporary path, processed, then deleted. No persistent storage.
 
-• Responses include the service name, status, and full payload. Errors
-  return structured JSON with the underlying exception message — these
-  are experimental services, so exposing error details helps debugging.
+• Responses include the service name, status, and full payload. On error,
+  the response returns a generic 4xx/5xx message (e.g. "OCR processing
+  failed. Check server logs for details.") and the full exception is
+  logged server-side via logger.exception(). This is the V271 fix for
+  CodeQL py/stack-trace-exposure — previously {exc} was interpolated
+  into the detail, which could leak internal paths, DB URLs, or
+  credential fragments from the underlying library.
 
 • The /features endpoint lets the frontend list all experimental
   services in a single call, with their availability status.
@@ -185,14 +189,19 @@ async def process_ocr(
     """
     from backend.services.ocr_service import OCRService
 
-    # Save upload to temp file
+    # V272 FIX: previously the upload-save block was OUTSIDE the try/finally,
+    # so if file.read() raised (network blip, client disconnect), the temp
+    # file was leaked on disk with no cleanup. Now the entire block is wrapped
+    # in a try/finally so cleanup always runs.
     suffix = Path(file.filename or "").suffix or ".bin"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        content = await file.read()
-        tmp.write(content)
-        tmp_path = tmp.name
-
+    tmp_path: str | None = None
     try:
+        # Save upload to temp file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            content = await file.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+
         svc = OCRService()
         result = svc.process_file(tmp_path, lang=lang)
         return success(data={"service": "ocr", "filename": file.filename, "result": result})
@@ -200,17 +209,22 @@ async def process_ocr(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    except Exception as exc:
+    except Exception:
+        # V271 FIX (CodeQL py/stack-trace-exposure): previously we exposed
+        # {exc} in the detail, which can leak internal paths, DB URLs, or
+        # credential fragments from the underlying library. Now we log the
+        # full exception server-side and return a generic message.
         logger.exception("OCR processing failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"OCR processing failed: {exc}",
-        ) from exc
+            detail="OCR processing failed. Check server logs for details.",
+        )
     finally:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
+        if tmp_path is not None:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
 
 @router.post("/scan-to-bim/process")
@@ -226,13 +240,16 @@ async def process_scan_to_bim(
     from backend.services.ocr_service import OCRService
     from backend.services.scan_to_bim import ScanToBIMService
 
+    # V272 FIX: wrap upload-save + processing in a single try/finally so
+    # the temp file is cleaned up even if file.read() raises mid-upload.
     suffix = Path(file.filename or "").suffix or ".bin"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        content = await file.read()
-        tmp.write(content)
-        tmp_path = tmp.name
-
+    tmp_path: str | None = None
     try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            content = await file.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+
         ocr = OCRService()
         svc = ScanToBIMService(ocr_service_instance=ocr)
         result = svc.process_scan(tmp_path, lang=lang)
@@ -249,17 +266,19 @@ async def process_scan_to_bim(
             },
         }
         return success(data=payload)
-    except Exception as exc:
+    except Exception:
+        # V271 FIX (CodeQL py/stack-trace-exposure): do not expose {exc}.
         logger.exception("Scan-to-BIM processing failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Scan-to-BIM processing failed: {exc}",
-        ) from exc
+            detail="Scan-to-BIM processing failed. Check server logs for details.",
+        )
     finally:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
+        if tmp_path is not None:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
 
 @router.post("/speckle/push")
@@ -282,10 +301,11 @@ async def speckle_push(body: SpeckleOperationRequest, _role: SystemConfigRole) -
         )
         return success(data={"service": "speckle-push", "result": result})
     except Exception as exc:
+        # V271 FIX (CodeQL py/stack-trace-exposure): do not expose {exc}.
         logger.exception("Speckle push failed")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Speckle push failed: {exc}",
+            detail="Speckle push failed. Check server logs and Speckle service status.",
         ) from exc
 
 
@@ -303,8 +323,9 @@ async def speckle_receive(body: SpeckleOperationRequest, _role: SystemConfigRole
         )
         return success(data={"service": "speckle-receive", "result": result})
     except Exception as exc:
+        # V271 FIX (CodeQL py/stack-trace-exposure): do not expose {exc}.
         logger.exception("Speckle receive failed")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Speckle receive failed: {exc}",
+            detail="Speckle receive failed. Check server logs and Speckle service status.",
         ) from exc

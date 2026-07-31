@@ -196,6 +196,7 @@ export function RevitPage() {
                                                         <Button
                                                                 onClick={handleConnect}
                                                                 disabled={connecting || connected}
+                                                                data-testid="connect-revit-btn"
                                                                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
                                                         >
                                                                 {connecting ? (

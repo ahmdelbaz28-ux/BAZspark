@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { apiCall } from "@/services/fullApi";
 
 export interface SidebarBadgeState {
 	/** Conflicts badge: count as string, or null if unavailable */
@@ -38,9 +39,10 @@ const INITIAL_STATE: SidebarBadgeState = {
 
 async function fetchJson<T>(url: string): Promise<T | null> {
 	try {
-		const resp = await fetch(url, { credentials: "same-origin" });
-		if (!resp.ok) return null;
-		return (await resp.json()) as T;
+		// V271 FIX: use apiCall for unified auth header injection, retry,
+		// and timeout. GET requests are CSRF-exempt but still benefit from
+		// apiCall's auth + retry + 30s timeout — direct fetch() had none.
+		return await apiCall<T>(url, { method: "GET" });
 	} catch {
 		return null;
 	}
@@ -54,15 +56,16 @@ export function useSidebarBadges(): SidebarBadgeState {
 
 		const poll = async () => {
 			// Fire all three in parallel
+			// V271 FIX: apiCall prepends /api/v1, so pass relative paths only.
 			const [conflictsResp, guardsResp, agentResp] = await Promise.all([
 				fetchJson<{ total?: number; data?: { total?: number } }>(
-					"/api/v1/conflicts?page=1&page_size=1"
+					"/conflicts?page=1&page_size=1"
 				),
 				fetchJson<{ data?: Array<{ violated?: boolean }> }>(
-					"/api/v1/qomn/physics-guards"
+					"/qomn/physics-guards"
 				),
 				fetchJson<{ data?: Array<{ timestamp?: string; ts?: string }> }>(
-					"/api/v1/monitor/agent-activity?limit=1"
+					"/monitor/agent-activity?limit=1"
 				),
 			]);
 

@@ -165,6 +165,7 @@ export function ProjectsPage() {
                                         </div>
                                                                         <Button
                                                                                 className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
+                                                                                data-testid="create-project-btn"
                                                                                 onClick={() => setShowCreateForm(true)}
                                                                         >
                                                                                 <FolderPlus aria-hidden="true" className="h-4 w-4 mr-1" />

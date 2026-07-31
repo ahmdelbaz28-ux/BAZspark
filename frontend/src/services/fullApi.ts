@@ -1277,32 +1277,102 @@ export const fullApi = {
          * method is only used by the orphan EngineeringRepository → useQOMNCalculatorViewModel
          * path. Rather than leaving a 404 in the codebase, route the call to the
          * correct specific endpoint based on the params shape.
+         *
+         * V272 FIX (honest self-criticism): the V270 version of this smart router
+         * had THREE unit-conversion / unit-naming defects that would have produced
+         * silently wrong fire-safety calculations if anyone ever wired this path
+         * into production:
+         *
+         *   1. `params.battery_load_ah` (amp-hours, a CAPACITY) was being mapped
+         *      to `standby_load_a` (amps, a CURRENT). Ah ≠ A — the unit names
+         *      even look similar, which is exactly why the bug slipped through.
+         *      The backend Pydantic model expects `standby_load_a` and
+         *      `alarm_load_a` as currents in amperes.
+         *
+         *   2. `params.ceiling_height`, `params.wire_length` were passed through
+         *      with NO unit conversion, then assigned to `_m` (meters) fields.
+         *      If the caller passed feet (which the QOMNCalculatorPage does for
+         *      its own state), the calculation would be wrong by a factor of
+         *      3.28084. The smart router had no way to know which unit the
+         *      caller intended.
+         *
+         *   3. `params.ceiling_height ?? 3.0` — silently defaulting a fire-safety
+         *      input to 3.0 m is dangerous. If a caller forgets to pass it, the
+         *      endpoint will happily run a calculation on a phantom 3 m ceiling
+         *      and return a "valid" result.
+         *
+         * The fix: the smart router now refuses to guess units. If a caller
+         * passes the legacy param names (battery_load_ah, ceiling_height,
+         * wire_length), the router returns a structured failure with a clear
+         * migration message instead of silently producing wrong numbers.
+         * Callers MUST use the typed qomnApi methods (which take SI units
+         * directly) or pass the SI-named fields explicitly.
          */
         qomnCalculate: async (params: any): Promise<{ success: boolean; data?: any; message?: string }> => {
-                // Route based on which params are present (matches backend schemas).
-                if (params.room_length !== undefined || params.room_width !== undefined || params.ceiling_height !== undefined) {
-                        // Smoke spacing — needs ceiling_height_m
-                        const ceiling_height_m = Number(params.ceiling_height ?? 3.0);
-                        return apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/smoke-spacing", { method: "POST", body: JSON.stringify({ ceiling_height_m }) });
+                // V271 FIX: guard against null/undefined params to prevent TypeError
+                // on property access. Returns structured failure instead of crashing.
+                if (params === null || params === undefined || typeof params !== "object") {
+                        return {
+                                success: false,
+                                message: "qomnCalculate: params must be a non-null object. Use qomnApi.smokeSpacing/battery/voltageDrop directly for typed calls.",
+                        };
                 }
-                if (params.battery_load_ah !== undefined || params.standby_hours !== undefined || params.alarm_minutes !== undefined) {
-                        return apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/battery", { method: "POST", body: JSON.stringify({
-                                standby_load_a: Number(params.battery_load_ah ?? 0),
-                                alarm_load_a: Number(params.alarm_load_ah ?? 0),
-                                standby_hours: Number(params.standby_hours ?? 24),
-                                alarm_minutes: Number(params.alarm_minutes ?? 10),
-                        }) });
+
+                // V272 FIX: detect the legacy ambiguous param names and refuse to
+                // guess units. Returning a clear error is safer than silently
+                // producing wrong fire-safety calculations.
+                const legacyAmbiguousKeys = ["battery_load_ah", "ceiling_height", "wire_length", "room_length", "room_width"];
+                const detectedLegacy = legacyAmbiguousKeys.filter((k) => params[k] !== undefined);
+                if (detectedLegacy.length > 0) {
+                        return {
+                                success: false,
+                                message:
+                                        "qomnCalculate: refusing to infer units for legacy param names (" +
+                                        detectedLegacy.join(", ") +
+                                        "). The V270 smart router silently converted these to SI-named fields, " +
+                                        "but the unit semantics were ambiguous (Ah vs A, ft vs m). " +
+                                        "Use qomnApi.smokeSpacing({ceiling_height_m}) / qomnApi.battery({standby_load_a, alarm_load_a}) / " +
+                                        "qomnApi.voltageDrop({current_a, length_m, awg_gauge}) directly with SI units.",
+                        };
                 }
-                if (params.ps_voltage !== undefined || params.ps_current !== undefined || params.wire_length !== undefined || params.wire_gauge !== undefined) {
-                        return apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/voltage-drop", { method: "POST", body: JSON.stringify({
-                                current_a: Number(params.ps_current ?? 0),
-                                length_m: Number(params.wire_length ?? 0),
-                                awg_gauge: String(params.wire_gauge ?? "12"),
-                                supply_voltage_v: Number(params.ps_voltage ?? 24),
-                        }) });
+
+                // Route based on SI-named params (matches backend schemas exactly).
+                if (params.ceiling_height_m !== undefined) {
+                        return apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/smoke-spacing", {
+                                method: "POST",
+                                body: JSON.stringify({ ceiling_height_m: Number(params.ceiling_height_m) }),
+                        });
+                }
+                if (params.standby_load_a !== undefined || params.alarm_load_a !== undefined) {
+                        return apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/battery", {
+                                method: "POST",
+                                body: JSON.stringify({
+                                        standby_load_a: Number(params.standby_load_a ?? 0),
+                                        alarm_load_a: Number(params.alarm_load_a ?? 0),
+                                        standby_hours: Number(params.standby_hours ?? 24),
+                                        alarm_minutes: Number(params.alarm_minutes ?? 10),
+                                }),
+                        });
+                }
+                if (params.current_a !== undefined || params.length_m !== undefined) {
+                        return apiCall<{ success: boolean; data?: any; message?: string }>("/qomn/voltage-drop", {
+                                method: "POST",
+                                body: JSON.stringify({
+                                        current_a: Number(params.current_a ?? 0),
+                                        length_m: Number(params.length_m ?? 0),
+                                        awg_gauge: String(params.awg_gauge ?? "12"),
+                                        supply_voltage_v: Number(params.supply_voltage_v ?? 24),
+                                }),
+                        });
                 }
                 // No recognized param shape — return a structured failure instead of 404.
-                return { success: false, message: "qomnCalculate: could not infer QOMN calculation type from params. Use qomnApi.smokeSpacing/battery/voltageDrop directly." };
+                return {
+                        success: false,
+                        message:
+                                "qomnCalculate: could not infer QOMN calculation type from params. " +
+                                "Pass SI-named fields (ceiling_height_m / standby_load_a+alarm_load_a / current_a+length_m+awg_gauge) " +
+                                "or use qomnApi.smokeSpacing/battery/voltageDrop directly.",
+                };
         },
         getEnvironmentalContext: async (lat: number, lon: number) => apiCall<{ data?: any }>(`/environment/context?lat=${lat}&lon=${lon}`),
         getWeatherForecast: async (location: string) => apiCall<{ data?: any }>(`/environment/weather?location=${encodeURIComponent(location)}`),

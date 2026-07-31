@@ -210,6 +210,7 @@ export function AutoCADPage() {
                                                         <Button
                                                                 onClick={handleConnect}
                                                                 disabled={connecting || connected}
+                                                                data-testid="connect-autocad-btn"
                                                                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
                                                         >
                                                                 {connecting ? (

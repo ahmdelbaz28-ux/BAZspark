@@ -354,11 +354,30 @@ async def rotate_secret(
     # Capture the previous secret (if set in env) so KeyRotator can
     # accept it during the grace period.
     previous_secret = os.environ.get(body.key_name)
+    # V271 FIX: KeyRotator requires register() before rotate(). Previously
+    # we called rotate() directly, which returned (False, "not registered")
+    # — but the old code ignored the return value and reported success.
+    # Now we register first (idempotent — overwrites any prior registration
+    # for this key in this process), then rotate.
     if previous_secret:
-        rotator.rotate(body.key_name, previous_secret, new_secret)
+        rotator.register(body.key_name, previous_secret)
+        rotated, rotate_msg = rotator.rotate(body.key_name, previous_secret, new_secret)
     else:
-        # No previous secret — just register the new one
-        rotator.rotate(body.key_name, "", new_secret)
+        # No previous secret — register the new one directly (no rotation
+        # semantics needed, but we still register so future rotates work).
+        rotator.register(body.key_name, new_secret)
+        rotated, rotate_msg = True, "Registered new key (no previous key to rotate from)."
+
+    # V271 FIX: KeyRotator.rotate() returns (bool, str). Previously we
+    # ignored the return value and always reported "rotated: True", which
+    # was a security defect: if rotation failed (e.g. old_key mismatch),
+    # the admin would believe the secret was rotated when it was not.
+    if not rotated:
+        logger.error("Secret rotation FAILED for '%s': %s", body.key_name, rotate_msg)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Secret rotation rejected: {rotate_msg}",
+        )
 
     # Update env var IN-PROCESS so subsequent reads see the new value.
     # NOTE: This does NOT persist to the deployment environment. The
@@ -412,9 +431,21 @@ async def rotate_admin_token(_role: SystemConfigRole) -> dict[str, Any]:
 
     rotator = KeyRotator()
     if previous_token:
-        rotator.rotate("BAZSPARK_MASTER_ADMIN_TOKEN", previous_token, new_token)
+        rotator.register("BAZSPARK_MASTER_ADMIN_TOKEN", previous_token)
+        rotated, rotate_msg = rotator.rotate(
+            "BAZSPARK_MASTER_ADMIN_TOKEN", previous_token, new_token
+        )
     else:
-        rotator.rotate("BAZSPARK_MASTER_ADMIN_TOKEN", "", new_token)
+        rotator.register("BAZSPARK_MASTER_ADMIN_TOKEN", new_token)
+        rotated, rotate_msg = True, "Registered new admin token (no previous token to rotate from)."
+
+    # V271 FIX: verify rotation succeeded before reporting success.
+    if not rotated:
+        logger.error("Admin token rotation FAILED: %s", rotate_msg)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Admin token rotation rejected: {rotate_msg}",
+        )
 
     # Update env in-process (immediate effect)
     os.environ["BAZSPARK_MASTER_ADMIN_TOKEN"] = new_token
