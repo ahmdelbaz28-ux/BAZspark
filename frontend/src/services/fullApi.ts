@@ -332,6 +332,7 @@ export const facpApi = {
 
 export const environmentApi = {
         /** GET /environment/countries */
+        getCountries: () => apiCall("/environment/countries"),
 
         /** GET /environment/weather?lat=&lon= */
         getWeather: (lat: number, lon: number) =>
@@ -359,6 +360,26 @@ export const environmentApi = {
 
         /** GET /environment/hazmat/known */
         getKnownHazmat: () => apiCall("/environment/hazmat/known"),
+
+        /** GET /environment/context */
+        getContext: (params?: { lat?: number; lon?: number; address?: string }) => {
+                const query = new URLSearchParams();
+                if (params?.lat) query.set("lat", String(params.lat));
+                if (params?.lon) query.set("lon", String(params.lon));
+                if (params?.address) query.set("address", params.address);
+                const qs = query.toString();
+                return apiCall(`/environment/context${qs ? `?${qs}` : ""}`);
+        },
+
+        /** GET /environment/full-context */
+        getFullContext: (params?: { lat?: number; lon?: number; address?: string }) => {
+                const query = new URLSearchParams();
+                if (params?.lat) query.set("lat", String(params.lat));
+                if (params?.lon) query.set("lon", String(params.lon));
+                if (params?.address) query.set("address", params.address);
+                const qs = query.toString();
+                return apiCall(`/environment/full-context${qs ? `?${qs}` : ""}`);
+        },
 
 };
 
@@ -773,6 +794,18 @@ export const monitorApi = {
         },
 
         /** GET /monitor/alerts */
+        getAlerts: (params?: { limit?: number; severity?: string }) => {
+                const query = new URLSearchParams();
+                if (params?.limit) query.set("limit", String(params.limit));
+                if (params?.severity) query.set("severity", params.severity);
+                const qs = query.toString();
+                return apiCall(
+                        `/monitor/alerts${qs ? `?${qs}` : ""}`,  // NOSONAR: typescript:S4624
+                );
+        },
+
+        /** GET /monitor/uptime */
+        getUptime: () => apiCall("/monitor/uptime"),
 };
 
 // ─── Workflow API ───────────────────────────────────────────────────────────
@@ -1017,6 +1050,22 @@ export const v2Api = {
                 fds_run_id?: string;
         }) =>
                 apiCall("/smoke-simulation/state", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        // ── V2 Memory endpoints ──
+        /** POST /memory/store — Store a memory item in V2 */
+        storeMemory: (data: { key: string; value: string; metadata?: Record<string, unknown> }) =>
+                apiCall("/memory/store", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** POST /memory/search — Search V2 memories */
+        searchMemory: (query: string, limit?: number) =>
+                apiCall("/memory/search", { method: "POST", body: JSON.stringify({ query, limit: limit || 10 }) }, API_V2_BASE),
+
+        /** GET /memory/health — V2 memory service health */
+        getMemoryHealth: () => apiCall("/memory/health", {}, API_V2_BASE),
+
+        // ── V2 Health ──
+        /** GET /health — V2 API health check */
+        getV2Health: () => apiCall("/health", {}, API_V2_BASE),
 };
 
 // ─── Marine API ─────────────────────────────────────────────────────────────
@@ -1452,6 +1501,10 @@ export const qomnExtendedApi = {
         /** POST /qomn/golden-tests — Run golden test suite */
         runGoldenTests: () =>
                 apiCall("/qomn/golden-tests", { method: "POST" }),
+
+        /** POST /qomn/place-detectors — Place smoke/heat detectors on a floor plan */
+        placeDetectors: (data: { room_area_m2: number; ceiling_height_m: number; detector_type?: string }) =>
+                apiCall("/qomn/place-detectors", { method: "POST", body: JSON.stringify(data) }),
 };
 
 // ─── Extended LLM API (models, compliance narrative) ───────────────────────

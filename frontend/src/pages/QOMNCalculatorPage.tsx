@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Zap, AlertTriangle, Settings, Thermometer,
   Wind, Activity, CheckCircle2, XCircle, AlertCircle,
-  Loader2, Server, Play, TestTube,
+  Loader2, Server, Play, TestTube, Crosshair, Shield, BookOpen, FileText,
 } from "lucide-react";
 import PhysicsGuardsMonitor, { GuardRule } from "@/components/engineering/PhysicsGuardsMonitor";
 import { qomnApi, qomnExtendedApi } from "@/services/fullApi";
@@ -105,7 +105,7 @@ const ServerVerifyPanel: React.FC<{ state: ServerVerifyState }> = ({ state }) =>
   );
 };
 
-type Tab = "smoke" | "heat" | "battery" | "voltage" | "detectors" | "duct";
+type Tab = "smoke" | "heat" | "battery" | "voltage" | "detectors" | "duct" | "guards" | "constants" | "audit";
 
 /* ---------------------------------------------------------- */
 /*  SHARED PRIMITIVES                                          */
@@ -602,6 +602,9 @@ const tabs: TabDef[] = [
   { id: "voltage",   label: "Voltage Drop",  icon: Activity    },
   { id: "detectors", label: "Detectors",     icon: AlertTriangle },
   { id: "duct",      label: "Duct Sizing",   icon: Settings    },
+  { id: "guards",    label: "Physics Guards", icon: Shield     },
+  { id: "constants", label: "Constants",      icon: BookOpen   },
+  { id: "audit",     label: "Audit Log",      icon: FileText   },
 ];
 
 export const QOMNCalculatorPage: React.FC = () => {
@@ -685,20 +688,160 @@ export const QOMNCalculatorPage: React.FC = () => {
           </div>
         )}
         {activeTab === "detectors" && (
-          <div className="flex flex-col items-center justify-center py-24 text-center anim-fade-in">
-            <div className="w-10 h-10 rounded-lg bg-[#111118] border border-[#1e1e28] flex items-center justify-center mb-4">
-              <Settings size={18} strokeWidth={1.5} className="text-[#3a3a50]" />
-            </div>
-            <h3 className="text-[14px] font-semibold text-[#4a4a60] mb-1">
-              {tabs.find(t => t.id === activeTab)?.label}
-            </h3>
-            <p className="text-[12px] text-[#2a2a38]">
-              Module under development — backend endpoint exists at{" "}
-              <code className="font-mono text-[#3a3a50]">
-                /api/v1/qomn/place-detectors
-              </code>
-            </p>
+          <PlaceDetectorsSection />
+        )}
+        {activeTab === "guards" && (
+          <div className="space-y-6 anim-fade-in">
+            <QomnReadOnlySection
+              title="Physics Guards (GET /qomn/physics-guards)"
+              fetcher={() => qomnApi.getPhysicsGuards()}
+            />
           </div>
+        )}
+        {activeTab === "constants" && (
+          <div className="space-y-6 anim-fade-in">
+            <QomnReadOnlySection
+              title="NFPA 72 / NEC Constants (GET /qomn/constants)"
+              fetcher={() => qomnApi.getConstants()}
+            />
+          </div>
+        )}
+        {activeTab === "audit" && (
+          <div className="space-y-6 anim-fade-in">
+            <QomnReadOnlySection
+              title="QOMN Audit Log (GET /qomn/audit)"
+              fetcher={() => qomnApi.getAudit()}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const QomnReadOnlySection: React.FC<{ title: string; fetcher: () => Promise<unknown> }> = ({ title, fetcher }) => {
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleFetch = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetcher();
+      setResult(res as Record<string, unknown>);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed";
+      setError(msg);
+      toast({ title: "Failed", description: msg, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="baz-card">
+      <h3 className="baz-label mb-4">{title}</h3>
+      <button
+        type="button"
+        onClick={handleFetch}
+        disabled={loading}
+        className="baz-btn-primary"
+      >
+        {loading ? <Loader2 size={14} className="animate-spin" /> : "Fetch Data"}
+      </button>
+      {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+      {result && (
+        <pre className="mt-4 text-xs font-mono bg-[#0a0a0f] p-3 rounded-lg overflow-auto max-h-96 text-[#7a7a8a]">
+          {JSON.stringify(result, null, 2)}
+        </pre>
+      )}
+    </div>
+  );
+};
+
+const PlaceDetectorsSection: React.FC = () => {
+  const [roomArea, setRoomArea] = useState(50);
+  const [ceilingHeight, setCeilingHeight] = useState(3.0);
+  const [detectorType, setDetectorType] = useState("smoke");
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handlePlaceDetectors = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await qomnExtendedApi.placeDetectors({
+        room_area_m2: roomArea,
+        ceiling_height_m: ceilingHeight,
+        detector_type: detectorType,
+      });
+      setResult(res as Record<string, unknown>);
+      toast({ title: "Detectors placed successfully" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed";
+      setError(msg);
+      toast({ title: "Failed", description: msg, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 anim-fade-in">
+      <div className="baz-card">
+        <h3 className="baz-label mb-4">Place Detectors (POST /qomn/place-detectors)</h3>
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="baz-label text-[10px]">Room Area (m²)</label>
+            <input
+              type="number"
+              value={roomArea}
+              onChange={e => setRoomArea(Number(e.target.value))}
+              className="baz-input"
+              min={1}
+            />
+          </div>
+          <div>
+            <label className="baz-label text-[10px]">Ceiling Height (m)</label>
+            <input
+              type="number"
+              value={ceilingHeight}
+              onChange={e => setCeilingHeight(Number(e.target.value))}
+              className="baz-input"
+              min={2}
+              step={0.1}
+            />
+          </div>
+          <div>
+            <label className="baz-label text-[10px]">Detector Type</label>
+            <select
+              value={detectorType}
+              onChange={e => setDetectorType(e.target.value)}
+              className="baz-input"
+            >
+              <option value="smoke">Smoke</option>
+              <option value="heat">Heat</option>
+            </select>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handlePlaceDetectors}
+          disabled={loading || roomArea <= 0}
+          className="baz-btn-primary"
+        >
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <Crosshair size={14} />}
+          Place Detectors
+        </button>
+        {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+        {result && (
+          <pre className="mt-4 text-xs font-mono bg-[#0a0a0f] p-3 rounded-lg overflow-auto max-h-48 text-[#7a7a8a]">
+            {JSON.stringify(result, null, 2)}
+          </pre>
         )}
       </div>
     </div>

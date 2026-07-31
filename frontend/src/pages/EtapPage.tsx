@@ -22,6 +22,7 @@ import {
         Settings2,
         ShieldAlert,
         Trash2,
+        Unplug,
         Upload,
 
         Zap,
@@ -256,6 +257,52 @@ export function EtapPage() {
                 }
         };
 
+        const handleDisconnect = async () => {
+                setLoading("disconnecting");
+                try {
+                        await etapApi.disconnect(selectedLocalProject);
+                        setConnectionStatus("disconnected");
+                        setConnectionMessage("");
+                        setServerVersion("");
+                        toast({
+                                title: t("etap.disconnected", "Disconnected"),
+                                description: t("etap.disconnectedDesc", "ETAP connection closed"),
+                        });
+                } catch (error) {
+                        const errMsg = error instanceof Error ? error.message : String(error);
+                        toast({
+                                title: t("etap.disconnectFailed", "Disconnect Failed"),
+                                description: errMsg,
+                                variant: "destructive",
+                        });
+                } finally {
+                        setLoading(null);
+                }
+        };
+
+        const [etapStatus, setEtapStatus] = useState<Record<string, unknown> | null>(null);
+
+        const handleGetStatus = async () => {
+                setLoading("status");
+                try {
+                        const res = await etapApi.getStatus(selectedLocalProject);
+                        setEtapStatus(res as Record<string, unknown>);
+                        toast({
+                                title: t("etap.statusRetrieved", "Status Retrieved"),
+                                description: `Enabled: ${res.enabled}, Configured: ${res.configured}`,
+                        });
+                } catch (error) {
+                        const errMsg = error instanceof Error ? error.message : String(error);
+                        toast({
+                                title: t("etap.statusFailed", "Status Failed"),
+                                description: errMsg,
+                                variant: "destructive",
+                        });
+                } finally {
+                        setLoading(null);
+                }
+        };
+
         const handleExport = async () => {
                 setLoading("exporting");
                 try {
@@ -376,7 +423,22 @@ export function EtapPage() {
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                         {getStatusBadge()}
+                                                        {connectionStatus === "connected" && (
+                                                                <Button onClick={handleDisconnect} variant="outline" size="sm" className="text-xs">
+                                                                        <Unplug aria-hidden="true" className="h-3 w-3 mr-1" />
+                                                                        Disconnect
+                                                                </Button>
+                                                        )}
+                                                        <Button onClick={handleGetStatus} variant="outline" size="sm" className="text-xs">
+                                                                <Activity aria-hidden="true" className="h-3 w-3 mr-1" />
+                                                                Status
+                                                        </Button>
                                                 </div>
+                                                {etapStatus && (
+                                                        <pre className="text-xs font-mono bg-slate-800/50 p-2 rounded mt-2 overflow-auto max-h-32 text-slate-300">
+                                                                {JSON.stringify(etapStatus, null, 2)}
+                                                        </pre>
+                                                )}
                                         </div>
                                 </header>
 

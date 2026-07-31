@@ -562,6 +562,17 @@ try:
 except ImportError as e:
     logger.warning("Router 'revit_api' skipped (optional dependency missing): %s", e)
 
+# V275: Register Engineering Copilot router — the AI-powered engineering assistant.
+# Previously this router was defined but NEVER registered in app.py, so ALL its
+# endpoints (/chat, /process-request, /create-entity, /translate-model,
+# /validate-model, /generate-reports, /health, /capabilities) returned 404.
+# The EngineeringCopilotPage.tsx was calling these endpoints but they always failed.
+try:
+    from backend.routers import engineering_copilot as engineering_copilot_module
+    app.include_router(engineering_copilot_module.router, prefix="/api/v1", tags=["Engineering Copilot"])
+except ImportError as e:
+    logger.warning("Router 'engineering_copilot' skipped (optional dependency missing): %s", e)
+
 # Previously monitor.router was defined but NEVER registered via include_router,
 # so every Prometheus scrape returned 404 and all dashboards/alerts had no data.
 # Auth is enforced INSIDE the router via require_permission(Permission.MONITOR_READ).

@@ -95,6 +95,35 @@ export function SelfHealingPage() {
                 }
         };
 
+        const [llmHealingEnabled, setLlmHealingEnabled] = useState<boolean | null>(null);
+        const [llmHealingLoading, setLlmHealingLoading] = useState(false);
+
+        const handleGetLlmHealing = async () => {
+                setLlmHealingLoading(true);
+                try {
+                        const res = await selfHealingApi.getLlmHealing();
+                        setLlmHealingEnabled(res.enabled);
+                } catch (err) {
+                        toast.error(`Failed to get LLM healing status: ${err instanceof Error ? err.message : "Unknown"}`);
+                } finally {
+                        setLlmHealingLoading(false);
+                }
+        };
+
+        const handleToggleLlmHealing = async (enabled: boolean) => {
+                setLlmHealingLoading(true);
+                try {
+                        await selfHealingApi.setLlmHealing(enabled);
+                        setLlmHealingEnabled(enabled);
+                        toast.success(`LLM healing ${enabled ? "enabled" : "disabled"}`);
+                        fetchAll();
+                } catch (err) {
+                        toast.error(`Failed to toggle LLM healing: ${err instanceof Error ? err.message : "Unknown"}`);
+                } finally {
+                        setLlmHealingLoading(false);
+                }
+        };
+
         const cbStateColor = (state: string) => {
                 if (state === "CLOSED") return "bg-emerald-600";
                 if (state === "OPEN") return "bg-red-600";
@@ -456,6 +485,56 @@ export function SelfHealingPage() {
                                         </CardContent>
                                 </Card>
                         )}
+
+                        {/* LLM Healing Toggle */}
+                        <Card className="border-border bg-card">
+                                <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                                <Zap aria-hidden="true" className="h-5 w-5 text-primary" />
+                                                LLM Healing Control
+                                        </CardTitle>
+                                        <CardDescription>
+                                                Enable or disable the LLM circuit breaker for AI-powered self-healing
+                                        </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                        <div className="flex items-center justify-between">
+                                                <div>
+                                                        <p className="text-sm font-medium">
+                                                                LLM Healing is{" "}
+                                                                {llmHealingEnabled === null ? (
+                                                                        <span className="text-muted-foreground">unknown</span>
+                                                                ) : llmHealingEnabled ? (
+                                                                        <span className="text-emerald-600">enabled</span>
+                                                                ) : (
+                                                                        <span className="text-red-600">disabled</span>
+                                                                )}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                                GET /api/v1/self-healing/llm-healing &middot; PUT /api/v1/self-healing/llm-healing
+                                                        </p>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                        {llmHealingEnabled === null ? (
+                                                                <Button onClick={handleGetLlmHealing} disabled={llmHealingLoading} variant="outline" size="sm">
+                                                                        {llmHealingLoading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : "Check Status"}
+                                                                </Button>
+                                                        ) : (
+                                                                <>
+                                                                        <Switch
+                                                                                checked={llmHealingEnabled}
+                                                                                onCheckedChange={handleToggleLlmHealing}
+                                                                                disabled={llmHealingLoading}
+                                                                        />
+                                                                        <Label className="text-xs text-muted-foreground">
+                                                                                {llmHealingEnabled ? "Enabled" : "Disabled"}
+                                                                        </Label>
+                                                                </>
+                                                        )}
+                                                </div>
+                                        </div>
+                                </CardContent>
+                        </Card>
 
                         {/* Protected Methods Info */}
                         <Card className="border-border bg-card">
