@@ -445,10 +445,10 @@ const handleSearchOpen = useCallback(() => {
                 { path: "/environment/air-quality", element: <AirQualityPage /> },
                 { path: "/environment/context", element: <ContextPage /> },
                 { path: "/environment/hazmat", element: <HazMatPage /> },
-                { path: "/security-alerts", element: <SecurityAlertsPage /> },
-                { path: "/settings/advanced", element: <AdvancedSettingsPage /> },
+                { path: "/security-alerts", element: <SecurityAlertsPage />, requiredRole: "admin" },
+                { path: "/settings/advanced", element: <AdvancedSettingsPage />, requiredRole: "admin" },
                 { path: "/sync", element: <SyncPage /> },
-                { path: "/multi-db", element: <MultiDBPage /> },
+                { path: "/multi-db", element: <MultiDBPage />, requiredRole: "admin" },
         ], []);
 
         // Determine if we're on a public route (no AppShell)
