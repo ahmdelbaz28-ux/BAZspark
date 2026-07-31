@@ -694,11 +694,11 @@ async def health_check_legacy_alias() -> dict[str, Any]:
 
 @app.get("/api/v2/health", tags=["Health-v2"])
 async def health_check_v2() -> dict[str, object]:
-    """Health check endpoint for API v2."""
+    """Health check endpoint for API v2 — includes real DB connectivity check."""
+    from backend.routers.health import health_check
+    base_health = await health_check()
     return {
-        "status": "healthy",
-        "service": "CAD/BIM Integration Platform",
-        "version": "1.0.0",
+        **base_health,
         "api_version": "v2",
         "features": [
             "rate_limiting", "enhanced_caching", "streaming",
@@ -724,8 +724,10 @@ async def general_exception_handler(request: Request, exc: Exception) -> Respons
 
 # ── Database health check endpoint ──────────────────────────────────────────
 @app.get("/api/database-health")
-async def database_health():
-    """Check the health of all database connections."""
+async def database_health(
+    _role: str = Depends(require_permission(Permission.HEALTH_READ)),  # NOSONAR - python:S8410
+):
+    """Check the health of all database connections. Requires HEALTH_READ permission."""
     multi_db_service = get_multi_db_service()
     health_status = multi_db_service.health_check()
     return {"success": True, "data": health_status}
