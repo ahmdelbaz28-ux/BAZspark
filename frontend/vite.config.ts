@@ -244,12 +244,23 @@ export default defineConfig({
                                         // V242: Use forks pool instead of threads — more reliable
                                         // teardown for jsdom + React testing-library.
                                         pool: "forks",
+                                        // V290 FIX: Use singleFork to prevent EnvironmentTeardownError
+                                        // race condition where apiKey.ts is imported after env teardown.
+                                        // Without singleFork, multiple forks can interleave teardown
+                                        // and lazy imports, causing "Cannot load after environment was
+                                        // torn down" errors that fail the CI Build Gate.
+                                        poolOptions: {
+                                                forks: {
+                                                        singleFork: true,
+                                                },
+                                        },
                                         // V242: Give the pool enough time to tear down jsdom + React.
-                                        teardownTimeout: 30000,
+                                        // V290: Increased from 30000 to 60000 to prevent teardown
+                                        // race conditions in CI with slow runners.
+                                        teardownTimeout: 60000,
                                         // V242: Don't hang the process if a test leaves a timer open.
-                                        // The warning "close timed out after 10000ms" is benign but
-                                        // noisy — bumping the timeout silences it.
-                                        closeTimeout: 15000,
+                                        // V290: Increased from 15000 to 30000 to match teardownTimeout.
+                                        closeTimeout: 30000,
                                         // V242: Force exit after all tests pass. The Vite dev server
                                         // inside Vitest sometimes keeps the process alive due to
                                         // jsdom's internal timers. This is safe because we're in CI

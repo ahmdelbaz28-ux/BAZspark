@@ -48,7 +48,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip --only-binary :all:
           pip install --only-binary :all: -e .
-          pip install --only-binary :all: ruff==0.9.7 bandit==1.9.0 mypy==1.15.0
+          pip install --only-binary :all: ruff==0.9.7 bandit==1.9.4 mypy==1.15.0
 
       - name: Create reports directory
         run: mkdir -p reports
@@ -500,7 +500,7 @@ jobs:
           pip install --only-binary :all: -e .
 
       - name: Install pip-audit
-        run: "pip install --only-binary :all: pip-audit==0.3.1"
+        run: "pip install --only-binary :all: pip-audit==2.10.1"
 
       - name: Audit Python dependencies
         # V300 / C-XX FIX: Combined approach — pip-audit runs with severity
