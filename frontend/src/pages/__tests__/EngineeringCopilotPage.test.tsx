@@ -21,30 +21,25 @@ vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
 }));
 
-vi.mock("lucide-react", () => {
-  const createIcon = (name: string) => {
-    const Icon = (props: Record<string, unknown>) => (
-      <span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
-    );
-    Icon.displayName = name;
-    return Icon;
-  };
-  return {
-    Bot: createIcon("Bot"),
-    Send: createIcon("Send"),
-    Loader2: createIcon("Loader2"),
-    User: createIcon("User"),
-    AlertTriangle: createIcon("AlertTriangle"),
-    Trash2: createIcon("Trash2"),
-    List: createIcon("List"),
-    FileText: createIcon("FileText"),
-    ArrowRightLeft: createIcon("ArrowRightLeft"),
-    ShieldCheck: createIcon("ShieldCheck"),
-    FileOutput: createIcon("FileOutput"),
-    Info: createIcon("Info"),
-    PlusCircle: createIcon("PlusCircle"),
-    Heart: createIcon("Heart"),
-  };
+vi.mock("lucide-react", async (importOriginal) => {
+	const actual = await importOriginal() as Record<string, unknown>;
+	// Create a simple mock component for each icon export
+	const createIcon = (name: string) => {
+		const Icon = (props: Record<string, unknown>) => (
+			<span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
+		);
+		Icon.displayName = name;
+		return Icon;
+	};
+	const mocked: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(actual)) {
+		if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
+			mocked[key] = createIcon(key);
+		} else {
+			mocked[key] = value;
+		}
+	}
+	return mocked;
 });
 
 const mockFetch = vi.fn();

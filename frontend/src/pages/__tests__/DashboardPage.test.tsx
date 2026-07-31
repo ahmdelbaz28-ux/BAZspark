@@ -49,24 +49,25 @@ vi.mock("react-router", () => ({
 
 import { DashboardPage } from "../DashboardPage";
 
-vi.mock("lucide-react", () => {
-        const createIcon = (name: string) => {
-                const Icon = (props: Record<string, unknown>) => (
-                        <span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
-                );
-                Icon.displayName = name;
-                return Icon;
-        };
-        return {
-                Activity: createIcon("Activity"),
-                AlertTriangle: createIcon("AlertTriangle"),
-                Calculator: createIcon("Calculator"),
-                CheckCircle2: createIcon("CheckCircle2"),
-                Clock: createIcon("Clock"),
-                Database: createIcon("Database"),
-                Server: createIcon("Server"),
-                XCircle: createIcon("XCircle"),
-        };
+vi.mock("lucide-react", async (importOriginal) => {
+	const actual = await importOriginal() as Record<string, unknown>;
+	// Create a simple mock component for each icon export
+	const createIcon = (name: string) => {
+		const Icon = (props: Record<string, unknown>) => (
+			<span data-testid={`icon-${name.toLowerCase()}`}>{name}</span>
+		);
+		Icon.displayName = name;
+		return Icon;
+	};
+	const mocked: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(actual)) {
+		if (typeof value === "function" || (typeof value === "object" && value !== null && "$$typeof" in (value as Record<string, unknown>))) {
+			mocked[key] = createIcon(key);
+		} else {
+			mocked[key] = value;
+		}
+	}
+	return mocked;
 });
 
 describe("DashboardPage", () => {
