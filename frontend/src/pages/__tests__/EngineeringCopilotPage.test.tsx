@@ -41,6 +41,7 @@ vi.mock("lucide-react", () => {
     ArrowRightLeft: createIcon("ArrowRightLeft"),
     ShieldCheck: createIcon("ShieldCheck"),
     FileOutput: createIcon("FileOutput"),
+    Info: createIcon("Info"),
   };
 });
 
