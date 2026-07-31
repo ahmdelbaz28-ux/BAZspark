@@ -1618,6 +1618,324 @@ export const v2ExtendedApi = {
                 apiCall(`/multi-db/bim/related-elements/${elementId}`, undefined, API_V2_BASE),
 };
 
+// ─── CAD Generic API (backend/routers/cad.py) ──────────────────────────────
+
+export const cadApi = {
+        /** POST /cad/connect — Connect to a CAD application */
+        connect: (data: { provider?: string; simulation_mode?: boolean }) =>
+                apiCall("/cad/connect", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /cad/disconnect — Disconnect from CAD application */
+        disconnect: () =>
+                apiCall("/cad/disconnect", { method: "POST" }),
+
+        /** GET /cad/status — Get CAD connection status */
+        getStatus: () =>
+                apiCall("/cad/status", { method: "GET" }),
+
+        /** POST /cad/read — Read a CAD drawing */
+        read: (data: { file_path?: string; format?: string }) =>
+                apiCall("/cad/read", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /cad/write — Write a CAD drawing */
+        write: (data: { file_path?: string; format?: string; data?: Record<string, unknown> }) =>
+                apiCall("/cad/write", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /cad/draw_line — Draw a line in CAD */
+        drawLine: (data: { start_x: number; start_y: number; end_x: number; end_y: number; layer?: string }) =>
+                apiCall("/cad/draw_line", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /cad/draw_polyline — Draw a polyline in CAD */
+        drawPolyline: (data: { points: number[][]; layer?: string; closed?: boolean }) =>
+                apiCall("/cad/draw_polyline", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /cad/draw_circle — Draw a circle in CAD */
+        drawCircle: (data: { center_x: number; center_y: number; radius: number; layer?: string }) =>
+                apiCall("/cad/draw_circle", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /cad/draw_text — Draw text in CAD */
+        drawText: (data: { x: number; y: number; text: string; height?: number; layer?: string }) =>
+                apiCall("/cad/draw_text", { method: "POST", body: JSON.stringify(data) }),
+};
+
+// ─── Analyze API (backend/routers/analyze.py) ──────────────────────────────
+
+export const analyzeApi = {
+        /** POST /analyze/battery — Analyze battery capacity (NFPA 72 §10.6.7) */
+        battery: (data: { standby_load_a: number; alarm_load_a: number; standby_hours?: number; alarm_minutes?: number }) =>
+                apiCall("/analyze/battery", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /analyze/voltage — Analyze voltage drop (NEC Ch.9 Table 8) */
+        voltage: (data: { current_a: number; length_m: number; awg_gauge: string; supply_voltage_v?: number }) =>
+                apiCall("/analyze/voltage", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /projects/{project_id}/analyze/room — Full room analysis */
+        room: (projectId: string, data: { room_name?: string; area_m2?: number; ceiling_height_m?: number }) =>
+                apiCall(`/projects/${encodeURIComponent(projectId)}/analyze/room`, { method: "POST", body: JSON.stringify(data) }),
+};
+
+// ─── Admin Config API (backend/routers/admin_config.py) ────────────────────
+
+export const adminConfigApi = {
+        /** GET /feature-flags — List all feature flags */
+        getFeatureFlags: () =>
+                apiCall("/feature-flags", { method: "GET" }),
+
+        /** POST /feature-flags — Update a feature flag */
+        setFeatureFlag: (data: { flag: string; enabled: boolean }) =>
+                apiCall("/feature-flags", { method: "POST", body: JSON.stringify(data) }),
+
+        /** GET /env-config — Get environment configuration */
+        getEnvConfig: () =>
+                apiCall("/env-config", { method: "GET" }),
+
+        /** PUT /env-config — Update environment configuration */
+        updateEnvConfig: (data: Record<string, unknown>) =>
+                apiCall("/env-config", { method: "PUT", body: JSON.stringify(data) }),
+
+        /** POST /settings/secret-rotation/rotate — Rotate secrets */
+        rotateSecret: (data: { secret_type?: string }) =>
+                apiCall("/settings/secret-rotation/rotate", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /settings/admin-token/rotate — Rotate admin token */
+        rotateAdminToken: () =>
+                apiCall("/settings/admin-token/rotate", { method: "POST" }),
+};
+
+// ─── Connections V2 API (backend/routers/connections_v2.py) ─────────────────
+
+export const connectionsV2Api = {
+        /** GET /connections — List all connections (v2, non-project-scoped) */
+        list: () =>
+                apiCall("/connections", { method: "GET" }),
+
+        /** POST /connections — Create a new connection */
+        create: (data: Record<string, unknown>) =>
+                apiCall("/connections", { method: "POST", body: JSON.stringify(data) }),
+
+        /** PUT /connections/{connection_id} — Update a connection */
+        update: (connectionId: string, data: Record<string, unknown>) =>
+                apiCall(`/connections/${encodeURIComponent(connectionId)}`, { method: "PUT", body: JSON.stringify(data) }),
+
+        /** DELETE /connections/{connection_id} — Delete a connection */
+        delete: (connectionId: string) =>
+                apiCall(`/connections/${encodeURIComponent(connectionId)}`, { method: "DELETE" }),
+};
+
+// ─── Elements API (backend/routers/elements.py) ────────────────────────────
+
+export const elementsApi = {
+        /** GET /elements — List all elements */
+        list: () =>
+                apiCall("/elements", { method: "GET" }),
+
+        /** POST /elements — Create a new element */
+        create: (data: Record<string, unknown>) =>
+                apiCall("/elements", { method: "POST", body: JSON.stringify(data) }),
+
+        /** GET /elements/{element_id} — Get element by ID */
+        get: (elementId: string) =>
+                apiCall(`/elements/${encodeURIComponent(elementId)}`, { method: "GET" }),
+
+        /** PUT /elements/{element_id} — Update an element */
+        update: (elementId: string, data: Record<string, unknown>) =>
+                apiCall(`/elements/${encodeURIComponent(elementId)}`, { method: "PUT", body: JSON.stringify(data) }),
+
+        /** DELETE /elements/{element_id} — Delete an element */
+        delete: (elementId: string) =>
+                apiCall(`/elements/${encodeURIComponent(elementId)}`, { method: "DELETE" }),
+};
+
+// ─── DWG Parser API (backend/routers/dwg.py) ──────────────────────────────
+
+export const dwgApi = {
+        /** POST /parse-dwg — Parse a DWG/DXF file */
+        parse: (file: File) => {
+                const formData = new FormData();
+                formData.append("file", file);
+                return apiCall("/parse-dwg", {
+                        method: "POST",
+                        body: formData,
+                        headers: {},
+                });
+        },
+};
+
+// ─── Engineering Copilot Full API (backend/routers/engineering_copilot.py) ─
+
+export const copilotApi = {
+        /** POST /engineering-copilot/chat — Chat with the engineering copilot */
+        chat: (data: { request: string; context?: Record<string, unknown> }) =>
+                apiCall("/engineering-copilot/chat", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /engineering-copilot/process-request — Process an engineering request */
+        processRequest: (data: { request_type: string; parameters: Record<string, unknown> }) =>
+                apiCall("/engineering-copilot/process-request", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /engineering-copilot/create-entity — Create an engineering entity */
+        createEntity: (data: { name: string; entity_type: string; description?: string; coordinates?: Record<string, number>; properties?: Record<string, unknown> }) =>
+                apiCall("/engineering-copilot/create-entity", { method: "POST", body: JSON.stringify(data) }),
+
+        /** GET /engineering-copilot/health — Health check */
+        getHealth: () =>
+                apiCall("/engineering-copilot/health", { method: "GET" }),
+
+        /** GET /engineering-copilot/capabilities — List copilot capabilities */
+        getCapabilities: () =>
+                apiCall("/engineering-copilot/capabilities", { method: "GET" }),
+};
+
+// ─── Environment Region API (backend/routers/environment.py) ───────────────
+
+export const environmentRegionApi = {
+        /** GET /environment/region — Get region information */
+        getRegion: (params?: { lat?: number; lon?: number; address?: string }) => {
+                const query = new URLSearchParams();
+                if (params?.lat) query.set("lat", String(params.lat));
+                if (params?.lon) query.set("lon", String(params.lon));
+                if (params?.address) query.set("address", params.address);
+                const qs = query.toString();
+                return apiCall(`/environment/region${qs ? `?${qs}` : ""}`, { method: "GET" });
+        },
+};
+
+// ─── Experimental Services API (backend/routers/experimental_services.py) ──
+
+export const experimentalApi = {
+        /** GET /experimental/features — List experimental features and their status */
+        getFeatures: () =>
+                apiCall("/experimental/features", { method: "GET" }),
+
+        /** POST /experimental/ocr/process — Process OCR on a PDF/image */
+        processOcr: (data: { file_url?: string; language?: string }) =>
+                apiCall("/experimental/ocr/process", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /experimental/scan-to-bim/process — Scan-to-BIM processing */
+        processScanToBim: (data: { file_url?: string; project_id?: string }) =>
+                apiCall("/experimental/scan-to-bim/process", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /experimental/speckle/push — Push elements to Speckle */
+        specklePush: (data: { stream_id?: string; elements?: Record<string, unknown>[] }) =>
+                apiCall("/experimental/speckle/push", { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /experimental/speckle/receive — Receive elements from Speckle */
+        speckleReceive: (data: { stream_id?: string; commit_id?: string }) =>
+                apiCall("/experimental/speckle/receive", { method: "POST", body: JSON.stringify(data) }),
+};
+
+// ─── Health API (backend/routers/health.py) ────────────────────────────────
+
+export const healthApi = {
+        /** GET /health — Basic health check */
+        check: () =>
+                apiCall("/health", { method: "GET" }, API_BASE.replace("/api/v1", "/api")),
+
+        /** GET /health/statistics — Detailed health statistics */
+        getStatistics: () =>
+                apiCall("/health/statistics", { method: "GET" }, API_BASE.replace("/api/v1", "/api")),
+};
+
+// ─── LLM Extended API (backend/routers/llm.py) ────────────────────────────
+
+export const llmExtendedApi2 = {
+        /** POST /llm/chat — Non-streaming chat completion */
+        chat: (data: { prompt: string; system?: string; model?: string; temperature?: number; max_tokens?: number }) =>
+                apiCall("/llm/chat", { method: "POST", body: JSON.stringify(data) }),
+
+        /** GET /llm/health — LLM service health check */
+        getHealth: () =>
+                apiCall("/llm/health", { method: "GET" }),
+};
+
+// ─── RBAC Admin API (backend/routers/rbac_admin.py) ────────────────────────
+
+export const rbacApi = {
+        /** GET /admin/rbac/permissions — Get role-permission matrix */
+        getPermissions: () =>
+                apiCall("/admin/rbac/permissions", { method: "GET" }),
+};
+
+// ─── Settings API (backend/routers/settings.py) ────────────────────────────
+
+export const settingsApi = {
+        /** GET /settings/keys/providers/list — List supported key providers */
+        listProviders: () =>
+                apiCall("/settings/keys/providers/list", { method: "GET" }),
+
+        /** POST /settings/keys/{provider} — Store a provider key */
+        storeKey: (provider: string, data: { key: string; label?: string }) =>
+                apiCall(`/settings/keys/${encodeURIComponent(provider)}`, { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /settings/keys/openai — Store OpenAI key (compat alias) */
+        storeOpenaiKey: (data: { key: string; label?: string }) =>
+                apiCall("/settings/keys/openai", { method: "POST", body: JSON.stringify(data) }),
+
+        /** GET /settings/keys/{provider} — List keys for a provider */
+        listKeys: (provider: string) =>
+                apiCall(`/settings/keys/${encodeURIComponent(provider)}`, { method: "GET" }),
+
+        /** GET /settings/keys/openai — List OpenAI keys (compat alias) */
+        listOpenaiKeys: () =>
+                apiCall("/settings/keys/openai", { method: "GET" }),
+
+        /** GET /settings/keys/{provider}/{key_id} — Get a specific key */
+        getKey: (provider: string, keyId: string) =>
+                apiCall(`/settings/keys/${encodeURIComponent(provider)}/${encodeURIComponent(keyId)}`, { method: "GET" }),
+
+        /** DELETE /settings/keys/{provider}/{key_id} — Delete a key */
+        deleteKey: (provider: string, keyId: string) =>
+                apiCall(`/settings/keys/${encodeURIComponent(provider)}/${encodeURIComponent(keyId)}`, { method: "DELETE" }),
+
+        /** POST /settings/keys/{provider}/bulk-delete — Bulk delete keys */
+        bulkDeleteKeys: (provider: string, data: { key_ids: string[] }) =>
+                apiCall(`/settings/keys/${encodeURIComponent(provider)}/bulk-delete`, { method: "POST", body: JSON.stringify(data) }),
+
+        /** POST /settings/keys/{provider}/{key_id}/test — Test a key */
+        testKey: (provider: string, keyId: string) =>
+                apiCall(`/settings/keys/${encodeURIComponent(provider)}/${encodeURIComponent(keyId)}/test`, { method: "POST" }),
+
+        /** GET /settings/keys/openai/{key_id} — Get OpenAI key (compat alias) */
+        getOpenaiKey: (keyId: string) =>
+                apiCall(`/settings/keys/openai/${encodeURIComponent(keyId)}`, { method: "GET" }),
+
+        /** DELETE /settings/keys/openai/{key_id} — Delete OpenAI key (compat alias) */
+        deleteOpenaiKey: (keyId: string) =>
+                apiCall(`/settings/keys/openai/${encodeURIComponent(keyId)}`, { method: "DELETE" }),
+
+        /** POST /settings/keys/openai/{key_id}/test — Test OpenAI key (compat alias) */
+        testOpenaiKey: (keyId: string) =>
+                apiCall(`/settings/keys/openai/${encodeURIComponent(keyId)}/test`, { method: "POST" }),
+};
+
+// ─── Digital Twin Upload-and-Convert API ────────────────────────────────────
+
+export const digitalTwinUploadApi = {
+        /** POST /digital-twin/upload-and-convert — Upload file and convert in one step */
+        uploadAndConvert: (file: File, options?: { target_format?: string; mapping_profile?: string }) => {
+                const formData = new FormData();
+                formData.append("file", file);
+                if (options?.target_format) formData.append("target_format", options.target_format);
+                if (options?.mapping_profile) formData.append("mapping_profile", options.mapping_profile);
+                return apiCall("/digital-twin/upload-and-convert", {
+                        method: "POST",
+                        body: formData,
+                        headers: {},
+                });
+        },
+};
+
+// ─── APS API (backend/routers/aps.py) ──────────────────────────────────────
+
+export const apsApi = {
+        /** POST /aps/process — Submit file to Autodesk Cloud for processing */
+        process: (data: { input_urn: string; output_urn: string; activity_id?: string; params?: Record<string, unknown> }) =>
+                apiCall("/aps/process", { method: "POST", body: JSON.stringify(data) }, API_V2_BASE),
+
+        /** GET /aps/status/{work_item_id} — Get APS work item status */
+        getStatus: (workItemId: string) =>
+                apiCall(`/aps/status/${encodeURIComponent(workItemId)}`, { method: "GET" }, API_V2_BASE),
+};
+
 // ─── Revit Integration API (APS-based cloud sync) ──────────────────────────
 
 export const revitIntegrationApi = {

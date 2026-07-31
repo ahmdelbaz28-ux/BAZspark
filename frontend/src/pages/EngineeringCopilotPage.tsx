@@ -25,7 +25,7 @@ import {
   Heart,
 } from "lucide-react";
 
-import { llmExtendedApi, copilotExtendedApi } from "@/services/fullApi";
+import { llmExtendedApi, copilotExtendedApi, copilotApi } from "@/services/fullApi";
 
 interface Message {
   id: string;
@@ -147,12 +147,7 @@ export const EngineeringCopilotPage: React.FC = () => {
   const handleGetCapabilities = async () => {
     setExtLoading(true);
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
-      const res = await fetch(`${API_BASE}/engineering-copilot/capabilities`, {
-        credentials: "same-origin",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await copilotApi.getCapabilities();
       setCapabilitiesResult(data as Record<string, unknown>);
     } catch (err) {
       // silent
@@ -164,12 +159,7 @@ export const EngineeringCopilotPage: React.FC = () => {
   const handleHealthCheck = async () => {
     setExtLoading(true);
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
-      const res = await fetch(`${API_BASE}/engineering-copilot/health`, {
-        credentials: "same-origin",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await copilotApi.getHealth();
       setHealthResult(data as Record<string, unknown>);
     } catch (err) {
       // silent
@@ -182,25 +172,17 @@ export const EngineeringCopilotPage: React.FC = () => {
     if (!entityForm.name.trim()) return;
     setEntityLoading(true);
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
-      const res = await fetch(`${API_BASE}/engineering-copilot/create-entity`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          name: entityForm.name,
-          entity_type: entityForm.entity_type,
-          description: entityForm.description,
-          coordinates: {
-            x: parseFloat(entityForm.x) || 0,
-            y: parseFloat(entityForm.y) || 0,
-            z: parseFloat(entityForm.z) || 0,
-          },
-          properties: {},
-        }),
+      const data = await copilotApi.createEntity({
+        name: entityForm.name,
+        entity_type: entityForm.entity_type,
+        description: entityForm.description,
+        coordinates: {
+          x: parseFloat(entityForm.x) || 0,
+          y: parseFloat(entityForm.y) || 0,
+          z: parseFloat(entityForm.z) || 0,
+        },
+        properties: {},
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
       setExtResult(data as Record<string, unknown>);
       setShowEntityForm(false);
     } catch (err) {
@@ -219,17 +201,8 @@ export const EngineeringCopilotPage: React.FC = () => {
 
   const chatMutation = useMutation({
     mutationFn: async (message: string) => {
-      const res = await fetch(`${COPILOT_API}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ request: message }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Request failed" }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      return res.json() as Promise<ChatResponse>;
+      const res = await copilotApi.chat({ request: message });
+      return res as ChatResponse;
     },
     onSuccess: (data) => {
       setMessages((prev) => [

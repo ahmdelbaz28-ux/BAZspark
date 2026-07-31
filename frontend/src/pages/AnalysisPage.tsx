@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   FlaskConical,
 } from "lucide-react";
+import { analyzeApi, apiCall } from "@/services/fullApi";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
@@ -86,59 +87,29 @@ export const AnalysisPage: React.FC = () => {
 
   const batteryMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${PROJECT_BASE}/api/analyze/battery`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          total_load_a: parseFloat(batteryLoad) || 0,
-          backup_minutes: parseFloat(batteryMinutes) || 0,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Request failed" }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      return res.json() as Promise<BatteryResult>;
+      return analyzeApi.battery({
+        standby_load_a: parseFloat(batteryLoad) || 0,
+        alarm_load_a: 0,
+        standby_hours: 24,
+        alarm_minutes: parseFloat(batteryMinutes) || 0,
+      }) as Promise<BatteryResult>;
     },
   });
 
   const voltageMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${PROJECT_BASE}/api/analyze/voltage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          length_ft: parseFloat(voltageLength) || 0,
-          current_a: parseFloat(voltageCurrent) || 0,
-          wire_awg: parseInt(voltageWire) || 14,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Request failed" }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      return res.json() as Promise<VoltageResult>;
+      return analyzeApi.voltage({
+        current_a: parseFloat(voltageCurrent) || 0,
+        length_m: parseFloat(voltageLength) || 0,
+        awg_gauge: voltageWire,
+      }) as Promise<VoltageResult>;
     },
   });
 
   const roomMutation = useMutation({
     mutationFn: async () => {
       if (!projectId) throw new Error("Please select a project");
-      const res = await fetch(
-        `${API_BASE}/projects/${projectId}/analyze/room`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-        }
-      );
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Request failed" }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      return res.json() as Promise<RoomAnalysisResult>;
+      return analyzeApi.room(projectId, {}) as Promise<RoomAnalysisResult>;
     },
   });
 

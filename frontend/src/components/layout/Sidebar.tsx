@@ -37,7 +37,12 @@ import {
         Globe,
         Smartphone,
         FilePlus,
-} from "lucide-react";
+        PenLine,
+        FlaskConical,
+        RotateCcw,
+        Database,
+        Cog,
+    } from "lucide-react";
 import type React from "react";
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -91,6 +96,23 @@ const routePrefetchMap: Record<string, () => Promise<unknown>> = {
         "/monitor/agent": () => import("@/pages/AgentChatPage"),
         "/engineering/qomn": () => import("@/pages/QOMNCalculatorPage"),
         "/reports/generate": () => import("@/pages/ReportGeneratorPage"),
+        "/cad-tools": () => import("@/pages/CADToolsPage"),
+        "/analysis": () => import("@/pages/AnalysisPage"),
+        "/dwg": () => import("@/pages/DWGPage"),
+        "/engineering-copilot": () => import("@/pages/EngineeringCopilotPage"),
+        "/settings/advanced": () => import("@/pages/AdvancedSettingsPage"),
+        "/settings/experimental": () => import("@/pages/ExperimentalServicesPage"),
+        "/security-alerts": () => import("@/pages/SecurityAlertsPage"),
+        "/multi-db": () => import("@/pages/MultiDBPage"),
+        "/sync": () => import("@/pages/SyncPage"),
+        "/aps": () => import("@/pages/APSPage"),
+        "/devices": () => import("@/pages/DevicesPage"),
+        "/bms": () => import("@/pages/BMSPage"),
+        "/engineering/guards": () => import("@/pages/GuardsPage"),
+        "/environment/air-quality": () => import("@/pages/AirQualityPage"),
+        "/environment/context": () => import("@/pages/ContextPage"),
+        "/environment/hazmat": () => import("@/pages/HazMatPage"),
+        "/audit-trail": () => import("@/pages/AuditTrailPage"),
 };
 
 interface NavItem {
@@ -375,6 +397,124 @@ const navItems: NavItem[] = [
                         icon: Smartphone,
                         path: "/ar-export",
                         requiredRole: "admin",
+                },
+                {
+                        labelKey: "nav.cadTools",
+                        defaultLabel: "CAD Tools",
+                        icon: PenLine,
+                        path: "/cad-tools",
+                },
+                {
+                        labelKey: "nav.analysis",
+                        defaultLabel: "Analysis",
+                        icon: FlaskConical,
+                        path: "/analysis",
+                },
+                {
+                        labelKey: "nav.dwg",
+                        defaultLabel: "DWG Parser",
+                        icon: FileText,
+                        path: "/dwg",
+                },
+                {
+                        labelKey: "nav.engineeringCopilot",
+                        defaultLabel: "Eng. Copilot",
+                        icon: Brain,
+                        path: "/engineering-copilot",
+                },
+                {
+                        labelKey: "nav.advancedSettings",
+                        defaultLabel: "Advanced Settings",
+                        icon: Cog,
+                        path: "/settings/advanced",
+                        requiredRole: "admin",
+                },
+                {
+                        labelKey: "nav.experimental",
+                        defaultLabel: "Experimental",
+                        icon: FlaskConical,
+                        path: "/settings/experimental",
+                        requiredRole: "admin",
+                },
+                {
+                        labelKey: "nav.securityAlerts",
+                        defaultLabel: "Security Alerts",
+                        icon: AlertTriangle,
+                        path: "/security-alerts",
+                        requiredRole: "admin",
+                },
+                {
+                        labelKey: "nav.multiDb",
+                        defaultLabel: "Multi-DB",
+                        icon: Database,
+                        path: "/multi-db",
+                        requiredRole: "admin",
+                },
+                {
+                        labelKey: "nav.sync",
+                        defaultLabel: "Sync",
+                        icon: RotateCcw,
+                        path: "/sync",
+                },
+                {
+                        labelKey: "nav.aps",
+                        defaultLabel: "APS Cloud",
+                        icon: Globe,
+                        path: "/aps",
+                },
+                {
+                        labelKey: "nav.qomn",
+                        defaultLabel: "QOMN Calculator",
+                        icon: Calculator,
+                        path: "/engineering/qomn",
+                },
+                {
+                        labelKey: "nav.devices",
+                        defaultLabel: "Devices",
+                        icon: Cpu,
+                        path: "/devices",
+                },
+                {
+                        labelKey: "nav.bms",
+                        defaultLabel: "BMS",
+                        icon: Activity,
+                        path: "/bms",
+                },
+                {
+                        labelKey: "nav.guards",
+                        defaultLabel: "Physics Guards",
+                        icon: Shield,
+                        path: "/engineering/guards",
+                },
+                {
+                        labelKey: "nav.airQuality",
+                        defaultLabel: "Air Quality",
+                        icon: CloudSun,
+                        path: "/environment/air-quality",
+                },
+                {
+                        labelKey: "nav.context",
+                        defaultLabel: "Context",
+                        icon: Globe,
+                        path: "/environment/context",
+                },
+                {
+                        labelKey: "nav.hazmat",
+                        defaultLabel: "HazMat",
+                        icon: AlertTriangle,
+                        path: "/environment/hazmat",
+                },
+                {
+                        labelKey: "nav.auditTrail",
+                        defaultLabel: "Audit Trail",
+                        icon: FileText,
+                        path: "/audit-trail",
+                },
+                {
+                        labelKey: "nav.pipelineLayers",
+                        defaultLabel: "Pipeline Layers",
+                        icon: Layers,
+                        path: "/engineering/pipeline",
                 },
 ];
 

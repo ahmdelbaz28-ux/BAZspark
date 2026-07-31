@@ -9,7 +9,7 @@
  */
 import React, { useCallback, useEffect, useState } from "react";
 import { Settings2, Loader2, RefreshCw, AlertTriangle, CheckCircle2, Save, Eye, EyeOff, Trash2, Database, Shield, Flag, KeyRound, Activity } from "lucide-react";
-import { adminApi } from "../services/fullApi";
+import { adminApi, adminConfigApi } from "../services/fullApi";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -89,16 +89,15 @@ export const AdvancedSettingsPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/env-config`, {
-        credentials: "same-origin",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: EnvConfigResponse = await res.json();
-      if (data.success && data.data) {
-        setConfigData(data.data);
+      const data = await adminConfigApi.getEnvConfig();
+      const payload = (data as Record<string, unknown>).data
+        ? (data as Record<string, unknown>).data as EnvConfigData
+        : data as unknown as EnvConfigData;
+      if (payload.categories) {
+        setConfigData(payload);
         // Initialize edited values from current config
         const initial: Record<string, string> = {};
-        for (const cat of Object.values(data.data.categories)) {
+        for (const cat of Object.values(payload.categories)) {
           for (const s of cat.settings) {
             initial[s.key] = s.value;
           }
@@ -110,7 +109,7 @@ export const AdvancedSettingsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [API_BASE]);
+  }, []);
 
   useEffect(() => {
     fetchConfig();
@@ -152,20 +151,13 @@ export const AdvancedSettingsPage: React.FC = () => {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/env-config`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ overrides }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (data.success) {
+      const data = await adminConfigApi.updateEnvConfig({ overrides });
+      if ((data as Record<string, unknown>).success) {
         setSaveStatus((prev) => ({ ...prev, [categoryKey]: "saved" as const }));
         // Refresh config to get updated masked values
         await fetchConfig();
       } else {
-        throw new Error(data.message || "Save failed");
+        throw new Error(((data as Record<string, unknown>).message as string) || "Save failed");
       }
     } catch (err) {        setSaveStatus((prev) => ({ ...prev, [categoryKey]: "error" as const }));
       } finally {

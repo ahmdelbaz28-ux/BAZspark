@@ -18,6 +18,7 @@ import {
   HardDrive,
   X,
 } from "lucide-react";
+import { dwgApi } from "@/services/fullApi";
 
 const PARSE_API = "/parse-dwg";
 
@@ -54,21 +55,9 @@ export const DWGPage: React.FC = () => {
     setResult(null);
     setFileName(file.name);
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const res = await fetch(PARSE_API, {
-        method: "POST",
-        body: formData,
-        credentials: "same-origin",
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.detail?.error || data.detail || `HTTP ${res.status}`);
-        return;
-      }
-      setResult(data);
+      const data = await dwgApi.parse(file);
+      setResult(data as ParseResult);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed");
     } finally {

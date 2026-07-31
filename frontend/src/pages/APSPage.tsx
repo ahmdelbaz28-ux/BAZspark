@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   ExternalLink,
 } from "lucide-react";
+import { apsApi } from "@/services/fullApi";
 
 const APS_API = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL.replace("/api/v1", "/api/v2")}/aps`
@@ -45,28 +46,19 @@ export const APSPage: React.FC = () => {
   const submitMutation = useMutation({
     mutationFn: async () => {
       const params = JSON.parse(paramsStr);
-      const res = await fetch(`${APS_API}/process`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ bucket_key: bucketKey, object_key: objectKey, activity_id: activityId, params }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Request failed" }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      return res.json() as Promise<ApsJob>;
+      return apsApi.process({
+        input_urn: `${bucketKey}/${objectKey}`,
+        output_urn: `${bucketKey}/output_${objectKey}`,
+        activity_id: activityId,
+        params,
+      }) as Promise<ApsJob>;
     },
   });
 
   const statusMutation = useMutation({
     mutationFn: async () => {
       if (!jobId) throw new Error("No job selected");
-      const res = await fetch(`${APS_API}/status/${jobId}`, {
-        credentials: "same-origin",
-      });
-      if (!res.ok) throw new Error("Failed to fetch status");
-      return res.json() as Promise<ApsStatus>;
+      return apsApi.getStatus(jobId) as Promise<ApsStatus>;
     },
   });
 

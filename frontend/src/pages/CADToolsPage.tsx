@@ -27,6 +27,7 @@ import {
   Type,
   Minus,
 } from "lucide-react";
+import { cadApi } from "@/services/fullApi";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
@@ -97,14 +98,10 @@ export const CADToolsPage: React.FC = () => {
   // Fetch status
   const statusMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${API_BASE}/cad/status?provider=${provider}`, {
-        credentials: "same-origin",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json() as Promise<{ success: boolean; provider: string; status: CADStatus }>;
+      return cadApi.getStatus() as Promise<{ success: boolean; provider: string; status: CADStatus }>;
     },
     onSuccess: (data) => {
-      setStatus(data.status);
+      setStatus((data as Record<string, unknown>).status as CADStatus);
       setStatusError(null);
     },
     onError: (err) => {
@@ -116,17 +113,7 @@ export const CADToolsPage: React.FC = () => {
   // Connect
   const connectMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${API_BASE}/cad/connect`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ provider, visible: true, force_new: false, method: "simulation" }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Connection failed" }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      return res.json() as Promise<ConnectResult>;
+      return cadApi.connect({ provider, simulation_mode: true }) as Promise<ConnectResult>;
     },
     onSuccess: (data) => {
       setStatus({ connected: data.connected, simulation_mode: data.simulation_mode });
@@ -140,14 +127,7 @@ export const CADToolsPage: React.FC = () => {
   // Disconnect
   const disconnectMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${API_BASE}/cad/disconnect`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ provider }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json() as Promise<DrawResult>;
+      return cadApi.disconnect() as Promise<DrawResult>;
     },
     onSuccess: () => {
       setStatus({ connected: false, simulation_mode: false });
@@ -160,25 +140,9 @@ export const CADToolsPage: React.FC = () => {
   // Draw line
   const drawLineMutation = useMutation({
     mutationFn: async () => {
-      const [sx, sy, sz] = drawLineStart.split(",").map(Number);
-      const [ex, ey, ez] = drawLineEnd.split(",").map(Number);
-      const res = await fetch(`${API_BASE}/cad/draw_line`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          provider,
-          start_point: [sx, sy, sz],
-          end_point: [ex, ey, ez],
-          layer: drawLineLayer,
-          color: 256,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Draw failed" }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      return res.json() as Promise<DrawResult>;
+      const [sx, sy] = drawLineStart.split(",").map(Number);
+      const [ex, ey] = drawLineEnd.split(",").map(Number);
+      return cadApi.drawLine({ start_x: sx, start_y: sy, end_x: ex, end_y: ey, layer: drawLineLayer }) as Promise<DrawResult>;
     },
   });
 
@@ -189,89 +153,30 @@ export const CADToolsPage: React.FC = () => {
         .split("\n")
         .filter(Boolean)
         .map((line) => line.split(",").map(Number));
-      const res = await fetch(`${API_BASE}/cad/draw_polyline`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          provider,
-          vertices,
-          layer: polyLayer,
-          color: 256,
-          closed: polyClosed,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Draw failed" }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      return res.json() as Promise<DrawResult>;
+      return cadApi.drawPolyline({ points: vertices, layer: polyLayer, closed: polyClosed }) as Promise<DrawResult>;
     },
   });
 
   // Draw circle
   const drawCircleMutation = useMutation({
     mutationFn: async () => {
-      const [cx, cy, cz] = circleCenter.split(",").map(Number);
-      const res = await fetch(`${API_BASE}/cad/draw_circle`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          provider,
-          center: [cx, cy, cz],
-          radius: parseFloat(circleRadius) || 1,
-          layer: circleLayer,
-          color: 256,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Draw failed" }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      return res.json() as Promise<DrawResult>;
+      const [cx, cy] = circleCenter.split(",").map(Number);
+      return cadApi.drawCircle({ center_x: cx, center_y: cy, radius: parseFloat(circleRadius) || 1, layer: circleLayer }) as Promise<DrawResult>;
     },
   });
 
   // Draw text
   const drawTextMutation = useMutation({
     mutationFn: async () => {
-      const [ix, iy, iz] = textInsertion.split(",").map(Number);
-      const res = await fetch(`${API_BASE}/cad/draw_text`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          provider,
-          text: textContent,
-          insertion_point: [ix, iy, iz],
-          height: parseFloat(textHeight) || 0.2,
-          layer: textLayer,
-          color: 256,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Draw failed" }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      return res.json() as Promise<DrawResult>;
+      const [ix, iy] = textInsertion.split(",").map(Number);
+      return cadApi.drawText({ x: ix, y: iy, text: textContent, height: parseFloat(textHeight) || 0.2, layer: textLayer }) as Promise<DrawResult>;
     },
   });
 
   // Read drawing
   const readMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${API_BASE}/cad/read`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ provider, filepath: readFilepath }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Read failed" }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      return res.json() as Promise<ReadResult>;
+      return cadApi.read({ file_path: readFilepath, format: provider }) as Promise<ReadResult>;
     },
     onSuccess: (data) => setReadResult(data),
   });
@@ -279,22 +184,7 @@ export const CADToolsPage: React.FC = () => {
   // Write drawing
   const writeMutation = useMutation({
     mutationFn: async () => {
-      // Write requires elements from a prior read
-      const res = await fetch(`${API_BASE}/cad/write`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          provider,
-          filepath: writeFilepath,
-          elements: readResult?.elements || [],
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Write failed" }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      return res.json() as Promise<WriteResult>;
+      return cadApi.write({ file_path: writeFilepath, format: provider, data: { elements: readResult?.elements || [] } }) as Promise<WriteResult>;
     },
   });
 
