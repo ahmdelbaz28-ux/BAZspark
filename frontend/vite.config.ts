@@ -244,20 +244,20 @@ export default defineConfig({
                                         // V242: Use forks pool instead of threads — more reliable
                                         // teardown for jsdom + React testing-library.
                                         pool: "forks",
-                                        // V300 FIX: Use singleFork to prevent EnvironmentTeardownError
-                                        // race condition where apiKey.ts is imported after env teardown.
-                                        poolOptions: {
-                                                forks: {
-                                                        singleFork: true,
-                                                },
-                                        },
+                                        // V301 FIX: Vitest 4 removed poolOptions — singleFork is now
+                                        // a top-level option. Without this, Vitest 4 ignores the
+                                        // deprecated poolOptions.forks.singleFork, causing
+                                        // EnvironmentTeardownError race conditions where apiKey.ts
+                                        // is imported after env teardown in parallel test workers.
+                                        singleFork: true,
                                         // V242: Give the pool enough time to tear down jsdom + React.
                                         // V300: Increased from 30000 to 60000 to prevent teardown
                                         // race conditions in CI with slow runners.
                                         teardownTimeout: 60000,
                                         // V242: Don't hang the process if a test leaves a timer open.
-                                        // V300: Increased from 15000 to 30000 to match teardownTimeout.
-                                        closeTimeout: 30000,
+                                        // V301: Increased from 30000 to 60000 to prevent CI timeout
+                                        // on slow runners where the Vite server takes longer to close.
+                                        closeTimeout: 60000,
                                         // V242: Force exit after all tests pass. The Vite dev server
                                         // inside Vitest sometimes keeps the process alive due to
                                         // jsdom's internal timers. This is safe because we're in CI
