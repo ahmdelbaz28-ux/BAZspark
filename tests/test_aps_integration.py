@@ -84,18 +84,30 @@ class TestApsService:
 class TestApsRouterEndpoints:
     """Verifies FastAPI API routes for Autodesk Platform Services Design Automation."""
 
+    _ROOT_KEY = "test-key-for-v2-api-testing-1234567890"
+
     @pytest.fixture
-    def client(self):
+    def client(self, monkeypatch):
         # Lazy import: backend.app is imported INSIDE the fixture so that
         # _ensure_default_admin_key() runs with the correct FIREAI_API_KEY
         # (set by conftest's autouse fixture), not at module-collection time.
+        #
+        # FIX: Set FIREAI_API_KEY BEFORE creating the TestClient so that
+        # the ApiKeyMiddleware can validate the X-API-Key header. Previously
+        # this was only set in the auth_headers fixture, which runs AFTER
+        # the client fixture — causing 401 when the middleware validated
+        # against a stale/empty env var.
+        monkeypatch.setenv("FIREAI_API_KEY", self._ROOT_KEY)
         from backend.app import app
-        return TestClient(app)
+        with TestClient(app, headers={"X-API-Key": self._ROOT_KEY}) as c:
+            yield c
 
     @pytest.fixture
-    def auth_headers(self):
-        # The app uses API key auth middleware
-        return {"X-API-Key": "test-key-for-v2-api-testing-1234567890"}
+    def auth_headers(self, monkeypatch):
+        # The app uses API key auth middleware. Ensure FIREAI_API_KEY matches
+        # the test key so the middleware validates the X-API-Key header.
+        monkeypatch.setenv("FIREAI_API_KEY", self._ROOT_KEY)
+        return {"X-API-Key": self._ROOT_KEY}
 
     def test_process_endpoint_simulation(self, client, auth_headers):
         """POST /api/v2/aps/process must successfully trigger WorkItem simulation."""
@@ -111,7 +123,7 @@ class TestApsRouterEndpoints:
         }
 
         res = client.post("/api/v2/aps/process", json=payload, headers=auth_headers)
-        assert res.status_code == 200
+        assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
         data = res.json()
         assert data["success"] is True
         assert "work_item_id" in data
@@ -124,7 +136,7 @@ class TestApsRouterEndpoints:
         svc.simulation_mode = True
 
         res = client.get("/api/v2/aps/status/mock_work_item_123", headers=auth_headers)
-        assert res.status_code == 200
+        assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
         data = res.json()
         assert data["success"] is True
         assert data["status"] == "success"

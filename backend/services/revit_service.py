@@ -939,8 +939,8 @@ class RevitService:
             return False
 
     def create_wall(self, start_point: List[float], end_point: List[float],
-                _height: float = 3000.0, _level: str = "Level 1",
-                _wall_type: str = "Basic Wall") -> Optional[str]:
+                height: float = 3000.0, level: str = "Level 1",
+                wall_type: str = "Basic Wall") -> Optional[str]:
         """Create a wall via the RevitAdapter.
 
         This method now delegates to `RevitAdapter.create_wall`, preserving the

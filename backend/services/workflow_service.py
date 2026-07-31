@@ -750,8 +750,8 @@ def node_environmental_context(state: PipelineState) -> PipelineState:
     state = {**state, "environmental_context": environmental_context}
     return _log_transition(
         state,
-        from_node="validate",  # V83 FIX: Updated — pipeline now goes validate → environmental_context → memory_enrich
-        to_node="environmental_context",
+        from_node="validate",  # V83 FIX: Updated — pipeline now goes validate → fetch_env_context → memory_enrich
+        to_node="fetch_env_context",
         evidence=f"Env context source: {environmental_context.get('source', 'async')}",
     )
 
@@ -1295,7 +1295,7 @@ def should_proceed_after_validation(state: PipelineState) -> str:
     before memory_enrich reads it for regional standards search.
     """
     if state.get("validation_passed", False):
-        return "environmental_context"  # V83: was "memory_enrich"
+        return "fetch_env_context"  # V83: was "memory_enrich"
     return "generate_report"  # Generate failure report
 
 
@@ -1358,7 +1358,7 @@ def build_fireai_workflow() -> StateGraph:
     workflow.add_node("parse", node_parse)
     workflow.add_node("validate", node_validate)
     workflow.add_node("memory_enrich", node_memory_enrich)
-    workflow.add_node("environmental_context", node_environmental_context)
+    workflow.add_node("fetch_env_context", node_environmental_context)
     workflow.add_node("nfpa_analysis", node_nfpa_analysis)
     workflow.add_node("conflict_detection", node_conflict_detection)
     workflow.add_node("human_review_gate", node_human_review_gate)
@@ -1382,11 +1382,16 @@ def build_fireai_workflow() -> StateGraph:
 
     # Conditional: validation pass → environmental context, fail → report
     # environmental_context must populate state before memory_enrich reads it.
+    # FIX: The mapping key must be "fetch_env_context" (matching the return
+    # value of should_proceed_after_validation), NOT "environmental_context"
+    # which conflicts with the PipelineState TypedDict key of the same name.
+    # LangGraph raises ValueError when a conditional edge key collides with
+    # a state key.
     workflow.add_conditional_edges(
         "validate",
         should_proceed_after_validation,
         {
-            "environmental_context": "environmental_context",  # V83: was memory_enrich
+            "fetch_env_context": "fetch_env_context",  # V83: was memory_enrich
             "generate_report": "generate_report",
         },
     )
@@ -1397,7 +1402,7 @@ def build_fireai_workflow() -> StateGraph:
     # the env_context was always empty {} when memory_enrich ran, making the V75
     # regional standards feature completely non-functional.
     # Per agent.md Rule 17: Root cause is pipeline node ordering, not the code logic.
-    workflow.add_edge("environmental_context", "memory_enrich")
+    workflow.add_edge("fetch_env_context", "memory_enrich")
     workflow.add_edge("memory_enrich", "nfpa_analysis")
     workflow.add_edge("nfpa_analysis", "conflict_detection")
 

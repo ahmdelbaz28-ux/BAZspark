@@ -263,7 +263,7 @@ class UniversalDataModel:
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS elements (
                     element_id TEXT PRIMARY KEY,
-                    data JSON NOT NULL,
+                    data JSON NOT NULL DEFAULT '{}',
                     element_type TEXT DEFAULT 'unknown',
                     project_id TEXT,
                     created_timestamp TEXT,
@@ -279,6 +279,14 @@ class UniversalDataModel:
                 pass  # Column already exists
             try:
                 cursor.execute("ALTER TABLE elements ADD COLUMN project_id TEXT")
+            except Exception:
+                pass  # Column already exists
+            # FIX: If the table was created by the shim's _initialize_schema
+            # (which uses properties/geometry columns instead of data), the
+            # data column may be missing. Add it via ALTER TABLE so that
+            # the NOT NULL constraint has a DEFAULT value.
+            try:
+                cursor.execute("ALTER TABLE elements ADD COLUMN data JSON NOT NULL DEFAULT '{}'")
             except Exception:
                 pass  # Column already exists
             cursor.execute('''
