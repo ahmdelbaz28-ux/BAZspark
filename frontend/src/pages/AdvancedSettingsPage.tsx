@@ -8,7 +8,8 @@
  * Secret values are masked in the UI and never shown in plaintext.
  */
 import React, { useCallback, useEffect, useState } from "react";
-import { Settings2, Loader2, RefreshCw, AlertTriangle, CheckCircle2, Save, Eye, EyeOff } from "lucide-react";
+import { Settings2, Loader2, RefreshCw, AlertTriangle, CheckCircle2, Save, Eye, EyeOff, Trash2, Database, Shield, Flag, KeyRound, Activity } from "lucide-react";
+import { adminApi } from "../services/fullApi";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,10 @@ const CATEGORY_META: Record<string, { icon: string; description: string }> = {
   pipeline: { icon: "⚙️", description: "Backend pipeline performance and processing parameters" },
   integrations: { icon: "🔗", description: "Third-party API keys: Resend, Supabase, GitHub, HF" },
   cors: { icon: "🌐", description: "Cross-Origin Resource Sharing and allowed origins" },
+  _cache: { icon: "💾", description: "In-memory cache management — view stats, clear entries" },
+  _feature_flags: { icon: "🚩", description: "Toggle feature flags on/off in real-time" },
+  _secret_rotation: { icon: "🔐", description: "Hot-rotate security secrets and admin tokens" },
+  _db_health: { icon: "🏥", description: "Live health status of all database backends" },
 };
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -59,6 +64,24 @@ export const AdvancedSettingsPage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>("nvidia");
   const [visibleSecrets, setVisibleSecrets] = useState<Set<string>>(new Set());
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
+
+  // ── Admin section states ──
+  const [cacheStats, setCacheStats] = useState<{ entries: number; max_entries: number; memory_usage_mb: number; hit_rate: number } | null>(null);
+  const [cacheLoading, setCacheLoading] = useState(false);
+  const [cacheClearing, setCacheClearing] = useState(false);
+  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean> | null>(null);
+  const [flagsLoading, setFlagsLoading] = useState(false);
+  const [flagToggling, setFlagToggling] = useState<string | null>(null);
+  const [dbHealth, setDbHealth] = useState<Record<string, { status: string; latency_ms: number; details?: string }> | null>(null);
+  const [dbHealthLoading, setDbHealthLoading] = useState(false);
+  const [secretName, setSecretName] = useState("");
+  const [secretValue, setSecretValue] = useState("");
+  const [secretGrace, setSecretGrace] = useState("300");
+  const [secretRotating, setSecretRotating] = useState(false);
+  const [adminTokenValue, setAdminTokenValue] = useState("");
+  const [adminTokenGrace, setAdminTokenGrace] = useState("300");
+  const [adminTokenRotating, setAdminTokenRotating] = useState(false);
+  const [adminMessage, setAdminMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
@@ -232,6 +255,230 @@ export const AdvancedSettingsPage: React.FC = () => {
 
   const categoryKeys = configData ? Object.keys(configData.categories) : [];
 
+  // ── Admin action handlers ──
+
+  const fetchCacheStats = useCallback(async () => {
+    setCacheLoading(true);
+    try {
+      const res = await adminApi.getCacheStats();
+      if (res.success && res.data) setCacheStats(res.data);
+    } catch { /* ignore */ }
+    finally { setCacheLoading(false); }
+  }, []);
+
+  const handleClearCache = useCallback(async () => {
+    setCacheClearing(true);
+    setAdminMessage(null);
+    try {
+      const res = await adminApi.clearCache();
+      setAdminMessage({ type: "success", text: res.message || "Cache cleared successfully" });
+      await fetchCacheStats();
+    } catch (err) {
+      setAdminMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to clear cache" });
+    } finally { setCacheClearing(false); }
+  }, [fetchCacheStats]);
+
+  const fetchFeatureFlags = useCallback(async () => {
+    setFlagsLoading(true);
+    try {
+      const res = await adminApi.getFeatureFlags();
+      if (res.success && res.data) setFeatureFlags(res.data);
+    } catch { /* ignore */ }
+    finally { setFlagsLoading(false); }
+  }, []);
+
+  const handleToggleFlag = useCallback(async (key: string, enabled: boolean) => {
+    setFlagToggling(key);
+    setAdminMessage(null);
+    try {
+      const res = await adminApi.setFeatureFlag({ key, enabled });
+      setAdminMessage({ type: "success", text: res.message || `Flag "${key}" ${enabled ? "enabled" : "disabled"}` });
+      setFeatureFlags((prev) => prev ? { ...prev, [key]: enabled } : prev);
+    } catch (err) {
+      setAdminMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to toggle flag" });
+    } finally { setFlagToggling(null); }
+  }, []);
+
+  const fetchDbHealth = useCallback(async () => {
+    setDbHealthLoading(true);
+    try {
+      const res = await adminApi.getDatabaseHealth();
+      if (res.success && res.data) setDbHealth(res.data);
+    } catch { /* ignore */ }
+    finally { setDbHealthLoading(false); }
+  }, []);
+
+  const handleRotateSecret = useCallback(async () => {
+    if (!secretName || !secretValue) return;
+    setSecretRotating(true);
+    setAdminMessage(null);
+    try {
+      const res = await adminApi.rotateSecret({ secret_name: secretName, new_value: secretValue, grace_period_seconds: Number(secretGrace) || 300 });
+      setAdminMessage({ type: "success", text: res.message || "Secret rotated successfully" });
+      setSecretName(""); setSecretValue("");
+    } catch (err) {
+      setAdminMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to rotate secret" });
+    } finally { setSecretRotating(false); }
+  }, [secretName, secretValue, secretGrace]);
+
+  const handleRotateAdminToken = useCallback(async () => {
+    if (!adminTokenValue) return;
+    setAdminTokenRotating(true);
+    setAdminMessage(null);
+    try {
+      const res = await adminApi.rotateAdminToken({ new_token: adminTokenValue, grace_period_seconds: Number(adminTokenGrace) || 300 });
+      setAdminMessage({ type: "success", text: res.message || "Admin token rotated successfully" });
+      setAdminTokenValue("");
+    } catch (err) {
+      setAdminMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to rotate admin token" });
+    } finally { setAdminTokenRotating(false); }
+  }, [adminTokenValue, adminTokenGrace]);
+
+  // Load admin data when category is selected
+  useEffect(() => {
+    if (activeCategory === "_cache") fetchCacheStats();
+    if (activeCategory === "_feature_flags") fetchFeatureFlags();
+    if (activeCategory === "_db_health") fetchDbHealth();
+  }, [activeCategory, fetchCacheStats, fetchFeatureFlags, fetchDbHealth]);
+
+  // ── Render admin sections ──
+
+  const renderCacheSection = () => (
+    <div className="space-y-4">
+      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Database className="h-5 w-5 text-blue-400" />
+          <h2 className="text-lg font-semibold text-slate-100">Cache Management</h2>
+        </div>
+        <p className="text-sm text-slate-400">View cache statistics and clear cached data. Admin-only operation.</p>
+      </div>
+      {cacheLoading ? (
+        <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 text-blue-400 animate-spin" /></div>
+      ) : cacheStats ? (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg divide-y divide-slate-700/50">
+          <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center"><p className="text-2xl font-bold text-slate-100">{cacheStats.entries}</p><p className="text-xs text-slate-500">Entries</p></div>
+            <div className="text-center"><p className="text-2xl font-bold text-slate-100">{cacheStats.max_entries}</p><p className="text-xs text-slate-500">Max Entries</p></div>
+            <div className="text-center"><p className="text-2xl font-bold text-slate-100">{cacheStats.memory_usage_mb.toFixed(1)} MB</p><p className="text-xs text-slate-500">Memory Usage</p></div>
+            <div className="text-center"><p className="text-2xl font-bold text-slate-100">{(cacheStats.hit_rate * 100).toFixed(1)}%</p><p className="text-xs text-slate-500">Hit Rate</p></div>
+          </div>
+          <div className="p-4 flex items-center justify-between">
+            <span className="text-xs text-slate-500">Clearing the cache will remove all cached data. This cannot be undone.</span>
+            <button type="button" onClick={handleClearCache} disabled={cacheClearing} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
+              <Trash2 className="h-4 w-4" />{cacheClearing ? "Clearing..." : "Clear Cache"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-center text-slate-500 text-sm">Failed to load cache stats</div>
+      )}
+    </div>
+  );
+
+  const renderFeatureFlagsSection = () => (
+    <div className="space-y-4">
+      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Flag className="h-5 w-5 text-amber-400" />
+          <h2 className="text-lg font-semibold text-slate-100">Feature Flags</h2>
+        </div>
+        <p className="text-sm text-slate-400">Toggle feature flags in real-time. Changes take effect immediately.</p>
+      </div>
+      {flagsLoading ? (
+        <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 text-amber-400 animate-spin" /></div>
+      ) : featureFlags ? (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg divide-y divide-slate-700/50">
+          {Object.entries(featureFlags).length === 0 ? (
+            <div className="p-4 text-center text-slate-500 text-sm">No feature flags configured</div>
+          ) : (
+            Object.entries(featureFlags).map(([key, enabled]) => (
+              <div key={key} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
+                <div><p className="text-sm font-medium text-slate-200">{key}</p><p className="text-xs text-slate-500 font-mono">{key}</p></div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded ${enabled ? "bg-green-500/15 text-green-400 border border-green-500/30" : "bg-red-500/15 text-red-400 border border-red-500/30"}`}>{enabled ? "Enabled" : "Disabled"}</span>
+                  <button type="button" onClick={() => handleToggleFlag(key, !enabled)} disabled={flagToggling === key} className="relative inline-flex items-center h-6 w-11 rounded-full transition-colors focus:outline-none disabled:opacity-50" style={{ backgroundColor: enabled ? "#22c55e" : "#475569" }}>
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-center text-slate-500 text-sm">Failed to load feature flags</div>
+      )}
+    </div>
+  );
+
+  const renderSecretRotationSection = () => (
+    <div className="space-y-4">
+      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <KeyRound className="h-5 w-5 text-red-400" />
+          <h2 className="text-lg font-semibold text-slate-100">Secret Rotation</h2>
+        </div>
+        <p className="text-sm text-slate-400">Hot-rotate security secrets with a grace period. Old secrets remain valid during the grace period.</p>
+      </div>
+      {/* Secret Rotation Form */}
+      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-slate-300">Rotate Security Secret</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div><label className="text-xs text-slate-500 mb-1 block">Secret Name</label><input type="text" value={secretName} onChange={(e) => setSecretName(e.target.value)} placeholder="e.g. FIREAI_SESSION_SECRET" className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm font-mono focus:border-blue-500 focus:outline-none" /></div>
+          <div><label className="text-xs text-slate-500 mb-1 block">New Value</label><input type="password" value={secretValue} onChange={(e) => setSecretValue(e.target.value)} placeholder="New secret value" className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm font-mono focus:border-blue-500 focus:outline-none" /></div>
+          <div><label className="text-xs text-slate-500 mb-1 block">Grace Period (s)</label><input type="number" value={secretGrace} onChange={(e) => setSecretGrace(e.target.value)} className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm font-mono focus:border-blue-500 focus:outline-none" /></div>
+        </div>
+        <button type="button" onClick={handleRotateSecret} disabled={secretRotating || !secretName || !secretValue} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
+          <Shield className="h-4 w-4" />{secretRotating ? "Rotating..." : "Rotate Secret"}
+        </button>
+      </div>
+      {/* Admin Token Rotation */}
+      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-slate-300">Rotate Admin Token</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="md:col-span-2"><label className="text-xs text-slate-500 mb-1 block">New Admin Token</label><input type="password" value={adminTokenValue} onChange={(e) => setAdminTokenValue(e.target.value)} placeholder="New admin token value" className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm font-mono focus:border-blue-500 focus:outline-none" /></div>
+          <div><label className="text-xs text-slate-500 mb-1 block">Grace Period (s)</label><input type="number" value={adminTokenGrace} onChange={(e) => setAdminTokenGrace(e.target.value)} className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm font-mono focus:border-blue-500 focus:outline-none" /></div>
+        </div>
+        <button type="button" onClick={handleRotateAdminToken} disabled={adminTokenRotating || !adminTokenValue} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
+          <KeyRound className="h-4 w-4" />{adminTokenRotating ? "Rotating..." : "Rotate Admin Token"}
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderDbHealthSection = () => (
+    <div className="space-y-4">
+      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-green-400" />
+            <h2 className="text-lg font-semibold text-slate-100">Database Health</h2>
+          </div>
+          <button type="button" onClick={fetchDbHealth} disabled={dbHealthLoading} className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs transition-colors disabled:opacity-50">
+            <RefreshCw className={`h-3 w-3 ${dbHealthLoading ? "animate-spin" : ""}`} />Refresh
+          </button>
+        </div>
+        <p className="text-sm text-slate-400">Live health status of all database backends (PostgreSQL, Qdrant, Neo4j, Redis).</p>
+      </div>
+      {dbHealthLoading ? (
+        <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 text-green-400 animate-spin" /></div>
+      ) : dbHealth ? (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg divide-y divide-slate-700/50">
+          {Object.entries(dbHealth).map(([name, info]) => (
+            <div key={name} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className={`h-3 w-3 rounded-full ${info.status === "healthy" ? "bg-green-500" : info.status === "degraded" ? "bg-yellow-500" : "bg-red-500"}`} />
+                <div><p className="text-sm font-medium text-slate-200">{name}</p>{info.details && <p className="text-xs text-slate-500">{info.details}</p>}</div>
+              </div>
+              <div className="text-right"><span className={`text-xs font-medium px-2 py-0.5 rounded ${info.status === "healthy" ? "bg-green-500/15 text-green-400" : info.status === "degraded" ? "bg-yellow-500/15 text-yellow-400" : "bg-red-500/15 text-red-400"}`}>{info.status}</span><p className="text-xs text-slate-500 mt-1">{info.latency_ms}ms</p></div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-center text-slate-500 text-sm">Failed to load database health</div>
+      )}
+    </div>
+  );
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -303,6 +550,20 @@ export const AdvancedSettingsPage: React.FC = () => {
 
           {/* Settings Forms */}
           <div className="flex-1 min-w-0">
+            {/* Admin Message Banner */}
+            {adminMessage && (
+              <div className={`mb-4 p-3 rounded-lg border flex items-center gap-2 ${adminMessage.type === "success" ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"}`}>
+                {adminMessage.type === "success" ? <CheckCircle2 className="h-4 w-4 text-green-400 shrink-0" /> : <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />}
+                <p className={`text-sm ${adminMessage.type === "success" ? "text-green-400" : "text-red-400"}`}>{adminMessage.text}</p>
+                <button type="button" onClick={() => setAdminMessage(null)} className="ml-auto text-slate-500 hover:text-slate-300 text-xs">Dismiss</button>
+              </div>
+            )}
+            {/* Admin sections (rendered before regular categories) */}
+            {activeCategory === "_cache" && renderCacheSection()}
+            {activeCategory === "_feature_flags" && renderFeatureFlagsSection()}
+            {activeCategory === "_secret_rotation" && renderSecretRotationSection()}
+            {activeCategory === "_db_health" && renderDbHealthSection()}
+            {/* Regular category settings */}
             {categoryKeys.map((catKey) => {
               if (catKey !== activeCategory) return null;
               const cat = configData.categories[catKey];
