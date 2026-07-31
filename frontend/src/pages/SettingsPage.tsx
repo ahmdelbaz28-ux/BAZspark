@@ -237,12 +237,8 @@ export function SettingsPage() {
                 persistSettings("general", { theme, language, notifications });
         };
 
-        const handleSaveSecurity = () => {
-                // V290: No-op — security settings are coming soon (backend enforcement not implemented).
-                // The "Save" button is kept for UX consistency but does nothing.
-                setSaveStatus("saved");
-                setTimeout(() => setSaveStatus(null), 2000);
-        };
+        // V290: Security tab has no functional settings — the Save button is disabled
+        // and marked "Coming Soon" to avoid misleading users. Remove handleSaveSecurity.
 
         const handleSaveApi = async () => {
                 persistSettings("api", { apiTimeout, retryAttempts });
@@ -584,10 +580,11 @@ export function SettingsPage() {
                                                                 </div>
                                                                                 <div className="pt-4">
                                                                                         <Button
-                                                                                                className="bg-primary hover:bg-primary/90 text-primary-foreground border-none"
-                                                                                                onClick={handleSaveSecurity}
+                                                                                                className="bg-primary hover:bg-primary/90 text-primary-foreground border-none opacity-50 cursor-not-allowed"
+                                                                                                disabled
+                                                                                                title={t("settings.security") + " — coming soon"}
                                                                                         >
-                                                                                                {t("settings.save")}
+                                                                                                {t("settings.save")} (Coming Soon)
                                                                                         </Button>
                                                                                 </div>
                                                         </CardContent>
