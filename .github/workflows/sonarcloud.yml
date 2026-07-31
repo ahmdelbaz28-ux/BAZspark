@@ -86,6 +86,27 @@ jobs:
         working-directory: frontend
 
       - name: SonarQube Scan
+        # V289 (2026-07-31): This step fails with exit code 3 when SonarCloud
+        # "Automatic Analysis" is enabled for the project, because Automatic
+        # Analysis and CI Analysis are mutually exclusive. The error message:
+        #   "You are running CI analysis while Automatic Analysis is enabled.
+        #    Please consider disabling one or the other."
+        #
+        # There is no public SonarCloud Web API endpoint to disable Automatic
+        # Analysis programmatically — it must be toggled in the SonarCloud UI:
+        #   https://sonarcloud.io/project/settings?category=analysis&id=ahmdelbaz28-ux_revit
+        #
+        # We use `continue-on-error: true` so the workflow passes either way:
+        #   - If Automatic Analysis is ENABLED: scan step fails silently, but
+        #     SonarCloud's separate "SonarCloud Code Analysis" check (posted
+        #     via webhook by SonarCloud itself) still runs and passes —
+        #     PRs still get quality-gate decoration.
+        #   - If Automatic Analysis is DISABLED: scan step succeeds normally.
+        #
+        # Token is set correctly (SONAR_TOKEN secret verified 2026-07-31).
+        # To permanently fix without continue-on-error: disable Automatic
+        # Analysis in the SonarCloud UI link above, then remove this flag.
+        continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@aa494459d7c39c106cc77b166de8b4250a32bb97  # v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
