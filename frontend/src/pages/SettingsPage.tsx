@@ -172,6 +172,8 @@ export function SettingsPage() {
 
         const [saveStatus, setSaveStatus] = useState<string | null>(null);
         const [settingsUpdateStatus, setSettingsUpdateStatus] = useState<Record<string, "saving" | "saved" | "error">>({});
+        const [securityActionStatus, setSecurityActionStatus] = useState<Record<string, "loading" | "success" | "error">>({});
+        const [visionKeyName, setVisionKeyName] = useState("");
 
         const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
@@ -646,11 +648,20 @@ export function SettingsPage() {
                                                                                 </Label>
                                                                                 <Badge variant="outline">{t("fireai.settings.noRotation")}</Badge>
                                                                         </div>
-                                                                        <Button variant="outline" onClick={async () => {
-                                                                                try { await fetch(`${API_BASE}/settings/secret-rotation/rotate`, { method: "POST" }); } catch { /* handled */ }
+                                                                        <Button variant="outline" disabled={securityActionStatus["secretRotation"] === "loading"} onClick={async () => {
+                                                                                setSecurityActionStatus((prev) => ({ ...prev, secretRotation: "loading" }));
+                                                                                try {
+                                                                                        const res = await fetch(`${API_BASE}/settings/secret-rotation/rotate`, { method: "POST", credentials: "same-origin" });
+                                                                                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                                                                                        setSecurityActionStatus((prev) => ({ ...prev, secretRotation: "success" }));
+                                                                                } catch {
+                                                                                        setSecurityActionStatus((prev) => ({ ...prev, secretRotation: "error" }));
+                                                                                }
                                                                         }}>
-                                                                                {t("fireai.settings.rotateKey")}
+                                                                                {securityActionStatus["secretRotation"] === "loading" ? t("settings.saving") : t("fireai.settings.rotateKey")}
                                                                         </Button>
+                                                                        {securityActionStatus["secretRotation"] === "success" && <Badge variant="default" className="ml-2">{t("settings.saved")}</Badge>}
+                                                                        {securityActionStatus["secretRotation"] === "error" && <Badge variant="destructive" className="ml-2">Error</Badge>}
                                                                 </CardContent>
                                                         </Card>
 
@@ -666,13 +677,23 @@ export function SettingsPage() {
                                                                 </CardHeader>
                                                                 <CardContent className="space-y-4">
                                                                         <div className="flex gap-2">
-                                                                                <Input placeholder={t("fireai.settings.keyName")} className="flex-1" />
-                                                                                <Button onClick={async () => {
-                                                                                        try { await fetch(`${API_BASE}/settings/keys/openai`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: "vision-key" }) }); } catch { /* handled */ }
+                                                                                <Input placeholder={t("fireai.settings.keyName")} className="flex-1" value={visionKeyName} onChange={(e) => setVisionKeyName(e.target.value)} />
+                                                                                <Button disabled={securityActionStatus["addKey"] === "loading" || !visionKeyName.trim()} onClick={async () => {
+                                                                                        setSecurityActionStatus((prev) => ({ ...prev, addKey: "loading" }));
+                                                                                        try {
+                                                                                                const res = await fetch(`${API_BASE}/settings/keys/openai`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ name: visionKeyName.trim() }) });
+                                                                                                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                                                                                                setVisionKeyName("");
+                                                                                                setSecurityActionStatus((prev) => ({ ...prev, addKey: "success" }));
+                                                                                        } catch {
+                                                                                                setSecurityActionStatus((prev) => ({ ...prev, addKey: "error" }));
+                                                                                        }
                                                                                 }}>
-                                                                                        {t("fireai.settings.addKey")}
+                                                                                        {securityActionStatus["addKey"] === "loading" ? t("settings.saving") : t("fireai.settings.addKey")}
                                                                                 </Button>
                                                                         </div>
+                                                                        {securityActionStatus["addKey"] === "success" && <div className="text-sm text-emerald-600 dark:text-emerald-400">{t("fireai.settings.addKey")} — success</div>}
+                                                                        {securityActionStatus["addKey"] === "error" && <div className="text-sm text-red-600 dark:text-red-400">Error adding key</div>}
                                                                         <div className="text-sm text-muted-foreground">
                                                                                 {t("fireai.settings.maskedKey")}: ****-****-****-****
                                                                         </div>
@@ -696,11 +717,20 @@ export function SettingsPage() {
                                                                                 </Label>
                                                                                 <Badge variant="default">{t("fireai.settings.configured")}</Badge>
                                                                         </div>
-                                                                        <Button variant="outline" onClick={async () => {
-                                                                                try { await fetch(`${API_BASE}/settings/admin-token/rotate`, { method: "POST" }); } catch { /* handled */ }
+                                                                        <Button variant="outline" disabled={securityActionStatus["adminToken"] === "loading"} onClick={async () => {
+                                                                                setSecurityActionStatus((prev) => ({ ...prev, adminToken: "loading" }));
+                                                                                try {
+                                                                                        const res = await fetch(`${API_BASE}/settings/admin-token/rotate`, { method: "POST", credentials: "same-origin" });
+                                                                                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                                                                                        setSecurityActionStatus((prev) => ({ ...prev, adminToken: "success" }));
+                                                                                } catch {
+                                                                                        setSecurityActionStatus((prev) => ({ ...prev, adminToken: "error" }));
+                                                                                }
                                                                         }}>
-                                                                                {t("fireai.settings.rotateToken")}
+                                                                                {securityActionStatus["adminToken"] === "loading" ? t("settings.saving") : t("fireai.settings.rotateToken")}
                                                                         </Button>
+                                                                        {securityActionStatus["adminToken"] === "success" && <Badge variant="default" className="ml-2">{t("settings.saved")}</Badge>}
+                                                                        {securityActionStatus["adminToken"] === "error" && <Badge variant="destructive" className="ml-2">Error</Badge>}
                                                                 </CardContent>
                                                         </Card>
                                                 </div>
