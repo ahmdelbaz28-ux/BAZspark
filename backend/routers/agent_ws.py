@@ -62,6 +62,78 @@ def _extract_api_key_from_handshake(websocket: WebSocket) -> str:
     return ""
 
 
+async def _authenticate_agent_websocket(websocket: WebSocket):
+    """Validate the agent's API key + RBAC before accepting the WS handshake.
+
+    Returns the validated ``api_key_info`` on success, or ``None`` after
+    closing the connection with code 4003 on any failure.
+    """
+    from backend.api_keys import validate_api_key
+    from backend.rbac import Permission, has_permission
+
+    api_key = _extract_api_key_from_handshake(websocket)
+    if not api_key:
+        logger.warning("Rejected agent connection: no API key in headers/subprotocol")
+        await websocket.close(code=4003)
+        return None
+
+    try:
+        api_key_info = validate_api_key(api_key)
+    except Exception as e:
+        logger.exception("Error validating agent API Key: %s", e)
+        await websocket.close(code=4003)
+        return None
+
+    if api_key_info is None:
+        logger.warning("Rejected agent connection: invalid API Key")
+        await websocket.close(code=4003)
+        return None
+
+    if not has_permission(api_key_info.role, Permission.CALCULATION_EXECUTE):
+        logger.warning(
+            "Rejected agent connection: role %s lacks CALCULATION_EXECUTE",
+            api_key_info.role,
+        )
+        await websocket.close(code=4003)
+        return None
+
+    return api_key_info
+
+
+def _register_agent(websocket: WebSocket, agent_type: str) -> None:
+    """Register an active agent connection."""
+    active_agents.setdefault(agent_type, []).append(websocket)
+
+
+def _cleanup_agent(websocket: WebSocket, agent_type: str) -> None:
+    """Fail pending futures and remove the agent from the active registry."""
+    ws_id = str(id(websocket))
+    pending = _agent_pending_commands.pop(ws_id, set())
+    for cmd_id in pending:
+        future = agent_response_futures.pop(cmd_id, None)
+        if future and not future.done():
+            future.set_exception(
+                ConnectionError(f"Agent disconnected while command {cmd_id} was pending")
+            )
+
+    if agent_type in active_agents and websocket in active_agents[agent_type]:
+        active_agents[agent_type].remove(websocket)
+    agent_locks.pop(ws_id, None)
+
+
+async def _handle_agent_message(websocket: WebSocket, msg: dict) -> None:
+    """Dispatch a single decoded agent message."""
+    msg_type = msg.get("type")
+    if msg_type == "response":
+        cmd_id = msg.get("id")
+        payload = msg.get("payload")
+        future = agent_response_futures.get(cmd_id)
+        if future is not None:
+            future.set_result(payload)
+    elif msg_type == "ping":
+        await websocket.send_json({"type": "pong"})
+
+
 @router.websocket("/ws")
 async def agent_websocket_endpoint(websocket: WebSocket):
     """
@@ -72,71 +144,28 @@ async def agent_websocket_endpoint(websocket: WebSocket):
     no longer accepted as a query-string parameter — query strings are logged
     by every reverse proxy and would leak the key.
     """
-    from backend.api_keys import validate_api_key
-
-    api_key = _extract_api_key_from_handshake(websocket)
-    if not api_key:
-        logger.warning("Rejected agent connection: no API key in headers/subprotocol")
-        await websocket.close(code=4003)
-        return
-
-    try:
-        api_key_info = validate_api_key(api_key)
-        if api_key_info is None:
-            logger.warning("Rejected agent connection: invalid API Key")
-            await websocket.close(code=4003)
-            return
-    except Exception as e:
-        logger.exception("Error validating agent API Key: %s", e)
-        await websocket.close(code=4003)
-        return
-
-    # RBAC: Check if agent role has permission to connect
-    from backend.rbac import Permission, has_permission
-    if not has_permission(api_key_info.role, Permission.CALCULATION_EXECUTE):
-        logger.warning("Rejected agent connection: role %s lacks CALCULATION_EXECUTE", api_key_info.role)
-        await websocket.close(code=4003)
-        return
+    api_key_info = await _authenticate_agent_websocket(websocket)
+    if api_key_info is None:
+        return  # already closed with code 4003
 
     await websocket.accept()
     logger.info("Local Agent connected to WebSocket successfully")
 
     agent_type = "autocad_revit"
-    if agent_type not in active_agents:
-        active_agents[agent_type] = []
-    active_agents[agent_type].append(websocket)
+    _register_agent(websocket, agent_type)
 
     try:
         while True:
             data = await websocket.receive_text()
             try:
                 msg = json.loads(data)
-                msg_type = msg.get("type")
-                if msg_type == "response":
-                    cmd_id = msg.get("id")
-                    payload = msg.get("payload")
-                    if cmd_id in agent_response_futures:
-                        agent_response_futures[cmd_id].set_result(payload)
-                elif msg_type == "ping":
-                    await websocket.send_json({"type": "pong"})
+                await _handle_agent_message(websocket, msg)
             except Exception as e:
                 logger.warning("Error handling agent message: %s", e)
     except WebSocketDisconnect:
         logger.info("Local Agent disconnected from WebSocket")
     finally:
-        # Fail all pending futures for this websocket
-        ws_id = str(id(websocket))
-        pending = _agent_pending_commands.pop(ws_id, set())
-        for cmd_id in pending:
-            future = agent_response_futures.pop(cmd_id, None)
-            if future and not future.done():
-                future.set_exception(
-                    ConnectionError(f"Agent disconnected while command {cmd_id} was pending")
-                )
-
-        if agent_type in active_agents and websocket in active_agents[agent_type]:
-            active_agents[agent_type].remove(websocket)
-        agent_locks.pop(ws_id, None)
+        _cleanup_agent(websocket, agent_type)
 
 
 def has_active_agent(agent_type: str = "autocad_revit") -> bool:
@@ -144,7 +173,9 @@ def has_active_agent(agent_type: str = "autocad_revit") -> bool:
     return len(active_agents.get(agent_type, [])) > 0
 
 
-async def send_agent_command(agent_type: str, action: str, args: Dict[str, Any], timeout: float = 30.0) -> Any:
+async def send_agent_command(
+    agent_type: str, action: str, args: Dict[str, Any], timeout: float = 30.0
+) -> Any:
     """
     Send a command to the active agent and await the response.
     """
@@ -166,12 +197,9 @@ async def send_agent_command(agent_type: str, action: str, args: Dict[str, Any],
     lock = get_agent_lock(websocket)
     async with lock:
         try:
-            await websocket.send_json({
-                "type": "command",
-                "id": cmd_id,
-                "action": f"{agent_type}/{action}",
-                "args": args
-            })
+            await websocket.send_json(
+                {"type": "command", "id": cmd_id, "action": f"{agent_type}/{action}", "args": args}
+            )
             async with asyncio.timeout(timeout):
                 response = await future
             if isinstance(response, dict) and "error" in response:
@@ -179,12 +207,16 @@ async def send_agent_command(agent_type: str, action: str, args: Dict[str, Any],
             return response
         except asyncio.TimeoutError as exc:
             logger.warning("Agent command %s timed out after %s seconds", action, timeout)
-            raise HTTPException(status_code=504, detail="Local Agent command execution timed out.") from exc
+            raise HTTPException(
+                status_code=504, detail="Local Agent command execution timed out."
+            ) from exc
         except Exception as e:
             if isinstance(e, HTTPException):
                 raise
             logger.exception("Error executing agent command %s: %s", action, e)
-            raise HTTPException(status_code=502, detail=f"Failed to execute local agent command: {e}")
+            raise HTTPException(
+                status_code=502, detail=f"Failed to execute local agent command: {e}"
+            )
         finally:
             agent_response_futures.pop(cmd_id, None)
             # Clean up tracking

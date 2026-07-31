@@ -50,7 +50,7 @@ import os
 import secrets
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -218,6 +218,38 @@ _SAFE_ENV_CATEGORIES: dict[str, list[str]] = {
 _BOOLEAN_LIKE = {"AUTO_SAVE_REPORTS", "SESSION_COOKIE_SECURE"}
 
 
+def _resolve_env_var_value(var: str, value: str | None) -> Any:
+    """Resolve the safe display value for a single env var.
+
+    Secrets (API keys, tokens, passwords) are NEVER returned — callers only
+    see set/unset status (None) or a masked URL. Non-secret vars return
+    their actual value, optionally coerced to bool.
+    """
+    # Synthesized boolean: True if BAZSPARK_MASTER_ADMIN_TOKEN is set
+    if var == "BAZSPARK_MASTER_ADMIN_TOKEN_SET":
+        return bool(os.environ.get("BAZSPARK_MASTER_ADMIN_TOKEN"))
+
+    # URLs may contain credentials — mask everything before the last @
+    if var.endswith("_URL") or var in {"DATABASE_URL", "REDIS_URL"}:
+        if not value:
+            return None
+        if "@" in value:
+            host_part = value.rsplit("@", 1)[-1]
+            return f"***@{host_part}"
+        return value
+
+    # Non-secret endpoints / public identifiers
+    if var in {"OPENAI_API_URL", "LANGFUSE_HOST", "LANGFUSE_PUBLIC_KEY"}:
+        return value
+
+    # Boolean-like coercion
+    if var in _BOOLEAN_LIKE:
+        return value.lower() in {"1", "true", "yes"} if value else False
+
+    # Default: return raw value (None if unset)
+    return value
+
+
 @router.get("/env-config")
 async def get_env_config(_role: SystemConfigRole) -> dict[str, Any]:
     """
@@ -229,42 +261,13 @@ async def get_env_config(_role: SystemConfigRole) -> dict[str, Any]:
     """
     config: dict[str, dict[str, Any]] = {}
     for category, var_names in _SAFE_ENV_CATEGORIES.items():
-        cat_data: dict[str, Any] = {}
-        for var in var_names:
-            value = os.environ.get(var)
-            if var == "BAZSPARK_MASTER_ADMIN_TOKEN_SET":
-                # Synthesized: True if BAZSPARK_MASTER_ADMIN_TOKEN is set
-                cat_data[var] = bool(os.environ.get("BAZSPARK_MASTER_ADMIN_TOKEN"))
-            elif var.endswith("_URL") or var in {"DATABASE_URL", "REDIS_URL"}:
-                # URLs may contain credentials — mask everything before the
-                # last "@" (rsplit handles credentials containing "@").
-                # V272 FIX: previously this branch had two assignments to
-                # cat_data[var] — the first using a confusing
-                # `value.split("@")[-1].join(["***@", ""])` expression that
-                # was immediately overwritten by the second assignment. The
-                # first line was dead code; removing it.
-                if value:
-                    if "@" in value:
-                        host_part = value.rsplit("@", 1)[-1]
-                        cat_data[var] = f"***@{host_part}"
-                    else:
-                        cat_data[var] = value
-                else:
-                    cat_data[var] = None
-            elif var in {"OPENAI_API_URL", "LANGFUSE_HOST", "LANGFUSE_PUBLIC_KEY"}:
-                # Non-secret endpoints / public identifiers
-                cat_data[var] = value
-            elif var in _BOOLEAN_LIKE:
-                cat_data[var] = value.lower() in {"1", "true", "yes"} if value else False
-            else:
-                cat_data[var] = value
-        config[category] = cat_data
+        config[category] = {
+            var: _resolve_env_var_value(var, os.environ.get(var)) for var in var_names
+        }
 
     # Apply in-memory overrides
     for category, overrides in _ENV_CONFIG_OVERRIDES.items():
-        if category not in config:
-            config[category] = {}
-        config[category].update(overrides)
+        config.setdefault(category, {}).update(overrides)
 
     return success(
         {
@@ -429,7 +432,9 @@ async def rotate_admin_token(_role: SystemConfigRole) -> dict[str, Any]:
     rotator = KeyRotator()
     if previous_token:
         rotator.register("BAZSPARK_MASTER_ADMIN_TOKEN", previous_token)
-        rotated, rotate_msg = rotator.rotate("BAZSPARK_MASTER_ADMIN_TOKEN", previous_token, new_token)
+        rotated, rotate_msg = rotator.rotate(
+            "BAZSPARK_MASTER_ADMIN_TOKEN", previous_token, new_token
+        )
     else:
         rotator.register("BAZSPARK_MASTER_ADMIN_TOKEN", new_token)
         rotated, rotate_msg = True, "Registered new admin token (no previous token to rotate from)."
