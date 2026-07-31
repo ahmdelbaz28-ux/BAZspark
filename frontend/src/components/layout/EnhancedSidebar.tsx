@@ -95,6 +95,7 @@ const navGroups: NavGroup[] = [
       { labelKey: "nav.facp",            label: "FACP Designer", icon: FlameKindling, path: "/facp" },
       { labelKey: "nav.physicsGuards",   label: "Physics Guards",icon: ShieldAlert,  path: "/engineering/guards", badgeKey: "physicsGuards", badgeVariant: "success"  /* V270: live value via useSidebarBadges */ },
       { labelKey: "nav.fireAlarmDesigner", label: "Fire Alarm", icon: BellRing,     path: "/fire-alarm/designer", dataOnboarding: "nav-fire-alarm-designer" },
+      { labelKey: "nav.fireAlarmOverview", label: "Fire Alarm · Overview", icon: BellRing,     path: "/fire-alarm" },
       { labelKey: "nav.engineeringCopilot", label: "Copilot",   icon: Brain,       path: "/engineering-copilot" },
       { labelKey: "nav.analysis",           label: "Analysis",  icon: BarChart3,   path: "/analysis" },
       { labelKey: "nav.generativeDesign",   label: "Generative",icon: Wand2,       path: "/engineering/generative" },
@@ -145,6 +146,7 @@ const navGroups: NavGroup[] = [
     separator: true,
     items: [
       { labelKey: "nav.reports",     label: "Reports",       icon: FileBarChart2,  path: "/reports",      dataOnboarding: "nav-reports" },
+      { labelKey: "nav.reportGenerate", label: "Generate", icon: FileBarChart2,  path: "/reports/generate" },
       { labelKey: "nav.exports",     label: "Export",        icon: Download,       path: "/exports"       },
       { labelKey: "nav.auditTrail",  label: "Audit Trail",   icon: ClipboardList,  path: "/audit-trail"   },
     ],
