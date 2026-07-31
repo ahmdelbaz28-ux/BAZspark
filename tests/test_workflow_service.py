@@ -120,7 +120,7 @@ class TestServiceInit:
         graph = build_fireai_workflow()
         expected_nodes = [
             "initialize", "parse", "validate",
-            "environmental_context", "nfpa_analysis",
+            "fetch_env_context", "nfpa_analysis",
             "conflict_detection", "human_review_gate",
             "generate_report",
         ]
@@ -305,7 +305,7 @@ class TestConditionalEdges:
     def test_validation_pass_routes_to_env(self, sample_state):
         """Passed validation must route to environmental context."""
         sample_state["validation_passed"] = True
-        assert should_proceed_after_validation(sample_state) == "environmental_context"
+        assert should_proceed_after_validation(sample_state) == "fetch_env_context"
 
     def test_validation_fail_routes_to_report(self, sample_state):
         """Failed validation must route to generate failure report."""

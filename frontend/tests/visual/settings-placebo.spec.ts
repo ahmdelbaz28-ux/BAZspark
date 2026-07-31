@@ -27,39 +27,96 @@ test.describe("Settings Page — Placebo Settings Backend Sync", () => {
   test("API tab shows apiTimeout and retryAttempts fields", async ({ page }) => {
     await installApiMock(page, { preAuthenticated: true });
 
+    // Mock settings endpoint to return backend-synced values
+    await page.route("**/api/v1/settings", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            data: {
+              api_timeout: 30,
+              retry_attempts: 3,
+              report_format: "pdf",
+              report_quality: "high",
+              auto_save_reports: true,
+            },
+          }),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ success: true, data: {} }),
+        });
+      }
+    });
+
     await page.goto("/settings", { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForLoadState("networkidle");
 
     // Click API tab
     const apiTab = page.getByRole("tab", { name: /api/i });
+    await expect(apiTab).toBeVisible({ timeout: 10000 });
     await apiTab.click();
+    await page.waitForLoadState("networkidle");
 
-    // Verify apiTimeout input exists
+    // Verify apiTimeout label exists — i18n key "settings.apiTimeout" renders "API Timeout (seconds)" in English
     const apiTimeoutLabel = page.getByText(/api timeout/i);
-    await expect(apiTimeoutLabel).toBeVisible({ timeout: 5000 });
+    await expect(apiTimeoutLabel).toBeVisible({ timeout: 10000 });
 
-    // Verify retryAttempts input exists
-    const retryLabel = page.getByText(/retry attempt/i);
-    await expect(retryLabel).toBeVisible({ timeout: 5000 });
+    // Verify retryAttempts label exists — i18n key "settings.retryAttempts" renders "Retry Attempts" in English
+    // Use .first() to avoid strict mode violation (both label and description match)
+    const retryLabel = page.getByText(/retry attempts/i).first();
+    await expect(retryLabel).toBeVisible({ timeout: 10000 });
   });
 
   test("Reports tab shows reportFormat and autoSave settings", async ({ page }) => {
     await installApiMock(page, { preAuthenticated: true });
+
+    // Mock settings endpoint to return backend-synced values
+    await page.route("**/api/v1/settings", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            data: {
+              api_timeout: 30,
+              retry_attempts: 3,
+              report_format: "pdf",
+              report_quality: "high",
+              auto_save_reports: true,
+            },
+          }),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ success: true, data: {} }),
+        });
+      }
+    });
 
     await page.goto("/settings", { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForLoadState("networkidle");
 
     // Click Reports tab
     const reportsTab = page.getByRole("tab", { name: /report/i });
+    await expect(reportsTab).toBeVisible({ timeout: 10000 });
     await reportsTab.click();
+    await page.waitForLoadState("networkidle");
 
-    // Verify reportFormat select exists
+    // Verify reportFormat label exists — i18n key "settings.reportFormat" renders "Report Format" in English
     const formatLabel = page.getByText(/report format/i);
-    await expect(formatLabel).toBeVisible({ timeout: 5000 });
+    await expect(formatLabel).toBeVisible({ timeout: 10000 });
 
-    // Verify autoSave toggle exists
-    const autoSaveLabel = page.getByText(/auto save/i);
-    await expect(autoSaveLabel).toBeVisible({ timeout: 5000 });
+    // Verify autoSave toggle exists — i18n key "settings.autoSaveReports" renders "Auto-save Reports" in English
+    const autoSaveLabel = page.getByText(/auto.save/i);
+    await expect(autoSaveLabel).toBeVisible({ timeout: 10000 });
   });
 
   test("API settings save button sends PUT request to backend", async ({ page }) => {

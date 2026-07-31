@@ -29,6 +29,9 @@ vi.mock("lucide-react", () => {
     Loader2: createIcon("Loader2"),
     Cpu: createIcon("Cpu"),
     ListChecks: createIcon("ListChecks"),
+    ShieldCheck: createIcon("ShieldCheck"),
+    FileCode2: createIcon("FileCode2"),
+    FileText: createIcon("FileText"),
   };
 });
 

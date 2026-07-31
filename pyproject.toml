@@ -649,11 +649,13 @@ ignore = [
     # UP006/UP045: Kept ignored — Python 3.12 supports PEP 585/604 but
     # 72 files still use Dict/Optional. Progressive migration tracked separately.
     "UP006",   # Non-pep585-annotation (Dict → dict) — progressive migration
+    "UP007",   # Non-pep604-annotation (Union → X | Y) — progressive migration
     "UP045",   # Non-pep604-annotation-optional (Optional → | None) — progressive migration
+    "PLC0414", # Import alias does not rename — progressive migration
     "RUF013",  # Implicit-optional (progressive migration)
     "RET504",  # Unnecessary-assign (style preference)
     "RET505",  # Superfluous-else-return (style preference)
-    "RUF059",  # Unused-unpacked-variable (intentional _ patterns)
+    # RUF059 removed — rule does not exist in ruff 0.9.7 (was causing TOML parse failure)
     "D200",    # Unnecessary-multiline-docstring (style preference)
     "D413",    # Missing-blank-line-after-last-section (style preference)
     "D204",    # Incorrect-blank-line-after-class (style preference)

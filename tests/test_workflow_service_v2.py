@@ -456,7 +456,7 @@ class TestShouldProceedAfterParse:
 class TestShouldProceedAfterValidation:
     def test_validation_passed_routes_to_environmental_context(self, sample_state):
         sample_state["validation_passed"] = True
-        assert should_proceed_after_validation(sample_state) == "environmental_context"
+        assert should_proceed_after_validation(sample_state) == "fetch_env_context"
 
     def test_validation_failed_routes_to_generate_report(self, sample_state):
         sample_state["validation_passed"] = False
@@ -498,7 +498,7 @@ class TestBuildFireaiWorkflow:
         graph = build_fireai_workflow()
         expected_nodes = {
             "initialize", "parse", "validate", "memory_enrich",
-            "environmental_context", "nfpa_analysis", "conflict_detection",
+            "fetch_env_context", "nfpa_analysis", "conflict_detection",
             "human_review_gate", "generate_report",
         }
         for node in expected_nodes:
@@ -539,7 +539,7 @@ class TestWorkflowServiceInit:
 
     def test_graph_has_all_nodes(self, service):
         expected = {"initialize", "parse", "validate", "memory_enrich",
-                    "environmental_context", "nfpa_analysis", "conflict_detection",
+                    "fetch_env_context", "nfpa_analysis", "conflict_detection",
                     "human_review_gate", "generate_report"}
         for node in expected:
             assert node in service._graph.nodes

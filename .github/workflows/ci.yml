@@ -48,7 +48,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip --only-binary :all:
           pip install --only-binary :all: -e .
-          pip install --only-binary :all: ruff==0.9.7 bandit==1.9.0 mypy==1.15.0
+          pip install --only-binary :all: ruff==0.9.7 bandit==1.9.4 mypy==1.15.0
 
       - name: Create reports directory
         run: mkdir -p reports
@@ -147,8 +147,10 @@ jobs:
           pip install --only-binary :all: langgraph==0.2.73 langgraph-checkpoint-sqlite==2.0.8
           pip install --only-binary :all: pytest-timeout==2.3.1 pytest-xdist==3.6.1
 
-      - name: Set FIREAI_SESSION_SECRET (required since V193/V207)
-        run: echo "FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" >> $GITHUB_ENV
+      - name: Generate ephemeral test secrets (V288 SECURITY — no hardcoded creds)
+        run: |
+          echo "FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" >> $GITHUB_ENV
+          echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> $GITHUB_ENV
 
       - name: Smoke test — import backend.app (Gate 2 pre-check)
         # V260 FIX (Rule 17 — Root-Cause): Same smoke test as ci-build-gate.yml.
@@ -164,7 +166,7 @@ jobs:
           DATABASE_URL: "sqlite:////tmp/fireai_ci_smoke.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_ci_smoke.db"
           UDM_DB_PATH: "/tmp/udm_ci_smoke.db"
-          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
+          SECRET_KEY: ${{ env.SECRET_KEY }}
         run: |
           if [ -z "$FIREAI_SESSION_SECRET" ]; then
             export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
@@ -205,7 +207,7 @@ jobs:
           DATABASE_URL: "sqlite:////tmp/fireai_ci_test.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_ci_test.db"
           UDM_DB_PATH: "/tmp/udm_ci_test.db"
-          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
+          SECRET_KEY: ${{ env.SECRET_KEY }}
         run: |
           # If FIREAI_SESSION_SECRET is not set, generate one for this run.
           if [ -z "$FIREAI_SESSION_SECRET" ]; then
@@ -500,7 +502,7 @@ jobs:
           pip install --only-binary :all: -e .
 
       - name: Install pip-audit
-        run: "pip install --only-binary :all: pip-audit==0.3.1"
+        run: "pip install --only-binary :all: pip-audit==2.10.1"
 
       - name: Audit Python dependencies
         # V300 / C-XX FIX: Combined approach — pip-audit runs with severity

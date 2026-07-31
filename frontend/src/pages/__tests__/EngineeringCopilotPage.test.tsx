@@ -36,6 +36,12 @@ vi.mock("lucide-react", () => {
     User: createIcon("User"),
     AlertTriangle: createIcon("AlertTriangle"),
     Trash2: createIcon("Trash2"),
+    List: createIcon("List"),
+    FileText: createIcon("FileText"),
+    ArrowRightLeft: createIcon("ArrowRightLeft"),
+    ShieldCheck: createIcon("ShieldCheck"),
+    FileOutput: createIcon("FileOutput"),
+    Info: createIcon("Info"),
   };
 });
 

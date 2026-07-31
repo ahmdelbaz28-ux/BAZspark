@@ -31,6 +31,7 @@ vi.mock("lucide-react", () => {
     RefreshCw: createIcon("RefreshCw"),
     AlertTriangle: createIcon("AlertTriangle"),
     Search: createIcon("Search"),
+    ShieldCheck: createIcon("ShieldCheck"),
   };
 });
 

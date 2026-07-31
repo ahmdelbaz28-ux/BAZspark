@@ -73,7 +73,7 @@ jobs:
           python -m pip install --upgrade pip --only-binary :all:
           pip install --only-binary :all: -r requirements.txt
           pip install --only-binary :all: -e .
-          pip install --only-binary :all: ruff==0.9.7 bandit==1.9.0 mypy==1.15.0 pytest==8.3.4 pytest-cov==6.0.0 pytest-asyncio==0.25.2 hypothesis==6.124.7
+          pip install --only-binary :all: ruff==0.9.7 bandit==1.9.4 mypy==1.15.0 pytest==8.3.4 pytest-cov==6.0.0 pytest-asyncio==0.25.2 hypothesis==6.124.7
           mkdir -p reports
 
       - name: Generate ephemeral test secrets (V288 SECURITY — no hardcoded creds)

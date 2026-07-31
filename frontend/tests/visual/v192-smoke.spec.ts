@@ -287,35 +287,27 @@ test("Connections: create connection modal opens with form fields", async ({
         expect(url, "Should stay on /connections (not redirect to /login)").toContain("/connections");
 
         // Click "Create Connection" button
-        // V242: The button may be disabled or not present if the page is loading.
         // Wait for it to be ready with a generous timeout.
         const createBtn = page.getByRole("button", { name: /create connection/i });
-        const btnCount = await createBtn.count();
-        if (btnCount > 0) {
-                await createBtn.first().click();
-                await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
+        await expect(createBtn).toBeVisible({ timeout: 10000 });
+        await createBtn.first().click();
+        await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
-                // V242: Verify modal is open with form fields.
-                // The modal is a plain <div> (not role="dialog") with an <h3>"Create Connection"</h3>
-                // heading and three <label> elements: "Source Element *", "Target Element *",
-                // "Relationship Type *". Target the modal by its heading, then verify
-                // the form labels are visible inside it.
-                const modalHeading = page.getByRole("heading", { name: /create connection/i }).first();
-                await expect(modalHeading).toBeVisible({ timeout: 3000 });
+        // Verify modal is open with form fields.
+        // The modal uses a <dialog> element with an <h3> heading.
+        const modalHeading = page.getByRole("heading", { name: /create connection/i }).first();
+        await expect(modalHeading).toBeVisible({ timeout: 10000 });
 
-                // Find the modal container (parent of the heading)
-                const modal = modalHeading.locator("xpath=ancestor::div[contains(@class,'fixed')][1]");
-                await expect(modal).toBeVisible();
+        // Find the modal container (parent of the heading)
+        const modal = modalHeading.locator("xpath=ancestor::div[contains(@class,'fixed') or contains(@class,'bg-card')][1]");
+        await expect(modal).toBeVisible();
 
-                // The labels have trailing " *" (e.g., "Source Element *") — use regex
-                // with .first() to avoid strict-mode violations from the table column
-                // headers that share the same text.
-                await expect(modal.getByText(/^Source Element/i).first()).toBeVisible();
-                await expect(modal.getByText(/^Target Element/i).first()).toBeVisible();
-                await expect(modal.getByText(/^Relationship Type/i).first()).toBeVisible();
-        }
-        // If no "Create Connection" button, the test still passes — it verified
-        // the page loaded without redirecting to /login (the original skip condition).
+        // The labels have trailing " *" (e.g., "Source Element *") — use regex
+        // with .first() to avoid strict-mode violations from the table column
+        // headers that share the same text.
+        await expect(modal.getByText(/^Source Element/i).first()).toBeVisible({ timeout: 5000 });
+        await expect(modal.getByText(/^Target Element/i).first()).toBeVisible({ timeout: 5000 });
+        await expect(modal.getByText(/^Relationship Type/i).first()).toBeVisible({ timeout: 5000 });
 });
 
 test("Dashboard: no React key warnings", async ({ page }) => {

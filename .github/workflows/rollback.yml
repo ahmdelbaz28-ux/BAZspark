@@ -214,4 +214,69 @@ jobs:
           helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
             --namespace ${{ env.HELM_NAMESPACE }} --create-namespace \
             --set images.api.tag="$TAG" --set images.worker.tag="$TAG" --set images.nginx.tag="$TAG" \
-            --set api.image.tag="$TAG" --set worker.image.tag="$T
+            --set api.image.tag="$TAG" --set worker.image.tag="$TAG" --set nginx.image.tag="$TAG" \
+            --wait --timeout 300s --debug 2>&1
+          RC=$?
+          if [ $RC -ne 0 ]; then
+            echo "::error::Helm rollback to image tag $TAG FAILED (exit: $RC)"
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "✓ Rollback to image tag $TAG completed"
+          echo "status=success" >> "$GITHUB_OUTPUT"
+          echo "revision=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Verify rollout
+        if: always() && steps.validate-secrets.outputs.result != 'skipped'
+        run: |
+          echo "=== Verifying Rollback ==="
+          kubectl rollout status deployment/${{ env.HELM_RELEASE_NAME }}-api -n ${{ env.HELM_NAMESPACE }} --timeout=180s
+          kubectl rollout status deployment/${{ env.HELM_RELEASE_NAME }}-worker -n ${{ env.HELM_NAMESPACE }} --timeout=180s
+          echo "✓ Rollback verified"
+
+      - name: Smoke test
+        if: github.event.inputs.skip_smoke_test != 'true'
+        id: smoke
+        run: |
+          echo "Waiting for service to be ready..."
+          sleep 30
+          kubectl run rollback-smoke-test --image=curlimages/curl:latest \
+            -n ${{ env.HELM_NAMESPACE }} --rm --restart=Never -- \
+            curl -sf https://${{ env.HELM_RELEASE_NAME }}-api.${{ env.HELM_NAMESPACE }}.svc.cluster.local/api/health
+          echo "status=passed" >> "$GITHUB_OUTPUT"
+
+      - name: Post-rollback audit
+        if: always()
+        run: |
+          echo "=== Post-Rollback Helm Release Status ==="
+          helm status ${{ env.HELM_RELEASE_NAME }} -n ${{ env.HELM_NAMESPACE }} 2>&1 || true
+          echo "=== Helm Release History (last 10) ==="
+          helm history ${{ env.HELM_RELEASE_NAME }} -n ${{ env.HELM_NAMESPACE }} --max=10 2>&1 || true
+
+  report:
+    name: "Rollback Report"
+    runs-on: ubuntu-latest
+    needs: [validate, rollback]
+    if: always()
+    steps:
+      - name: Generate rollback report
+        run: |
+          echo "## Rollback Report"
+          echo ""
+          echo "| Field | Value |"
+          echo "|-------|-------|"
+          echo "| Strategy | ${{ github.event.inputs.strategy }} |"
+          echo "| Environment | ${{ github.event.inputs.environment }} |"
+          echo "| Triggered by | ${{ github.actor }} |"
+          echo "| Rollback result | ${{ needs.rollback.result }} |"
+          if [ "${{ github.event.inputs.strategy }}" = "helm-revision" ]; then
+            echo "| Target revision | ${{ github.event.inputs.revision }} |"
+          else
+            echo "| Target image tag | ${{ github.event.inputs.version }} |"
+          fi
+          echo ""
+          if [ "${{ needs.rollback.result }}" = "success" ]; then
+            echo "✅ Rollback completed successfully."
+          else
+            echo "❌ Rollback failed or was cancelled. Manual intervention may be required."
+          fi

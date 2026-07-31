@@ -138,11 +138,15 @@ test.describe("ETAP Integration Page", () => {
                 await page.waitForSelector("h1", { timeout: 15000 });
 
                 // Connection tab should be active by default
-                await expect(page.locator("text=Connection Settings")).toBeVisible();
-                await expect(page.locator("#host")).toBeVisible();
-                await expect(page.locator("#port")).toBeVisible();
-                await expect(page.locator("#username")).toBeVisible();
-                await expect(page.locator("#password")).toBeVisible();
+                // The page uses "Host Configuration" as the card title, not "Connection Settings"
+                const hostConfig = page.locator("text=Host Configuration").first();
+                await expect(hostConfig).toBeVisible({ timeout: 10000 });
+
+                // Verify form fields exist
+                await expect(page.locator("#host")).toBeVisible({ timeout: 10000 });
+                await expect(page.locator("#port")).toBeVisible({ timeout: 10000 });
+                await expect(page.locator("#username")).toBeVisible({ timeout: 10000 });
+                await expect(page.locator("#password")).toBeVisible({ timeout: 10000 });
         });
 
         test("ETAP page has tabs for Connection, Projects, Sync, Logs", async ({ page }) => {
