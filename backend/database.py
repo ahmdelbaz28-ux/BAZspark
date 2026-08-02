@@ -128,6 +128,22 @@ class Database:
         self._init_schema()
         logger.info("Digital Twin database initialized (SQLite) at %s", db_path)
 
+    def _degrade_to_sqlite(self, reason: str) -> None:
+        """Fall back to the local SQLite database when PostgreSQL is
+        unavailable (e.g. HF Spaces containers cannot reach Supabase's
+        IPv6-only endpoint). Keeps /health reporting ok and the app
+        operational instead of crashing at startup.
+        """
+        logger.warning(
+            "PostgreSQL unavailable (%s) - degrading to local SQLite at %s. "
+            "/health will report database=connected (SQLite). Set a reachable "
+            "DATABASE_URL/NEON_DATABASE_URL to use PostgreSQL.",
+            reason,
+            self.db_path,
+        )
+        self._is_postgres = False
+        self._init_sqlite(self.db_path)
+
     def _init_postgres(self) -> None:
         """Initialize PostgreSQL connection pool.
 
@@ -136,9 +152,8 @@ class Database:
           2. If the connection fails (e.g. HF Spaces free tier cannot reach
              Supabase's IPv6-only endpoint), fall back to NEON_DATABASE_URL
              (IPv4-direct, always reachable from any container runtime).
-          3. If both fail, raise the original DATABASE_URL error so the
-             application surfaces the primary misconfiguration, not a
-             secondary one.
+          3. If both fail, degrade to the local SQLite database so the
+             application still starts and /health reports ok.
 
         This makes BOTH databases work together: Supabase stays as the
         standard primary; Neon is the automatic IPv4 fallback.
@@ -147,10 +162,10 @@ class Database:
             import psycopg2  # noqa: F401  (imported to surface ImportError early)
             from psycopg2 import pool as pg_pool
         except ImportError:
-            raise ImportError(
-                "PostgreSQL mode requires psycopg2. Install it with: "
-                "pip install psycopg2-binary  OR  pip install psycopg2"
-            )
+            # psycopg2 not installed - degrade to local SQLite so the
+            # app still starts (e.g. slim containers that omit it).
+            self._degrade_to_sqlite("psycopg2 not installed")
+            return
 
         db_url = getattr(self, '_database_url', _DATABASE_URL)
         neon_url = os.environ.get("NEON_DATABASE_URL", "")
@@ -179,8 +194,13 @@ class Database:
             )
         except Exception as primary_exc:
             if not neon_url or neon_url == db_url:
-                # No fallback available â€” raise the original error
-                raise
+                # No fallback available - degrade to local SQLite so the
+                # app still starts and /health reports ok.
+                self._degrade_to_sqlite(
+                    f"PostgreSQL unreachable ({type(primary_exc).__name__}): "
+                    f"{primary_exc}"
+                )
+                return
             logger.warning(
                 "Primary DATABASE_URL failed (%s); falling back to NEON_DATABASE_URL (%s)",
                 type(primary_exc).__name__,
