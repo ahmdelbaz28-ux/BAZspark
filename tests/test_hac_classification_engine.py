@@ -631,7 +631,7 @@ class TestPhysicalSanity:
             room_volume_m3=1000.0,  # Large room
             is_indoor=True,
         )
-        horizontal, vertical, volume = result  # NOSONAR
+        horizontal, _vertical, volume = result  # NOSONAR
         # Indoor hemisphere: V = (2/3) π r³
         expected_volume = (2.0 / 3.0) * math.pi * (horizontal ** 3)
         # Allow 50% tolerance due to buoyancy factors and other adjustments

@@ -83,7 +83,7 @@ class TestDomainDetection(unittest.TestCase):
         self.assertEqual(detect_domain("accessibility contrast wcag"), "ux")
 
     def test_ambiguous_query_returns_runner_up(self):
-        domain, runner_up = detect_domain("font pairing elegant crypto", return_scores=True)
+        domain, _runner_up = detect_domain("font pairing elegant crypto", return_scores=True)
         self.assertIsNotNone(domain)
         # runner_up may be None if the winning domain has no close second --
         # this just verifies the call shape works without raising.

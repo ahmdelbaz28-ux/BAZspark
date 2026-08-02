@@ -646,11 +646,11 @@ class TestDistributedSecurity(unittest.TestCase):
         permission_checker = PermissionChecker(self.rbac_engine)
 
         # Admin should have access to everything
-        allowed, reason = permission_checker.check_method_access("admin_user", "admin.configure")  # NOSONAR - python:S1481
+        allowed, _reason = permission_checker.check_method_access("admin_user", "admin.configure")  # NOSONAR - python:S1481
         self.assertTrue(allowed)
 
         # Operator should have execution access
-        allowed, reason = permission_checker.check_method_access("operator_user", "engine.calculate")
+        allowed, _reason = permission_checker.check_method_access("operator_user", "engine.calculate")
         self.assertTrue(allowed)
 
         # Viewer should not have execution access

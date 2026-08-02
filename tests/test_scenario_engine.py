@@ -422,7 +422,7 @@ class TestDetectionTime:
 
     def test_detection_time_at_zero_distance_is_finite(self):
         """Detector at ignition point must detect very quickly."""
-        t_det, hrr, od = FirePhysics.detection_time(  # NOSONAR
+        t_det, _hrr, _od = FirePhysics.detection_time(  # noqa: RUF059
             alpha=0.04689,
             distance_m=0.0,
             ceiling_h_m=3.0,
@@ -471,7 +471,7 @@ class TestDetectionTime:
     def test_detection_time_returns_max_when_never_detected(self):
         """If threshold never reached within max_t_s, return (max_t_s, ...)."""
         # Very low alpha + high threshold → never reaches 4.0 %/m in 30 s
-        t_det, hrr, od = FirePhysics.detection_time(  # NOSONAR
+        t_det, _hrr, od = FirePhysics.detection_time(  # noqa: RUF059
             alpha=0.0001,  # Very slow
             distance_m=20.0,  # Very far
             ceiling_h_m=3.0,
@@ -484,7 +484,7 @@ class TestDetectionTime:
 
     def test_detection_time_q_max_caps_hrr_at_detection(self):
         """When q_max is low, HRR at detection must not exceed q_max."""
-        t_det, hrr, od = FirePhysics.detection_time(  # NOSONAR
+        t_det, hrr, _od = FirePhysics.detection_time(  # noqa: RUF059
             alpha=0.04689,
             distance_m=0.5,
             ceiling_h_m=3.0,
