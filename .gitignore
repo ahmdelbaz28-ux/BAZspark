@@ -314,6 +314,7 @@ API_Test_Collection.postman_collection.json
 *.secret
 !.env.example
 !.env.example.txt
+!.env.production.example
 
 !frontend/src/data/
 

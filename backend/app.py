@@ -226,6 +226,23 @@ async def lifespan(app: FastAPI):
         )
 
     logger.info("Starting CAD/BIM Integration Platform...")
+
+    # V300 — Runtime environment validation gate.
+    # backend/env_validator.py is the single source of truth for which env
+    # vars are REQUIRED at launch. In production, any HARD issue raises
+    # RuntimeError → app refuses to start (fail-safe). In development, only
+    # warnings are logged (graceful DX). Operations can set
+    # FIREAI_ENV_VALIDATION=warn to demote HARD issues while rotating secrets
+    # on a live deployment (degraded mode — still logged loudly).
+    try:
+        from backend.env_validator import assert_environment
+        assert_environment()
+    except RuntimeError as _env_err:
+        # Re-raise so the lifespan/startup fails LOUDLY — never silently
+        # run a half-configured backend in production.
+        logger.critical("Environment validation failed — aborting startup:\n%s", _env_err)
+        raise
+
     # HOTFIX C-2: Mark core modules as loaded so health check reports "ok".
     try:
         from backend.routers.health import set_core_modules_loaded

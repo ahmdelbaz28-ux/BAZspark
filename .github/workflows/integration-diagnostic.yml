@@ -1,0 +1,115 @@
+name: Integration Diagnostic
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BAZspark End-to-End Integration Health Gate
+#
+# Runs scripts/integration_diagnostic.py against every integrated platform:
+#   Supabase (Postgres + REST + Auth), Langfuse, GitHub, HuggingFace Space,
+#   Vercel, Cloudflare, Autodesk APS, Resend, SonarCloud, Daytona,
+#   CodeSandbox, and the FastAPI backend.
+#
+# Design decisions:
+#   - workflow_dispatch: run manually at any time (best diagnostic UX).
+#   - schedule (weekly): keep a rolling health record.
+#   - Non-blocking: this workflow is informational — it does NOT gate the
+#     main CI/CD pipeline (which is gated by ci-build-gate.yml). A red run
+#     here flags a broken integration WITHOUT blocking deployments.
+#   - Secrets are injected as env vars from GitHub Actions secrets — the
+#     same canonical names as .env.production.example.
+#   - The JSON report is uploaded as an artifact for the audit trail.
+# ═══════════════════════════════════════════════════════════════════════════
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1"  # every Monday 03:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    name: End-to-end integration health check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@b64ffcaf5b410884ad320a9cfac8866006a109aa  # v5.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --quiet --upgrade pip
+          pip install --quiet httpx "psycopg2-binary>=2.9"
+
+      - name: Run integration diagnostic
+        id: diagnostic
+        continue-on-error: true
+        env:
+          BASE_URL: ${{ vars.BASE_URL }}
+          FIREAI_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          APS_CLIENT_ID: ${{ secrets.APS_CLIENT_ID }}
+          APS_CLIENT_SECRET: ${{ secrets.APS_CLIENT_SECRET }}
+          VERCEL_DEPLOY_TOKEN: ${{ secrets.VERCEL_DEPLOY_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_REPO: ${{ github.repository }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION || 'ahmdelbaz28-ux' }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY || 'ahmdelbaz28-ux_revit' }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_USER_TOKEN_1: ${{ secrets.CLOUDFLARE_USER_TOKEN_1 }}
+          CLOUDFLARE_USER_TOKEN_2: ${{ secrets.CLOUDFLARE_USER_TOKEN_2 }}
+          CLOUDFLARE_USER_TOKEN_3: ${{ secrets.CLOUDFLARE_USER_TOKEN_3 }}
+          DAYTONA_API_TOKEN: ${{ secrets.DAYTONA_API_TOKEN }}
+          DAYTONA_API_URL: ${{ secrets.DAYTONA_API_URL }}
+          CODESANDBOX_TOKEN: ${{ secrets.CODESANDBOX_TOKEN }}
+        run: |
+          python scripts/integration_diagnostic.py \
+            --endpoint "${BASE_URL:-https://ahmdelbaz28-bazspark.hf.space}" \
+            --json > integration_report.json 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          cat integration_report.json
+
+      - name: Upload diagnostic report
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882  # v4.4.3
+        with:
+          name: integration-report-${{ github.run_id }}
+          path: integration_report.json
+          retention-days: 30
+
+      - name: Annotate summary
+        if: always()
+        run: |
+          python - <<'EOF'
+          import json
+          with open("integration_report.json", encoding="utf-8") as f:
+              report = json.load(f)
+          s = report["summary"]
+          lines = [f"**Integration Diagnostic** — {s['ok']} OK / {s['warn']} WARN / {s['fail']} FAIL / {s['skip']} SKIP"]
+          for check in report["checks"]:
+              emoji = {"OK": ":green_circle:", "WARN": ":yellow_circle:", "FAIL": ":red_circle:", "SKIP": ":white_circle:"}[check["status"]]
+              lines.append(f"- {emoji} {check['service']}: `{check['status']}` HTTP {check['http_code'] or '-'} ({check['latency_ms']}ms)")
+          with open("summary.md", "w", encoding="utf-8") as f:
+              f.write("\n".join(lines))
+          EOF
+          echo "## Integration Diagnostic" >> "$GITHUB_STEP_SUMMARY"
+          cat summary.md >> "$GITHUB_STEP_SUMMARY"
