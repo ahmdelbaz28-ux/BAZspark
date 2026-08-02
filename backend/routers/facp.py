@@ -616,46 +616,36 @@ async def get_facp_cluster_status():
     """
     Get Distributed FACP Cluster Communicator status and node topology.
     Exposes real-time node health, leader node, and communicator stats.
-    """
-    try:
-        import importlib
-        mod = importlib.import_module("facp_distributed.event_bus.cluster_communicator")
-        DistributedClusterCommunicator = getattr(mod, "DistributedClusterCommunicator")
-        communicator = DistributedClusterCommunicator(
-            node_id="primary_node_01",
-            host="127.0.0.1",
-            port=9000,
-            node_type="l2_orchestrator",
-        )
 
-        status_data = communicator.get_cluster_status()
-        return {
-            "success": True,
-            "data": status_data,
-        }
-    except Exception as exc:
-        logger.exception("FACP cluster status error: %s", exc)
-        return {
-            "success": True,
-            "data": {
-                "cluster_id": "facp_cluster_default",
-                "local_node_id": "node_standalone",
-                "local_node_type": "l2_orchestrator",
-                "local_node_status": "healthy",
-                "total_nodes": 1,
-                "healthy_nodes": 1,
-                "unhealthy_nodes": 0,
-                "leader_node": "node_standalone",
-                "is_leader": True,
-                "known_peers": [],
-                "stats": {
-                    "messages_sent": 0,
-                    "messages_received": 0,
-                    "connections_made": 0,
-                    "connection_errors": 0,
-                    "state_syncs": 0,
-                },
-                "uptime_seconds": 3600.0,
+    Returns the local (standalone) node status. This endpoint must NOT
+    import facp_distributed: the backend is required to stay isolated
+    from that package (see backend/tests/security/
+    test_marshal_loads_not_http_reachable.py Tests 1/1b/1c) because it
+    transitively reaches isolation.py (marshal.loads, M-1). When a real
+    distributed deployment is added, expose cluster status through a
+    backend-local service layer instead.
+    """
+    return {
+        "success": True,
+        "data": {
+            "cluster_id": "facp_cluster_default",
+            "local_node_id": "node_standalone",
+            "local_node_type": "l2_orchestrator",
+            "local_node_status": "healthy",
+            "total_nodes": 1,
+            "healthy_nodes": 1,
+            "unhealthy_nodes": 0,
+            "leader_node": "node_standalone",
+            "is_leader": True,
+            "known_peers": [],
+            "stats": {
+                "messages_sent": 0,
+                "messages_received": 0,
+                "connections_made": 0,
+                "connection_errors": 0,
+                "state_syncs": 0,
             },
-        }
+            "uptime_seconds": 3600.0,
+        },
+    }
 
