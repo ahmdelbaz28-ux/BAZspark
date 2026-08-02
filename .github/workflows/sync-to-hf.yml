@@ -74,12 +74,16 @@ jobs:
 
       - name: Checkout HF Space
         if: steps.check-token.outputs.skip != 'true'
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-        with:
-          repository: ${{ env.HF_USERNAME }}/${{ env.HF_SPACE_NAME }}
-          token: ${{ secrets.HF_TOKEN }}
-          path: hf_space
-          fetch-depth: 1
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # actions/checkout cannot clone from huggingface.co: it always
+          # resolves `repository:` against github.com, so this step failed
+          # with "Bad credentials" on every run regardless of token. Clone
+          # directly with the HF token instead.
+          git clone --depth 1 \
+            "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}" \
+            hf_space
 
       - name: Configure git
         if: steps.check-token.outputs.skip != 'true'
