@@ -613,20 +613,9 @@ class HeatDetectorSpec:
 
 
 # ============================================================================
-# ⚠️ FIXED: DetectorPlacement - Reference Bug Resolved (2026-05-14)
+# FIXED: DetectorPlacement - Reference Bug Resolved
 # ============================================================================
-# ORIGINAL BUG (Line 240):
-#   def __post_init__(self):
-#       if self.coverage_radius_m is None:
-#           self.coverage_radius_m = get_smoke_detector_radius(
-#               ceiling_spec.height_at_low_point_m  # ReferenceError! ceiling_spec not defined
-#           ) if hasattr(ceiling_spec, 'height_at_low_point_m') else 4.55
-#
-# FIX APPLIED:
-#   - Added ceiling_height_m as EXPLICIT PARAMETER
-#   - Uses get_smoke_detector_radius_safe() for safe fallback
-#   - No more ReferenceError
-# ============================================================================
+
 @dataclass
 class DetectorPlacement:
     """

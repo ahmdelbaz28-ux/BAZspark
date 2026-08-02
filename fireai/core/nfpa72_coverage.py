@@ -326,18 +326,9 @@ def is_point_in_room(point: tuple[float, float], room_polygon: Polygon) -> bool:
 
 
 # ============================================================================
-# ⚠️ FIXED: Coverage Geometry - Heat Detectors Use Square (2026-05-14)
+# FIXED: Coverage Geometry - Heat Detectors Use Square Geometry
 # ============================================================================
-# ORIGINAL BUG:
-#   if detector_type == DetectorType.SMOKE:
-#       radius = get_smoke_detector_radius(ceiling_spec.height_m)
-#   else:
-#       radius = 9.1 / 2  # Uses CIRCULAR geometry for heat - WRONG!
-#
-# FIX APPLIED:
-#   - SMOKE: Uses CIRCULAR geometry (Euclidean distance)
-#   - HEAT: Uses SQUARE geometry (Chebyshev distance)
-#   - Uses get_smoke_detector_radius_safe() for safe fallback
+
 # ============================================================================
 def check_coverage_polygon(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     detector_positions: list[tuple[float, float]],
