@@ -519,24 +519,31 @@ def _make_sentinel(raw_log: list, filtered_log: list,
     WANT a loud failure via the assertion, not via an exception that
     some router might silently catch.
     """
+    # Normalize the test-file prefixes once (constant for the lifetime
+    # of this sentinel) so the filtered-log startswith check matches on
+    # Windows where paths use backslashes.
+    normalized_prefixes = tuple(p.replace("\\", "/") for p in test_file_prefixes)
+
     def _sentinel(*args, **kwargs):
         import inspect
         frame = inspect.currentframe().f_back
         skip_substrings = ("/marshal", "<frozen", "/mock", "/unittest")
         while frame is not None:
-            fn = frame.f_code.co_filename
+            # Normalize to forward slashes so the skip-substring
+            # checks work on Windows (\\unittest\\mock.py vs /unittest).
+            fn = frame.f_code.co_filename.replace("\\", "/")
             if not any(s in fn for s in skip_substrings):
                 break
             frame = frame.f_back
         if frame is not None:
-            fn = frame.f_code.co_filename
+            fn = frame.f_code.co_filename.replace("\\", "/")
             ln = frame.f_lineno
             entry = (fn, ln, func_name)
             raw_log.append(entry)
-            if (not fn.startswith(test_file_prefixes)
+            if (not fn.startswith(normalized_prefixes)
                     and "/_pytest/" not in fn
                     and "/site-packages/pytest" not in fn
-                    and "conftest" not in os.path.basename(fn)
+                    and "conftest" not in fn.rsplit("/", 1)[-1]
                     # V214 MERGE FIX: Exclude APM/tracing libraries (ddtrace, opentelemetry,
                     # sentry) that legitimately use marshal internally for bytecode
                     # instrumentation. These are NOT reachable from HTTP request
