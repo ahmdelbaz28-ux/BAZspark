@@ -508,3 +508,44 @@ class TestPostgresSqliteFallback:
         assert created_dsn == ["postgresql://neon:pass@db.example.com:5432/n"]
         assert db._database_url == "postgresql://neon:pass@db.example.com:5432/n"
         assert db._is_postgres is True  # still postgres (NEON), not degraded
+
+    def test_degrades_when_pool_created_but_smoke_test_fails(self, tmp_path, monkeypatch) -> None:
+        """The realistic Space scenario: pool creation succeeds (host accepts
+        TCP) but the smoke-test query fails. Must still degrade to SQLite and
+        release the partially-initialized pool (no connection leak)."""
+        import sys
+        import types
+
+
+        monkeypatch.delenv("NEON_DATABASE_URL", raising=False)
+
+        fake_pool = types.ModuleType("psycopg2.pool")
+        closed = []
+
+        class _PoolCreatedButDead:
+            def __init__(self, *args, **kwargs):
+                pass  # pool creation succeeds
+
+            def getconn(self, *a, **k):
+                raise ConnectionError("smoke-test SELECT 1 timed out")
+
+            def closeall(self):
+                closed.append(True)
+
+        fake_pool.ThreadedConnectionPool = _PoolCreatedButDead
+        fake_psycopg2 = types.ModuleType("psycopg2")
+        fake_psycopg2.pool = fake_pool
+        monkeypatch.setitem(sys.modules, "psycopg2", fake_psycopg2)
+        monkeypatch.setitem(sys.modules, "psycopg2.pool", fake_pool)
+
+        db = self._bare_db(tmp_path)
+        db._pg_pool = _PoolCreatedButDead()  # pool was already created
+        db._init_postgres()  # must NOT raise
+
+        assert db._is_postgres is False
+        assert db._pg_pool is None  # dead pool released
+        assert db._database_url is None  # stale Postgres URL cleared
+        assert closed == [True]  # pool connections closed, no leak
+        with db._transaction() as cur:
+            cur.execute("SELECT COUNT(*) FROM projects")
+            assert cur.fetchone()[0] == 0

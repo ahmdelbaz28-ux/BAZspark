@@ -141,6 +141,16 @@ class Database:
             reason,
             self.db_path,
         )
+        # Best-effort release any partially-initialized Postgres pool so its
+        # connections do not leak when we switch to local SQLite.
+        pg_pool = getattr(self, "_pg_pool", None)
+        if pg_pool is not None:
+            try:
+                pg_pool.closeall()
+            except Exception:
+                logger.debug("Suppressed Exception in database.py", exc_info=True)
+        self._pg_pool = None
+        self._database_url = None  # Postgres URL is no longer in use
         self._is_postgres = False
         self._init_sqlite(self.db_path)
 
