@@ -320,7 +320,7 @@ tools. The following table maps the existing infrastructure to this policy.
 | 1 | `ci.yml` | 7-gate CI pipeline (static analysis, tests, frontend, Docker, bundle) | R2, R4, R6 |
 | 2 | `deploy.yml` | Staging + Production deployment via Helm/Kubernetes | R2, R6, R10 |
 | 3 | `secret-scan.yml` | Gitleaks secret scanning on every push/PR | R2, R3 |
-| 4 | `sonarcloud.yml` | SonarCloud code quality analysis | R2, R3 |
+| 4 | _(removed)_ | SonarCloud code quality analysis now provided by **AutoScan** (SonarCloud GitHub App) — no CI workflow needed; see V290 | R2, R3 |
 | 5 | `ci-build-gate.yml` | Pre-merge frontend build + typecheck gate | R2, R4, R5 |
 | 6 | `ai-code-review.yml` | AI-powered code review | R1, R5 |
 | 7 | `bundle-size.yml` | Frontend bundle size regression tracking | R2, R7 |

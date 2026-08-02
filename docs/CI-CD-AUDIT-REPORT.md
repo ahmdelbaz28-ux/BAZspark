@@ -134,9 +134,30 @@ Each of the 15 workflows was evaluated against all 12 policy rules:
 
 ---
 
-## 5. `sonarcloud.yml` — SonarCloud Analysis
+## 5. `sonarcloud.yml` — REMOVED (V290, 2026-07-31)
 
-**Status: ✅ COMPLIANT**
+**Status: 🗑️ DELETED — replaced by SonarCloud AutoScan**
+
+This workflow was removed because it conflicted with SonarCloud's AutoScan
+feature (which is enabled for this project via the SonarCloud GitHub App).
+SonarCloud does not allow both CI-based analysis and AutoScan to run
+simultaneously — attempting both produces the error:
+"You are running CI analysis while Automatic Analysis is enabled."
+
+**Root-cause fix (V290):** Removed the redundant CI workflow entirely.
+AutoScan now provides all SonarCloud functionality:
+- Automatic analysis on every push and PR (no token, no workflow config)
+- PR decoration via `SonarCloud Code Analysis` check (posted by `sonarqubecloud` app)
+- Quality gate status reporting
+- Coverage and issue tracking
+
+**Verification (2026-07-31):**
+- AutoScan active: `autoscanEnabled: true`, `ciName: Autoscan` (via SonarCloud API)
+- `SonarCloud Code Analysis` check present on PRs #230, #231, #232 (all succeeded)
+- No branch protection rules depend on the removed workflow (main is unprotected)
+- `SONAR_TOKEN` secret is now unused and can be removed from repo settings
+
+**Previous compliance table (for historical reference):**
 
 | Rule | Assessment | Details |
 |------|------------|---------|
@@ -146,7 +167,7 @@ Each of the 15 workflows was evaluated against all 12 policy rules:
 | R10 | ✅ | Uses `SONAR_TOKEN` secret |
 | R11 | ✅ | Generates ephemeral test secrets |
 
-**Gaps:** None.
+**Gaps:** None — AutoScan satisfies the same rules via the GitHub App.
 
 ---
 
