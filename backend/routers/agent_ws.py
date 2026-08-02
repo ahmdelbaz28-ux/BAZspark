@@ -69,6 +69,7 @@ async def _authenticate_agent_websocket(websocket: WebSocket):
     closing the connection with code 4003 on any failure.
     """
     import os
+
     from backend.api_keys import validate_api_key
     from backend.rbac import Permission, has_permission
 

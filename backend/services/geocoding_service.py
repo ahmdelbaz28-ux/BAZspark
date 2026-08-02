@@ -135,6 +135,7 @@ class GeocodingService:
         """Fetch geocoding from Nominatim."""
         await self._enforce_rate_limit()
         from urllib.parse import urlparse
+
         from backend.integrations._ssrf_guard import resolve_to_safe_ip
         parsed_url = urlparse(self.NOMINATIM_URL)
         if parsed_url.hostname:
@@ -236,6 +237,7 @@ class GeocodingService:
         """
         await self._enforce_rate_limit()
         from urllib.parse import urlparse
+
         from backend.integrations._ssrf_guard import resolve_to_safe_ip
         reverse_url = "https://nominatim.openstreetmap.org/reverse"
         parsed_url = urlparse(reverse_url)
