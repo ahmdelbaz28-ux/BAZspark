@@ -6,70 +6,15 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-1.55.0-orange)](VERSION)
 
-BAZSpark automates fire detection and alarm system design per **NFPA 72-2022**. It provides deterministic engineering calculations, a Digital Twin for bidirectional AutoCAD/Revit conversion, and an immutable audit trail for PE review.
+BAZSpark automates fire detection and alarm system design per NFPA 72-2022. It delivers deterministic engineering calculations and an immutable audit trail for professional review.
 
-**Live:** [ba-zspark.vercel.app](https://ba-zspark.vercel.app) (frontend) | [ahmdelbaz28-bazspark.hf.space](https://ahmdelbaz28-bazspark.hf.space) (backend)
+The system features a Digital Twin engine for bidirectional AutoCAD and Revit conversion. It eliminates manual drafting errors while verifying compliance across complex building layouts.
 
----
-
-## Features
-
-| Capability | Description |
-|---|---|
-| **NFPA 72 Engine** | Detector spacing, coverage analysis, compliance verification |
-| **Digital Twin** | Bidirectional conversion between AutoCAD and Revit |
-| **NAC Design** | Notification appliance circuit calculations with voltage drop and battery sizing |
-| **Audit Trail** | HMAC-SHA256 signed, Merkle tree for PE review |
-| **Marine Module** | SOLAS, IEC 60092, NFPA 302 for ship fire safety |
-| **Multi-Format Parsers** | DXF, DWG, IFC, PDF, Excel, Image |
-| **RBAC Security** | Role-based access with 5 roles (Admin, Engineer, Reviewer, Viewer, API) |
-| **API** | 247+ REST + WebSocket endpoints |
+**Live Endpoints:** [ba-zspark.vercel.app](https://ba-zspark.vercel.app) (Frontend) | [ahmdelbaz28-bazspark.hf.space](https://ahmdelbaz28-bazspark.hf.space) (Backend)
 
 ---
 
-## Quick Start
-
-### Prerequisites
-
-- Python 3.8+ (minimum required by pyproject.toml)
-- Node.js 22+
-- npm 11+
-
-### Backend
-
-```bash
-git clone https://github.com/ahmdelbaz28-ux/BAZspark.git
-cd BAZspark
-
-pip install -e ".[dev,parsing]"
-
-export FIREAI_API_KEY="your-api-key"
-cd backend
-uvicorn app:app --reload --host 127.0.0.1 --port 8000
-```
-
-API docs: http://127.0.0.1:8000/docs
-
-### Frontend
-
-```bash
-cd frontend
-npm ci
-npm run dev
-```
-
-Frontend: http://localhost:5173
-
-### Login
-
-1. Open http://localhost:5173
-2. Go to Settings
-3. Enter your API Key (same value as `FIREAI_API_KEY`)
-4. Click Login
-
----
-
-## Architecture
+## 1. System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -87,127 +32,140 @@ Frontend: http://localhost:5173
     │ Engine    │ │ Twin     │ │ SQLite / │
     │ Voltage   │ │ AutoCAD  │ │ Postgres │
     │ Drop      │ │ ←→ Revit │ │ + Redis  │
-    │ Spatial   │ │          │ │ + Qdrant │
     └───────────┘ └──────────┘ └──────────┘
 ```
 
-See [docs/reference/architecture.md](docs/reference/architecture.md) for full architecture details.
+The frontend React application communicates with the FastAPI backend via REST and WebSockets. Requests pass through RBAC authorization, rate limiting, and security headers.
+
+Core calculation engines execute deterministic algorithms for spatial coverage and voltage drop. Results persist across PostgreSQL, Redis cache, and Qdrant vector storage.
 
 ---
 
-## Tech Stack
+## 2. Core Capabilities
 
-| Layer | Technology |
-|---|---|
-| Backend | Python 3.8+, FastAPI, SQLAlchemy, Pydantic, Shapely/GEOS |
-| Frontend | React 18, TypeScript 5.9, Vite 8, Tailwind CSS 4, Three.js |
-| Database | PostgreSQL (Supabase), SQLite, Redis, Qdrant (vector), Neo4j (graph) |
-| Infrastructure | Docker, Kubernetes, Helm, Prometheus, Grafana |
-| CI/CD | GitHub Actions (6 gates), CodeQL, SonarCloud |
+| Capability | Engineering Purpose | Standard |
+|---|---|---|
+| **NFPA 72 Engine** | Detector spacing and visual coverage verification | NFPA 72-2022 |
+| **Digital Twin** | Bidirectional DWG and RVT element translation | IFC 4.3 / ISO 16739 |
+| **NAC Circuit Solver** | End-of-line voltage drop and battery capacity sizing | NFPA 72 §10.6.7 |
+| **Marine Module** | Vessel fire detection and deluge control rules | SOLAS / IEC 60092 |
+| **Immutable Audit** | Merkle tree signed calculation verification | NFPA 72 §14.2.4 |
+| **Multi-Format Parsers** | High-throughput DXF, DWG, IFC, and PDF parsing | ISO 32000 |
 
----
-
-## Documentation
-
-| Document | Description |
-|---|---|
-| [Installation](docs/how-to/installation.md) | Setup instructions for all platforms |
-| [Configuration](docs/how-to/configuration.md) | Environment variables and settings |
-| [API Reference](docs/reference/api-reference.md) | Full endpoint documentation |
-| [Architecture](docs/reference/architecture.md) | System design and components |
-| [Engineering Formulas](docs/reference/engineering-formulas.md) | NFPA 72 / NEC formulas and constants |
-| [Security](docs/reference/security.md) | Security practices and policies |
-| [Contributing](CONTRIBUTING.md) | How to contribute |
-| [Changelog](CHANGELOG.md) | Release history |
-
-### Guides
-
-| Guide | Description |
-|---|---|
-| [First Fire Alarm Design](docs/tutorials/first-fire-alarm-design.md) | Step-by-step tutorial |
-| [Database Setup](docs/how-to/database-setup.md) | PostgreSQL, Redis, Qdrant, Neo4j |
-| [Deployment](docs/how-to/deployment.md) | Docker and production deployment |
-| [Troubleshooting](docs/how-to/troubleshooting.md) | Common issues and solutions |
+Every calculation is deterministic and reproducible. The platform never relies on heuristic fallbacks during safety-critical evaluation cycles.
 
 ---
 
-## Testing
+## 3. Technology Stack
+
+| Layer | Component | Specification |
+|---|---|---|
+| **API Layer** | FastAPI 0.138+ | Asynchronous Python 3.8+ runtime |
+| **UI Layer** | React 18 & Vite 8 | TypeScript 5.9 with Tailwind CSS 4 |
+| **Storage** | PostgreSQL & SQLite | Supabase primary with WAL SQLite |
+| **Caching & Search** | Redis & Qdrant | In-memory cache and vector memory |
+| **Security** | RBAC & HMAC-SHA256 | Strict origin CORS and Security Headers |
+
+The stack isolates calculation logic from presentation layers. This separation guarantees complete auditability across all execution paths.
+
+---
+
+## 4. Prerequisites
+
+Before installing BAZSpark, verify your environment meets the minimum runtime specifications.
+
+- Python 3.8 or higher
+- Node.js 22.0.0 or higher
+- npm 11.0.0 or higher
+- Git 2.40+
+
+---
+
+## 5. Quick Start Guide
+
+Clone the repository and install backend dependencies in editable mode with development flags.
 
 ```bash
-# Run all tests
+git clone https://github.com/ahmdelbaz28-ux/BAZspark.git
+cd BAZspark
+pip install -e ".[dev,parsing]"
+```
+
+Export required environment tokens and launch the FastAPI server.
+
+```bash
+export FIREAI_API_KEY="your-secure-api-key"
+export FIREAI_SESSION_SECRET=$(python3 -m backend.session_secret generate | tail -1)
+uvicorn backend.app:app --reload --host 127.0.0.1 --port 8000
+```
+
+Install frontend dependencies and start the Vite development server.
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Access the UI at `http://localhost:5173`. Open Settings, input your `FIREAI_API_KEY`, and authenticate.
+
+---
+
+## 6. Directory Structure
+
+```
+BAZspark/
+├── fireai/              # NFPA 72 engine and audit verification
+├── backend/             # FastAPI routers, services, and models
+├── frontend/            # React SPA user interface
+├── marine/              # SOLAS marine compliance engine
+├── qomn_fire/           # Standalone QOMN-FIRE kernel
+├── facp_distributed/    # Distributed FACP agent pipeline
+├── parsers/             # DXF, DWG, IFC, and PDF parsers
+├── deploy/              # Docker, Kubernetes, and Helm manifests
+└── tests/               # Unit and integration test suites
+```
+
+---
+
+## 7. Verification & Testing
+
+Execute the test suite to verify calculation accuracy and router integrity.
+
+```bash
+# Run complete test suite
 pytest
 
-# Run with coverage
+# Generate HTML coverage report
 pytest --cov=fireai --cov-report=html
-
-# Run specific module
-pytest tests/test_nfpa72.py -v
 ```
 
-**Current status:** 8,557+ tests collected.
+The repository maintains strict test gate enforcement. Pull requests must pass all security and calculation gates before merge.
 
 ---
 
-## Deployment
+## 8. Production Deployment
 
-### Docker (Recommended)
+Deploy the platform container using Docker Compose.
 
 ```bash
-export FIREAI_API_KEY="your-strong-key"
+export FIREAI_API_KEY="your-production-key"
 export FIREAI_SESSION_SECRET=$(python3 -m backend.session_secret generate | tail -1)
-
 docker-compose up -d
-curl http://localhost:8000/api/health
 ```
 
-### Kubernetes
+For Kubernetes clusters, install using the Helm chart.
 
 ```bash
 helm install fireai deploy/helm/fireai
 ```
 
-See [docs/how-to/deployment.md](docs/how-to/deployment.md) for full details.
-
 ---
 
-## Project Structure
+## 9. Governance & License
 
-```
-BAZspark/
-├── fireai/              # Core engine (NFPA 72, spatial analysis, audit trail)
-├── backend/             # FastAPI backend (247+ endpoints)
-├── frontend/            # React SPA (22 pages)
-├── marine/              # Marine fire safety (SOLAS, IEC 60092)
-├── qomn_fire/           # QOMN-FIRE engine (standalone)
-├── facp_distributed/    # Distributed FACP agent system
-├── parsers/             # Multi-format file parsers
-├── deploy/              # Docker, Kubernetes, Helm, observability
-├── tests/               # 8,557+ tests
-└── docs/                # Documentation (Diátaxis structure)
-    ├── tutorials/       # Learning-oriented guides
-    ├── how-to/          # Problem-oriented recipes
-    ├── reference/       # Information-oriented specs
-    └── explanation/     # Understanding-oriented discussions
-```
+BAZSpark is a safety-critical system. All contributions undergo strict engineering review.
 
----
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-**Important:** This is a safety-critical system. All contributions undergo additional review for engineering calculations and compliance verification.
-
----
-
-## License
-
-MIT License. See [LICENSE](LICENSE).
-
----
-
-## Acknowledgments
+Distributed under the MIT License. See [LICENSE](LICENSE) for details.
 
 Designed and developed by **Eng. Ahmed Elbaz**.
-
-Built on NFPA 72-2022, NEC 2023, IBC, and SOLAS standards.
