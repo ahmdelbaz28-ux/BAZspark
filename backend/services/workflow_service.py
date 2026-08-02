@@ -310,7 +310,7 @@ def node_parse(state: PipelineState) -> PipelineState:
 
             extractor = GeometryExtractor(file_path)
             walls = extractor.extract_walls()
-            rooms_result, _report = extract_rooms_from_walls(walls, pdf_path=file_path)  # NOSONAR - python:S930
+            rooms_result, _report = extract_rooms_from_walls(walls, pdf_path=file_path)  # NOSONAR — S930: pdf_path accepted by adapters.pdf_to_rooms_adapter.extract_rooms_from_walls(walls, pdf_path=""); SonarCloud can't resolve delayed import
 
             rooms = [
                 {

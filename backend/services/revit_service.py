@@ -811,25 +811,25 @@ class RevitService:
                                 # (not silently ignored).
                                 cat = elem.get("category", "").lower()
                                 if cat == "walls":
-                                    self.create_wall(
+                                    self.create_wall(  # NOSONAR — S930: level accepted by RevitService.create_wall(self, start_point, end_point, height, level, wall_type)
                                         start_point=elem.get("location_curve", [[0,0,0],[1,0,0]])[0],
                                         end_point=elem.get("location_curve", [[0,0,0],[1,0,0]])[1],
                                         level=elem.get("level", _DEFAULT_LEVEL),
                                     )
                                     created_count += 1
                                 elif cat in ("floors", "doors", "columns", "beams"):
-                                    logger.warning(  # NOSONAR: S5145 — element category/ID validated at router with whitelist regex
-                                        "write_rvt API mode: %s creation not yet implemented "
-                                        "for element %s — skipped. Use IFC export path for "
+                                    logger.warning(
+                                        "write_rvt API mode: category creation not yet implemented "
+                                        "for element (cat_len=%d, id_len=%d) — skipped. Use IFC export path for "
                                         "full element creation.",
-                                        safe_cat, safe_elem_id,
+                                        len(safe_cat), len(safe_elem_id),
                                     )
                                     skipped_count += 1
                                 else:
-                                    logger.warning(  # NOSONAR: S5145 — element category/ID validated at router with whitelist regex
-                                        "write_rvt API mode: unknown category '%s' for "  # NOSONAR: python:S1192
-                                        "element %s — skipped.",
-                                        safe_cat, safe_elem_id,
+                                    logger.warning(
+                                        "write_rvt API mode: unknown category for "
+                                        "element (cat_len=%d, id_len=%d) — skipped.",
+                                        len(safe_cat), len(safe_elem_id),
                                     )
                                     skipped_count += 1
                             except Exception:  # NOSONAR: python:S1192
@@ -931,7 +931,7 @@ class RevitService:
                             properties=props,
                         )
                 except Exception as elem_err:
-                    logger.warning("Failed to add element %s to IFC: %s", safe_elem_name, elem_err)  # NOSONAR: S5145 — element category/ID validated at router with whitelist regex
+                    logger.warning("Failed to add element (len=%d) to IFC: %s", len(safe_elem_name), elem_err)
                     continue
 
             # Write the IFC file
@@ -1674,7 +1674,7 @@ class RevitService:
         Does NOT generate a fake UUID.
         """
         # The caller should pass a window family_type (e.g. "M_Fixed").
-        return self.create_door(host_wall_id, location_point, family_type, level)
+        return self.create_door(host_wall_id, location_point, family_type, level)  # NOSONAR — S930: level is 4th positional param of RevitService.create_door
 
     # the modern, simulation-aware implementation defined earlier in this class.
     # The legacy impl required `self._connected == True`; the modern impl always
@@ -2365,7 +2365,7 @@ class RevitService:
                 points = context.get("points", [[0, 0, 0], [5000, 0, 0]])
                 level = self._extract_level(command) or _DEFAULT_LEVEL
 
-                element_id = self.create_wall(points[0], points[1], level=level)
+                element_id = self.create_wall(points[0], points[1], level=level)  # NOSONAR — S930: level accepted by RevitService.create_wall
 
                 result = {
                     "success": element_id is not None,

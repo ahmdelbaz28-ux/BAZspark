@@ -446,7 +446,7 @@ async def store_provider_key(
 
     logger.info(
         "Stored %s Vision key id=%s masked=%s model=%s",
-        provider, key_id, masked, _safe_log_fragment(model_name),  # NOSONAR: python:S5145 — model_name sanitized by _safe_log_fragment (strips control chars, truncates)
+        _safe_log_fragment(provider), key_id, _safe_log_fragment(masked), _safe_log_fragment(model_name),
     )
     _audit_key_event("added", key_id, masked, {"provider": provider, "model_name": model_name, "base_url": base_url})
     return _row_to_response(row)
@@ -723,7 +723,7 @@ async def test_provider_key(
     try:
         plaintext = decrypt_key(row["encrypted_key"])
     except ValueError as e:
-        logger.exception("Vision key test (decrypt) failed for id=%s: %s", key_id, type(e).__name__)  # NOSONAR: python:S5145 — key_id is a server-generated UUID, not user-controlled
+        logger.exception("Vision key test (decrypt) failed for id=%s: %s", key_id[:36], type(e).__name__)
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
@@ -738,7 +738,7 @@ async def test_provider_key(
                 (utc_now_iso(), key_id),
             )
     except Exception as e:
-        logger.debug("Failed to update last_used_at for id=%s: %s", key_id, type(e).__name__)
+        logger.debug("Failed to update last_used_at for id=%s: %s", key_id[:36], type(e).__name__)
 
     test_url = f"{base_url}{test_path}"
     try:
@@ -763,7 +763,7 @@ async def test_provider_key(
             masked_key=masked,
         )
     except httpx.HTTPError as e:
-        logger.debug("Vision key test (network) failed for id=%s: %s", key_id, type(e).__name__)
+        logger.debug("Vision key test (network) failed for id=%s: %s", key_id[:36], type(e).__name__)
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,
@@ -771,7 +771,7 @@ async def test_provider_key(
             masked_key=masked,
         )
     except Exception as e:
-        logger.exception("Vision key test (unknown) failed for id=%s: %s", key_id, type(e).__name__)
+        logger.exception("Vision key test (unknown) failed for id=%s: %s", key_id[:36], type(e).__name__)
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,

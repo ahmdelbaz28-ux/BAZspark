@@ -83,9 +83,8 @@ class IFCParser(ParserBase):
                 raw_area = attrs.get('Area', 0)
                 if raw_area < 0:
                     logging.getLogger(__name__).warning(
-                        "Negative area for space: %s. Space REJECTED — "
-                        "manual fire protection design REQUIRED.",
-                        raw_area,  # nosec: S5145 — numeric value only, not user-controlled text
+                        "Negative area detected for space. Space REJECTED — "
+                        "manual fire protection design REQUIRED."
                     )
                     continue
 

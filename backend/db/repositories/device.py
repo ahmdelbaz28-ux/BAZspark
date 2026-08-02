@@ -162,7 +162,7 @@ class DeviceRepository(BaseRepository):
             if deleted_conns > 0:
                 logger.info(
                     "Deleted %s orphaned connection(s) for device",
-                    deleted_conns,  # nosec: S5145 — only logging count, not device_id
+                    deleted_conns,
                 )
             cur.execute(
                 f"DELETE FROM devices WHERE id = {self.db._ph()} AND project_id = {self.db._ph()}",

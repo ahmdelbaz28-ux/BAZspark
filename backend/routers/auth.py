@@ -220,7 +220,7 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
 
     # Rate limit check
     if not _check_rate_limit(client_ip):
-        logger.warning("Rate limit exceeded for login attempts from %s", client_ip)
+        logger.warning("Rate limit exceeded for login attempts from %s", client_ip[:45])
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=429,
             detail="Too many failed login attempts. Try again in 5 minutes.",
@@ -243,7 +243,7 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
         if body.username or body.password:
             logger.warning(
                 "Login attempt with username/password (ignored — S-05 backdoor removed) from %s",
-                client_ip,
+                client_ip[:45],
             )
         raise HTTPException(status_code=400, detail="API key is required")  # NOSONAR — S8415: assignment kept for readability / debuggability
 

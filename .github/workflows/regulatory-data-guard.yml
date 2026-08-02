@@ -27,8 +27,11 @@ on:
       - 'facp_system/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
 jobs:
   check-regulatory-attestation:
+    timeout-minutes: 30
     name: "Require PE sign-off or standard citation"
     runs-on: ubuntu-latest
     permissions:

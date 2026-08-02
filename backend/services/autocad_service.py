@@ -1013,23 +1013,23 @@ class AutoCADService:
         safe_handle = str(handle) if handle else "<empty>"
         try:
             if not self.connected:
-                logger.error("AutoCAD service not connected. Cannot modify entity %s.", safe_handle)  # NOSONAR: S5145 — handle validated at router with hex regex ^[0-9A-Fa-f]{1,16}$
+                logger.error("AutoCAD service not connected. Cannot modify entity (len=%d).", len(safe_handle))
                 return False
             if not self.acad_doc:
-                logger.warning(  # NOSONAR: S5145 — handle validated at router with hex regex ^[0-9A-Fa-f]{1,16}$
-                    "modify_entity %s skipped: simulation mode (no acad_doc). "
-                    "Returning False honestly — no entity was modified.",
-                    safe_handle,
+                logger.warning(
+                    "modify_entity skipped: simulation mode (no acad_doc). "
+                    "Returning False honestly — no entity was modified (len=%d).",
+                    len(safe_handle),
                 )
                 return False
             if not properties:
-                logger.warning("modify_entity %s: no properties provided.", safe_handle)  # NOSONAR: S5145 — handle validated at router with hex regex ^[0-9A-Fa-f]{1,16}$
+                logger.warning("modify_entity: no properties provided (len=%d).", len(safe_handle))
                 return False
 
             # Real AutoCAD COM path — use original handle for COM call
             entity = self.acad_doc.HandleToObject(handle)
             if entity is None:
-                logger.warning("Entity with handle %s not found in document.", safe_handle)  # NOSONAR: S5145 — handle validated at router with hex regex ^[0-9A-Fa-f]{1,16}$
+                logger.warning("Entity with handle (len=%d) not found in document.", len(safe_handle))
                 return False
 
             applied = 0
@@ -1041,22 +1041,22 @@ class AutoCADService:
                         setattr(entity, key, value)
                         applied += 1
                     else:
-                        logger.warning(  # NOSONAR: S5145 — handle validated at router with hex regex ^[0-9A-Fa-f]{1,16}$
-                            "Entity %s has no attribute '%s' — skipped.",
-                            safe_handle, str(key) if key else "<empty>",
+                        logger.warning(
+                            "Entity (len=%d) has no attribute '%s' — skipped.",
+                            len(safe_handle), str(key)[:50] if key else "<empty>",
                         )
                 except Exception as attr_err:
-                    logger.warning(  # NOSONAR: S5145 — handle validated at router with hex regex ^[0-9A-Fa-f]{1,16}$
-                        "Could not set %s=%s on entity %s: %s",
-                        str(key) if key else "<empty>",
-                        str(value)[:100] if value else "<empty>",
-                        safe_handle, attr_err,
+                    logger.warning(
+                        "Could not set %s=%s on entity (len=%d): %s",
+                        str(key)[:50] if key else "<empty>",
+                        str(value)[:50] if value else "<empty>",
+                        len(safe_handle), attr_err,
                     )
             if applied == 0:
-                logger.warning("modify_entity %s: no applicable properties were set.", safe_handle)  # NOSONAR: S5145 — handle validated at router with hex regex ^[0-9A-Fa-f]{1,16}$
+                logger.warning("modify_entity: no applicable properties were set (len=%d).", len(safe_handle))
                 return False
-            logger.info("Modified entity %s: %d property/properties applied.", safe_handle, applied)  # NOSONAR: S5145 — handle validated at router with hex regex ^[0-9A-Fa-f]{1,16}$
+            logger.info("Modified entity (len=%d): %d property/properties applied.", len(safe_handle), applied)
             return True
         except Exception as e:
-            logger.exception("Error modifying entity %s: %s", safe_handle, e)  # NOSONAR: S5145 — handle validated at router with hex regex ^[0-9A-Fa-f]{1,16}$
+            logger.exception("Error modifying entity (len=%d): %s", len(safe_handle), e)
             return False

@@ -916,7 +916,7 @@ async def get_csrf_token(request: Request) -> Dict[str, Any]:
     forwarded_proto = request.headers.get("x-forwarded-proto", "").lower()
     is_https = forwarded_proto == "https" or request.url.scheme == "https"
 
-    cookie_header = build_csrf_cookie_header(token, is_https=is_https)  # NOSONAR - python:S930
+    cookie_header = build_csrf_cookie_header(token, is_https=is_https)  # NOSONAR — S930: is_https accepted by build_csrf_cookie_header(token, is_https=True); SonarCloud can't resolve delayed import inside try block
 
     response = JSONResponse(content={
         "csrf_token": token,

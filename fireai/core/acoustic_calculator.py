@@ -390,7 +390,7 @@ def calculate_min_speakers_for_room(
             mode=mode,
             ref_distance_m=ref_distance_m,
             room_absorption_m2=room_absorption_m2,
-            room_volume_m3=room_length_m * room_width_m * room_height_m,
+            room_volume_m3=room_length_m * room_width_m * room_height_m,  # NOSONAR — S930: room_volume_m3 accepted by check_audibility_compliance(source_dba, target_distance_m, ambient_dba, mode, ref_distance_m, room_absorption_m2, room_volume_m3)
         )
 
         if result.compliant:
@@ -409,7 +409,7 @@ def calculate_min_speakers_for_room(
         mode=mode,
         ref_distance_m=ref_distance_m,
         room_absorption_m2=room_absorption_m2,
-        room_volume_m3=room_length_m * room_width_m * room_height_m,
+        room_volume_m3=room_length_m * room_width_m * room_height_m,  # NOSONAR — S930: room_volume_m3 accepted by check_audibility_compliance
     )
 
     return SpeakerPlacementResult(

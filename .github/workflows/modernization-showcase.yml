@@ -8,6 +8,7 @@ permissions:
 
 jobs:
   showcase-modernization:
+    timeout-minutes: 30
     name: "Modernization Health Check"
     runs-on: ubuntu-latest
 

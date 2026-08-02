@@ -683,7 +683,7 @@ async def get_elements(
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
-    elements = svc.get_elements(category=category, element_class=element_class)
+    elements = svc.get_elements(category=category, element_class=element_class)  # NOSONAR — S930: element_class accepted by RevitService.get_elements; SonarCloud can’t resolve Union[RevitService, AutoCADService] return type from CADGateway
     return ElementsResponse(success=True, elements=elements, count=len(elements))
 
 
@@ -734,7 +734,7 @@ async def create_wall(request: Request, body: CreateWallRequest) -> ElementRespo
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
-    element_id = svc.create_wall(
+    element_id = svc.create_wall(  # NOSONAR — S930: height/level/wall_type accepted by RevitService.create_wall; SonarCloud can’t resolve Union return type
         start_point=body.start_point,
         end_point=body.end_point,
         height=body.height,
@@ -757,7 +757,7 @@ async def create_floor(request: Request, body: CreateFloorRequest) -> ElementRes
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
-    element_id = svc.create_floor(
+    element_id = svc.create_floor(  # NOSONAR — S930: level accepted by RevitService.create_floor; SonarCloud can’t resolve Union return type
         boundary_points=body.boundary_points,
         level=body.level,
         floor_type=body.floor_type
@@ -778,7 +778,7 @@ async def create_door(request: Request, body: CreateDoorRequest) -> ElementRespo
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
-    element_id = svc.create_door(
+    element_id = svc.create_door(  # NOSONAR — S930: level accepted by RevitService.create_door; SonarCloud can’t resolve Union return type
         host_wall_id=body.host_wall_id,
         location_point=body.location_point,
         family_type=body.family_type,
@@ -800,7 +800,7 @@ async def create_window(request: Request, body: CreateWindowRequest) -> ElementR
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
-    element_id = svc.create_window(
+    element_id = svc.create_window(  # NOSONAR — S930: level accepted by RevitService.create_window; SonarCloud can’t resolve Union return type
         host_wall_id=body.host_wall_id,
         location_point=body.location_point,
         family_type=body.family_type,
@@ -829,7 +829,7 @@ async def create_column(request: Request, body: CreateColumnRequest) -> ElementR
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
-    element_id = svc.create_column(
+    element_id = svc.create_column(  # NOSONAR — S930: height/level accepted by RevitService.create_column; SonarCloud can’t resolve Union return type
         location_point=body.location_point,
         height=body.height,
         level=body.level,
@@ -858,7 +858,7 @@ async def create_beam(request: Request, body: CreateBeamRequest) -> ElementRespo
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
-    element_id = svc.create_beam(
+    element_id = svc.create_beam(  # NOSONAR — S930: level accepted by RevitService.create_beam; SonarCloud can’t resolve Union return type
         start_point=body.start_point,
         end_point=body.end_point,
         level=body.level,
@@ -887,7 +887,7 @@ async def create_family(request: Request, body: CreateFamilyRequest) -> ElementR
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
-    element_id = svc.create_family_instance(
+    element_id = svc.create_family_instance(  # NOSONAR — S930: level accepted by RevitService.create_family_instance; SonarCloud can’t resolve Union return type
         family_name=body.family_name,
         category=body.category,
         location_point=body.location_point,

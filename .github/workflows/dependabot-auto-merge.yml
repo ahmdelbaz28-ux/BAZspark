@@ -20,6 +20,7 @@ permissions:
 
 jobs:
   auto-merge:
+    timeout-minutes: 30
     name: Dependabot Auto-Merge Evaluator
     runs-on: ubuntu-latest
     if: github.event.pull_request.user.login == 'dependabot[bot]'

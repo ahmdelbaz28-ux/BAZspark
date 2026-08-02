@@ -23,8 +23,12 @@ concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+  packages: read
 jobs:
   test:
+    timeout-minutes: 30
     name: Test & Validate
     runs-on: ubuntu-latest
     permissions:
@@ -198,6 +202,7 @@ jobs:
           npm run build
 
   build:
+    timeout-minutes: 30
     name: Build & Push Images
     runs-on: ubuntu-latest
     permissions:
@@ -256,6 +261,7 @@ jobs:
           sbom: true
 
   deploy-staging:
+    timeout-minutes: 30
     name: Deploy to Staging
     runs-on: ubuntu-latest
     permissions:
@@ -345,6 +351,7 @@ jobs:
             curl -sf https://fireai-api.fireai.svc.cluster.local/api/health
 
   deploy-production:
+    timeout-minutes: 30
     name: Deploy to Production
     runs-on: ubuntu-latest
     permissions:

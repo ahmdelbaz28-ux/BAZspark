@@ -143,14 +143,14 @@ async def fds_result_webhook(
                 "error": payload.error,
             }
             await ws_manager.send_to_project(project_id, notification)
-            logger.info(  # NOSONAR — pythonsecurity:S5145: user data truncated to safe length
-                "FDS WebSocket notification sent for job %s (project %s)",
-                payload.job_id[:8] + "...", project_id[:8] + "...",
+            logger.info(
+                "FDS WebSocket notification sent for job (len=%d, project_len=%d)",
+                len(payload.job_id), len(project_id),
             )
     except Exception as exc:
-        logger.warning(  # NOSONAR — pythonsecurity:S5145: user data truncated to safe length
-            "FDS WebSocket notification failed for job %s: %s",
-            payload.job_id[:8] + "...", str(exc)[:100],
+        logger.warning(
+            "FDS WebSocket notification failed for job (len=%d): %s",
+            len(payload.job_id), type(exc).__name__,
         )
 
     return result

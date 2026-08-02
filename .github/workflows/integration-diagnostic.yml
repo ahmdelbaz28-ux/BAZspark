@@ -29,6 +29,7 @@ permissions:
 
 jobs:
   diagnostic:
+    timeout-minutes: 30
     name: End-to-end integration health check
     runs-on: ubuntu-latest
     steps:

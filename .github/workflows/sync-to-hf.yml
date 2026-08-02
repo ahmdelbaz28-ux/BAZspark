@@ -46,6 +46,7 @@ env:
 
 jobs:
   sync-to-hf:
+    timeout-minutes: 30
     name: Mirror runtime subset to HuggingFace Space
     # S7631 FIX: Only sync from the canonical repository, not from forks.
     if: >

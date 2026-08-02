@@ -26,6 +26,7 @@ permissions:
 
 jobs:
   trivy-scan:
+    timeout-minutes: 30
     name: Trivy Vulnerability Scan
     runs-on: ubuntu-latest
     steps:

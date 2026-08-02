@@ -203,7 +203,7 @@ async def update_feature_flag(
     _FEATURE_FLAG_OVERRIDES[body.flag] = body.enabled
     logger.info(
         "Feature flag '%s' set to %s by admin (in-memory override)",
-        body.flag,
+        body.flag[:50],
         body.enabled,
     )
     return success(
@@ -371,9 +371,9 @@ async def update_env_config(
         _ENV_CONFIG_OVERRIDES[category].update(overrides)
         applied[category] = list(overrides.keys())
         logger.info(
-            "Env config overrides applied for category '%s': %s (in-memory)",
-            category,
-            list(overrides.keys()),
+            "Env config overrides applied for category (len=%d): %d keys (in-memory)",
+            len(category),
+            len(overrides),
         )
 
     return success(

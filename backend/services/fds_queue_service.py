@@ -188,10 +188,10 @@ def handle_fds_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
     expected_secret = _compute_webhook_secret(job_id)
     received_secret = payload.get("secret", "") or ""
     if not expected_secret or not received_secret:
-        logger.warning("FDS Webhook: missing secret for job %s", job_id)
+        logger.warning("FDS Webhook: missing secret for job (len=%d)", len(job_id))
         return {"error": "Invalid webhook secret"}
     if not hmac.compare_digest(received_secret, expected_secret):
-        logger.warning("FDS Webhook: invalid secret for job %s", job_id)
+        logger.warning("FDS Webhook: invalid secret for job (len=%d)", len(job_id))
         return {"error": "Invalid webhook secret"}
 
     job = _get_job_store().get(job_id)

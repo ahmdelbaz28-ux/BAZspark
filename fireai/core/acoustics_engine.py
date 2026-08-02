@@ -632,8 +632,8 @@ class AcousticsEngine:
 
         logger.info(
             "check_coverage: room=%s mode=%s speakers=%d points=%d",
-            room_id,
-            mode,
+            room_id[:50],
+            mode[:50],
             len(speakers),
             len(check_points),
         )
@@ -701,13 +701,13 @@ class AcousticsEngine:
         if compliant:
             logger.info(
                 "check_coverage PASS: room=%s margin=%.1f dB",
-                room_id,
+                room_id[:50],
                 result.margin_dba,
             )
         else:
             logger.warning(
                 "check_coverage FAIL: room=%s violations=%d",
-                room_id,
+                room_id[:50],
                 len(violations),
             )
 

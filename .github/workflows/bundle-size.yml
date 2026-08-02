@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   bundle-size:
+    timeout-minutes: 30
     name: Bundle Size Gate
     runs-on: ubuntu-latest
     steps:
