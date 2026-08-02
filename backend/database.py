@@ -221,18 +221,30 @@ class Database:
                 self._pg_pool.closeall()
             except Exception:
                                 logger.debug("Suppressed Exception in database.py", exc_info=True)
-            self._database_url = neon_url
-            self._pg_pool = pg_pool.ThreadedConnectionPool(
-                minconn=2,
-                maxconn=20,
-                dsn=neon_url,
-            )
-            self._conn = None
-            logger.info(
-                "Digital Twin database initialized (PostgreSQL via NEON_DATABASE_URL fallback) â€” "
-                "pool: 2â€“20 connections, URL: %s",
-                neon_url.split("@")[-1],
-            )
+            try:
+                self._database_url = neon_url
+                self._pg_pool = pg_pool.ThreadedConnectionPool(
+                    minconn=2,
+                    maxconn=20,
+                    dsn=neon_url,
+                )
+                self._conn = None
+                logger.info(
+                    "Digital Twin database initialized (PostgreSQL via NEON_DATABASE_URL fallback) "
+                    "pool: 2-20 connections, URL: %s",
+                    neon_url.split("@")[-1],
+                )
+                self._init_schema_pg()
+                return
+            except Exception as neon_exc:
+                # NEON also unreachable (e.g. both Supabase and Neon blocked
+                # from the container) - degrade to local SQLite so the app
+                # still starts and /health reports ok.
+                self._degrade_to_sqlite(
+                    f"PostgreSQL unreachable (primary + NEON: "
+                    f"{type(neon_exc).__name__}): {neon_exc}"
+                )
+                return
         self._init_schema_pg()
 
     @contextmanager
