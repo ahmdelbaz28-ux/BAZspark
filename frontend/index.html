@@ -53,7 +53,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="" />
 
-<!-- H-01 FIX: Removed 'unsafe-inline' from style-src.
+    <!-- H-01 FIX: Removed 'unsafe-inline' from style-src.
           - style-src 'self' covers /critical.css (external stylesheet)
             and Vite's hashed CSS chunks.
           - style-src-attr 'unsafe-inline' covers React style={{...}}
@@ -61,7 +61,12 @@
             arbitrary <style> elements).
           - https://fonts.googleapis.com is needed for the Inter font
             progressive enhancement loaded via <link> above.
+          NOSONAR on the meta line: Web:S7039 — the style-src-attr
+          'unsafe-inline' token is required by React's inline style
+          props (100+ usages across the app); CSP3 restricts it to
+          style attributes only, which is the OWASP-accepted pattern.
      -->
+     <!-- NOSONAR: Web:S7039 — style-src-attr 'unsafe-inline' required for React style props (CSP3 attribute-only scope) -->
      <meta http-equiv="Content-Security-Policy"
       content="default-src 'self';
     script-src 'self';
@@ -69,7 +74,7 @@
     style-src-attr 'unsafe-inline';
     img-src 'self' data: blob:;
     font-src 'self' data: https://fonts.gstatic.com;
-    connect-src 'self' http://localhost:8000 ws://localhost:* http://127.0.0.1:8000 https://ahmdelbaz28-bazspark.hf.space https://revit-rust.vercel.app __CSP_CONNECT_SRC__;
+    connect-src 'self' http://localhost:8000 ws://localhost:5173 ws://localhost:8000 http://127.0.0.1:8000 https://ahmdelbaz28-bazspark.hf.space https://revit-rust.vercel.app __CSP_CONNECT_SRC__;
     base-uri 'self';
     form-action 'self';" />
 

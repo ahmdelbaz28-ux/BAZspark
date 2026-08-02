@@ -9,10 +9,10 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="" />
 
-    <!-- Security: Content Security Policy
-         style-src-attr 'unsafe-inline' covers React style={{...}} props
-         (CSP Level 3 — style ATTRIBUTES only, not arbitrary <style>) -->
-    <meta
+    <!-- Security: Content Security Policy (https://ahmdelbaz28-bazspark.hf.space wss://ahmdelbaz28-bazspark.hf.space injected at build time).
+         NOSONAR below: Web:S7039 — style-src-attr 'unsafe-inline' is required by React's inline style={{...}} props (100+
+         usages); CSP3 restricts it to style ATTRIBUTES only, never <style> elements (OWASP-accepted pattern). -->
+    <!-- NOSONAR: Web:S7039 -- style-src-attr 'unsafe-inline' required for React inline style props (CSP3 attribute-only scope) --><meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self';
                script-src 'self';
@@ -50,9 +50,9 @@
   </head>
   <body>
     <noscript>
-      <div style="text-align:center;padding:2rem;color:#e2e8f0;background:#0f172a;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-        <h1 style="font-size:1.5rem;margin-bottom:1rem;">FireAI requires JavaScript</h1>
-        <p style="color:#94a3b8;">Please enable JavaScript in your browser settings to use this application.</p>
+      <div class="noscript-box">
+        <h1 class="noscript-h1">FireAI requires JavaScript</h1>
+        <p class="noscript-p">Please enable JavaScript in your browser settings to use this application.</p>
       </div>
     </noscript>
     <div id="root">

@@ -38,3 +38,24 @@ body {
   font-size: 0.875rem;
   letter-spacing: 0.05em;
 }
+
+/* <noscript> fallback (replaces inline style=" attributes) */
+.noscript-box {
+  text-align: center;
+  padding: 2rem;
+  color: #e2e8f0;
+  background: #0f172a;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.noscript-h1 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+.noscript-p {
+  color: #94a3b8;
+}
+

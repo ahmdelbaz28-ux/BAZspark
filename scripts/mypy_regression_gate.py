@@ -20,6 +20,7 @@ To update the baseline after fixing a batch of type errors:
 """
 from __future__ import annotations
 
+import os
 import re
 import shlex
 import subprocess
@@ -42,6 +43,40 @@ def _validate_target(raw: str) -> None:
     if re.search(r'[;&|`$(){}!]', raw):
         print(f"ERROR: --target path contains shell metacharacters (got: {raw})", file=sys.stderr)
         sys.exit(2)
+
+
+# Allowlist of repository directories that may be passed to mypy via --target.
+# S8705 fix: untrusted CLI arguments must be validated before being passed to
+# OS commands, so we reject anything outside the known source directories.
+_ALLOWED_TARGETS = frozenset({
+    "backend/",
+    "fireai/",
+    "core/",
+    "parsers/",
+    "adapters/",
+    "integration/",
+    "qomn_conduit/",
+    "qomn_fire/",
+})
+
+
+def _validate_targets(raw_targets: list[str]) -> list[str]:
+    """Validate --target values against the allowlist of repo directories."""
+    validated: list[str] = []
+    for target in raw_targets:
+        norm = target.replace("\\", "/").rstrip("/") + "/"
+        if norm not in _ALLOWED_TARGETS:
+            print(
+                f"ERROR: target '{target}' is not in the allowlist "
+                f"{sorted(_ALLOWED_TARGETS)}",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
+        if not os.path.isdir(target):
+            print(f"ERROR: target directory '{target}' does not exist", file=sys.stderr)
+            raise SystemExit(2)
+        validated.append(target)
+    return validated
 
 
 def main() -> int:  # NOSONAR — S3776: CI gate orchestrates multiple pipeline steps
@@ -68,6 +103,9 @@ def main() -> int:  # NOSONAR — S3776: CI gate orchestrates multiple pipeline 
             i += 2
         else:
             i += 1
+
+    # S8705 fix: only allowlisted directories reach subprocess.
+    targets = _validate_targets(targets)
 
     cmd = ["mypy"] + targets + mypy_args
     print(f"Running: {shlex.join(cmd)}")

@@ -3,7 +3,7 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /build
 
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts # NOSONAR: docker:S6505 — frontend build runs via `npm run build` on line 9, install only
 
 COPY frontend/ ./
 RUN npm run build

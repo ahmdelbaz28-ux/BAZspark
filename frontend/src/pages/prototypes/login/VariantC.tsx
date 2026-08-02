@@ -23,6 +23,13 @@ import {
 
 // ── Particle Canvas (unique to VariantC) ────────────────────────────────
 
+/** CSPRNG float in [0, 1) using crypto.getRandomValues — satisfies SonarCloud typescript:S2245. */
+function randomFloat(): number {
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return buf[0] / 0x100000000;
+}
+
 function ParticleCanvas() {
         const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -43,14 +50,14 @@ function ParticleCanvas() {
                 window.addEventListener("resize", resize);
 
                 for (let i = 0; i < 60; i++) {
-                        // NOSONAR: typescript:S2245 — Math.random is safe here; used only for UI particle animation, not security
+                        // NOSONAR: typescript:S2245 — crypto-backed randomFloat is used here, see helper above
                         particles.push({
-                                x: Math.random() * canvas.width,
-                                y: Math.random() * canvas.height,
-                                vx: (Math.random() - 0.5) * 0.3,
-                                vy: (Math.random() - 0.5) * 0.3,
-                                r: Math.random() * 1.5 + 0.5,
-                                a: Math.random() * 0.4 + 0.1,
+                                x: randomFloat() * canvas.width,
+                                y: randomFloat() * canvas.height,
+                                vx: (randomFloat() - 0.5) * 0.3,
+                                vy: (randomFloat() - 0.5) * 0.3,
+                                r: randomFloat() * 1.5 + 0.5,
+                                a: randomFloat() * 0.4 + 0.1,
                         });
                 }
 

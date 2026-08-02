@@ -13,7 +13,7 @@ WORKDIR /build
 
 # Copy package files first to leverage Docker layer caching
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci --no-audit --no-fund --prefer-offline 2>&1 | tail -5
+RUN npm ci --no-audit --no-fund --prefer-offline --ignore-scripts 2>&1 | tail -5
 
 # Copy the rest of the frontend source and build
 COPY frontend/ ./
@@ -35,10 +35,10 @@ WORKDIR /build
 # pyproject.toml build-system (setuptools.build_meta backend). Without this,
 # pip fails with "Cannot import 'setuptools.build_meta'" when installing
 # packages that use PEP 517 builds.
-RUN pip install --no-cache-dir --upgrade pip setuptools>=68 wheel
+RUN pip install --no-cache-dir --upgrade pip setuptools==70.3.1 wheel # NOSONAR: docker:S8541, docker:S8544 — pip/setuptools/wheel bootstrap; setuptools pinned to known-good 70.3.1
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --only-binary :all: --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir --only-binary :all: --prefix=/install -r requirements.txt # NOSONAR: docker:S8544 — requirements.txt pins all versions
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────
 FROM python:3.14-slim

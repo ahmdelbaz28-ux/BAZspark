@@ -101,11 +101,20 @@ export const DWGPage: React.FC = () => {
 
         {/* Upload Zone */}
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Upload DWG or DXF file"
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={onFileDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
+          className={`relative border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
             dragOver
               ? "border-cyan-400 bg-cyan-500/5"
               : "border-slate-600 bg-slate-800/30 hover:border-slate-500"

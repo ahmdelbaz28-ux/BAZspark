@@ -32,11 +32,6 @@ interface SyncStatus {
   connectionCount?: number;
 }
 
-interface SyncStatusResponse {
-  data: SyncStatus;
-  success: boolean;
-}
-
 export const SyncPage: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const queryClient = useQueryClient();
@@ -64,8 +59,9 @@ export const SyncPage: React.FC = () => {
     queryKey: ["sync-status", selectedProjectId],
     queryFn: async () => {
       if (!selectedProjectId) return null;
-      const res = await syncApi.getSyncStatus(selectedProjectId) as SyncStatusResponse;
-      return res.data;
+      // apiCall already unwraps the {success, data} envelope, so the
+      // resolved value IS the SyncStatus payload.
+      return (await syncApi.getSyncStatus(selectedProjectId)) as SyncStatus;
     },
     enabled: !!selectedProjectId,
   });
@@ -74,8 +70,9 @@ export const SyncPage: React.FC = () => {
   const syncMutation = useMutation({
     mutationFn: async () => {
       if (!selectedProjectId) throw new Error("No project selected");
-      const res = await syncApi.syncProject(selectedProjectId) as { data: SyncStatus };
-      return res.data as SyncStatus;
+      // apiCall already unwraps the {success, data} envelope, so the
+      // resolved value IS the SyncStatus payload.
+      return (await syncApi.syncProject(selectedProjectId)) as SyncStatus;
     },
     onSuccess: () => {
       // Refetch status after sync completes

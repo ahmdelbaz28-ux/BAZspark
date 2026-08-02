@@ -739,7 +739,7 @@ async def create_wall(request: Request, body: CreateWallRequest) -> ElementRespo
         end_point=body.end_point,
         height=body.height,
         level=body.level,
-        wall_type=body.wall_type
+        wall_type=body.wall_type,
     )
 
     return ElementResponse(

@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # NOSONAR
-# services/doctr/Dockerfile — DocTR OCR Service for FireAI
+# services/doctr/Dockerfile â€” DocTR OCR Service for FireAI
 # Provides OCR with bounding boxes for scanned floor plans.
-# Runs as a separate Docker container — no AGPL contamination.
+# Runs as a separate Docker container â€” no AGPL contamination.
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -13,12 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt
+RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt # NOSONAR: docker:S8544 — requirements.txt pins all versions
 
 # V248 FIX: Resolved git merge conflict. Kept the non-root user + .dockerignore
 # approach (Updated upstream) which is more secure. The "Stashed changes"
 # version (COPY main.py .) is redundant since COPY . . already includes main.py.
-# Explicit copy of required files only (S6470 fix — avoid recursive COPY)
+# Explicit copy of required files only (S6470 fix â€” avoid recursive COPY)
 COPY requirements.txt ./
 COPY main.py ./
 COPY doctr/ ./doctr/

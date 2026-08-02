@@ -109,11 +109,11 @@ describe("SyncPage", () => {
       }
       return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
     });
-    // Backend sync responses are wrapped as { data: SyncStatus, success: true }
-    // (see backend/routers/sync.py: get_sync_status / sync project), and the
-    // component reads res.data — so the mocks resolve the wrapped shape.
-    mockGetSyncStatus.mockResolvedValue({ data: MOCK_SYNC_STATUS_SYNCED });
-    mockSyncProject.mockResolvedValue({ data: MOCK_SYNC_STATUS_SYNCED });
+    // The real syncApi methods go through apiCall, which ALREADY unwraps the
+    // backend's { data, success } envelope (see apiClient.fetchWithRetry), so
+    // the mocked syncApi resolves the payload shape directly.
+    mockGetSyncStatus.mockResolvedValue(MOCK_SYNC_STATUS_SYNCED);
+    mockSyncProject.mockResolvedValue(MOCK_SYNC_STATUS_SYNCED);
   });
 
   it("renders the page title", () => {

@@ -244,6 +244,9 @@ class MockEventBus:
         self.subscribers = {}
         self.event_queue = asyncio.Queue()
         self.running = False
+        # Strong refs to background tasks so the event loop doesn't GC them
+        # before completion (fixes SonarCloud python:S7502).
+        self._background_tasks: set = set()
 
     async def publish(self, event_data: Dict[str, Any]) -> bool:
         """
@@ -264,8 +267,13 @@ class MockEventBus:
             if event_type in self.subscribers:
                 for handler in self.subscribers[event_type]:
                     try:
-                        # Run handler in background
-                        asyncio.create_task(handler(event_data))
+                        # Run handler in background. Keep a strong reference so
+                        # the task is not garbage-collected before completion
+                        # (SonarCloud python:S7502). The done callback removes
+                        # the ref to avoid unbounded growth.
+                        task = asyncio.create_task(handler(event_data))
+                        self._background_tasks.add(task)
+                        task.add_done_callback(self._background_tasks.discard)
                     except Exception as e:
                         self.logger.error(f"Error in event handler: {e}")
 

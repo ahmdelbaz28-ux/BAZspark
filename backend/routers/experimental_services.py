@@ -197,6 +197,8 @@ async def process_ocr(
     tmp_path: str | None = None
     try:
         # Save upload to temp file
+        # NOSONAR: python:S7493 — single write of in-memory upload content;
+        # aiofiles intentionally not a dep (see digital_twin.py:401 comment).
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             content = await file.read()
             tmp.write(content)
@@ -245,6 +247,8 @@ async def process_scan_to_bim(
     suffix = Path(file.filename or "").suffix or ".bin"
     tmp_path: str | None = None
     try:
+        # NOSONAR: python:S7493 — single write of in-memory upload content;
+        # aiofiles intentionally not a dep (see digital_twin.py:401 comment).
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             content = await file.read()
             tmp.write(content)

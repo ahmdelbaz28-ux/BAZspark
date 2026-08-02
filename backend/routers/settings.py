@@ -75,6 +75,19 @@ router = APIRouter(prefix="/settings/keys", tags=["settings"])
 
 
 # ── V151.1 Audit logging helper ──────────────────────────────────────────────
+def _safe_log_fragment(value: str | None, max_len: int = 64) -> str:
+    """Sanitize user-controlled strings for safe inclusion in log output.
+
+    Strips control characters (including newlines used for log forging) and
+    truncates to a bounded length. Satisfies SonarCloud python:S5145 by making
+    the logged value non-injectable.
+    """
+    if value is None:
+        return ""
+    cleaned = "".join(ch for ch in str(value) if ch.isprintable())
+    return cleaned[:max_len]
+
+
 def _audit_key_event(event_type: str, key_id: str, masked_key: str, extra: dict | None = None) -> None:
     """
     Record a Vision API Keys event in the AuditStore for compliance traceability.
@@ -433,7 +446,7 @@ async def store_provider_key(
 
     logger.info(
         "Stored %s Vision key id=%s masked=%s model=%s",
-        provider, key_id, masked, model_name,  # nosec: S5145 — provider/key_id/masked are server-generated; model_name is validated by _validate_provider()
+        provider, key_id, masked, _safe_log_fragment(model_name),  # NOSONAR: python:S5145 — model_name sanitized by _safe_log_fragment (strips control chars, truncates)
     )
     _audit_key_event("added", key_id, masked, {"provider": provider, "model_name": model_name, "base_url": base_url})
     return _row_to_response(row)
@@ -710,7 +723,7 @@ async def test_provider_key(
     try:
         plaintext = decrypt_key(row["encrypted_key"])
     except ValueError as e:
-        logger.exception("Vision key test (decrypt) failed for id=%s: %s", key_id, type(e).__name__)  # nosec: S5145 — key_id is a server-generated UUID, not user-controlled
+        logger.exception("Vision key test (decrypt) failed for id=%s: %s", key_id, type(e).__name__)  # NOSONAR: python:S5145 — key_id is a server-generated UUID, not user-controlled
         return OpenAIKeyTestResponse(
             ok=False,
             status_code=None,

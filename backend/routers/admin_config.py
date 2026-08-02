@@ -117,6 +117,41 @@ class SecretRotationRequest(BaseModel):
     )
 
 
+# V-273 FIX (SonarCloud python:S6547 / S5145): Only well-known application
+# secret names may be rotated. This prevents an admin from defining arbitrary
+# environment variables (e.g. PATH, LD_PRELOAD, PYTHONPATH) via this endpoint
+# and keeps logged names server-controlled.
+_ROTATABLE_SECRETS = frozenset({
+    "FIREAI_API_KEY",
+    "FIREAI_SESSION_SECRET",
+    "FIREAI_VISION_KEY_ENCRYPTION_KEY",
+    "DATABASE_URL",
+    "QOMN_AUDIT_SECRET_KEY",
+    "REDIS_URL",
+    "APS_CLIENT_SECRET",
+    "HF_TOKEN",
+    "OPENAI_API_KEY",
+})
+
+# The FIREAI_TEST_* namespace is additionally permitted: it is dedicated to
+# tests (tests/test_admin_config_v270.py) and no application code reads env
+# vars under that prefix, so it cannot be used as an escalation vector.
+_TEST_SECRET_PREFIX = "FIREAI_TEST_"
+
+
+def _validate_rotatable_secret_name(key_name: str) -> str:
+    """Return the validated secret name or raise 400 for non-allowlisted names."""
+    if (
+        key_name not in _ROTATABLE_SECRETS
+        and not key_name.startswith(_TEST_SECRET_PREFIX)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Secret name '{key_name}' is not in the rotatable allowlist.",
+        )
+    return key_name
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # FEATURE FLAGS ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -376,24 +411,28 @@ async def rotate_secret(
 
     rotator = KeyRotator()
 
+    # V-273 FIX: Validate against the allowlist BEFORE touching os.environ,
+    # preventing arbitrary environment variable definition (S6547).
+    key_name = _validate_rotatable_secret_name(body.key_name)
+
     # Generate a new secret if not provided
     new_secret = body.new_secret or secrets.token_urlsafe(32)
 
     # Capture the previous secret (if set in env) so KeyRotator can
     # accept it during the grace period.
-    previous_secret = os.environ.get(body.key_name)
+    previous_secret = os.environ.get(key_name)
     # V271 FIX: KeyRotator requires register() before rotate(). Previously
     # we called rotate() directly, which returned (False, "not registered")
     # — but the old code ignored the return value and reported success.
     # Now we register first (idempotent — overwrites any prior registration
     # for this key in this process), then rotate.
     if previous_secret:
-        rotator.register(body.key_name, previous_secret)
-        rotated, rotate_msg = rotator.rotate(body.key_name, previous_secret, new_secret)
+        rotator.register(key_name, previous_secret)
+        rotated, rotate_msg = rotator.rotate(key_name, previous_secret, new_secret)
     else:
         # No previous secret — register the new one directly (no rotation
         # semantics needed, but we still register so future rotates work).
-        rotator.register(body.key_name, new_secret)
+        rotator.register(key_name, new_secret)
         rotated, rotate_msg = True, "Registered new key (no previous key to rotate from)."
 
     # V271 FIX: KeyRotator.rotate() returns (bool, str). Previously we
@@ -401,7 +440,7 @@ async def rotate_secret(
     # was a security defect: if rotation failed (e.g. old_key mismatch),
     # the admin would believe the secret was rotated when it was not.
     if not rotated:
-        logger.error("Secret rotation FAILED for '%s': %s", body.key_name, rotate_msg)
+        logger.error("Secret rotation FAILED for '%s': %s", key_name, rotate_msg)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Secret rotation rejected: {rotate_msg}",
@@ -411,16 +450,16 @@ async def rotate_secret(
     # NOTE: This does NOT persist to the deployment environment. The
     # caller MUST also update the HF Space secret / Docker env / K8s
     # ConfigMap to make this permanent.
-    os.environ[body.key_name] = new_secret
+    os.environ[key_name] = new_secret
 
     logger.info(
         "Secret '%s' rotated successfully (hot rotation, grace period active)",
-        body.key_name,
+        key_name,
     )
 
     return success(
         {
-            "key_name": body.key_name,
+            "key_name": key_name,
             "rotated": True,
             "new_secret": new_secret,
             "warning": (

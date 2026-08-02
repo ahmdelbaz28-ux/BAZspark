@@ -76,6 +76,18 @@ const RELATIONSHIP_TYPES = [
 
 const VECTOR_DIMENSIONS = 128;
 
+/**
+ * Generate a random demo embedding vector using crypto.getRandomValues
+ * (CSPRNG) instead of Math.random. Satisfies SonarCloud typescript:S2245 —
+ * these are demo vectors for the Qdrant UI, and crypto is available in all
+ * modern browsers and in the Vite dev server.
+ */
+function randomEmbedding(dim: number): number[] {
+  const buf = new Float32Array(dim);
+  crypto.getRandomValues(buf);
+  return Array.from(buf, (v) => (v + 1) / 2); // normalize to [0, 1)
+}
+
 export function MultiDBPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -238,7 +250,7 @@ export function MultiDBPage() {
     setLoading(true);
     try {
       // Generate a simple dummy embedding for demonstration
-      const embedding = Array.from({ length: VECTOR_DIMENSIONS }, () => Math.random());
+      const embedding = randomEmbedding(VECTOR_DIMENSIONS);
       await v2Api.storeElementEmbeddings(embedElementId, embedding);
       setEmbedResult(`Embeddings stored for element "${embedElementId}" (${VECTOR_DIMENSIONS} dimensions)`);
       toast({ title: "Embeddings stored in Qdrant" });
@@ -261,7 +273,7 @@ export function MultiDBPage() {
     }
     setLoading(true);
     try {
-      const embedding = Array.from({ length: VECTOR_DIMENSIONS }, () => Math.random());
+      const embedding = randomEmbedding(VECTOR_DIMENSIONS);
       const res = (await v2Api.findSimilarElements(embedding, simLimit)) as {
         data?: { results?: unknown[] };
       };
@@ -1114,7 +1126,7 @@ export function MultiDBPage() {
                     if (!embedElementId) { toast({ title: "Element ID required", variant: "destructive" }); return; }
                     setLoading(true);
                     try {
-                      const embedding = Array.from({ length: VECTOR_DIMENSIONS }, () => Math.random());
+                      const embedding = randomEmbedding(VECTOR_DIMENSIONS);
                       await v2ExtendedApi.storeEmbeddings({ element_id: embedElementId, embedding });
                       toast({ title: "Embeddings stored" });
                     } catch (err) {
@@ -1132,7 +1144,7 @@ export function MultiDBPage() {
                   onClick={async () => {
                     setLoading(true);
                     try {
-                      const embedding = Array.from({ length: VECTOR_DIMENSIONS }, () => Math.random());
+                      const embedding = randomEmbedding(VECTOR_DIMENSIONS);
                       const res = await v2ExtendedApi.findSimilar({ embedding });
                       setSimResults(JSON.stringify(res, null, 2));
                       toast({ title: "Similar elements found" });

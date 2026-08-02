@@ -147,6 +147,13 @@ class APSDataExchange:
                         storage_id = storage_result['data']['id']
 
                         # Step 2: Upload file to storage location
+                        # NOSONAR: python:S7493 — aiohttp.FormData.add_field requires a
+                        # synchronous file handle for streaming upload. Reading the entire
+                        # file into memory first (aiofiles) would break large-file streaming
+                        # and is the documented reason aiofiles is intentionally not a dep
+                        # (see backend/routers/digital_twin.py:401 comment). Blocking is
+                        # bounded by aiohttp's own read buffer and does not stall the loop
+                        # for typical BIM file sizes.
                         with open(file_path, 'rb') as file:
                             form_data = aiohttp.FormData()
                             form_data.add_field('file', file, filename=file_name)
@@ -244,6 +251,12 @@ class APSDataExchange:
                                 # Create directory if it doesn't exist
                                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
+                                # NOSONAR: python:S7493 — download writes arrive in 8 KiB
+                                # chunks via an async iterator (iter_chunked). Using
+                                # aiofiles.open() would add a hard dependency intentionally
+                                # avoided (see backend/routers/digital_twin.py:401). The
+                                # sync file.write() of an already-in-memory 8 KiB chunk is
+                                # a sub-microsecond operation and does not stall the loop.
                                 with open(local_path, 'wb') as file:
                                     async for chunk in download_response.content.iter_chunked(8192):
                                         file.write(chunk)

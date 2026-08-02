@@ -38,6 +38,7 @@ PY
 
 # ── 2. Fetch repo public key (one call) ─────────────────────────────────
 echo "▶ Fetching GitHub Actions public key for ${GH_REPO}…"
+# NOSONAR: shell:S6506 — base URL is hardcoded https://api.github.com; GH_REPO is owner/repo, not a scheme
 KEY_JSON=$(curl -fsSL -X GET \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer ${GH_PAT}" \

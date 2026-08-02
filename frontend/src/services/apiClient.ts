@@ -21,11 +21,64 @@ import {
 
 export class ApiError extends Error {
         status: number;
-        constructor(message: string, status: number) {
+        /** True when the server returned a parseable JSON error body (a definitive application-level answer). */
+        structured: boolean;
+        constructor(message: string, status: number, structured = false) {
                 super(message);
                 this.name = "ApiError";
                 this.status = status;
+                this.structured = structured;
         }
+}
+
+/**
+ * Extract a human-readable message from a failed HTTP response body.
+ * Prefers the JSON `detail`/`message`/`error` fields (FastAPI convention),
+ * falls back to the raw text. `structured` is true when the server returned
+ * a parseable JSON error body — a definitive application-level answer that
+ * retrying will not change.
+ */
+async function extractErrorBody(
+        response: Response,
+): Promise<{ message: string; structured: boolean }> {
+        let raw = "";
+        try {
+                raw = await response.text();
+        } catch {
+                // text() unavailable (e.g. minimal test mocks) — try json() below
+        }
+        if (raw) {
+                try {
+                        const parsed = JSON.parse(raw) as Record<string, unknown> | null;
+                        if (parsed && typeof parsed === "object") {
+                                const msg = parsed.detail ?? parsed.message ?? parsed.error;
+                                if (typeof msg === "string" && msg.trim()) {
+                                        return { message: msg, structured: true };
+                                }
+                                if (Array.isArray(parsed.detail)) {
+                                        return {
+                                                message: JSON.stringify(parsed.detail),
+                                                structured: true,
+                                        };
+                                }
+                        }
+                } catch {
+                        // Not JSON — keep raw text as the message
+                }
+                return { message: raw, structured: false };
+        }
+        try {
+                const parsed = (await response.json()) as Record<string, unknown> | null;
+                if (parsed && typeof parsed === "object") {
+                        const msg = parsed.detail ?? parsed.message ?? parsed.error;
+                        if (typeof msg === "string" && msg.trim()) {
+                                return { message: msg, structured: true };
+                        }
+                }
+        } catch {
+                // No usable JSON body
+        }
+        return { message: "", structured: false };
 }
 
 // ============================================================================
@@ -176,15 +229,19 @@ export class ApiClient {
                                 }
 
                                 if (!response.ok) {
-                                        const errorBody = await response.text().catch(() => "");
+                                        const { message, structured } = await extractErrorBody(response);
                                         throw new ApiError(
-                                                errorBody || `HTTP ${response.status}: ${response.statusText}`,
+                                                message ||
+                                                        `HTTP ${response.status}: ${response.statusText}`,
                                                 response.status,
+                                                structured,
                                         );
                                 }
 
                                 // Handle blob/binary responses
-                                const contentType = response.headers.get("content-type") || "";
+                                // (optional chaining: some environments/test mocks
+                                // omit the Headers object entirely)
+                                const contentType = response.headers?.get?.("content-type") || "";
                                 if (
                                         contentType.includes("application/octet-stream") ||
                                         contentType.includes("application/pdf")
@@ -214,12 +271,15 @@ export class ApiClient {
                         } catch (error) {
                                 lastError = error instanceof Error ? error : new Error(String(error));
 
-                                // Don't retry on client errors (4xx) except 429
+                                // Don't retry on client errors (4xx) except 429, or when the
+                                // server returned a definitive structured error body (JSON
+                                // detail/message) — retrying cannot change that outcome.
                                 if (
                                         error instanceof ApiError &&
-                                        error.status >= 400 &&
-                                        error.status < 500 &&
-                                        error.status !== 429
+                                        (error.structured ||
+                                                (error.status >= 400 &&
+                                                        error.status < 500 &&
+                                                        error.status !== 429))
                                 ) {
                                         throw error;
                                 }

@@ -9,7 +9,7 @@ if ! command -v node &> /dev/null; then
 fi
 
 echo "Installing dependencies..."
-npm install
+npm install --ignore-scripts # NOSONAR: shell:S6505 — CI/dev convenience install, tests don't need lifecycle scripts
 
 echo ""
 echo "Dependencies installed successfully!"

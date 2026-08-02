@@ -65,7 +65,10 @@ class TestCanonicalDumps:
 
     def test_deterministic(self):
         payload = {"b": 2, "a": 1}
-        assert _canonical_dumps(payload) == _canonical_dumps(payload)
+        # Two independent calls of same key order must produce identical output.
+        first = _canonical_dumps(payload)
+        second = _canonical_dumps({"b": 2, "a": 1})
+        assert first == second
 
     def test_sort_keys(self):
         payload = {"z": 1, "a": 2}

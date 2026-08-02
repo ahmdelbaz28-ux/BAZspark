@@ -59,9 +59,7 @@ concurrency:
   group: rollback-${{ github.event.inputs.environment || 'unknown' }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  packages: read
+permissions: {}  # NOSONAR: githubactions:S8264 — permissions moved to job level (validate, rollback)
 
 # Environment config resolved at workflow level so ALL jobs can use it
 env:
@@ -74,6 +72,8 @@ jobs:
   validate:
     name: "Validate Input & Confirmation"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read  # NOSONAR: githubactions:S8264 — moved from workflow level (only this job checks out code)
     outputs:
       valid: ${{ steps.check.outputs.valid }}
       environment: ${{ steps.resolve.outputs.environment }}
@@ -143,6 +143,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate
     if: needs.validate.outputs.valid == 'true'
+    permissions:
+      contents: read  # NOSONAR: githubactions:S8264 — moved from workflow level
+      packages: read  # NOSONAR: githubactions:S8264 — moved from workflow level (helm may pull GHCR images)
     environment:
       name: ${{ needs.validate.outputs.environment }}
       url: https://${{ env.ENV_DOMAIN }}

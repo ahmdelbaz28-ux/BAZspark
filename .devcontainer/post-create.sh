@@ -21,9 +21,12 @@ if [[ -f frontend/package.json ]]; then
 fi
 
 # ── 3. Playwright browsers (for visual tests) ────────────────────────────
-if command -v npx >/dev/null 2>&1; then
-  echo "▶ Installing Playwright browsers…"
-  npx playwright install --with-deps chromium 2>&1 | tail -3 || true
+echo "▶ Installing Playwright browsers…"
+if command -v playwright >/dev/null 2>&1; then
+  playwright install --with-deps chromium 2>&1 | tail -3 || true
+elif command -v npx >/dev/null 2>&1; then
+  # NOSONAR: shell:S6505 — devbox bootstrap only; playwright CLI is trusted
+  npx --no-install playwright install --with-deps chromium 2>&1 | tail -3 || true
 fi
 
 # ── 4. Local SQLite DBs + session secret ─────────────────────────────────

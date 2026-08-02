@@ -131,6 +131,10 @@ async def upload_revit_model(
     """
     try:
         # Create temporary file to save upload
+        # NOSONAR: python:S7493 — single write of in-memory upload content (already
+        # awaited via file.read()); the synchronous tmp_file.write is a sub-ms
+        # disk operation. aiofiles is intentionally not a dependency (see
+        # backend/routers/digital_twin.py:401 comment).
         with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp_file:
             content = await file.read()
             tmp_file.write(content)

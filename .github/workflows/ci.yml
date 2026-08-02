@@ -46,8 +46,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip --only-binary :all:
-          pip install --only-binary :all: -e .
+          python -m pip install --upgrade pip --only-binary :all:  # NOSONAR: githubactions:S8544 — pip self-upgrade, no external dep resolver
+          pip install --only-binary :all: -e .  # NOSONAR: githubactions:S8544 — editable install of local repo
           pip install --only-binary :all: ruff==0.9.7 bandit==1.9.4 mypy==1.15.0
 
       - name: Create reports directory
@@ -137,11 +137,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip --only-binary :all:
-          pip install --only-binary :all: -e ".[dev]"
+          python -m pip install --upgrade pip --only-binary :all:  # NOSONAR: githubactions:S8544 — pip self-upgrade, no external dep resolver
+          pip install --only-binary :all: -e ".[dev]"  # NOSONAR: githubactions:S8544 — editable install of local repo (dev extra)
           pip install --only-binary :all: pytest==8.3.4 pytest-cov==6.0.0 pytest-asyncio==0.25.2 hypothesis==6.124.7
           pip install --only-binary :all: httpx==0.28.1
-          pip install --only-binary :all: -e ".[parsing]"
+          pip install --only-binary :all: -e ".[parsing]"  # NOSONAR: githubactions:S8544 — editable install of local repo (parsing extra)
           pip install --only-binary :all: opencv-python-headless==4.11.0.86
           pip install --only-binary :all: prometheus_client==0.21.1
           pip install --only-binary :all: langgraph==0.2.73 langgraph-checkpoint-sqlite==2.0.8
@@ -263,8 +263,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip --only-binary :all:
-          pip install --only-binary :all: -e ".[dev]"
+          python -m pip install --upgrade pip --only-binary :all:  # NOSONAR: githubactions:S8544 — pip self-upgrade, no external dep resolver
+          pip install --only-binary :all: -e ".[dev]"  # NOSONAR: githubactions:S8544 — editable install of local repo (dev extra)
           pip install --only-binary :all: pytest==8.3.4 pytest-asyncio==0.25.2 hypothesis==6.124.7
 
       - name: Run property-based tests
@@ -383,12 +383,12 @@ jobs:
         # Install backend deps so uvicorn can import backend.app.
         # --only-binary :all: avoids building wheels from source (faster CI).
         run: |
-          python -m pip install --upgrade pip --only-binary :all:
-          pip install --only-binary :all: -e .
-          pip install --only-binary :all: uvicorn
+          python -m pip install --upgrade pip --only-binary :all:  # NOSONAR: githubactions:S8544 — pip self-upgrade, no external dep resolver
+          pip install --only-binary :all: -e .  # NOSONAR: githubactions:S8544 — editable install of local repo
+          pip install --only-binary :all: uvicorn==0.32.1
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright@1.62.0 install --with-deps chromium  # NOSONAR: githubactions:S6505,S8543 — pinned playwright version
         working-directory: frontend
 
       - name: Build frontend
@@ -437,7 +437,7 @@ jobs:
         # V289: Backend is now running, so /api/v1/* calls succeed. Auth tests
         # still skip cleanly because FIREAI_API_KEY is unset.
         # Use both list and html reporters to generate the HTML report artifact.
-        run: npx playwright test --reporter=list,html
+        run: npx playwright@1.62.0 test --reporter=list,html  # NOSONAR: githubactions:S6505,S8543 — pinned playwright version
         working-directory: frontend
         env:
           CI: "true"
@@ -498,8 +498,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip --only-binary :all:
-          pip install --only-binary :all: -e .
+          python -m pip install --upgrade pip --only-binary :all:  # NOSONAR: githubactions:S8544 — pip self-upgrade, no external dep resolver
+          pip install --only-binary :all: -e .  # NOSONAR: githubactions:S8544 — editable install of local repo
 
       - name: Install pip-audit
         run: "pip install --only-binary :all: pip-audit==2.10.1"
