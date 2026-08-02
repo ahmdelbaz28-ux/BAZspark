@@ -401,3 +401,151 @@ class TestProjectBridge:
         from backend.project_bridge import sync_connection_delete_to_udm
         with contextlib.suppress(Exception):
             sync_connection_delete_to_udm("test-project-id", "conn-001")
+
+class TestPostgresSqliteFallback:
+    """Regression tests: when PostgreSQL is unavailable, Database must degrade
+    to local SQLite instead of raising, so the app starts and /health reports ok
+    (HF Spaces containers cannot always reach Supabase's IPv6-only endpoint).
+    """
+
+    def _bare_db(self, tmp_path):
+        """Build a Database instance without running __init__ (so we control
+        the postgres path without any real connection attempt)."""
+        import threading
+
+        from backend.database import Database
+
+        db = object.__new__(Database)
+        db.db_path = str(tmp_path / "degraded.db")
+        db._lock = threading.RLock()
+        db._is_postgres = True
+        db._database_url = "postgresql://user:pass@203.0.113.1:5432/db"
+        return db
+
+    def test_degrades_to_sqlite_when_psycopg2_missing(self, tmp_path, monkeypatch) -> None:
+        """psycopg2 absent (ImportError) must degrade to SQLite, not raise."""
+        import sys
+
+        monkeypatch.delenv("NEON_DATABASE_URL", raising=False)
+        # Force `import psycopg2` to raise ImportError.
+        monkeypatch.setitem(sys.modules, "psycopg2", None)
+
+        db = self._bare_db(tmp_path)
+        db._init_postgres()  # must NOT raise
+
+        assert db._is_postgres is False
+        # SQLite schema must be usable (health runs list_projects through this).
+        with db._transaction() as cur:
+            cur.execute("SELECT COUNT(*) FROM projects")
+            assert cur.fetchone()[0] == 0
+
+    def test_degrades_to_sqlite_when_pool_unreachable(self, tmp_path, monkeypatch) -> None:
+        """Postgres pool creation failure (no NEON fallback) must degrade to SQLite."""
+        import sys
+        import types
+
+        monkeypatch.delenv("NEON_DATABASE_URL", raising=False)
+
+        # Fake psycopg2 that imports fine but whose pool raises on creation.
+        fake_pool = types.ModuleType("psycopg2.pool")
+
+        class _FailingPool:
+            def __init__(self, *args, **kwargs):
+                raise ConnectionError("could not connect to server")
+
+        fake_pool.ThreadedConnectionPool = _FailingPool
+        fake_psycopg2 = types.ModuleType("psycopg2")
+        fake_psycopg2.pool = fake_pool
+        monkeypatch.setitem(sys.modules, "psycopg2", fake_psycopg2)
+        monkeypatch.setitem(sys.modules, "psycopg2.pool", fake_pool)
+
+        db = self._bare_db(tmp_path)
+        db._init_postgres()  # must NOT raise
+
+        assert db._is_postgres is False
+        with db._transaction() as cur:
+            cur.execute("SELECT COUNT(*) FROM projects")
+            assert cur.fetchone()[0] == 0
+        assert db._conn is not None  # real SQLite connection now backing the app
+
+    def test_neon_fallback_still_tried_before_sqlite(self, tmp_path, monkeypatch) -> None:
+        """When NEON_DATABASE_URL differs, a primary failure must attempt the
+        NEON fallback rather than jumping straight to SQLite."""
+        import sys
+        import types
+
+        import backend.database as dbmod
+
+        monkeypatch.setenv(
+            "NEON_DATABASE_URL", "postgresql://neon:pass@db.example.com:5432/n"
+        )
+
+        # Fake pool: primary DSN fails, NEON DSN succeeds.
+        fake_pool = types.ModuleType("psycopg2.pool")
+        created_dsn = []
+
+        class _FakePool:
+            def __init__(self, *args, **kwargs):
+                dsn = kwargs.get("dsn")
+                if "203.0.113.1" in dsn:
+                    raise ConnectionError("primary unreachable")
+                created_dsn.append(dsn)
+
+        fake_pool.ThreadedConnectionPool = _FakePool
+        fake_psycopg2 = types.ModuleType("psycopg2")
+        fake_psycopg2.pool = fake_pool
+        monkeypatch.setitem(sys.modules, "psycopg2", fake_psycopg2)
+        monkeypatch.setitem(sys.modules, "psycopg2.pool", fake_pool)
+
+        # Avoid the real Postgres schema init (no real pool available).
+        monkeypatch.setattr(
+            dbmod.Database, "_init_schema_pg", lambda self: None
+        )
+
+        db = self._bare_db(tmp_path)
+        db._init_postgres()
+
+        assert created_dsn == ["postgresql://neon:pass@db.example.com:5432/n"]
+        assert db._database_url == "postgresql://neon:pass@db.example.com:5432/n"
+        assert db._is_postgres is True  # still postgres (NEON), not degraded
+
+    def test_degrades_when_pool_created_but_smoke_test_fails(self, tmp_path, monkeypatch) -> None:
+        """The realistic Space scenario: pool creation succeeds (host accepts
+        TCP) but the smoke-test query fails. Must still degrade to SQLite and
+        release the partially-initialized pool (no connection leak)."""
+        import sys
+        import types
+
+
+        monkeypatch.delenv("NEON_DATABASE_URL", raising=False)
+
+        fake_pool = types.ModuleType("psycopg2.pool")
+        closed = []
+
+        class _PoolCreatedButDead:
+            def __init__(self, *args, **kwargs):
+                pass  # pool creation succeeds
+
+            def getconn(self, *a, **k):
+                raise ConnectionError("smoke-test SELECT 1 timed out")
+
+            def closeall(self):
+                closed.append(True)
+
+        fake_pool.ThreadedConnectionPool = _PoolCreatedButDead
+        fake_psycopg2 = types.ModuleType("psycopg2")
+        fake_psycopg2.pool = fake_pool
+        monkeypatch.setitem(sys.modules, "psycopg2", fake_psycopg2)
+        monkeypatch.setitem(sys.modules, "psycopg2.pool", fake_pool)
+
+        db = self._bare_db(tmp_path)
+        db._pg_pool = _PoolCreatedButDead()  # pool was already created
+        db._init_postgres()  # must NOT raise
+
+        assert db._is_postgres is False
+        assert db._pg_pool is None  # dead pool released
+        assert db._database_url is None  # stale Postgres URL cleared
+        assert closed == [True]  # pool connections closed, no leak
+        with db._transaction() as cur:
+            cur.execute("SELECT COUNT(*) FROM projects")
+            assert cur.fetchone()[0] == 0
