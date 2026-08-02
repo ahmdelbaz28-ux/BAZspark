@@ -172,6 +172,7 @@ class OpenAQAdapter(ExternalApiAdapter):
 
         # SSRF Guard Protection: Validate target host against private/loopback/metadata IP ranges
         from urllib.parse import urlparse
+
         from backend.integrations._ssrf_guard import resolve_to_safe_ip
         parsed_url = urlparse(self._base_url)
         if parsed_url.hostname:

@@ -6,7 +6,7 @@ Centralizes response formatting and pagination validation used across backend ro
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TypeVar
+from typing import Any, Dict, List, TypeVar
 
 T = TypeVar("T")
 

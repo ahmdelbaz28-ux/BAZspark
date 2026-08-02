@@ -48,7 +48,9 @@ References
 # Removing it forces actual type resolution at import time.
 import logging
 import os
+import uuid
 from typing import Any, Dict, List, Optional
+
 try:
     from typing import Annotated
 except ImportError:

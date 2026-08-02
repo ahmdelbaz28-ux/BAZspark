@@ -17,7 +17,6 @@ _device_lock = threading.Lock()
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-
 from backend.auth import require_permission
 from backend.contract import validate_device, validate_paginated
 from backend.database import get_db

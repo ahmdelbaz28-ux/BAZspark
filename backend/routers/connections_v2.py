@@ -15,7 +15,6 @@ FIX #28: Does not expose connection_id in error messages.
 """
 
 import logging
-import math
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -30,8 +29,7 @@ from backend.schemas import (
     ConnectionResponse,
     PaginatedData,
 )
-
-from backend.services.connection_service import ConnectionService, connection_service
+from backend.services.connection_service import ConnectionService
 
 logger = logging.getLogger(__name__)
 
