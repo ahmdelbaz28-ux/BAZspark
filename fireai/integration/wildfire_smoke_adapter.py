@@ -186,14 +186,11 @@ class WildfireSmokeAdapter(ExternalApiAdapter):
         # SSRF Guard: validate the EXACT request URL (with params) immediately
         # before every HTTP call — not just the static base URL set at init.
         # This prevents SSRF via URL manipulation between construction and use.
-        from urllib.parse import urlencode, urlparse
+        from urllib.parse import urlencode
 
-        from backend.integrations._ssrf_guard import resolve_to_safe_ip
+        from backend.integrations._ssrf_guard import validate_url
         _request_url = f"{self._base_url}?{urlencode(params)}"
-        _parsed = urlparse(_request_url)
-        if not _parsed.hostname:
-            raise ValueError(f"SSRF guard: could not parse hostname from request URL: {_request_url!r}")
-        resolve_to_safe_ip(_parsed.hostname)  # raises ValueError if unsafe
+        validate_url(_request_url)
 
         resp = await client.get(self._base_url, params=params)
 

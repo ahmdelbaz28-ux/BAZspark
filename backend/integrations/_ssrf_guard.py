@@ -64,6 +64,7 @@ __all__ = [
     "resolve_to_safe_ip",
     "resolve_to_safe_ip_with_hostname",
     "validate_host_for_user_input",
+    "validate_url",
 ]
 
 # ─── DNS resolution state ───────────────────────────────────────────────────
@@ -450,6 +451,55 @@ def resolve_to_safe_ip_with_hostname(host: str, dns_timeout: float = 5.0) -> Tup
         SSRFError: same conditions as resolve_to_safe_ip.
     """
     return _resolve_to_safe_ip_impl(host, dns_timeout)
+
+
+def validate_url(
+    url: str,
+    allowed_schemes: Tuple[str, ...] = ("http", "https"),
+    dns_timeout: float = 5.0,
+) -> str:
+    """Validate a destination URL against SSRF attacks before network execution.
+
+    Enforces:
+      1. Non-empty string and valid URL syntax
+      2. Strict scheme whitelist (http/https only by default)
+      3. Host extraction and format validation
+      4. Host safety check (blocks localhost, metadata, private/loopback/cloud ranges)
+      5. DNS resolution verification to ensure host resolves to a public safe IP
+
+    Args:
+        url: Complete URL string (e.g. "https://api.example.com/data?q=1").
+        allowed_schemes: Permitted URL schemes.
+        dns_timeout: Max seconds to wait for DNS lookup.
+
+    Returns:
+        The validated URL string unmodified if safe.
+
+    Raises:
+        SSRFError: If scheme is forbidden, host is missing/blocked, or IP is non-routable/private.
+        ValueError: If url is empty or malformed.
+    """
+    if not url or not isinstance(url, str):
+        raise ValueError("URL must be a non-empty string")
+
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url.strip())
+    scheme = (parsed.scheme or "").lower()
+    if not scheme:
+        raise SSRFError(f"Missing URL scheme in '{url}'")
+
+    if scheme not in [s.lower() for s in allowed_schemes]:
+        raise SSRFError(
+            f"Scheme '{scheme}' is not permitted. Allowed schemes: {allowed_schemes}"
+        )
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise SSRFError(f"Could not extract a valid hostname from URL: '{url}'")
+
+    resolve_to_safe_ip(hostname, dns_timeout=dns_timeout)
+    return url
 
 
 def _try_resolve_literal_ip(host: str) -> Optional[Tuple[str, str]]:

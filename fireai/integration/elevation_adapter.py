@@ -123,7 +123,15 @@ class ElevationAdapter(ExternalApiAdapter):
 
         params = {"locations": f"{lat},{lon}"}
         client = await self._get_client()
+
+        from urllib.parse import urlencode
+
+        from backend.integrations._ssrf_guard import validate_url
+        _request_url = f"{self._base_url}?{urlencode(params)}"
+        validate_url(_request_url)
+
         resp = await client.get(self._base_url, params=params)
+
         resp.raise_for_status()
         data = resp.json()
 

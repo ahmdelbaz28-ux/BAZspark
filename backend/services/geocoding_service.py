@@ -134,23 +134,24 @@ class GeocodingService:
     async def _fetch_nominatim(self, address: str) -> GeocodingResult:
         """Fetch geocoding from Nominatim."""
         await self._enforce_rate_limit()
-        from urllib.parse import urlparse
+        from urllib.parse import urlencode
 
-        from backend.integrations._ssrf_guard import resolve_to_safe_ip
-        parsed_url = urlparse(self.NOMINATIM_URL)
-        if parsed_url.hostname:
-            resolve_to_safe_ip(parsed_url.hostname)
+        from backend.integrations._ssrf_guard import validate_url
+        params = {
+            "q": address,
+            "format": "json",
+            "limit": 1,
+            "addressdetails": 1,
+        }
+        _request_url = f"{self.NOMINATIM_URL}?{urlencode(params)}"
+        validate_url(_request_url)
 
         client = await self._get_client()
         response = await client.get(
             self.NOMINATIM_URL,
-            params={
-                "q": address,
-                "format": "json",
-                "limit": 1,
-                "addressdetails": 1,
-            },
+            params=params,
         )
+
 
         response.raise_for_status()
         results = response.json()
@@ -236,25 +237,26 @@ class GeocodingService:
 
         """
         await self._enforce_rate_limit()
-        from urllib.parse import urlparse
+        from urllib.parse import urlencode
 
-        from backend.integrations._ssrf_guard import resolve_to_safe_ip
+        from backend.integrations._ssrf_guard import validate_url
         reverse_url = "https://nominatim.openstreetmap.org/reverse"
-        parsed_url = urlparse(reverse_url)
-        if parsed_url.hostname:
-            resolve_to_safe_ip(parsed_url.hostname)
+        params = {
+            "lat": latitude,
+            "lon": longitude,
+            "format": "json",
+            "addressdetails": 1,
+        }
+        _request_url = f"{reverse_url}?{urlencode(params)}"
+        validate_url(_request_url)
 
         client = await self._get_client()
         try:
             response = await client.get(
                 reverse_url,
-                params={
-                    "lat": latitude,
-                    "lon": longitude,
-                    "format": "json",
-                    "addressdetails": 1,
-                },
+                params=params,
             )
+
 
             response.raise_for_status()
             data = response.json()
