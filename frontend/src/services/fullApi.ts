@@ -164,6 +164,19 @@ export const qomnApi = {
         getPhysicsGuards: () =>
                 apiCall("/qomn/physics-guards", { method: "GET" }),
 
+        /** POST /qomn/acoustics/evaluate — NFPA 72 §18.4 audible notification evaluation */
+        evaluateAcoustics: (data: {
+                room_id: string;
+                occ_type: string;
+                speaker_spl_dba: number;
+                check_point_distance_m: number;
+                mode?: string;
+        }) =>
+                apiCall("/qomn/acoustics/evaluate", {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                }),
+
         /** GET /qomn/constants — List NFPA 72 / NEC constants used by the kernel */
         getConstants: () =>
                 apiCall("/qomn/constants", { method: "GET" }),
