@@ -218,7 +218,7 @@ def _get_redis_for_key_cache() -> Any:
         return None
 
 
-def _read_server_secret_retry(path: Path, attempts: int = 8, delay: float = 0.05) -> bytes | None:
+def _read_server_secret_retry(path: Path, attempts: int = 40, delay: float = 0.1) -> bytes | None:
     """
     Read a valid (>=32 byte) server secret, tolerating partial writes.
 
@@ -230,6 +230,15 @@ def _read_server_secret_retry(path: Path, attempts: int = 8, delay: float = 0.05
     raised `RuntimeError: Server secret file ... exists but is invalid`,
     making the test suite fail nondeterministically. Retrying briefly makes
     the read deterministic instead of crashing on a transient race.
+
+    V214 FIX (Gate 2 — test isolation): Increased retry window from 8 * 50ms
+    (400ms) to 40 * 100ms (4s). On slow CI runners with disk I/O contention
+    from parallel workers, 400ms was insufficient — the writer process could
+    still be mid-fsync when the reader gave up, causing:
+      - test_autocad_connect_with_mock_agent (500 instead of 200/401/422/503)
+      - test_websocket_multiple_actions (RuntimeError on secret file)
+    4 seconds is well within the 120s per-test timeout but long enough to
+    tolerate fsync latency on loaded disks.
     """
     for _ in range(attempts):
         if path.exists():

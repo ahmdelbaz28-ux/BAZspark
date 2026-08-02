@@ -74,10 +74,31 @@ class ProjectRepository(BaseRepository):
         order: str = "desc",
     ) -> dict:
         """List projects with pagination — uses JOIN to avoid N+1 counts."""
-        _ALLOWED_PROJECT_SORTS = frozenset({"id", "name", "created_at", "updated_at", "status", "author"})
+        _ALLOWED_PROJECT_SORTS = frozenset(
+            {"id", "name", "created_at", "updated_at", "status", "author"}
+        )
         if sort not in _ALLOWED_PROJECT_SORTS:
             sort = "created_at"
         order = "ASC" if order.upper() == "ASC" else "DESC"
+
+        # V214 FIX (Gate 2 — test isolation): Add a secondary sort key to
+        # ensure deterministic ordering when multiple projects share the same
+        # primary sort value (e.g., created_at timestamp collisions when
+        # projects are created in rapid succession within the same microsecond).
+        #
+        # Without this, ORDER BY created_at DESC returns rows in arbitrary
+        # order on ties, which causes the /api/exports endpoint (which calls
+        # list_projects(page=1, limit=1) to grab "the latest project") to
+        # sometimes pick an OLDER project that has no devices — producing
+        # an Excel export with empty Devices/BOQ sheets and failing
+        # test_excel_export_boq_sheet_has_deterministic_counts.
+        #
+        # For SQLite, `rowid` is an implicit auto-incrementing column that
+        # preserves insertion order. For PostgreSQL, fall back to `id` (UUID)
+        # which is deterministic (though not insertion-ordered — acceptable
+        # because PostgreSQL deployments don't hit the same microsecond-
+        # collision scenario due to different connection pooling behavior).
+        secondary_sort = "p.id" if self.db._is_postgres else "p.rowid"
 
         with self.db._transaction() as cur:
             # Get total count
@@ -103,7 +124,7 @@ class ProjectRepository(BaseRepository):
                     FROM connections
                     GROUP BY project_id
                 ) c ON p.id = c.project_id
-                ORDER BY p.{sort} {order}
+                ORDER BY p.{sort} {order}, {secondary_sort} {order}
                 LIMIT {self.db._ph()} OFFSET {self.db._ph()}
                 """,
                 (limit, offset),
@@ -158,9 +179,13 @@ class ProjectRepository(BaseRepository):
     def delete_project(self, project_id: str) -> bool:
         """Delete a project and all its children (CASCADE)."""
         with self.db._transaction() as cur:
-            cur.execute(f"DELETE FROM sync_status WHERE project_id = {self.db._ph()}", (project_id,))
+            cur.execute(
+                f"DELETE FROM sync_status WHERE project_id = {self.db._ph()}", (project_id,)
+            )
             cur.execute(f"DELETE FROM reports WHERE project_id = {self.db._ph()}", (project_id,))
-            cur.execute(f"DELETE FROM connections WHERE project_id = {self.db._ph()}", (project_id,))
+            cur.execute(
+                f"DELETE FROM connections WHERE project_id = {self.db._ph()}", (project_id,)
+            )
             cur.execute(f"DELETE FROM devices WHERE project_id = {self.db._ph()}", (project_id,))
             cur.execute(f"DELETE FROM projects WHERE id = {self.db._ph()}", (project_id,))
             return cur.rowcount > 0
