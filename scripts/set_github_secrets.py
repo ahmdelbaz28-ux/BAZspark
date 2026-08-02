@@ -20,8 +20,10 @@ secrets_to_set = {
     "VERCEL_DEPLOY_TOKEN": os.environ.get("VERCEL_DEPLOY_TOKEN"),
     "VERCEL_DEPLOY_HOOK_TOKEN": os.environ.get("VERCEL_DEPLOY_TOKEN"),
     "VERCEL_PROJECT_ID": os.environ.get("VERCEL_PROJECT_ID"),
-    "SUPABASE_SERVICE_ROLE_KEY": os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    "SUPABASE_SERVICE_ROLE_KEY": os.environ.get("SUPABASE_SERVICE_ROLE_KEY"),
+    "KUBE_CONFIG_PRODUCTION": os.environ.get("KUBE_CONFIG_PRODUCTION"),
 }
+
 
 def encrypt(public_key: str, secret_value: str) -> str:
     """Encrypt a Unicode string using the public key."""
