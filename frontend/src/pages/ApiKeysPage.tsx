@@ -43,6 +43,33 @@ interface ApiKeyInfo {
         prefix: string;
 }
 
+/** Build auth headers with optional API key and CSRF token. */
+function buildAuthHeaders(): Record<string, string> {
+        const apiKey = getApiKey();
+        const headers: Record<string, string> = {};
+        if (apiKey) headers["X-API-Key"] = apiKey;
+        return headers;
+}
+
+/** Build POST/DELETE headers including CSRF protection. */
+async function buildSecureHeaders(): Promise<Record<string, string>> {
+        const headers = buildAuthHeaders();
+        headers["Content-Type"] = "application/json";
+        let csrfToken = getCachedCsrfToken();
+        if (!csrfToken) csrfToken = await getCsrfToken();
+        if (csrfToken) headers[CSRF_HEADER_NAME] = csrfToken;
+        return headers;
+}
+
+/** Execute a DELETE request for an API key and handle the response. */
+async function executeDeleteKey(keyHash: string, resolve: () => void, reject: (reason?: unknown) => void) {
+        const headers = await buildSecureHeaders();
+        const resp = await fetch(`/api/v1/admin/keys/${keyHash}`, { method: "DELETE", headers, credentials: "same-origin" });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        toast.success("API key deleted");
+        resolve();
+}
+
 export function ApiKeysPage() {
         const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
         const [loading, setLoading] = useState(true);
@@ -55,10 +82,7 @@ export function ApiKeysPage() {
         const fetchKeys = async () => {
                 setLoading(true);
                 try {
-                        const apiKey = getApiKey();
-                        const headers: Record<string, string> = {};
-                        if (apiKey) headers["X-API-Key"] = apiKey;
-                        const resp = await fetch("/api/v1/admin/keys", { headers, credentials: "same-origin" });
+                        const resp = await fetch("/api/v1/admin/keys", { headers: buildAuthHeaders(), credentials: "same-origin" });
                         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                         const data = await resp.json();
                         setKeys(data.keys || data.data?.keys || []);
@@ -69,21 +93,13 @@ export function ApiKeysPage() {
                 }
         };
 
-        useEffect(() => {
-                fetchKeys();
-        }, []);
+        useEffect(() => { fetchKeys(); }, []);
 
         const handleCreate = async () => {
                 setCreating(true);
                 setNewKeyValue(null);
                 try {
-                        const apiKey = getApiKey();
-                        const headers: Record<string, string> = { "Content-Type": "application/json" };
-                        if (apiKey) headers["X-API-Key"] = apiKey;
-                        // SECURITY FIX: Inject CSRF token into POST request
-                        let csrfToken = getCachedCsrfToken();
-                        if (!csrfToken) csrfToken = await getCsrfToken();
-                        if (csrfToken) headers[CSRF_HEADER_NAME] = csrfToken;
+                        const headers = await buildSecureHeaders();
                         const resp = await fetch("/api/v1/admin/keys", {
                                 method: "POST",
                                 headers,
@@ -102,36 +118,21 @@ export function ApiKeysPage() {
                 }
         };
 
-        const handleDelete = async (keyHash: string) => {  // NOSONAR: typescript:S2004,S3776
-                // V253 FIX: Replaced confirm() with a non-blocking toast confirmation.
-                // The user must click the "Delete" button in the toast to confirm.
+        const handleDelete = async (keyHash: string) => {
                 let confirmed = false;
                 let resolveFn: ((value: void) => void) | null = null;
                 let rejectFn: ((reason?: unknown) => void) | null = null;
 
-                const onDeleteConfirmed = async () => {  // NOSONAR: typescript:S3776,S2004
+                const onDeleteConfirmed = () => {
                         confirmed = true;
-                        const apiKey = getApiKey();
-                        const headers: Record<string, string> = {};
-                        if (apiKey) headers["X-API-Key"] = apiKey;
-                        // SECURITY FIX: Inject CSRF token into DELETE request
-                        let csrfToken = getCachedCsrfToken();
-                        if (!csrfToken) csrfToken = await getCsrfToken();
-                        if (csrfToken) headers[CSRF_HEADER_NAME] = csrfToken;
-                        fetch(`/api/v1/admin/keys/${keyHash}`, { method: "DELETE", headers, credentials: "same-origin" })
-                                .then((resp) => {
-                                        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                                        toast.success("API key deleted");
-                                        if (resolveFn) resolveFn();
-                                })
-                                .catch((err) => {
-                                        toast.error(`Failed to delete: ${err.message}`);
-                                        if (rejectFn) rejectFn(err);
-                                });
+                        executeDeleteKey(keyHash, () => resolveFn?.(), (err) => rejectFn?.(err)).catch((err) => {
+                                toast.error(`Failed to delete: ${err.message}`);
+                                rejectFn?.(err);
+                        });
                 };
 
-                const onDismissed = () => {  // NOSONAR: typescript:S3776,S2004
-                        if (!confirmed && rejectFn) rejectFn(new Error("Cancelled"));
+                const onDismissed = () => {
+                        if (!confirmed) rejectFn?.(new Error("Cancelled"));
                 };
 
                 const deletePromise = new Promise<void>((resolve, reject) => {

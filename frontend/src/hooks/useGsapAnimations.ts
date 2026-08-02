@@ -312,9 +312,17 @@ export function useGsapMotionPath(
   );
 }
 
+/** Format a counter value with optional prefix/suffix. */
+function formatCounterValue(obj: { val: number }, finalValue: number, prefix: string, suffix: string, target: HTMLElement) {
+        const formatted = finalValue % 1 === 0
+                ? Math.round(obj.val)
+                : obj.val.toFixed(1);
+        target.textContent = `${prefix}${formatted}${suffix}`;
+}
+
 // ─── Hook: Number Counter (for metrics) ─────────────────────────────
 
-export function useGsapCounter(  // NOSONAR: typescript:S3776
+export function useGsapCounter(
   containerRef: RefObject<HTMLElement | null>,
   options: { duration?: number; ease?: string; start?: string } = {},
 ) {
@@ -342,12 +350,7 @@ export function useGsapCounter(  // NOSONAR: typescript:S3776
               val: finalValue,
               duration,
               ease,
-              onUpdate: () => {  // NOSONAR - typescript:S2004: nested callbacks intentional for GSAP animation sequence
-                const formatted = finalValue % 1 === 0
-                  ? Math.round(obj.val)
-                  : obj.val.toFixed(1);
-                target.textContent = `${prefix}${formatted}${suffix}`;
-              },
+              onUpdate: () => formatCounterValue(obj, finalValue, prefix, suffix, target),
             });
           },
         });

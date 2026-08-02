@@ -3,7 +3,7 @@
  * ?variant=A|B|C switches between UI prototypes (A = current production design)
  */
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useCallback } from "react";
 import { Navigate as RouterNavigate, useSearchParams as useRouterSearchParams } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { PrototypeSwitcher } from "@/components/ui/PrototypeSwitcher";
@@ -98,7 +98,27 @@ const translations = {
         },
 };
 
-export function LoginPage() {  // NOSONAR: typescript:S3776
+/** Map login error messages to user-friendly localized text. */
+function mapLoginError(msg: string, lang: "en" | "ar"): string {
+        if (msg.includes("429") || msg.includes("Too many")) {
+                return lang === "ar"
+                        ? "محاولات كثيرة خاطئة. يرجى الانتظار بضع دقائق."
+                        : "Too many failed attempts. Please wait a few minutes.";
+        }
+        if (msg.includes("401") || msg.includes("Invalid")) {
+                return lang === "ar"
+                        ? "مفتاح الترخيص غير صحيح. يرجى التثبت والمحاولة مجدداً."
+                        : "Invalid Authorization key. Please verify and try again.";
+        }
+        if (msg.includes("Failed to fetch") || msg.includes("Network")) {
+                return lang === "ar"
+                        ? "تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت."
+                        : "Unable to reach the server. Check your connection.";
+        }
+        return msg;
+}
+
+export function LoginPage() {
         const [searchParams] = useRouterSearchParams();
         const { isAuthenticated, loading: ctxLoading, login } = useAuth();
 
@@ -133,18 +153,10 @@ export function LoginPage() {  // NOSONAR: typescript:S3776
                 return <RouterNavigate to={from} replace />;
         }
 
-        const handleError = (err: unknown) => {
+        const handleError = useCallback((err: unknown) => {
                 const msg = err instanceof Error ? err.message : "Login failed";
-                if (msg.includes("429") || msg.includes("Too many")) {
-                        setError(lang === "ar" ? "محاولات كثيرة خاطئة. يرجى الانتظار بضع دقائق." : "Too many failed attempts. Please wait a few minutes.");
-                } else if (msg.includes("401") || msg.includes("Invalid")) {
-                        setError(lang === "ar" ? "مفتاح الترخيص غير صحيح. يرجى التثبت والمحاولة مجدداً." : "Invalid Authorization key. Please verify and try again.");
-                } else if (msg.includes("Failed to fetch") || msg.includes("Network")) {
-                        setError(lang === "ar" ? "تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت." : "Unable to reach the server. Check your connection.");
-                } else {
-                        setError(msg);
-                }
-        };
+                setError(mapLoginError(msg, lang));
+        }, [lang]);
 
         const handleSubmit = async (e: FormEvent) => {
                 e.preventDefault();
