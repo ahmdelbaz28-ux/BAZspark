@@ -291,17 +291,20 @@ export function FACPPage() {
                                                 <CardContent>
                                                         <div className="space-y-2">
                                                                 {panels.map((p, i) => {
-                                                                        const panel = p as { model: string; manufacturer: string; device_capacity: number; nac_capacity: number };
+                                                                        const panel = p as { model: string; manufacturer: string; device_capacity?: number; points_capacity?: number; points?: number; nac_capacity?: number };
+                                                                        const devCap = panel.device_capacity ?? panel.points_capacity ?? panel.points ?? 0;
+                                                                        const nacCap = panel.nac_capacity ?? 0;
                                                                         return (
                                                                                 <div key={i} className="flex items-center justify-between text-sm border-b border-border pb-2">
                                                                                         <span className="font-mono text-foreground">{panel.model}</span>
                                                                                         <span className="text-muted-foreground">{panel.manufacturer}</span>
                                                                                         <span className="font-mono text-muted-foreground">
-                                                                                                {panel.device_capacity} dev / {panel.nac_capacity} NAC
+                                                                                                {devCap} dev / {nacCap} NAC
                                                                                         </span>
                                                                                 </div>
                                                                         );
                                                                 })}
+
                                                         </div>
                                                 </CardContent>
                                         </Card>

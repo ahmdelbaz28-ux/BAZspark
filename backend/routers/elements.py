@@ -9,7 +9,12 @@ CRUD endpoints for building elements.
 import logging
 import math
 import re
-from typing import Annotated, Any, Optional
+from typing import Any, Optional
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
+
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 

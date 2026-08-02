@@ -246,15 +246,18 @@ class RoomRequest(BaseModel):
 
 
 class DuctDetectorRequest(BaseModel):
-    """Duct detector placement request."""
+    """Duct detector placement request supporting frontend contract aliases."""
 
-    duct_id:        str   = Field(..., description="Duct identifier")
-    width_m:        float = Field(..., gt=0, description="Duct width in meters")
-    height_m:       float = Field(..., gt=0, description="Duct height in meters")
+    model_config = {"populate_by_name": True}
+
+    duct_id:        str   = Field(default="duct-1", description="Duct identifier")
+    width_m:        float = Field(default=0.5, gt=0, alias="duct_width_m", description="Duct width in meters")
+    height_m:       float = Field(default=0.5, gt=0, description="Duct height in meters")
     velocity_m_s:   float = Field(
-        ..., gt=0,
+        default=2.5, gt=0, alias="duct_velocity_mps",
         description="Air velocity in m/s [0.305–15.24 per NFPA 72 §17.7.4.2.2]"
     )
+
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────

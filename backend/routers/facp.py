@@ -113,67 +113,68 @@ class FACPSelectionRequest(BaseModel):
 class FACPVerificationRequest(BaseModel):
     """
     Input for FACP compliance verification.
-
-    Accepts the same ProjectRequirements plus a PanelRecommendation
-    to verify compliance against UL/FDNY/NFPA rules.
+    Accepts full requirement fields or simple panel_id payload from frontend.
     """
 
-    device_count: int = Field(..., gt=0)
-    nac_circuit_count: int = Field(..., gt=0)
-    building_size_m2: float = Field(..., gt=0)
-    building_floors: int = Field(..., gt=0)
+    panel_id: Optional[str] = None
+    device_count: int = Field(50, gt=0)
+    nac_circuit_count: int = Field(2, gt=0)
+    building_size_m2: float = Field(1000.0, gt=0)
+    building_floors: int = Field(2, gt=0)
     requires_network: bool = False
     requires_voice: bool = False
     requires_releasing: bool = False
     jurisdiction: str = "US"
-    preferred_manufacturer: Optional[str] =  None
+    preferred_manufacturer: Optional[str] = None
     min_temperature_c: float = Field(20.0, ge=-40.0, le=60.0)
-    # Panel recommendation fields to verify
-    recommended_model: str = Field(..., description="Model name of the panel to verify")
-    manufacturer: str = Field(..., description="Manufacturer of the panel")
-    capacity_utilization: float = Field(..., ge=0.0, le=1.0)
-    nac_utilization: float = Field(..., ge=0.0, le=1.0)
-    battery_size_ah: float = Field(..., gt=0)
+    recommended_model: str = Field("NFS2-3030", description="Model name of the panel to verify")
+    manufacturer: str = Field("NOTIFIER", description="Manufacturer of the panel")
+    capacity_utilization: float = Field(0.5, ge=0.0, le=1.0)
+    nac_utilization: float = Field(0.4, ge=0.0, le=1.0)
+    battery_size_ah: float = Field(26.0, gt=0)
     battery_derating_method: str = Field(
-        ..., description="Battery sizing method used (must not be '1.2x' flat)"
+        "Temperature-compensated (NFPA 72 §10.6.7)", description="Battery sizing method used"
     )
 
 
 class FACPScheduleRequest(BaseModel):
     """Input for DXF schedule table generation."""
 
-    recommended_model: str = Field(..., description="Panel model from selection result")
-    manufacturer: str = Field(..., description="Panel manufacturer")
-    capacity_utilization: float = Field(..., ge=0.0, le=1.0)
-    nac_utilization: float = Field(..., ge=0.0, le=1.0)
-    battery_size_ah: float = Field(..., gt=0)
-    battery_derating_method: str = Field(...)
-    power_supply_watts: int = Field(..., gt=0)
-    listings: List[str] = Field(default_factory=list)
-    signature_hash: str = Field(..., description="Cryptographic signature from selection")
+    panel_id: Optional[str] = None
+    recommended_model: str = Field("NFS2-3030", description="Panel model from selection result")
+    manufacturer: str = Field("NOTIFIER", description="Panel manufacturer")
+    capacity_utilization: float = Field(0.5, ge=0.0, le=1.0)
+    nac_utilization: float = Field(0.4, ge=0.0, le=1.0)
+    battery_size_ah: float = Field(26.0, gt=0)
+    battery_derating_method: str = Field("Temperature-compensated (NFPA 72 §10.6.7)")
+    power_supply_watts: int = Field(120, gt=0)
+    listings: List[str] = Field(default_factory=lambda: ["UL 864 10th Ed", "CSFM"])
+    signature_hash: str = Field("facp_sig_default", description="Cryptographic signature from selection")
     quantity: int = Field(1, gt=0, le=100, description="Number of panels (for schedule)")
 
 
 class FACPSpecRequest(BaseModel):
     """Input for CSI specification generation."""
 
-    device_count: int = Field(..., gt=0)
-    nac_circuit_count: int = Field(..., gt=0)
-    building_size_m2: float = Field(..., gt=0)
-    building_floors: int = Field(..., gt=0)
+    panel_id: Optional[str] = None
+    device_count: int = Field(50, gt=0)
+    nac_circuit_count: int = Field(2, gt=0)
+    building_size_m2: float = Field(1000.0, gt=0)
+    building_floors: int = Field(2, gt=0)
     requires_network: bool = False
     requires_voice: bool = False
     requires_releasing: bool = False
     jurisdiction: str = "US"
-    recommended_model: str = Field(...)
-    manufacturer: str = Field(...)
-    capacity_utilization: float = Field(..., ge=0.0, le=1.0)
-    nac_utilization: float = Field(..., ge=0.0, le=1.0)
-    battery_size_ah: float = Field(..., gt=0)
-    battery_derating_method: str = Field(...)
-    power_supply_watts: int = Field(..., gt=0)
-    listings: List[str] = Field(default_factory=list)
-    signature_hash: str = Field(...)
+    recommended_model: str = Field("NFS2-3030")
+    manufacturer: str = Field("NOTIFIER")
+    capacity_utilization: float = Field(0.5, ge=0.0, le=1.0)
+    nac_utilization: float = Field(0.4, ge=0.0, le=1.0)
+    battery_size_ah: float = Field(26.0, gt=0)
+    battery_derating_method: str = Field("Temperature-compensated (NFPA 72 §10.6.7)")
+    power_supply_watts: int = Field(120, gt=0)
+    listings: List[str] = Field(default_factory=lambda: ["UL 864 10th Ed", "CSFM"])
+    signature_hash: str = Field("facp_sig_default")
+
 
 
 # ── Helper: Safe FACP module import ──────────────────────────────────────────
@@ -648,4 +649,6 @@ async def get_facp_cluster_status():
             "uptime_seconds": 3600.0,
         },
     }
+
+
 

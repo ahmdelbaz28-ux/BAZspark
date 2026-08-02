@@ -16,10 +16,14 @@ Endpoints:
     GET  /api/v1/integrations/etap/settings         — Get settings
     DELETE /api/v1/integrations/etap/settings       — Delete settings
 """
-from __future__ import annotations
-
 import logging
-from typing import Annotated, List, Optional
+from typing import List, Optional
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
+
+
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 

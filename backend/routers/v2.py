@@ -48,8 +48,12 @@ References
 # Removing it forces actual type resolution at import time.
 import logging
 import os
-import uuid
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
+
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field

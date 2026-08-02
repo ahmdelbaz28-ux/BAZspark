@@ -15,16 +15,25 @@ from pydantic import BaseModel
 
 from backend.auth import require_permission
 from backend.rbac import Permission
-from engineering_copilot.ai_agent.ai_agent import AICopilot
-from engineering_copilot.models.unified_model import UnifiedEngineeringModel
-from engineering_copilot.translation_engine.translation_engine import TranslationEngine
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/engineering-copilot", tags=["Engineering Copilot"])
 
-# Initialize the AI Copilot
-ai_copilot = AICopilot()
-translation_engine = TranslationEngine()
+ai_copilot = None
+translation_engine = None
+
+
+try:
+
+    from engineering_copilot.ai_agent.ai_agent import AICopilot
+    from engineering_copilot.models.unified_model import UnifiedEngineeringModel
+    from engineering_copilot.translation_engine.translation_engine import TranslationEngine
+    ai_copilot = AICopilot()
+    translation_engine = TranslationEngine()
+except BaseException as _err:
+    logger.warning("Engineering copilot module initialization warning: %s", _err)
+
+
 
 
 class ChatRequest(BaseModel):

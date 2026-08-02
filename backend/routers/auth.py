@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 """
 backend/routers/auth.py — Session-based authentication with signed HttpOnly cookies.
+
 
 SECURITY DESIGN (CRITICAL FIX):
   The API key is NEVER stored in the cookie. Instead, we generate a

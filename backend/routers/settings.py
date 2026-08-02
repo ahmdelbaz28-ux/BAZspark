@@ -39,7 +39,12 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Annotated, Optional
+from typing import Optional
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
+
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status

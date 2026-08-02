@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 """FireAI Backend API Routers."""
 
 import logging as _logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 _logger = _logging.getLogger(__name__)
 
 
-def _lazy_import(name: str) -> object | None:
+def _lazy_import(name: str) -> Optional[object]:
+
     """Lazily import a router module -- fails gracefully if unavailable.
 
     Catches ImportError (optional dependency missing), NameError (typing

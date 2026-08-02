@@ -24,8 +24,12 @@ import logging
 import os
 import re
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
+
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse
