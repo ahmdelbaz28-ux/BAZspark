@@ -47,12 +47,39 @@ def verify_api_key_ws(api_key: str | None = None) -> str:
     return api_key
 
 
+WS_HEARTBEAT_TIMEOUT_SECONDS: float = 30.0
+
+
+def _validate_ws_origin(websocket: WebSocket) -> None:
+    """Enforce strict Origin header validation to prevent CSWSH attacks.
+
+    Raises HTTPException(403) if the Origin is present but not in the
+    CORS_ALLOWED_ORIGINS allow-list. Absent origins (e.g. native clients
+    or server-to-server) are permitted because they cannot originate from
+    a browser cross-site request.
+    """
+    origin = websocket.headers.get("origin")
+    if not origin:
+        return  # non-browser client — allow
+
+    allowed_str = os.environ.get(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173",
+    )
+    allowed = [o.strip().lower() for o in allowed_str.split(",") if o.strip()]
+    origin_lower = origin.strip().lower()
+    if not any(origin_lower == o or origin_lower.startswith(o) for o in allowed):
+        logger.warning("Rejected WebSocket from untrusted origin '%s'", origin)
+        raise HTTPException(status_code=403, detail="Forbidden: untrusted WebSocket origin.")
+
+
 class ConnectionManager:
     def __init__(self) -> None:
         self._active_connections: dict[str, WebSocket] = {}
         self._connection_keys: dict[WebSocket, str] = {}
 
     async def connect(self, websocket: WebSocket, client_id: str, api_key: str | None = None) -> None:
+        _validate_ws_origin(websocket)
         verify_api_key_ws(api_key)
         await websocket.accept()
         self._active_connections[client_id] = websocket
