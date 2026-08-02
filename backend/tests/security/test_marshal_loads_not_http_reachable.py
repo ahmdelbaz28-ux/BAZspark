@@ -524,16 +524,21 @@ def _make_sentinel(raw_log: list, filtered_log: list,
         frame = inspect.currentframe().f_back
         skip_substrings = ("/marshal", "<frozen", "/mock", "/unittest")
         while frame is not None:
-            fn = frame.f_code.co_filename
+            # Normalize to forward slashes so the skip-substring
+            # checks work on Windows (\\unittest\\mock.py vs /unittest).
+            fn = frame.f_code.co_filename.replace("\\", "/")
             if not any(s in fn for s in skip_substrings):
                 break
             frame = frame.f_back
         if frame is not None:
-            fn = frame.f_code.co_filename
+            fn = frame.f_code.co_filename.replace("\\", "/")
             ln = frame.f_lineno
             entry = (fn, ln, func_name)
             raw_log.append(entry)
-            if (not fn.startswith(test_file_prefixes)
+            # Normalize the test-file prefixes the same way so the
+            # startswith check matches on Windows (backslash paths).
+            normalized_prefixes = tuple(p.replace("\\", "/") for p in test_file_prefixes)
+            if (not fn.startswith(normalized_prefixes)
                     and "/_pytest/" not in fn
                     and "/site-packages/pytest" not in fn
                     and "conftest" not in os.path.basename(fn)

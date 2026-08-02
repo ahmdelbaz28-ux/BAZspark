@@ -237,13 +237,13 @@ def test_l1_file_is_in_production_source_tree():
     if not DATA_SERVICE_TS.exists():
         pytest.skip("dataService.ts not found")
 
-    assert "frontend/src/" in str(DATA_SERVICE_TS), (
+    # Use as_posix() so forward-slash checks are OS-portable.
+    path_str = DATA_SERVICE_TS.as_posix()
+    assert "frontend/src/" in path_str, (
         "dataService.ts is no longer under frontend/src/ — it may have "
         "been moved to a non-production directory. If so, the L-1 claim "
         "may no longer apply and should be reworded."
     )
-
-    path_str = str(DATA_SERVICE_TS)
     assert "/test/" not in path_str and "/__tests__/" not in path_str \
         and "/mock/" not in path_str, (
         "dataService.ts is under a test/ or mock/ directory — it is no "
@@ -371,7 +371,7 @@ def test_l1_honest_caveat_file_is_orphaned_in_production():
         except (OSError, UnicodeDecodeError):
             continue
         if import_pattern.search(text):
-            importers.append(str(ts_file.relative_to(FRONTEND_SRC)))
+            importers.append(ts_file.relative_to(FRONTEND_SRC).as_posix())
 
     expected_hooks = {
         "components/mockups/engineering/hooks/useTelemetryStream.ts",
