@@ -109,8 +109,11 @@ describe("SyncPage", () => {
       }
       return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
     });
-    mockGetSyncStatus.mockResolvedValue(MOCK_SYNC_STATUS_SYNCED);
-    mockSyncProject.mockResolvedValue(MOCK_SYNC_STATUS_SYNCED);
+    // Backend sync responses are wrapped as { data: SyncStatus, success: true }
+    // (see backend/routers/sync.py: get_sync_status / sync project), and the
+    // component reads res.data — so the mocks resolve the wrapped shape.
+    mockGetSyncStatus.mockResolvedValue({ data: MOCK_SYNC_STATUS_SYNCED });
+    mockSyncProject.mockResolvedValue({ data: MOCK_SYNC_STATUS_SYNCED });
   });
 
   it("renders the page title", () => {
