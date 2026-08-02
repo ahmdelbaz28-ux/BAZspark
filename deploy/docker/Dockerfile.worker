@@ -15,7 +15,7 @@ COPY requirements.txt pyproject.toml ./
 # would point to /build/ which is absent in the final stage. Install
 # requirements.txt only; source code is copied to /app/ in the final
 # stage and PYTHONPATH=/app makes it importable.
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir --only-binary :all: --prefix=/install -r requirements.txt
 
 FROM python:3.12-slim
 
