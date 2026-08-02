@@ -20,8 +20,7 @@ from backend.limiter import limiter
 from backend.models import CreateConnectionInput
 from backend.rbac import Permission
 from backend.response import success
-
-from backend.services.connection_service import ConnectionService, connection_service
+from backend.services.connection_service import ConnectionService
 
 router = APIRouter(prefix="/projects/{project_id}/connections", tags=["connections"])
 

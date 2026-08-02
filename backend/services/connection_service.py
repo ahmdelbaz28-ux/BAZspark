@@ -8,7 +8,7 @@ shared between v1 project-scoped connections and v2 relationship connections.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 from backend.database import get_db
 

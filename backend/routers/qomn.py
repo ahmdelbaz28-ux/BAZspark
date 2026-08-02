@@ -934,8 +934,8 @@ async def evaluate_acoustics(request: Request, body: AcousticsEvaluationRequest)
     Unified Acoustics Engine evaluation for NFPA 72 §18.4 audible notification.
     """
     try:
+        from fireai.core.acoustic_calculator import CheckPoint, Speaker
         from fireai.core.acoustics_engine import AcousticsEngine
-        from fireai.core.acoustic_calculator import Speaker, CheckPoint
         engine = AcousticsEngine()
         spk = Speaker(x=0.0, y=0.0, z=2.8, rating_dba=body.speaker_spl_dba)
         chk = CheckPoint(x=body.check_point_distance_m, y=0.0, z=1.5, label="CP-1")

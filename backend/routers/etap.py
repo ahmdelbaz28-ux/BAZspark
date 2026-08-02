@@ -18,6 +18,7 @@ Endpoints:
 """
 import logging
 from typing import List, Optional
+
 try:
     from typing import Annotated
 except ImportError:

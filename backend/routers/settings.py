@@ -40,6 +40,7 @@ from __future__ import annotations
 import logging
 import uuid
 from typing import Optional
+
 try:
     from typing import Annotated
 except ImportError:

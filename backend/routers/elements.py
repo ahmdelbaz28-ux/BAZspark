@@ -10,6 +10,7 @@ import logging
 import math
 import re
 from typing import Any, Optional
+
 try:
     from typing import Annotated
 except ImportError:
