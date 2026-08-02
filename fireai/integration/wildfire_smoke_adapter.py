@@ -174,14 +174,6 @@ class WildfireSmokeAdapter(ExternalApiAdapter):
         if not (1 <= forecast_hours <= 168):
             raise ValueError(f"forecast_hours must be 1..168, got {forecast_hours}")
 
-        # SSRF Guard Protection: Validate target host against private/loopback/metadata IP ranges
-        from urllib.parse import urlparse
-
-        from backend.integrations._ssrf_guard import resolve_to_safe_ip
-        parsed_url = urlparse(self._base_url)
-        if parsed_url.hostname:
-            resolve_to_safe_ip(parsed_url.hostname)
-
         params = {
             "latitude": lat,
             "longitude": lon,
@@ -190,7 +182,21 @@ class WildfireSmokeAdapter(ExternalApiAdapter):
             "forecast_days": max(1, (forecast_hours + 23) // 24),
         }
         client = await self._get_client()
+
+        # SSRF Guard: validate the EXACT request URL (with params) immediately
+        # before every HTTP call — not just the static base URL set at init.
+        # This prevents SSRF via URL manipulation between construction and use.
+        from urllib.parse import urlencode, urlparse
+
+        from backend.integrations._ssrf_guard import resolve_to_safe_ip
+        _request_url = f"{self._base_url}?{urlencode(params)}"
+        _parsed = urlparse(_request_url)
+        if not _parsed.hostname:
+            raise ValueError(f"SSRF guard: could not parse hostname from request URL: {_request_url!r}")
+        resolve_to_safe_ip(_parsed.hostname)  # raises ValueError if unsafe
+
         resp = await client.get(self._base_url, params=params)
+
 
         resp.raise_for_status()
         data = resp.json()

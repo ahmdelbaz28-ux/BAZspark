@@ -150,12 +150,61 @@ async def _handle_agent_message(websocket: WebSocket, msg: dict) -> None:
 
 
 WS_HEARTBEAT_TIMEOUT_SECONDS = 30.0
+WS_PING_INTERVAL_SECONDS = 25.0  # send ping 5s before timeout deadline
+
+
+async def _run_heartbeat_loop(websocket: WebSocket) -> None:
+    """Active ping/pong heartbeat loop.
+
+    Sends a ping every WS_PING_INTERVAL_SECONDS. After sending, waits up
+    to WS_HEARTBEAT_TIMEOUT_SECONDS for a pong response. If no pong arrives
+    within that window, closes the socket immediately with code 4008
+    (Policy Violation — heartbeat timeout) to prevent resource locks.
+    """
+    import asyncio as _asyncio
+
+    _pong_received: dict[str, bool] = {"value": True}  # mutable flag shared with message handler
+
+    async def _ping_cycle() -> None:
+        while True:
+            await _asyncio.sleep(WS_PING_INTERVAL_SECONDS)
+            _pong_received["value"] = False
+            try:
+                await websocket.send_json({"type": "ping"})
+            except Exception:
+                return  # connection already dead — let message loop handle it
+
+            # Wait up to 30s for pong
+            deadline = WS_HEARTBEAT_TIMEOUT_SECONDS
+            while deadline > 0:
+                await _asyncio.sleep(0.5)
+                deadline -= 0.5
+                if _pong_received["value"]:
+                    break
+            else:
+                logger.warning(
+                    "Agent WebSocket heartbeat timeout: no pong within %ss — terminating connection",
+                    WS_HEARTBEAT_TIMEOUT_SECONDS,
+                )
+                try:
+                    await websocket.close(code=4008)
+                except Exception:
+                    pass
+                return  # signal to caller that we closed
+
+    return _pong_received, _ping_cycle
 
 
 @router.websocket("/ws")
 async def agent_websocket_endpoint(websocket: WebSocket):
     """
-    WebSocket endpoint for the local agent to connect with origin validation and heartbeat timeout.
+    WebSocket endpoint for the local agent.
+
+    Security:
+      - Origin validated against CORS_ALLOWED_ORIGINS (CSWSH protection).
+      - API key verified before handshake is accepted.
+      - Active 30-second ping/pong heartbeat: if client fails to pong,
+        socket is terminated immediately with code 4008.
     """
     api_key_info = await _authenticate_agent_websocket(websocket)
     if api_key_info is None:
@@ -167,21 +216,30 @@ async def agent_websocket_endpoint(websocket: WebSocket):
     agent_type = "autocad_revit"
     _register_agent(websocket, agent_type)
 
-    try:
+    pong_flag, ping_cycle_fn = _run_heartbeat_loop(websocket)
+
+    async def _message_loop() -> None:
         while True:
-            data = await asyncio.wait_for(websocket.receive_text(), timeout=WS_HEARTBEAT_TIMEOUT_SECONDS)
+            data = await websocket.receive_text()
             try:
                 msg = json.loads(data)
-                await _handle_agent_message(websocket, msg)
+                # A pong response from the client resets the heartbeat flag
+                if msg.get("type") == "pong":
+                    pong_flag["value"] = True
+                else:
+                    await _handle_agent_message(websocket, msg)
             except Exception as e:
                 logger.warning("Error handling agent message: %s", e)
-    except asyncio.TimeoutError:
-        logger.warning("Agent WebSocket idle heartbeat timeout (%ss) reached — closing connection", WS_HEARTBEAT_TIMEOUT_SECONDS)
-        await websocket.close(code=1000)
+
+    try:
+        await asyncio.gather(_message_loop(), ping_cycle_fn())
     except WebSocketDisconnect:
         logger.info("Local Agent disconnected from WebSocket")
+    except Exception as e:
+        logger.warning("Agent WebSocket session ended: %s", e)
     finally:
         _cleanup_agent(websocket, agent_type)
+
 
 
 

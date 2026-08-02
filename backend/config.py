@@ -101,15 +101,30 @@ class Config:
             if not all(part in cls.DATABASE_URL for part in ["//", "@"]):
                 issues.append("DATABASE_URL may have invalid PostgreSQL format")
 
-        # Fail-Safe check: Ensure JWT_SECRET or SESSION_SECRET is set in production
-        if cls.ENVIRONMENT.lower() in ("production", "prod"):
-            session_secret = os.getenv("FIREAI_SESSION_SECRET") or os.getenv("SESSION_SECRET") or os.getenv("JWT_SECRET") or os.getenv("FIREAI_SESSION_SECRET_FILE")
-            if not session_secret:
-                issues.append("CRITICAL: JWT_SECRET or SESSION_SECRET is missing in production environment.")
-
         return issues
 
 
+# ── STARTUP FAIL-FAST: secrets must be present at import time ──────────────
+# Evaluated once when the module is loaded. Any missing secret terminates the
+# process immediately — NO fallback, NO default string, NO silent degradation.
+_jwt_secret = (
+    os.environ.get("JWT_SECRET")
+    or os.environ.get("SESSION_SECRET")
+    or os.environ.get("FIREAI_SESSION_SECRET")
+    or os.environ.get("FIREAI_SESSION_SECRET_FILE")
+)
+
+if not _jwt_secret:
+    raise RuntimeError(
+        "FATAL: Environment secrets missing.\n"
+        "Set JWT_SECRET (or SESSION_SECRET / FIREAI_SESSION_SECRET) before starting.\n"
+        "Generate a strong secret with:\n"
+        "  python3 -m backend.session_secret generate\n"
+        "Then export it:\n"
+        "  export JWT_SECRET='<generated>'\n"
+        "The application cannot start without a signing secret."
+    )
 
 # Singleton instance
 config = Config()
+
