@@ -21,33 +21,21 @@ from backend.models import CreateConnectionInput
 from backend.rbac import Permission
 from backend.response import success
 
+from backend.services.connection_service import ConnectionService, connection_service
+
 router = APIRouter(prefix="/projects/{project_id}/connections", tags=["connections"])
 
 
 def _verify_project(project_id: str) -> None:
     """Ensure the project exists before operating on its connections."""
-    db = get_db()
-    project = db.get_project(project_id)
-    if not project:
+    if not ConnectionService.verify_project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
 
-# camelCase → snake_case sort field mapping
-_SORT_MAP = {
-    "createdAt": "created_at",
-    "cableSize": "cable_size",
-    "length": "length",
-    "type": "type",
-}
-
-
 def _normalize_sort(sort: str) -> str:
-    """
-    Convert camelCase sort fields to snake_case for database.
+    """Convert camelCase sort fields to snake_case for database."""
+    return ConnectionService.normalize_sort_field(sort)
 
-    SECURITY FIX (BUG-32): Strict whitelist — rejects unknown sort fields.
-    """
-    return _SORT_MAP.get(sort, "created_at")
 
 
 @router.get("", dependencies=[Depends(require_permission(Permission.CONNECTION_READ))])

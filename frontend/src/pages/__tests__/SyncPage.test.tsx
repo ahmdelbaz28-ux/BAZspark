@@ -39,6 +39,18 @@ vi.mock("lucide-react", async (importOriginal) => {
 	return mocked;
 });
 
+// Mock the fullApi module so we control syncApi.getSyncStatus/syncProject
+// directly without going through the real apiCall/fetchWithRetry/CSRF pipeline.
+const mockGetSyncStatus = vi.fn();
+const mockSyncProject = vi.fn();
+
+vi.mock("@/services/fullApi", () => ({
+  syncApi: {
+    getSyncStatus: (...args: unknown[]) => mockGetSyncStatus(...args),
+    syncProject: (...args: unknown[]) => mockSyncProject(...args),
+  },
+}));
+
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
@@ -55,23 +67,17 @@ const MOCK_PROJECTS = {
 };
 
 const MOCK_SYNC_STATUS_SYNCED = {
-  data: {
-    status: "synced",
-    lastSync: "2026-07-30T12:00:00Z",
-    pendingChanges: 0,
-    deviceCount: 24,
-    connectionCount: 8,
-  },
-  success: true,
+  status: "synced",
+  lastSync: "2026-07-30T12:00:00Z",
+  pendingChanges: 0,
+  deviceCount: 24,
+  connectionCount: 8,
 };
 
 const MOCK_SYNC_STATUS_SYNCING = {
-  data: {
-    status: "syncing",
-    lastSync: "2026-07-30T12:00:00Z",
-    pendingChanges: 0,
-  },
-  success: true,
+  status: "syncing",
+  lastSync: "2026-07-30T12:00:00Z",
+  pendingChanges: 0,
 };
 
 function createQueryClient() {
@@ -101,14 +107,10 @@ describe("SyncPage", () => {
           json: () => Promise.resolve(MOCK_PROJECTS),
         });
       }
-      if (url.includes("/projects/") && url.includes("/sync")) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(MOCK_SYNC_STATUS_SYNCED),
-        });
-      }
       return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
     });
+    mockGetSyncStatus.mockResolvedValue(MOCK_SYNC_STATUS_SYNCED);
+    mockSyncProject.mockResolvedValue(MOCK_SYNC_STATUS_SYNCED);
   });
 
   it("renders the page title", () => {
@@ -192,27 +194,12 @@ describe("SyncPage", () => {
     await userEvent.click(syncBtn);
 
     await waitFor(() => {
-      // Should have made a POST request
-      const hasPostCall = mockFetch.mock.calls.some(
-        (call) => (call[1] as RequestInit)?.method === "POST"
-      );
-      expect(hasPostCall).toBe(true);
+      expect(mockSyncProject).toHaveBeenCalledWith("proj-1");
     });
   });
 
   it("shows Syncing... text during sync", async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes("/projects?limit=50")) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(MOCK_PROJECTS),
-        });
-      }
-      if (url.includes("/projects/") && url.includes("/sync")) {
-        return new Promise(() => {}); // Never resolves
-      }
-      return Promise.resolve({ ok: false });
-    });
+    mockSyncProject.mockImplementation(() => new Promise(() => {})); // Never resolves
 
     renderPage();
     await waitFor(() => {
@@ -235,22 +222,7 @@ describe("SyncPage", () => {
   });
 
   it("shows error on sync failure", async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes("/projects?limit=50")) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(MOCK_PROJECTS),
-        });
-      }
-      if (url.includes("/sync")) {
-        return Promise.resolve({
-          ok: false,
-          status: 500,
-          json: () => Promise.resolve({ detail: "Sync failed: DB unavailable" }),
-        });
-      }
-      return Promise.resolve({ ok: false });
-    });
+    mockSyncProject.mockRejectedValue(new Error("Sync failed: DB unavailable"));
 
     renderPage();
     await waitFor(() => {
@@ -273,21 +245,7 @@ describe("SyncPage", () => {
   });
 
   it("shows error when sync status fetch fails", async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes("/projects?limit=50")) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(MOCK_PROJECTS),
-        });
-      }
-      if (url.includes("/sync")) {
-        return Promise.resolve({
-          ok: false,
-          status: 404,
-        });
-      }
-      return Promise.resolve({ ok: false });
-    });
+    mockGetSyncStatus.mockRejectedValue(new Error("HTTP 404: Not Found"));
 
     renderPage();
     await waitFor(() => {

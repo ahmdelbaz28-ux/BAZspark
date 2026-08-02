@@ -31,6 +31,8 @@ from backend.schemas import (
     PaginatedData,
 )
 
+from backend.services.connection_service import ConnectionService, connection_service
+
 logger = logging.getLogger(__name__)
 
 # (relative) to avoid double-prefixing when include_router adds /api/v1.
@@ -55,7 +57,8 @@ async def list_connections(
             page=page,
             page_size=page_size,
         )
-        total_pages = math.ceil(total / page_size) if total > 0 else 0
+        total_pages = ConnectionService.calculate_pagination(total, page_size)
+
 
         return ApiResponse(
             success=True,

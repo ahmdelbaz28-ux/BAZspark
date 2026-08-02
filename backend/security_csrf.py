@@ -93,12 +93,23 @@ CSRF_EXEMPT_PATHS = frozenset({
     "/docs",
     "/redoc",
     "/openapi.json",
-    # Auth endpoints: login creates the session (no existing cookie to
-    # double-submit). Logout is NOT exempt — logout CSRF is a real attack
-    # that can forcibly terminate user sessions (denial of service).
     "/api/v1/auth/login",
     "/api/v1/auth/session/login",
 })
+
+
+def extract_csrf_header(headers: MutableMapping[str, str] | dict) -> str | None:
+    """Extract CSRF token from request headers (case-insensitive key search)."""
+    for key, value in headers.items():
+        if key.lower() == CSRF_HEADER_NAME.lower():
+            return value
+    return None
+
+
+def is_csrf_exempt_path(path: str) -> bool:
+    """Check if request path is exempt from CSRF protection."""
+    return path in CSRF_EXEMPT_PATHS or any(path.startswith(p) for p in CSRF_EXEMPT_PATHS)
+
 
 # It was defined but NEVER USED anywhere in the codebase. Keeping it
 # misled readers into thinking the middleware enforces content-type
