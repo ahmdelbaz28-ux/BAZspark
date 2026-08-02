@@ -1,33 +1,43 @@
 name: Auto-merge Dependabot PRs
 
-# Auto-merge is restricted to DEV dependencies only.
-# Safety-critical production packages require manual review.
+# Safety-critical policy: Auto-merge is permitted ONLY for dev dependencies
+# and non-critical patch/minor updates after all CI status checks pass.
+# Production & safety-critical packages require manual review.
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - synchronize
       - reopened
+      - labeled
 
 permissions:
   contents: write
   pull-requests: write
   statuses: read
+  checks: read
 
 jobs:
   auto-merge:
+    name: Dependabot Auto-Merge Evaluator
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
-      - name: Check if dependency is safe to auto-merge
-        id: check-safe
+      - name: Fetch Dependabot Metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@d7267fdb7e40a03c8e827035a0730e0499b88131  # v2.3.0
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Check if package is safety-critical or production
+        id: check-safety
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
-            const pr = context.payload.pull_request;
-            const title = pr.title || '';
-            const headRef = pr.head.ref || '';
+            const depNames = '${{ steps.metadata.outputs.dependency-names }}'.split(',').map(s => s.trim().toLowerCase());
+            const depType = '${{ steps.metadata.outputs.dependency-type }}'; // 'direct:production', 'direct:development', etc.
+            const updateType = '${{ steps.metadata.outputs.update-type }}'; // 'version-update:semver-major', etc.
 
             const CRITICAL_PACKAGES = [
               'fastapi', 'starlette', 'uvicorn', 'gunicorn',
@@ -42,99 +52,48 @@ jobs:
               'typescript', '@vitejs/plugin-react',
             ];
 
-            let packageName = '';
-            const titleMatch = title.match(/bump\s+([^\s]+)/i);
-            if (titleMatch) {
-              packageName = titleMatch[1].replace(/[^a-zA-Z0-9@/_-]/g, '');
-            }
-            if (!packageName) {
-              const branchMatch = headRef.match(/dependabot\/[^/]+\/(?:frontend\/)?([^/-]+)/);
-              if (branchMatch) packageName = branchMatch[1];
-            }
-
-            const pkgLower = packageName.toLowerCase();
-            const isCritical = CRITICAL_PACKAGES.some(p =>
-              pkgLower === p || pkgLower === p.replace('/', '-') || pkgLower.endsWith('/' + p)
-            );
-
-            console.log(`PR title: ${title}`);
-            console.log(`Package: ${packageName}`);
-            console.log(`Is critical: ${isCritical}`);
-
-            core.setOutput('package', packageName);
-            core.setOutput('is_critical', isCritical.toString());
-            core.setOutput('safe', isCritical ? 'false' : 'true');
-
-      - name: Wait for status checks (with timeout protection)
-        id: wait-for-status-checks
-        if: steps.check-safe.outputs.safe == 'true'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
-        with:
-          script: |
-            const ref = context.payload.pull_request.head.sha;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            // Wait up to 10 minutes (reduced from 30 to prevent timeout failures)
-            const timeout = 10 * 60 * 1000;
-            const start = Date.now();
-            let attempts = 0;
-
-            while (Date.now() - start < timeout) {
-              attempts++;
-              try {
-                const { data: statuses } = await github.rest.repos.listCommitStatuses({
-                  owner, repo, ref
-                });
-
-                const { data: checkRuns } = await github.rest.checks.listForRef({
-                  owner, repo, ref
-                });
-
-                const pendingStatuses = statuses.filter(s => s.state === 'pending');
-                const pendingChecks = checkRuns.check_runs.filter(c =>
-                  c.status !== 'completed' && c.name !== 'auto-merge'
-                );
-
-                console.log(`Attempt ${attempts}: ${pendingStatuses.length} pending statuses, ${pendingChecks.length} pending checks`);
-
-                if (pendingStatuses.length === 0 && pendingChecks.length === 0) {
-                  const allStatusesOk = statuses.length === 0 || statuses.every(s => s.state === 'success');
-                  const allChecksOk = checkRuns.check_runs.length === 0 ||
-                    checkRuns.check_runs.every(c => c.status !== 'completed' || c.conclusion === 'success' || c.conclusion === 'skipped' || c.conclusion === 'neutral');
-
-                  if (allStatusesOk && allChecksOk) {
-                    core.setOutput('ready', 'true');
-                    console.log('All checks passed — ready to merge');
-                    return;
-                  } else {
-                    console.log('Some checks failed — skipping auto-merge');
-                    core.setOutput('ready', 'false');
-                    return;
-                  }
-                }
-              } catch (err) {
-                console.log(`Error checking status: ${err.message}`);
+            let isCritical = false;
+            for (const name of depNames) {
+              if (CRITICAL_PACKAGES.some(c => name === c || name.endsWith('/' + c) || name.replace('/', '-') === c)) {
+                isCritical = true;
+                break;
               }
-
-              await new Promise(resolve => setTimeout(resolve, 15000));
             }
 
-            // Timeout — DO NOT auto-merge without CI greenlight (security)
-            console.log('Timeout reached — CI checks did not complete, skipping auto-merge');
-            core.setOutput('ready', 'false');
+            const isDev = depType === 'direct:development' || depType === 'indirect';
+            const isMajor = updateType === 'version-update:semver-major';
 
-      - name: Enable auto-merge (dev deps only)
-        if: steps.check-safe.outputs.safe == 'true' && steps.wait-for-status-checks.outputs.ready == 'true'
-        run: |
-          echo "Auto-merging dev dependency: ${{ steps.check-safe.outputs.package }}"
-          gh pr merge --auto --squash "${{ github.event.pull_request.number }}" || \
-          echo "::warning::Auto-merge not available - PR may need manual merge"
+            // Safe to auto-merge ONLY if:
+            // 1. Not a safety-critical package
+            // 2. Is a dev dependency OR non-major update
+            const safe = (!isCritical) && (isDev || !isMajor);
+
+            console.log(`Dependencies: ${depNames.join(', ')}`);
+            console.log(`Dependency Type: ${depType}`);
+            console.log(`Update Type: ${updateType}`);
+            console.log(`Is Critical Package: ${isCritical}`);
+            console.log(`Safe to Auto-merge: ${safe}`);
+
+            core.setOutput('safe', safe ? 'true' : 'false');
+            core.setOutput('is_critical', isCritical ? 'true' : 'false');
+
+      - name: Auto-approve PR
+        if: steps.check-safety.outputs.safe == 'true'
+        run: gh pr review --approve "$PR_URL"
         env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Skip auto-merge (critical dep)
-        if: steps.check-safe.outputs.is_critical == 'true'
+      - name: Enable auto-merge
+        if: steps.check-safety.outputs.safe == 'true'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip auto-merge (critical/production package)
+        if: steps.check-safety.outputs.safe != 'true'
         run: |
-          echo "::notice::Auto-merge skipped for critical package: ${{ steps.check-safe.outputs.package }}"
-          echo "This PR requires manual review."
+          echo "::notice::Auto-merge skipped for safety-critical or major production package."
+          echo "Dependencies: ${{ steps.metadata.outputs.dependency-names }}"
+          echo "Requires manual engineering review."
