@@ -26,6 +26,16 @@ except ImportError:  # pragma: no cover
 
 project_router = APIRouter(prefix="/exports", tags=["exports"])
 
+# V273 FIX (F821): Import openpyxl at module level so helper functions can
+# reference Font, PatternFill, Alignment.  The try/except pattern is kept
+# so the module loads even when openpyxl is not installed — the individual
+# endpoint handlers catch the NameError at runtime.
+try:
+    from openpyxl.styles import Alignment, Font, PatternFill  # noqa: F401
+    from openpyxl.utils import get_column_letter  # noqa: F401
+except ImportError:
+    pass
+
 
 def _generate_excel_export(project, devices, connections):
     """Generate Excel export content with multiple sheets."""

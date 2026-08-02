@@ -52,6 +52,7 @@ def get_etap_service(request: Request):
 
 
 # ── Annotated dependency aliases (S8410) ────────────────────────────────────
+# NOTE: Must be defined AFTER the DI function it references (F821 fix).
 EtapServiceDep = Annotated[EtapService, Depends(get_etap_service)]
 # ────────────────────────────────────────────────────────────────────────────
 

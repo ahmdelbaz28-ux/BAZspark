@@ -41,6 +41,14 @@ GenerateReportInput.model_rebuild()
 from backend.rbac import Permission
 from backend.response import safe_filename as _safe_filename
 
+# V273 FIX (F821): Import Paragraph at module level so helper functions
+# _add_pdf_value / _add_data_to_pdf can reference it.  The try/except
+# pattern is kept so the module loads even when reportlab is not installed.
+try:
+    from reportlab.platypus import Paragraph  # noqa: F401
+except ImportError:
+    pass
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/projects/{project_id}/reports", tags=["reports"])

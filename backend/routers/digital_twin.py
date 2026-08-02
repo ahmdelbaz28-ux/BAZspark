@@ -60,6 +60,7 @@ def get_config_manager() -> ConversionConfigManager:
 
 
 # ── Annotated dependency aliases (S8410) ────────────────────────────────────
+# NOTE: Must be defined AFTER the DI functions they reference (F821 fix).
 DigitalTwinServiceDep = Annotated[DigitalTwinService, Depends(get_digital_twin_service)]
 ConfigManagerDep = Annotated[ConversionConfigManager, Depends(get_config_manager)]
 ExportExecuteRole = Annotated[None, Depends(require_permission(Permission.EXPORT_EXECUTE))]
