@@ -77,7 +77,7 @@ class TestLogin:
         """Wrong API key should return 401."""
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "wrong_key"},
+            json={"api_key": "wrong_key"},  # NOSONAR: python:S6418 — test fixture, not a real secret
         )
         assert resp.status_code == 401, resp.text
         assert "Invalid" in resp.json()["detail"]
@@ -86,7 +86,7 @@ class TestLogin:
         """Empty API key should fail Pydantic validation (min_length=1)."""
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": ""},
+            json={"api_key": ""},  # NOSONAR: python:S6418 — test fixture, not a real secret
         )
         assert resp.status_code == 422, resp.text
 
@@ -138,7 +138,7 @@ class TestCookieAuth:
         # Login to get session cookie
         login_resp = fresh_client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_auth_123"},
+            json={"api_key": "test_key_for_auth_123"},  # NOSONAR: python:S6418 — test fixture, not a real secret
         )
         # Manually inject the __Host- session cookie (httpx rejects __Host- over HTTP)
         set_cookie = login_resp.headers.get("set-cookie", "")

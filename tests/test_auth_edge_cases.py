@@ -203,7 +203,7 @@ class TestInputValidation:
         """Whitespace-only API key should be rejected (empty after strip)."""
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "   "},
+            json={"api_key": "   "},  # NOSONAR: python:S6418 — test fixture, not a real secret
         )
         # Pydantic min_length=1 should catch this before strip
         assert resp.status_code in (400, 422)
@@ -213,7 +213,7 @@ class TestInputValidation:
         long_key = "x" * 10000
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": long_key},
+            json={"api_key": long_key},  # NOSONAR: python:S6418 — test fixture, not a real secret
         )
         assert resp.status_code == 401, "Long invalid key should be rejected"
 
@@ -221,7 +221,7 @@ class TestInputValidation:
         """API key with special characters should be handled safely."""
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "key<script>alert(1)</script>"},
+            json={"api_key": "key<script>alert(1)</script>"},  # NOSONAR: python:S6418 — test fixture, not a real secret
         )
         assert resp.status_code == 401, "Invalid key should be rejected"
 
@@ -229,7 +229,7 @@ class TestInputValidation:
         """API key with newlines should be handled safely (no header injection)."""
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "key\n\rSet-Cookie: evil=true"},
+            json={"api_key": "key\n\rSet-Cookie: evil=true"},  # NOSONAR: python:S6418 — test fixture, not a real secret
         )
         assert resp.status_code == 401, "Invalid key should be rejected"
 
@@ -266,10 +266,10 @@ class TestRateLimitWindow:
         """Rate limit should reset after the window expires."""
         # Make 5 failed attempts
         for _ in range(5):
-            client.post("/api/v1/auth/login", json={"api_key": "wrong"})
+            client.post("/api/v1/auth/login", json={"api_key": "wrong"})  # NOSONAR: python:S6418 — test fixture, not a real secret
 
         # Should be rate limited
-        resp = client.post("/api/v1/auth/login", json={"api_key": "wrong"})
+        resp = client.post("/api/v1/auth/login", json={"api_key": "wrong"})  # NOSONAR: python:S6418 — test fixture, not a real secret
         assert resp.status_code == 429
 
         # Simulate time passing (clear the failed attempts)
@@ -278,14 +278,14 @@ class TestRateLimitWindow:
             _mem_failed.clear()
 
         # Should be able to attempt again
-        resp = client.post("/api/v1/auth/login", json={"api_key": "wrong"})
+        resp = client.post("/api/v1/auth/login", json={"api_key": "wrong"})  # NOSONAR: python:S6418 — test fixture, not a real secret
         assert resp.status_code == 401, "Rate limit should reset after window"
 
     def test_successful_login_clears_failed_attempts(self, client: TestClient) -> None:
         """Successful login should clear failed attempts for that IP."""
         # 3 failed attempts
         for _ in range(3):
-            client.post("/api/v1/auth/login", json={"api_key": "wrong"})
+            client.post("/api/v1/auth/login", json={"api_key": "wrong"})  # NOSONAR: python:S6418 — test fixture, not a real secret
 
         # Verify attempts recorded
         client_ip = "testclient"

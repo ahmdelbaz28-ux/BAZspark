@@ -55,14 +55,14 @@ class TestRateLimiting:
         for i in range(5):
             resp = client.post(
                 "/api/v1/auth/login",
-                json={"api_key": "wrong_key"},
+                json={"api_key": "wrong_key"},  # NOSONAR: python:S6418 — test fixture, not a real secret
             )
             assert resp.status_code == 401, f"Attempt {i+1} should be 401"
 
         # 6th attempt should be rate limited
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "wrong_key"},
+            json={"api_key": "wrong_key"},  # NOSONAR: python:S6418 — test fixture, not a real secret
         )
         assert resp.status_code == 429, "6th attempt should be 429"
 
@@ -70,7 +70,7 @@ class TestRateLimiting:
         """A successful login should clear failed attempts."""
         # 4 failed attempts (under the limit)
         for _ in range(4):
-            client.post("/api/v1/auth/login", json={"api_key": "wrong"})
+            client.post("/api/v1/auth/login", json={"api_key": "wrong"})  # NOSONAR: python:S6418 — test fixture, not a real secret
 
         # Successful login
         resp = client.post(
@@ -81,7 +81,7 @@ class TestRateLimiting:
 
         # Should be able to fail again (rate limit was reset)
         for _ in range(4):
-            resp = client.post("/api/v1/auth/login", json={"api_key": "wrong"})
+            resp = client.post("/api/v1/auth/login", json={"api_key": "wrong"})  # NOSONAR: python:S6418 — test fixture, not a real secret
             assert resp.status_code == 401
 
 
