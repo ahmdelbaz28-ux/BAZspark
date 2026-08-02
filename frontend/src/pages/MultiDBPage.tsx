@@ -82,7 +82,7 @@ const VECTOR_DIMENSIONS = 128;
  * these are demo vectors for the Qdrant UI, and crypto is available in all
  * modern browsers and in the Vite dev server.
  */
-function randomEmbedding(dim: number): number[] {
+function randomEmbedding(dim: number): number[] { // NOSONAR: typescript:S2245 — uses crypto.getRandomValues (CSPRNG), not Math.random
   const buf = new Float32Array(dim);
   crypto.getRandomValues(buf);
   return Array.from(buf, (v) => (v + 1) / 2); // normalize to [0, 1)

@@ -4,7 +4,7 @@ import asyncio
 import json
 import logging
 import uuid
-from typing import Any, Dict
+from typing import Any, Callable, Coroutine, Dict
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
@@ -67,33 +67,36 @@ def _extract_api_key_from_handshake(websocket: WebSocket) -> str:
     return ""
 
 
-async def _authenticate_agent_websocket(websocket: WebSocket):
-    """Validate the agent's API key + RBAC + Origin before accepting the WS handshake.
-
-    Returns the validated ``api_key_info`` on success, or ``None`` after
-    closing the connection with code 4003 on any failure.
-    """
+def _validate_origin(origin: str) -> bool:
+    """Check that the Origin header value is in the CORS allow-list."""
     import os
 
-    from backend.api_keys import validate_api_key
-    from backend.rbac import Permission, has_permission
+    allowed_origins_str = os.environ.get(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173",
+    )
+    allowed_origins = [
+        o.strip().lower() for o in allowed_origins_str.split(",") if o.strip()
+    ]
+    origin_clean = origin.strip().lower()
+    return any(
+        origin_clean == o or origin_clean.startswith(o) for o in allowed_origins
+    )
 
-    # 0. Strict Origin header validation
-    origin = websocket.headers.get("origin")
-    if origin:
-        allowed_origins_str = os.environ.get(
-            "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
-        )
-        allowed_origins = [o.strip().lower() for o in allowed_origins_str.split(",") if o.strip()]
-        origin_clean = origin.strip().lower()
-        if not any(origin_clean == o or origin_clean.startswith(o) for o in allowed_origins):
-            logger.warning("Rejected agent connection: untrusted origin '%s'", origin)
-            await websocket.close(code=4003)
-            return None, ""
 
+async def _extract_and_validate_api_key(
+    websocket: WebSocket,
+) -> tuple:
+    """Extract API key from handshake and validate it.
+
+    Returns ``(api_key_info, api_key)`` on success, or ``(None, "")``
+    after closing the socket on any failure.
+    """
     api_key = _extract_api_key_from_handshake(websocket)
     if not api_key:
-        logger.warning("Rejected agent connection: no API key in headers/subprotocol")
+        logger.warning(
+            "Rejected agent connection: no API key in headers/subprotocol"
+        )
         await websocket.close(code=4003)
         return None, ""
 
@@ -109,7 +112,6 @@ async def _authenticate_agent_websocket(websocket: WebSocket):
         await websocket.close(code=4003)
         return None, ""
 
-
     if not has_permission(api_key_info.role, Permission.CALCULATION_EXECUTE):
         logger.warning(
             "Rejected agent connection: role %s lacks CALCULATION_EXECUTE",
@@ -119,6 +121,21 @@ async def _authenticate_agent_websocket(websocket: WebSocket):
         return None, ""
 
     return api_key_info, api_key
+
+
+async def _authenticate_agent_websocket(websocket: WebSocket):
+    """Validate the agent's API key + RBAC + Origin before accepting the WS handshake.
+
+    Returns the validated ``api_key_info`` on success, or ``None`` after
+    closing the connection with code 4003 on any failure.
+    """
+    origin = websocket.headers.get("origin")
+    if origin and not _validate_origin(origin):
+        logger.warning("Rejected agent connection: untrusted origin '%s'", origin)
+        await websocket.close(code=4003)
+        return None, ""
+
+    return await _extract_and_validate_api_key(websocket)
 
 
 
@@ -160,7 +177,32 @@ WS_HEARTBEAT_TIMEOUT_SECONDS = 30.0
 WS_PING_INTERVAL_SECONDS = 25.0  # send ping 5s before timeout deadline
 
 
-async def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> None:
+async def _revalidate_api_key(api_key: str) -> bool:
+    """Return ``True`` if *api_key* is still valid and carries the required permission."""
+    try:
+        info = validate_api_key(api_key)
+        return info is not None and has_permission(
+            info.role, Permission.CALCULATION_EXECUTE
+        )
+    except Exception:
+        return False
+
+
+async def _wait_for_pong(pong_flag: dict[str, bool], timeout: float) -> bool:
+    """Poll *pong_flag* every 0.5 s for up to *timeout* seconds.
+
+    Returns ``True`` as soon as the flag is set, ``False`` on timeout.
+    """
+    remaining = timeout
+    while remaining > 0:
+        await asyncio.sleep(0.5)
+        remaining -= 0.5
+        if pong_flag["value"]:
+            return True
+    return False
+
+
+def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> tuple[dict[str, bool], Callable[[], Coroutine[Any, Any, None]]]:
     """Active ping/pong heartbeat loop with periodic token re-authentication.
 
     Sends a ping every WS_PING_INTERVAL_SECONDS. After sending, waits up
@@ -168,25 +210,18 @@ async def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> None:
     API key validity on every cycle to detect revoked keys/expired sessions.
     If no pong arrives or key is revoked, closes socket immediately.
     """
-    import asyncio as _asyncio
-
     _pong_received: dict[str, bool] = {"value": True}  # mutable flag shared with message handler
 
     async def _ping_cycle() -> None:
         while True:
-            await _asyncio.sleep(WS_PING_INTERVAL_SECONDS)
+            await asyncio.sleep(WS_PING_INTERVAL_SECONDS)
             # Re-authenticate API key on every heartbeat cycle to prevent session hijacking
-            if api_key:
-                try:
-                    info = validate_api_key(api_key)
-                    if info is None or not has_permission(info.role, Permission.CALCULATION_EXECUTE):
-                        logger.warning("Agent WebSocket heartbeat: API key revoked or expired — terminating connection")
-                        await websocket.close(code=4003)
-                        return
-                except Exception:
-                    logger.warning("Agent WebSocket heartbeat: Auth re-validation error — terminating connection")
-                    await websocket.close(code=4003)
-                    return
+            if api_key and not await _revalidate_api_key(api_key):
+                logger.warning(
+                    "Agent WebSocket heartbeat: API key revoked or expired — terminating connection"
+                )
+                await websocket.close(code=4003)
+                return
 
             _pong_received["value"] = False
             try:
@@ -194,14 +229,7 @@ async def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> None:
             except Exception:
                 return  # connection already dead — let message loop handle it
 
-            # Wait up to 30s for pong
-            deadline = WS_HEARTBEAT_TIMEOUT_SECONDS
-            while deadline > 0:
-                await _asyncio.sleep(0.5)
-                deadline -= 0.5
-                if _pong_received["value"]:
-                    break
-            else:
+            if not await _wait_for_pong(_pong_received, WS_HEARTBEAT_TIMEOUT_SECONDS):
                 logger.warning(
                     "Agent WebSocket heartbeat timeout: no pong within %ss — terminating connection",
                     WS_HEARTBEAT_TIMEOUT_SECONDS,

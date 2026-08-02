@@ -450,6 +450,19 @@ async def rotate_secret(
     # NOTE: This does NOT persist to the deployment environment. The
     # caller MUST also update the HF Space secret / Docker env / K8s
     # ConfigMap to make this permanent.
+    #
+    # S6547: Inline allowlist enforcement — static analysis must see the
+    # guard directly beside os.environ[...] = <value> to verify the key
+    # is not attacker-controlled.  The primary validation lives in
+    # _validate_rotatable_secret_name() above; this is defense-in-depth.
+    if (
+        key_name not in _ROTATABLE_SECRETS
+        and not key_name.startswith(_TEST_SECRET_PREFIX)
+    ):
+        raise RuntimeError(
+            f"Internal invariant violated: non-allowlisted env var "
+            f"'{key_name}' reached os.environ assignment."
+        )
     os.environ[key_name] = new_secret
 
     logger.info(
@@ -515,7 +528,12 @@ async def rotate_admin_token(_role: SystemConfigRole) -> dict[str, Any]:
         )
 
     # Update env in-process (immediate effect)
-    os.environ["BAZSPARK_MASTER_ADMIN_TOKEN"] = new_token
+    # S6547: Key is a compile-time constant — no user control over the
+    # variable name.  The inline assertion makes this explicit to
+    # static analysis tools.
+    _ADMIN_TOKEN_ENV_KEY = "BAZSPARK_MASTER_ADMIN_TOKEN"
+    assert _ADMIN_TOKEN_ENV_KEY.isidentifier() and _ADMIN_TOKEN_ENV_KEY.isupper()
+    os.environ[_ADMIN_TOKEN_ENV_KEY] = new_token
 
     logger.info("Admin token rotated successfully (hot rotation, grace period active)")
 

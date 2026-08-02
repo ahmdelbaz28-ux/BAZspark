@@ -683,7 +683,7 @@ async def get_elements(
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
 
-    elements = svc.get_elements(category=category, element_class=element_class)  # NOSONAR - python:S930
+    elements = svc.get_elements(category=category, element_class=element_class)
     return ElementsResponse(success=True, elements=elements, count=len(elements))
 
 
@@ -891,7 +891,7 @@ async def create_family(request: Request, body: CreateFamilyRequest) -> ElementR
         family_name=body.family_name,
         category=body.category,
         location_point=body.location_point,
-        level=body.level,  # NOSONAR - python:S930
+        level=body.level,
         parameters=body.parameters
     )
 

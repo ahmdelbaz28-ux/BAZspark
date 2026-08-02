@@ -30,7 +30,7 @@ try:
     from engineering_copilot.translation_engine.translation_engine import TranslationEngine
     ai_copilot = AICopilot()
     translation_engine = TranslationEngine()
-except BaseException as _err:
+except Exception as _err:
     logger.warning("Engineering copilot module initialization warning: %s", _err)
 
 
@@ -95,9 +95,11 @@ async def chat_with_copilot(request: ChatRequest) -> Dict[str, Any]:
             "sources": result.get("sources", []),
             "timestamp": datetime.now().isoformat(),
         }
-    except Exception:
+    except HTTPException:
+        raise
+    except (AttributeError, KeyError, ValueError, TypeError) as exc:
         logger.exception("Error processing chat request")
-        raise HTTPException(status_code=500, detail="Error processing chat request")
+        raise HTTPException(status_code=500, detail="Error processing chat request") from exc
 
 
 @router.post("/process-request", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
@@ -134,9 +136,11 @@ async def process_engineering_request(request: EngineeringRequest) -> Dict[str, 
         logger.info(f"Engineering request processed successfully for {len(request.target_systems)} systems")
         return result
 
-    except Exception:
+    except HTTPException:
+        raise
+    except (AttributeError, KeyError, ValueError, TypeError) as exc:
         logger.exception("Error processing engineering request")
-        raise HTTPException(status_code=500, detail="Error processing request")
+        raise HTTPException(status_code=500, detail="Error processing request") from exc
 
 
 @router.post("/create-entity", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
@@ -280,9 +284,11 @@ async def create_engineering_entity(request: EntityRequest) -> Dict[str, Any]:
         logger.info("Created %s entity", request.entity_type)  # nosec: S5145 — entity_type is enum-validated
         return creation_result
 
-    except Exception:
+    except HTTPException:
+        raise
+    except (AttributeError, KeyError, ValueError, TypeError, ImportError) as exc:
         logger.exception("Error creating entity")  # nosec: S5145 — no user data in log message
-        raise HTTPException(status_code=500, detail="Error creating entity")
+        raise HTTPException(status_code=500, detail="Error creating entity") from exc
 
 
 @router.post("/translate-model", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
@@ -330,9 +336,11 @@ async def translate_engineering_model(request: SyncRequest) -> Dict[str, Any]:
         logger.info("Translated model from %s to %s", request.source_system, request.target_system)  # nosec: S5145 — system names are enum-validated
         return translation_result
 
-    except Exception:
+    except HTTPException:
+        raise
+    except (AttributeError, KeyError, ValueError, TypeError) as exc:
         logger.exception("Error translating model")
-        raise HTTPException(status_code=500, detail="Error translating model")
+        raise HTTPException(status_code=500, detail="Error translating model") from exc
 
 
 @router.post("/validate-model", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
@@ -361,9 +369,11 @@ async def validate_engineering_model(model_data: Dict[str, Any]) -> Dict[str, An
         logger.info(f"Model validation completed: {validation_result['summary']}")
         return validation_result
 
-    except Exception:
+    except HTTPException:
+        raise
+    except (AttributeError, KeyError, ValueError, TypeError) as exc:
         logger.exception("Error validating model")
-        raise HTTPException(status_code=500, detail="Error validating model")
+        raise HTTPException(status_code=500, detail="Error validating model") from exc
 
 
 @router.post("/generate-reports", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
@@ -392,9 +402,11 @@ async def generate_engineering_reports(model_data: Dict[str, Any]) -> Dict[str, 
         logger.info("Engineering reports generated successfully")
         return reports
 
-    except Exception:
+    except HTTPException:
+        raise
+    except (AttributeError, KeyError, ValueError, TypeError) as exc:
         logger.exception("Error generating reports")
-        raise HTTPException(status_code=500, detail="Error generating reports")
+        raise HTTPException(status_code=500, detail="Error generating reports") from exc
 
 
 @router.get("/health", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.HEALTH_READ))])
@@ -422,9 +434,9 @@ async def health_check() -> Dict[str, Any]:
         logger.info("Health check completed")
         return health_status
 
-    except Exception:
+    except (AttributeError, ValueError, TypeError) as exc:
         logger.exception("Health check failed")
-        raise HTTPException(status_code=500, detail="Health check failed")
+        raise HTTPException(status_code=500, detail="Health check failed") from exc
 
 
 @router.get("/capabilities", response_model=Dict[str, Any], dependencies=[Depends(require_permission(Permission.CALCULATION_READ))])

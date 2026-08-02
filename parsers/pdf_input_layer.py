@@ -433,7 +433,7 @@ class PDFInputLayer:
     def _extract_room_area(self, text: str, position: int) -> Optional[float]:
         window = text[position:position + 200]
 
-        area_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sf|sqft)', window)  # NOSONAR — python:S5855: intentional optional-dot pattern
+        area_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sf)', window)
         if area_match:
             try:
                 return float(area_match.group(1))

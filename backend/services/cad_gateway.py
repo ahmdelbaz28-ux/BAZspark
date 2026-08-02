@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -46,7 +46,7 @@ class CADGateway:
         self._initialized = True
         logger.info("CADGateway initialized.")
 
-    def get_service(self, provider: str) -> Any:
+    def get_service(self, provider: str) -> Union[RevitService, AutoCADService]:
         provider_lower = provider.lower()
         if provider_lower == "autocad":
             return self._autocad_service

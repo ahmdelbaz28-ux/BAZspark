@@ -71,7 +71,7 @@ class GeometryTransformationService:
         gis_features = []
 
         for element in model_elements:
-            if element.get('location') and element.get('geometry'):
+            if 'location' in element and 'geometry' in element:
                 # Create a GIS feature
                 feature = {
                     "type": "Feature",

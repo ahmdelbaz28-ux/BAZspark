@@ -116,6 +116,7 @@ def main() -> int:  # NOSONAR — S3776: CI gate orchestrates multiple pipeline 
             capture_output=True,
             text=True,
             timeout=300,  # 5-minute timeout
+            shell=False,  # S8705: explicit non-shell invocation
         )
     except FileNotFoundError:
         print("ERROR: mypy not found. Install with: pip install mypy", file=sys.stderr)

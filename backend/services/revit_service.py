@@ -83,6 +83,8 @@ from .revit_adapter import RevitAdapter
 
 logger = logging.getLogger(__name__)
 
+_DEFAULT_LEVEL = "Level 1"
+
 _EXC_MSG = ""
 
 
@@ -98,7 +100,7 @@ class StrictRevitElementSchema(BaseModel):
     element_type: str = Field(..., min_length=1, max_length=100)
     start_point: List[float] = Field(..., min_length=2, max_length=3)
     end_point: List[float] = Field(..., min_length=2, max_length=3)
-    level: str = Field("Level 1", max_length=100)
+    level: str = Field(_DEFAULT_LEVEL, max_length=100)
     parameters: Optional[Dict[str, Any]] = None
 
 
@@ -531,7 +533,7 @@ class RevitService:
                 "id": get_attr(element, 'Id', 'unknown', prefer='tostring'),
                 "name": get_attr(element, 'Name', 'unnamed', prefer='auto'),
                 "category": get_attr(element, 'Category', 'unknown', prefer='name'),
-                "level": get_attr(element, 'Level', 'Level 1', prefer='name'),
+                "level": get_attr(element, 'Level', _DEFAULT_LEVEL, prefer='name'),
                 "workset": get_attr(element, 'WorksetId', 'default', prefer='tostring'),
                 "element_type": getattr(element, 'GetType', lambda: 'Element')(),
             }
@@ -812,7 +814,7 @@ class RevitService:
                                     self.create_wall(
                                         start_point=elem.get("location_curve", [[0,0,0],[1,0,0]])[0],
                                         end_point=elem.get("location_curve", [[0,0,0],[1,0,0]])[1],
-                                        level=elem.get("level", "Level 1"),
+                                        level=elem.get("level", _DEFAULT_LEVEL),
                                     )
                                     created_count += 1
                                 elif cat in ("floors", "doors", "columns", "beams"):
@@ -959,7 +961,7 @@ class RevitService:
             return False
 
     def create_wall(self, start_point: List[float], end_point: List[float],
-                height: float = 3000.0, level: str = "Level 1",
+                height: float = 3000.0, level: str = _DEFAULT_LEVEL,
                 wall_type: str = "Basic Wall") -> Optional[str]:
         """Create a wall via the RevitAdapter.
 
@@ -982,7 +984,7 @@ class RevitService:
             logger.info("Real wall creation not implemented in adapter stub.")
             return result.get("id")
 
-    def create_floor(self, boundary: Optional[List[List[float]]] = None, level: str = "Level 1",  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def create_floor(self, boundary: Optional[List[List[float]]] = None, level: str = _DEFAULT_LEVEL,  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
                      floor_type: str = "Floor", boundary_points: Optional[List[List[float]]] = None) -> Optional[str]:
         """
         Create a floor in the active Revit document.
@@ -1137,7 +1139,7 @@ class RevitService:
             return None
 
     def create_column(self, location: Optional[List[float]] = None, height: float = 3000.0,  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-                      level: str = "Level 1", column_type: str = "M_Columns",
+                      level: str = _DEFAULT_LEVEL, column_type: str = "M_Columns",
                       location_point: Optional[List[float]] = None) -> Optional[str]:
         """
         Create a column in the active Revit document.
@@ -1561,7 +1563,7 @@ class RevitService:
         host_wall_id: str,
         location_point: List[float],
         family_type: str = "M_Single-Flush",
-        level: str = "Level 1"
+        level: str = _DEFAULT_LEVEL
     ) -> Optional[str]:
         """
         Create a door in a wall.
@@ -1660,7 +1662,7 @@ class RevitService:
         host_wall_id: str,
         location_point: List[float],
         family_type: str = "M_Single-Flush",
-        level: str = "Level 1"
+        level: str = _DEFAULT_LEVEL
     ) -> Optional[str]:
         """
         Create a window in a wall.
@@ -1682,7 +1684,7 @@ class RevitService:
         self,
         start_point: List[float],
         end_point: List[float],
-        level: str = "Level 1",
+        level: str = _DEFAULT_LEVEL,
         beam_type: str = "W-Wide Flange"
     ) -> Optional[str]:
         """
@@ -1965,7 +1967,7 @@ class RevitService:
 
         if self._connection_method == ConnectionMethod.SIMULATION:
             return [
-                {"id": "v1", "name": "Level 1 Floor Plan", "type": "Floor Plan"},  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                {"id": "v1", "name": f"{_DEFAULT_LEVEL} Floor Plan", "type": "Floor Plan"},
                 {"id": "v2", "name": "Level 2 Floor Plan", "type": "Floor Plan"},
                 {"id": "v3", "name": "Section 1", "type": "Section"},
                 {"id": "v4", "name": "3D View", "type": "3D View"}
@@ -1973,7 +1975,7 @@ class RevitService:
 
         return self.get_elements(category="Views")
 
-    def create_view(self, view_name: str, view_type: str = "Floor Plan", level: str = "Level 1") -> Optional[str]:
+    def create_view(self, view_name: str, view_type: str = "Floor Plan", level: str = _DEFAULT_LEVEL) -> Optional[str]:
         """
         Create a new view.
 
@@ -2070,7 +2072,7 @@ class RevitService:
         """Get all levels."""
         if not self._connected:
             return [
-                {"id": "l1", "name": "Level 1", "elevation": 0.0},
+                {"id": "l1", "name": _DEFAULT_LEVEL, "elevation": 0.0},
                 {"id": "l2", "name": "Level 2", "elevation": 3000.0},
                 {"id": "l3", "name": "Level 3", "elevation": 6000.0}
             ]
@@ -2361,7 +2363,7 @@ class RevitService:
         try:
             if "create wall" in command or "add wall" in command:
                 points = context.get("points", [[0, 0, 0], [5000, 0, 0]])
-                level = self._extract_level(command) or "Level 1"
+                level = self._extract_level(command) or _DEFAULT_LEVEL
 
                 element_id = self.create_wall(points[0], points[1], level=level)
 
@@ -2604,11 +2606,11 @@ class RevitService:
     def _get_simulated_elements(self, category: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get simulated elements."""
         elements = [
-            {"id": "1001", "name": "Exterior Wall", "category": "Walls", "level": "Level 1"},
-            {"id": "1002", "name": "Interior Wall", "category": "Walls", "level": "Level 1"},
-            {"id": "2001", "name": "Floor 1", "category": "Floors", "level": "Level 1"},
-            {"id": "3001", "name": "M_Single-Flush", "category": "Doors", "level": "Level 1"},
-            {"id": "4001", "name": "M_Single-Flush", "category": "Windows", "level": "Level 1"},
+            {"id": "1001", "name": "Exterior Wall", "category": "Walls", "level": _DEFAULT_LEVEL},
+            {"id": "1002", "name": "Interior Wall", "category": "Walls", "level": _DEFAULT_LEVEL},
+            {"id": "2001", "name": "Floor 1", "category": "Floors", "level": _DEFAULT_LEVEL},
+            {"id": "3001", "name": "M_Single-Flush", "category": "Doors", "level": _DEFAULT_LEVEL},
+            {"id": "4001", "name": "M_Single-Flush", "category": "Windows", "level": _DEFAULT_LEVEL},
         ]
 
         if category:

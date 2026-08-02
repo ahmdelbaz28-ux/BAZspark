@@ -219,6 +219,24 @@ def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException
     return HTTPException(status_code=status_code, detail=log_msg)
 
 
+_VALID_CONVERSION_TYPES = ("autocad_to_revit", "revit_to_autocad")
+
+
+def _resolve_conversion_type(
+    conversion_type: Optional[str],
+    source_format: str,
+    target_format: str,
+) -> str:
+    """Infer conversion type from formats when not explicitly provided."""
+    if conversion_type:
+        return conversion_type
+    if source_format.lower() == "dwg" and target_format.lower() == "rvt":
+        return "autocad_to_revit"
+    if source_format.lower() == "rvt" and target_format.lower() == "dwg":
+        return "revit_to_autocad"
+    return "autocad_to_revit"
+
+
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
 @router.post(
@@ -229,7 +247,7 @@ def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException
     },
 )
 @limiter.limit("10/minute")  # V243: Rate limit expensive conversion
-async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+async def convert_files(
     http_request: Request,  # V243: Required by slowapi rate limiter
     request: ConvertRequest,
     service: DigitalTwinServiceDep,
@@ -243,16 +261,11 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
         source_format = request.sourceFormat or "dwg"
         target_format = request.targetFormat or "rvt"
 
-        conversion_type = request.conversion_type
-        if not conversion_type:
-            if source_format.lower() == "dwg" and target_format.lower() == "rvt":
-                conversion_type = "autocad_to_revit"
-            elif source_format.lower() == "rvt" and target_format.lower() == "dwg":
-                conversion_type = "revit_to_autocad"
-            else:
-                conversion_type = "autocad_to_revit"
+        conversion_type = _resolve_conversion_type(
+            request.conversion_type, source_format, target_format,
+        )
 
-        if conversion_type not in ("autocad_to_revit", "revit_to_autocad"):
+        if conversion_type not in _VALID_CONVERSION_TYPES:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=400,
                 detail=f"Invalid conversion type: {conversion_type}",

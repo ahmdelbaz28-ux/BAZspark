@@ -474,10 +474,10 @@ def test_l3_runtime_wss_default_does_not_raise(monkeypatch):
         else:
             # A different ValueError — re-raise (unexpected).
             raise
-    except Exception:
-        # Other exceptions (e.g., connection errors) are acceptable —
-        # the test only verifies that the ws:// rejection logic doesn't
-        # fire on wss://.
+    except (OSError, ConnectionError, RuntimeError, TypeError):
+        # Connection/type errors are acceptable — send_request is sync
+        # but the test awaits it; TypeError from non-awaitable is expected.
+        # Intentionally narrow catch to avoid swallowing AssertionError.
         pass
 
 
@@ -531,8 +531,10 @@ def test_l3_runtime_ws_allowed_with_opt_in(monkeypatch):
             )
         else:
             raise
-    except Exception:
-        # Connection errors are acceptable.
+    except (OSError, ConnectionError, RuntimeError, TypeError):
+        # Connection/type errors are acceptable — send_request is sync
+        # but the test awaits it; TypeError from non-awaitable is expected.
+        # Intentionally narrow catch to avoid swallowing AssertionError.
         pass
 
 

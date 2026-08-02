@@ -39,6 +39,7 @@ DESIGN NOTES
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import tempfile
@@ -57,6 +58,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/experimental", tags=["experimental-services"])
 
 SystemConfigRole = Annotated[Role, Depends(require_permission(Permission.SYSTEM_CONFIG))]
+
+
+def _write_temp_file(suffix: str, content: bytes) -> str:
+    """Write *content* to a named temp file and return its path.
+
+    Called via ``await asyncio.to_thread(_write_temp_file, ...)`` so the
+    synchronous file I/O does not block the async event loop (S7493).
+    """
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(content)
+        return tmp.name
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -196,13 +208,10 @@ async def process_ocr(
     suffix = Path(file.filename or "").suffix or ".bin"
     tmp_path: str | None = None
     try:
-        # Save upload to temp file
-        # NOSONAR: python:S7493 — single write of in-memory upload content;
-        # aiofiles intentionally not a dep (see digital_twin.py:401 comment).
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            content = await file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
+        # S7493: use asyncio.to_thread to avoid blocking the event loop
+        # with synchronous tempfile I/O.
+        content = await file.read()
+        tmp_path = await asyncio.to_thread(_write_temp_file, suffix, content)
 
         svc = OCRService()
         result = svc.process_file(tmp_path, lang=lang)
@@ -247,12 +256,10 @@ async def process_scan_to_bim(
     suffix = Path(file.filename or "").suffix or ".bin"
     tmp_path: str | None = None
     try:
-        # NOSONAR: python:S7493 — single write of in-memory upload content;
-        # aiofiles intentionally not a dep (see digital_twin.py:401 comment).
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            content = await file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
+        # S7493: use asyncio.to_thread to avoid blocking the event loop
+        # with synchronous tempfile I/O.
+        content = await file.read()
+        tmp_path = await asyncio.to_thread(_write_temp_file, suffix, content)
 
         ocr = OCRService()
         svc = ScanToBIMService(ocr_service_instance=ocr)
