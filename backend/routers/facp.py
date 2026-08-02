@@ -116,24 +116,27 @@ class FACPVerificationRequest(BaseModel):
     Accepts full requirement fields or simple panel_id payload from frontend.
     """
 
+    # panel_id is optional — frontend may send only panel_id for a quick re-verify.
+    # All other fields remain REQUIRED so partial payloads correctly 422.
     panel_id: Optional[str] = None
-    device_count: int = Field(50, gt=0)
-    nac_circuit_count: int = Field(2, gt=0)
-    building_size_m2: float = Field(1000.0, gt=0)
-    building_floors: int = Field(2, gt=0)
+    device_count: int = Field(..., gt=0)
+    nac_circuit_count: int = Field(..., gt=0)
+    building_size_m2: float = Field(..., gt=0)
+    building_floors: int = Field(..., gt=0)
     requires_network: bool = False
     requires_voice: bool = False
     requires_releasing: bool = False
     jurisdiction: str = "US"
     preferred_manufacturer: Optional[str] = None
     min_temperature_c: float = Field(20.0, ge=-40.0, le=60.0)
-    recommended_model: str = Field("NFS2-3030", description="Model name of the panel to verify")
-    manufacturer: str = Field("NOTIFIER", description="Manufacturer of the panel")
-    capacity_utilization: float = Field(0.5, ge=0.0, le=1.0)
-    nac_utilization: float = Field(0.4, ge=0.0, le=1.0)
-    battery_size_ah: float = Field(26.0, gt=0)
+    # Panel recommendation fields to verify
+    recommended_model: str = Field(..., description="Model name of the panel to verify")
+    manufacturer: str = Field(..., description="Manufacturer of the panel")
+    capacity_utilization: float = Field(..., ge=0.0, le=1.0)
+    nac_utilization: float = Field(..., ge=0.0, le=1.0)
+    battery_size_ah: float = Field(..., gt=0)
     battery_derating_method: str = Field(
-        "Temperature-compensated (NFPA 72 §10.6.7)", description="Battery sizing method used"
+        ..., description="Battery sizing method used (must not be '1.2x' flat)"
     )
 
 
