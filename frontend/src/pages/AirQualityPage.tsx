@@ -197,10 +197,26 @@ export const AirQualityPage: React.FC = () => {
 
         {/* Info */}
         <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">
-          <p className="text-xs text-slate-500">
-            Air quality data sourced from WAQI (World Air Quality Index). Moderate AQI (100) is used as
-            conservative default when the API is unavailable. AQI &gt; 150 indicates unhealthy baseline
-            that may require increased tenability margins per NFPA 130 / life safety standards.
+          <h4 className="text-xs font-semibold text-slate-300 mb-2 flex items-center gap-1">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+            Wildfire Smoke & Ambient Particulate Advisory (NFPA 72 §17.7)
+          </h4>
+          <p className="text-xs text-slate-400 mb-2">
+            Elevated ambient PM2.5 from wildfire smoke or dust events can cause detector drift or false alarms.
+          </p>
+          {data && (
+            <div className="mt-2 pt-2 border-t border-slate-700/50 flex items-center justify-between text-xs">
+              <span className="text-slate-400">Detector False Alarm Advisory Risk:</span>
+              <span className={`font-mono font-semibold px-2 py-0.5 rounded ${
+                data.pm25_ug_m3 >= 35.5 ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
+              }`}>
+                {data.pm25_ug_m3 >= 35.5 ? 'HIGH RISK' : 'LOW RISK'}
+              </span>
+            </div>
+          )}
+          <p className="text-[11px] text-slate-500 mt-2">
+            Air quality data sourced from WAQI & Open-Meteo Air Quality API. Moderate AQI (100) is used as
+            conservative default when external endpoints are offline per NFPA 72 / NFPA 130 safety protocol.
           </p>
         </div>
       </div>
@@ -209,3 +225,4 @@ export const AirQualityPage: React.FC = () => {
 };
 
 export default AirQualityPage;
+

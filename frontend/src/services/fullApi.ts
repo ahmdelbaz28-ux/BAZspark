@@ -326,6 +326,9 @@ export const facpApi = {
 
         /** GET /facp/panels — List all FACP panels */
         getPanels: () => apiCall("/facp/panels"),
+
+        /** GET /facp/cluster/status — Get FACP distributed cluster communicator status */
+        getClusterStatus: () => apiCall("/facp/cluster/status"),
 };
 
 // ─── Environment API ────────────────────────────────────────────────────────
@@ -337,6 +340,11 @@ export const environmentApi = {
         /** GET /environment/weather?lat=&lon= */
         getWeather: (lat: number, lon: number) =>
                 apiCall(`/environment/weather?lat=${lat}&lon=${lon}`),
+
+        /** GET /environment/wildfire?lat=&lon= */
+        getWildfire: (lat: number, lon: number) =>
+                apiCall(`/environment/wildfire?lat=${lat}&lon=${lon}`),
+
 
         /** GET /environment/geocode?address= */
         geocode: (address: string) =>

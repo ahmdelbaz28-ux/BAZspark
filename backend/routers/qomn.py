@@ -911,3 +911,51 @@ def _handle_error(exc: Exception) -> NoReturn:
             "detail": "An unexpected error occurred. The engineering team has been notified.",
         }
     )
+
+
+class AcousticsEvaluationRequest(BaseModel):
+    room_id: str = Field("R-101", description="Room identifier")
+    occ_type: str = Field("business", description="Occupancy type")
+    speaker_spl_dba: float = Field(95.0, ge=60, le=120, description="Speaker rated SPL in dBA at 3m")
+    check_point_distance_m: float = Field(5.0, ge=0.5, le=50.0, description="Distance from speaker to check point")
+    mode: str = Field("public", description="Audible mode: public | private | sleeping")
+
+
+@router.post(
+    "/qomn/acoustics/evaluate",
+    dependencies=[Depends(require_permission(Permission.QOMN_READ))],
+)
+@limiter.limit("30/minute")
+async def evaluate_acoustics(request: Request, body: AcousticsEvaluationRequest):
+    """
+    Unified Acoustics Engine evaluation for NFPA 72 §18.4 audible notification.
+    """
+    try:
+        from fireai.core.acoustics_engine import AcousticsEngine
+        from fireai.core.acoustic_calculator import Speaker, CheckPoint
+        engine = AcousticsEngine()
+        spk = Speaker(x=0.0, y=0.0, z=2.8, rating_dba=body.speaker_spl_dba)
+        chk = CheckPoint(x=body.check_point_distance_m, y=0.0, z=1.5, label="CP-1")
+        res = engine.check_coverage(
+            room_id=body.room_id,
+            occ_type=body.occ_type,
+            speakers=[spk],
+            check_points=[chk],
+            mode=body.mode,
+        )
+        return {
+            "success": True,
+            "data": {
+                "compliant": res.compliant,
+                "mode": res.mode,
+                "required_dba": res.required_dba,
+                "worst_spl_dba": res.worst_spl_dba,
+                "margin_dba": res.margin_dba,
+                "violations": res.violations,
+                "nfpa_sections_referenced": res.nfpa_sections_referenced,
+            },
+        }
+    except Exception as exc:
+        logger.exception("Acoustics evaluation error: %s", exc)
+        return _handle_error(exc)
+

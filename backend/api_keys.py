@@ -218,6 +218,28 @@ def _get_redis_for_key_cache() -> Any:
         return None
 
 
+def _read_server_secret_retry(path: Path, attempts: int = 8, delay: float = 0.05) -> bytes | None:
+    """
+    Read a valid (>=32 byte) server secret, tolerating partial writes.
+
+    V303 FIX: CI runs pytest with `-n auto` (pytest-xdist), so multiple
+    worker processes race on the shared `db/api_keys.secret` file on first
+    use. One process creates the file with O_CREAT|O_EXCL and then writes the
+    32-byte payload; a concurrent reader can observe the file between the
+    create and the write, yielding an empty/partial file. The old code then
+    raised `RuntimeError: Server secret file ... exists but is invalid`,
+    making the test suite fail nondeterministically. Retrying briefly makes
+    the read deterministic instead of crashing on a transient race.
+    """
+    for _ in range(attempts):
+        if path.exists():
+            candidate = path.read_bytes().strip()
+            if len(candidate) >= 32:
+                return candidate
+        time.sleep(delay)
+    return None
+
+
 def _load_server_secret() -> bytes:
     """
     Load or create the per-server HMAC secret used for fast key lookup.
@@ -225,17 +247,20 @@ def _load_server_secret() -> bytes:
     STRICT FIX D: Use O_CREAT|O_EXCL to prevent TOCTOU race on first run.
     If two processes start simultaneously and both try to create the secret
     file, the second one's open() will fail with EEXIST. We then re-read
-    the existing file.
+    the existing file (with a short retry window to tolerate the writer
+    still mid-write — see V303).
     """
     global _SERVER_SECRET
     if _SERVER_SECRET:
         return _SERVER_SECRET
     path = Path(_get_server_secret_file_path())
     try:
-        if path.exists():
-            _SERVER_SECRET = path.read_bytes().strip()
-            if len(_SERVER_SECRET) >= 32:
-                return _SERVER_SECRET
+        # V303: tolerate a file that exists but is still being written by
+        # a parallel worker process (empty/partial file on first read).
+        cached = _read_server_secret_retry(path)
+        if cached is not None:
+            _SERVER_SECRET = cached
+            return _SERVER_SECRET
         # Generate a new 32-byte secret
         path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         _SERVER_SECRET = secrets.token_bytes(32)
@@ -250,13 +275,14 @@ def _load_server_secret() -> bytes:
             logger.info("Generated new API-key lookup secret at %s", path)
         except FileExistsError:
             # Another process created the file between our check and open.
-            # Re-read the existing file.
-            _SERVER_SECRET = path.read_bytes().strip()
-            if len(_SERVER_SECRET) < 32:
+            # Wait for it to finish writing, then re-read (V303).
+            cached = _read_server_secret_retry(path)
+            if cached is None:
                 raise RuntimeError(
                     f"Server secret file {path} exists but is invalid. "
                     f"Delete it and restart to regenerate."
                 )
+            _SERVER_SECRET = cached
             logger.info("Reused existing API-key lookup secret (race avoided)")
     except OSError as e:
         # If we can't persist a secret, generate an ephemeral one. Keys won't

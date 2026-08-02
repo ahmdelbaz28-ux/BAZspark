@@ -844,8 +844,71 @@ const PlaceDetectorsSection: React.FC = () => {
           </pre>
         )}
       </div>
+
+      {/* Acoustics Evaluation Panel */}
+      <div className="baz-card">
+        <h3 className="baz-label mb-2 flex items-center gap-2">
+          <Activity size={16} className="text-[#00d4ff]" />
+          Acoustic & UGLD Raytracing Integration Engine (NFPA 72 §18.4 / ISA-TR84.00.07)
+        </h3>
+        <p className="text-[11px] text-[#7a7a8a] mb-4">
+          Evaluates unified audible notification sound propagation and ultrasonic gas leak detection raytracing with Maekawa barrier diffraction.
+        </p>
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="baz-label text-[10px]">Speaker Rated SPL (dBA @ 3m)</label>
+            <input
+              type="number"
+              defaultValue={95}
+              id="acoustics-speaker-spl"
+              className="baz-input"
+            />
+          </div>
+          <div>
+            <label className="baz-label text-[10px]">Check Point Distance (m)</label>
+            <input
+              type="number"
+              defaultValue={5.0}
+              id="acoustics-checkpoint-dist"
+              className="baz-input"
+            />
+          </div>
+          <div>
+            <label className="baz-label text-[10px]">Audible Mode</label>
+            <select id="acoustics-mode" className="baz-input" defaultValue="public">
+              <option value="public">Public Mode (§18.4.3)</option>
+              <option value="private">Private Mode (§18.4.4)</option>
+              <option value="sleeping">Sleeping Area (§18.4.2)</option>
+            </select>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              const spl = Number((document.getElementById("acoustics-speaker-spl") as HTMLInputElement)?.value || 95);
+              const dist = Number((document.getElementById("acoustics-checkpoint-dist") as HTMLInputElement)?.value || 5);
+              const mode = (document.getElementById("acoustics-mode") as HTMLSelectElement)?.value || "public";
+              const res = await qomnApi.evaluateAcoustics({
+                room_id: "R-101",
+                occ_type: "business",
+                speaker_spl_dba: spl,
+                check_point_distance_m: dist,
+                mode: mode,
+              });
+              alert(`Acoustic Evaluation Completed:\n${JSON.stringify(res, null, 2)}`);
+            } catch (err) {
+              alert(`Evaluation failed: ${err instanceof Error ? err.message : err}`);
+            }
+          }}
+          className="baz-btn-primary"
+        >
+          Evaluate Acoustic Coverage
+        </button>
+      </div>
     </div>
   );
 };
 
 export default QOMNCalculatorPage;
+

@@ -50,7 +50,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip --only-binary :all:
           pip install --only-binary :all: -e .
-          pip install --only-binary :all: pytest==8.3.4 pytest-cov==6.0.0
+          pip install --only-binary :all: pytest==8.3.4 pytest-cov==6.0.0 pytest-timeout==2.3.1
 
       - name: Set up Node.js 22
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
@@ -75,38 +75,40 @@ jobs:
           CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
         run: |
           pytest tests/ backend/tests/ \
-            --tb=short --no-cov \
+            --tb=short \
             --timeout=60 -q \
+            --cov \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
             -p no:cacheprovider \
             || echo "::warning::Some tests failed (non-blocking for SonarCloud scan)"
 
       - name: Run frontend tests with coverage
         run: |
-          npm run test -- --coverage 2>/dev/null || true
+          # lcov reporter must be enabled explicitly: vite.config.ts has no
+          # coverage block, and vitest default reporters omit lcov.info.
+          npm run test -- --coverage --coverage.reporter=lcov --coverage.reporter=text 2>/dev/null || true
         working-directory: frontend
 
       - name: SonarQube Scan
-        # V289 (2026-07-31): This step fails with exit code 3 when SonarCloud
-        # "Automatic Analysis" is enabled for the project, because Automatic
-        # Analysis and CI Analysis are mutually exclusive. The error message:
+        # V290 (2026-08-02): Root-cause fix - Automatic Analysis (AutoScan)
+        # must be DISABLED for this project, otherwise CI analysis is rejected
+        # with exit code 3:
         #   "You are running CI analysis while Automatic Analysis is enabled.
         #    Please consider disabling one or the other."
         #
-        # There is no public SonarCloud Web API endpoint to disable Automatic
-        # Analysis programmatically — it must be toggled in the SonarCloud UI:
+        # AutoScan and CI-based analysis are mutually exclusive. This workflow
+        # is now the project single analysis source - it also uploads the
+        # coverage reports (coverage.xml, frontend/coverage/lcov.info) produced
+        # by the test steps above.
+        #
+        # Manual step required once (no public SonarCloud API exists to do it
+        # programmatically): disable Automatic Analysis at
         #   https://sonarcloud.io/project/settings?category=analysis&id=ahmdelbaz28-ux_revit
         #
-        # We use `continue-on-error: true` so the workflow passes either way:
-        #   - If Automatic Analysis is ENABLED: scan step fails silently, but
-        #     SonarCloud's separate "SonarCloud Code Analysis" check (posted
-        #     via webhook by SonarCloud itself) still runs and passes —
-        #     PRs still get quality-gate decoration.
-        #   - If Automatic Analysis is DISABLED: scan step succeeds normally.
-        #
-        # Token is set correctly (SONAR_TOKEN secret verified 2026-07-31).
-        # To permanently fix without continue-on-error: disable Automatic
-        # Analysis in the SonarCloud UI link above, then remove this flag.
-        continue-on-error: true
+        # Until that toggle is flipped this step fails with exit code 3 -
+        # intentionally visible instead of silently masked.
+        # Requires the SONAR_TOKEN repository secret.
         uses: SonarSource/sonarqube-scan-action@aa494459d7c39c106cc77b166de8b4250a32bb97  # v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

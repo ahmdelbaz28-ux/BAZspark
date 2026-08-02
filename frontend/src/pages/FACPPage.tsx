@@ -390,7 +390,42 @@ export function FACPPage() {
                                                 </div>
                                         </CardContent>
                                 </Card>
+
+                                {/* Distributed FACP Cluster Visualizer */}
+                                <Card>
+                                        <CardHeader>
+                                                <CardTitle className="text-base flex items-center gap-2">
+                                                        <Cpu aria-hidden="true" className="h-5 w-5 text-cyan-400" />
+                                                        Distributed FACP Cluster Visualizer
+                                                </CardTitle>
+                                                <CardDescription>
+                                                        Real-time cluster node state, leader node status, and event bus communicator metrics
+                                                </CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                                <div className="space-y-4">
+                                                        <div className="flex items-center justify-between">
+                                                                <Button
+                                                                        onClick={async () => {
+                                                                                try {
+                                                                                        const res = await facpApi.getClusterStatus();
+                                                                                        setExtendedResult(res as Record<string, unknown>);
+                                                                                        toast({ title: "Cluster status refreshed" });
+                                                                                } catch (err) {
+                                                                                        toast({ title: "Cluster status failed", description: err instanceof Error ? err.message : "Failed", variant: "destructive" });
+                                                                                }
+                                                                        }}
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                >
+                                                                        Fetch Cluster Status
+                                                                </Button>
+                                                        </div>
+                                                </div>
+                                        </CardContent>
+                                </Card>
                         </div>
                 </div>
         );
 }
+

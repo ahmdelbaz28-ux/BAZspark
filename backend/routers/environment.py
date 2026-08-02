@@ -788,3 +788,48 @@ async def get_full_phase2_context(
             }
 
     return response
+
+
+@router.get("/wildfire")
+async def get_wildfire_smoke(
+    lat: float = Query(..., ge=-90, le=90, description="Latitude"),
+    lon: float = Query(..., ge=-180, le=180, description="Longitude"),
+):
+    """
+    Get Wildfire Smoke & PM2.5 Advisory data for smoke detector false alarm risk analysis.
+    NFPA 72 §17.7 / §14.4.3 compliance advisory.
+    """
+    from fireai.integration.wildfire_smoke_adapter import WildfireSmokeAdapter
+    adapter = WildfireSmokeAdapter()
+    result = await adapter.call(lat=lat, lon=lon)
+    if result.ok:
+        assessment = result.value
+        return {
+            "success": True,
+            "data": {
+                "peak_pm25_24h": assessment.peak_pm25_24h,
+                "peak_pm10_24h": assessment.peak_pm10_24h,
+                "avg_co_24h": assessment.avg_co_24h,
+                "aqi_category": assessment.aqi_category,
+                "false_alarm_risk": assessment.false_alarm_risk,
+                "advisory_note": assessment.advisory_note,
+                "nfpa_reference": assessment.nfpa_reference,
+                "data_source": assessment.data_source,
+                "coordinates": list(assessment.coordinates),
+            },
+        }
+    return {
+        "success": True,
+        "data": {
+            "peak_pm25_24h": None,
+            "peak_pm10_24h": None,
+            "avg_co_24h": None,
+            "aqi_category": "UNKNOWN",
+            "false_alarm_risk": "UNKNOWN",
+            "advisory_note": "Air quality API unavailable. Rely on physical detector signals.",
+            "nfpa_reference": "NFPA 72-2022 §17.7 / §14.4.3",
+            "data_source": "Fallback",
+            "coordinates": [lat, lon],
+        },
+    }
+
