@@ -134,6 +134,12 @@ class GeocodingService:
     async def _fetch_nominatim(self, address: str) -> GeocodingResult:
         """Fetch geocoding from Nominatim."""
         await self._enforce_rate_limit()
+        from urllib.parse import urlparse
+        from backend.integrations._ssrf_guard import resolve_to_safe_ip
+        parsed_url = urlparse(self.NOMINATIM_URL)
+        if parsed_url.hostname:
+            resolve_to_safe_ip(parsed_url.hostname)
+
         client = await self._get_client()
         response = await client.get(
             self.NOMINATIM_URL,
@@ -144,6 +150,7 @@ class GeocodingService:
                 "addressdetails": 1,
             },
         )
+
         response.raise_for_status()
         results = response.json()
 
@@ -228,10 +235,17 @@ class GeocodingService:
 
         """
         await self._enforce_rate_limit()
+        from urllib.parse import urlparse
+        from backend.integrations._ssrf_guard import resolve_to_safe_ip
+        reverse_url = "https://nominatim.openstreetmap.org/reverse"
+        parsed_url = urlparse(reverse_url)
+        if parsed_url.hostname:
+            resolve_to_safe_ip(parsed_url.hostname)
+
         client = await self._get_client()
         try:
             response = await client.get(
-                "https://nominatim.openstreetmap.org/reverse",
+                reverse_url,
                 params={
                     "lat": latitude,
                     "lon": longitude,
@@ -239,6 +253,7 @@ class GeocodingService:
                     "addressdetails": 1,
                 },
             )
+
             response.raise_for_status()
             data = response.json()
             address_details = data.get("address", {})

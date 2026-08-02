@@ -27,11 +27,18 @@ def _get_key() -> bytes:
     """
     key: Optional[str] = os.getenv(_ETAP_ENCRYPTION_KEY_ENV) or os.getenv(_MASTER_ENCRYPTION_KEY_ENV)
     if not key:
+        is_production = os.getenv("FIREAI_ENV", "production").lower() in ("production", "prod")
+        if is_production:
+            raise RuntimeError(
+                f"FAIL-SAFE: Missing required env var {_ETAP_ENCRYPTION_KEY_ENV} or {_MASTER_ENCRYPTION_KEY_ENV} in production. "
+                "Generate one with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+            )
         raise OSError(
             f"Missing required env var {_ETAP_ENCRYPTION_KEY_ENV} or {_MASTER_ENCRYPTION_KEY_ENV}. "
             "Generate one with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
         )
     return key.encode("utf-8")
+
 
 
 def encrypt_password(plaintext: str) -> str:

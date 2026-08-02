@@ -463,8 +463,8 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
 
     try:
         while True:
-            # Receive messages from client
-            raw = await websocket.receive_text()
+            # Receive messages from client with 30s heartbeat timeout
+            raw = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
             try:
                 message = json.loads(raw)
             except json.JSONDecodeError:
@@ -504,7 +504,11 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
                         "projectId": project_id,
                     })
 
+    except asyncio.TimeoutError:
+        logger.warning(f"WebSocket client {client_ip} timed out after 30s of inactivity")
+        await websocket.close(code=1000, reason="Idle timeout")
     except WebSocketDisconnect:
+        logger.info(f"WebSocket client disconnected from {client_ip}")
         manager.disconnect(websocket)
     except Exception as e:
         logger.exception("WebSocket error: %s", e)

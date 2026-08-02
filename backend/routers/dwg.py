@@ -75,12 +75,14 @@ async def _parse_dwg_impl(request: Request, file: UploadFile):  # NOSONAR — S3
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
 
-    ext = os.path.splitext(file.filename)[1].lower()
+    safe_filename = os.path.basename(file.filename)
+    ext = os.path.splitext(safe_filename)[1].lower()
     if ext not in _DWG_ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
             detail=f"Unsupported file extension '{ext}'. Allowed: {', '.join(sorted(_DWG_ALLOWED_EXTENSIONS))}",
         )
+
 
     # ── Save upload to a temp file with size limit (C-5 FIX + STRESS FIX #5) ──
     # Stream chunks DIRECTLY to disk — never accumulate in memory.

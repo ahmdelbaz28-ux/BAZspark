@@ -148,7 +148,7 @@ async def _handle_agent_message(websocket: WebSocket, msg: dict) -> None:
         await websocket.send_json({"type": "pong"})
 
 
-WS_HEARTBEAT_TIMEOUT_SECONDS = 45.0
+WS_HEARTBEAT_TIMEOUT_SECONDS = 30.0
 
 
 @router.websocket("/ws")

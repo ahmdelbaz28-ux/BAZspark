@@ -10,9 +10,13 @@ circuit calculations that directly affect life safety.
 """
 
 import logging
+import threading
 import uuid
 
+_device_lock = threading.Lock()
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+
 
 from backend.auth import require_permission
 from backend.contract import validate_device, validate_paginated
@@ -149,14 +153,16 @@ async def create_device(request: Request, project_id: str, input_data: CreateDev
         "load": load_amperes,  # Always stored in Amperes for NFPA 72 calculations
         "properties": properties,
     }
-    device = db.create_device(project_id, device_data)
-    validate_device(device)
+    with _device_lock:
+        device = db.create_device(project_id, device_data)
+        validate_device(device)
 
-    # Sync device to UDM for conflict detection
-    from backend.project_bridge import sync_device_to_udm
-    sync_device_to_udm(project_id, device_data)
+        # Sync device to UDM for conflict detection
+        from backend.project_bridge import sync_device_to_udm
+        sync_device_to_udm(project_id, device_data)
 
     return success(device)
+
 
 
 @router.get("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_READ))])
@@ -223,16 +229,18 @@ async def update_device(  # NOSONAR — S3776: cognitive complexity is inherent 
             # load_unit doesn't matter for zero load — remove from updates
             updates.pop("load_unit", None)
 
-    device = db.update_device(project_id, device_id, updates)
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
-    validate_device(device)
+    with _device_lock:
+        device = db.update_device(project_id, device_id, updates)
+        if not device:
+            raise HTTPException(status_code=404, detail="Device not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        validate_device(device)
 
-    # Sync device update to UDM for conflict detection
-    from backend.project_bridge import sync_device_update_to_udm
-    sync_device_update_to_udm(project_id, device_id, updates)
+        # Sync device update to UDM for conflict detection
+        from backend.project_bridge import sync_device_update_to_udm
+        sync_device_update_to_udm(project_id, device_id, updates)
 
     return success(device)
+
 
 
 @router.delete("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_DELETE))])
