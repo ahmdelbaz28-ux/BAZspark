@@ -102,7 +102,7 @@ jobs:
             if [ -e "${{ github.workspace }}/${p}" ]; then
               if [ -d "${{ github.workspace }}/${p}" ]; then
                 mkdir -p "hf_space/${p}"
-                cp -r "${{ github.workspace }}/${p}/" "hf_space/${p}/"
+                cp -r "${{ github.workspace }}/${p}/." "hf_space/${p}/"
                 echo "  + synced (dir): ${p}/"
               else
                 cp "${{ github.workspace }}/${p}" "hf_space/${p}"
