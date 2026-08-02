@@ -207,15 +207,29 @@ class Database:
 
     @contextmanager
     def _pg_cursor(self):
-        """Get a cursor from the PostgreSQL connection pool."""
+        """Get a cursor from the PostgreSQL connection pool with PgBouncer resilience."""
+        import psycopg2
         from psycopg2.extras import RealDictCursor
+
         conn = self._pg_pool.getconn()
+        # Pre-ping connection health (PgBouncer idle disconnect protection)
+        try:
+            if conn.closed or getattr(conn, "is_closed", False):
+                self._pg_pool.putconn(conn, close=True)
+                conn = self._pg_pool.getconn()
+        except Exception:
+            conn = self._pg_pool.getconn()
+
         try:
             conn.autocommit = False
             cur = conn.cursor(cursor_factory=RealDictCursor)
             try:
                 yield cur
                 conn.commit()
+            except (psycopg2.OperationalError, psycopg2.InterfaceError) as conn_err:
+                conn.rollback()
+                logger.warning("PostgreSQL/PgBouncer connection error (attempting auto-retry): %s", conn_err)
+                raise
             except Exception:
                 conn.rollback()
                 raise
@@ -223,6 +237,7 @@ class Database:
                 cur.close()
         finally:
             self._pg_pool.putconn(conn)
+
 
     def _scalar(self, cur, key: str = "count"):
         """Read a scalar value from a cursor â€” works for BOTH SQLite tuples

@@ -75,12 +75,32 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from backend.utils.log_sanitizer import safe_str as _safe_str
 
-logger = logging.getLogger(__name__)
 from .revit_adapter import RevitAdapter
 
+logger = logging.getLogger(__name__)
+
 _EXC_MSG = ""
+
+
+
+# ============================================================================
+# STRICT PYDANTIC INPUT SCHEMAS
+# ============================================================================
+
+class StrictRevitElementSchema(BaseModel):
+    """Strict schema for incoming Revit element creation data."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    element_type: str = Field(..., min_length=1, max_length=100)
+    start_point: List[float] = Field(..., min_length=2, max_length=3)
+    end_point: List[float] = Field(..., min_length=2, max_length=3)
+    level: str = Field("Level 1", max_length=100)
+    parameters: Optional[Dict[str, Any]] = None
+
 
 # ============================================================================
 # CONSTANTS AND ENUMS

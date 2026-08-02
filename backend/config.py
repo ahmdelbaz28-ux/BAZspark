@@ -97,16 +97,20 @@ class Config:
         issues = []
 
         # Check if PostgreSQL connection string format is valid (if using PostgreSQL)
-        if cls.DATABASE_URL.startswith(("postgres://", "postgresql://")):
+        if cls.DATABASE_URL.startswith(("postgres://", "postgresql://", "postgresql+asyncpg://")):
             if not all(part in cls.DATABASE_URL for part in ["//", "@"]):
                 issues.append("DATABASE_URL may have invalid PostgreSQL format")
+
+        is_prod = cls.ENVIRONMENT.lower() in ("production", "prod")
+        if is_prod:
+            # Enforce production strict database configuration check
+            if "sqlite" in cls.DATABASE_URL.lower() and os.environ.get("ALLOW_SQLITE_IN_PROD", "").lower() not in ("true", "1"):
+                issues.append("CRITICAL: SQLite is in use for production without ALLOW_SQLITE_IN_PROD=true. Consider PostgreSQL.")
 
         return issues
 
 
-# ── STARTUP FAIL-FAST: secrets must be present at import time ──────────────
-# Evaluated once when the module is loaded. Any missing secret terminates the
-# process immediately — NO fallback, NO default string, NO silent degradation.
+# ── STARTUP FAIL-FAST: secrets must be present and secure at import time ──
 _jwt_secret = (
     os.environ.get("JWT_SECRET")
     or os.environ.get("SESSION_SECRET")
@@ -125,6 +129,18 @@ if not _jwt_secret:
         "The application cannot start without a signing secret."
     )
 
+_WEAK_SECRETS = {"secret", "change-me", "default", "test", "123456", "admin", "jwt_secret", "password"}
+_env_name = os.environ.get("FIREAI_ENV", "production").lower()
+if _env_name in ("production", "prod"):
+    if _jwt_secret.strip().lower() in _WEAK_SECRETS or len(_jwt_secret.strip()) < 32:
+        raise RuntimeError(
+            "FATAL: Insecure or default JWT_SECRET / SESSION_SECRET detected in production.\n"
+            "Placeholder/weak secrets are strictly forbidden in production.\n"
+            "Generate a strong 256-bit secret with:\n"
+            "  python3 -c \"import secrets; print(secrets.token_urlsafe(64))\""
+        )
+
 # Singleton instance
 config = Config()
+
 

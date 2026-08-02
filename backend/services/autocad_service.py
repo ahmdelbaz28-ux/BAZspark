@@ -31,7 +31,26 @@ import os
 import platform
 from typing import Any, Dict, List, Optional
 
+from pydantic import BaseModel, ConfigDict, Field
+
 logger = logging.getLogger(__name__)
+
+
+
+# ============================================================================
+# STRICT PYDANTIC INPUT SCHEMAS FOR CAD ENTITIES
+# ============================================================================
+
+class StrictCADEntitySchema(BaseModel):
+    """Strict schema for incoming AutoCAD entity manipulation data."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    object_type: str = Field(..., min_length=1, max_length=50)
+    layer: str = Field("0", max_length=100)
+    color: int = Field(0, ge=0, le=256)
+    coordinates: List[List[float]] = Field(..., min_length=1)
+    properties: Optional[Dict[str, Any]] = None
+
 
 # Cross-platform support: Real imports for Windows, mock for Linux/Mac
 IS_WINDOWS = platform.system() == "Windows"

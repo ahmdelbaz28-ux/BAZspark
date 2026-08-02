@@ -8,7 +8,12 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
+from backend.api_keys import validate_api_key
+from backend.auth import has_permission
+from backend.rbac import Permission
+
 logger = logging.getLogger(__name__)
+
 
 router = APIRouter(prefix="/agent", tags=["agent-ws"])
 
@@ -84,25 +89,26 @@ async def _authenticate_agent_websocket(websocket: WebSocket):
         if not any(origin_clean == o or origin_clean.startswith(o) for o in allowed_origins):
             logger.warning("Rejected agent connection: untrusted origin '%s'", origin)
             await websocket.close(code=4003)
-            return None
+            return None, ""
 
     api_key = _extract_api_key_from_handshake(websocket)
     if not api_key:
         logger.warning("Rejected agent connection: no API key in headers/subprotocol")
         await websocket.close(code=4003)
-        return None
+        return None, ""
 
     try:
         api_key_info = validate_api_key(api_key)
     except Exception as e:
         logger.exception("Error validating agent API Key: %s", e)
         await websocket.close(code=4003)
-        return None
+        return None, ""
 
     if api_key_info is None:
         logger.warning("Rejected agent connection: invalid API Key")
         await websocket.close(code=4003)
-        return None
+        return None, ""
+
 
     if not has_permission(api_key_info.role, Permission.CALCULATION_EXECUTE):
         logger.warning(
@@ -110,9 +116,10 @@ async def _authenticate_agent_websocket(websocket: WebSocket):
             api_key_info.role,
         )
         await websocket.close(code=4003)
-        return None
+        return None, ""
 
-    return api_key_info
+    return api_key_info, api_key
+
 
 
 def _register_agent(websocket: WebSocket, agent_type: str) -> None:
@@ -153,13 +160,13 @@ WS_HEARTBEAT_TIMEOUT_SECONDS = 30.0
 WS_PING_INTERVAL_SECONDS = 25.0  # send ping 5s before timeout deadline
 
 
-async def _run_heartbeat_loop(websocket: WebSocket) -> None:
-    """Active ping/pong heartbeat loop.
+async def _run_heartbeat_loop(websocket: WebSocket, api_key: str = "") -> None:
+    """Active ping/pong heartbeat loop with periodic token re-authentication.
 
     Sends a ping every WS_PING_INTERVAL_SECONDS. After sending, waits up
-    to WS_HEARTBEAT_TIMEOUT_SECONDS for a pong response. If no pong arrives
-    within that window, closes the socket immediately with code 4008
-    (Policy Violation — heartbeat timeout) to prevent resource locks.
+    to WS_HEARTBEAT_TIMEOUT_SECONDS for a pong response. Also re-verifies
+    API key validity on every cycle to detect revoked keys/expired sessions.
+    If no pong arrives or key is revoked, closes socket immediately.
     """
     import asyncio as _asyncio
 
@@ -168,6 +175,19 @@ async def _run_heartbeat_loop(websocket: WebSocket) -> None:
     async def _ping_cycle() -> None:
         while True:
             await _asyncio.sleep(WS_PING_INTERVAL_SECONDS)
+            # Re-authenticate API key on every heartbeat cycle to prevent session hijacking
+            if api_key:
+                try:
+                    info = validate_api_key(api_key)
+                    if info is None or not has_permission(info.role, Permission.CALCULATION_EXECUTE):
+                        logger.warning("Agent WebSocket heartbeat: API key revoked or expired — terminating connection")
+                        await websocket.close(code=4003)
+                        return
+                except Exception:
+                    logger.warning("Agent WebSocket heartbeat: Auth re-validation error — terminating connection")
+                    await websocket.close(code=4003)
+                    return
+
             _pong_received["value"] = False
             try:
                 await websocket.send_json({"type": "ping"})
@@ -195,6 +215,7 @@ async def _run_heartbeat_loop(websocket: WebSocket) -> None:
     return _pong_received, _ping_cycle
 
 
+
 @router.websocket("/ws")
 async def agent_websocket_endpoint(websocket: WebSocket):
     """
@@ -206,7 +227,7 @@ async def agent_websocket_endpoint(websocket: WebSocket):
       - Active 30-second ping/pong heartbeat: if client fails to pong,
         socket is terminated immediately with code 4008.
     """
-    api_key_info = await _authenticate_agent_websocket(websocket)
+    api_key_info, raw_api_key = await _authenticate_agent_websocket(websocket)
     if api_key_info is None:
         return  # already closed with code 4003
 
@@ -216,7 +237,8 @@ async def agent_websocket_endpoint(websocket: WebSocket):
     agent_type = "autocad_revit"
     _register_agent(websocket, agent_type)
 
-    pong_flag, ping_cycle_fn = _run_heartbeat_loop(websocket)
+    pong_flag, ping_cycle_fn = _run_heartbeat_loop(websocket, api_key=raw_api_key)
+
 
     async def _message_loop() -> None:
         while True:

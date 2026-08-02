@@ -320,6 +320,38 @@ app.state.limiter = limiter
 # Add rate limit exceeded handler
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception):
+    """Centralized 500 Exception Handler.
+
+    Prevents raw tracebacks, internal database schemas, or system paths from
+    leaking to end-users while capturing full error details and attaching a
+    Correlation ID for auditing.
+    """
+    import uuid
+    correlation_id = (
+        getattr(request.state, "correlation_id", None)
+        or request.headers.get("X-Correlation-ID")
+        or str(uuid.uuid4())
+    )
+    logger.exception(
+        "Unhandled internal error on %s %s [correlation_id=%s]: %s",
+        request.method,
+        request.url.path,
+        correlation_id,
+        exc,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "An internal server error occurred. Please contact support with your correlation ID.",
+            "correlation_id": correlation_id,
+            "success": False,
+        },
+    )
+
+
 # ── CORS middleware — V127 / V129 hardening ───────────────────────────────
 # explicitly. Wildcard '*' is FORBIDDEN. Missing env var → RuntimeError
 # (fail-safe). Development defaults to localhost-only (safe default).

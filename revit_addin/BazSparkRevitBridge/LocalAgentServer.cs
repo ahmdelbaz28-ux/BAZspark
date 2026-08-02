@@ -4,6 +4,7 @@
 // and waits synchronously for the result (with a timeout).
 
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Pipes;
 using System.Text;
@@ -22,6 +23,10 @@ namespace BazSparkRevitBridge
         private readonly BazSparkExternalEventHandler _handler;
         private volatile bool _running = false;
 
+        // Resilient local caching queue for pending modification payloads during network/pipe blips
+        private readonly ConcurrentQueue<BazSparkCommand> _pendingCommandQueue = new ConcurrentQueue<BazSparkCommand>();
+        private readonly Random _jitter = new Random();
+
         public LocalAgentServer(BazSparkExternalEventHandler handler)
         {
             _handler = handler;
@@ -30,6 +35,8 @@ namespace BazSparkRevitBridge
         public void Start()
         {
             _running = true;
+            int attempt = 0;
+
             while (_running)
             {
                 try
@@ -38,16 +45,22 @@ namespace BazSparkRevitBridge
                     using var pipe = CreateSecurePipe();
 
                     pipe.WaitForConnection(); // Blocks until Python Agent connects
+                    attempt = 0; // Reset backoff on successful connection
                     HandleClient(pipe);
                 }
                 catch (Exception ex) when (_running)
                 {
-                    // Log and restart listener on transient errors
-                    System.Diagnostics.Debug.WriteLine($"[BazSpark] Pipe error: {ex.Message}");
-                    Thread.Sleep(500);
+                    attempt++;
+                    // Exponential backoff with random jitter (base 250ms, max 10,000ms)
+                    int baseDelay = Math.Min(10000, 250 * (1 << Math.Min(attempt, 6)));
+                    int jitterDelay = baseDelay + _jitter.Next(0, 250);
+
+                    System.Diagnostics.Debug.WriteLine($"[BazSpark Revit] Pipe error (attempt {attempt}, retry in {jitterDelay}ms): {ex.Message}");
+                    Thread.Sleep(jitterDelay);
                 }
             }
         }
+
 
         private NamedPipeServerStream CreateSecurePipe()
         {
