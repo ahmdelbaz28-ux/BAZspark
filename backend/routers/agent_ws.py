@@ -63,13 +63,27 @@ def _extract_api_key_from_handshake(websocket: WebSocket) -> str:
 
 
 async def _authenticate_agent_websocket(websocket: WebSocket):
-    """Validate the agent's API key + RBAC before accepting the WS handshake.
+    """Validate the agent's API key + RBAC + Origin before accepting the WS handshake.
 
     Returns the validated ``api_key_info`` on success, or ``None`` after
     closing the connection with code 4003 on any failure.
     """
+    import os
     from backend.api_keys import validate_api_key
     from backend.rbac import Permission, has_permission
+
+    # 0. Strict Origin header validation
+    origin = websocket.headers.get("origin")
+    if origin:
+        allowed_origins_str = os.environ.get(
+            "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
+        )
+        allowed_origins = [o.strip().lower() for o in allowed_origins_str.split(",") if o.strip()]
+        origin_clean = origin.strip().lower()
+        if not any(origin_clean == o or origin_clean.startswith(o) for o in allowed_origins):
+            logger.warning("Rejected agent connection: untrusted origin '%s'", origin)
+            await websocket.close(code=4003)
+            return None
 
     api_key = _extract_api_key_from_handshake(websocket)
     if not api_key:
@@ -134,15 +148,13 @@ async def _handle_agent_message(websocket: WebSocket, msg: dict) -> None:
         await websocket.send_json({"type": "pong"})
 
 
+WS_HEARTBEAT_TIMEOUT_SECONDS = 45.0
+
+
 @router.websocket("/ws")
 async def agent_websocket_endpoint(websocket: WebSocket):
     """
-    WebSocket endpoint for the local agent to connect.
-
-    S-06 FIX: the API key MUST be supplied via the `X-API-Key` request header
-    (or as the Sec-WebSocket-Protocol subprotocol for browser clients). It is
-    no longer accepted as a query-string parameter — query strings are logged
-    by every reverse proxy and would leak the key.
+    WebSocket endpoint for the local agent to connect with origin validation and heartbeat timeout.
     """
     api_key_info = await _authenticate_agent_websocket(websocket)
     if api_key_info is None:
@@ -156,16 +168,20 @@ async def agent_websocket_endpoint(websocket: WebSocket):
 
     try:
         while True:
-            data = await websocket.receive_text()
+            data = await asyncio.wait_for(websocket.receive_text(), timeout=WS_HEARTBEAT_TIMEOUT_SECONDS)
             try:
                 msg = json.loads(data)
                 await _handle_agent_message(websocket, msg)
             except Exception as e:
                 logger.warning("Error handling agent message: %s", e)
+    except asyncio.TimeoutError:
+        logger.warning("Agent WebSocket idle heartbeat timeout (%ss) reached — closing connection", WS_HEARTBEAT_TIMEOUT_SECONDS)
+        await websocket.close(code=1000)
     except WebSocketDisconnect:
         logger.info("Local Agent disconnected from WebSocket")
     finally:
         _cleanup_agent(websocket, agent_type)
+
 
 
 def has_active_agent(agent_type: str = "autocad_revit") -> bool:

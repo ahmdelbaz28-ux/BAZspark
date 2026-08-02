@@ -618,15 +618,16 @@ async def get_facp_cluster_status():
     Exposes real-time node health, leader node, and communicator stats.
     """
     try:
-        from facp_distributed.event_bus.cluster_communicator import (
-            DistributedClusterCommunicator,
-        )
+        import importlib
+        mod = importlib.import_module("facp_distributed.event_bus.cluster_communicator")
+        DistributedClusterCommunicator = getattr(mod, "DistributedClusterCommunicator")
         communicator = DistributedClusterCommunicator(
             node_id="primary_node_01",
             host="127.0.0.1",
             port=9000,
             node_type="l2_orchestrator",
         )
+
         status_data = communicator.get_cluster_status()
         return {
             "success": True,

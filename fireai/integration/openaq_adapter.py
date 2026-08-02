@@ -170,6 +170,13 @@ class OpenAQAdapter(ExternalApiAdapter):
             # (since the service may be fine, just our config).
             raise ValueError("OPENAQ_API_KEY environment variable not set")
 
+        # SSRF Guard Protection: Validate target host against private/loopback/metadata IP ranges
+        from urllib.parse import urlparse
+        from backend.integrations._ssrf_guard import resolve_to_safe_ip
+        parsed_url = urlparse(self._base_url)
+        if parsed_url.hostname:
+            resolve_to_safe_ip(parsed_url.hostname)
+
         params = {
             "coordinates": f"{lat},{lon}",
             "radius": radius_m,
@@ -181,6 +188,7 @@ class OpenAQAdapter(ExternalApiAdapter):
         headers = {"X-API-Key": self._api_key}
         client = await self._get_client()
         resp = await client.get(self._base_url, params=params, headers=headers)
+
         resp.raise_for_status()
         data = resp.json()
 

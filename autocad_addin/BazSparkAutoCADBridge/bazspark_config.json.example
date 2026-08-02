@@ -1,3 +1,4 @@
 {
-  "DashboardUrl": "http://localhost:5173"
+  "DashboardUrl": "http://<YOUR_DASHBOARD_HOST_HERE>:5173",
+  "ApiKey": "<YOUR_API_KEY_HERE>"
 }

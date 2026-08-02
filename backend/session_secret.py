@@ -186,13 +186,15 @@ def _load_single_secret(env_var: str, file_env_var: str, source_label: str) -> s
         validate_secret(secret, f"{source_label} (file: {file_path})")
         return secret
 
-    # Fall back to env var
-    secret = os.getenv(env_var, "")
-    if secret:
-        validate_secret(secret, f"{source_label} (env: {env_var})")
-        return secret
+    # Fall back to env vars (FIREAI_SESSION_SECRET, SESSION_SECRET, JWT_SECRET)
+    for key in (env_var, "SESSION_SECRET", "JWT_SECRET"):
+        secret = os.getenv(key, "")
+        if secret:
+            validate_secret(secret, f"{source_label} (env: {key})")
+            return secret
 
     return None
+
 
 
 class SessionSecretManager:

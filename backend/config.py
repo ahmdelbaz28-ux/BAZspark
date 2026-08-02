@@ -101,11 +101,14 @@ class Config:
             if not all(part in cls.DATABASE_URL for part in ["//", "@"]):
                 issues.append("DATABASE_URL may have invalid PostgreSQL format")
 
-        # Check if Neo4j has credentials when using remote server
-        if cls.NEO4J_URI is not None and not cls.NEO4J_URI.startswith("bolt://localhost") and not cls.NEO4J_PASSWORD:
-            issues.append("Neo4j remote connection detected without password")
+        # Fail-Safe check: Ensure JWT_SECRET or SESSION_SECRET is set in production
+        if cls.ENVIRONMENT.lower() in ("production", "prod"):
+            session_secret = os.getenv("FIREAI_SESSION_SECRET") or os.getenv("SESSION_SECRET") or os.getenv("JWT_SECRET") or os.getenv("FIREAI_SESSION_SECRET_FILE")
+            if not session_secret:
+                issues.append("CRITICAL: JWT_SECRET or SESSION_SECRET is missing in production environment.")
 
         return issues
+
 
 
 # Singleton instance
