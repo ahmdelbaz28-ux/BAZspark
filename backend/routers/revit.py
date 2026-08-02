@@ -737,9 +737,9 @@ async def create_wall(request: Request, body: CreateWallRequest) -> ElementRespo
     element_id = svc.create_wall(
         start_point=body.start_point,
         end_point=body.end_point,
-        _height=body.height,
-        _level=body.level,
-        _wall_type=body.wall_type
+        height=body.height,
+        level=body.level,
+        wall_type=body.wall_type
     )
 
     return ElementResponse(
