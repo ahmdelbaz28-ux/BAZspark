@@ -549,3 +549,37 @@ class TestPostgresSqliteFallback:
         with db._transaction() as cur:
             cur.execute("SELECT COUNT(*) FROM projects")
             assert cur.fetchone()[0] == 0
+
+    def test_degrades_when_neon_also_unreachable(self, tmp_path, monkeypatch) -> None:
+        """Both primary AND NEON failing must degrade to SQLite (Space scenario:
+        Supabase IPv6 unreachable + Neon also blocked). Without this, the NEON
+        fallback pool creation raises and get_db() fails -> /health disconnected."""
+        import sys
+        import types
+
+
+        monkeypatch.setenv(
+            "NEON_DATABASE_URL", "postgresql://neon:pass@db.example.com:5432/n"
+        )
+
+        fake_pool = types.ModuleType("psycopg2.pool")
+
+        class _AllUnreachable:
+            def __init__(self, *args, **kwargs):
+                raise ConnectionError("all postgres hosts unreachable")
+
+        fake_pool.ThreadedConnectionPool = _AllUnreachable
+        fake_psycopg2 = types.ModuleType("psycopg2")
+        fake_psycopg2.pool = fake_pool
+        monkeypatch.setitem(sys.modules, "psycopg2", fake_psycopg2)
+        monkeypatch.setitem(sys.modules, "psycopg2.pool", fake_pool)
+
+        db = self._bare_db(tmp_path)
+        db._init_postgres()  # must NOT raise even though NEON also fails
+
+        assert db._is_postgres is False
+        assert db._pg_pool is None
+        assert db._database_url is None
+        with db._transaction() as cur:
+            cur.execute("SELECT COUNT(*) FROM projects")
+            assert cur.fetchone()[0] == 0
