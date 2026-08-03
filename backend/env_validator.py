@@ -156,16 +156,6 @@ def _min_len(n: int) -> _EnvValidator:
     return _v
 
 
-def _is_url(value: str | None) -> tuple[bool, str]:
-    ok, msg = _present(value)
-    if not ok:
-        return ok, msg
-    v = (value or "").strip()  # _present() guarantees non-empty when ok
-    if not (v.startswith("http://") or v.startswith("https://")):
-        return False, "must be an http(s):// URL"
-    return True, "valid URL"
-
-
 def _is_https(value: str | None) -> tuple[bool, str]:
     ok, msg = _present(value)
     if not ok:
