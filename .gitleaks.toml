@@ -10,14 +10,21 @@
 #   pre-commit run gitleaks --all-files
 #
 # When adding a new false positive:
-#   Option A: Add the file/pattern to the global allowlist below
+#   Option A: Add the file/pattern to the relevant allowlist section below
 #   Option B: Add `# gitleaks:allow` to the specific line (inline)
+#
+# SYNTAX FIX (2026-08-03): Changed `[[allowlist]]` (singular, TOML array
+# of tables) to `[[allowlists]]` (plural). gitleaks v8.30.1 expects the
+# plural form for top-level allowlists. The singular form was rejected
+# with: "AllowList expected a map, got a slice". This had been silently
+# breaking secret scanning on every commit since the config was first
+# written.
 # ═══════════════════════════════════════════════════════════════════════════
 
 title = "BAZSPARK FireAI Secret Scanning Configuration"
 
-# ── Global Allowlist ─────────────────────────────────────────────────────
-[[allowlist]]
+# ── Global Allowlists ────────────────────────────────────────────────────
+[[allowlists]]
 description = "Lock files — auto-generated, contain integrity hashes only"
 paths = [
   '''(?:^|/)(?:package-lock\.json|npm-shrinkwrap\.json)$''',
@@ -27,7 +34,7 @@ paths = [
   '''(?:^|/)poetry\.lock$''',
 ]
 
-[[allowlist]]
+[[allowlists]]
 description = "Dependency directories — third-party code, not project secrets"
 paths = [
   '''(?:^|/)node_modules(?:/.*)?$''',
@@ -36,7 +43,7 @@ paths = [
   '''(?:^|/)__pycache__(?:/.*)?$''',
 ]
 
-[[allowlist]]
+[[allowlists]]
 description = "Binary and media files"
 paths = [
   '''(?i)\.(?:bmp|gif|jpe?g|png|svg|tiff?)$''',
@@ -47,7 +54,7 @@ paths = [
 ]
 
 # ── Test Fixture Allowlist ───────────────────────────────────────────────
-[[allowlist]]
+[[allowlists]]
 description = "Test fixtures with synthetic keys for security validation"
 paths = [
   '''tests/test_security\.py''',
@@ -62,7 +69,7 @@ paths = [
 ]
 
 # ── Documentation Allowlist ──────────────────────────────────────────────
-[[allowlist]]
+[[allowlists]]
 description = "Documentation and example files with placeholder credentials"
 paths = [
   '''\.env\.example.*''',
@@ -76,7 +83,7 @@ paths = [
 ]
 
 # ── Security Config Allowlist ────────────────────────────────────────────
-[[allowlist]]
+[[allowlists]]
 description = "Security tooling configuration files"
 paths = [
   '''\.secrets\.baseline''',
@@ -84,7 +91,7 @@ paths = [
 ]
 
 # ── Regex Stopwords (content-based exclusions) ───────────────────────────
-[[allowlist]]
+[[allowlists]]
 description = "Regex-based content exclusions for inline patterns"
 regexes = [
   '''your-api-key-here''',
