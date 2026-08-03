@@ -518,7 +518,7 @@ export function CADSettingsPage() {
                                                                 </div>
 
                                                                 <Button
-                                                                        className="w-full bg-danger hover:bg-danger/90 text-white border-none"
+                                                                        className="w-full bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                                                         onClick={saveAutoCADSettings}
                                                                 >
                                                                         Save AutoCAD Settings
@@ -712,7 +712,7 @@ export function CADSettingsPage() {
                                                                 </div>
 
                                                                 <Button
-                                                                        className="w-full bg-danger hover:bg-danger/90 text-white border-none"
+                                                                        className="w-full bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                                                         onClick={saveRevitSettings}
                                                                 >
                                                                         Save Revit Settings
@@ -818,7 +818,7 @@ export function CADSettingsPage() {
                                                                 </div>
 
                                                                 <Button
-                                                                        className="w-full bg-danger hover:bg-danger/90 text-white border-none"
+                                                                        className="w-full bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                                                         onClick={saveCloudSettings}
                                                                 >
                                                                         Save Cloud Settings

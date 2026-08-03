@@ -1,0 +1,423 @@
+/* facp.css — FACP industrial identity for the FACP Panel Selection page
+ *
+ * Phase 13 (frontend-design skill, continued): the FACP page is the heart
+ * of the system — it selects the Fire Alarm Control Panel for a project.
+ * This is the surface where the industrial vocabulary is most at home.
+ *
+ * Every visual choice here mirrors a real NFPA 72 FACP:
+ *
+ *   - Page title: Space Grotesk 700 + mono NFPA reference label
+ *   - Cards: graphite bezel + panel-recess input wells
+ *   - Inputs: 2px sharp corners + IBM Plex Mono labels
+ *   - Selection result: evac-green model badge (recommended = "normal")
+ *   - Capacity utilization: alarm-color progress bar
+ *     (green ≤70% / amber 70-90% / red >90% — NFPA derating thresholds)
+ *   - Cluster visualizer: each node = a FACP module slot
+ *
+ * The previous FACP page used:
+ *   - Cpu icon text-primary (cyan) for the page title icon
+ *   - Cpu icon text-cyan-400 for the cluster visualizer
+ *   - shadcn Card (glassmorphism) for all cards
+ *   - bg-muted for the JSON result pre block
+ *   - default Input/Button components (rounded, no industrial styling)
+ *
+ * All replaced with FACP vocabulary. The default cyan --color-primary is
+ * RETAINED for other surfaces — this file is OPT-IN.
+ *
+ * DEV-MODE CSP NOTE: same as shell.css / login.css / dashboard.css.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Page header — title + NFPA reference
+ *
+ * The title was text-lg font-semibold + a Cpu icon in text-primary (cyan).
+ * Now it's Space Grotesk 700 + a Cpu icon in evac-green + a mono NFPA
+ * reference label that reads like a FACP nameplate.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.facp-page-header {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+	padding-bottom: 1rem;
+	border-bottom: 1px solid rgba(90, 103, 112, 0.25);
+}
+.facp-page-title {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 1.5rem;
+	letter-spacing: -0.02em;
+	line-height: 1.2;
+	color: var(--color-bone);
+}
+.facp-page-title-icon {
+	color: var(--color-evac-green);
+	flex-shrink: 0;
+}
+.facp-page-ref {
+	font-family: var(--font-data);
+	font-size: 0.75rem;
+	font-weight: 500;
+	letter-spacing: 0.06em;
+	color: var(--color-steel);
+	text-transform: uppercase;
+}
+.facp-page-ref-accent {
+	color: var(--color-amber-alert);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Cards — graphite bezel, panel-recess wells, sharp 2px corners
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.facp-card {
+	background-color: var(--color-graphite);
+	border: 1px solid rgba(90, 103, 112, 0.32);
+	border-radius: 2px;
+	backdrop-filter: none;
+}
+.facp-card-header {
+	padding: 1.25rem 1.5rem 0.5rem;
+}
+.facp-card-content {
+	padding: 0.5rem 1.5rem 1.5rem;
+}
+.facp-card-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 1rem;
+	letter-spacing: -0.01em;
+	color: var(--color-bone);
+}
+.facp-card-title-icon {
+	color: var(--color-evac-green);
+	flex-shrink: 0;
+}
+.facp-card-desc {
+	font-family: var(--font-body);
+	font-size: 0.8125rem;
+	color: rgba(232, 228, 216, 0.55);
+	margin-top: 0.25rem;
+}
+
+/* ── Form labels — mono uppercase tracked, like engraved panel placards ──── */
+.facp-field-label {
+	font-family: var(--font-data);
+	font-size: 0.6875rem;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--color-steel);
+	margin-bottom: 0.4rem;
+	display: block;
+}
+
+/* ── Inputs — sharp 2px corners, panel-recess bg, steel hairline border ───
+   Overrides the shadcn Input default (rounded-md + bg-background). */
+.facp-input,
+.facp-input:focus {
+	background-color: var(--color-panel-recess);
+	border: 1px solid rgba(90, 103, 112, 0.45);
+	border-radius: 2px;
+	color: var(--color-bone);
+	font-family: var(--font-data);
+	font-size: 0.875rem;
+	font-variant-numeric: tabular-nums;
+	transition: border-color 200ms var(--ease-micro),
+		box-shadow 200ms var(--ease-micro);
+}
+.facp-input::placeholder {
+	color: rgba(90, 103, 112, 0.85);
+	font-family: var(--font-data);
+}
+.facp-input:hover {
+	border-color: rgba(90, 103, 112, 0.7);
+}
+.facp-input:focus-visible,
+.facp-input:focus {
+	outline: none;
+	border-color: var(--color-evac-green);
+	box-shadow: 0 0 0 2px var(--color-graphite),
+		0 0 0 4px rgba(61, 138, 77, 0.45);
+}
+
+/* ── Select trigger — same vocabulary as inputs ─────────────────────────── */
+.facp-select-trigger {
+	background-color: var(--color-panel-recess);
+	border: 1px solid rgba(90, 103, 112, 0.45);
+	border-radius: 2px;
+	color: var(--color-bone);
+	font-family: var(--font-data);
+	font-size: 0.875rem;
+}
+.facp-select-trigger:hover {
+	border-color: rgba(90, 103, 112, 0.7);
+}
+.facp-select-trigger:focus-visible,
+.facp-select-trigger[data-state="open"] {
+	outline: none;
+	border-color: var(--color-evac-green);
+	box-shadow: 0 0 0 2px var(--color-graphite),
+		0 0 0 4px rgba(61, 138, 77, 0.45);
+}
+
+/* ── Checkbox labels — mono small caps ──────────────────────────────────── */
+.facp-check-label {
+	font-family: var(--font-body);
+	font-size: 0.8125rem;
+	color: rgba(232, 228, 216, 0.85);
+	cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Action buttons — primary (evac-green) + outline (steel hairline)
+ *
+ * The shadcn Button defaults use primary=cyan and outline=white/10 border.
+ * We override:
+ *   - Primary "Select Panel": evac-green bg + graphite text — this is the
+ *     "set the panel" action, green = "go" in FACP vocabulary.
+ *   - Outline "List All Panels" / "Verify Compliance": steel hairline +
+ *     evac-green hover. Matches the dashboard refresh button.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.facp-btn-primary {
+	font-family: var(--font-body);
+	font-weight: 500;
+	font-size: 0.8125rem;
+	background-color: var(--color-evac-green);
+	color: var(--color-graphite);
+	border: 1px solid var(--color-evac-green);
+	border-radius: 2px;
+	transition: background-color 200ms var(--ease-micro),
+		border-color 200ms var(--ease-micro),
+		box-shadow 200ms var(--ease-micro);
+	cursor: pointer;
+}
+.facp-btn-primary:hover:not(:disabled),
+.facp-btn-primary:focus-visible:not(:disabled) {
+	background-color: #2f6e3c;
+	border-color: #2f6e3c;
+}
+.facp-btn-primary:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--color-graphite),
+		0 0 0 4px rgba(61, 138, 77, 0.55);
+}
+.facp-btn-primary:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.facp-btn-outline {
+	font-family: var(--font-body);
+	font-weight: 500;
+	font-size: 0.8125rem;
+	background-color: transparent;
+	color: var(--color-bone);
+	border: 1px solid rgba(90, 103, 112, 0.45);
+	border-radius: 2px;
+	transition: color 200ms var(--ease-micro),
+		background-color 200ms var(--ease-micro),
+		border-color 200ms var(--ease-micro),
+		box-shadow 200ms var(--ease-micro);
+	cursor: pointer;
+}
+.facp-btn-outline:hover:not(:disabled),
+.facp-btn-outline:focus-visible:not(:disabled) {
+	color: var(--color-evac-green);
+	background-color: var(--color-panel-recess);
+	border-color: rgba(61, 138, 77, 0.55);
+}
+.facp-btn-outline:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--color-graphite),
+		0 0 0 4px rgba(61, 138, 77, 0.45);
+}
+.facp-btn-outline:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Selection result — recommended panel card
+ *
+ * The model badge was Badge variant="default" (cyan). Now it's an
+ * evac-green nameplate with mono uppercase tracked text — reads like
+ * a FACP model placard (e.g. "NOTIFIER NFS2-3030").
+ *
+ * The capacity / NAC utilization numbers get an alarm-color progress bar:
+ *   ≤70% = evac-green (NFPA headroom OK)
+ *   70-90% = amber-alert (derating zone)
+ *   >90% = signal-red (violation — panel is undersized)
+ * These thresholds come from NFPA 72 §10.6.10.1.2 (80% max utilization
+ * for NACs) with a 10% safety margin.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.facp-result-nameplate {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.5rem 0.875rem;
+	background-color: rgba(61, 138, 77, 0.12);
+	border: 1px solid rgba(61, 138, 77, 0.55);
+	border-radius: 2px;
+	font-family: var(--font-data);
+	font-size: 0.875rem;
+	font-weight: 500;
+	letter-spacing: 0.06em;
+	color: var(--color-evac-green);
+}
+.facp-result-manufacturer {
+	font-family: var(--font-body);
+	font-size: 0.8125rem;
+	color: rgba(232, 228, 216, 0.7);
+}
+
+/* Utilization row — label + value + horizontal alarm bar */
+.facp-util-row {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.4rem;
+}
+@media (min-width: 640px) {
+	.facp-util-row {
+		grid-template-columns: 10rem 4rem 1fr;
+		align-items: center;
+		gap: 0.75rem;
+	}
+}
+.facp-util-label {
+	font-family: var(--font-data);
+	font-size: 0.6875rem;
+	font-weight: 500;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--color-steel);
+}
+.facp-util-value {
+	font-family: var(--font-data);
+	font-size: 0.875rem;
+	font-variant-numeric: tabular-nums;
+	color: var(--color-bone);
+	text-align: right;
+}
+.facp-util-bar {
+	height: 0.5rem;
+	background-color: var(--color-panel-recess);
+	border: 1px solid rgba(90, 103, 112, 0.3);
+	border-radius: 1px;
+	overflow: hidden;
+}
+.facp-util-bar-fill {
+	height: 100%;
+	transition: width 400ms var(--ease-entrance);
+}
+.facp-util-bar-fill.ok { background-color: var(--color-evac-green); }
+.facp-util-bar-fill.warning { background-color: var(--color-amber-alert); }
+.facp-util-bar-fill.danger { background-color: var(--color-signal-red); }
+
+.facp-derating-block {
+	font-family: var(--font-data);
+	font-size: 0.75rem;
+	color: rgba(232, 228, 216, 0.6);
+	background-color: var(--color-panel-recess);
+	border: 1px solid rgba(90, 103, 112, 0.25);
+	border-left: 3px solid var(--color-amber-alert);
+	border-radius: 2px;
+	padding: 0.75rem 1rem;
+}
+.facp-derating-block dt {
+	color: var(--color-steel);
+	font-weight: 500;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	font-size: 0.625rem;
+	margin-top: 0.4rem;
+}
+.facp-derating-block dt:first-child { margin-top: 0; }
+.facp-derating-block dd {
+	color: var(--color-bone);
+	margin-inline-start: 0;
+	margin-top: 0.1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Panel database list — each row is a FACP module slot
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.facp-panel-row {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.25rem;
+	padding: 0.6rem 0.875rem;
+	border-bottom: 1px solid rgba(90, 103, 112, 0.22);
+	transition: background-color 200ms var(--ease-micro);
+}
+.facp-panel-row:hover {
+	background-color: rgba(90, 103, 112, 0.12);
+}
+.facp-panel-row:last-child {
+	border-bottom: none;
+}
+@media (min-width: 640px) {
+	.facp-panel-row {
+		grid-template-columns: 1.4fr 1fr 1.2fr;
+		align-items: center;
+		gap: 1rem;
+	}
+}
+.facp-panel-model {
+	font-family: var(--font-data);
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--color-bone);
+	letter-spacing: 0.02em;
+}
+.facp-panel-manufacturer {
+	font-family: var(--font-body);
+	font-size: 0.8125rem;
+	color: rgba(232, 228, 216, 0.65);
+}
+.facp-panel-capacity {
+	font-family: var(--font-data);
+	font-size: 0.75rem;
+	color: var(--color-steel);
+	letter-spacing: 0.04em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Extended operations result — JSON pre block
+ *
+ * Was: bg-muted + font-mono + text-muted-foreground.
+ * Now: panel-recess bg + IBM Plex Mono + bone color + amber left border.
+ * Reads like a FACP event log entry.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.facp-event-log {
+	font-family: var(--font-data);
+	font-size: 0.75rem;
+	line-height: 1.5;
+	color: rgba(232, 228, 216, 0.8);
+	background-color: var(--color-panel-recess);
+	border: 1px solid rgba(90, 103, 112, 0.3);
+	border-left: 3px solid var(--color-evac-green);
+	border-radius: 2px;
+	padding: 0.875rem 1rem;
+	overflow: auto;
+	max-height: 15rem;
+	white-space: pre-wrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * REDUCED MOTION — neutralize the util-bar fill animation (WCAG 2.3.3)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+	.facp-util-bar-fill,
+	.facp-btn-primary,
+	.facp-btn-outline,
+	.facp-input,
+	.facp-select-trigger,
+	.facp-panel-row {
+		transition-duration: 0.01ms !important;
+	}
+}

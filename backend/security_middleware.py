@@ -59,7 +59,7 @@ from backend.auth_utils import (
     extract_session_token_from_headers as _extract_session_token,
 )
 from backend.auth_utils import (
-    validate_api_key_credential as _validate_api_key_credential,
+    resolve_credential as _resolve_credential,
 )
 from backend.rbac import Role as _Role
 
@@ -368,11 +368,12 @@ class ApiKeyMiddleware:
             if not api_key:
                 cookie_token = _extract_session_token(headers)
                 if cookie_token is not None:
-                    # Import validate_session_cookie lazily to avoid circular import
+                    # Import get_session_principal lazily to avoid circular import
                     # if backend.routers.auth ever imports from this module in future.
-                    from backend.routers.auth import validate_session_cookie
-                    role_from_cookie = validate_session_cookie(cookie_token)
-                    if role_from_cookie is not None:
+                    from backend.routers.auth import get_session_principal
+                    principal_tuple = get_session_principal(cookie_token)
+                    if principal_tuple is not None:
+                        role_from_cookie, principal_from_cookie = principal_tuple
                         try:
                             role = _Role(role_from_cookie)
                         except ValueError:
@@ -381,14 +382,23 @@ class ApiKeyMiddleware:
                             scope.setdefault("state", {})
                             scope["state"]["fireai_role"] = role
                             scope["fireai_role"] = role
+                            # F3: stamp the per-credential principal for
+                            # resource scoping (memory etc.).
+                            scope["state"]["fireai_principal"] = principal_from_cookie
+                            scope["fireai_principal"] = principal_from_cookie
                             await self.app(scope, receive, send)
                             return
 
             # Validate API key via auth_utils (env var bypass + RBAC store).
             # This is the single validation implementation shared with routers/auth.py.
             role = None
+            principal = None
             if api_key:
-                role = _validate_api_key_credential(api_key)
+                # F3: resolve (role, principal) in one pass — principal is the
+                # opaque per-credential id used for resource scoping.
+                resolved = _resolve_credential(api_key)
+                if resolved is not None:
+                    role, principal = resolved
                 if role is None:
                     # Invalid API key — return 401 directly.
                     # Don't reveal whether the key exists; just "unauthorized".
@@ -403,6 +413,9 @@ class ApiKeyMiddleware:
                 scope.setdefault("state", {})
                 scope["state"]["fireai_role"] = role
                 scope["fireai_role"] = role
+                if principal is not None:
+                    scope["state"]["fireai_principal"] = principal
+                    scope["fireai_principal"] = principal
 
         await self.app(scope, receive, send)
 

@@ -254,6 +254,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                                         {t("fireAlarm.addDetector")}
                                 </label>
                                 <select
+                                        aria-label={t("fireAlarm.addDetector")}
                                         value={newDetectorType}
                                         onChange={(e) => setNewDetectorType(e.target.value as DetectorType)}
                                         className="bg-card border border-border rounded px-2 py-1 text-sm text-foreground"

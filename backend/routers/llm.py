@@ -21,7 +21,7 @@ reminding the engineer that AI output must be verified against the published cod
 """
 import json
 import logging
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any, AsyncGenerator, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -29,6 +29,7 @@ from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
 from backend.limiter import limiter
+from backend.llm_constants import AI_DISCLAIMER, PERSONAE
 from backend.rbac import Permission
 from backend.services.llm_service import LLMResponse, get_llm_service
 
@@ -39,11 +40,7 @@ router = APIRouter(prefix="/llm", tags=["llm"])
 # Standard disclaimer appended to all AI-generated narratives.
 # This protects the engineer and the AHJ (Authority Having Jurisdiction) by
 # making it explicit that AI output is advisory and must be verified.
-_AI_DISCLAIMER = (
-        "⚠️ AI-GENERATED CONTENT — Advisory only. This output was produced by an "
-        "LLM and must be verified against the published NFPA 72 / NEC code by a "
-        "licensed fire-protection engineer before use in a submittal."
-)
+_AI_DISCLAIMER = AI_DISCLAIMER
 
 # Standard error messages — defined once to avoid duplication (SonarCloud S1192).
 _ERR_NOT_CONFIGURED = "LLM service not configured"
@@ -75,6 +72,21 @@ _RES_503 = {
 # ── Request / Response models ────────────────────────────────────────────────
 
 
+class ChatMessage(BaseModel):
+        """A single conversation turn for the bounded history window (F5b)."""
+
+        role: Literal["user", "assistant"] = Field(
+                ...,
+                description="Message role. Only user/assistant are accepted.",
+        )
+        content: str = Field(
+                ...,
+                min_length=1,
+                max_length=8000,
+                description="Message text.",
+        )
+
+
 class ChatRequest(BaseModel):
         """Request body for POST /llm/chat."""
 
@@ -84,10 +96,21 @@ class ChatRequest(BaseModel):
                 max_length=8000,
                 description="The user's question or instruction to the LLM.",
         )
-        system: Optional[str] =  Field(
+        role: Literal["engineer_assistant", "code_explainer", "narrative_writer"] = Field(
+                "engineer_assistant",
+                description=(
+                        "Server-owned persona (whitelist). Free-text system prompts "
+                        "are not accepted; the server resolves the persona text."
+                ),
+        )
+        history: Optional[List[ChatMessage]] = Field(
                 None,
-                max_length=2000,
-                description="Optional system message to set the assistant's persona.",
+                max_length=20,
+                description=(
+                        "Bounded conversation history (max 20 turns). Sent oldest "
+                        "to newest; the latest user turn should be omitted (it is "
+                        "sent separately as prompt)."
+                ),
         )
         model: Optional[str] =  Field(
                 None,
@@ -182,12 +205,22 @@ async def llm_chat(request: Request, req: ChatRequest) -> Dict[str, Any]:
                         },
                 )
         try:
+                # F5a: persona is server-owned — resolve the whitelisted role to
+                # the fixed persona text. The client can no longer inject a
+                # free-text system prompt via /llm/chat.
+                system_msg = PERSONAE[req.role]
+                history = (
+                        [m.model_dump() for m in req.history]
+                        if req.history
+                        else None
+                )
                 result: LLMResponse = await svc.chat(
                         req.prompt,
-                        system=req.system,
+                        system=system_msg,
                         model=req.model,
                         temperature=req.temperature,
                         max_tokens=req.max_tokens,
+                        history=history,
                 )
         except Exception:
                 logger.exception("LLM chat failed")
@@ -345,17 +378,25 @@ async def llm_chat_stream(
 
         async def event_generator() -> AsyncGenerator[str, None]:
                 try:
+                        # F5a/F5b: server-owned persona + bounded history window.
+                        system_msg = PERSONAE[req.role]
+                        history = (
+                                [m.model_dump() for m in req.history]
+                                if req.history
+                                else None
+                        )
                         async for event in svc.chat_stream(
                                 req.prompt,
-                                system=req.system,
+                                system=system_msg,
                                 model=req.model,
                                 temperature=req.temperature,
                                 max_tokens=req.max_tokens,
+                                history=history,
                         ):
                                 yield f"data: {json.dumps(event)}\n\n"
                 except Exception:
                         logger.exception("LLM stream failed")
-                        yield f"data: {json.dumps({'type': 'error', 'message': _ERR_REQUEST_FAILED})}\n\n"
+                        yield f"data: {json.dumps({'type': 'error', 'message': _ERR_REQUEST_FAILED, 'disclaimer': _AI_DISCLAIMER})}\n\n"
 
         return StreamingResponse(
                 event_generator(),

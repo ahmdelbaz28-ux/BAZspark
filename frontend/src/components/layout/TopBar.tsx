@@ -6,6 +6,7 @@ import { UserMenu } from "@/components/auth/UserMenu";
 import { ContextualHelpButton } from "@/components/shared/ContextualHelpButton";
 import { useTheme } from "@/contexts/ThemeContext";
 import { BazSparkLogo } from "@/components/auth/BazSparkLogo";
+import "@/styles/shell.css";
 
 interface TopBarProps {
         isConnected: boolean;
@@ -37,21 +38,6 @@ const routeLabels: Record<string, string> = {
         "/digital-twin/history": "DT History",
 };
 
-/**
- * Shared className for icon-only TopBar buttons.
- * UI/UX Pro Max audit (Phase 5.1):
- *   - `cursor-pointer` per checklist
- *   - `focus-visible:ring-2` for keyboard navigation
- *   - `transition-[color,background-color,border-color,box-shadow]` (no transform — avoids layout shift)
- *   - `hover:-translate-y-px` is intentionally NOT used here because shifting
- *     TopBar icons causes the entire 16px row to reflow on hover. We use a
- *     color-only hover treatment instead.
- */
-const iconButtonClass =
-        "p-2 rounded-lg text-muted-foreground cursor-pointer transition-[color,background-color] duration-200 " +
-        "hover:text-cyan-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 " +
-        "focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
-
 const TopBar: React.FC<TopBarProps> = memo(
         // NOSONAR - typescript:S9011: Intentionally complex demo UI with many interactive buttons
         ({ isConnected, onHelpOpen, onSearchOpen, currentLanguage, onLanguageChange }) => {
@@ -72,44 +58,46 @@ const TopBar: React.FC<TopBarProps> = memo(
                 }, []);
 
                 const pageName = routeLabels[location.pathname] || "BAZSPARK";
+                const connState = isConnected ? "online" : "offline";
 
                 return (
                         <header
-                                className="h-16 glass flex items-center px-4 lg:px-6 gap-2 lg:gap-4 shrink-0 sticky top-0 z-40"
-                                style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}
+                                className="shell-topbar h-16 flex items-center px-4 lg:px-6 gap-2 lg:gap-4 shrink-0 sticky top-0 z-40"
                         >
                                 {/* Left — logo + page title */}
                                 <div className="flex items-center gap-3 min-w-0">
                                         <BazSparkLogo size={30} className="shrink-0" />
-                                        <h1 className="text-foreground font-semibold text-[16px] tracking-tight truncate ml-1">
+                                        <h1 className="shell-page-title truncate" title={pageName}>
                                                 {pageName}
                                         </h1>
                                 </div>
 
                                 <div className="flex-1" />
 
-                                {/* Connection status — neutral slate when offline, no red */}
+                                {/* Connection status — alarm-color vocabulary (evac-green / amber-alert).
+                                    Previous bg-slate-500 was a decorative nothing; amber = TROUBLE in FACP. */}
                                 <div
                                         className="flex items-center gap-2"
                                         role="status"
                                         aria-live="polite"
+                                        aria-label={isConnected ? "Connected to backend" : "Disconnected from backend"}
                                 >
                                         <span
-                                                className={`h-2 w-2 rounded-full ${isConnected ? "bg-success" : "bg-slate-500"}`}
+                                                className={`shell-conn-dot ${connState}`}
                                                 aria-hidden="true"
                                         />
-                                        <span className="text-muted-foreground text-[13px] hidden md:inline">
+                                        <span className={`shell-conn-label ${connState} hidden md:inline`}>
                                                 {isConnected ? "Online" : "Offline"}
                                         </span>
                                 </div>
 
-                                <div className="h-5 w-px bg-white/10" role="separator" aria-orientation="vertical" />
+                                <div className="shell-separator" role="separator" aria-orientation="vertical" />
 
                                 {/* Action buttons */}
                                 <button
                                         type="button"
                                         onClick={onSearchOpen}
-                                        className={iconButtonClass}
+                                        className="shell-icon-btn p-2"
                                         aria-label="Search"
                                         title="Search (Ctrl+K)"
                                 >
@@ -121,7 +109,7 @@ const TopBar: React.FC<TopBarProps> = memo(
                                 <button
                                         type="button"
                                         onClick={onHelpOpen}
-                                        className={iconButtonClass}
+                                        className="shell-icon-btn p-2"
                                         aria-label="Help"
                                         data-onboarding="help-button"
                                         title="Global help (F1)"
@@ -131,7 +119,7 @@ const TopBar: React.FC<TopBarProps> = memo(
 
                                 <Link
                                         to="/settings"
-                                        className={iconButtonClass}
+                                        className="shell-icon-btn p-2 inline-flex"
                                         aria-label="Settings"
                                         title="Settings"
                                 >
@@ -143,7 +131,7 @@ const TopBar: React.FC<TopBarProps> = memo(
                                         type="button"
                                         onClick={toggle}
                                         aria-label="Toggle dark mode"
-                                        className={iconButtonClass}
+                                        className="shell-icon-btn p-2"
                                 >
                                         {dark ? (
                                                 <Moon aria-hidden="true" className="h-5 w-5" />
@@ -157,7 +145,7 @@ const TopBar: React.FC<TopBarProps> = memo(
                                         <button
                                                 type="button"
                                                 onClick={() => setLangOpen(!langOpen)}
-                                                className="flex items-center gap-1.5 px-3 py-2 text-muted-foreground cursor-pointer hover:text-cyan-300 hover:bg-white/5 transition-[color,background-color] duration-200 text-[13px] rounded-lg border border-white/10 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                                className="shell-lang-btn flex items-center gap-1.5 px-3 py-2"
                                                 aria-label="Change language"
                                                 aria-expanded={langOpen}
                                                 aria-haspopup="menu"
@@ -167,7 +155,7 @@ const TopBar: React.FC<TopBarProps> = memo(
                                         </button>
                                         {langOpen && (
                                                 <div
-                                                        className="absolute right-0 top-full mt-2 glass rounded-lg shadow-xl z-50 min-w-[120px] overflow-hidden border border-white/10"
+                                                        className="shell-lang-menu absolute right-0 top-full mt-2 shadow-xl z-50 min-w-[140px] overflow-hidden"
                                                         role="menu"
                                                         aria-label="Language selector"
                                                 >
@@ -181,10 +169,8 @@ const TopBar: React.FC<TopBarProps> = memo(
                                                                         }}
                                                                         role="menuitemradio"
                                                                         aria-checked={currentLanguage === lang}
-                                                                        className={`block w-full text-left px-3 py-2.5 text-[13px] cursor-pointer transition-colors duration-200 ${
-                                                                                currentLanguage === lang
-                                                                                        ? "text-cyan-300 bg-cyan-400/10"
-                                                                                        : "text-foreground hover:bg-white/5"
+                                                                        className={`shell-lang-item block w-full text-left px-3 py-2.5 ${
+                                                                                currentLanguage === lang ? "active" : ""
                                                                         }`}
                                                                 >
                                                                         {lang === "en" ? "English" : "العربية"}
@@ -194,7 +180,7 @@ const TopBar: React.FC<TopBarProps> = memo(
                                         )}
                                 </div>
 
-                                <div className="h-5 w-px bg-white/10" role="separator" aria-orientation="vertical" />
+                                <div className="shell-separator" role="separator" aria-orientation="vertical" />
 
                                 <UserMenu />
                         </header>

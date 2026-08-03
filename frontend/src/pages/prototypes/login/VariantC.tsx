@@ -179,7 +179,7 @@ export function VariantC(props: Readonly<LoginVariantProps>) {
                                         <p
                                                 style={{
                                                         fontSize: "0.7rem",
-                                                        color: "#64748b",
+                                                        color: "#94a3b8",
                                                         fontFamily: "monospace",
                                                         letterSpacing: "0.15em",
                                                         marginTop: "0.25rem",
@@ -223,7 +223,7 @@ export function VariantC(props: Readonly<LoginVariantProps>) {
                                                                                                         style={{
                                                                                                                 fontSize: "0.65rem",
                                                                                                                 fontWeight: 600,
-                                                                                                                color: "#64748b",
+                                                                                                                color: "#94a3b8",
                                                                                                                 textTransform: "uppercase",
                                                                                                                 letterSpacing: "0.08em",
                                                                                                         }}

@@ -376,7 +376,7 @@ function Elements() {
             <Button
                                                                 onClick={() => deleteMutation.mutate(deleteTarget.element_id)}
                                                                 disabled={deleteMutation.isPending}
-                                                                className="bg-danger hover:bg-danger/90 text-white border-none"
+                                                                className="bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                                         >
                                                                 {deleteMutation.isPending
                                                                         ? t("elements.deleting")
@@ -570,7 +570,7 @@ function CreateElementModal({
                                         <Button
                                                 onClick={() => createMutation.mutate()}
                                                 disabled={!name || createMutation.isPending}
-                                                className="bg-danger hover:bg-danger/90 text-white border-none"
+                                                className="bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                         >
                                                 {createMutation.isPending
                                                         ? t("common.creating")

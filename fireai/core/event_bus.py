@@ -146,6 +146,10 @@ class Events:
     # ── Room Lifecycle ──────────────────────────────────────────────
     ROOM_LIFECYCLE_CHANGED = "room.lifecycle.changed"
 
+    # ── Self-Healing Engine (Tier 2 LLM recovery) ───────────────────
+    HEALING_OCCURRED = "healing.occurred"
+    HEALING_BLOCKED = "healing.blocked"
+
 
 # ===========================================================================
 # Callback Type

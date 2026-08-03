@@ -26,23 +26,11 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Anchor,
-  Cpu,
-  Download,
-  FileCode2,
-  FileSpreadsheet,
-  Flame,
-  Layers,
-  Loader2,
-  Server,
-  Shield,
-  ShieldCheck,
-  Ship,
-  Siren,
-  Sliders,
-  Sparkles,
-  Zap,
+        Anchor, Cpu, Download, FileCode2, FileSpreadsheet,
+        Flame, Layers, Loader2, Server, Shield,
+        ShieldCheck, Ship, Siren, Sliders, Sparkles, Zap,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   CardDescription,

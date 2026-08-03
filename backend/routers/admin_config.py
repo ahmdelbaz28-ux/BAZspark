@@ -426,6 +426,11 @@ async def rotate_secret(
 
     # S6547: the secret VALUE is user-supplied (or generated). Whitelist-check
     # it so control characters can never be injected into the environment.
+    if not new_secret.isprintable():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="new_secret must not contain control characters.",
+        )
     if _SAFE_SECRET_VALUE_RE.fullmatch(new_secret) is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

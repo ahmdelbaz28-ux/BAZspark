@@ -502,6 +502,7 @@ export function SettingsPage() {
                                                                                         {t("settings.theme")}
                                                                                 </Label>
                                                                                 <select
+                                                                                        aria-label={t("settings.theme")}
                                                                                         value={theme}
                                                                                         onChange={(e) => setTheme(e.target.value)}
                                                                                         className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
@@ -516,6 +517,7 @@ export function SettingsPage() {
                                                                                         {t("settings.language")}
                                                                                 </Label>
                                                                                 <select
+                                                                                        aria-label={t("settings.language")}
                                                                                         value={language}
                                                                                         onChange={(e) => setLanguage(e.target.value)}
                                                                                         className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
@@ -538,6 +540,7 @@ export function SettingsPage() {
                                                                                 </p>
                                                                         </div>
                                                                         <Switch
+                                                                                aria-label={t("settings.notifications")}
                                                                                 checked={notifications}
                                                                                 onCheckedChange={setNotifications}
                                                                                 className="data-[state=checked]:bg-danger"
@@ -610,6 +613,7 @@ export function SettingsPage() {
                                                                                         {t("fireai.settings.llmHealing")}
                                                                                 </Label>
                                                                                 <Switch
+                                                                                        aria-label={t("fireai.settings.llmHealing")}
                                                                                         checked={qomnEnableLlmHealing}
                                                                                         onCheckedChange={(checked) => updateSetting("qomnEnableLlmHealing", checked)}
                                                                                 />
@@ -822,6 +826,7 @@ export function SettingsPage() {
                                                                                 </p>
                                                                         </div>
                                                                         <Switch
+                                                                                aria-label={t("settings.autoSaveReports")}
                                                                                 checked={autoSaveReports}
                                                                                 onCheckedChange={setAutoSaveReports}
                                                                                 className="data-[state=checked]:bg-danger"
@@ -833,6 +838,7 @@ export function SettingsPage() {
                                                                                         {t("settings.reportFormat")}
                                                                                 </Label>
                                                                                 <select
+                                                                                        aria-label={t("settings.reportFormat")}
                                                                                         value={reportFormat}
                                                                                         onChange={(e) => setReportFormat(e.target.value)}
                                                                                         className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
@@ -860,6 +866,7 @@ export function SettingsPage() {
                                                                                         {t("settings.reportQuality")}
                                                                                 </Label>
                                                                                 <select
+                                                                                        aria-label={t("settings.reportQuality")}
                                                                                         value={reportQuality}
                                                                                         onChange={(e) => setReportQuality(e.target.value)}
                                                                                         className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
@@ -932,13 +939,13 @@ export function SettingsPage() {
                                                                                                 )}
                                                                                         </div>
                                                                                         <Switch
+                                                                                                aria-label={flagDef.name}
                                                                                                 checked={value}
                                                                                                 onCheckedChange={(checked: boolean) =>
                                                                                                         handleFlagToggle(flagDef.key, checked)
                                                                                                 }
                                                                                                 disabled={isReadOnly || status === "saving"}
                                                                                                 className="data-[state=checked]:bg-primary"
-                                                                                                aria-label={flagDef.name}
                                                                                         />
                                                                                 </div>
                                                                         );

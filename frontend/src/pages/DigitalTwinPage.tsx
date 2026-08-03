@@ -400,7 +400,7 @@ export function DigitalTwinPage() {
                                                         </CardHeader>
                                                         <CardContent>
                                                                 <Button
-                                                                        className="w-full bg-danger hover:bg-danger/90 text-white border-none h-12"
+                                                                        className="w-full bg-danger hover:bg-danger/90 text-danger-foreground border-none h-12"
                                                                         data-testid="convert-btn"
                                                                         onClick={handleConvert}
                                                                         disabled={!selectedFile || converting}
@@ -664,7 +664,7 @@ export function DigitalTwinPage() {
                                                                         </div>
                                                                 </div>
                                                                 <Button
-                                                                        className="w-full bg-danger hover:bg-danger/90 text-white border-none"
+                                                                        className="w-full bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                                                         onClick={saveConversionSettings}
                                                                 >
                                                                         Save Conversion Settings

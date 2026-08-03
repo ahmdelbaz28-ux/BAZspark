@@ -40,6 +40,7 @@
   --color-success: #34d399;             /* emerald */
   --color-warning: #fbbf24;             /* amber */
   --color-danger: rgb(248, 113, 113);   /* red — ONLY for real errors */
+  --color-danger-foreground: #070b12;   /* dark text on danger bg (WCAG AA: 7.12:1) */
   --color-destructive: rgb(248, 113, 113);
   --color-destructive-foreground: #070b12;
   --color-info: #22d3ee;                /* cyan */
@@ -94,6 +95,52 @@
   --text-xl: 1.25rem;     /* 20px */
   --text-2xl: 1.5rem;     /* 24px */
   --text-3xl: 1.875rem;   /* 30px */
+
+  /* ════════════════════════════════════════════════════════════════════════
+   * FACP Industrial Identity tokens (Phase 12 — frontend-design skill)
+   *
+   * These tokens encode the visual vocabulary of a real NFPA 72 fire alarm
+   * control panel. They are NOT decorative — each color carries the same
+   * semiotic meaning it has on a physical FACP:
+   *
+   *   --color-graphite        bezel / panel face
+   *   --color-panel-recess    button well / darker inset
+   *   --color-bone            code-book paper, soft foreground
+   *   --color-signal-red      life-safety alarm (errors ONLY — never decoration)
+   *   --color-evac-green      "all clear" / secure / online (running-man sign)
+   *   --color-amber-alert     standby / processing / acknowledged trouble
+   *   --color-steel           muted structural text (panel labels)
+   *
+   * Type roles:
+   *   --font-display    Space Grotesk  — industrial signage, hero title, wordmark
+   *   --font-body       IBM Plex Sans  — engineered body text, form labels
+   *   --font-data       IBM Plex Mono  — terminal/panel readouts, API keys, version strings
+   *
+   * The default cyan #22d3ee accent is RETAINED for the existing dashboard
+   * surfaces so this commit does not break 68 already-shipped pages. The new
+   * alarm vocabulary is OPT-IN: only the login screen (and future surfaces
+   * that explicitly adopt it) consumes these tokens. This keeps the change
+   * scoped, reversible, and safe for the protected main branch.
+   * ════════════════════════════════════════════════════════════════════════ */
+  --color-graphite: #0a0e10;
+  --color-panel-recess: #151a1f;
+  --color-bone: #e8e4d8;
+  --color-signal-red: #c2362c;
+  --color-evac-green: #3d8a4d;
+  --color-amber-alert: #c8951e;
+  --color-steel: #5a6770;
+
+  /* Type role tokens — referenced by typography.css + per-surface CSS */
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Inter", system-ui, -apple-system, sans-serif;
+  --font-data: "IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  /* Alarm status bar — signature element timing.
+   * 1.6s = the cadence of a real FACP trouble LED (NFPA 72 §10.11 visible
+   * signaling spec — slow enough to read as "attention", fast enough to
+   * notice). The pulse is TWO-stroke (on-off-on-off) not a sine, matching
+   * the panel hardware behavior. */
+  --alarm-pulse-duration: 1.6s;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

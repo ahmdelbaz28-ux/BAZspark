@@ -27,12 +27,6 @@ export interface AskAiSheetProps {
         readonly context?: string;
 }
 
-const SYSTEM_PROMPT_ENGINEERING =
-        "You are a licensed fire-protection engineering assistant for the BAZSPARK platform. " +
-        "Answer questions about NFPA 72, NEC, fire alarm system design, voltage drop, battery sizing, " +
-        "detector placement, and FACP selection. Be precise, cite code sections, and flag non-compliance. " +
-        "If unsure, say so. Never invent code requirements.";
-
 const QUICK_PROMPTS = [
         "What is NFPA 72 smoke detector spacing?",
         "How do I calculate voltage drop?",
@@ -48,7 +42,7 @@ export function AskAiSheet({
         const { t } = useTranslation();
         const [input, setInput] = useState("");
         const { messages, loading, error, sendMessage, clearChat } = useLlmChat(
-                SYSTEM_PROMPT_ENGINEERING,
+                "engineer_assistant",
         );
         const scrollRef = useRef<HTMLDivElement>(null);
         const inputRef = useRef<HTMLInputElement>(null);
@@ -210,7 +204,7 @@ export function AskAiSheet({
                                                         type="submit"
                                                         size="icon"
                                                         disabled={!input.trim() || loading}
-                                                        className="bg-danger hover:bg-danger/90 text-white flex-shrink-0"
+                                                        className="bg-danger hover:bg-danger/90 text-danger-foreground flex-shrink-0"
                                                 >
                                                         <Send aria-hidden="true" className="w-4 h-4" />
                                                 </Button>

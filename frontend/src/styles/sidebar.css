@@ -1,0 +1,527 @@
+/* sidebar.css — FACP industrial identity for the primary navigation rail
+ *
+ * Phase 14 (frontend-design skill, continued): applies the same industrial
+ * vocabulary established for login (Phase 12) and the application shell
+ * (Phase 13) to the left navigation Sidebar. The Sidebar is the single
+ * most-used component in the app — it appears on every authenticated page
+ * and accounts for the bulk of the "templated SaaS dashboard" feel that
+ * the frontend-design skill warns against.
+ *
+ * VOCABULARY (identical to login.css / shell.css — single visual language):
+ *   --color-graphite        bezel / panel face  (replaces `glass` blur)
+ *   --color-panel-recess    button well / hover surface
+ *   --color-bone            code-book paper, primary text on dark
+ *   --color-evac-green      active route LED, focus ring
+ *   --color-amber-alert     standby / acknowledged trouble
+ *   --color-signal-red      life-safety alarm (NOT used in nav — nav is never alarming)
+ *   --color-steel           muted structural text / group headers
+ *   --font-display          Space Grotesk — brand wordmark
+ *   --font-data             IBM Plex Mono — section labels, subtitle, FACP nameplate
+ *
+ * WHAT CHANGED vs. the previous cyan-on-navy glassmorphism sidebar:
+ *
+ *   1. Sidebar background: `glass` (rgba(15,23,42,0.95)+backdrop-blur) →
+ *      solid graphite. The blur was the #1 templated AI tell per the
+ *      skill; removing it makes the rail read as a milled cabinet side,
+ *      not a frosted SaaS dock.
+ *
+ *   2. Active route indicator: `bg-cyan-400/10 text-cyan-300 border-cyan-400/20`
+ *      (a soft cyan pill) → a 3px evac-green left LED strip with a soft
+ *      glow. This is the same "LED light-pipe housing" affordance used on
+ *      the dashboard counters — structural, not decorative. On a real
+ *      FACP, the active zone LED is a green bar next to the zone label;
+ *      this is that affordance.
+ *
+ *   3. Hover state: `hover:bg-white/5 hover:text-foreground` (soft white
+ *      tint) → `--color-panel-recess` background (a darker recess, like
+ *      a button well being depressed) + `--color-bone` text. The hover
+ *      now reads as a physical press, not a CSS highlight.
+ *
+ *   4. Focus ring: cyan-400/60 → evac-green. Matches the alarm vocabulary
+ *      used throughout the shell — focus is a "go" affordance, not a
+ *      brand accent.
+ *
+ *   5. Group headers: `text-muted-foreground/70` (generic gray) → IBM
+ *      Plex Mono uppercase tracked, color steel. Reads like the section
+ *      labels silkscreened on a real FACP cabinet — "DETECTION",
+ *      "NOTIFICATION", "ANNUNCIATOR", etc.
+ *
+ *   6. Brand subtitle: "FireAI Digital Twin" in muted-foreground → IBM
+ *      Plex Mono uppercase tracked, color steel. Reads like the model
+ *      number on a FACP nameplate (e.g. "NOTIFIER NFS2-3030").
+ *
+ *   7. Corner radius: rounded-lg (8px, soft SaaS) → 2px (industrial
+ *      sharpness, matches login.css / shell.css / dashboard.css).
+ *
+ *   8. Collapse toggle: `hover:text-cyan-400` (brand accent) → membrane-
+ *      switch affordance with evac-green hover (matches the dashboard
+ *      refresh button — inset shadow on hover = physical depression).
+ *
+ * SIGNATURE ELEMENT — the active-route LED strip:
+ *   The active nav item displays a 3px evac-green bar on its left edge
+ *   (right edge in RTL) with a soft outer glow. This is NOT decorative —
+ *   it is the same affordance a real FACP uses to show the selected zone:
+ *   a green LED bar next to the active zone label. The glow is restrained
+ *   (3px blur, 0.6 opacity) — readable, not flashy. Inactive items have
+ *   no LED (the absence is the signal). On hover, a faint steel LED
+ *   appears to indicate "this is selectable".
+ *
+ * WHAT IS PRESERVED:
+ *   - All ARIA attributes (aria-current, aria-label, aria-expanded).
+ *   - All keyboard focus behavior (focus-visible:ring-2 + offset).
+ *   - All RTL handling (the LED strip mirrors to the right edge).
+ *   - All 63 nav paths and 9 group sections (Phase 8 refactor intact).
+ *   - The routePrefetchMap (Vercel React Best Practices — preload on hover).
+ *   - The BazSparkLogo component (unchanged).
+ *   - The `glass` utility class remains in globals.css for any other
+ *     component that still uses it; we just stop using it here.
+ *   - The default --color-primary cyan is RETAINED for other surfaces.
+ *
+ * DEV-MODE CSP NOTE (same as login.css / shell.css): in `vite dev`, this
+ * CSS is injected as an inline <style> tag which is blocked by the strict
+ * CSP in index.html (style-src 'self' without 'unsafe-inline'). In
+ * `vite build` + `vite preview` the CSS is emitted as a hashed .css file
+ * loaded via <link>, which IS allowed. So the rules apply correctly in
+ * production — verify with `npm run build && npm run preview`.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Sidebar faceplate screws — 4 corner decorations
+ *
+ * Phase 14 R1 fix: VLM suggested adding screw-head decorations at the
+ * corners to imply the sidebar is a faceplate screwed onto a chassis.
+ * Implemented as 4 small radial-gradient circles positioned absolutely
+ * at the corners. The gradient reads as a Phillips-head screw catching
+ * light — restrained (6px diameter, 28% opacity), not decorative.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.sidebar-root::before,
+.sidebar-root::after {
+    content: "";
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%,
+        rgba(180, 188, 196, 0.45) 0%,
+        rgba(90, 103, 112, 0.28) 40%,
+        rgba(0, 0, 0, 0.5) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+.sidebar-root::before {
+    top: 6px;
+    left: 6px;
+}
+.sidebar-root::after {
+    bottom: 6px;
+    left: 6px;
+}
+[dir="rtl"] .sidebar-root::before,
+[dir="rtl"] .sidebar-root::after {
+    left: auto;
+    right: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Sidebar root — the <aside> element
+ *
+ * Replaces `glass flex flex-col` with a solid graphite cabinet side.
+ * The 1px steel hairline replaces the previous border-white/10.
+ * In RTL, the border mirrors to the left edge via [dir="rtl"].
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.sidebar-root {
+    position: relative; /* needed for ::before/::after screw decorations */
+    background-color: var(--color-graphite);
+    border-right: 1px solid rgba(90, 103, 112, 0.28);
+    /* Phase 14 R3 fix: VLM said sidebar floats without a hard edge —
+       real FACP panels have beveled chassis edges. Added inset
+       box-shadow on the right edge (left edge in RTL) to simulate
+       the metal bezel thickness. Reads as a milled side wall, not
+       a flat rectangle. */
+    box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.5);
+}
+[dir="rtl"] .sidebar-root {
+    border-right: none;
+    border-left: 1px solid rgba(90, 103, 112, 0.28);
+    box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Group section divider — thin steel hairline between groups
+ *
+ * Phase 14 R1 fix: VLM said section spacing is too uniform/SaaS. Real
+ * control panels have visible dividers between zones. Added a 1px steel
+ * hairline above each group label (except the first) to read as a
+ * silkscreened zone divider on a FACP faceplate.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.sidebar-group-divider {
+    /* Phase 14 R2 fix: VLM said 1px border-top looks printed. Switched
+       to inset box-shadow — reads as a laser-etched groove, not a
+       drawn line. Two-tone: 1px dark below (the groove's lower wall)
+       + 1px faint light above (the groove's upper lip catching light). */
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    box-shadow:
+        inset 0 1px 0 rgba(0, 0, 0, 0.5),
+        inset 0 2px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Brand header — BAZSPARK wordmark + FACP nameplate subtitle
+ *
+ * The brand block is the top 64px of the sidebar. Previously used a
+ * white/10 bottom border; now uses the same steel hairline as the rest
+ * of the shell. The wordmark switches to Space Grotesk (matches login
+ * hero / TopBar page title); the subtitle becomes an IBM Plex Mono
+ * uppercase tracked label (FACP nameplate style).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.sidebar-brand {
+    border-bottom: 1px solid rgba(90, 103, 112, 0.28);
+}
+.sidebar-brand-wordmark {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.9375rem;
+    letter-spacing: -0.01em;
+    color: var(--color-bone);
+    line-height: 1.2;
+}
+.sidebar-brand-subtitle {
+    font-family: var(--font-data);
+    font-weight: 500;
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-steel);
+    margin-top: 0.125rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Group headers — the section labels above each nav group
+ *
+ * Replaces `text-muted-foreground/70` with IBM Plex Mono uppercase
+ * tracked steel. This is the same typographic treatment used on the
+ * FACP nameplate subtitle and the dashboard event-log indices — it
+ * reads like the silkscreened section labels on a real FACP cabinet
+ * ("DETECTION", "NOTIFICATION", "ANNUNCIATOR", "SUPERVISORY").
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.sidebar-group-label {
+    font-family: var(--font-data);
+    font-weight: 500;
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-steel);
+    /* Phase 14 R3 fix: VLM said group labels look printed, not stamped.
+       Added subtle 1px dark text-shadow below — reads as debossed
+       plastic, like silkscreened FACP cabinet section labels. Avoid
+       the white highlight version (would look embossed, wrong
+       direction for a recessed label). */
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8);
+    /* Slight top padding to separate groups — reads as cabinet section spacing. */
+    padding-top: 0.5rem;
+    padding-bottom: 0.25rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Nav item — the clickable route link
+ *
+ * Replaces `rounded-lg` (8px, soft SaaS) with 2px industrial sharpness
+ * to match login.css / shell.css / dashboard.css / facp.css.
+ *
+ * IDLE state: steel text, transparent background. The icon is also steel
+ * so the row reads as a single structural unit.
+ *
+ * HOVER state: panel-recess background (darker than the rail — reads as
+ * a button well being depressed), bone text, faint steel LED strip on
+ * the left edge (the "selectable" affordance — same light-pipe housing
+ * as the active LED, just dimmer).
+ *
+ * ACTIVE state: 3px evac-green left LED strip with a soft glow (the
+ * signature element — same affordance as a real FACP zone LED). Bone
+ * text, NO background tint (the LED is the signal, not a pill). Icon
+ * also turns evac-green so the row reads as "energized".
+ *
+ * FOCUS state: 2px evac-green ring with 2px graphite offset. Matches
+ * the focus ring used on every other shell control — focus is a "go"
+ * affordance in the alarm vocabulary, not a brand accent.
+ *
+ * RTL MIRROR: in [dir="rtl"], the LED strip and its glow mirror to the
+ * right edge. The hover background and rounded corners are symmetric.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.sidebar-nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    /* Phase 14 R1 fix: VLM critique — spacing rhythm was too SaaS (generous
+       16px padding). Compressed to 0.4rem / 0.625rem to read as dense
+       industrial control panel, not a Dribbble web app. */
+    padding: 0.4rem 0.625rem;
+    border: 1px solid transparent;
+    border-radius: 2px; /* industrial sharpness — matches login.css */
+    color: var(--color-steel);
+    background-color: transparent;
+    cursor: pointer;
+    transition: color 150ms var(--ease-out, ease-out),
+                background-color 150ms var(--ease-out, ease-out),
+                border-color 150ms var(--ease-out, ease-out);
+}
+.sidebar-nav-item:hover {
+    /* Phase 14 R2 fix: VLM said flat hover bg reads as "cardboard cutout".
+       Added inset well depth — top highlight (1px white at 4% opacity,
+       mimics light catching the top edge of a milled well) + bottom
+       inset shadow (1px black at 60%, mimics the well's lower wall).
+       Subtle, not aggressive — 2 shadows, not the 4-shadow stack VLM
+       suggested (that would be kitsch per the skill's anti-skeuomorphism
+       warning). The evac-green tint stays — reads as LED bleed. */
+    color: var(--color-bone);
+    background-color: rgba(61, 138, 77, 0.08);
+    border-color: rgba(90, 103, 112, 0.20);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+}
+/* Hover LED — faint steel strip on the left edge. Reads as "selectable".
+   Same light-pipe housing as the active LED, just dimmer. */
+.sidebar-nav-item:hover::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 60%;
+    background-color: var(--color-steel);
+    border-radius: 0 1px 1px 0;
+}
+[dir="rtl"] .sidebar-nav-item:hover::before {
+    left: auto;
+    right: 0;
+    border-radius: 1px 0 0 1px;
+}
+
+/* ACTIVE — the signature LED strip */
+.sidebar-nav-item.active {
+    color: var(--color-bone);
+    /* Phase 14 R2 fix: deeper inset well on active — the LED strip
+       illuminates the entire cavity, not just the strip itself.
+       Inset shadow stack: top highlight (white 5% — LED bleed catches
+       the top wall) + bottom+left dark shadow (the cavity walls).
+       Reads as a recessed illuminated channel, not a flat pill. */
+    background-color: rgba(61, 138, 77, 0.04);
+    border-color: transparent;
+    box-shadow:
+        inset 0 1px 0 rgba(61, 138, 77, 0.18),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+        inset 1px 0 0 rgba(0, 0, 0, 0.4);
+}
+.sidebar-nav-item.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    /* Phase 14 R1 fix: VLM said 3px is too thin to read as a physical LED.
+       Bumped to 4px and rounded end-caps (already had border-radius).
+       Real FACP LEDs are 3-5mm domes — 4px at this scale matches. */
+    width: 4px;
+    height: 70%;
+    background-color: var(--color-evac-green);
+    border-radius: 0 2px 2px 0;
+    /* Phase 14 R1 fix: VLM said glow is too weak. A real FACP LED bleeds
+       light onto the surrounding bezel. Bumped blur from 3px to 8px and
+       spread from 1px to 2px. Opacity dropped slightly to 0.5 to keep
+       it from looking neon. Reads as illuminated plastic, not a CSS
+       box-shadow flex. */
+    box-shadow: 0 0 8px 2px rgba(61, 138, 77, 0.5);
+}
+[dir="rtl"] .sidebar-nav-item.active::before {
+    left: auto;
+    right: 0;
+    border-radius: 2px 0 0 2px;
+}
+.sidebar-nav-item.active:hover {
+    /* Active + hover: keep the green LED, intensify the green tint slightly. */
+    background-color: rgba(61, 138, 77, 0.12);
+}
+
+/* Focus ring — evac-green, matches every other shell control. */
+.sidebar-nav-item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-graphite),
+                0 0 0 4px var(--color-evac-green);
+}
+
+/* Icon color — follows the text color, but active gets the evac-green
+   "energized" treatment. */
+.sidebar-nav-icon {
+    color: var(--color-steel);
+    flex-shrink: 0;
+    /* Phase 14 R3 fix: VLM said icons look "vector perfect" / floating.
+       Reduced opacity to 0.7 (idle) + tiny 1px dark drop-shadow to
+       make them feel embedded in the panel, not pasted on top.
+       Active/hover states below restore full opacity + green tint. */
+    opacity: 0.7;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8));
+    transition: color 150ms var(--ease-out, ease-out),
+                opacity 150ms var(--ease-out, ease-out);
+}
+.sidebar-nav-item:hover .sidebar-nav-icon {
+    color: var(--color-bone);
+    opacity: 1;
+}
+.sidebar-nav-item.active .sidebar-nav-icon {
+    color: var(--color-evac-green); /* energized */
+    opacity: 1;
+}
+
+/* Label typography — slightly heavier than body, matches dashboard. */
+.sidebar-nav-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Collapsed state — when the sidebar is collapsed to w-16 (64px)
+ *
+ * In collapsed mode, only the icons are visible. The LED strip and hover
+ * behavior still work; the brand wordmark and group labels are hidden
+ * via the existing `!collapsed` conditional in Sidebar.tsx.
+ *
+ * The active LED needs to stay visible in collapsed mode — it's the
+ * only signal of which page you're on. The hover tooltip (title attr)
+ * provides the label.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.sidebar-root.collapsed .sidebar-nav-item {
+    justify-content: center;
+    padding: 0.5rem;
+}
+/* In collapsed mode the hover LED would be hidden behind the icon —
+   instead, intensify the active LED glow so it remains the primary
+   signal. */
+.sidebar-root.collapsed .sidebar-nav-item.active::before {
+    height: 80%;
+    box-shadow: 0 0 4px 2px rgba(61, 138, 77, 0.7);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Footer — About link + collapse toggle
+ *
+ * The footer previously used border-white/10 and the same cyan hover as
+ * the nav. Now uses the same steel hairline as the rest of the shell,
+ * and the About link + collapse button adopt the membrane-switch
+ * affordance from the dashboard refresh button (inset shadow on hover
+ * = physical depression).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.sidebar-footer {
+    border-top: 1px solid rgba(90, 103, 112, 0.28);
+}
+.sidebar-about-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    color: var(--color-steel);
+    background-color: transparent;
+    cursor: pointer;
+    transition: color 150ms var(--ease-out, ease-out),
+                background-color 150ms var(--ease-out, ease-out),
+                border-color 150ms var(--ease-out, ease-out);
+}
+.sidebar-about-link:hover {
+    color: var(--color-bone);
+    background-color: var(--color-panel-recess);
+    border-color: rgba(90, 103, 112, 0.20);
+}
+.sidebar-about-link:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-graphite),
+                0 0 0 4px var(--color-evac-green);
+}
+.sidebar-about-icon {
+    color: var(--color-steel);
+    flex-shrink: 0;
+}
+.sidebar-about-link:hover .sidebar-about-icon {
+    color: var(--color-bone);
+}
+
+/* Collapse toggle — membrane-switch affordance. The inset shadow on
+   hover reads as a physical button depression (same treatment as the
+   dashboard refresh button). Evac-green hover text = "go" affordance. */
+.sidebar-collapse-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0.625rem;
+    border: 1px solid rgba(90, 103, 112, 0.20);
+    border-radius: 2px;
+    color: var(--color-steel);
+    background-color: transparent;
+    cursor: pointer;
+    margin-top: 0.25rem;
+    transition: color 150ms var(--ease-out, ease-out),
+                background-color 150ms var(--ease-out, ease-out),
+                border-color 150ms var(--ease-out, ease-out),
+                box-shadow 150ms var(--ease-out, ease-out);
+}
+.sidebar-collapse-btn:hover {
+    color: var(--color-evac-green);
+    background-color: var(--color-panel-recess);
+    border-color: rgba(61, 138, 77, 0.40);
+    /* Membrane-press — inset shadow reads as a physical depression. */
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.sidebar-collapse-btn:active {
+    /* Full depression on click. */
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.7);
+}
+.sidebar-collapse-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-graphite),
+                0 0 0 4px var(--color-evac-green);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * REDUCED MOTION — neutralize the hover/active transitions (WCAG 2.3.3)
+ *
+ * The LED color is preserved (that's information, not motion). Only the
+ * transition timing is collapsed to 0.01ms so the color change is
+ * effectively instant for users who request reduced motion.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-nav-item,
+    .sidebar-nav-icon,
+    .sidebar-about-link,
+    .sidebar-about-icon,
+    .sidebar-collapse-btn {
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * HIGH CONTRAST — Windows High Contrast mode (forced colors)
+ *
+ * In forced-colors mode, all CSS colors are overridden by the user's
+ * system palette. We use `forced-color-adjust: preserve` so our LED
+ * colors are still readable, and rely on the system's SelectedItem
+ * keyword for the active state.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+@media (forced-colors: active) {
+    .sidebar-nav-item.active::before {
+        forced-color-adjust: preserve;
+        background-color: Highlight;
+        box-shadow: none;
+    }
+    .sidebar-nav-item.active {
+        color: HighlightText;
+    }
+}

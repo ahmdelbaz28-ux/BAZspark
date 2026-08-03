@@ -16,7 +16,7 @@ import {
         ChevronRight,
         Lightbulb,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router";
 import { Badge } from "@/components/ui/badge";
