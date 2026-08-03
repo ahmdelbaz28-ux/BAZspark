@@ -9,7 +9,7 @@
 [![Stars](https://img.shields.io/github/stars/ahmdelbaz28-ux/BAZspark?style=for-the-badge)](https://github.com/ahmdelbaz28-ux/BAZspark/stargazers)
 [![Release](https://img.shields.io/github/v/release/ahmdelbaz28-ux/BAZspark?style=for-the-badge)](https://github.com/ahmdelbaz28-ux/BAZspark/releases)
 
-[![Frontend](https://img.shields.io/badge/Web%20App-ba--zspark.vercel.app-blueviolet?style=for-the-badge&logo=vercel)](https://ba-zspark.vercel.app)
+[![Frontend](https://img.shields.io/badge/Web%20App-ba--zspark-tau.vercel.app-blueviolet?style=for-the-badge&logo=vercel)](https://ba-zspark-tau.vercel.app)
 [![API](https://img.shields.io/badge/API%20Engine-HuggingFace%20Space-orange?style=for-the-badge&logo=huggingface)](https://ahmdelbaz28-bazspark.hf.space)
 
 </div>

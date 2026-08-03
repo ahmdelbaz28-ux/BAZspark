@@ -1,5 +1,5 @@
 # Cloudflare Pages configuration for BAZSPARK frontend
-# NOTE: Primary deployment is Vercel (ba-zspark.vercel.app)
+# NOTE: Primary deployment is Vercel (ba-zspark-tau.vercel.app)
 # Cloudflare Pages is a secondary/backup deployment only.
 name = "bazspark-frontend"
 compatibility_date = "2024-09-23"

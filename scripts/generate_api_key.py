@@ -113,7 +113,7 @@ def generate_key(backend: str, admin_key: str, master_token: str, role: str, des
                 print("=" * 60)
                 print()
                 print("  To use this key:")
-                print("  1. Go to: https://ba-zspark.vercel.app")
+                print("  1. Go to: https://ba-zspark-tau.vercel.app")
                 print("  2. Paste the key in the 'API Key' field")
                 print("  3. Click 'Sign In'")
         else:

@@ -16,7 +16,7 @@ system design, Digital Twin (AutoCAD/Revit), NAC design, marine module, and an i
 audit trail for PE review.
 
 **Live:**
-- Frontend: [ba-zspark.vercel.app](https://ba-zspark.vercel.app)
+- Frontend: [ba-zspark-tau.vercel.app](https://ba-zspark-tau.vercel.app)
 - Backend (this Space): [ahmdelbaz28-bazspark.hf.space](https://ahmdelbaz28-bazspark.hf.space)
 
 ## API
