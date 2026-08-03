@@ -410,6 +410,14 @@ class GenerativeLayoutAgent:
     """
     Generative Design Engine — produces 3 scored layout variants.
 
+    NOTE (F8 naming hygiene — Architecture Audit): despite the "Agent" name,
+    this class is FULLY DETERMINISTIC. It contains NO LLM calls, NO neural
+    networks, and NO learned parameters. Every variant is produced by the
+    fixed NFPA 72 geometry rules in this module and scored by the fixed
+    weighted objective (COVERAGE/COMPLIANCE/REDUNDANCY/COST). It is an
+    engineering solver named "Agent" for historical reasons; do not confuse
+    it with the advisory LLM layer (backend/services/llm_service.py).
+
     Usage:
         agent = GenerativeLayoutAgent()
         room = Room(name="Office", width=10.0, length=8.0, ceiling_height=3.0)

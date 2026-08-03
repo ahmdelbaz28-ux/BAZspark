@@ -29,7 +29,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from backend.auth import require_permission
+from backend.auth import get_current_principal, require_permission
 from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.services.memory_service import (
@@ -49,6 +49,44 @@ def _sanitize_error(msg: Optional[str]) -> str:
         return "Internal error (details sanitized)"
     # Limit length to prevent information disclosure
     return str(msg)[:200]
+
+
+def _require_principal(request: Request) -> str:
+    """
+    Resolve the authenticated credential's opaque principal id (F3).
+
+    The principal is stamped by ApiKeyMiddleware from the validated API key
+    (or session). Memory scoping is derived from it server-side; client-
+    supplied user_id values are NEVER trusted for authorization.
+    """
+    principal = get_current_principal(request)
+    if not principal:
+        raise HTTPException(
+            status_code=401,
+            detail="Authenticated credential not resolvable",
+        )
+    return principal
+
+
+def _enforce_principal_scope(
+    principal: str,
+    client_user_id: Optional[str],
+    *,
+    logger_name: str,
+) -> str:
+    """
+    Override a client-supplied user_id with the server-derived principal.
+
+    Returns the effective user_id. Logs when a client tried to impersonate
+    another scope (defense-in-depth; the override makes it harmless).
+    """
+    if client_user_id and client_user_id != principal:
+        logger.warning(
+            "[F3] %s: client-supplied user_id=%r ignored (principal-scoped)",
+            logger_name,
+            client_user_id[:40],
+        )
+    return principal
 
 
 logger = logging.getLogger(__name__)
@@ -110,8 +148,19 @@ async def add_memory(request: Request, body: MemoryAddRequest):
     Returns:
         Dict with operation result
 
+    F3: ``user_id`` is derived from the authenticated credential's principal,
+    never from the client body. Agent scope is defaulted to "fireai".
     """
     service = get_memory_service()
+    principal = _require_principal(request)
+
+    # F3: server-side scoping — client-supplied user_id is ignored.
+    body.user_id = _enforce_principal_scope(
+        principal, body.user_id, logger_name="add_memory"
+    )
+    if not body.agent_id:
+        body.agent_id = "fireai"
+
     result = service.add_memory(body)
     result["disclaimer"] = MEMORY_DISCLAIMER
     return result
@@ -132,14 +181,24 @@ async def search_memories(request: Request, body: MemorySearchRequest):
     Returns:
         MemorySearchResponse with results and safety disclaimer
 
+    F3: search is always scoped to the authenticated credential's principal.
     """
     service = get_memory_service()
+    principal = _require_principal(request)
+
+    # F3: force the search scope to the caller's principal — a client can
+    # never query another credential's memories.
+    body.user_id = _enforce_principal_scope(
+        principal, body.user_id, logger_name="search_memories"
+    )
+
     response = service.search_memories(body)
     return response.model_dump()
 
 
 @router.get("/all", summary="Get all memories", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def get_all_memories(
+    request: Request,
     user_id: Optional[str] =  Query(None, description="Filter by user/engineer"),  # NOSONAR - python:S8410
     agent_id: Optional[str] =  Query(None, description="Filter by agent"),  # NOSONAR - python:S8410
     run_id: Optional[str] =  Query(None, description="Filter by project/run"),  # NOSONAR - python:S8410
@@ -150,7 +209,8 @@ async def get_all_memories(
     Supports filtering by user, agent, or project.
 
     Args:
-        user_id: Filter by user/engineer
+        user_id: Filter by user/engineer (IGNORED — F3: always the caller's
+            principal; the parameter is kept for backward compatibility)
         agent_id: Filter by agent
         run_id: Filter by project/run
 
@@ -159,8 +219,16 @@ async def get_all_memories(
 
     """
     service = get_memory_service()
+    principal = _require_principal(request)
+
+    # F3: the user scope is always the caller's principal — a client cannot
+    # list another credential's memories by passing a foreign user_id.
+    effective_user_id = _enforce_principal_scope(
+        principal, user_id, logger_name="get_all_memories"
+    )
+
     result = service.get_all_memories(
-        user_id=user_id,
+        user_id=effective_user_id,
         agent_id=agent_id,
         run_id=run_id,
     )

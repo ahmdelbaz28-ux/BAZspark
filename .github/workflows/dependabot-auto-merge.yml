@@ -12,6 +12,14 @@ on:
       - reopened
       - labeled
 
+# Serialize runs per PR: dependabot fires multiple pull_request_target events
+# (opened + labeled + synchronize), which previously raced and caused
+# "enablePullRequestAutoMerge" failures when concurrent runs tried to enable
+# auto-merge on the same PR at the same time.
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
@@ -85,9 +93,65 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Enable auto-merge
+      - name: Wait for required checks
         if: steps.check-safety.outputs.safe == 'true'
-        run: gh pr merge --auto --squash "$PR_URL"
+        id: wait-for-checks
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        timeout-minutes: 15
+        with:
+          script: |
+            const ref = context.payload.pull_request.head.sha;
+            const { owner, repo } = context.repo;
+            const deadline = Date.now() + 15 * 60 * 1000;
+
+            while (Date.now() < deadline) {
+              const { data: statuses } = await github.rest.repos.listCommitStatuses({ owner, repo, ref });
+              const { data: checkRuns } = await github.rest.checks.listForRef({ owner, repo, ref });
+
+              const pendingStatuses = statuses.filter(s => s.state === 'pending');
+              const pendingChecks = checkRuns.check_runs.filter(c =>
+                c.status !== 'completed' && c.name !== 'Dependabot Auto-Merge Evaluator'
+              );
+
+              console.log(`pending statuses=${pendingStatuses.length}, pending checks=${pendingChecks.length}`);
+
+              if (pendingStatuses.length === 0 && pendingChecks.length === 0) {
+                const allOk =
+                  statuses.every(s => s.state === 'success') &&
+                  checkRuns.check_runs.every(c =>
+                    c.status !== 'completed' ||
+                    c.name === 'Dependabot Auto-Merge Evaluator' ||
+                    c.conclusion === 'success' || c.conclusion === 'skipped' || c.conclusion === 'neutral'
+                  );
+                core.setOutput('ready', allOk ? 'true' : 'false');
+                console.log(allOk ? 'All required checks passed' : 'Some checks failed - skip auto-merge');
+                return;
+              }
+
+              await new Promise(r => setTimeout(r, 15000));
+            }
+
+            console.log('Timeout waiting for checks - skip auto-merge');
+            core.setOutput('ready', 'false');
+
+      - name: Enable auto-merge
+        if: steps.check-safety.outputs.safe == 'true' && steps.wait-for-checks.outputs.ready == 'true'
+        run: |
+          for attempt in 1 2 3; do
+            if gh pr merge --auto --squash "$PR_URL"; then
+              echo "Auto-merge enabled for $PR_URL"
+              exit 0
+            fi
+            state="$(gh pr view "$PR_URL" --json state --jq .state)"
+            if [ "$state" = "MERGED" ]; then
+              echo "PR already merged - nothing to do."
+              exit 0
+            fi
+            echo "Enable auto-merge attempt $attempt failed (state=$state), retrying..."
+            sleep 15
+          done
+          echo "::error::Could not enable auto-merge after 3 attempts."
+          exit 1
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

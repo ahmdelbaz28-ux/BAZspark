@@ -47,6 +47,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from backend.auth_utils import resolve_credential
 from backend.response import success
 from backend.session_secret import get_secret_manager
 
@@ -276,11 +277,17 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
         api_key_hash = _hash_secret(api_key)
     else:
         api_key_hash = ""
+    # F3: capture the opaque per-credential principal for memory scoping.
+    # resolve_credential re-validates; role was already checked above, so a
+    # None here is impossible in practice — guard defensively anyway.
+    _resolved = resolve_credential(api_key)
+    principal = _resolved[1] if _resolved else (api_key_hash or "")
     expires_at_epoch = time.time() + _COOKIE_MAX_AGE_SECONDS
     _session_store.set(
         session_id_hash,
         {
             "api_key_hash": api_key_hash,  # For audit/revocation, never sent to client
+            "principal": principal,  # F3: stable per-credential id for memory scoping
             "role": role.value,
             "expires_at": expires_at_epoch,
             "created_at": time.time(),
@@ -439,3 +446,34 @@ def validate_session_cookie(cookie_value: str) -> Optional[str]:
         return None
 
     return session.get("role")
+
+
+def get_session_principal(cookie_value: str) -> Optional[tuple[str, str]]:
+    """
+    Validate a session cookie and return ``(role, principal)``.
+
+    The principal is the opaque per-credential identifier stored at login
+    (see ``resolve_credential``). For sessions created before the F3 change,
+    falls back to the stored ``api_key_hash`` — still a stable, opaque,
+    per-credential id, so memory scoping remains correct across upgrades.
+
+    Returns None if the session is invalid or expired.
+    """
+    session_id = _verify_session_token(cookie_value)
+    if session_id is None:
+        return None
+
+    session_id_hash = _hash_secret(session_id)
+    session = _session_store.get(session_id_hash)
+    if session is None:
+        return None
+
+    if time.time() > session.get("expires_at", 0):
+        _session_store.delete(session_id_hash)
+        return None
+
+    role = session.get("role")
+    principal = session.get("principal") or session.get("api_key_hash") or ""
+    if not role or not principal:
+        return None
+    return (str(role), str(principal))
