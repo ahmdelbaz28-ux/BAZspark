@@ -73,8 +73,30 @@ export function SelfHealingPage() {
         }, [autoRefresh]);
 
         useEffect(() => {
-                fetchAll();
-        }, [fetchAll]);
+                // Inline async IIFE — no synchronous setState in the effect body
+                // (react-hooks/set-state-in-effect). `fetchAll` is still defined
+                // above for use by event handlers (refresh button, auto-refresh
+                // interval). Errors are silent on mount (autoRefresh initial=true).
+                let cancelled = false;
+                (async () => {
+                        try {
+                                const [h, a] = await Promise.all([
+                                        selfHealingApi.getHealth(),
+                                        selfHealingApi.getAudit(20),
+                                ]);
+                                if (cancelled) return;
+                                setHealth(h);
+                                setAudit(a);
+                        } catch {
+                                // Silent on mount — autoRefresh defaults to true
+                        } finally {
+                                if (!cancelled) setLoading(false);
+                        }
+                })();
+                return () => {
+                        cancelled = true;
+                };
+        }, []);
 
         useEffect(() => {
                 if (!autoRefresh) return;

@@ -27,13 +27,7 @@ from unittest.mock import patch
 
 import pytest
 
-# pytesseract requires the tesseract system package (apt install tesseract-ocr)
-# which is not available in all CI environments. Without this skip, the
-# collection error aborts the ENTIRE test run, masking all other test results.
-# importorskip raises pytest.skip() at collection time if the import fails.
-pytest.importorskip("pytesseract", reason="pytesseract not installed — OCR tests skipped")
-
-from backend.services.ocr_service import OCRService, ocr_service
+from backend.services.ocr_service import OCRService
 from backend.services.scan_to_bim import BIMRoom, scan_to_bim_service
 
 
@@ -41,9 +35,13 @@ class TestOCRService:
     """Tests for OCR Service functionality."""
 
     def setup_method(self):
-        if ocr_service is None:
-            pytest.skip("Tesseract OCR is not installed (ocr_service is None)")
-        self.ocr = ocr_service
+        # The tests below only exercise pure extraction/sanitization logic and
+        # mocked image processing, so they must not depend on the tesseract
+        # binary. Build a service instance directly instead of relying on the
+        # global `ocr_service` singleton (which is None when the tesseract
+        # executable is not installed) and skip the binary availability probe.
+        with patch.object(OCRService, '_validate_tesseract_installation'):
+            self.ocr = OCRService()
 
     def test_ocr_initialization(self):
         """Test that OCR service initializes correctly."""
@@ -122,8 +120,6 @@ class TestScanToBIMService:
     """Tests for ScanToBIM Service functionality."""
 
     def setup_method(self):
-        if ocr_service is None:
-            pytest.skip("Tesseract OCR is not installed (ocr_service is None)")
         self.scan_service = scan_to_bim_service
 
     def test_scan_to_bim_initialization(self):

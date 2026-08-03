@@ -43,7 +43,7 @@ dependencies = [
     "pyjwt[crypto]>=2.13.0,<3.0.0",  # V163 RESTORE: was reverted to 2.9.0 by 9da220d2 (7 known CVEs)
     "passlib[bcrypt]>=1.7.0,<2.0.0",
     "cryptography>=48.0.1,<50.0.0",  # V163: fix 5 HIGH CVEs (Python >=3.12 supported)
-    "websockets>=12.0.0,<17.0.0",
+    "websockets>=12.0.0,<18.0.0",
     "asyncpg>=0.27.0,<1.0.0",
     "celery>=5.2.0,<6.0.0",
     "redis[hiredis]>=4.5.0,<9.0.0",
@@ -516,7 +516,20 @@ norecursedirs = [".git", "__pycache__", "venv", "env", "revit-main", "facp_distr
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-# asyncio_default_fixture_loop_scope = "function"  # Requires pytest-asyncio >=0.24; CI uses 0.23.8
+# V312 FIX: Removed legacy root-level pytest.ini which used the invalid
+# `[tool:pytest]` section name (only valid in setup.cfg/tox.ini, NOT pytest.ini).
+# Because pytest.ini existed at root, it SHADOWED this pyproject.toml config
+# and every setting here (markers, --strict-markers, filterwarnings, testpaths)
+# was silently dropped — the root cause of all PytestUnknownMarkWarning leaks.
+# All pytest config now lives in this single [tool.pytest.ini_options] block.
+# Per-marker timeouts (slow/integration/unit/safety_critical) are no longer
+# configurable via ini (pytest-timeout 2.x removed those options); CI passes
+# --timeout explicitly on the command line.
+timeout = 300
+timeout_method = "thread"
+# PytestDeprecationWarning: set the asyncio fixture loop scope explicitly
+# (pytest-asyncio >=0.24; CI pins 0.25.2).
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
 source = ["."]
@@ -537,6 +550,12 @@ branch = true
 # See https://coverage.readthedocs.io/en/latest/config.html#config-run-concurrency
 concurrency = ["multiprocessing", "thread"]
 sigterm = true
+# V312 FIX: Suppress "Couldn't parse '<generated>'": coverage tries to re-read
+# subprocess temp scripts (facp_sandbox_*/exec_script.py) and generated
+# config.py/config-3.py that are deleted before the report phase. These are
+# test artifacts, not code we measure; hiding this specific warning is safe
+# and eliminates the CI log noise (CoverageWarning × 4 in Gate 2).
+disable_warnings = ["couldnt-parse"]
 
 [tool.coverage.report]
 show_missing = true

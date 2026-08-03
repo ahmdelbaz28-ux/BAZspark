@@ -7,7 +7,7 @@
  */
 
 import { Battery, Cable, Zap, Flame, Network, CheckCircle2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExplainButton } from "@/components/ai/ExplainButton";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +70,13 @@ export function EngineeringPage() {
                 computation_hash: string;
         } | null>(null);
 
-        const calculateVoltageDropLocal = useCallback(() => {
+        // V214 FIX (React Compiler): removed manual useCallback wrapper — the
+        // React Compiler auto-memoizes this function. Manual useCallback was
+        // triggering react-hooks/preserve-manual-memoization ("Compilation
+        // Skipped: Existing memoization could not be preserved"). The function
+        // is only called synchronously during render at L230 below; it does not
+        // appear in any useEffect deps array, so reference instability is fine.
+        const calculateVoltageDropLocal = () => {
                 // Local FALLBACK calculation only — used when QOMN API is unavailable.
                 // V214 FIX: This is NOT the primary calculation. The primary path
                 // is calculateVoltageDropViaApi() which calls the real QOMN kernel
@@ -99,14 +105,18 @@ export function EngineeringPage() {
                         percentage: Number.parseFloat(percentage.toFixed(2)),
                         absolute: Number.parseFloat(voltageDrop.toFixed(3)),
                 };
-        }, [voltageDropInputs]);
+        };
 
         // V214 FIX: Call real QOMN API — this is the PRIMARY calculation path.
         // Previously this function had a leading underscore (_calculateVoltageDropViaApi)
         // making it "private" and it was NEVER invoked from the render path.
         // The page silently used local placeholder formulas instead, bypassing
         // the entire QOMN audit chain (no NEC Table 8, no HMAC-SHA256 hash).
-        const calculateVoltageDropViaApi = useCallback(async () => {
+        // V214 FIX (React Compiler): removed manual useCallback wrapper — the
+        // React Compiler auto-memoizes. Manual useCallback was triggering
+        // react-hooks/preserve-manual-memoization. The function is captured in
+        // the debounce effect below via a ref pattern (see effect deps).
+        const calculateVoltageDropViaApi = async () => {
                 const current = Number.parseFloat(voltageDropInputs.current);
                 const length = Number.parseFloat(voltageDropInputs.length);
                 if (Number.isNaN(current) || Number.isNaN(length) || current <= 0 || length <= 0) {
@@ -136,10 +146,18 @@ export function EngineeringPage() {
                 } finally {
                         setApiLoading(false);
                 }
-        }, [voltageDropInputs]);
+        };
 
         // V214 FIX: Call the API whenever inputs change — with 500ms debounce
         // to avoid hammering the backend on every keystroke.
+        // React Compiler: `calculateVoltageDropViaApi` is no longer memoized
+        // (we removed useCallback above), so we capture it in a ref to avoid
+        // re-running the effect on every render. The effect deps are the
+        // actual inputs that should trigger a recalculation.
+        const calculateVoltageDropViaApiRef = useRef(calculateVoltageDropViaApi);
+        useEffect(() => {
+                calculateVoltageDropViaApiRef.current = calculateVoltageDropViaApi;
+        });
         useEffect(() => {
                 const current = Number.parseFloat(voltageDropInputs.current);
                 const length = Number.parseFloat(voltageDropInputs.length);
@@ -147,10 +165,10 @@ export function EngineeringPage() {
                         return;
                 }
                 const timer = setTimeout(() => {
-                        calculateVoltageDropViaApi();
+                        calculateVoltageDropViaApiRef.current();
                 }, 500);
                 return () => clearTimeout(timer);
-        }, [calculateVoltageDropViaApi, voltageDropInputs.current, voltageDropInputs.length]);
+        }, [voltageDropInputs.current, voltageDropInputs.length]);
 
         // Vercel React Best Practices: rerender-memo — extract expensive work into memoized functions
         const calculateCableSizing = useCallback(() => {
@@ -246,14 +264,17 @@ export function EngineeringPage() {
         const cableResult = useMemo(() => calculateCableSizing(), [calculateCableSizing]);
         const batteryResult = useMemo(() => calculateBatteryRequirements(), [calculateBatteryRequirements]);
 
-        // Vercel React Best Practices: rerender-memo — memoize inline objects passed as props
-        const voltageDropResultProp = useMemo(() => ({
+        // Vercel React Best Practices: rerender-memo — memoize inline objects passed as props.
+        // React Compiler: removed manual useMemo — the Compiler auto-memoizes this
+        // object literal. Manual useMemo was triggering
+        // react-hooks/preserve-manual-memoization ("Compilation Skipped").
+        const voltageDropResultProp = {
                 percentage: vDropResult.percentage,
                 absolute_v: vDropResult.absolute,
                 current: voltageDropInputs.current,
                 length: voltageDropInputs.length,
                 voltage: voltageDropInputs.voltage,
-        }), [vDropResult, voltageDropInputs]);
+        };
 
         const cableResultProp = useMemo(() => ({
                 recommended_size_mm2: cableResult.recommendedSize,

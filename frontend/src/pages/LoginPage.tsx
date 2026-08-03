@@ -144,6 +144,13 @@ export function LoginPage() {
                 setLang((prev) => (prev === "en" ? "ar" : "en"));
         };
 
+        // IMPORTANT: handleError must be declared BEFORE the early-return below so
+        // hooks are called unconditionally on every render (react-hooks/rules-of-hooks).
+        const handleError = useCallback((err: unknown) => {
+                const msg = err instanceof Error ? err.message : "Login failed";
+                setError(mapLoginError(msg, lang));
+        }, [lang]);
+
         // Redirect if authenticated
         if (!ctxLoading && isAuthenticated && (redirectReady || !isSuccess)) {
                 let from = searchParams.get("from") || "/dashboard";
@@ -152,11 +159,6 @@ export function LoginPage() {
                 }
                 return <RouterNavigate to={from} replace />;
         }
-
-        const handleError = useCallback((err: unknown) => {
-                const msg = err instanceof Error ? err.message : "Login failed";
-                setError(mapLoginError(msg, lang));
-        }, [lang]);
 
         const handleSubmit = async (e: FormEvent) => {
                 e.preventDefault();

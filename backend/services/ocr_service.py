@@ -35,8 +35,16 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-import pytesseract
-from pdf2image import convert_from_path
+try:  # OCR extras — optional so the module imports without Tesseract
+    import pytesseract
+except ImportError:  # pragma: no cover — environment without OCR deps
+    pytesseract = None
+
+try:  # OCR extras — optional so the module imports without poppler
+    from pdf2image import convert_from_path
+except ImportError:  # pragma: no cover — environment without OCR deps
+    convert_from_path = None
+
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -48,7 +56,7 @@ OCR_MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB max file size
 
 # Patterns for room names and area values
 ROOM_NAME_PATTERNS = [
-    re.compile(r'(?:room|rm|chambre|غرفة)\s*[:\-\s]*([A-Z0-9]+)', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(r'(?:room|rm|chambre|غرفة)\s*[:\-\s]*([A-Z0-9]+(?:-[A-Z0-9]+)*)', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
     re.compile(r'([A-Z][A-Z0-9]*\s*[A-Z0-9]*)\s+(?:ROOM|RM)', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
     re.compile(r'(?:space|espacio|مساحة)\s*[:\-\s]*([A-Z0-9\s\-]+)', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
     re.compile(r'([A-Z0-9\s\-]{2,20})\s*(?:OFFICE|BEDROOM|KITCHEN|BATHROOM|WC)', re.IGNORECASE),  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
@@ -72,6 +80,8 @@ MALICIOUS_PATTERNS = [
     re.compile(r'<script', re.IGNORECASE),  # Potential HTML/JS injection  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
     re.compile(r'\.\./', re.IGNORECASE),  # Path traversal  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
     re.compile(r'union\s+select', re.IGNORECASE),  # SQL injection  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(r'\b(drop|alter|truncate)\s+(table|database|schema)\b', re.IGNORECASE),  # SQL DDL injection  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
+    re.compile(r'\b(delete|insert|update)\s+(from|into|set)\b', re.IGNORECASE),  # SQL DML injection  # NOSONAR: S8786 — regex is intentional for OCR pattern matching  # NOSONAR — S7632: test function documented via class name / module path
 ]
 
 
@@ -94,6 +104,8 @@ class OCRService:
     def _validate_tesseract_installation(self) -> None:
         """Validate that Tesseract is installed and accessible."""
         try:
+            if pytesseract is None:
+                raise ImportError("pytesseract is not installed")
             # This will raise an exception if Tesseract is not installed
             pytesseract.get_tesseract_version()
             self.logger.info("Tesseract OCR installation validated successfully")
@@ -204,6 +216,12 @@ class OCRService:
         elif image.mode == 'RGBA':
             image = image.convert('RGB')  # NOSONAR — S1871: branches intentionally separate
 
+        if pytesseract is None:
+            raise RuntimeError(
+                "pytesseract is required but not installed. "
+                "Please run `pip install pytesseract`."
+            )
+
         # Perform OCR with data including confidence scores
         data = pytesseract.image_to_data(
             image,
@@ -271,6 +289,11 @@ class OCRService:
 
         try:
             if file_ext == '.pdf':
+                if convert_from_path is None:
+                    raise RuntimeError(
+                        "pdf2image is required for PDF OCR. "
+                        "Please run `pip install pdf2image`."
+                    )
                 # Convert PDF to images
                 with tempfile.TemporaryDirectory() as temp_dir:
                     pages = convert_from_path(

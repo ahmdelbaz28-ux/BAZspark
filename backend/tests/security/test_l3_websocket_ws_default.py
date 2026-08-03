@@ -324,7 +324,7 @@ def test_l3_claim_text_reflects_resolved_state():
       - "wss://" (the new default)
       - "allow_insecure_ws" (the opt-in parameter)
     """
-    WORKLOG = Path("/home/z/my-project/worklog.md")
+    WORKLOG = REPO_ROOT / "worklog.md"
     if not WORKLOG.exists():
         pytest.skip(f"Worklog not found at {WORKLOG}")
 

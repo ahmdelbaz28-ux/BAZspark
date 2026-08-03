@@ -112,8 +112,38 @@ export const AdvancedSettingsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchConfig();
-  }, [fetchConfig]);
+    // Inline async IIFE — no synchronous setState in the effect body
+    // (react-hooks/set-state-in-effect). `fetchConfig` is still defined above
+    // for use by event handlers (refresh button, after-save reload).
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await adminConfigApi.getEnvConfig();
+        if (cancelled) return;
+        const payload = (data as Record<string, unknown>).data
+          ? (data as Record<string, unknown>).data as EnvConfigData
+          : data as unknown as EnvConfigData;
+        if (payload.categories) {
+          setConfigData(payload);
+          const initial: Record<string, string> = {};
+          for (const cat of Object.values(payload.categories)) {
+            for (const s of cat.settings) {
+              initial[s.key] = s.value;
+            }
+          }
+          setEditedValues(initial);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to load configuration");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleValueChange = (key: string, value: string) => {
     setEditedValues((prev) => ({ ...prev, [key]: value }));
@@ -249,14 +279,22 @@ export const AdvancedSettingsPage: React.FC = () => {
 
   // ── Admin action handlers ──
 
-  const fetchCacheStats = useCallback(async () => {
-    setCacheLoading(true);
+  // `fetchCacheStatsCore` does NOT call setCacheLoading(true) synchronously —
+  // only setCacheStats/setCacheLoading(false) after the first await. Safe to
+  // call from an effect (react-hooks/set-state-in-effect). `fetchCacheStats`
+  // wraps it with synchronous setCacheLoading(true) for explicit user actions.
+  const fetchCacheStatsCore = useCallback(async () => {
     try {
       const res = await adminApi.getCacheStats();
       if (res.success && res.data) setCacheStats(res.data);
     } catch { /* ignore */ }
     finally { setCacheLoading(false); }
   }, []);
+
+  const fetchCacheStats = useCallback(async () => {
+    setCacheLoading(true);
+    await fetchCacheStatsCore();
+  }, [fetchCacheStatsCore]);
 
   const handleClearCache = useCallback(async () => {
     setCacheClearing(true);
@@ -270,8 +308,7 @@ export const AdvancedSettingsPage: React.FC = () => {
     } finally { setCacheClearing(false); }
   }, [fetchCacheStats]);
 
-  const fetchFeatureFlags = useCallback(async () => {
-    setFlagsLoading(true);
+  const fetchFeatureFlagsCore = useCallback(async () => {
     try {
       const res = await adminApi.getFeatureFlags();
       if (res.success && res.data) setFeatureFlags(res.data);
@@ -291,14 +328,18 @@ export const AdvancedSettingsPage: React.FC = () => {
     } finally { setFlagToggling(null); }
   }, []);
 
-  const fetchDbHealth = useCallback(async () => {
-    setDbHealthLoading(true);
+  const fetchDbHealthCore = useCallback(async () => {
     try {
       const res = await adminApi.getDatabaseHealth();
       if (res.success && res.data) setDbHealth(res.data);
     } catch { /* ignore */ }
     finally { setDbHealthLoading(false); }
   }, []);
+
+  const fetchDbHealth = useCallback(async () => {
+    setDbHealthLoading(true);
+    await fetchDbHealthCore();
+  }, [fetchDbHealthCore]);
 
   const handleRotateSecret = useCallback(async () => {
     if (!secretName || !secretValue) return;
@@ -326,12 +367,33 @@ export const AdvancedSettingsPage: React.FC = () => {
     } finally { setAdminTokenRotating(false); }
   }, [adminTokenValue, adminTokenGrace]);
 
-  // Load admin data when category is selected
+  // Load admin data when category is selected. Uses a shared helper that
+  // performs the fetch + setState after the first `await`, so no synchronous
+  // setState in the effect body (react-hooks/set-state-in-effect). The helper
+  // eliminates the cross-category duplication (SonarCloud CPD finding).
   useEffect(() => {
-    if (activeCategory === "_cache") fetchCacheStats();
-    if (activeCategory === "_feature_flags") fetchFeatureFlags();
-    if (activeCategory === "_db_health") fetchDbHealth();
-  }, [activeCategory, fetchCacheStats, fetchFeatureFlags, fetchDbHealth]);
+    let cancelled = false;
+    const run = <T,>(
+      fetcher: () => Promise<{ success: boolean; data?: T }>,
+      setter: (data: T) => void,
+      loadingSetter: (loading: boolean) => void,
+    ) => {
+      (async () => {
+        try {
+          const res = await fetcher();
+          if (cancelled) return;
+          if (res.success && res.data) setter(res.data);
+        } catch { /* ignore */ }
+        finally { if (!cancelled) loadingSetter(false); }
+      })();
+    };
+    if (activeCategory === "_cache") run(adminApi.getCacheStats, setCacheStats, setCacheLoading);
+    else if (activeCategory === "_feature_flags") run(adminApi.getFeatureFlags, setFeatureFlags, setFlagsLoading);
+    else if (activeCategory === "_db_health") run(adminApi.getDatabaseHealth, setDbHealth, setDbHealthLoading);
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCategory]);
 
   // ── Render admin sections ──
 

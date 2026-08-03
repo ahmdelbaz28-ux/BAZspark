@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { revitApi, revitExtendedApi, revitIntegrationApi } from "@/services/fullApi";
+import { checkCadStatus } from "@/lib/cadStatus";
 
 export function RevitPage() {
         const [connected, setConnected] = useState(false);
@@ -54,23 +55,26 @@ export function RevitPage() {
         const [integrationLoading, setIntegrationLoading] = useState(false);
 
         const checkStatus = useCallback(async () => {
-                try {
-                        const s = await revitApi.getStatus();
-                        setStatus(s as Record<string, unknown>);
-                        setConnected(true);
-                        // V214: Check simulation_mode from status response
-                        const sim = (s as Record<string, unknown>)?.simulation_mode;
-                        setSimulationMode(Boolean(sim));
-                } catch {
-                        setConnected(false);
-                        setStatus(null);
-                        setSimulationMode(false);
-                }
+                await checkCadStatus(() => revitApi.getStatus(), {
+                        setStatus,
+                        setConnected,
+                        setSimulationMode,
+                });
         }, []);
 
         useEffect(() => {
-                checkStatus();
-        }, [checkStatus]);
+                // Mount fetch via the shared checkCadStatus helper — no synchronous
+                // setState in the effect body (react-hooks/set-state-in-effect).
+                let cancelled = false;
+                checkCadStatus(
+                        () => revitApi.getStatus(),
+                        { setStatus, setConnected, setSimulationMode },
+                        () => cancelled,
+                );
+                return () => {
+                        cancelled = true;
+                };
+        }, []);
 
         const handleConnect = async () => {
                 setConnecting(true);

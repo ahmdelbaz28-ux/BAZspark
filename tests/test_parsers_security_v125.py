@@ -32,7 +32,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import pytest
 
-pytest.importorskip("fireai.parsers.excel_parser", reason="Excel parser not yet implemented")
+pytest.importorskip("parsers.excel_parser", reason="Excel parser not yet implemented")
 
 
 def _make_temp(suffix: str, size: int = 100) -> str:
@@ -261,9 +261,14 @@ class TestV125SingleSourceOfTruth:
             f"the shared _path_security helper. Either restore the import "
             f"or remove the parser from this enforcement list."
         )
-        assert "validate_input_path" in src, (
-            f"V125/Rule #23 regression: {parser_file} does not call "
-            f"validate_input_path(). Custom validation is forbidden by Rule #23."
+        # V125 enforces the single source of truth. Parsers may either call
+        # validate_input_path()/validate_file_size() directly OR delegate to
+        # ParserBase.validate_input(), which invokes both helpers. Custom
+        # inline validation is forbidden by Rule #23.
+        assert ("validate_input_path" in src) or ("self.validate_input" in src), (
+            f"V125/Rule #23 regression: {parser_file} neither calls "
+            f"validate_input_path() nor delegates to ParserBase.validate_input(). "
+            f"Custom validation is forbidden by Rule #23."
         )
 
 
@@ -292,6 +297,9 @@ class TestV125DoSCapConsistency:
             f"V125: {parser_file} should expose its size cap via {env_var} "
             f"so operators can tune without code changes."
         )
-        assert "validate_file_size" in src, (
-            f"V125: {parser_file} should call validate_file_size()."
+        # Size cap is enforced either by calling validate_file_size() directly
+        # or by delegating to ParserBase.validate_input() (which enforces it).
+        assert ("validate_file_size" in src) or ("self.validate_input" in src), (
+            f"V125: {parser_file} should enforce its size cap via "
+            f"validate_file_size() or ParserBase.validate_input()."
         )

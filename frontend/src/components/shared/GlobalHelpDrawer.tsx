@@ -9,12 +9,12 @@
  */
 
 import {
-	AlertTriangle,
-	BookOpen,
-	CheckCircle2,
-	ChevronDown,
-	ChevronRight,
-	Lightbulb,
+        AlertTriangle,
+        BookOpen,
+        CheckCircle2,
+        ChevronDown,
+        ChevronRight,
+        Lightbulb,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,306 +23,318 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetHeader,
-	SheetTitle,
+        Sheet,
+        SheetContent,
+        SheetDescription,
+        SheetHeader,
+        SheetTitle,
 } from "@/components/ui/sheet";
 import { HELP_TOPICS } from "@/help/helpTopics";
 import type { HelpTopic, HelpTopicId } from "@/help/types";
 import { HELP_TREE, ROUTE_HELP_MAP } from "@/help/types";
 
 interface GlobalHelpDrawerProps {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	/** Optional topic to show directly (from Magic Help / contextual button) */
-	initialTopicId?: HelpTopicId | null;
+        open: boolean;
+        onOpenChange: (open: boolean) => void;
+        /** Optional topic to show directly (from Magic Help / contextual button) */
+        initialTopicId?: HelpTopicId | null;
 }
 
 export function GlobalHelpDrawer({
-	open,
-	onOpenChange,
-	initialTopicId,
+        open,
+        onOpenChange,
+        initialTopicId,
 }: GlobalHelpDrawerProps) {
-	const location = useLocation();
-	const { i18n } = useTranslation();
-	const isAr = i18n.language === "ar";
-	const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-		new Set(),
-	);
-	const [selectedTopicId, setSelectedTopicId] = useState<HelpTopicId | null>(
-		null,
-	);
+        const location = useLocation();
+        const { i18n } = useTranslation();
+        const isAr = i18n.language === "ar";
+        const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+                new Set(),
+        );
+        const [selectedTopicId, setSelectedTopicId] = useState<HelpTopicId | null>(
+                null,
+        );
 
-	// When opened with initialTopicId (magic help), select that topic
-	useEffect(() => {
-		if (initialTopicId) {
-			setSelectedTopicId(initialTopicId);
-			// Expand the category containing this topic
-			const topic = HELP_TOPICS[initialTopicId];
-			if (topic) {
-				setExpandedCategories((prev) => new Set([...prev, topic.category]));
-			}
-		} else if (open) {
-			// Auto-select topic based on current route
-			const routeTopic = ROUTE_HELP_MAP[location.pathname];
-			if (routeTopic) {
-				setSelectedTopicId(routeTopic);
-				const topic = HELP_TOPICS[routeTopic];
-				if (topic) {
-					setExpandedCategories((prev) => new Set([...prev, topic.category]));
-				}
-			}
-		}
-	}, [initialTopicId, open, location.pathname]);
+        // React docs pattern: "set state during render based on previous value"
+        // to respond to prop/state changes without an effect (avoids
+        // react-hooks/set-state-in-effect). When initialTopicId / open / pathname
+        // change, we synchronously update selectedTopicId + expandedCategories.
+        // React will re-render this component immediately with the new state.
+        const [prevInitialTopicId, setPrevInitialTopicId] = useState(initialTopicId);
+        const [prevOpen, setPrevOpen] = useState(open);
+        const [prevPathname, setPrevPathname] = useState(location.pathname);
+        if (
+                initialTopicId !== prevInitialTopicId ||
+                open !== prevOpen ||
+                location.pathname !== prevPathname
+        ) {
+                setPrevInitialTopicId(initialTopicId);
+                setPrevOpen(open);
+                setPrevPathname(location.pathname);
+                if (initialTopicId) {
+                        setSelectedTopicId(initialTopicId);
+                        const topic = HELP_TOPICS[initialTopicId];
+                        if (topic) {
+                                setExpandedCategories((prev) => new Set([...prev, topic.category]));
+                        }
+                } else if (open) {
+                        const routeTopic = ROUTE_HELP_MAP[location.pathname];
+                        if (routeTopic) {
+                                setSelectedTopicId(routeTopic);
+                                const topic = HELP_TOPICS[routeTopic];
+                                if (topic) {
+                                        setExpandedCategories((prev) => new Set([...prev, topic.category]));
+                                }
+                        }
+                }
+        }
 
-	// Listen for magic help event (F1)
-	useEffect(() => {
-		const handleMagicHelp = (e: Event) => {
-			const detail = (e as CustomEvent).detail;
-			if (detail?.topicId) {
-				setSelectedTopicId(detail.topicId);
-				onOpenChange(true);
-			} else {
-				// Find topic for current route
-				const routeTopic = ROUTE_HELP_MAP[location.pathname];
-				if (routeTopic) {
-					setSelectedTopicId(routeTopic);
-				}
-				onOpenChange(true);
-			}
-		};
-		globalThis.addEventListener("fireai:open-help", handleMagicHelp);
-		return () =>
-			globalThis.removeEventListener("fireai:open-help", handleMagicHelp);
-	}, [location.pathname, onOpenChange]);
+        // Listen for magic help event (F1)
+        useEffect(() => {
+                const handleMagicHelp = (e: Event) => {
+                        const detail = (e as CustomEvent).detail;
+                        if (detail?.topicId) {
+                                setSelectedTopicId(detail.topicId);
+                                onOpenChange(true);
+                        } else {
+                                // Find topic for current route
+                                const routeTopic = ROUTE_HELP_MAP[location.pathname];
+                                if (routeTopic) {
+                                        setSelectedTopicId(routeTopic);
+                                }
+                                onOpenChange(true);
+                        }
+                };
+                globalThis.addEventListener("fireai:open-help", handleMagicHelp);
+                return () =>
+                        globalThis.removeEventListener("fireai:open-help", handleMagicHelp);
+        }, [location.pathname, onOpenChange]);
 
-	const toggleCategory = (cat: string) => {
-		setExpandedCategories((prev) => {
-			const next = new Set(prev);
-			if (next.has(cat)) {
-				next.delete(cat);
-			} else {
-				next.add(cat);
-			}
-			return next;
-		});
-	};
+        const toggleCategory = (cat: string) => {
+                setExpandedCategories((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(cat)) {
+                                next.delete(cat);
+                        } else {
+                                next.add(cat);
+                        }
+                        return next;
+                });
+        };
 
-	const selectedTopic: HelpTopic | null = selectedTopicId
-		? HELP_TOPICS[selectedTopicId] || null
-		: null;
+        const selectedTopic: HelpTopic | null = selectedTopicId
+                ? HELP_TOPICS[selectedTopicId] || null
+                : null;
 
-	const totalTopics = useMemo(() => Object.keys(HELP_TOPICS).length, []);
+        const totalTopics = useMemo(() => Object.keys(HELP_TOPICS).length, []);
 
-	return (
-		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent
-				side={isAr ? "left" : "right"}
-				className="w-full sm:w-[600px] bg-card border-border p-0 flex flex-col"
-			>
-				<SheetHeader className="px-6 py-4 border-b border-border shrink-0">
-					<SheetTitle className="flex items-center gap-2 text-foreground">
-						<BookOpen aria-hidden="true" className="h-5 w-5 text-primary" />
-						{isAr ? "دليل المستخدم الكامل" : "Complete User Guide"}
-					</SheetTitle>
-					<SheetDescription className="text-muted-foreground">
-						{isAr
-							? `${totalTopics} موضوع مساعدة — ثنائي اللغة (عربي/إنجليزي)`
-							: `${totalTopics} help topics — bilingual (Arabic/English)`}
-					</SheetDescription>
-				</SheetHeader>
+        return (
+                <Sheet open={open} onOpenChange={onOpenChange}>
+                        <SheetContent
+                                side={isAr ? "left" : "right"}
+                                className="w-full sm:w-[600px] bg-card border-border p-0 flex flex-col"
+                        >
+                                <SheetHeader className="px-6 py-4 border-b border-border shrink-0">
+                                        <SheetTitle className="flex items-center gap-2 text-foreground">
+                                                <BookOpen aria-hidden="true" className="h-5 w-5 text-primary" />
+                                                {isAr ? "دليل المستخدم الكامل" : "Complete User Guide"}
+                                        </SheetTitle>
+                                        <SheetDescription className="text-muted-foreground">
+                                                {isAr
+                                                        ? `${totalTopics} موضوع مساعدة — ثنائي اللغة (عربي/إنجليزي)`
+                                                        : `${totalTopics} help topics — bilingual (Arabic/English)`}
+                                        </SheetDescription>
+                                </SheetHeader>
 
-				<div className="flex-1 flex overflow-hidden">
-					{/* Tree sidebar */}
-					<div className="w-56 shrink-0 border-r border-border overflow-y-auto bg-background/50">
-						<ScrollArea className="h-full">
-							<div className="p-2 space-y-1">
-								{HELP_TREE.map((node) => (
-									<div key={node.category}>
-										<button type="button"
-											onClick={() => toggleCategory(node.category)}
-											className="w-full flex items-center gap-1 px-2 py-1.5 rounded text-sm text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
-										>
-											{expandedCategories.has(node.category) ? (
-												<ChevronDown aria-hidden="true" className="h-3 w-3 shrink-0" />
-											) : (
-												<ChevronRight aria-hidden="true" className="h-3 w-3 shrink-0" />
-											)}
-											<span className="text-base">{node.icon}</span>
-											<span className="truncate">
-												{isAr ? node.labelAr : node.labelEn}
-											</span>
-										</button>
-										{expandedCategories.has(node.category) && (
-											<div className="ml-6 space-y-0.5">
-												{node.topics.map((topicId) => {
-													const topic = HELP_TOPICS[topicId];
-													if (!topic) return null;
-													return (													<button type="button"
-															key={topicId}
-																onClick={() => setSelectedTopicId(topicId)}
-															className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${
-																selectedTopicId === topicId
-																	? "bg-primary/20 text-primary font-medium"
-																	: "text-muted-foreground hover:bg-card hover:text-foreground/90"
-															}`}
-														>
-															{isAr ? topic.titleAr : topic.titleEn}
-														</button>
-													);
-												})}
-											</div>
-										)}
-									</div>
-								))}
-							</div>
-						</ScrollArea>
-					</div>
+                                <div className="flex-1 flex overflow-hidden">
+                                        {/* Tree sidebar */}
+                                        <div className="w-56 shrink-0 border-r border-border overflow-y-auto bg-background/50">
+                                                <ScrollArea className="h-full">
+                                                        <div className="p-2 space-y-1">
+                                                                {HELP_TREE.map((node) => (
+                                                                        <div key={node.category}>
+                                                                                <button type="button"
+                                                                                        onClick={() => toggleCategory(node.category)}
+                                                                                        className="w-full flex items-center gap-1 px-2 py-1.5 rounded text-sm text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
+                                                                                >
+                                                                                        {expandedCategories.has(node.category) ? (
+                                                                                                <ChevronDown aria-hidden="true" className="h-3 w-3 shrink-0" />
+                                                                                        ) : (
+                                                                                                <ChevronRight aria-hidden="true" className="h-3 w-3 shrink-0" />
+                                                                                        )}
+                                                                                        <span className="text-base">{node.icon}</span>
+                                                                                        <span className="truncate">
+                                                                                                {isAr ? node.labelAr : node.labelEn}
+                                                                                        </span>
+                                                                                </button>
+                                                                                {expandedCategories.has(node.category) && (
+                                                                                        <div className="ml-6 space-y-0.5">
+                                                                                                {node.topics.map((topicId) => {
+                                                                                                        const topic = HELP_TOPICS[topicId];
+                                                                                                        if (!topic) return null;
+                                                                                                        return (                                                                                                        <button type="button"
+                                                                                                                        key={topicId}
+                                                                                                                                onClick={() => setSelectedTopicId(topicId)}
+                                                                                                                        className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${
+                                                                                                                                selectedTopicId === topicId
+                                                                                                                                        ? "bg-primary/20 text-primary font-medium"
+                                                                                                                                        : "text-muted-foreground hover:bg-card hover:text-foreground/90"
+                                                                                                                        }`}
+                                                                                                                >
+                                                                                                                        {isAr ? topic.titleAr : topic.titleEn}
+                                                                                                                </button>
+                                                                                                        );
+                                                                                                })}
+                                                                                        </div>
+                                                                                )}
+                                                                        </div>
+                                                                ))}
+                                                        </div>
+                                                </ScrollArea>
+                                        </div>
 
-					{/* Topic content */}
-					<div className="flex-1 overflow-y-auto">
-						<ScrollArea className="h-full">
-							{selectedTopic ? (
-								<div className="p-6 space-y-4" dir={isAr ? "rtl" : "ltr"}>
-									{/* Title */}
-									<div>
-										<h2 className="text-xl font-bold text-foreground">
-											{isAr ? selectedTopic.titleAr : selectedTopic.titleEn}
-										</h2>
-										<p className="text-sm text-muted-foreground mt-1">
-											{isAr ? selectedTopic.titleEn : selectedTopic.titleAr}
-										</p>
-									</div>
+                                        {/* Topic content */}
+                                        <div className="flex-1 overflow-y-auto">
+                                                <ScrollArea className="h-full">
+                                                        {selectedTopic ? (
+                                                                <div className="p-6 space-y-4" dir={isAr ? "rtl" : "ltr"}>
+                                                                        {/* Title */}
+                                                                        <div>
+                                                                                <h2 className="text-xl font-bold text-foreground">
+                                                                                        {isAr ? selectedTopic.titleAr : selectedTopic.titleEn}
+                                                                                </h2>
+                                                                                <p className="text-sm text-muted-foreground mt-1">
+                                                                                        {isAr ? selectedTopic.titleEn : selectedTopic.titleAr}
+                                                                                </p>
+                                                                        </div>
 
-									{/* Bilingual badge */}
-									<div className="flex items-center gap-2">
-										<Badge
-											variant="outline"
-											className="border-emerald-600/30 text-success"
-										>
-											EN
-										</Badge>
-										<Badge
-											variant="outline"
-											className="border-primary/30 text-primary"
-										>
-											AR
-										</Badge>
-										{selectedTopic.navigateTo && (
-											<Button
-												size="sm"
-												variant="ghost"
-												className="text-xs text-muted-foreground hover:text-primary"
-												onClick={() => {
-													window.location.href = selectedTopic.navigateTo!;
-												}}
-											>
-												{isAr ? "اذهب للصفحة" : "Go to page"} →
-											</Button>
-										)}
-									</div>
+                                                                        {/* Bilingual badge */}
+                                                                        <div className="flex items-center gap-2">
+                                                                                <Badge
+                                                                                        variant="outline"
+                                                                                        className="border-emerald-600/30 text-success"
+                                                                                >
+                                                                                        EN
+                                                                                </Badge>
+                                                                                <Badge
+                                                                                        variant="outline"
+                                                                                        className="border-primary/30 text-primary"
+                                                                                >
+                                                                                        AR
+                                                                                </Badge>
+                                                                                {selectedTopic.navigateTo && (
+                                                                                        <Button
+                                                                                                size="sm"
+                                                                                                variant="ghost"
+                                                                                                className="text-xs text-muted-foreground hover:text-primary"
+                                                                                                onClick={() => {
+                                                                                                        window.location.href = selectedTopic.navigateTo!;
+                                                                                                }}
+                                                                                        >
+                                                                                                {isAr ? "اذهب للصفحة" : "Go to page"} →
+                                                                                        </Button>
+                                                                                )}
+                                                                        </div>
 
-									{/* Description */}
-									<div className="space-y-2">
-										<h3 className="text-sm font-medium text-primary">
-											{isAr ? "الوصف" : "Description"}
-										</h3>
-										<p className="text-sm text-foreground/90">
-											{isAr
-												? selectedTopic.descriptionAr
-												: selectedTopic.descriptionEn}
-										</p>
-									</div>
+                                                                        {/* Description */}
+                                                                        <div className="space-y-2">
+                                                                                <h3 className="text-sm font-medium text-primary">
+                                                                                        {isAr ? "الوصف" : "Description"}
+                                                                                </h3>
+                                                                                <p className="text-sm text-foreground/90">
+                                                                                        {isAr
+                                                                                                ? selectedTopic.descriptionAr
+                                                                                                : selectedTopic.descriptionEn}
+                                                                                </p>
+                                                                        </div>
 
-									{/* Steps */}
-									{selectedTopic.stepsEn.length > 0 && (
-										<div className="space-y-2">
-											<h3 className="text-sm font-medium text-primary flex items-center gap-1">
-												<CheckCircle2 aria-hidden="true" className="h-4 w-4" />
-												{isAr ? "الخطوات" : "Steps"}
-											</h3>
-											<ol className="space-y-2">
-												{(isAr
-													? selectedTopic.stepsAr
-													: selectedTopic.stepsEn
-												).map((step, i) => (
-													<li
-														key={`${i}-${step.substring(0, 20)}`}
-														className="flex gap-3 text-sm text-foreground/90"
-													>
-														<span className="shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
-															{i + 1}
-														</span>
-														<span>{step}</span>
-													</li>
-												))}
-											</ol>
-										</div>
-									)}
+                                                                        {/* Steps */}
+                                                                        {selectedTopic.stepsEn.length > 0 && (
+                                                                                <div className="space-y-2">
+                                                                                        <h3 className="text-sm font-medium text-primary flex items-center gap-1">
+                                                                                                <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
+                                                                                                {isAr ? "الخطوات" : "Steps"}
+                                                                                        </h3>
+                                                                                        <ol className="space-y-2">
+                                                                                                {(isAr
+                                                                                                        ? selectedTopic.stepsAr
+                                                                                                        : selectedTopic.stepsEn
+                                                                                                ).map((step, i) => (
+                                                                                                        <li
+                                                                                                                key={`${i}-${step.substring(0, 20)}`}
+                                                                                                                className="flex gap-3 text-sm text-foreground/90"
+                                                                                                        >
+                                                                                                                <span className="shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
+                                                                                                                        {i + 1}
+                                                                                                                </span>
+                                                                                                                <span>{step}</span>
+                                                                                                        </li>
+                                                                                                ))}
+                                                                                        </ol>
+                                                                                </div>
+                                                                        )}
 
-									{/* Warnings */}
-									{selectedTopic.warningsEn.length > 0 && (
-										<div className="space-y-2">
-											<h3 className="text-sm font-medium text-danger flex items-center gap-1">
-												<AlertTriangle aria-hidden="true" className="h-4 w-4" />
-												{isAr ? "تحذيرات" : "Warnings"}
-											</h3>
-											<ul className="space-y-1">
-												{(isAr
-													? selectedTopic.warningsAr
-													: selectedTopic.warningsEn
-												).map((w, i) => (
-													<li
-														key={i}  // NOSONAR: typescript:S6479
-														className="text-sm text-amber-300 bg-amber-600/10 border border-amber-600/20 rounded p-2"
-													>
-														{w}
-													</li>
-												))}
-											</ul>
-										</div>
-									)}
+                                                                        {/* Warnings */}
+                                                                        {selectedTopic.warningsEn.length > 0 && (
+                                                                                <div className="space-y-2">
+                                                                                        <h3 className="text-sm font-medium text-danger flex items-center gap-1">
+                                                                                                <AlertTriangle aria-hidden="true" className="h-4 w-4" />
+                                                                                                {isAr ? "تحذيرات" : "Warnings"}
+                                                                                        </h3>
+                                                                                        <ul className="space-y-1">
+                                                                                                {(isAr
+                                                                                                        ? selectedTopic.warningsAr
+                                                                                                        : selectedTopic.warningsEn
+                                                                                                ).map((w, i) => (
+                                                                                                        <li
+                                                                                                                key={i}  // NOSONAR: typescript:S6479
+                                                                                                                className="text-sm text-amber-300 bg-amber-600/10 border border-amber-600/20 rounded p-2"
+                                                                                                        >
+                                                                                                                {w}
+                                                                                                        </li>
+                                                                                                ))}
+                                                                                        </ul>
+                                                                                </div>
+                                                                        )}
 
-									{/* Related topics */}
-									{selectedTopic.relatedTopics.length > 0 && (
-										<div className="space-y-2">
-											<h3 className="text-sm font-medium text-info flex items-center gap-1">
-												<Lightbulb aria-hidden="true" className="h-4 w-4" />
-												{isAr ? "مواضيع ذات صلة" : "Related Topics"}
-											</h3>
-											<div className="flex flex-wrap gap-2">
-												{selectedTopic.relatedTopics.map((rtId) => {
-													const rt = HELP_TOPICS[rtId];
-													if (!rt) return null;
-													return (														<button type="button"
-																key={rtId}
-																onClick={() => setSelectedTopicId(rtId)}
-																className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:border-primary/30 hover:text-primary transition-colors"
-															>
-															{isAr ? rt.titleAr : rt.titleEn}
-														</button>
-													);
-												})}
-											</div>
-										</div>
-									)}
-								</div>
-							) : (
-								<div className="p-6 text-center text-muted-foreground">
-									<BookOpen aria-hidden="true" className="h-12 w-12 mx-auto mb-3 opacity-50" />
-									<p>
-										{isAr
-											? "اختر موضوعاً من القائمة"
-											: "Select a topic from the tree"}
-									</p>
-								</div>
-							)}
-						</ScrollArea>
-					</div>
-				</div>
-			</SheetContent>
-		</Sheet>
-	);
+                                                                        {/* Related topics */}
+                                                                        {selectedTopic.relatedTopics.length > 0 && (
+                                                                                <div className="space-y-2">
+                                                                                        <h3 className="text-sm font-medium text-info flex items-center gap-1">
+                                                                                                <Lightbulb aria-hidden="true" className="h-4 w-4" />
+                                                                                                {isAr ? "مواضيع ذات صلة" : "Related Topics"}
+                                                                                        </h3>
+                                                                                        <div className="flex flex-wrap gap-2">
+                                                                                                {selectedTopic.relatedTopics.map((rtId) => {
+                                                                                                        const rt = HELP_TOPICS[rtId];
+                                                                                                        if (!rt) return null;
+                                                                                                        return (                                                                                                                <button type="button"
+                                                                                                                                key={rtId}
+                                                                                                                                onClick={() => setSelectedTopicId(rtId)}
+                                                                                                                                className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:border-primary/30 hover:text-primary transition-colors"
+                                                                                                                        >
+                                                                                                                        {isAr ? rt.titleAr : rt.titleEn}
+                                                                                                                </button>
+                                                                                                        );
+                                                                                                })}
+                                                                                        </div>
+                                                                                </div>
+                                                                        )}
+                                                                </div>
+                                                        ) : (
+                                                                <div className="p-6 text-center text-muted-foreground">
+                                                                        <BookOpen aria-hidden="true" className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                                                        <p>
+                                                                                {isAr
+                                                                                        ? "اختر موضوعاً من القائمة"
+                                                                                        : "Select a topic from the tree"}
+                                                                        </p>
+                                                                </div>
+                                                        )}
+                                                </ScrollArea>
+                                        </div>
+                                </div>
+                        </SheetContent>
+                </Sheet>
+        );
 }

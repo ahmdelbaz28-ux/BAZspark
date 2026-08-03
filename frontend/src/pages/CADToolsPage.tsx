@@ -66,6 +66,93 @@ interface WriteResult {
   message: string;
 }
 
+// CoordInput — extracted to module scope so it is declared once, not recreated
+// on every render of CADToolsPage (react-hooks/static-components: components
+// created during render reset their state each time).
+function CoordInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-[11px] text-slate-500 mb-1 font-mono">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-2.5 py-1.5 bg-slate-700 border border-slate-600 rounded text-slate-100 text-xs font-mono focus:border-cyan-500 focus:outline-none"
+        placeholder="x,y,z"
+      />
+    </div>
+  );
+}
+
+// ActionButton — extracted to module scope (react-hooks/static-components).
+interface ActionButtonMutation {
+  isPending: boolean;
+  mutate: () => void;
+  isError: boolean;
+  isSuccess: boolean;
+  error: Error | null;
+  data: unknown;
+  reset: () => void;
+}
+
+function ActionButton({
+  mutation,
+  label,
+  icon: Icon,
+  loadingLabel,
+  disabled,
+  color = "cyan",
+}: {
+  mutation: ActionButtonMutation;
+  label: string;
+  icon: React.ElementType;
+  loadingLabel: string;
+  disabled?: boolean;
+  color?: "cyan" | "emerald" | "amber";
+}) {
+  const colors = {
+    cyan: "bg-cyan-600 hover:bg-cyan-700",
+    emerald: "bg-emerald-600 hover:bg-emerald-700",
+    amber: "bg-amber-600 hover:bg-amber-700",
+  };
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => mutation.mutate()}
+        disabled={mutation.isPending || disabled}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 ${colors[color]} disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors`}
+      >
+        {mutation.isPending ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Icon className="h-3.5 w-3.5" />
+        )}
+        {mutation.isPending ? loadingLabel : label}
+      </button>
+      {mutation.isError && (
+        <p className="text-[11px] text-red-400 mt-1">
+          {mutation.error instanceof Error ? mutation.error.message : "Failed"}
+        </p>
+      )}
+      {mutation.isSuccess && mutation.data != null && (
+        <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
+          <CheckCircle2 className="h-3 w-3" />
+          {(mutation.data as { message?: string })?.message || "Success"}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export const CADToolsPage: React.FC = () => {
   const [provider, setProvider] = useState<CADProvider>("autocad");
   const [status, setStatus] = useState<CADStatus | null>(null);
@@ -197,76 +284,10 @@ export const CADToolsPage: React.FC = () => {
     { key: "file" as const, label: "File Read/Write", icon: FileUp },
   ];
 
-  const CoordInput = ({
-    label,
-    value,
-    onChange,
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-  }) => (
-    <div>
-      <label className="block text-[11px] text-slate-500 mb-1 font-mono">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-2.5 py-1.5 bg-slate-700 border border-slate-600 rounded text-slate-100 text-xs font-mono focus:border-cyan-500 focus:outline-none"
-        placeholder="x,y,z"
-      />
-    </div>
-  );
-
-  const ActionButton = ({
-    mutation,
-    label,
-    icon: Icon,
-    loadingLabel,
-    disabled,
-    color = "cyan",
-  }: {
-    mutation: { isPending: boolean; mutate: () => void; isError: boolean; isSuccess: boolean; error: Error | null; data: unknown; reset: () => void };
-    label: string;
-    icon: React.ElementType;
-    loadingLabel: string;
-    disabled?: boolean;
-    color?: "cyan" | "emerald" | "amber";
-  }) => {
-    const colors = {
-      cyan: "bg-cyan-600 hover:bg-cyan-700",
-      emerald: "bg-emerald-600 hover:bg-emerald-700",
-      amber: "bg-amber-600 hover:bg-amber-700",
-    };
-    return (
-      <div>
-        <button
-          type="button"
-          onClick={() => mutation.mutate()}
-          disabled={mutation.isPending || disabled}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 ${colors[color]} disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors`}
-        >
-          {mutation.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Icon className="h-3.5 w-3.5" />
-          )}
-          {mutation.isPending ? loadingLabel : label}
-        </button>
-        {mutation.isError && (
-          <p className="text-[11px] text-red-400 mt-1">
-            {mutation.error instanceof Error ? mutation.error.message : "Failed"}
-          </p>
-        )}
-        {mutation.isSuccess && mutation.data != null && (
-          <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
-            <CheckCircle2 className="h-3 w-3" />
-            {(mutation.data as { message?: string })?.message || "Success"}
-          </p>
-        )}
-      </div>
-    );
-  };
+  // CoordInput and ActionButton were previously defined inside this component
+  // body, which caused react-hooks/static-components errors (components created
+  // during render reset their state on each render). They have been extracted
+  // to module scope (see definitions above CADToolsPage).
 
   return (
     <div className="flex-1 overflow-auto">

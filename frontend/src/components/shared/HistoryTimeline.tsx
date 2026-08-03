@@ -33,8 +33,26 @@ export function HistoryTimeline() {
         }, []);
 
         useEffect(() => {
-                fetchHistory();
-        }, [fetchHistory]);
+                // Inline async IIFE — no synchronous setState in the effect body
+                // (react-hooks/set-state-in-effect). `fetchHistory` is still defined
+                // above for use by event handlers (rollback).
+                let cancelled = false;
+                (async () => {
+                        try {
+                                const history = await digitalTwinApi.getHistory();
+                                if (cancelled) return;
+                                setVersions(Array.isArray(history) ? history : []);
+                        } catch {
+                                if (cancelled) return;
+                                setVersions([]);
+                        } finally {
+                                if (!cancelled) setLoading(false);
+                        }
+                })();
+                return () => {
+                        cancelled = true;
+                };
+        }, []);
 
         const handleRollback = async (versionId: string) => {
                 setRollingBack(versionId);
