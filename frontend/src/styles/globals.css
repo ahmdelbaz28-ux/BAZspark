@@ -1,79 +1,23 @@
-/* globals.css — Engineering Obsidian Theme tokens (loaded via App.tsx) */
-/* NOTE: @import "tailwindcss" is already in index.css — do NOT add it here */
+/* globals.css — Base styles and utility classes (loaded via App.tsx)
+ *
+ * Phase 5 (2026-08-03): All design tokens (--color-*, --radius, --glass-*)
+ * have been moved to styles/tokens.css. This file now only contains:
+ *   - body base styles (font, smoothing)
+ *   - utility classes (.bg-glass, .border-tech, .font-mono-num)
+ *
+ * The previous @layer base :root blocks that defined --background,
+ * --foreground, --card, etc. (using RGB tuple syntax like "8 12 20")
+ * have been removed because they conflicted with index.css (which used
+ * hex syntax like "#070b12"). The cascade order between index.css and
+ * globals.css caused unpredictable behavior.
+ *
+ * NOTE: @import "tailwindcss" is already in index.css — do NOT add it here.
+ */
 
 @layer base {
-        :root {
-                /* ── BAZSPARK Engineering Obsidian Theme ── */
-                --background: 8 12 20;                 /* #080c14 — deep slate obsidian canvas */
-                --foreground: 241 245 249;             /* #f1f5f9 — crisp high-contrast text */
-
-                --card: 15 23 42;                      /* #0f172a — solid dark panel */
-                --card-foreground: 241 245 249;
-
-                --popover: 15 23 42;
-                --popover-foreground: 241 245 249;
-
-                --primary: 6 182 212;                  /* #06b6d4 — technical cyan */
-                --primary-foreground: 8 12 20;
-
-                --secondary: 30 41 59;                 /* #1e293b — slate panel highlight */
-                --secondary-foreground: 241 245 249;
-
-                --muted: 30 41 59;
-                --muted-foreground: 148 163 184;       /* #94a3b8 — slate muted labels */
-
-                --accent: 6 182 212;                   /* technical cyan */
-                --accent-foreground: 8 12 20;
-
-                --destructive: 239 68 68;              /* #ef4444 — ANSI fire alert red */
-                --destructive-foreground: 255 255 255;
-
-                --border: 30 41 59;                    /* #1e293b — crisp 1px border */
-                --input: 30 41 59;
-                --ring: 6 182 212;
-
-                --success: 16 185 129;                 /* #10b981 — emerald safe status */
-                --warning: 245 158 11;                 /* #f59e0b — amber warning */
-                --danger: 239 68 68;
-                --info: 6 182 212;
-
-                --darker: 4 6 10;                      /* #04060a */
-
-                --radius: 0.375rem;                    /* 6px crisp engineering corners */
-        }
-}
-
-@layer base {
-        :root {
-                --color-primary: var(--primary);
-                --color-primary-foreground: var(--primary-foreground);
-                --color-background: var(--background);
-                --color-foreground: var(--foreground);
-                --color-card: var(--card);
-                --color-card-foreground: var(--card-foreground);
-                --color-popover: var(--popover);
-                --color-popover-foreground: var(--popover-foreground);
-                --color-secondary: var(--secondary);
-                --color-secondary-foreground: var(--secondary-foreground);
-                --color-muted: var(--muted);
-                --color-muted-foreground: var(--muted-foreground);
-                --color-accent: var(--accent);
-                --color-accent-foreground: var(--accent-foreground);
-                --color-destructive: var(--destructive);
-                --color-destructive-foreground: var(--destructive-foreground);
-                --color-border: var(--border);
-                --color-input: var(--input);
-                --color-ring: var(--ring);
-                --color-success: var(--success);
-                --color-warning: var(--warning);
-                --color-danger: var(--danger);
-                --color-info: var(--info);
-                --color-darker: var(--darker);
-        }
-
         body {
-                background-color: rgb(var(--background));
-                color: rgb(var(--foreground));
+                background-color: var(--color-background);
+                color: var(--color-foreground);
                 font-feature-settings: "cv02", "cv03", "cv04", "cv11";
         }
 }
