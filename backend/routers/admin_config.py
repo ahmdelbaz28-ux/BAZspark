@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import secrets
 from typing import Annotated, Any
 
@@ -137,6 +138,11 @@ _ROTATABLE_SECRETS = frozenset({
 # tests (tests/test_admin_config_v270.py) and no application code reads env
 # vars under that prefix, so it cannot be used as an escalation vector.
 _TEST_SECRET_PREFIX = "FIREAI_TEST_"
+
+#: Whitelist for env-var secret VALUES (S6547). The variable NAME is already
+#: restricted to _ROTATABLE_SECRETS; this additionally forbids control
+#: characters (e.g. newlines) from being injected into the environment value.
+_SAFE_SECRET_VALUE_RE = re.compile(r"^[\x20-\x7e]{32,4096}$")
 
 
 def _validate_rotatable_secret_name(key_name: str) -> str:
@@ -417,6 +423,14 @@ async def rotate_secret(
 
     # Generate a new secret if not provided
     new_secret = body.new_secret or secrets.token_urlsafe(32)
+
+    # S6547: the secret VALUE is user-supplied (or generated). Whitelist-check
+    # it so control characters can never be injected into the environment.
+    if _SAFE_SECRET_VALUE_RE.fullmatch(new_secret) is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="new_secret must be 32-4096 printable ASCII characters.",
+        )
 
     # Capture the previous secret (if set in env) so KeyRotator can
     # accept it during the grace period.

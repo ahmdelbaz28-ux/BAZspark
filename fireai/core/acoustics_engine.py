@@ -85,6 +85,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 from dataclasses import dataclass, field
 
 # ---------------------------------------------------------------------------
@@ -143,6 +144,12 @@ NFPA72_PUBLIC_MODE_ABOVE_AMBIENT_DB: float = 15.0  # §18.4.3
 NFPA72_PRIVATE_MODE_ABOVE_AMBIENT_DB: float = 10.0  # §18.4.4
 NFPA72_SLEEPING_ABSOLUTE_MIN_DBA: float = 75.0  # §18.4.2
 NFPA72_MAX_DBA: float = 110.0  # §18.4.1.2
+
+#: Whitelist for log-safe room identifiers (S5145). Room ids originate from
+#: user input (HTTP bodies / BIM imports); \w covers unicode letters/digits/
+#: underscore, and the punctuation set covers separators seen in real ids.
+#: Control characters (CR/LF — the log-forging vector) are rejected.
+_SAFE_ROOM_ID_RE = re.compile(r"^[\w .\-/():]{1,64}$")
 
 #: Typical ceiling absorption coefficient for industrial spaces at
 #: ultrasonic frequencies.  Concrete/steel deck ≈ 0.03-0.05.
@@ -628,6 +635,16 @@ class AcousticsEngine:
                 f"Defaulting to 'public' is not permitted for life-safety "
                 f"checks — the caller must explicitly choose the correct "
                 f"mode per NFPA 72 §18.4."
+            )
+
+        # S5145: room_id is user-controlled (HTTP bodies / BIM imports). Validate
+        # against a strict allowlist BEFORE it reaches any log statement, so a
+        # crafted id (e.g. newlines) can never forge log entries.
+        if _SAFE_ROOM_ID_RE.fullmatch(room_id) is None:
+            raise ValueError(
+                "room_id must be a safe identifier: 1-64 characters of "
+                "letters, digits, underscore, space, '_', '-', '.', '/', "
+                "':', '(', ')'. Control characters are not permitted."
             )
 
         logger.info(

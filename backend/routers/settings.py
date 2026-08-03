@@ -38,6 +38,7 @@ when no key is available or when the stored key fails at runtime.
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from typing import Optional
 
@@ -70,6 +71,13 @@ from backend.vision_key_store import (
 logger = logging.getLogger(__name__)
 
 _MODELS_PATH = "/models"
+
+#: Whitelists for log-safe values (S5145). Model names and key ids are
+#: user/URL-supplied and must be validated against an allowlist before they
+#: reach any log statement, so crafted values (e.g. newlines) can never
+#: forge log entries.
+_SAFE_MODEL_NAME_RE = re.compile(r"^[\w][\w./:+-]{0,127}$")
+_SAFE_KEY_ID_RE = re.compile(r"^[\w-]{1,64}$")
 
 router = APIRouter(prefix="/settings/keys", tags=["settings"])
 
@@ -383,6 +391,11 @@ async def store_provider_key(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"base_url is required for provider '{provider}' (no default configured).",
         )
+    if _SAFE_MODEL_NAME_RE.fullmatch(model_name) is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="model_name contains unsupported characters.",
+        )
 
     db = get_db()
     now = utc_now_iso()
@@ -681,6 +694,11 @@ async def test_provider_key(
     with a generic error message (no internal network details leaked).
     """
     provider = _validate_provider(provider)
+    if _SAFE_KEY_ID_RE.fullmatch(key_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid key id.",
+        )
     _ensure_v152_columns()
     db = get_db()
     try:
