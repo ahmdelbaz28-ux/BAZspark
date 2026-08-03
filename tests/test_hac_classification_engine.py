@@ -631,7 +631,7 @@ class TestPhysicalSanity:
             room_volume_m3=1000.0,  # Large room
             is_indoor=True,
         )
-        horizontal, _vertical, volume = result  # NOSONAR
+        horizontal, vertical, volume = result  # NOSONAR
         # Indoor hemisphere: V = (2/3) π r³
         expected_volume = (2.0 / 3.0) * math.pi * (horizontal ** 3)
         # Allow 50% tolerance due to buoyancy factors and other adjustments
@@ -688,20 +688,20 @@ class TestHACClassificationEngine:
             atmospheric_pressure_kpa=101.325,
             humidity_pct=50.0,
         )
-        try:
-            result = engine.classify_v21(
-                substance=substance,
-                environment=env,  # NOSONAR
-                release_grade=ReleaseGrade.SECONDARY,
-                release_rate_kg_s=0.01,
-                room_volume_m3=100.0,
-                is_indoor=True,
-                ventilation=VentilationLevel.MEDIUM,
-            )
-            assert result is not None  # NOSONAR — S5779: pickle used intentionally for ML model serialization
-        except Exception as e:
-            # If the API requires different params, document it but don't fail
-            pytest.skip(f"classify_v21 API requires different params: {e}")
+        result = engine.classify_v21(
+            substance=substance,
+            env_context=env,
+            release_grade=ReleaseGrade.SECONDARY,
+            release_rate_kg_s=0.01,
+            room_volume_m3=100.0,
+            is_indoor=True,
+            ventilation=VentilationLevel.MEDIUM,
+        )
+        assert result is not None  # NOSONAR — S5779: pickle used intentionally for ML model serialization
+        assert result.zone is not None
+        assert result.extent.horizontal_m >= 0.0
+        assert result.hazard_type is not None
+        assert len(result.critical_flags) == 0
 
 
 if __name__ == "__main__":

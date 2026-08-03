@@ -225,7 +225,7 @@ def test_m5_claim_text_REWORDED_in_worklog():
       (b) The reworded (accurate) wording IS present in the active
           Phase 3 verdict.
     """
-    WORKLOG = Path("/home/z/my-project/worklog.md")
+    WORKLOG = REPO_ROOT / "worklog.md"
     if not WORKLOG.exists():
         pytest.skip(f"Worklog not found at {WORKLOG}")
 

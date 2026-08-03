@@ -31,7 +31,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import pytest
 
-pytest.importorskip("fireai.parsers.ddc_adapter", reason="DDC adapter not yet implemented")
+pytest.importorskip("parsers.ddc_adapter", reason="DDC adapter not yet implemented")
 
 from parsers.ddc_adapter import DDCAdapter, DDCNotAvailableError
 

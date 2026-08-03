@@ -132,7 +132,7 @@ def test_logout_does_not_use_localStorage_clear():
 
 def test_m6_claim_text_exists_in_worklog():
     """REGRESSION GUARD: the M-6 claim text must exist in worklog.md."""
-    WORKLOG = Path("/home/z/my-project/worklog.md")
+    WORKLOG = REPO_ROOT / "worklog.md"
     if not WORKLOG.exists():
         pytest.skip(f"Worklog not found at {WORKLOG}")
 

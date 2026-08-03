@@ -182,13 +182,19 @@ class ScanToBIMService:
         Returns:
             Normalized room name
         """
-        # Remove special characters and extra whitespace
-        normalized = re.sub(r'[^\w\s\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]', ' ', name)
+        # Remove special characters and extra whitespace, keeping hyphens so
+        # room identifiers like "A-101" survive normalization.
+        normalized = re.sub(r'[^\w\s\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\-]', ' ', name)
         normalized = ' '.join(normalized.split()).strip()
 
         # Convert to title case for consistency
         if normalized:
             normalized = normalized[0].upper() + normalized[1:].lower()
+
+        # Keep known type keywords uppercase so acronyms like "ROOM" survive
+        # title-casing ("Office room 101" -> "Office ROOM 101").
+        for keyword in ('ROOM', 'RM'):
+            normalized = re.sub(rf'\b{keyword}\b', keyword, normalized, flags=re.IGNORECASE)
 
         return normalized
 

@@ -6,7 +6,7 @@ Tests for the Revit integration functionality.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -344,7 +344,7 @@ async def test_sync_status_dto():
         successful_elements=95,
         failed_elements=5,
         progress=100.0,
-        start_time=datetime.utcnow()
+        start_time=datetime.now(timezone.utc)
     )
 
     assert sync_status.sync_id == "test_sync_1"

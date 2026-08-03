@@ -7,7 +7,7 @@ Defines standardized contracts between Revit and ETAP systems.
 
 Principal Software Architect: Eng. Ahmed Elbaz
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -28,8 +28,8 @@ class RevitElementDTO(BaseModel):
     geometry: Optional[Dict[str, Any]] = Field(None, description="Geometric representation")
     level: Optional[str] = Field(None, description="Building level/phase")
     workset: Optional[str] = Field(None, description="Workset assignment")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
-    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Creation timestamp")
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Last update timestamp")
 
 
 class ElectricalAssetDTO(BaseModel):
@@ -49,7 +49,7 @@ class ElectricalAssetDTO(BaseModel):
     connections: List[str] = Field(default_factory=list, description="Connected element IDs")
     location_coordinates: Optional[Dict[str, float]] = Field(None, description="GIS coordinates")
     electrical_parameters: Dict[str, Any] = Field(default_factory=dict, description="Electrical parameters")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Creation timestamp")
 
 
 class SyncStatusDTO(BaseModel):
@@ -65,7 +65,7 @@ class SyncStatusDTO(BaseModel):
     processed_elements: int = Field(0, description="Elements processed")
     successful_elements: int = Field(0, description="Successfully synced elements")
     failed_elements: int = Field(0, description="Failed elements count")
-    start_time: datetime = Field(default_factory=datetime.utcnow, description="Sync start time")
+    start_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Sync start time")
     end_time: Optional[datetime] = Field(None, description="Sync completion time")
     error_details: Optional[Dict[str, str]] = Field(None, description="Error details if any")
     message: Optional[str] = Field(None, description="Status message")
@@ -109,8 +109,8 @@ class RevitProjectDTO(BaseModel):
     status: str = Field("active", description="Project status")
     owner: Optional[str] = Field(None, description="Project owner")
     permissions: Dict[str, bool] = Field(default_factory=dict, description="User permissions")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Project creation time")
-    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Project update time")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Project creation time")
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Project update time")
 
 
 class RevitSyncLogDTO(BaseModel):
@@ -125,7 +125,7 @@ class RevitSyncLogDTO(BaseModel):
     element_id: Optional[str] = Field(None, description="Affected element ID")
     status: str = Field(..., description="Operation status")
     message: str = Field(..., description="Log message")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Log timestamp")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Log timestamp")
     duration_ms: Optional[int] = Field(None, description="Operation duration in milliseconds")
     user_id: Optional[str] = Field(None, description="User who initiated sync")
     client_ip: Optional[str] = Field(None, description="Client IP address")

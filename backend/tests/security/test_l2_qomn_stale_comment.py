@@ -367,7 +367,7 @@ def test_l2_claim_text_reflects_resolved_state():
       - "72 Ah" (the new value)
       - "0 Ah" (the old value being replaced)
     """
-    WORKLOG = Path("/home/z/my-project/worklog.md")
+    WORKLOG = REPO_ROOT / "worklog.md"
     if not WORKLOG.exists():
         pytest.skip(f"Worklog not found at {WORKLOG}")
 

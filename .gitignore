@@ -296,6 +296,10 @@ playwright-report/
 # Download directory (runtime output, not source code)
 # Worklog files (transient agent work logs)
 worklog.md
+# Exception: the audit worklog is committed because backend/tests/security/
+# regression-guard tests assert its claim texts (NO SKIP policy — the file
+# must exist on CI for those tests to run instead of skipping).
+!worklog.md
 worklog_entry.md
 # Stress test / benchmark result JSONs (regenerated on demand)
 HTTP_STRESS_TEST_RESULTS.json
@@ -314,7 +318,6 @@ API_Test_Collection.postman_collection.json
 *.secret
 !.env.example
 !.env.example.txt
-!.env.production.example
 
 !frontend/src/data/
 
