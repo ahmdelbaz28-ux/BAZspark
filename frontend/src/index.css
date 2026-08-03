@@ -1,66 +1,21 @@
 /* BAZSPARK — Awwwards Identity (Softened Cyan + Deep Navy + Glassmorphism)
  * Softened palette: reduced saturation, no red (except errors)
  * Generous spacing for readability
+ *
+ * Phase 5 (2026-08-03): Design tokens (--color-*, --radius, --glass-*,
+ * --ease-*) have been moved to styles/tokens.css. This file now only
+ * contains base element styles, utility classes, and animations.
  */
 @import "tailwindcss";
 
-
-@import "./styles/dark-mode.css";
-
-:root {
-        /* ── Core palette (softened) ──────────────────────────────────────── */
-        --color-background: #070b12;          /* deep navy — pure void */
-        --color-foreground: #e8f0fe;          /* off-white at 95% */
-        --color-card: rgba(17, 24, 39, 0.6);  /* glassmorphism surface */
-        --color-card-foreground: #e8f0fe;
-        --color-popover: rgba(17, 24, 39, 0.8);
-        --color-popover-foreground: #e8f0fe;
-
-        /* ── Accent — softened cyan (less saturated) ──────────────────────── */
-        --color-primary: #22d3ee;             /* softer cyan-400 */
-        --color-primary-foreground: #070b12;
-        --color-secondary: rgba(255, 255, 255, 0.05);
-        --color-secondary-foreground: #e8f0fe;
-        --color-muted: rgba(255, 255, 255, 0.05);
-        --color-muted-foreground: #94a3b8;    /* slate at 60% */
-        --color-accent: #22d3ee;
-        --color-accent-foreground: #070b12;
-
-        /* ── Structural ──────────────────────────────────────────────────── */
-        --color-border: rgba(31, 45, 68, 0.5); /* muted navy hairline */
-        --color-input: rgba(31, 45, 68, 0.5);
-        --color-ring: #22d3ee;
-
-        /* ── Darker BG for depth ─────────────────────────────────────────── */
-        --color-darker: #0a0e17;
-
-        /* ── Destructive — ONLY for actual errors ────────────────────────── */
-        --color-destructive: rgb(248, 113, 113);
-        --color-destructive-foreground: #070b12;
-
-        /* ── Status — softened, no harsh red ─────────────────────────────── */
-        --color-success: #34d399;             /* emerald */
-        --color-warning: #fbbf24;             /* amber */
-        --color-danger: rgb(248, 113, 113);   /* red — ONLY for real errors */
-        --color-info: #22d3ee;                /* cyan */
-
-        /* ── Radius ──────────────────────────────────────────────────────── */
-        --radius: 0.75rem;                    /* 12px */
-        --radius-sm: 0.5rem;                  /* 8px */
-
-        /* ── Motion easings ──────────────────────────────────────────────── */
-        --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
-        --ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
-        --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-        --ease-micro: cubic-bezier(0.4, 0, 0.2, 1);
-
-        /* ── Glassmorphism helpers ───────────────────────────────────────── */
-        --glass-bg: rgba(17, 24, 39, 0.6);
-        --glass-border: rgba(255, 255, 255, 0.1);
-        --glass-blur: 20px;
-}
+/* dark-mode.css is no longer needed — its .dark overrides were merged into
+ * tokens.css :root because BAZSPARK uses dark theme by default (the .dark
+ * class was never actually toggled by the app). */
 
 @theme {
+        /* Map Tailwind's theme variables to our design tokens (defined in
+         * tokens.css). This bridges Tailwind v4's @theme system with our
+         * custom properties. */
         --color-background: var(--color-background);
         --color-foreground: var(--color-foreground);
         --color-primary: var(--color-primary);
