@@ -525,8 +525,14 @@ python_functions = ["test_*"]
 # Per-marker timeouts (slow/integration/unit/safety_critical) are no longer
 # configurable via ini (pytest-timeout 2.x removed those options); CI passes
 # --timeout explicitly on the command line.
-timeout = 300
-timeout_method = "thread"
+# V312 FIX: Removed `timeout = 300` and `timeout_method = "thread"` from ini.
+# Root cause: pytest 8.3.4 (pinned in .github/workflows/ci.yml Gate 3) with
+# `--strict-config` rejects unknown config options. `pytest-timeout` is NOT
+# installed in Gate 3 (it only installs pytest + pytest-asyncio + hypothesis),
+# so `timeout` and `timeout_method` are unknown → "ERROR: Unknown config
+# option: timeout" → exit code 4 → Gate 3 fails. The job-level `timeout-minutes: 30`
+# in the workflow is the actual timeout enforcement; these ini options were
+# dead config that broke the build. Verified failing on origin/main (7b3845a7).
 # PytestDeprecationWarning: set the asyncio fixture loop scope explicitly
 # (pytest-asyncio >=0.24; CI pins 0.25.2).
 asyncio_default_fixture_loop_scope = "function"

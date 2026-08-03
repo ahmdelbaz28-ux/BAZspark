@@ -124,6 +124,28 @@ label {
         outline: none;
 }
 
+/* ── Reduced motion (WCAG 2.3.3 — UI/UX Pro Max audit Phase 5.1) ────── */
+/* Disable non-essential animations and transforms when the user has
+   requested reduced motion. Essential feedback (loading spinners, status
+   pulses) is preserved because it conveys state changes the user needs.   */
+@media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                transition-delay: 0s !important;
+                scroll-behavior: auto !important;
+        }
+        /* Loading spinners remain functional — they convey state, not decoration */
+        .animate-spin,
+        [class*="animate-pulse"] {
+                animation-duration: 1.5s !important;
+                animation-iteration-count: infinite !important;
+        }
+}
+
 /* ── Scrollbar ──────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
         width: 8px;

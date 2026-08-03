@@ -36,3 +36,59 @@
         font-family: "JetBrains Mono", ui-monospace, monospace;
         font-variant-numeric: tabular-nums;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * UI/UX Pro Max audit (Phase 5.1) — interaction & accessibility utilities
+ *
+ * 1) `.cursor-pointer` — applied to every clickable element per skill checklist
+ *    ("cursor-pointer on all clickable elements").
+ * 2) `.focus-ring` — single source of truth for keyboard focus styling.
+ *    Uses two-layer box-shadow so the ring stays visible on both the deep
+ *    navy background and the glass cards.
+ * 3) `.lift-on-hover` — subtle 1px lift + border highlight. We use transform
+ *    translateY only (NOT scale) per skill rule "Hover states don't cause
+ *    layout shift" (scale would reflow adjacent grid items).
+ * 4) `.card-hover` — combined hover treatment for clickable Cards (border
+ *    brightens, background lightens, subtle lift).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.cursor-pointer {
+        cursor: pointer;
+}
+
+.focus-ring {
+        outline: none;
+}
+.focus-ring:focus-visible {
+        box-shadow: var(--ring-focus);
+        outline: none;
+}
+
+.lift-on-hover {
+        transition: transform 0.2s var(--ease-micro), border-color 0.2s var(--ease-micro),
+                background-color 0.2s var(--ease-micro);
+}
+.lift-on-hover:hover {
+        transform: translateY(-1px);
+}
+
+.card-hover {
+        transition: transform 0.2s var(--ease-micro), border-color 0.2s var(--ease-micro),
+                background-color 0.2s var(--ease-micro), box-shadow 0.2s var(--ease-micro);
+}
+.card-hover:hover {
+        transform: translateY(-2px);
+        border-color: rgba(34, 211, 238, 0.35);
+        box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(34, 211, 238, 0.1);
+}
+
+/* Reduced motion — neutralize transforms & transitions per WCAG 2.3.3 */
+@media (prefers-reduced-motion: reduce) {
+        .lift-on-hover,
+        .card-hover,
+        .lift-on-hover:hover,
+        .card-hover:hover {
+                transition-duration: 0.01ms !important;
+                transition-delay: 0s !important;
+                transform: none !important;
+        }
+}
