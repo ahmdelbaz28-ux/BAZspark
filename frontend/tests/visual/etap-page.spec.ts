@@ -126,8 +126,15 @@ test.describe("ETAP Integration Page", () => {
                 await expect(page.getByRole("button", { name: "Test Connection" })).toBeVisible();
 
                 // Filter out known non-critical errors
+                // V311 FIX: Vercel Analytics + Speed Insights return 404 in `vite preview`
+                // because the scripts are only available on Vercel deployments.
                 const criticalErrors = errors.filter(
-                        (e) => !e.includes("frame-ancestors") && !e.includes("X-Frame-Options") && !e.includes("Applying inline style violates"),
+                        (e) =>
+                                !e.includes("frame-ancestors") &&
+                                !e.includes("X-Frame-Options") &&
+                                !e.includes("Applying inline style violates") &&
+                                !e.includes("/_vercel/insights/script.js") &&
+                                !e.includes("/_vercel/speed-insights/script.js"),
                 );
                 expect(criticalErrors).toEqual([]);
         });

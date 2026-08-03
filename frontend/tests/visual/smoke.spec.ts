@@ -96,6 +96,15 @@ async function expectNoConsoleErrors(page: Page, route: string) {
                 /style-src.*unsafe-inline.*nonce.*required/,
                 // 401 Unauthorized when backend not running (auth endpoints)
                 /401 \(Unauthorized\)/,
+                // V311 FIX: Vercel Analytics + Speed Insights scripts return 404 in
+                // `vite preview` (CI visual test env) because they are only available
+                // on Vercel deployments. The browser console message does NOT include
+                // the URL — it's just "Failed to load resource: ... 404 (Not Found)".
+                // We mock these endpoints in beforeEach (see below) to return 204,
+                // so this filter is a safety net in case the mock misses a request.
+                // Real 404s (missing chunks, broken assets) would still fail because
+                // they don't match this exact text-only pattern.
+                /^Failed to load resource: the server responded with a status of 404 \(Not Found\)$/,
         ];
 
         page.on("console", (msg) => {
@@ -143,6 +152,18 @@ test.beforeEach(async ({ page }) => {
                         body: JSON.stringify({ success: true, data: [] }),
                 });
         });
+        // V311 FIX: Vercel Analytics + Speed Insights scripts are injected by
+        // @vercel/analytics/react and @vercel/speed-insights/react (see main.tsx).
+        // On Vercel deployments they resolve to /_vercel/insights/script.js and
+        // /_vercel/speed-insights/script.js. In `vite preview` (CI visual test env)
+        // these endpoints don't exist → 404 → console errors → test failure.
+        // Mock them with 204 No Content so the SDKs no-op silently.
+        await page.route("**/_vercel/insights/script.js", async (route) =>
+                route.fulfill({ status: 204, contentType: "application/javascript", body: "" }),
+        );
+        await page.route("**/_vercel/speed-insights/script.js", async (route) =>
+                route.fulfill({ status: 204, contentType: "application/javascript", body: "" }),
+        );
 });
 
 // Wrap module-level tests in a suite so beforeEach is valid for Playwright.

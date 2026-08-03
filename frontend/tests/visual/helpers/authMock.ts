@@ -167,6 +167,20 @@ export async function installApiMock(page: Page, options: MockOptions = {}) {
 		return fulfillData(route, method);
 	});
 
+	// V311 FIX: Vercel Analytics + Speed Insights scripts are injected by
+	// @vercel/analytics/react and @vercel/speed-insights/react (see main.tsx).
+	// On Vercel deployments they resolve to /_vercel/insights/script.js and
+	// /_vercel/speed-insights/script.js. In `vite preview` (CI visual test env)
+	// these endpoints don't exist → 404 → console errors → test failure.
+	// Mock them with 204 No Content so the SDKs no-op silently.
+	// (Separate route from **/api/** because the URL pattern differs.)
+	await page.route("**/_vercel/insights/script.js", async (route) =>
+		route.fulfill({ status: 204, contentType: "application/javascript", body: "" }),
+	);
+	await page.route("**/_vercel/speed-insights/script.js", async (route) =>
+		route.fulfill({ status: 204, contentType: "application/javascript", body: "" }),
+	);
+
 	return {
 		/** Programmatically authenticate (skip the login UI). */
 		async login() {
