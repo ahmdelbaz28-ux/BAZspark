@@ -391,6 +391,11 @@ async def store_provider_key(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"base_url is required for provider '{provider}' (no default configured).",
         )
+    if not model_name.isprintable():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="model_name must not contain control characters.",
+        )
     if _SAFE_MODEL_NAME_RE.fullmatch(model_name) is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -694,6 +699,11 @@ async def test_provider_key(
     with a generic error message (no internal network details leaked).
     """
     provider = _validate_provider(provider)
+    if not key_id.isprintable():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid key id.",
+        )
     if _SAFE_KEY_ID_RE.fullmatch(key_id) is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

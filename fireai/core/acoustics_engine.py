@@ -638,8 +638,15 @@ class AcousticsEngine:
             )
 
         # S5145: room_id is user-controlled (HTTP bodies / BIM imports). Validate
-        # against a strict allowlist BEFORE it reaches any log statement, so a
-        # crafted id (e.g. newlines) can never forge log entries.
+        # BEFORE it reaches any log statement, so a crafted id (e.g. newlines)
+        # can never forge log entries. isprintable() rejects CR/LF and every
+        # other control character; the strict allowlist below then enforces the
+        # exact charset and length.
+        if not room_id.isprintable():
+            raise ValueError(
+                "room_id must not contain control characters (e.g. CR/LF) "
+                "that could forge log entries."
+            )
         if _SAFE_ROOM_ID_RE.fullmatch(room_id) is None:
             raise ValueError(
                 "room_id must be a safe identifier: 1-64 characters of "
