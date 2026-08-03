@@ -43,7 +43,7 @@ class IFCAnalysis:
 class IFCParser(ParserBase):
     """Parse IFC format files."""
 
-    allowed_extensions = {'.ifc'}
+    allowed_extensions = {'.ifc', _JSON_EXT}
     max_file_size_bytes = int(os.getenv("FIREAI_IFC_MAX_FILE_SIZE_BYTES", 500 * 1024 * 1024))
 
     def __init__(self, ifc_path: str):
