@@ -2,219 +2,158 @@
 
 # 🔥 BAZspark
 
-### **Safety-Critical Fire Alarm Engineering & Digital Twin Platform**
-*منصة هندسة أنذار الحريق الذكية والتوأم الرقمي القياسي*
+**Safety-Critical Fire Alarm Engineering & Digital Twin Platform**
 
-[![CI/CD Status](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/ci.yml)
-[![NFPA Compliance](https://img.shields.io/badge/Standard-NFPA%2072--2022-red.svg)](https://www.nfpa.org/codes-and-standards/all-codes-and-standards/list-of-codes-and-standards/detail?code=72)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.55.0-orange.svg)](VERSION)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.138%2B-009688.svg)](https://fastapi.tiangolo.com/)
-[![React 18](https://img.shields.io/badge/React-18.3.1-61DAFB.svg)](https://react.dev/)
+[![CI](https://img.shields.io/github/actions/workflow/status/ahmdelbaz28-ux/BAZspark/ci.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white)](https://github.com/ahmdelbaz28-ux/BAZspark/actions)
+[![License](https://img.shields.io/github/license/ahmdelbaz28-ux/BAZspark?style=for-the-badge)](https://github.com/ahmdelbaz28-ux/BAZspark/blob/main/LICENSE)
+[![Stars](https://img.shields.io/github/stars/ahmdelbaz28-ux/BAZspark?style=for-the-badge)](https://github.com/ahmdelbaz28-ux/BAZspark/stargazers)
+[![Release](https://img.shields.io/github/v/release/ahmdelbaz28-ux/BAZspark?style=for-the-badge)](https://github.com/ahmdelbaz28-ux/BAZspark/releases)
 
----
-
-### 🌐 Live Environments / الروابط المباشرة للنظام
-
-[![Frontend Demo](https://img.shields.io/badge/🚀%20Web%20App-ba--zspark.vercel.app-blueviolet?style=for-the-badge&logo=vercel)](https://ba-zspark.vercel.app)
-&nbsp;&nbsp;&nbsp;&nbsp;
-[![Backend API Docs](https://img.shields.io/badge/⚡%20API%20Engine-ahmdelbaz28--bazspark.hf.space-emerald?style=for-the-badge&logo=huggingface)](https://ahmdelbaz28-bazspark.hf.space)
-
----
-
-![BAZspark Platform Banner](docs/assets/screenshots/banner-dashboard.png)
+[![Frontend](https://img.shields.io/badge/Web%20App-ba--zspark.vercel.app-blueviolet?style=for-the-badge&logo=vercel)](https://ba-zspark.vercel.app)
+[![API](https://img.shields.io/badge/API%20Engine-HuggingFace%20Space-orange?style=for-the-badge&logo=huggingface)](https://ahmdelbaz28-bazspark.hf.space)
 
 </div>
 
 ---
 
-## 📌 1. Executive Summary & Core Mission | نبذة تنفيذية والهدف الأساسي
+## What is this?
 
-**BAZspark** is a state-of-the-art, safety-critical fire protection engineering platform engineered to automate compliance verification, voltage drop calculations, battery backup capacity sizing, and bidirectional CAD/BIM drawing translation according to **NFPA 72-2022** and **SOLAS Marine** safety codes.
-
-By coupling a **deterministic mathematical calculation engine** with an **AI-assisted Digital Twin**, BAZspark eliminates human drafting errors, accelerates MEP approval cycles, and produces an immutable, Merkle-tree signed audit trail for every design decision.
+BAZspark automates fire alarm system design and compliance verification according to **NFPA 72-2022** and **SOLAS Marine** standards. It runs deterministic voltage drop and battery capacity calculations, generates a Merkle-tree signed audit trail for every design decision, and bridges AutoCAD DWG files to Autodesk Revit BIM models — eliminating manual drafting errors from protection engineering workflows.
 
 ---
 
-## 📸 2. Interactive Product Tour | جولة تفاعلية بالصور الشاشية
+## Quick Start
 
-<div align="center">
-
-### 🖥️ Main Engineering Dashboard & System Monitoring
-*لوحة التحكم الرئيسية وإدارة المشاريع الهندسية*
-![BAZspark Dashboard](docs/assets/screenshots/dashboard.png)
-
----
-
-### 🎨 Fire Alarm Canvas & CAD Designer
-*محرر المخططات التفاعلي لتوزيع الحساسات وأجراس الإنذار*
-![Fire Alarm Canvas Designer](docs/assets/screenshots/fire-alarm-designer.png)
-
----
-
-<table width="100%">
-<tr>
-<td width="50%" align="center">
-<b>🏢 Digital Twin (AutoCAD ↔ Revit Bridge)</b><br/>
-<i>التوأم الرقمي للتحويل المباشر بين المخططات والـ BIM</i><br/><br/>
-<img src="docs/assets/screenshots/digital-twin.png" alt="Digital Twin Engine" width="100%"/>
-</td>
-<td width="50%" align="center">
-<b>⚡ Compliance & NFPA 72 Verification Center</b><br/>
-<i>مركز تحقق الملاءمة الهندسية ومعايير NFPA 72</i><br/><br/>
-<img src="docs/assets/screenshots/compliance-center.png" alt="Compliance Center" width="100%"/>
-</td>
-</tr>
-<tr>
-<td width="50%" align="center">
-<b>📊 BoQ, Bill of Materials & Export Center</b><br/>
-<i>إخراج جداول الكميات وتصدير التقارير الهندسية</i><br/><br/>
-<img src="docs/assets/screenshots/reports.png" alt="Reports & BoQ" width="100%"/>
-</td>
-<td width="50%" align="center">
-<b>🛠️ Multi-Loop Engineering Workspace</b><br/>
-<i>مساحة عمل المهندس لحسابات الجهد والبطاريات</i><br/><br/>
-<img src="docs/assets/screenshots/engineering-workspace.png" alt="Engineering Workspace" width="100%"/>
-</td>
-</tr>
-</table>
-
----
-
-### ✅ Quality Assurance & Verification Gates
-*بوابات الفحص والتأكد الذاتي من صحة الحسابات والأمان (100% Pass)*
-![Quality Gates Green](docs/assets/screenshots/all-gates-green.png)
-
-</div>
-
----
-
-## 👥 3. Who is BAZspark For? | لمن صُمم هذا النظام؟
-
-| Target User / المستخدم المستهدف | Primary Use Case / حالات الاستخدام الرئيسية | Core Benefit / الفائدة المحققة |
-|---|---|---|
-| 👷 **Fire Protection Engineers**<br/>*(مهندسو الوقاية من الحريق)* | Automating NFPA 72 detector coverage, visual candela calculations, NAC loop voltage drop, and 24h/60m battery backup sizing. | Eliminates manual Excel calculation errors and guarantees 100% code compliance. |
-| 🏛️ **MEP & BIM Consultants**<br/>*(استشاريو ومصممو BIM)* | Bidirectional conversion between AutoCAD DWG files and Autodesk Revit BIM models with IFC 4.3 compatibility. | Saves up to 80% of drafting time by converting 2D drawings into native BIM elements. |
-| 🛡️ **Authorities Having Jurisdiction (AHJ)**<br/>*(الجهات الرقابية وهئية الدفاع المدني)* | Reviewing submitted fire alarm designs using verifiable Merkle-tree signed audit reports. | Instant calculation transparency with zero ambiguity or unverified assumptions. |
-| 💻 **Developers & Integrators**<br/>*(المطورون ومهندسو الأنظمة)* | Integrating custom CAD tools, IoT fire panels, and BIM software using 247+ OpenAPI REST & WebSocket endpoints. | Fully async, high-performance Python 3.8+ & React 18 architecture. |
-
----
-
-## 📐 4. System Architecture & Engineering Composition | التكوين الهندسي والمعماري
-
-BAZspark follows a decoupled, asynchronous micro-architecture ensuring that calculation logic remains isolated from presentation layers:
-
-```
-                                  ┌───────────────────────────────────────────────────────────┐
-                                  │   React 18 + TypeScript 5.9 + Vite 8 + Tailwind CSS 4     │
-                                  │   Interactive HTML5 Canvas │ Dashboard │ Real-time Stream │
-                                  └─────────────────────────────┬─────────────────────────────┘
-                                                                │ REST APIs + WebSockets
-                                  ┌─────────────────────────────▼─────────────────────────────┐
-                                  │          FastAPI 0.138+ Asynchronous Backend Engine       │
-                                  │   247+ Endpoints │ HMAC-SHA256 Auth │ SSRF Guard │ RBAC    │
-                                  └──────┬──────────────────────┬──────────────────────┬──────┘
-                                         │                      │                      │
-                   ┌─────────────────────▼──────┐    ┌──────────▼───────────┐    ┌─────▼──────────────────────┐
-                   │ NFPA 72 Calculation Engine │    │ Digital Twin Kernel  │    │ Unified Storage Infrastructure│
-                   │ • Voltage Drop & End of Line│    │ • AutoCAD Bridge     │    │ • PostgreSQL (Primary DB)  │
-                   │ • Battery Backup Capacity  │    │ • Revit BIM Adapter  │    │ • SQLite WAL (Local)       │
-                   │ • Sound & Strobe Coverage  │    │ • DXF/DWG/IFC Parser │    │ • Redis & Qdrant Vector    │
-                   └────────────────────────────┘    └──────────────────────┘    └────────────────────────────┘
-```
-
-### 🧩 Core Component Layers
-
-1. **Deterministic Calculation Core (`fireai/`, `qomn_fire/`)**:
-   - **Voltage Drop Solver**: Exact Kirchhoff circuit analysis for Notification Appliance Circuits (NAC) per NFPA 72 §10.6.7.
-   - **Battery Capacity Sizer**: Computes required Ampere-Hours ($Ah$) for 24-hour standby + 5/60-minute alarm modes with 20% safety factor.
-   - **Acoustic & Visual Coverage**: Determines indoor/outdoor strobe candela requirements and speaker dBA attenuation.
-
-2. **Digital Twin Engine (`autocad_addin/`, `parsers/`)**:
-   - High-throughput DXF, DWG, IFC 4.3, and PDF floorplan parser.
-   - Bidirectional C# .NET bridge linking AutoCAD and Revit elements in real time.
-
-3. **Security & Audit Governance (`backend/auth.py`, `backend/rbac.py`)**:
-   - Strict Role-Based Access Control (RBAC) with 6 permission levels.
-   - Merkle-tree cryptographic signature for every calculation snapshot.
-
----
-
-## ⚡ 5. How to Use BAZspark | كيفية الاستخدام والتشغيل السريع
-
-### 📋 Prerequisites | المتطلبات الأساسية
-- **Python**: `3.8.4` or higher
-- **Node.js**: `22.0.0` or higher (`npm 11+`)
-- **Git**: `2.40+`
-
----
-
-### 🚀 Step 1: Clone & Setup Backend | إعداد الخلفية
+**Prerequisites:** Python 3.8+, Node.js 22+, npm 11+, Git 2.40+
 
 ```bash
-# 1. Clone the repository
+# 1. Clone and install backend
 git clone https://github.com/ahmdelbaz28-ux/BAZspark.git
 cd BAZspark
-
-# 2. Install backend dependencies
 pip install -e ".[dev,parsing]"
 
-# 3. Set environment secrets & launch API server
+# 2. Set secrets and start the API server
 export FIREAI_API_KEY="your-secure-api-key"
 export FIREAI_SESSION_SECRET=$(python3 -m backend.session_secret generate | tail -1)
-
 uvicorn backend.app:app --reload --host 127.0.0.1 --port 8000
 ```
-> The API documentation will be available at `http://127.0.0.1:8000/docs`.
-
----
-
-### 🎨 Step 2: Setup & Launch Frontend | إعداد الواجهة الرسومية
 
 ```bash
-# Navigate to frontend directory
+# 3. Start the frontend (in a second terminal)
 cd frontend
-
-# Install Node dependencies
 npm ci
-
-# Start Vite development server
 npm run dev
+# Open http://localhost:5173 → Settings → enter FIREAI_API_KEY
 ```
-> Access the web application at `http://localhost:5173`. Navigate to **Settings** and input your `FIREAI_API_KEY`.
-
----
-
-### 🐳 Step 3: Run via Docker | التشغيل الحاوي باستخدام Docker
 
 ```bash
-# Build and run entire stack with Docker Compose
+# Or run the entire stack with Docker
 docker-compose up -d --build
 ```
 
 ---
 
-## 🔬 6. Verification & Quality Enforcement | فحوصات الجودة والتحقق
+## Screenshots
 
-BAZspark enforces strict automated Quality Gates before any pull request is merged:
+| Dashboard | Fire Alarm Canvas |
+|-----------|------------------|
+| ![Dashboard](docs/assets/screenshots/dashboard.png) | ![Fire Alarm Designer](docs/assets/screenshots/fire-alarm-designer.png) |
 
-```bash
-# Run unit and security test suites (145+ tests)
-python -m pytest tests/test_ssrf_and_security_protocol.py tests/test_security.py backend/tests/test_database_and_utils.py
+| Digital Twin | Compliance Center |
+|-------------|------------------|
+| ![Digital Twin](docs/assets/screenshots/digital-twin.png) | ![Compliance](docs/assets/screenshots/compliance-center.png) |
 
-# Run static linter analysis
-python -m ruff check .
+---
+
+## Architecture
+
+```mermaid
+graph LR
+    FE["Frontend\nReact 18 + Vite + TypeScript"] --> API["FastAPI Backend\n247+ endpoints · RBAC · SSRF Guard"]
+    API --> Calc["NFPA 72 Engine\nVoltage Drop · Battery Sizing\nAcoustic & Strobe Coverage"]
+    API --> Twin["Digital Twin Kernel\nAutoCAD DWG ↔ Revit BIM\nDXF · IFC 4.3 · PDF Parser"]
+    API --> Store["Storage\nPostgreSQL · SQLite WAL\nRedis · Qdrant Vector"]
+    Calc --> Audit["Merkle Audit Trail\nCryptographic Signatures"]
+    Twin --> Audit
 ```
 
 ---
 
-## 📄 7. License & Governance | الترخيص والتطوير
+## Project Structure
 
-BAZspark is open-source software licensed under the **[MIT License](LICENSE)**.
-
-Developed and Maintained by **Eng. Ahmed Elbaz**.
+```
+BAZspark/
+├── .github/workflows/     # CI/CD, deployment, and security scan pipelines
+├── autocad_addin/         # AutoCAD C# .NET bridge add-in
+├── backend/               # FastAPI routers, services, auth, and RBAC
+├── deploy/                # Docker, Helm, and Kubernetes manifests
+├── docs/                  # Architecture, API, and operational docs
+├── facp_distributed/      # Distributed FACP multi-agent pipeline
+├── fireai/                # NFPA 72 calculation engine and audit core
+├── frontend/              # React SPA — canvas designer, dashboard, reports
+├── marine/                # SOLAS marine fire detection compliance module
+├── parsers/               # DXF, DWG, IFC, and PDF high-throughput parsers
+├── qomn_fire/             # Standalone QOMN-FIRE physics kernel
+├── scripts/               # Developer tooling and secret management
+└── tests/                 # Unit and integration test suites (145+ tests)
+```
 
 ---
+
+## Documentation
+
+| Resource | Description |
+|----------|-------------|
+| [Architecture Overview](docs/ARCHITECTURE_CHANGE_PROPOSAL_V2.md) | System design, component boundaries, and data flow |
+| [API Keys Guide](docs/API_KEYS_GUIDE.md) | Generating and managing FIREAI_API_KEY and session secrets |
+| [Production Deployment](docs/PRODUCTION_DEPLOYMENT_GUIDE.md) | Docker Compose, Kubernetes, and Vercel deployment steps |
+| [NFPA 72 Specification](docs/FACP_SPECIFICATION.md) | Calculation methods, coverage rules, and standard references |
+| [Dev Pipeline](docs/DEV_PIPELINE.md) | CI gates, test strategy, and PR review requirements |
+| [Database Config](docs/DATABASE_STANDARD_CONFIG.md) | PostgreSQL, SQLite WAL, Redis, and Qdrant setup |
+| [Release Notes](docs/RELEASE_NOTES.md) | Changelog and version history |
+
+---
+
+## Verification
+
+```bash
+# Run the full test suite (145+ tests)
+pytest
+
+# Run only security and SSRF tests
+pytest tests/test_ssrf_and_security_protocol.py tests/test_security.py
+
+# Run static linting (must pass before every PR)
+python -m ruff check .
+
+# Generate HTML coverage report
+pytest --cov=fireai --cov-report=html
+```
+
+All pull requests must pass the CI quality gates — static analysis, security checks, calculation accuracy, and integration tests — before merge.
+
+---
+
+## Contributing
+
+Engineering contributions are welcome. Open an issue to discuss significant changes before submitting a PR. All submissions undergo strict safety-critical code review.
+
+<a href="https://github.com/ahmdelbaz28-ux/BAZspark/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=ahmdelbaz28-ux/BAZspark" />
+</a>
+
+---
+
+## License
+
+Distributed under the [MIT License](LICENSE).
+
+Designed and developed by **Eng. Ahmed Elbaz**.
+
+---
+
 <div align="center">
-<b>BAZspark Engine © 2026 | Safety-Critical Fire Protection Engineering</b>
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ahmdelbaz28-ux/BAZspark&type=Date)](https://star-history.com/#ahmdelbaz28-ux/BAZspark&Date)
+
 </div>
