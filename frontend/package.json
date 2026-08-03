@@ -130,6 +130,10 @@
                 "vite": "^8.2.0",
                 "vitest": "^4.1.8"
         },
+        "overrides": {
+                "rimraf": "^6.0.0",
+                "glob": "^11.0.0"
+        },
         "build": {
                 "appId": "org.fireai.digitaltwin",
                 "productName": "FireAI Digital Twin",
