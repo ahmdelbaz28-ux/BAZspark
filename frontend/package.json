@@ -118,7 +118,7 @@
                 "electron": "^43.2.0",
                 "electron-builder": "^26.15.3",
                 "eslint": "^9.0.0",
-                "eslint-plugin-react-hooks": "^5.0.0",
+                "eslint-plugin-react-hooks": "^7.1.1",
                 "fast-glob": "^3.3.3",
                 "globals": "^17.7.0",
                 "jsdom": "^29.1.1",
