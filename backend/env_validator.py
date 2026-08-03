@@ -136,6 +136,13 @@ def _present(value: str | None) -> tuple[bool, str]:
         return False, "missing or still a placeholder in .env.production"
     return True, "present"
 
+def _cors_origins_present(value: str | None) -> tuple[bool, str]:
+    """Presence validator for CORS_ORIGINS that also accepts the legacy
+    CORS_ALLOWED_ORIGINS alias — mirrors backend/app.py backward-compat.
+    """
+    effective = value or os.environ.get("CORS_ALLOWED_ORIGINS")
+    return _present(effective)
+
 
 def _min_len(n: int) -> _EnvValidator:
     def _v(value: str | None) -> tuple[bool, str]:
@@ -239,7 +246,7 @@ _REQUIRED_VARS: list[tuple[str, Severity, _EnvValidator]] = [
     ("CODESANDBOX_TOKEN", Severity.SOFT, _present),
 
     # ── 16. CORS / Security ──
-    ("CORS_ORIGINS", Severity.HARD, _present),
+    ("CORS_ORIGINS", Severity.HARD, _cors_origins_present),
 ]
 
 
@@ -266,7 +273,7 @@ def validate_environment() -> list[ValidationIssue]:
             )
 
     # Extra policy check: no wildcard CORS in production.
-    cors = os.environ.get("CORS_ORIGINS", "")
+    cors = os.environ.get("CORS_ORIGINS", "") or os.environ.get("CORS_ALLOWED_ORIGINS", "")
     if "*" in (cors.split(",") if cors else []):
         issues.append(
             ValidationIssue(
