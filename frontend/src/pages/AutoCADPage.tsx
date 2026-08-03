@@ -167,7 +167,7 @@ export function AutoCADPage() {
                                                 <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                                                         SIMULATION MODE — No real AutoCAD instance is connected
                                                 </p>
-                                                <p className="text-xs text-amber-700 dark:text-amber-300">
+                                                <p className="text-xs text-amber-200">
                                                         All drawing operations (draw_line, draw_circle, read_dwg,
                                                         write_dwg, save, delete_entity, modify_entity) will either
                                                         return mock objects or fail with an honest error. No real

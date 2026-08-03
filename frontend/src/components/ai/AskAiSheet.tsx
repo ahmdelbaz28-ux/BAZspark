@@ -210,7 +210,7 @@ export function AskAiSheet({
                                                         type="submit"
                                                         size="icon"
                                                         disabled={!input.trim() || loading}
-                                                        className="bg-danger hover:bg-danger/90 text-white flex-shrink-0"
+                                                        className="bg-danger hover:bg-danger/90 text-danger-foreground flex-shrink-0"
                                                 >
                                                         <Send aria-hidden="true" className="w-4 h-4" />
                                                 </Button>

@@ -100,7 +100,7 @@ export function ApiKeyInputField({
                                         transform: "translateY(-50%)",
                                         width: "0.9rem",
                                         height: "0.9rem",
-                                        color: "#64748b",
+                                        color: "#94a3b8",
                                         pointerEvents: "none",
                                 }}
                         />
@@ -151,7 +151,7 @@ export function ApiKeyInputField({
                                         transform: "translateY(-50%)",
                                         background: "none",
                                         border: "none",
-                                        color: "#64748b",
+                                        color: "#94a3b8",
                                         cursor: "pointer",
                                         padding: "0.2rem",
                                         display: "flex",

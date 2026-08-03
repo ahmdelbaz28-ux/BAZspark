@@ -286,7 +286,7 @@ export function ReportGeneratorPage() {
                                                         </h2>
                                                         <Button
                                                                 size="sm"
-                                                                className="bg-danger hover:bg-danger/90 text-white border-none"
+                                                                className="bg-danger hover:bg-danger/90 text-danger-foreground border-none"
                                                                 onClick={() => {
                                                                         setGenerateError(null);
                                                                         setShowGenerateForm(true);
@@ -499,7 +499,7 @@ export function ReportGeneratorPage() {
 
                                                                         <div className="flex gap-2 pt-2">
                                                                                 <Button
-                                                                                        className="bg-danger hover:bg-danger/90 text-white border-none flex-1"
+                                                                                        className="bg-danger hover:bg-danger/90 text-danger-foreground border-none flex-1"
                                                                                         onClick={handleGenerateReport}
                                                                                         disabled={generating}
                                                                                 >

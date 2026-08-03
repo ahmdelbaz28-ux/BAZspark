@@ -38,6 +38,7 @@
         --color-success: var(--color-success);
         --color-warning: var(--color-warning);
         --color-danger: var(--color-danger);
+        --color-danger-foreground: var(--color-danger-foreground);
         --color-info: var(--color-info);
         --color-darker: var(--color-darker);
         --radius: var(--radius);

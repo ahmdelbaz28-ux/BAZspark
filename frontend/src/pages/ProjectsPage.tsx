@@ -248,7 +248,7 @@ export function ProjectsPage() {
                                 {/* Filters */}
                                 <div className="flex flex-wrap items-center gap-3">
                                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                                <SelectTrigger className="w-[180px] bg-card border-border text-white">
+                                                <SelectTrigger className="w-[180px] bg-card border-border text-white" aria-label={t("projects.allStatuses", "Filter by status")}>
                                                         <SelectValue placeholder={t("projects.allStatuses")} />
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-card border-border text-white">

@@ -345,7 +345,7 @@ export function DashboardPage() {
                                                         </div>
                                                         <Button
                                                                 onClick={() => navigate("/reports")}
-                                                                className="bg-danger hover:bg-danger/90 text-white border-none flex items-center gap-2"
+                                                                className="bg-danger hover:bg-danger/90 text-danger-foreground border-none flex items-center gap-2"
                                                                 aria-label={t("settings.openReportGenerator")}
                                                         >
                                                                 <Calculator aria-hidden="true" className="h-4 w-4" />

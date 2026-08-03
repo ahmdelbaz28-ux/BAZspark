@@ -40,6 +40,7 @@
   --color-success: #34d399;             /* emerald */
   --color-warning: #fbbf24;             /* amber */
   --color-danger: rgb(248, 113, 113);   /* red — ONLY for real errors */
+  --color-danger-foreground: #070b12;   /* dark text on danger bg (WCAG AA: 7.12:1) */
   --color-destructive: rgb(248, 113, 113);
   --color-destructive-foreground: #070b12;
   --color-info: #22d3ee;                /* cyan */
