@@ -550,6 +550,14 @@ export function FDSSimulationPage() {
                       setStatusJobId(job.job_id || "");
                       setSelectedJob(job);
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        setStatusJobId(job.job_id || "");
+                        setSelectedJob(job);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
