@@ -279,6 +279,11 @@ jobs:
           python -m pip install --upgrade pip --only-binary :all:
           pip install --only-binary :all: -e ".[dev]"
           pip install --only-binary :all: pytest==8.3.4 pytest-asyncio==0.25.2 hypothesis==6.124.7
+          # V295 FIX: pytest-timeout is REQUIRED — pyproject.toml [tool.pytest.ini_options]
+          # declares `timeout = 300` and addopts include --strict-config, so without the
+          # plugin pytest aborts at startup with "ERROR: Unknown config option: timeout".
+          # All other pytest gates (Gate 2, Build Gate, deploy, full-deploy) pin it explicitly.
+          pip install --only-binary :all: pytest-timeout==2.3.1
 
       - name: Run property-based tests
         # V166 FIX: Add --no-cov to disable pytest-cov atexit hook
