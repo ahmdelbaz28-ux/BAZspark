@@ -27,6 +27,7 @@ CONTEXT:
 """
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -208,13 +209,19 @@ def test_no_false_python_38_justification():
 # ─── pip-audit verification (the gold standard) ─────────────────────────────
 
 
-@pytest.mark.timeout(30)
+@pytest.mark.timeout(120)
 def test_pip_audit_reports_no_known_vulnerabilities():
-    """Run pip-audit on requirements.txt — assert zero CVEs.
+    """Run pip-audit on the installed environment — assert the three
+    M-4 packages (cryptography, pyjwt, python-multipart) have zero CVEs.
 
     This is the GOLD STANDARD test. If pip-audit reports any CVEs in
     cryptography, pyjwt, or python-multipart, the M-4 claim is
     ACCURATE (CVEs remain). If pip-audit is clean, M-4 is STALE.
+
+    We audit the *installed* environment (not `-r requirements.txt`)
+    because resolving the pinned requirements against the configured
+    PyPI index can fail spuriously when the mirror is stale or
+    partial — that is an index problem, not a vulnerability report.
 
     We skip this test if pip-audit is not installed (CI environments
     may not have it).
@@ -224,9 +231,10 @@ def test_pip_audit_reports_no_known_vulnerabilities():
 
     try:
         result = subprocess.run(
-            ["pip-audit", "-r", str(REQUIREMENTS_TXT),
-             "--strict", "--no-deps"],
-            capture_output=True, text=True, timeout=120,
+            [sys.executable, "-m", "pip_audit", "-l",
+             "--desc", "off", "-f", "json"],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=100,
         )
     except FileNotFoundError:
         pytest.skip("pip-audit not installed")
@@ -235,28 +243,41 @@ def test_pip_audit_reports_no_known_vulnerabilities():
 
     output = result.stdout + result.stderr
 
-    # Filter to the three packages M-4 mentions
-    relevant_lines = [
-        line for line in output.split("\n")
-        if any(pkg in line.lower() for pkg in
-               ("cryptography", "pyjwt", "python-multipart"))
-    ]
+    # pip-audit exit code 0 = no vulnerabilities found.
+    # Non-zero exit with malformed/absent JSON (e.g. an index or OSV
+    # service error) means the audit did not complete — treat that as
+    # "cannot verify" rather than a CVE report.
+    try:
+        report = json.loads(result.stdout)
+    except (json.JSONDecodeError, ValueError):
+        if result.returncode == 0:
+            return
+        pytest.skip(
+            "pip-audit did not produce a parseable report (service/"
+            "index error):\n  " + "\n  ".join(
+                line for line in output.split("\n") if line.strip()
+            )[:2000]
+        )
 
-    # pip-audit exit code 0 = no vulnerabilities
-    if result.returncode == 0:
-        # No vulnerabilities — M-4 is STALE
-        return
+    # Only the three packages M-4 mentions are in scope.
+    target_packages = ("cryptography", "pyjwt", "python-multipart")
+    relevant_vulns = []
+    for dep in report.get("dependencies", []):
+        name = dep.get("name", "").lower()
+        if name not in target_packages:
+            continue
+        for vuln in dep.get("vulns", []):
+            relevant_vulns.append(
+                f"{dep.get('name')} {dep.get('version')}: "
+                f"{vuln.get('id')}"
+            )
 
-    # If pip-audit found vulnerabilities in OTHER packages, that's
-    # outside M-4's scope — skip
-    if not relevant_lines:
-        return
-
-    pytest.fail(
-        "M-4 CLAIM IS ACCURATE: pip-audit reports vulnerabilities in "
-        "cryptography/pyjwt/python-multipart:\n  "
-        + "\n  ".join(relevant_lines)
-    )
+    if relevant_vulns:
+        pytest.fail(
+            "M-4 CLAIM IS ACCURATE: pip-audit reports vulnerabilities in "
+            "cryptography/pyjwt/python-multipart:\n  "
+            + "\n  ".join(relevant_vulns)
+        )
 
 
 # ─── Claim retraction regression guard ────────────────────────────────────────
@@ -277,7 +298,7 @@ def test_m4_claim_text_REMOVED_from_active_worklog():
     intentional historical records. This test only asserts it's gone
     from the ACTIVE Phase 3 verdict listing.
     """
-    WORKLOG = Path("/home/z/my-project/worklog.md")
+    WORKLOG = REPO_ROOT / "worklog.md"
     if not WORKLOG.exists():
         pytest.skip(f"Worklog not found at {WORKLOG}")
 

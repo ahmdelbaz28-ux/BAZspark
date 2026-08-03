@@ -169,7 +169,7 @@ def test_no_race_condition_in_get_or_create_pattern():
 
 def test_m3_claim_text_exists_in_worklog():
     """REGRESSION GUARD: the M-3 claim text must exist in worklog.md."""
-    WORKLOG = Path("/home/z/my-project/worklog.md")
+    WORKLOG = REPO_ROOT / "worklog.md"
     if not WORKLOG.exists():
         pytest.skip(f"Worklog not found at {WORKLOG}")
 

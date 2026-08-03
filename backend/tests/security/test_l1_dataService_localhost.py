@@ -237,13 +237,13 @@ def test_l1_file_is_in_production_source_tree():
     if not DATA_SERVICE_TS.exists():
         pytest.skip("dataService.ts not found")
 
-    # Use as_posix() so forward-slash checks are OS-portable.
     path_str = DATA_SERVICE_TS.as_posix()
     assert "frontend/src/" in path_str, (
         "dataService.ts is no longer under frontend/src/ — it may have "
         "been moved to a non-production directory. If so, the L-1 claim "
         "may no longer apply and should be reworded."
     )
+
     assert "/test/" not in path_str and "/__tests__/" not in path_str \
         and "/mock/" not in path_str, (
         "dataService.ts is under a test/ or mock/ directory — it is no "
@@ -270,7 +270,7 @@ def test_l1_claim_text_reflects_resolved_state():
     to remove the RESOLVED wording — and this test will FAIL, forcing
     a conscious update.
     """
-    WORKLOG = Path("/home/z/my-project/worklog.md")
+    WORKLOG = REPO_ROOT / "worklog.md"
     if not WORKLOG.exists():
         pytest.skip(f"Worklog not found at {WORKLOG}")
 

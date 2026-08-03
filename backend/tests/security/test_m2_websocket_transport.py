@@ -310,7 +310,7 @@ def test_m2_claim_text_exists_in_worklog():
     must remain for traceability. If someone removes it, this test
     forces a conscious decision.
     """
-    WORKLOG = Path("/home/z/my-project/worklog.md")
+    WORKLOG = REPO_ROOT / "worklog.md"
     if not WORKLOG.exists():
         pytest.skip(f"Worklog not found at {WORKLOG}")
 

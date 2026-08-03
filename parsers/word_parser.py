@@ -6,6 +6,7 @@ Parses project specifications from Word documents.
 """
 
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Dict, List

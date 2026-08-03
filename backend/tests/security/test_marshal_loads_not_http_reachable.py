@@ -106,10 +106,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 BACKEND_DIR = REPO_ROOT / "backend"
 ISOLATION_PY = REPO_ROOT / "facp_distributed" / "security" / "isolation.py"
-WORKLOG = REPO_ROOT.parent.parent / "worklog.md"  # /home/z/my-project/worklog.md
-# Fall back if worklog is elsewhere
-if not WORKLOG.exists():
-    WORKLOG = Path("/home/z/my-project/worklog.md")
+WORKLOG = REPO_ROOT / "worklog.md"
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -519,40 +516,36 @@ def _make_sentinel(raw_log: list, filtered_log: list,
     WANT a loud failure via the assertion, not via an exception that
     some router might silently catch.
     """
-    # Normalize the test-file prefixes once (constant for the lifetime
-    # of this sentinel) so the filtered-log startswith check matches on
-    # Windows where paths use backslashes.
-    normalized_prefixes = tuple(p.replace("\\", "/") for p in test_file_prefixes)
-
     def _sentinel(*args, **kwargs):
         import inspect
         frame = inspect.currentframe().f_back
         skip_substrings = ("/marshal", "<frozen", "/mock", "/unittest")
         while frame is not None:
-            # Normalize to forward slashes so the skip-substring
-            # checks work on Windows (\\unittest\\mock.py vs /unittest).
-            fn = frame.f_code.co_filename.replace("\\", "/")
-            if not any(s in fn for s in skip_substrings):
+            fn = frame.f_code.co_filename
+            fn_posix = fn.replace(os.sep, "/")
+            if not any(s in fn_posix for s in skip_substrings):
                 break
             frame = frame.f_back
         if frame is not None:
-            fn = frame.f_code.co_filename.replace("\\", "/")
+            fn = frame.f_code.co_filename
             ln = frame.f_lineno
             entry = (fn, ln, func_name)
             raw_log.append(entry)
-            if (not fn.startswith(normalized_prefixes)
-                    and "/_pytest/" not in fn
-                    and "/site-packages/pytest" not in fn
-                    and "conftest" not in fn.rsplit("/", 1)[-1]
+            fn_posix = fn.replace(os.sep, "/")
+            if (not fn_posix.startswith(tuple(p.replace(os.sep, "/")
+                                             for p in test_file_prefixes))
+                    and "/_pytest/" not in fn_posix
+                    and "/site-packages/pytest" not in fn_posix
+                    and "conftest" not in os.path.basename(fn)
                     # V214 MERGE FIX: Exclude APM/tracing libraries (ddtrace, opentelemetry,
                     # sentry) that legitimately use marshal internally for bytecode
                     # instrumentation. These are NOT reachable from HTTP request
                     # handlers — they wrap Python import machinery. Excluding them
                     # avoids false positives in local dev environments where these
                     # libraries are installed (CI does not install them).
-                    and "/ddtrace/" not in fn
-                    and "/opentelemetry/" not in fn
-                    and "/sentry_sdk/" not in fn):
+                    and "/ddtrace/" not in fn_posix
+                    and "/opentelemetry/" not in fn_posix
+                    and "/sentry_sdk/" not in fn_posix):
                 filtered_log.append(entry)
         return b""
     return _sentinel

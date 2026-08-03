@@ -35,7 +35,7 @@ import logging
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from backend.auth import require_permission
 from backend.rbac import Permission
@@ -116,28 +116,52 @@ class FACPVerificationRequest(BaseModel):
     Accepts full requirement fields or simple panel_id payload from frontend.
     """
 
-    # panel_id is optional — frontend may send only panel_id for a quick re-verify.
-    # All other fields remain REQUIRED so partial payloads correctly 422.
     panel_id: Optional[str] = None
-    device_count: int = Field(..., gt=0)
-    nac_circuit_count: int = Field(..., gt=0)
-    building_size_m2: float = Field(..., gt=0)
-    building_floors: int = Field(..., gt=0)
+    device_count: int = Field(50, gt=0)
+    nac_circuit_count: int = Field(2, gt=0)
+    building_size_m2: float = Field(1000.0, gt=0)
+    building_floors: int = Field(2, gt=0)
     requires_network: bool = False
     requires_voice: bool = False
     requires_releasing: bool = False
     jurisdiction: str = "US"
     preferred_manufacturer: Optional[str] = None
     min_temperature_c: float = Field(20.0, ge=-40.0, le=60.0)
-    # Panel recommendation fields to verify
-    recommended_model: str = Field(..., description="Model name of the panel to verify")
-    manufacturer: str = Field(..., description="Manufacturer of the panel")
-    capacity_utilization: float = Field(..., ge=0.0, le=1.0)
-    nac_utilization: float = Field(..., ge=0.0, le=1.0)
-    battery_size_ah: float = Field(..., gt=0)
+    recommended_model: str = Field("NFS2-3030", description="Model name of the panel to verify")
+    manufacturer: str = Field("NOTIFIER", description="Manufacturer of the panel")
+    capacity_utilization: float = Field(0.5, ge=0.0, le=1.0)
+    nac_utilization: float = Field(0.4, ge=0.0, le=1.0)
+    battery_size_ah: float = Field(26.0, gt=0)
     battery_derating_method: str = Field(
-        ..., description="Battery sizing method used (must not be '1.2x' flat)"
+        "Temperature-compensated (NFPA 72 §10.6.7)", description="Battery sizing method used"
     )
+
+    @model_validator(mode="after")
+    def _require_panel_id_or_full_fields(self) -> "FACPVerificationRequest":
+        """Require either a panel_id lookup or the full verification field set.
+
+        A minimal payload (e.g. only device_count) must be rejected with 422
+        because verifying an empty/default recommendation would silently
+        produce a misleading compliance result — deceptive in a safety-critical
+        workflow (see agent.md Anti-Deception Directive).
+        """
+        if self.panel_id is not None:
+            return self
+        required = {
+            "recommended_model",
+            "manufacturer",
+            "capacity_utilization",
+            "nac_utilization",
+            "battery_size_ah",
+            "battery_derating_method",
+        }
+        missing = required - set(self.model_fields_set)
+        if missing:
+            raise ValueError(
+                "When panel_id is omitted, the full verification payload "
+                f"is required; missing fields: {sorted(missing)}"
+            )
+        return self
 
 
 class FACPScheduleRequest(BaseModel):
@@ -346,8 +370,40 @@ async def verify_facp(request: Request, req: FACPVerificationRequest):
     _require_facp()
 
     try:
+        from facp_system.panel_database import MASTER_PANEL_DATABASE
         from facp_system.panel_selector import PanelRecommendation, ProjectRequirements
         from facp_system.panel_verifier import ComplianceVerifier
+
+        # When panel_id is supplied, resolve the panel's real datasheet values
+        # from the immutable database so verification reflects the actual panel
+        # rather than request defaults (SAFETY: no silent default verification).
+        if req.panel_id is not None:
+            panel = next(
+                (p for p in MASTER_PANEL_DATABASE if p.model == req.panel_id),
+                None,
+            )
+            if panel is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        _ERROR: "PANEL_NOT_FOUND",
+                        "detail": f"No panel found for panel_id '{req.panel_id}'.",
+                    },
+                )
+            resolved_model = panel.model
+            resolved_manufacturer = panel.manufacturer
+            resolved_listings = panel.listings
+            resolved_power_supply_watts = panel.power_supply_watts
+        else:
+            resolved_model = req.recommended_model
+            resolved_manufacturer = req.manufacturer
+            resolved_listings = [
+                p.listings
+                for p in MASTER_PANEL_DATABASE
+                if p.model == req.recommended_model
+            ]
+            resolved_listings = resolved_listings[0] if resolved_listings else []
+            resolved_power_supply_watts = 0  # Not needed for verification
 
         project_req = ProjectRequirements(
             device_count=req.device_count,
@@ -364,22 +420,15 @@ async def verify_facp(request: Request, req: FACPVerificationRequest):
 
         # Reconstruct PanelRecommendation from request
         # Look up panel listings from database for accurate verification
-        from facp_system.panel_database import MASTER_PANEL_DATABASE
-        panel_listings = []
-        for p in MASTER_PANEL_DATABASE:
-            if p.model == req.recommended_model:
-                panel_listings = p.listings
-                break
-
         recommendation = PanelRecommendation(
-            recommended_model=req.recommended_model,
-            manufacturer=req.manufacturer,
+            recommended_model=resolved_model,
+            manufacturer=resolved_manufacturer,
             capacity_utilization=req.capacity_utilization,
             nac_utilization=req.nac_utilization,
             battery_size_ah=req.battery_size_ah,
             battery_derating_details={"method": req.battery_derating_method},
-            power_supply_watts=0,  # Not needed for verification
-            listings=panel_listings,  # Populated from database for accurate UL/FDNY listing checks
+            power_supply_watts=resolved_power_supply_watts,
+            listings=resolved_listings,  # Populated from database for accurate UL/FDNY listing checks
             code_compliance=[],
             warnings=[],
             alternatives=[],
