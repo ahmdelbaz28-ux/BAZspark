@@ -957,7 +957,12 @@
                 "danger": "خطر",
                 "warning": "تحذير",
                 "statusSummary": "ملخص الحالة",
-                "deviceStatusOverview": "نظرة عامة على حالات الأجهزة عبر جميع المشاريع"
+                "deviceStatusOverview": "نظرة عامة على حالات الأجهزة عبر جميع المشاريع",
+                "supervising": "يشرف",
+                "signalLost": "فقدان الإشارة",
+                "allPointsNormal": "جميع النقاط سليمة",
+                "supervisoryStatus": "حالة الإشراف",
+                "systemSupervising": "النظام يشرف على جميع الأجهزة المتصلة"
         },
         "projects": {
                 "title": "المشاريع",

@@ -1068,7 +1068,12 @@
     "deleteConfirmTitle": "Confirm Delete",
     "cancel": "Cancel",
     "viewProject": "View Project",
-    "yesDelete": "Yes, Delete"
+    "yesDelete": "Yes, Delete",
+    "supervising": "Supervising",
+    "signalLost": "Signal Lost",
+    "allPointsNormal": "All Points Normal",
+    "supervisoryStatus": "Supervisory Status",
+    "systemSupervising": "System supervising all connected devices"
   },
   "projects": {
     "title": "Projects",
